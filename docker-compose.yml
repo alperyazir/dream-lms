@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: dream-lms-postgres
+    environment:
+      POSTGRES_DB: dreamlms
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dream-lms-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dream-lms-backend
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:password@postgres:5432/dreamlms
+      - APP_NAME=Dream LMS API
+      - APP_VERSION=0.1.0
+      - CORS_ORIGINS=http://localhost:5173
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dream-lms-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dream-lms-frontend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_APP_NAME=Dream LMS
+      - VITE_APP_VERSION=0.1.0
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - dream-lms-network
+
+volumes:
+  postgres_data:
+
+networks:
+  dream-lms-network:
+    driver: bridge
