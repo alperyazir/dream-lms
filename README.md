@@ -120,6 +120,18 @@ Optional (for local development without Docker):
    - API Documentation: http://localhost:8000/docs
    - Database: localhost:5432
 
+5. **Seed the admin user** (First time setup)
+   ```bash
+   cd backend
+   python scripts/seed_admin.py
+   ```
+
+   **Admin Credentials:**
+   - Email: `admin@dreamlms.com`
+   - Password: `Admin123!`
+
+   ⚠️ **Important:** Change the admin password after first login in production!
+
 ### Local Development (Without Docker)
 
 **Backend:**

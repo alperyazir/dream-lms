@@ -1,7 +1,7 @@
 # Dream LMS Backend Dockerfile
 # Multi-stage build for Python FastAPI application
 
-FROM python:3.11-slim as base
+FROM python:3.11 as base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -21,12 +21,12 @@ RUN apt-get update && apt-get install -y \
 # Copy dependency files
 COPY pyproject.toml ./
 
+# Copy application code
+COPY . .
+
 # Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install -e ".[dev]"
-
-# Copy application code
-COPY . .
 
 # Expose port
 EXPOSE 8000

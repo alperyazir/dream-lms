@@ -19,8 +19,12 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = Field(
-        default="postgresql+psycopg://dream_user:dream_pass@postgres:5432/dream_lms",
+        default="postgresql+asyncpg://dream_user:dream_pass@postgres:5432/dream_lms",
         alias="DATABASE_URL",
+    )
+    alembic_database_url: str = Field(
+        default="postgresql+psycopg://dream_user:dream_pass@postgres:5432/dream_lms",
+        alias="ALEMBIC_DATABASE_URL",
     )
 
     # JWT Authentication
