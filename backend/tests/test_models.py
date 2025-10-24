@@ -110,9 +110,7 @@ async def test_email_uniqueness_constraint(db_session):
 async def test_create_publisher_with_relationship(db_session):
     """Test creating a publisher with user relationship."""
     # Create publisher user
-    user = User(
-        email="pub@test.com", password_hash="hash", role=UserRole.publisher, is_active=True
-    )
+    user = User(email="pub@test.com", password_hash="hash", role=UserRole.publisher, is_active=True)
     db_session.add(user)
     await db_session.flush()
 
@@ -371,9 +369,7 @@ async def test_cascade_delete_publisher_deletes_schools(db_session):
     await db_session.commit()
 
     # Verify schools were also deleted
-    result = await db_session.execute(
-        select(School).where(School.id.in_([school1_id, school2_id]))
-    )
+    result = await db_session.execute(select(School).where(School.id.in_([school1_id, school2_id])))
     deleted_schools = result.scalars().all()
 
     assert len(deleted_schools) == 0
