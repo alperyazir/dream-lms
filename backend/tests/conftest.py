@@ -2,6 +2,7 @@
 Pytest configuration and fixtures for backend tests.
 """
 
+import os
 import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -9,8 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.db.base import Base
 from app.main import app
 
-# Test database URL (using same database for now - in production, use separate test DB)
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:password@localhost:5432/dreamlms"
+# Test database URL - use environment variable or default
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://postgres:password@localhost:5432/dreamlms"
+)
 
 
 @pytest.fixture
