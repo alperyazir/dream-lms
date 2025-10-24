@@ -102,7 +102,9 @@ async def login(
 )
 @limiter.limit("10/hour")
 async def refresh_token(
-    request: Request, refresh_data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)
+    request: Request,
+    refresh_data: RefreshTokenRequest,
+    db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """
     Refresh token endpoint that issues a new access token.

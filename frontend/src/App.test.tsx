@@ -1,20 +1,20 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import App from './App'
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import App from "./App";
 
-describe('App', () => {
-  it('renders placeholder home page', () => {
-    render(<App />)
-    expect(screen.getByText(/Dream LMS/i)).toBeInTheDocument()
-  })
+describe("App", () => {
+  it("renders admin dashboard page", () => {
+    render(<App />);
+    expect(screen.getByText(/Admin Dashboard/i)).toBeInTheDocument();
+  });
 
-  it('displays version information', () => {
-    render(<App />)
-    expect(screen.getByText(/Version 0.1.0/i)).toBeInTheDocument()
-  })
+  it("displays quick actions section", () => {
+    render(<App />);
+    expect(screen.getByText(/Quick Actions/i)).toBeInTheDocument();
+  });
 
-  it('displays coming soon message', () => {
-    render(<App />)
-    expect(screen.getByText(/Coming Soon/i)).toBeInTheDocument()
-  })
-})
+  it("displays manage publishers link", () => {
+    render(<App />);
+    expect(screen.getByText(/Manage Publishers/i)).toBeInTheDocument();
+  });
+});

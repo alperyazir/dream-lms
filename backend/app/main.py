@@ -9,7 +9,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import get_settings
-from app.routers import auth
+from app.routers import admin, auth
 
 settings = get_settings()
 
@@ -36,6 +36,7 @@ app.add_middleware(
 
 # Register routers
 app.include_router(auth.router)
+app.include_router(admin.router)
 
 
 @app.get("/api/health")

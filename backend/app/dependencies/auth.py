@@ -99,11 +99,15 @@ async def get_current_publisher(
     return user
 
 
-async def get_current_teacher(user: User = Depends(require_role(UserRole.teacher))) -> User:
+async def get_current_teacher(
+    user: User = Depends(require_role(UserRole.teacher)),
+) -> User:
     """Dependency that requires teacher role."""
     return user
 
 
-async def get_current_student(user: User = Depends(require_role(UserRole.student))) -> User:
+async def get_current_student(
+    user: User = Depends(require_role(UserRole.student)),
+) -> User:
     """Dependency that requires student role."""
     return user
