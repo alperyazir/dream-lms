@@ -21,11 +21,21 @@ from app.models import User, UserRole
 @pytest.fixture(name="session", scope="function")
 def session_fixture() -> Generator[Session, None, None]:
     """Create a fresh database session for each test"""
+    from sqlalchemy import event
+
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+
+    # Enable foreign key constraints for SQLite
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
     from sqlmodel import SQLModel
     SQLModel.metadata.create_all(engine)
 
