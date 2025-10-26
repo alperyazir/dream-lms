@@ -1,0 +1,58 @@
+{
+    "mcpServers": {
+        "playwright": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "@playwright/mcp@latest"
+            ],
+            "env": {}
+        },
+        "sequential-thinking": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-sequential-thinking"
+            ]
+        },
+        "shadcn": {
+            "command": "npx",
+            "args": [
+                "@jpisnice/shadcn-ui-mcp-server@latest"
+            ]
+        },
+        "context7": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@upstash/context7-mcp"
+            ],
+            "env": {}
+        },
+        "morphllm-fast-apply": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@morph-llm/morph-fast-apply"
+            ],
+            "env": {}
+        },
+        "serena": {
+            "type": "stdio",
+            "command": "uvx",
+            "args": [
+                "--from",
+                "git+https://github.com/oraios/serena",
+                "serena",
+                "start-mcp-server",
+                "--context",
+                "ide-assistant",
+                "--project",
+                "/Users/alperyazir/Dev/dream-lms"
+            ],
+            "env": {}
+        }
+    }
+}
