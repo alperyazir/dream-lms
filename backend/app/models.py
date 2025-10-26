@@ -1,7 +1,16 @@
 import uuid
+from enum import Enum
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
+
+
+class UserRole(str, Enum):
+    """User role enumeration for RBAC"""
+    admin = "admin"
+    publisher = "publisher"
+    teacher = "teacher"
+    student = "student"
 
 
 # Shared properties
@@ -10,6 +19,7 @@ class UserBase(SQLModel):
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
+    role: UserRole = Field(default=UserRole.student)
 
 
 # Properties to receive via API on creation
@@ -69,6 +79,7 @@ class Token(SQLModel):
 # Contents of JWT token
 class TokenPayload(SQLModel):
     sub: str | None = None
+    role: str | None = None
 
 
 class NewPassword(SQLModel):

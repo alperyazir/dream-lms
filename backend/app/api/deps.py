@@ -11,7 +11,7 @@ from sqlmodel import Session
 from app.core import security
 from app.core.config import settings
 from app.core.db import engine
-from app.models import TokenPayload, User
+from app.models import TokenPayload, User, UserRole
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
@@ -55,3 +55,25 @@ def get_current_active_superuser(current_user: CurrentUser) -> User:
             status_code=403, detail="The user doesn't have enough privileges"
         )
     return current_user
+
+
+def require_role(*allowed_roles: UserRole):
+    """
+    Dependency factory to check if user has one of the allowed roles.
+
+    Usage:
+        @router.get("/admin/dashboard")
+        async def admin_dashboard(
+            user: User = Depends(require_role(UserRole.admin))
+        ):
+            ...
+    """
+    def role_checker(current_user: CurrentUser) -> User:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access forbidden. Required roles: {[role.value for role in allowed_roles]}"
+            )
+        return current_user
+
+    return Depends(role_checker)
