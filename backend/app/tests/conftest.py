@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.core.db import init_db
 from app.core.security import get_password_hash
 from app.main import app
-from app.models import User, UserRole
+from app.models import Publisher, School, Student, Teacher, User, UserRole
 
 
 # Test database with in-memory SQLite
@@ -184,3 +184,91 @@ def student_token_fixture(client: TestClient, student_user: User) -> str:
     )
     assert response.status_code == 200
     return response.json()["access_token"]
+
+
+# Bulk import specific fixtures with complete role records
+
+
+@pytest.fixture(name="publisher_user_with_record")
+def publisher_user_with_record_fixture(session: Session) -> User:
+    """Create a publisher user WITH Publisher record for bulk import testing"""
+    user = User(
+        id=uuid.uuid4(),
+        email="publisher_bulk@example.com",
+        hashed_password=get_password_hash("publisherpassword"),
+        role=UserRole.publisher,
+        is_active=True,
+        is_superuser=False,
+        full_name="Publisher Bulk User"
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    publisher = Publisher(
+        id=uuid.uuid4(),
+        user_id=user.id,
+        name="Bulk Test Publisher",
+        contact_email="contact@bulkpublisher.com"
+    )
+    session.add(publisher)
+    session.commit()
+    session.refresh(publisher)
+    session.refresh(user)
+
+    return user
+
+
+@pytest.fixture(name="teacher_user_with_record")
+def teacher_user_with_record_fixture(session: Session) -> User:
+    """Create a teacher user WITH Teacher record for bulk import testing"""
+    # Create publisher for school
+    pub_user = User(
+        id=uuid.uuid4(),
+        email="pub_for_teacher_bulk@example.com",
+        hashed_password=get_password_hash("password"),
+        role=UserRole.publisher
+    )
+    session.add(pub_user)
+    session.commit()
+
+    publisher = Publisher(
+        id=uuid.uuid4(),
+        user_id=pub_user.id,
+        name="Publisher for Bulk Teacher"
+    )
+    session.add(publisher)
+    session.commit()
+
+    user = User(
+        id=uuid.uuid4(),
+        email="teacher_bulk@example.com",
+        hashed_password=get_password_hash("teacherpassword"),
+        role=UserRole.teacher,
+        is_active=True,
+        is_superuser=False,
+        full_name="Teacher Bulk User"
+    )
+    session.add(user)
+    session.commit()
+
+    school = School(
+        id=uuid.uuid4(),
+        name="Bulk Test School",
+        publisher_id=publisher.id
+    )
+    session.add(school)
+    session.commit()
+
+    teacher = Teacher(
+        id=uuid.uuid4(),
+        user_id=user.id,
+        school_id=school.id,
+        subject_specialization="Bulk Test Subject"
+    )
+    session.add(teacher)
+    session.commit()
+    session.refresh(teacher)
+    session.refresh(user)
+
+    return user

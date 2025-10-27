@@ -648,3 +648,52 @@ class AssignmentStudentPublic(AssignmentStudentBase):
     id: uuid.UUID
     assignment_id: uuid.UUID
     student_id: uuid.UUID
+
+
+# ============================================================================
+# Bulk Import Schemas
+# ============================================================================
+
+
+class StudentBulkImportRow(SQLModel):
+    """Schema for student bulk import row from Excel"""
+    first_name: str = Field(max_length=255, alias="First Name")
+    last_name: str = Field(max_length=255, alias="Last Name")
+    email: EmailStr = Field(max_length=255, alias="Email")
+    grade_level: str | None = Field(default=None, max_length=50, alias="Grade Level")
+    parent_email: EmailStr | None = Field(default=None, max_length=255, alias="Parent Email")
+
+
+class TeacherBulkImportRow(SQLModel):
+    """Schema for teacher bulk import row from Excel"""
+    first_name: str = Field(max_length=255, alias="First Name")
+    last_name: str = Field(max_length=255, alias="Last Name")
+    email: EmailStr = Field(max_length=255, alias="Email")
+    school_id: uuid.UUID = Field(alias="School ID")
+    subject_specialization: str | None = Field(default=None, max_length=255, alias="Subject Specialization")
+
+
+class PublisherBulkImportRow(SQLModel):
+    """Schema for publisher bulk import row from Excel"""
+    first_name: str = Field(max_length=255, alias="First Name")
+    last_name: str = Field(max_length=255, alias="Last Name")
+    email: EmailStr = Field(max_length=255, alias="Email")
+    company_name: str = Field(max_length=255, alias="Company Name")
+    contact_email: EmailStr = Field(max_length=255, alias="Contact Email")
+
+
+class BulkImportErrorDetail(SQLModel):
+    """Details of a single bulk import validation error"""
+    row_number: int
+    field: str | None = None
+    message: str
+
+
+class BulkImportResponse(SQLModel):
+    """Response schema for bulk import endpoints"""
+    success: bool
+    total_rows: int
+    created_count: int
+    error_count: int
+    errors: list[BulkImportErrorDetail]
+    credentials: list[dict[str, str]] | None = None  # Only if success=True

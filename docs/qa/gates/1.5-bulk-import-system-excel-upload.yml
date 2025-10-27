@@ -1,0 +1,98 @@
+schema: 1
+story: '1.5'
+story_title: 'Bulk Import System (Excel Upload)'
+gate: CONCERNS
+status_reason: 'Solid implementation with comprehensive testing, but security concerns around missing rate limiting and credentials exposure require attention before production.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-10-28T21:30:00Z'
+
+top_issues:
+  - severity: medium
+    category: security
+    title: 'Rate limiting not implemented'
+    description: 'Story mentions rate limiting (10/min) but not implemented in endpoints. File uploads are resource-intensive and should be rate-limited.'
+    refs:
+      - 'backend/app/api/routes/teachers.py:105-257'
+      - 'backend/app/api/routes/admin.py:255-698'
+    suggested_owner: dev
+
+  - severity: medium
+    category: security
+    title: 'Credentials returned in plaintext HTTP response'
+    description: 'Temporary passwords returned in API response body. While acceptable for temp passwords, consider alternative delivery (email, secure download) for production.'
+    refs:
+      - 'backend/app/api/routes/teachers.py:248-255'
+    suggested_owner: dev
+
+  - severity: low
+    category: performance
+    title: 'File read into memory twice'
+    description: 'validate_file_size reads file, then parse_excel_file reads again. Minor inefficiency that could be optimized.'
+    refs:
+      - 'backend/app/utils.py:150-164'
+      - 'backend/app/utils.py:185-236'
+    suggested_owner: dev
+
+  - severity: low
+    category: code-quality
+    title: 'Defined Pydantic schemas not used'
+    description: 'StudentBulkImportRow, TeacherBulkImportRow, PublisherBulkImportRow schemas defined but not actually used for validation. Consider using or removing.'
+    refs:
+      - 'backend/app/models.py:662-685'
+    suggested_owner: dev
+
+waiver:
+  active: false
+
+quality_score: 80
+expires: '2025-11-11T21:30:00Z'
+
+evidence:
+  tests_reviewed: 30
+  risks_identified: 4
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: CONCERNS
+    notes: 'RBAC implemented correctly, file validation good, but missing rate limiting and credentials in plaintext response are concerns. No input sanitization for Excel cell values.'
+  performance:
+    status: PASS
+    notes: 'Efficient batch database checks, read-only Excel parsing. Minor inefficiency with double file read.'
+  reliability:
+    status: PASS
+    notes: 'Excellent transaction handling with rollback, comprehensive error handling with detailed messages.'
+  maintainability:
+    status: PASS
+    notes: 'Well-structured with clear separation of concerns, comprehensive type hints, good documentation, 30 tests covering utilities and endpoints.'
+
+recommendations:
+  immediate:
+    - action: 'Implement rate limiting on bulk import endpoints (10/min as specified)'
+      refs: ['backend/app/api/routes/teachers.py', 'backend/app/api/routes/admin.py']
+    - action: 'Add input sanitization for Excel cell values to prevent potential injection'
+      refs: ['backend/app/utils.py:185-236']
+
+  future:
+    - action: 'Consider alternative credential delivery (email/secure download) instead of HTTP response'
+      refs: ['backend/app/api/routes/teachers.py:248-255']
+    - action: 'Optimize file reading to avoid reading file twice'
+      refs: ['backend/app/utils.py:150-164', 'backend/app/utils.py:185-236']
+    - action: 'Use or remove unused Pydantic bulk import schemas'
+      refs: ['backend/app/models.py:662-685']
+    - action: 'Add school_id existence validation in teacher bulk import endpoint (like admin endpoint has)'
+      refs: ['backend/app/api/routes/teachers.py:105-257']
+
+strengths:
+  - 'Excellent separation of concerns with services/bulk_import.py module'
+  - 'Comprehensive validation with role-specific logic'
+  - 'Atomic transaction handling with proper rollback'
+  - 'Outstanding test coverage: 20 unit tests + 10 integration tests'
+  - 'Proper RBAC implementation with require_role()'
+  - 'Detailed error messages with row numbers for debugging'
+  - 'Security: read_only=True prevents macro execution'
+  - 'Type hints throughout codebase'
+  - 'Logging for monitoring and debugging'
+  - 'All 173 tests passing'
