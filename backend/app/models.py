@@ -1,13 +1,25 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
 
-from pydantic import EmailStr
+from pydantic import EmailStr, field_validator, model_validator
+from sqlalchemy import Column, JSON, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from app.models import Publisher, School, Teacher, Student
+    from app.models import (
+        Assignment,
+        AssignmentStudent,
+        Activity,
+        Book,
+        Class,
+        ClassStudent,
+        Publisher,
+        School,
+        Student,
+        Teacher,
+    )
 
 
 class UserRole(str, Enum):
@@ -126,12 +138,13 @@ class Publisher(PublisherBase, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", unique=True, index=True, ondelete="CASCADE")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
     user: User = Relationship(back_populates="publisher", sa_relationship_kwargs={"passive_deletes": True})
     schools: list["School"] = Relationship(back_populates="publisher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    books: list["Book"] = Relationship(back_populates="publisher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
 class PublisherPublic(PublisherBase):
@@ -140,6 +153,14 @@ class PublisherPublic(PublisherBase):
     user_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+
+
+class PublisherCreateAPI(SQLModel):
+    """Properties for API endpoint publisher creation (includes user creation)"""
+    name: str = Field(max_length=255)
+    contact_email: EmailStr = Field(max_length=255)
+    user_email: EmailStr = Field(max_length=255)
+    full_name: str = Field(max_length=255)
 
 
 # --- School Models ---
@@ -169,12 +190,13 @@ class School(SchoolBase, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     publisher_id: uuid.UUID = Field(foreign_key="publishers.id", index=True, ondelete="CASCADE")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
     publisher: Publisher = Relationship(back_populates="schools", sa_relationship_kwargs={"passive_deletes": True})
     teachers: list["Teacher"] = Relationship(back_populates="school", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    classes: list["Class"] = Relationship(back_populates="school", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
 class SchoolPublic(SchoolBase):
@@ -211,12 +233,14 @@ class Teacher(TeacherBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", unique=True, index=True, ondelete="CASCADE")
     school_id: uuid.UUID = Field(foreign_key="schools.id", index=True, ondelete="CASCADE")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
     user: User = Relationship(back_populates="teacher", sa_relationship_kwargs={"passive_deletes": True})
     school: School = Relationship(back_populates="teachers", sa_relationship_kwargs={"passive_deletes": True})
+    classes: list["Class"] = Relationship(back_populates="teacher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    assignments: list["Assignment"] = Relationship(back_populates="teacher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
 class TeacherPublic(TeacherBase):
@@ -226,6 +250,14 @@ class TeacherPublic(TeacherBase):
     school_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+
+
+class TeacherCreateAPI(SQLModel):
+    """Properties for API endpoint teacher creation (includes user creation)"""
+    user_email: EmailStr = Field(max_length=255)
+    full_name: str = Field(max_length=255)
+    school_id: uuid.UUID
+    subject_specialization: str | None = Field(default=None, max_length=255)
 
 
 # --- Student Models ---
@@ -253,11 +285,13 @@ class Student(StudentBase, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", unique=True, index=True, ondelete="CASCADE")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
     user: User = Relationship(back_populates="student", sa_relationship_kwargs={"passive_deletes": True})
+    class_enrollments: list["ClassStudent"] = Relationship(back_populates="student", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    assignment_submissions: list["AssignmentStudent"] = Relationship(back_populates="student", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
 class StudentPublic(StudentBase):
@@ -266,3 +300,351 @@ class StudentPublic(StudentBase):
     user_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+
+
+class StudentCreateAPI(SQLModel):
+    """Properties for API endpoint student creation (includes user creation)"""
+    user_email: EmailStr = Field(max_length=255)
+    full_name: str = Field(max_length=255)
+    grade_level: str | None = Field(default=None, max_length=50)
+    parent_email: EmailStr | None = Field(default=None, max_length=255)
+
+
+# Response for user creation endpoints with temporary password
+class UserCreationResponse(SQLModel):
+    """Response schema for role-specific user creation endpoints"""
+    user: UserPublic
+    temp_password: str
+    role_record: PublisherPublic | TeacherPublic | StudentPublic
+
+
+# ============================================================================
+# LMS Core Models - Classes, Books, Activities, Assignments
+# ============================================================================
+
+# --- Class Models ---
+
+class ClassBase(SQLModel):
+    """Shared Class properties"""
+    name: str = Field(max_length=255)
+    grade_level: str | None = Field(default=None, max_length=50)
+    subject: str | None = Field(default=None, max_length=100)
+    academic_year: str | None = Field(default=None, max_length=20)
+    is_active: bool = Field(default=True)
+
+
+class ClassCreate(ClassBase):
+    """Properties to receive via API on Class creation"""
+    teacher_id: uuid.UUID
+    school_id: uuid.UUID
+
+
+class ClassUpdate(SQLModel):
+    """Properties to receive via API on Class update"""
+    name: str | None = Field(default=None, max_length=255)
+    grade_level: str | None = Field(default=None, max_length=50)
+    subject: str | None = Field(default=None, max_length=100)
+    academic_year: str | None = Field(default=None, max_length=20)
+    is_active: bool | None = Field(default=None)
+
+
+class Class(ClassBase, table=True):
+    """Class database model"""
+    __tablename__ = "classes"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    school_id: uuid.UUID = Field(foreign_key="schools.id", index=True, ondelete="CASCADE")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    teacher: Teacher = Relationship(back_populates="classes", sa_relationship_kwargs={"passive_deletes": True})
+    school: School = Relationship(back_populates="classes", sa_relationship_kwargs={"passive_deletes": True})
+    class_students: list["ClassStudent"] = Relationship(back_populates="class_obj", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+
+class ClassPublic(ClassBase):
+    """Properties to return via API"""
+    id: uuid.UUID
+    teacher_id: uuid.UUID
+    school_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+# --- ClassStudent Junction Table ---
+
+class ClassStudentBase(SQLModel):
+    """Shared ClassStudent properties"""
+    pass
+
+
+class ClassStudentCreate(ClassStudentBase):
+    """Properties to receive via API on ClassStudent creation"""
+    class_id: uuid.UUID
+    student_id: uuid.UUID
+
+
+class ClassStudent(ClassStudentBase, table=True):
+    """Junction table for class enrollments"""
+    __tablename__ = "class_students"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    class_id: uuid.UUID = Field(foreign_key="classes.id", index=True, ondelete="CASCADE")
+    student_id: uuid.UUID = Field(foreign_key="students.id", index=True, ondelete="CASCADE")
+    enrolled_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # SQLAlchemy-level unique constraint
+    __table_args__ = (
+        UniqueConstraint('class_id', 'student_id', name='uq_class_student'),
+    )
+
+    # Relationships
+    class_obj: Class = Relationship(back_populates="class_students", sa_relationship_kwargs={"passive_deletes": True})
+    student: Student = Relationship(back_populates="class_enrollments", sa_relationship_kwargs={"passive_deletes": True})
+
+
+class ClassStudentPublic(ClassStudentBase):
+    """Properties to return via API"""
+    id: uuid.UUID
+    class_id: uuid.UUID
+    student_id: uuid.UUID
+    enrolled_at: datetime
+
+
+# --- Book Models ---
+
+class BookBase(SQLModel):
+    """Shared Book properties"""
+    dream_storage_id: str = Field(unique=True, max_length=255)
+    title: str = Field(max_length=500)
+    description: str | None = Field(default=None)
+    cover_image_url: str | None = Field(default=None)
+
+
+class BookCreate(BookBase):
+    """Properties to receive via API on Book creation"""
+    publisher_id: uuid.UUID
+
+
+class BookUpdate(SQLModel):
+    """Properties to receive via API on Book update"""
+    title: str | None = Field(default=None, max_length=500)
+    description: str | None = Field(default=None)
+    cover_image_url: str | None = Field(default=None)
+
+
+class Book(BookBase, table=True):
+    """Book database model"""
+    __tablename__ = "books"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    publisher_id: uuid.UUID = Field(foreign_key="publishers.id", index=True, ondelete="CASCADE")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    publisher: Publisher = Relationship(back_populates="books", sa_relationship_kwargs={"passive_deletes": True})
+    activities: list["Activity"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    assignments: list["Assignment"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+
+class BookPublic(BookBase):
+    """Properties to return via API"""
+    id: uuid.UUID
+    publisher_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+# --- Activity Models ---
+
+class ActivityType(str, Enum):
+    """Activity type enumeration"""
+    dragdroppicture = "dragdroppicture"
+    dragdroppicturegroup = "dragdroppicturegroup"
+    matchTheWords = "matchTheWords"
+    circle = "circle"
+    markwithx = "markwithx"
+    puzzleFindWords = "puzzleFindWords"
+
+
+class ActivityBase(SQLModel):
+    """Shared Activity properties"""
+    dream_activity_id: str | None = Field(default=None, max_length=255)
+    activity_type: ActivityType
+    title: str | None = Field(default=None, max_length=500)
+    config_json: dict = Field(sa_column=Column(JSON))
+    order_index: int = Field(default=0)
+
+
+class ActivityCreate(ActivityBase):
+    """Properties to receive via API on Activity creation"""
+    book_id: uuid.UUID
+
+
+class ActivityUpdate(SQLModel):
+    """Properties to receive via API on Activity update"""
+    dream_activity_id: str | None = Field(default=None, max_length=255)
+    activity_type: ActivityType | None = Field(default=None)
+    title: str | None = Field(default=None, max_length=500)
+    config_json: dict | None = Field(default=None, sa_column=Column(JSON))
+    order_index: int | None = Field(default=None)
+
+
+class Activity(ActivityBase, table=True):
+    """Activity database model"""
+    __tablename__ = "activities"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    book_id: uuid.UUID = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    book: Book = Relationship(back_populates="activities", sa_relationship_kwargs={"passive_deletes": True})
+    assignments: list["Assignment"] = Relationship(back_populates="activity", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+
+class ActivityPublic(ActivityBase):
+    """Properties to return via API"""
+    id: uuid.UUID
+    book_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+# --- Assignment Models ---
+
+class AssignmentBase(SQLModel):
+    """Shared Assignment properties"""
+    name: str = Field(max_length=500)
+    instructions: str | None = Field(default=None)
+    due_date: datetime | None = Field(default=None)
+    time_limit_minutes: int | None = Field(default=None, gt=0)
+
+
+class AssignmentCreate(AssignmentBase):
+    """Properties to receive via API on Assignment creation"""
+    teacher_id: uuid.UUID
+    activity_id: uuid.UUID
+    book_id: uuid.UUID
+
+
+class AssignmentUpdate(SQLModel):
+    """Properties to receive via API on Assignment update"""
+    name: str | None = Field(default=None, max_length=500)
+    instructions: str | None = Field(default=None)
+    due_date: datetime | None = Field(default=None)
+    time_limit_minutes: int | None = Field(default=None, gt=0)
+
+
+class Assignment(AssignmentBase, table=True):
+    """Assignment database model"""
+    __tablename__ = "assignments"
+
+    model_config = {"validate_assignment": True}
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    activity_id: uuid.UUID = Field(foreign_key="activities.id", index=True, ondelete="CASCADE")
+    book_id: uuid.UUID = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    teacher: Teacher = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
+    activity: Activity = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
+    book: Book = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
+    assignment_students: list["AssignmentStudent"] = Relationship(back_populates="assignment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+    @model_validator(mode='after')
+    def validate_time_limit(self) -> 'Assignment':
+        """Validate time_limit_minutes is positive"""
+        if self.time_limit_minutes is not None and self.time_limit_minutes <= 0:
+            raise ValueError("time_limit_minutes must be greater than 0")
+        return self
+
+
+class AssignmentPublic(AssignmentBase):
+    """Properties to return via API"""
+    id: uuid.UUID
+    teacher_id: uuid.UUID
+    activity_id: uuid.UUID
+    book_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+# --- AssignmentStudent Junction Table ---
+
+class AssignmentStatus(str, Enum):
+    """Assignment completion status"""
+    not_started = "not_started"
+    in_progress = "in_progress"
+    completed = "completed"
+
+
+class AssignmentStudentBase(SQLModel):
+    """Shared AssignmentStudent properties"""
+    status: AssignmentStatus = Field(default=AssignmentStatus.not_started)
+    score: int | None = Field(default=None, ge=0, le=100)
+    answers_json: dict | None = Field(default=None, sa_column=Column(JSON))
+    progress_json: dict | None = Field(default=None, sa_column=Column(JSON))
+    started_at: datetime | None = Field(default=None)
+    completed_at: datetime | None = Field(default=None)
+    time_spent_minutes: int = Field(default=0)
+    last_saved_at: datetime | None = Field(default=None)
+
+
+class AssignmentStudentCreate(AssignmentStudentBase):
+    """Properties to receive via API on AssignmentStudent creation"""
+    assignment_id: uuid.UUID
+    student_id: uuid.UUID
+
+
+class AssignmentStudentUpdate(SQLModel):
+    """Properties to receive via API on AssignmentStudent update"""
+    status: AssignmentStatus | None = Field(default=None)
+    score: int | None = Field(default=None, ge=0, le=100)
+    answers_json: dict | None = Field(default=None, sa_column=Column(JSON))
+    progress_json: dict | None = Field(default=None, sa_column=Column(JSON))
+    started_at: datetime | None = Field(default=None)
+    completed_at: datetime | None = Field(default=None)
+    time_spent_minutes: int | None = Field(default=None)
+    last_saved_at: datetime | None = Field(default=None)
+
+
+class AssignmentStudent(AssignmentStudentBase, table=True):
+    """Assignment-student junction table for tracking progress"""
+    __tablename__ = "assignment_students"
+
+    model_config = {"validate_assignment": True}
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    assignment_id: uuid.UUID = Field(foreign_key="assignments.id", index=True, ondelete="CASCADE")
+    student_id: uuid.UUID = Field(foreign_key="students.id", index=True, ondelete="CASCADE")
+
+    # SQLAlchemy-level unique constraint
+    __table_args__ = (
+        UniqueConstraint('assignment_id', 'student_id', name='uq_assignment_student'),
+    )
+
+    # Relationships
+    assignment: Assignment = Relationship(back_populates="assignment_students", sa_relationship_kwargs={"passive_deletes": True})
+    student: Student = Relationship(back_populates="assignment_submissions", sa_relationship_kwargs={"passive_deletes": True})
+
+    @model_validator(mode='after')
+    def validate_score(self) -> 'AssignmentStudent':
+        """Validate score is between 0 and 100"""
+        if self.score is not None and (self.score < 0 or self.score > 100):
+            raise ValueError("score must be between 0 and 100")
+        return self
+
+
+class AssignmentStudentPublic(AssignmentStudentBase):
+    """Properties to return via API"""
+    id: uuid.UUID
+    assignment_id: uuid.UUID
+    student_id: uuid.UUID

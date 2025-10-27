@@ -1,4 +1,6 @@
 import logging
+import secrets
+import string
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -121,3 +123,22 @@ def verify_password_reset_token(token: str) -> str | None:
         return str(decoded_token["sub"])
     except InvalidTokenError:
         return None
+
+
+def generate_temp_password(length: int = 12) -> str:
+    """
+    Generate a cryptographically secure random temporary password.
+
+    Args:
+        length: Length of password to generate (default: 12)
+
+    Returns:
+        Random password string containing uppercase, lowercase, digits, and special characters
+
+    Example:
+        >>> password = generate_temp_password()
+        >>> len(password)
+        12
+    """
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(alphabet) for _ in range(length))

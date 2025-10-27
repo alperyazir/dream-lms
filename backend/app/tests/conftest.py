@@ -40,11 +40,20 @@ def session_fixture() -> Generator[Session, None, None]:
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
-        yield session
-        # Clean up after test
-        for table in reversed(SQLModel.metadata.sorted_tables):
-            session.exec(delete(table))
-        session.commit()
+        try:
+            yield session
+        except Exception:
+            # Rollback on any exception during test
+            session.rollback()
+            raise
+        finally:
+            # Clean up after test
+            try:
+                for table in reversed(SQLModel.metadata.sorted_tables):
+                    session.exec(delete(table))
+                session.commit()
+            except Exception:
+                session.rollback()
 
 
 @pytest.fixture(name="client")
