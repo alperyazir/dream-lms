@@ -34,11 +34,46 @@ Transform the template's Chakra UI frontend into a polished Shadcn UI + Tailwind
 
 ## Story 2.1: Remove Chakra UI & Install Shadcn + Design System
 
+**Dependencies:** Story 2.0 (✅ COMPLETED - migration guides created)
+**Estimated Effort:** 2-3 days
+**Status:** 🟡 READY FOR PICKUP
+
 As a **developer**,
 I want **to replace Chakra UI with Shadcn UI + Tailwind and configure the neumorphic design system**,
 so that **we have a clean foundation for Dream LMS's unique visual aesthetic**.
 
 ### Acceptance Criteria:
+
+#### 0. Prerequisites (Complete Before Starting)
+
+**⚠️ CRITICAL: Read migration guides before touching any code!**
+
+- [ ] Read `docs/chakra-to-shadcn-migration-guide.md` (15-20 minutes)
+  - Component mapping table
+  - Page-by-page migration checklists
+  - Common pitfalls & solutions
+  - 3-phase migration workflow
+- [ ] Review screenshots in `docs/ss/` (5 minutes)
+  - `login.png` - Current login page appearance
+  - `dashboard.png` - Current dashboard layout
+  - `admin.png` - Current admin table
+  - `user_settings.png` - Current settings page
+- [ ] Bookmark `docs/chakra-to-tailwind-quick-ref.md` for constant reference
+  - Quick props translation table
+  - Shadcn install commands
+  - Testing checklist
+- [ ] Understand Story 2.0 deliverables (completed by PM)
+  - Migration guide with 5 page-specific checklists
+  - Visual references to prevent regressions
+  - Component inventory and analysis
+
+**Why this matters:** Story 2.0 created comprehensive safety nets to prevent visual regressions and developer confusion. Skipping these guides will result in wasted time and inconsistent UI.
+
+**Estimated prep time:** 25-30 minutes of reading before first line of code.
+
+---
+
+#### Implementation Steps:
 
 1. Remove Chakra UI: `npm uninstall @chakra-ui/react @emotion/react @emotion/styled`
 2. Install Shadcn: `npx shadcn-ui@latest init` with Tailwind + TypeScript
