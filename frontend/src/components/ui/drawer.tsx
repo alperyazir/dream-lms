@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from "./sheet"
 export const DrawerRoot = Sheet
 export const DrawerTrigger = SheetTrigger
 export const DrawerContent = SheetContent
-export const DrawerBackdrop = ({ ...props }) => null // Sheet handles overlay internally
+export const DrawerBackdrop = () => null // Sheet handles overlay internally
 
 export const DrawerBody = ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className="p-4" {...props}>{children}</div>
