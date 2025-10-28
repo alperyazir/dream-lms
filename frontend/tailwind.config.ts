@@ -53,8 +53,40 @@ const config: Config = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
-  			}
-  		}
+  			},
+  			// Dream LMS Brand Colors
+  			teal: {
+  				50: '#F0FDFA',
+  				100: '#CCFBF1',
+  				200: '#99F6E4',
+  				300: '#5EEAD4',
+  				400: '#2DD4BF',
+  				500: '#14B8A6', // Primary
+  				600: '#0D9488',
+  				700: '#0F766E',
+  				800: '#115E59',
+  				900: '#134E4A',
+  				950: '#042F2E',
+  			},
+  			cyan: {
+  				50: '#ECFEFF',
+  				100: '#CFFAFE',
+  				200: '#A5F3FC',
+  				300: '#67E8F9',
+  				400: '#22D3EE',
+  				500: '#06B6D4', // Secondary
+  				600: '#0891B2',
+  				700: '#0E7490',
+  				800: '#155E75',
+  				900: '#164E63',
+  				950: '#083344',
+  			},
+  		},
+  		boxShadow: {
+  			'neuro-sm': '2px 2px 4px rgba(0,0,0,0.2), -2px -2px 4px rgba(255,255,255,0.05)',
+  			'neuro': '4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05)',
+  			'neuro-lg': '8px 8px 16px rgba(0,0,0,0.2), -8px -8px 16px rgba(255,255,255,0.05)',
+  		},
   	}
   },
   plugins: [require("tailwindcss-animate")],
