@@ -1,13 +1,6 @@
-import {
-  Button,
-  DialogActionTrigger,
-  DialogRoot,
-  DialogTrigger,
-  Flex,
-  Input,
-  Text,
-  VStack,
-} from "@chakra-ui/react"
+import { DialogActionTrigger, DialogRoot, DialogTrigger } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { Controller, type SubmitHandler, useForm } from "react-hook-form"
@@ -95,12 +88,12 @@ const EditUser = ({ user }: EditUserProps) => {
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <Text mb={4}>Update the user details below.</Text>
-            <VStack gap={4}>
+            <p className="mb-4">Update the user details below.</p>
+            <div className="flex flex-col gap-4">
               <Field
                 required
-                invalid={!!errors.email}
-                errorText={errors.email?.message}
+                /* invalid={!!errors.email}
+                error={errors.email?.message}
                 label="Email"
               >
                 <Input
@@ -114,8 +107,8 @@ const EditUser = ({ user }: EditUserProps) => {
               </Field>
 
               <Field
-                invalid={!!errors.full_name}
-                errorText={errors.full_name?.message}
+                /* invalid={!!errors.full_name}
+                error={errors.full_name?.message}
                 label="Full Name"
               >
                 <Input
@@ -126,8 +119,8 @@ const EditUser = ({ user }: EditUserProps) => {
               </Field>
 
               <Field
-                invalid={!!errors.password}
-                errorText={errors.password?.message}
+                /* invalid={!!errors.password}
+                error={errors.password?.message}
                 label="Set Password"
               >
                 <Input
@@ -143,8 +136,8 @@ const EditUser = ({ user }: EditUserProps) => {
               </Field>
 
               <Field
-                invalid={!!errors.confirm_password}
-                errorText={errors.confirm_password?.message}
+                /* invalid={!!errors.confirm_password}
+                error={errors.confirm_password?.message}
                 label="Confirm Password"
               >
                 <Input
@@ -157,9 +150,9 @@ const EditUser = ({ user }: EditUserProps) => {
                   type="password"
                 />
               </Field>
-            </VStack>
+            </div>
 
-            <Flex mt={4} direction="column" gap={4}>
+            <div className="mt-4 flex flex-col gap-4">
               <Controller
                 control={control}
                 name="is_superuser"
@@ -188,20 +181,20 @@ const EditUser = ({ user }: EditUserProps) => {
                   </Field>
                 )}
               />
-            </Flex>
+            </div>
           </DialogBody>
 
           <DialogFooter gap={2}>
             <DialogActionTrigger asChild>
               <Button
-                variant="subtle"
+                variant="ghost"
                 colorPalette="gray"
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
             </DialogActionTrigger>
-            <Button variant="solid" type="submit" loading={isSubmitting}>
+            <Button variant="default" type="submit" loading={isSubmitting}>
               Save
             </Button>
           </DialogFooter>

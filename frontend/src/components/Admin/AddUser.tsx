@@ -1,12 +1,6 @@
-import {
-  Button,
-  DialogActionTrigger,
-  DialogTitle,
-  Flex,
-  Input,
-  Text,
-  VStack,
-} from "@chakra-ui/react"
+import { DialogActionTrigger, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { Controller, type SubmitHandler, useForm } from "react-hook-form"
@@ -83,7 +77,7 @@ const AddUser = () => {
       onOpenChange={({ open }) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
-        <Button value="add-user" my={4}>
+        <Button value="add-user" className="my-4">
           <FaPlus fontSize="16px" />
           Add User
         </Button>
@@ -94,14 +88,14 @@ const AddUser = () => {
             <DialogTitle>Add User</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <Text mb={4}>
+            <p className="mb-4">
               Fill in the form below to add a new user to the system.
-            </Text>
-            <VStack gap={4}>
+            </p>
+            <div className="flex flex-col gap-4">
               <Field
                 required
-                invalid={!!errors.email}
-                errorText={errors.email?.message}
+                /* invalid={!!errors.email}
+                error={errors.email?.message}
                 label="Email"
               >
                 <Input
@@ -115,8 +109,8 @@ const AddUser = () => {
               </Field>
 
               <Field
-                invalid={!!errors.full_name}
-                errorText={errors.full_name?.message}
+                /* invalid={!!errors.full_name}
+                error={errors.full_name?.message}
                 label="Full Name"
               >
                 <Input
@@ -128,8 +122,8 @@ const AddUser = () => {
 
               <Field
                 required
-                invalid={!!errors.password}
-                errorText={errors.password?.message}
+                /* invalid={!!errors.password}
+                error={errors.password?.message}
                 label="Set Password"
               >
                 <Input
@@ -147,8 +141,8 @@ const AddUser = () => {
 
               <Field
                 required
-                invalid={!!errors.confirm_password}
-                errorText={errors.confirm_password?.message}
+                /* invalid={!!errors.confirm_password}
+                error={errors.confirm_password?.message}
                 label="Confirm Password"
               >
                 <Input
@@ -162,9 +156,9 @@ const AddUser = () => {
                   type="password"
                 />
               </Field>
-            </VStack>
+            </div>
 
-            <Flex mt={4} direction="column" gap={4}>
+            <div className="mt-4 flex flex-col gap-4">
               <Controller
                 control={control}
                 name="is_superuser"
@@ -193,13 +187,13 @@ const AddUser = () => {
                   </Field>
                 )}
               />
-            </Flex>
+            </div>
           </DialogBody>
 
           <DialogFooter gap={2}>
             <DialogActionTrigger asChild>
               <Button
-                variant="subtle"
+                variant="ghost"
                 colorPalette="gray"
                 disabled={isSubmitting}
               >
@@ -207,7 +201,7 @@ const AddUser = () => {
               </Button>
             </DialogActionTrigger>
             <Button
-              variant="solid"
+              variant="default"
               type="submit"
               disabled={!isValid}
               loading={isSubmitting}

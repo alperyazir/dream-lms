@@ -1,12 +1,5 @@
-import {
-  Box,
-  Button,
-  Container,
-  Flex,
-  Heading,
-  Input,
-  Text,
-} from "@chakra-ui/react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
@@ -70,13 +63,12 @@ const UserInformation = () => {
   }
 
   return (
-    <Container maxW="full">
-      <Heading size="sm" py={4}>
+    <div className="max-w-full">
+      <h3 className="text-sm font-semibold py-4">
         User Information
-      </Heading>
-      <Box
-        w={{ sm: "full", md: "sm" }}
-        as="form"
+      </h3>
+      <form
+        className="w-full md:w-96"
         onSubmit={handleSubmit(onSubmit)}
       >
         <Field label="Full name">
@@ -87,22 +79,19 @@ const UserInformation = () => {
               size="md"
             />
           ) : (
-            <Text
-              fontSize="md"
-              py={2}
-              color={!currentUser?.full_name ? "gray" : "inherit"}
-              truncate
-              maxW="sm"
+            <p
+              className="text-base py-2 truncate max-w-sm"
+              style={{ color: !currentUser?.full_name ? "gray" : "inherit" }}
             >
               {currentUser?.full_name || "N/A"}
-            </Text>
+            </p>
           )}
         </Field>
         <Field
           mt={4}
           label="Email"
-          invalid={!!errors.email}
-          errorText={errors.email?.message}
+          /* invalid={!!errors.email}
+          error={errors.email?.message}
         >
           {editMode ? (
             <Input
@@ -114,14 +103,14 @@ const UserInformation = () => {
               size="md"
             />
           ) : (
-            <Text fontSize="md" py={2} truncate maxW="sm">
+            <p className="text-base py-2 truncate max-w-sm">
               {currentUser?.email}
-            </Text>
+            </p>
           )}
         </Field>
-        <Flex mt={4} gap={3}>
+        <div className="mt-4 flex gap-3">
           <Button
-            variant="solid"
+            variant="default"
             onClick={toggleEditMode}
             type={editMode ? "button" : "submit"}
             loading={editMode ? isSubmitting : false}
@@ -131,7 +120,7 @@ const UserInformation = () => {
           </Button>
           {editMode && (
             <Button
-              variant="subtle"
+              variant="ghost"
               colorPalette="gray"
               onClick={onCancel}
               disabled={isSubmitting}
@@ -139,9 +128,9 @@ const UserInformation = () => {
               Cancel
             </Button>
           )}
-        </Flex>
-      </Box>
-    </Container>
+        </div>
+      </form>
+    </div>
   )
 }
 

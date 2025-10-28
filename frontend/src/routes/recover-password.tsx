@@ -1,4 +1,4 @@
-import { Container, Heading, Input, Text } from "@chakra-ui/react"
+import { Input } from "@/components/ui/input"
 import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
@@ -58,23 +58,17 @@ function RecoverPassword() {
   }
 
   return (
-    <Container
-      as="form"
+    <form
       onSubmit={handleSubmit(onSubmit)}
-      h="100vh"
-      maxW="sm"
-      alignItems="stretch"
-      justifyContent="center"
-      gap={4}
-      centerContent
+      className="h-screen max-w-sm flex flex-col items-stretch justify-center gap-4 mx-auto px-4"
     >
-      <Heading size="xl" color="ui.main" textAlign="center" mb={2}>
+      <h1 className="text-3xl text-center mb-2">
         Password Recovery
-      </Heading>
-      <Text textAlign="center">
+      </h1>
+      <p className="text-center">
         A password recovery email will be sent to the registered account.
-      </Text>
-      <Field invalid={!!errors.email} errorText={errors.email?.message}>
+      </p>
+      <Field /* invalid={!!errors.email} error={errors.email?.message}>
         <InputGroup w="100%" startElement={<FiMail />}>
           <Input
             {...register("email", {
@@ -86,9 +80,9 @@ function RecoverPassword() {
           />
         </InputGroup>
       </Field>
-      <Button variant="solid" type="submit" loading={isSubmitting}>
+      <Button variant="default" type="submit" loading={isSubmitting}>
         Continue
       </Button>
-    </Container>
+    </form>
   )
 }

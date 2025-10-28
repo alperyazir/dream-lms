@@ -1,53 +1,33 @@
-import type { BoxProps, InputElementProps } from "@chakra-ui/react"
-import { Group, InputElement } from "@chakra-ui/react"
 import * as React from "react"
 
-export interface InputGroupProps extends BoxProps {
-  startElementProps?: InputElementProps
-  endElementProps?: InputElementProps
-  startElement?: React.ReactNode
-  endElement?: React.ReactNode
-  children: React.ReactElement<InputElementProps>
-  startOffset?: InputElementProps["paddingStart"]
-  endOffset?: InputElementProps["paddingEnd"]
+export interface InputGroupProps {
+  children: React.ReactNode
+  className?: string
 }
 
 export const InputGroup = React.forwardRef<HTMLDivElement, InputGroupProps>(
-  function InputGroup(props, ref) {
-    const {
-      startElement,
-      startElementProps,
-      endElement,
-      endElementProps,
-      children,
-      startOffset = "6px",
-      endOffset = "6px",
-      ...rest
-    } = props
-
-    const child =
-      React.Children.only<React.ReactElement<InputElementProps>>(children)
-
+  function InputGroup({ children, className }, ref) {
     return (
-      <Group ref={ref} {...rest}>
-        {startElement && (
-          <InputElement pointerEvents="none" {...startElementProps}>
-            {startElement}
-          </InputElement>
-        )}
-        {React.cloneElement(child, {
-          ...(startElement && {
-            ps: `calc(var(--input-height) - ${startOffset})`,
-          }),
-          ...(endElement && { pe: `calc(var(--input-height) - ${endOffset})` }),
-          ...children.props,
-        })}
-        {endElement && (
-          <InputElement placement="end" {...endElementProps}>
-            {endElement}
-          </InputElement>
-        )}
-      </Group>
+      <div ref={ref} className={`relative flex items-center ${className || ""}`}>
+        {children}
+      </div>
     )
-  },
+  }
 )
+
+export interface InputElementProps {
+  children: React.ReactNode
+  placement?: "left" | "right"
+  className?: string
+}
+
+export const InputElement = ({ children, placement = "left", className }: InputElementProps) => {
+  const baseClasses = "absolute flex items-center justify-center pointer-events-none text-muted-foreground"
+  const placementClasses = placement === "left" ? "left-3" : "right-3"
+
+  return (
+    <div className={`${baseClasses} ${placementClasses} ${className || ""}`}>
+      {children}
+    </div>
+  )
+}

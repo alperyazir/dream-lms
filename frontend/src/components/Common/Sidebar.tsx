@@ -1,4 +1,4 @@
-import { Box, Flex, IconButton, Text } from "@chakra-ui/react"
+import { IconButton } from "@/components/ui/icon-button"
 import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { FaBars } from "react-icons/fa"
@@ -47,29 +47,25 @@ const Sidebar = () => {
         <DrawerContent maxW="xs">
           <DrawerCloseTrigger />
           <DrawerBody>
-            <Flex flexDir="column" justify="space-between">
-              <Box>
+            <div className="flex flex-col justify-between">
+              <div>
                 <SidebarItems onClose={() => setOpen(false)} />
-                <Flex
-                  as="button"
+                <button
                   onClick={() => {
                     logout()
                   }}
-                  alignItems="center"
-                  gap={4}
-                  px={4}
-                  py={2}
+                  className="flex items-center gap-4 px-4 py-2"
                 >
                   <FiLogOut />
-                  <Text>Log Out</Text>
-                </Flex>
-              </Box>
+                  <span>Log Out</span>
+                </button>
+              </div>
               {currentUser?.email && (
-                <Text fontSize="sm" p={2} truncate maxW="sm">
+                <p className="text-sm p-2 truncate max-w-sm">
                   Logged in as: {currentUser.email}
-                </Text>
+                </p>
               )}
-            </Flex>
+            </div>
           </DrawerBody>
           <DrawerCloseTrigger />
         </DrawerContent>
@@ -77,19 +73,11 @@ const Sidebar = () => {
 
       {/* Desktop */}
 
-      <Box
-        display={{ base: "none", md: "flex" }}
-        position="sticky"
-        bg="bg.subtle"
-        top={0}
-        minW="xs"
-        h="100vh"
-        p={4}
-      >
-        <Box w="100%">
+      <div className="hidden md:flex sticky top-0 bg-subtle min-w-xs h-screen p-4">
+        <div className="w-full">
           <SidebarItems />
-        </Box>
-      </Box>
+        </div>
+      </div>
     </>
   )
 }

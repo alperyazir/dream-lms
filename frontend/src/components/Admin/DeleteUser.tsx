@@ -1,4 +1,5 @@
-import { Button, DialogTitle, Text } from "@chakra-ui/react"
+import { DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
@@ -68,17 +69,17 @@ const DeleteUser = ({ id }: { id: string }) => {
             <DialogTitle>Delete User</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <Text mb={4}>
+            <p className="mb-4">
               All items associated with this user will also be{" "}
               <strong>permanently deleted.</strong> Are you sure? You will not
               be able to undo this action.
-            </Text>
+            </p>
           </DialogBody>
 
           <DialogFooter gap={2}>
             <DialogActionTrigger asChild>
               <Button
-                variant="subtle"
+                variant="ghost"
                 colorPalette="gray"
                 disabled={isSubmitting}
               >
@@ -86,7 +87,7 @@ const DeleteUser = ({ id }: { id: string }) => {
               </Button>
             </DialogActionTrigger>
             <Button
-              variant="solid"
+              variant="default"
               colorPalette="red"
               type="submit"
               loading={isSubmitting}

@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Text } from "@chakra-ui/react"
+import { Button } from "@/components/ui/button"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
@@ -57,7 +57,7 @@ const DeleteConfirmation = () => {
       onOpenChange={({ open }) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
-        <Button variant="solid" colorPalette="red" mt={4}>
+        <Button variant="default" colorPalette="red" mt={4}>
           Delete
         </Button>
       </DialogTrigger>
@@ -69,19 +69,19 @@ const DeleteConfirmation = () => {
             <DialogTitle>Confirmation Required</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <Text mb={4}>
+            <p className="mb-4">
               All your account data will be{" "}
               <strong>permanently deleted.</strong> If you are sure, please
               click <strong>"Confirm"</strong> to proceed. This action cannot be
               undone.
-            </Text>
+            </p>
           </DialogBody>
 
           <DialogFooter gap={2}>
-            <ButtonGroup>
+            <div className="flex gap-2">
               <DialogActionTrigger asChild>
                 <Button
-                  variant="subtle"
+                  variant="ghost"
                   colorPalette="gray"
                   disabled={isSubmitting}
                 >
@@ -89,14 +89,14 @@ const DeleteConfirmation = () => {
                 </Button>
               </DialogActionTrigger>
               <Button
-                variant="solid"
+                variant="default"
                 colorPalette="red"
                 type="submit"
                 loading={isSubmitting}
               >
                 Delete
               </Button>
-            </ButtonGroup>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

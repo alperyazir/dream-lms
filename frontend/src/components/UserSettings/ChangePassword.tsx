@@ -1,4 +1,4 @@
-import { Box, Button, Container, Heading, VStack } from "@chakra-ui/react"
+import { Button } from "@/components/ui/button"
 import { useMutation } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { FiLock } from "react-icons/fi"
@@ -42,12 +42,12 @@ const ChangePassword = () => {
   }
 
   return (
-    <Container maxW="full">
-      <Heading size="sm" py={4}>
+    <div className="max-w-full">
+      <h3 className="text-sm font-semibold py-4">
         Change Password
-      </Heading>
-      <Box as="form" onSubmit={handleSubmit(onSubmit)}>
-        <VStack gap={4} w={{ base: "100%", md: "sm" }}>
+      </h3>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="flex flex-col gap-4 w-full md:w-96">
           <PasswordInput
             type="current_password"
             startElement={<FiLock />}
@@ -69,12 +69,12 @@ const ChangePassword = () => {
             placeholder="Confirm Password"
             errors={errors}
           />
-        </VStack>
-        <Button variant="solid" mt={4} type="submit" loading={isSubmitting}>
+        </div>
+        <Button variant="default" className="mt-4" type="submit" loading={isSubmitting}>
           Save
         </Button>
-      </Box>
-    </Container>
+      </form>
+    </div>
   )
 }
 export default ChangePassword

@@ -1,31 +1,18 @@
-import { Flex, Image, useBreakpointValue } from "@chakra-ui/react"
 import { Link } from "@tanstack/react-router"
 
 import Logo from "/assets/images/fastapi-logo.svg"
 import UserMenu from "./UserMenu"
 
 function Navbar() {
-  const display = useBreakpointValue({ base: "none", md: "flex" })
-
   return (
-    <Flex
-      display={display}
-      justify="space-between"
-      position="sticky"
-      color="white"
-      align="center"
-      bg="bg.muted"
-      w="100%"
-      top={0}
-      p={4}
-    >
+    <div className="hidden md:flex justify-between sticky top-0 items-center bg-muted w-full p-4">
       <Link to="/">
-        <Image src={Logo} alt="Logo" maxW="3xs" p={2} />
+        <img src={Logo} alt="Logo" className="max-w-xs p-2" />
       </Link>
-      <Flex gap={2} alignItems="center">
+      <div className="flex gap-2 items-center">
         <UserMenu />
-      </Flex>
-    </Flex>
+      </div>
+    </div>
   )
 }
 

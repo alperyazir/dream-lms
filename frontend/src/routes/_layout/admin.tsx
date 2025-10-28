@@ -1,4 +1,5 @@
-import { Badge, Container, Flex, Heading, Table } from "@chakra-ui/react"
+import { Badge } from "@/components/ui/badge"
+import { Table } from "@/components/ui/table"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
@@ -98,32 +99,32 @@ function UsersTable() {
           ))}
         </Table.Body>
       </Table.Root>
-      <Flex justifyContent="flex-end" mt={4}>
+      <div className="flex justify-end mt-4">
         <PaginationRoot
           count={count}
           pageSize={PER_PAGE}
           onPageChange={({ page }) => setPage(page)}
         >
-          <Flex>
+          <div className="flex">
             <PaginationPrevTrigger />
             <PaginationItems />
             <PaginationNextTrigger />
-          </Flex>
+          </div>
         </PaginationRoot>
-      </Flex>
+      </div>
     </>
   )
 }
 
 function Admin() {
   return (
-    <Container maxW="full">
-      <Heading size="lg" pt={12}>
+    <div className="max-w-full">
+      <h1 className="text-2xl font-bold pt-12">
         Users Management
-      </Heading>
+      </h1>
 
       <AddUser />
       <UsersTable />
-    </Container>
+    </div>
   )
 }

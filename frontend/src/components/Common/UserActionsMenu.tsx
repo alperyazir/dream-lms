@@ -1,4 +1,4 @@
-import { IconButton } from "@chakra-ui/react"
+import { IconButton } from "@/components/ui/icon-button"
 import { BsThreeDotsVertical } from "react-icons/bs"
 import type { UserPublic } from "@/client"
 import DeleteUser from "../Admin/DeleteUser"

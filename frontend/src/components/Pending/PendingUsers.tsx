@@ -1,39 +1,48 @@
-import { Table } from "@chakra-ui/react"
-import { SkeletonText } from "../ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Skeleton } from "../ui/skeleton"
 
 const PendingUsers = () => (
-  <Table.Root size={{ base: "sm", md: "md" }}>
-    <Table.Header>
-      <Table.Row>
-        <Table.ColumnHeader w="sm">Full name</Table.ColumnHeader>
-        <Table.ColumnHeader w="sm">Email</Table.ColumnHeader>
-        <Table.ColumnHeader w="sm">Role</Table.ColumnHeader>
-        <Table.ColumnHeader w="sm">Status</Table.ColumnHeader>
-        <Table.ColumnHeader w="sm">Actions</Table.ColumnHeader>
-      </Table.Row>
-    </Table.Header>
-    <Table.Body>
-      {[...Array(5)].map((_, index) => (
-        <Table.Row key={index}>
-          <Table.Cell>
-            <SkeletonText noOfLines={1} />
-          </Table.Cell>
-          <Table.Cell>
-            <SkeletonText noOfLines={1} />
-          </Table.Cell>
-          <Table.Cell>
-            <SkeletonText noOfLines={1} />
-          </Table.Cell>
-          <Table.Cell>
-            <SkeletonText noOfLines={1} />
-          </Table.Cell>
-          <Table.Cell>
-            <SkeletonText noOfLines={1} />
-          </Table.Cell>
-        </Table.Row>
-      ))}
-    </Table.Body>
-  </Table.Root>
+  <div className="w-full">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Full name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {[...Array(5)].map((_, index) => (
+          <TableRow key={index}>
+            <TableCell>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
 )
 
 export default PendingUsers

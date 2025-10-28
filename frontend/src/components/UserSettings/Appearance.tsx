@@ -1,4 +1,3 @@
-import { Container, Heading, Stack } from "@chakra-ui/react"
 import { useTheme } from "next-themes"
 
 import { Radio, RadioGroup } from "@/components/ui/radio"
@@ -7,23 +6,23 @@ const Appearance = () => {
   const { theme, setTheme } = useTheme()
 
   return (
-    <Container maxW="full">
-      <Heading size="sm" py={4}>
+    <div className="max-w-full">
+      <h3 className="text-sm font-semibold py-4">
         Appearance
-      </Heading>
+      </h3>
 
       <RadioGroup
         onValueChange={(e) => setTheme(e.value ?? "system")}
         value={theme}
         colorPalette="teal"
       >
-        <Stack>
+        <div className="flex flex-col gap-2">
           <Radio value="system">System</Radio>
           <Radio value="light">Light Mode</Radio>
           <Radio value="dark">Dark Mode</Radio>
-        </Stack>
+        </div>
       </RadioGroup>
-    </Container>
+    </div>
   )
 }
 export default Appearance

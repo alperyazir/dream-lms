@@ -1,4 +1,4 @@
-import { Container, Flex, Image, Input, Text } from "@chakra-ui/react"
+import { Input } from "@/components/ui/input"
 import {
   createFileRoute,
   Link as RouterLink,
@@ -54,28 +54,19 @@ function SignUp() {
   }
 
   return (
-    <Flex flexDir={{ base: "column", md: "row" }} justify="center" h="100vh">
-      <Container
-        as="form"
+    <div className="flex flex-col md:flex-row justify-center h-screen">
+      <form
         onSubmit={handleSubmit(onSubmit)}
-        h="100vh"
-        maxW="sm"
-        alignItems="stretch"
-        justifyContent="center"
-        gap={4}
-        centerContent
+        className="h-screen max-w-sm flex flex-col items-stretch justify-center gap-4 mx-auto px-4"
       >
-        <Image
+        <img
           src={Logo}
           alt="FastAPI logo"
-          height="auto"
-          maxW="2xs"
-          alignSelf="center"
-          mb={4}
+          className="h-auto max-w-xs self-center mb-4"
         />
         <Field
-          invalid={!!errors.full_name}
-          errorText={errors.full_name?.message}
+          /* invalid={!!errors.full_name}
+          error={errors.full_name?.message}
         >
           <InputGroup w="100%" startElement={<FiUser />}>
             <Input
@@ -89,7 +80,7 @@ function SignUp() {
           </InputGroup>
         </Field>
 
-        <Field invalid={!!errors.email} errorText={errors.email?.message}>
+        <Field /* invalid={!!errors.email} error={errors.email?.message}>
           <InputGroup w="100%" startElement={<FiUser />}>
             <Input
               {...register("email", {
@@ -115,17 +106,17 @@ function SignUp() {
           placeholder="Confirm Password"
           errors={errors}
         />
-        <Button variant="solid" type="submit" loading={isSubmitting}>
+        <Button variant="default" type="submit" loading={isSubmitting}>
           Sign Up
         </Button>
-        <Text>
+        <p>
           Already have an account?{" "}
           <RouterLink to="/login" className="main-link">
             Log In
           </RouterLink>
-        </Text>
-      </Container>
-    </Flex>
+        </p>
+      </form>
+    </div>
   )
 }
 
