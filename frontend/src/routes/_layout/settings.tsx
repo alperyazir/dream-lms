@@ -1,4 +1,4 @@
-import { Tabs } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { createFileRoute } from "@tanstack/react-router"
 
 import Appearance from "@/components/UserSettings/Appearance"
@@ -34,20 +34,20 @@ function UserSettings() {
         User Settings
       </h1>
 
-      <Tabs.Root defaultValue="my-profile" variant="ghost">
-        <Tabs.List>
+      <Tabs defaultValue="my-profile">
+        <TabsList>
           {finalTabs.map((tab) => (
-            <Tabs.Trigger key={tab.value} value={tab.value}>
+            <TabsTrigger key={tab.value} value={tab.value}>
               {tab.title}
-            </Tabs.Trigger>
+            </TabsTrigger>
           ))}
-        </Tabs.List>
+        </TabsList>
         {finalTabs.map((tab) => (
-          <Tabs.Content key={tab.value} value={tab.value}>
+          <TabsContent key={tab.value} value={tab.value}>
             <tab.component />
-          </Tabs.Content>
+          </TabsContent>
         ))}
-      </Tabs.Root>
+      </Tabs>
     </div>
   )
 }

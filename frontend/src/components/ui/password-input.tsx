@@ -1,10 +1,10 @@
 import * as React from "react"
 import { LuEye, LuEyeOff } from "react-icons/lu"
 import { Button } from "./button"
-import { Input, type InputProps } from "./input"
+import { Input } from "./input"
 import { InputElement, InputGroup } from "./input-group"
 
-export const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
+export const PasswordInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   function PasswordInput(props, ref) {
     const [show, setShow] = React.useState(false)
 

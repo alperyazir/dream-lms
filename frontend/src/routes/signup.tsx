@@ -5,7 +5,6 @@ import {
   redirect,
 } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { FiLock, FiUser } from "react-icons/fi"
 
 import type { UserRegister } from "@/client"
 import { Button } from "@/components/ui/button"
@@ -37,7 +36,7 @@ function SignUp() {
     register,
     handleSubmit,
     getValues,
-    formState: { errors, isSubmitting },
+    formState: {  isSubmitting },
   } = useForm<UserRegisterForm>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -65,10 +64,10 @@ function SignUp() {
           className="h-auto max-w-xs self-center mb-4"
         />
         <Field
-          /* invalid={!!errors.full_name}
-          error={errors.full_name?.message}
+          /* invalid prop removed */
+          
         >
-          <InputGroup w="100%" startElement={<FiUser />}>
+          <InputGroup className="w-full">
             <Input
               minLength={3}
               {...register("full_name", {
@@ -80,8 +79,8 @@ function SignUp() {
           </InputGroup>
         </Field>
 
-        <Field /* invalid={!!errors.email} error={errors.email?.message}>
-          <InputGroup w="100%" startElement={<FiUser />}>
+        <Field>
+          <InputGroup className="w-full">
             <Input
               {...register("email", {
                 required: "Email is required",
@@ -94,19 +93,19 @@ function SignUp() {
         </Field>
         <PasswordInput
           type="password"
-          startElement={<FiLock />}
+         
           {...register("password", passwordRules())}
           placeholder="Password"
-          errors={errors}
+         
         />
         <PasswordInput
           type="confirm_password"
-          startElement={<FiLock />}
+         
           {...register("confirm_password", confirmPasswordRules(getValues))}
           placeholder="Confirm Password"
-          errors={errors}
+         
         />
-        <Button variant="default" type="submit" loading={isSubmitting}>
+        <Button variant="default" type="submit" disabled={isSubmitting}>
           Sign Up
         </Button>
         <p>

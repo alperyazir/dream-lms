@@ -89,10 +89,11 @@ python -m app.initial_data
 # INFO:app.initial_data:Initial data created
 ```
 
-This creates an admin user:
-- **Email:** `admin@example.com`
-- **Password:** `changethis`
-- **Role:** `admin`
+This creates test users (see "Access Points Summary" below for full list):
+- **Admin:** `admin@example.com` / `changethis` (superuser)
+- **Publisher:** `publisher@example.com` / `changethis`
+- **Teacher:** `teacher@example.com` / `changethis`
+- **Students:** `student1@example.com` / `changethis`, `student2@example.com` / `changethis`
 
 ### 2.4 Start Backend Server
 
@@ -191,27 +192,14 @@ curl http://localhost:8000/api/v1/users/ \
 
 Should return user list (200 OK)
 
-**4. Create Student User**
-```bash
-curl -X POST http://localhost:8000/api/v1/users/ \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "student@example.com",
-    "password": "studentpass123",
-    "full_name": "Test Student",
-    "role": "student"
-  }'
-```
-
-**5. Login as Student**
+**4. Login as Student (Already Created)**
 ```bash
 curl -X POST http://localhost:8000/api/v1/login/access-token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=student@example.com&password=studentpass123"
+  -d "username=student1@example.com&password=changethis"
 ```
 
-**6. Test Student Access (Should Fail)**
+**5. Test Student Access (Should Fail)**
 ```bash
 STUDENT_TOKEN="<paste_student_token_here>"
 
@@ -220,6 +208,8 @@ curl http://localhost:8000/api/v1/users/ \
 ```
 
 Expected: `403 Forbidden` ✅
+
+**Note:** Students are auto-created by `initial_data.py`, no need to create them manually.
 
 ---
 
@@ -263,14 +253,19 @@ npm run test:e2e
 |---------|-----|-------------|
 | **Backend API** | http://localhost:8000 | - |
 | **API Docs** | http://localhost:8000/docs | - |
-| **Frontend** | http://localhost:5173 | Login with admin user |
+| **Frontend** | http://localhost:5173 | Login with test users below |
 | **Adminer (DB)** | http://localhost:8080 | Server: `db`<br>User: `postgres`<br>Password: `changethis`<br>Database: `app` |
 | **Mailcatcher** | http://localhost:1080 | - |
 
-**Default Admin User:**
-- Email: `admin@example.com`
-- Password: `changethis`
-- Role: `admin`
+**Test Users (Auto-Created by initial_data.py):**
+
+| Role | Email | Password | Notes |
+|------|-------|----------|-------|
+| **Admin** | `admin@example.com` | `changethis` | Superuser, sees Admin section |
+| **Publisher** | `publisher@example.com` | `changethis` | Has publisher profile |
+| **Teacher** | `teacher@example.com` | `changethis` | Has teacher profile, assigned to Dream Academy |
+| **Student 1** | `student1@example.com` | `changethis` | Enrolled in Grade 9 class |
+| **Student 2** | `student2@example.com` | `changethis` | Enrolled in Grade 9 class |
 
 ---
 

@@ -1,4 +1,4 @@
-import { DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
@@ -6,16 +6,6 @@ import { useForm } from "react-hook-form"
 import { FiTrash2 } from "react-icons/fi"
 
 import { UsersService } from "@/client"
-import {
-  DialogActionTrigger,
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogRoot,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import useCustomToast from "@/hooks/useCustomToast"
 
 const DeleteUser = ({ id }: { id: string }) => {
@@ -50,55 +40,47 @@ const DeleteUser = ({ id }: { id: string }) => {
   }
 
   return (
-    <DialogRoot
-      size={{ base: "xs", md: "md" }}
-      placement="center"
-      role="alertdialog"
-      open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
-    >
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" colorPalette="red">
+        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
           <FiTrash2 fontSize="16px" />
           Delete User
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
           </DialogHeader>
-          <DialogBody>
-            <p className="mb-4">
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
               All items associated with this user will also be{" "}
               <strong>permanently deleted.</strong> Are you sure? You will not
               be able to undo this action.
             </p>
-          </DialogBody>
+          </div>
 
-          <DialogFooter gap={2}>
-            <DialogActionTrigger asChild>
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
               <Button
                 variant="ghost"
-                colorPalette="gray"
                 disabled={isSubmitting}
+                type="button"
               >
                 Cancel
               </Button>
-            </DialogActionTrigger>
+            </DialogClose>
             <Button
-              variant="default"
-              colorPalette="red"
+              variant="destructive"
               type="submit"
-              loading={isSubmitting}
+              disabled={isSubmitting}
             >
-              Delete
+              {isSubmitting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
-          <DialogCloseTrigger />
         </form>
       </DialogContent>
-    </DialogRoot>
+    </Dialog>
   )
 }
 

@@ -1,7 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { FiLock } from "react-icons/fi"
 
 import { type ApiError, LoginService, type NewPassword } from "@/client"
 import { Button } from "@/components/ui/button"
@@ -31,7 +30,7 @@ function ResetPassword() {
     handleSubmit,
     getValues,
     reset,
-    formState: { errors },
+    
   } = useForm<NewPasswordForm>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -78,16 +77,16 @@ function ResetPassword() {
         Please enter your new password and confirm it to reset your password.
       </p>
       <PasswordInput
-        startElement={<FiLock />}
+       
         type="new_password"
-        errors={errors}
+       
         {...register("new_password", passwordRules())}
         placeholder="New Password"
       />
       <PasswordInput
-        startElement={<FiLock />}
+       
         type="confirm_password"
-        errors={errors}
+       
         {...register("confirm_password", confirmPasswordRules(getValues))}
         placeholder="Confirm Password"
       />

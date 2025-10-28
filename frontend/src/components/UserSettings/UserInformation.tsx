@@ -76,7 +76,6 @@ const UserInformation = () => {
             <Input
               {...register("full_name", { maxLength: 30 })}
               type="text"
-              size="md"
             />
           ) : (
             <p
@@ -88,9 +87,8 @@ const UserInformation = () => {
           )}
         </Field>
         <Field
-          mt={4}
+          className="mt-4"
           label="Email"
-          /* invalid={!!errors.email}
           error={errors.email?.message}
         >
           {editMode ? (
@@ -100,7 +98,6 @@ const UserInformation = () => {
                 pattern: emailPattern,
               })}
               type="email"
-              size="md"
             />
           ) : (
             <p className="text-base py-2 truncate max-w-sm">
@@ -113,15 +110,13 @@ const UserInformation = () => {
             variant="default"
             onClick={toggleEditMode}
             type={editMode ? "button" : "submit"}
-            loading={editMode ? isSubmitting : false}
-            disabled={editMode ? !isDirty || !getValues("email") : false}
+            disabled={editMode ? (!isDirty || !getValues("email") || isSubmitting) : false}
           >
-            {editMode ? "Save" : "Edit"}
+            {editMode ? (isSubmitting ? "Saving..." : "Save") : "Edit"}
           </Button>
           {editMode && (
             <Button
               variant="ghost"
-              colorPalette="gray"
               onClick={onCancel}
               disabled={isSubmitting}
             >

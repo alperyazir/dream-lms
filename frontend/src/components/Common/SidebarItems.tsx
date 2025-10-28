@@ -5,9 +5,10 @@ import type { IconType } from "react-icons/lib"
 
 import type { UserPublic } from "@/client"
 
-const items = [
+const allItems = [
   { icon: FiHome, title: "Dashboard", path: "/" },
   { icon: FiSettings, title: "User Settings", path: "/settings" },
+  { icon: FiUsers, title: "Admin", path: "/admin" },
 ]
 
 interface SidebarItemsProps {
@@ -24,9 +25,10 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
 
+  // Show Admin only for superusers, filter it out for everyone else
   const finalItems: Item[] = currentUser?.is_superuser
-    ? [...items, { icon: FiUsers, title: "Admin", path: "/admin" }]
-    : items
+    ? allItems
+    : allItems.filter((item) => item.title !== "Admin")
 
   const listItems = finalItems.map(({ icon: IconComponent, title, path }) => (
     <RouterLink key={title} to={path} onClick={onClose}>

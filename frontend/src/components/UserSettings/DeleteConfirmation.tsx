@@ -5,13 +5,11 @@ import { useForm } from "react-hook-form"
 
 import { type ApiError, UsersService } from "@/client"
 import {
-  DialogActionTrigger,
-  DialogBody,
-  DialogCloseTrigger,
+  Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
-  DialogRoot,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -49,58 +47,48 @@ const DeleteConfirmation = () => {
   }
 
   return (
-    <DialogRoot
-      size={{ base: "xs", md: "md" }}
-      role="alertdialog"
-      placement="center"
-      open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
-    >
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="default" colorPalette="red" mt={4}>
+        <Button variant="destructive" className="mt-4">
           Delete
         </Button>
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogCloseTrigger />
           <DialogHeader>
             <DialogTitle>Confirmation Required</DialogTitle>
           </DialogHeader>
-          <DialogBody>
-            <p className="mb-4">
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
               All your account data will be{" "}
               <strong>permanently deleted.</strong> If you are sure, please
               click <strong>"Confirm"</strong> to proceed. This action cannot be
               undone.
             </p>
-          </DialogBody>
+          </div>
 
-          <DialogFooter gap={2}>
-            <div className="flex gap-2">
-              <DialogActionTrigger asChild>
-                <Button
-                  variant="ghost"
-                  colorPalette="gray"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-              </DialogActionTrigger>
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
               <Button
-                variant="default"
-                colorPalette="red"
-                type="submit"
-                loading={isSubmitting}
+                variant="ghost"
+                disabled={isSubmitting}
+                type="button"
               >
-                Delete
+                Cancel
               </Button>
-            </div>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Deleting..." : "Delete"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
-    </DialogRoot>
+    </Dialog>
   )
 }
 

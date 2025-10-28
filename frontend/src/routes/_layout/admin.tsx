@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge"
-import { Table } from "@/components/ui/table"
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
@@ -61,49 +61,49 @@ function UsersTable() {
 
   return (
     <>
-      <Table.Root size={{ base: "sm", md: "md" }}>
-        <Table.Header>
-          <Table.Row>
-            <Table.ColumnHeader w="sm">Full name</Table.ColumnHeader>
-            <Table.ColumnHeader w="sm">Email</Table.ColumnHeader>
-            <Table.ColumnHeader w="sm">Role</Table.ColumnHeader>
-            <Table.ColumnHeader w="sm">Status</Table.ColumnHeader>
-            <Table.ColumnHeader w="sm">Actions</Table.ColumnHeader>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Full name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {users?.map((user) => (
-            <Table.Row key={user.id} opacity={isPlaceholderData ? 0.5 : 1}>
-              <Table.Cell color={!user.full_name ? "gray" : "inherit"}>
+            <TableRow key={user.id} style={{ opacity: isPlaceholderData ? 0.5 : 1 }}>
+              <TableCell className={!user.full_name ? "text-muted-foreground" : ""}>
                 {user.full_name || "N/A"}
                 {currentUser?.id === user.id && (
-                  <Badge ml="1" colorScheme="teal">
+                  <Badge className="ml-1" variant="default">
                     You
                   </Badge>
                 )}
-              </Table.Cell>
-              <Table.Cell truncate maxW="sm">
+              </TableCell>
+              <TableCell className="truncate max-w-sm">
                 {user.email}
-              </Table.Cell>
-              <Table.Cell>
+              </TableCell>
+              <TableCell>
                 {user.is_superuser ? "Superuser" : "User"}
-              </Table.Cell>
-              <Table.Cell>{user.is_active ? "Active" : "Inactive"}</Table.Cell>
-              <Table.Cell>
+              </TableCell>
+              <TableCell>{user.is_active ? "Active" : "Inactive"}</TableCell>
+              <TableCell>
                 <UserActionsMenu
                   user={user}
                   disabled={currentUser?.id === user.id}
                 />
-              </Table.Cell>
-            </Table.Row>
+              </TableCell>
+            </TableRow>
           ))}
-        </Table.Body>
-      </Table.Root>
+        </TableBody>
+      </Table>
       <div className="flex justify-end mt-4">
         <PaginationRoot
           count={count}
           pageSize={PER_PAGE}
-          onPageChange={({ page }) => setPage(page)}
+          onPageChange={(page: number) => setPage(page)}
         >
           <div className="flex">
             <PaginationPrevTrigger />

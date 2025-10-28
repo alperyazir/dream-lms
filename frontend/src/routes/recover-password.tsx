@@ -2,7 +2,6 @@ import { Input } from "@/components/ui/input"
 import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { FiMail } from "react-icons/fi"
 
 import { type ApiError, LoginService } from "@/client"
 import { Button } from "@/components/ui/button"
@@ -32,7 +31,7 @@ function RecoverPassword() {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: {  isSubmitting },
   } = useForm<FormData>()
   const { showSuccessToast } = useCustomToast()
 
@@ -68,8 +67,8 @@ function RecoverPassword() {
       <p className="text-center">
         A password recovery email will be sent to the registered account.
       </p>
-      <Field /* invalid={!!errors.email} error={errors.email?.message}>
-        <InputGroup w="100%" startElement={<FiMail />}>
+      <Field>
+        <InputGroup className="w-full">
           <Input
             {...register("email", {
               required: "Email is required",
@@ -80,7 +79,7 @@ function RecoverPassword() {
           />
         </InputGroup>
       </Field>
-      <Button variant="default" type="submit" loading={isSubmitting}>
+      <Button variant="default" type="submit" disabled={isSubmitting}>
         Continue
       </Button>
     </form>

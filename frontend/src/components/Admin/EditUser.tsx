@@ -1,4 +1,4 @@
-import { DialogActionTrigger, DialogRoot, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -11,14 +11,6 @@ import type { ApiError } from "@/client/core/ApiError"
 import useCustomToast from "@/hooks/useCustomToast"
 import { emailPattern, handleError } from "@/utils"
 import { Checkbox } from "../ui/checkbox"
-import {
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog"
 import { Field } from "../ui/field"
 
 interface EditUserProps {
@@ -70,29 +62,23 @@ const EditUser = ({ user }: EditUserProps) => {
   }
 
   return (
-    <DialogRoot
-      size={{ base: "xs", md: "md" }}
-      placement="center"
-      open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
-    >
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm">
           <FaExchangeAlt fontSize="16px" />
           Edit User
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
-          <DialogBody>
-            <p className="mb-4">Update the user details below.</p>
+          <div className="py-4">
+            <p className="mb-4 text-sm text-muted-foreground">Update the user details below.</p>
             <div className="flex flex-col gap-4">
               <Field
                 required
-                /* invalid={!!errors.email}
                 error={errors.email?.message}
                 label="Email"
               >
@@ -107,7 +93,6 @@ const EditUser = ({ user }: EditUserProps) => {
               </Field>
 
               <Field
-                /* invalid={!!errors.full_name}
                 error={errors.full_name?.message}
                 label="Full Name"
               >
@@ -119,7 +104,6 @@ const EditUser = ({ user }: EditUserProps) => {
               </Field>
 
               <Field
-                /* invalid={!!errors.password}
                 error={errors.password?.message}
                 label="Set Password"
               >
@@ -136,7 +120,6 @@ const EditUser = ({ user }: EditUserProps) => {
               </Field>
 
               <Field
-                /* invalid={!!errors.confirm_password}
                 error={errors.confirm_password?.message}
                 label="Confirm Password"
               >
@@ -157,10 +140,11 @@ const EditUser = ({ user }: EditUserProps) => {
                 control={control}
                 name="is_superuser"
                 render={({ field }) => (
-                  <Field disabled={field.disabled} colorPalette="teal">
+                  <Field>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={({ checked }) => field.onChange(checked)}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      disabled={field.disabled}
                     >
                       Is superuser?
                     </Checkbox>
@@ -171,10 +155,11 @@ const EditUser = ({ user }: EditUserProps) => {
                 control={control}
                 name="is_active"
                 render={({ field }) => (
-                  <Field disabled={field.disabled} colorPalette="teal">
+                  <Field>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={({ checked }) => field.onChange(checked)}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      disabled={field.disabled}
                     >
                       Is active?
                     </Checkbox>
@@ -182,26 +167,25 @@ const EditUser = ({ user }: EditUserProps) => {
                 )}
               />
             </div>
-          </DialogBody>
+          </div>
 
-          <DialogFooter gap={2}>
-            <DialogActionTrigger asChild>
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
               <Button
                 variant="ghost"
-                colorPalette="gray"
                 disabled={isSubmitting}
+                type="button"
               >
                 Cancel
               </Button>
-            </DialogActionTrigger>
-            <Button variant="default" type="submit" loading={isSubmitting}>
-              Save
+            </DialogClose>
+            <Button variant="default" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
-          <DialogCloseTrigger />
         </form>
       </DialogContent>
-    </DialogRoot>
+    </Dialog>
   )
 }
 

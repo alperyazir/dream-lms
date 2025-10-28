@@ -5,7 +5,6 @@ import {
   redirect,
 } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { FiLock, FiMail } from "react-icons/fi"
 
 import type { Body_login_login_access_token as AccessToken } from "@/client"
 import { Button } from "@/components/ui/button"
@@ -28,11 +27,11 @@ export const Route = createFileRoute("/login")({
 })
 
 function Login() {
-  const { loginMutation, error, resetError } = useAuth()
+  const { loginMutation, resetError } = useAuth()
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: {  isSubmitting },
   } = useForm<AccessToken>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -65,10 +64,10 @@ function Login() {
         className="h-auto max-w-xs self-center mb-4"
       />
       <Field
-        /* invalid={!!errors.username}
-        error={errors.username?.message || !!error}
+        /* invalid prop removed */
+        
       >
-        <InputGroup w="100%" startElement={<FiMail />}>
+        <InputGroup className="w-full">
           <Input
             {...register("username", {
               required: "Username is required",
@@ -81,15 +80,15 @@ function Login() {
       </Field>
       <PasswordInput
         type="password"
-        startElement={<FiLock />}
+       
         {...register("password", passwordRules())}
         placeholder="Password"
-        errors={errors}
+       
       />
       <RouterLink to="/recover-password" className="main-link">
         Forgot Password?
       </RouterLink>
-      <Button variant="default" type="submit" loading={isSubmitting} size="md">
+      <Button variant="default" type="submit" disabled={isSubmitting} >
         Log In
       </Button>
       <p>

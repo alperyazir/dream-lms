@@ -12,9 +12,8 @@ const Appearance = () => {
       </h3>
 
       <RadioGroup
-        onValueChange={(e) => setTheme(e.value ?? "system")}
+        onValueChange={(e) => setTheme(e ?? "system")}
         value={theme}
-        colorPalette="teal"
       >
         <div className="flex flex-col gap-2">
           <Radio value="system">System</Radio>

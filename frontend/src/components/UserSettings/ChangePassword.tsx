@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { useMutation } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { FiLock } from "react-icons/fi"
 
 import { type ApiError, type UpdatePassword, UsersService } from "@/client"
 import useCustomToast from "@/hooks/useCustomToast"
@@ -19,7 +18,7 @@ const ChangePassword = () => {
     handleSubmit,
     reset,
     getValues,
-    formState: { errors, isSubmitting },
+    formState: {  isSubmitting },
   } = useForm<UpdatePasswordForm>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -50,28 +49,28 @@ const ChangePassword = () => {
         <div className="flex flex-col gap-4 w-full md:w-96">
           <PasswordInput
             type="current_password"
-            startElement={<FiLock />}
+           
             {...register("current_password", passwordRules())}
             placeholder="Current Password"
-            errors={errors}
+           
           />
           <PasswordInput
             type="new_password"
-            startElement={<FiLock />}
+           
             {...register("new_password", passwordRules())}
             placeholder="New Password"
-            errors={errors}
+           
           />
           <PasswordInput
             type="confirm_password"
-            startElement={<FiLock />}
+           
             {...register("confirm_password", confirmPasswordRules(getValues))}
             placeholder="Confirm Password"
-            errors={errors}
+           
           />
         </div>
-        <Button variant="default" className="mt-4" type="submit" loading={isSubmitting}>
-          Save
+        <Button variant="default" className="mt-4" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : "Save"}
         </Button>
       </form>
     </div>

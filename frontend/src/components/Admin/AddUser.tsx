@@ -1,4 +1,4 @@
-import { DialogActionTrigger, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -10,15 +10,7 @@ import type { ApiError } from "@/client/core/ApiError"
 import useCustomToast from "@/hooks/useCustomToast"
 import { emailPattern, handleError } from "@/utils"
 import { Checkbox } from "../ui/checkbox"
-import {
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogRoot,
-  DialogTrigger,
-} from "../ui/dialog"
+import { DialogTrigger } from "../ui/dialog"
 import { Field } from "../ui/field"
 
 interface UserCreateForm extends UserCreate {
@@ -70,31 +62,25 @@ const AddUser = () => {
   }
 
   return (
-    <DialogRoot
-      size={{ base: "xs", md: "md" }}
-      placement="center"
-      open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
-    >
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button value="add-user" className="my-4">
           <FaPlus fontSize="16px" />
           Add User
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>Add User</DialogTitle>
           </DialogHeader>
-          <DialogBody>
-            <p className="mb-4">
+          <div className="py-4">
+            <p className="mb-4 text-sm text-muted-foreground">
               Fill in the form below to add a new user to the system.
             </p>
             <div className="flex flex-col gap-4">
               <Field
                 required
-                /* invalid={!!errors.email}
                 error={errors.email?.message}
                 label="Email"
               >
@@ -109,7 +95,6 @@ const AddUser = () => {
               </Field>
 
               <Field
-                /* invalid={!!errors.full_name}
                 error={errors.full_name?.message}
                 label="Full Name"
               >
@@ -122,7 +107,6 @@ const AddUser = () => {
 
               <Field
                 required
-                /* invalid={!!errors.password}
                 error={errors.password?.message}
                 label="Set Password"
               >
@@ -141,7 +125,6 @@ const AddUser = () => {
 
               <Field
                 required
-                /* invalid={!!errors.confirm_password}
                 error={errors.confirm_password?.message}
                 label="Confirm Password"
               >
@@ -163,10 +146,11 @@ const AddUser = () => {
                 control={control}
                 name="is_superuser"
                 render={({ field }) => (
-                  <Field disabled={field.disabled} colorPalette="teal">
+                  <Field>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={({ checked }) => field.onChange(checked)}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      disabled={field.disabled}
                     >
                       Is superuser?
                     </Checkbox>
@@ -177,10 +161,11 @@ const AddUser = () => {
                 control={control}
                 name="is_active"
                 render={({ field }) => (
-                  <Field disabled={field.disabled} colorPalette="teal">
+                  <Field>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={({ checked }) => field.onChange(checked)}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      disabled={field.disabled}
                     >
                       Is active?
                     </Checkbox>
@@ -188,31 +173,29 @@ const AddUser = () => {
                 )}
               />
             </div>
-          </DialogBody>
+          </div>
 
-          <DialogFooter gap={2}>
-            <DialogActionTrigger asChild>
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
               <Button
                 variant="ghost"
-                colorPalette="gray"
                 disabled={isSubmitting}
+                type="button"
               >
                 Cancel
               </Button>
-            </DialogActionTrigger>
+            </DialogClose>
             <Button
               variant="default"
               type="submit"
-              disabled={!isValid}
-              loading={isSubmitting}
+              disabled={!isValid || isSubmitting}
             >
-              Save
+              {isSubmitting ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </form>
-        <DialogCloseTrigger />
       </DialogContent>
-    </DialogRoot>
+    </Dialog>
   )
 }
 
