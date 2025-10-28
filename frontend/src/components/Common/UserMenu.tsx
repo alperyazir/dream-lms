@@ -1,3 +1,6 @@
+import { Link } from "@tanstack/react-router"
+import { FaUserAstronaut } from "react-icons/fa"
+import { FiLogOut, FiUser } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -5,9 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Link } from "@tanstack/react-router"
-import { FaUserAstronaut } from "react-icons/fa"
-import { FiLogOut, FiUser } from "react-icons/fi"
 
 import useAuth from "@/hooks/useAuth"
 
@@ -24,7 +24,11 @@ const UserMenu = () => {
       <div className="flex">
         <DropdownMenu>
           <DropdownMenuTrigger asChild className="p-2">
-            <Button data-testid="user-menu" variant="default" className="max-w-sm truncate">
+            <Button
+              data-testid="user-menu"
+              variant="default"
+              className="max-w-sm truncate"
+            >
               <FaUserAstronaut fontSize="18" />
               <span>{user?.full_name || "User"}</span>
             </Button>

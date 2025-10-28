@@ -1,13 +1,20 @@
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { Controller, type SubmitHandler, useForm } from "react-hook-form"
 import { FaExchangeAlt } from "react-icons/fa"
-
 import { type UserPublic, UsersService, type UserUpdate } from "@/client"
 import type { ApiError } from "@/client/core/ApiError"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import useCustomToast from "@/hooks/useCustomToast"
 import { emailPattern, handleError } from "@/utils"
 import { Checkbox } from "../ui/checkbox"
@@ -75,13 +82,11 @@ const EditUser = ({ user }: EditUserProps) => {
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="mb-4 text-sm text-muted-foreground">Update the user details below.</p>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Update the user details below.
+            </p>
             <div className="flex flex-col gap-4">
-              <Field
-                required
-                error={errors.email?.message}
-                label="Email"
-              >
+              <Field required error={errors.email?.message} label="Email">
                 <Input
                   {...register("email", {
                     required: "Email is required",
@@ -92,10 +97,7 @@ const EditUser = ({ user }: EditUserProps) => {
                 />
               </Field>
 
-              <Field
-                error={errors.full_name?.message}
-                label="Full Name"
-              >
+              <Field error={errors.full_name?.message} label="Full Name">
                 <Input
                   {...register("full_name")}
                   placeholder="Full name"
@@ -103,10 +105,7 @@ const EditUser = ({ user }: EditUserProps) => {
                 />
               </Field>
 
-              <Field
-                error={errors.password?.message}
-                label="Set Password"
-              >
+              <Field error={errors.password?.message} label="Set Password">
                 <Input
                   {...register("password", {
                     minLength: {
@@ -171,11 +170,7 @@ const EditUser = ({ user }: EditUserProps) => {
 
           <DialogFooter className="gap-2">
             <DialogClose asChild>
-              <Button
-                variant="ghost"
-                disabled={isSubmitting}
-                type="button"
-              >
+              <Button variant="ghost" disabled={isSubmitting} type="button">
                 Cancel
               </Button>
             </DialogClose>

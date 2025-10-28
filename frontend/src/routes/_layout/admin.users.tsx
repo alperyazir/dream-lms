@@ -1,19 +1,25 @@
-import { Badge } from "@/components/ui/badge"
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
-
 import { type UserPublic, UsersService } from "@/client"
 import AddUser from "@/components/Admin/AddUser"
 import { UserActionsMenu } from "@/components/Common/UserActionsMenu"
 import PendingUsers from "@/components/Pending/PendingUsers"
+import { Badge } from "@/components/ui/badge"
 import {
   PaginationItems,
   PaginationNextTrigger,
   PaginationPrevTrigger,
   PaginationRoot,
 } from "@/components/ui/pagination.tsx"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 const usersSearchSchema = z.object({
   page: z.number().catch(1),
@@ -29,7 +35,7 @@ function getUsersQueryOptions({ page }: { page: number }) {
   }
 }
 
-export const Route = createFileRoute("/_layout/admin")({
+export const Route = createFileRoute("/_layout/admin/users")({
   component: Admin,
   validateSearch: (search) => usersSearchSchema.parse(search),
 })
@@ -47,7 +53,7 @@ function UsersTable() {
 
   const setPage = (page: number) => {
     navigate({
-      to: "/admin",
+      to: "/admin/users",
       search: (prev) => ({ ...prev, page }),
     })
   }
@@ -73,8 +79,13 @@ function UsersTable() {
         </TableHeader>
         <TableBody>
           {users?.map((user) => (
-            <TableRow key={user.id} style={{ opacity: isPlaceholderData ? 0.5 : 1 }}>
-              <TableCell className={!user.full_name ? "text-muted-foreground" : ""}>
+            <TableRow
+              key={user.id}
+              style={{ opacity: isPlaceholderData ? 0.5 : 1 }}
+            >
+              <TableCell
+                className={!user.full_name ? "text-muted-foreground" : ""}
+              >
                 {user.full_name || "N/A"}
                 {currentUser?.id === user.id && (
                   <Badge className="ml-1" variant="default">
@@ -82,12 +93,8 @@ function UsersTable() {
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="truncate max-w-sm">
-                {user.email}
-              </TableCell>
-              <TableCell>
-                {user.is_superuser ? "Superuser" : "User"}
-              </TableCell>
+              <TableCell className="truncate max-w-sm">{user.email}</TableCell>
+              <TableCell>{user.is_superuser ? "Superuser" : "User"}</TableCell>
               <TableCell>{user.is_active ? "Active" : "Inactive"}</TableCell>
               <TableCell>
                 <UserActionsMenu
@@ -119,9 +126,7 @@ function UsersTable() {
 function Admin() {
   return (
     <div className="max-w-full">
-      <h1 className="text-2xl font-bold pt-12">
-        Users Management
-      </h1>
+      <h1 className="text-2xl font-bold pt-12">Users Management</h1>
 
       <AddUser />
       <UsersTable />

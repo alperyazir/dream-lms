@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button"
 import { Link } from "@tanstack/react-router"
+import { Button } from "@/components/ui/button"
 
 const NotFound = () => {
   return (
@@ -12,9 +12,7 @@ const NotFound = () => {
           <h1 className="text-6xl md:text-8xl font-bold leading-none mb-4">
             404
           </h1>
-          <h2 className="text-2xl font-bold mb-2">
-            Oops!
-          </h2>
+          <h2 className="text-2xl font-bold mb-2">Oops!</h2>
         </div>
       </div>
 

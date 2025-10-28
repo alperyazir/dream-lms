@@ -1,22 +1,24 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
-import useAuth from "@/hooks/useAuth"
+import type { UserRole } from "@/client"
+
+// Map role to dashboard route
+const roleDashboards: Record<UserRole, string> = {
+  admin: "/admin/dashboard",
+  publisher: "/publisher/dashboard",
+  teacher: "/teacher/dashboard",
+  student: "/student/dashboard",
+}
 
 export const Route = createFileRoute("/_layout/")({
-  component: Dashboard,
+  beforeLoad: ({ context }) => {
+    const currentUser = context.currentUser
+
+    // Get user role and dashboard path (default to student if not set)
+    const userRole = (currentUser?.role || "student") as UserRole
+    const dashboardPath = roleDashboards[userRole]
+
+    // Redirect to role-specific dashboard
+    throw redirect({ to: dashboardPath })
+  },
 })
-
-function Dashboard() {
-  const { user: currentUser } = useAuth()
-
-  return (
-    <div className="max-w-full">
-      <div className="pt-12 m-4">
-        <h1 className="text-2xl truncate max-w-sm">
-          Hi, {currentUser?.full_name || currentUser?.email} 👋🏼
-        </h1>
-        <p>Welcome back, nice to see you again!</p>
-      </div>
-    </div>
-  )
-}

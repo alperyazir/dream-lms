@@ -1,12 +1,19 @@
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { Controller, type SubmitHandler, useForm } from "react-hook-form"
 import { FaPlus } from "react-icons/fa"
 import { type UserCreate, UsersService } from "@/client"
 import type { ApiError } from "@/client/core/ApiError"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import useCustomToast from "@/hooks/useCustomToast"
 import { emailPattern, handleError } from "@/utils"
 import { Checkbox } from "../ui/checkbox"
@@ -79,11 +86,7 @@ const AddUser = () => {
               Fill in the form below to add a new user to the system.
             </p>
             <div className="flex flex-col gap-4">
-              <Field
-                required
-                error={errors.email?.message}
-                label="Email"
-              >
+              <Field required error={errors.email?.message} label="Email">
                 <Input
                   {...register("email", {
                     required: "Email is required",
@@ -94,10 +97,7 @@ const AddUser = () => {
                 />
               </Field>
 
-              <Field
-                error={errors.full_name?.message}
-                label="Full Name"
-              >
+              <Field error={errors.full_name?.message} label="Full Name">
                 <Input
                   {...register("full_name")}
                   placeholder="Full name"
@@ -177,11 +177,7 @@ const AddUser = () => {
 
           <DialogFooter className="gap-2">
             <DialogClose asChild>
-              <Button
-                variant="ghost"
-                disabled={isSubmitting}
-                type="button"
-              >
+              <Button variant="ghost" disabled={isSubmitting} type="button">
                 Cancel
               </Button>
             </DialogClose>

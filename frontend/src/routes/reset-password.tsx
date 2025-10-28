@@ -25,19 +25,15 @@ export const Route = createFileRoute("/reset-password")({
 })
 
 function ResetPassword() {
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    reset,
-    
-  } = useForm<NewPasswordForm>({
-    mode: "onBlur",
-    criteriaMode: "all",
-    defaultValues: {
-      new_password: "",
+  const { register, handleSubmit, getValues, reset } = useForm<NewPasswordForm>(
+    {
+      mode: "onBlur",
+      criteriaMode: "all",
+      defaultValues: {
+        new_password: "",
+      },
     },
-  })
+  )
   const { showSuccessToast } = useCustomToast()
   const navigate = useNavigate()
 
@@ -70,23 +66,17 @@ function ResetPassword() {
       onSubmit={handleSubmit(onSubmit)}
       className="h-screen max-w-sm flex flex-col items-stretch justify-center gap-4 mx-auto px-4"
     >
-      <h1 className="text-3xl text-center mb-2">
-        Reset Password
-      </h1>
+      <h1 className="text-3xl text-center mb-2">Reset Password</h1>
       <p className="text-center">
         Please enter your new password and confirm it to reset your password.
       </p>
       <PasswordInput
-       
         type="new_password"
-       
         {...register("new_password", passwordRules())}
         placeholder="New Password"
       />
       <PasswordInput
-       
         type="confirm_password"
-       
         {...register("confirm_password", confirmPasswordRules(getValues))}
         placeholder="Confirm Password"
       />

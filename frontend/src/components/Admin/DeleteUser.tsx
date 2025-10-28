@@ -1,11 +1,18 @@
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { FiTrash2 } from "react-icons/fi"
-
 import { UsersService } from "@/client"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import useCustomToast from "@/hooks/useCustomToast"
 
 const DeleteUser = ({ id }: { id: string }) => {
@@ -42,7 +49,11 @@ const DeleteUser = ({ id }: { id: string }) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:text-destructive"
+        >
           <FiTrash2 fontSize="16px" />
           Delete User
         </Button>
@@ -62,19 +73,11 @@ const DeleteUser = ({ id }: { id: string }) => {
 
           <DialogFooter className="gap-2">
             <DialogClose asChild>
-              <Button
-                variant="ghost"
-                disabled={isSubmitting}
-                type="button"
-              >
+              <Button variant="ghost" disabled={isSubmitting} type="button">
                 Cancel
               </Button>
             </DialogClose>
-            <Button
-              variant="destructive"
-              type="submit"
-              disabled={isSubmitting}
-            >
+            <Button variant="destructive" type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

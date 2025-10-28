@@ -1,15 +1,14 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
-
 import {
   type ApiError,
   type UserPublic,
   UsersService,
   type UserUpdateMe,
 } from "@/client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { emailPattern, handleError } from "@/utils"
@@ -64,19 +63,11 @@ const UserInformation = () => {
 
   return (
     <div className="max-w-full">
-      <h3 className="text-sm font-semibold py-4">
-        User Information
-      </h3>
-      <form
-        className="w-full md:w-96"
-        onSubmit={handleSubmit(onSubmit)}
-      >
+      <h3 className="text-sm font-semibold py-4">User Information</h3>
+      <form className="w-full md:w-96" onSubmit={handleSubmit(onSubmit)}>
         <Field label="Full name">
           {editMode ? (
-            <Input
-              {...register("full_name", { maxLength: 30 })}
-              type="text"
-            />
+            <Input {...register("full_name", { maxLength: 30 })} type="text" />
           ) : (
             <p
               className="text-base py-2 truncate max-w-sm"
@@ -86,11 +77,7 @@ const UserInformation = () => {
             </p>
           )}
         </Field>
-        <Field
-          className="mt-4"
-          label="Email"
-          error={errors.email?.message}
-        >
+        <Field className="mt-4" label="Email" error={errors.email?.message}>
           {editMode ? (
             <Input
               {...register("email", {
@@ -110,16 +97,14 @@ const UserInformation = () => {
             variant="default"
             onClick={toggleEditMode}
             type={editMode ? "button" : "submit"}
-            disabled={editMode ? (!isDirty || !getValues("email") || isSubmitting) : false}
+            disabled={
+              editMode ? !isDirty || !getValues("email") || isSubmitting : false
+            }
           >
             {editMode ? (isSubmitting ? "Saving..." : "Save") : "Edit"}
           </Button>
           {editMode && (
-            <Button
-              variant="ghost"
-              onClick={onCancel}
-              disabled={isSubmitting}
-            >
+            <Button variant="ghost" onClick={onCancel} disabled={isSubmitting}>
               Cancel
             </Button>
           )}

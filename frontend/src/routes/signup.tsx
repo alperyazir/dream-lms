@@ -1,14 +1,13 @@
-import { Input } from "@/components/ui/input"
 import {
   createFileRoute,
   Link as RouterLink,
   redirect,
 } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
-
 import type { UserRegister } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { InputGroup } from "@/components/ui/input-group"
 import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
@@ -36,7 +35,7 @@ function SignUp() {
     register,
     handleSubmit,
     getValues,
-    formState: {  isSubmitting },
+    formState: { isSubmitting },
   } = useForm<UserRegisterForm>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -64,8 +63,7 @@ function SignUp() {
           className="h-auto max-w-xs self-center mb-4"
         />
         <Field
-          /* invalid prop removed */
-          
+        /* invalid prop removed */
         >
           <InputGroup className="w-full">
             <Input
@@ -93,17 +91,13 @@ function SignUp() {
         </Field>
         <PasswordInput
           type="password"
-         
           {...register("password", passwordRules())}
           placeholder="Password"
-         
         />
         <PasswordInput
           type="confirm_password"
-         
           {...register("confirm_password", confirmPasswordRules(getValues))}
           placeholder="Confirm Password"
-         
         />
         <Button variant="default" type="submit" disabled={isSubmitting}>
           Sign Up

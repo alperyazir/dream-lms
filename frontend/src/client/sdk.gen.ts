@@ -3,22 +3,42 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminListTeachersData, AdminListTeachersResponse, AdminListStudentsData, AdminListStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersListMySchoolsResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
-export class ItemsService {
+export class AdminService {
     /**
-     * Read Items
-     * Retrieve items.
+     * Create new publisher
+     * Creates a new publisher user and Publisher record. Admin only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserCreationResponse Successful Response
+     * @throws ApiError
+     */
+    public static createPublisher(data: AdminCreatePublisherData): CancelablePromise<AdminCreatePublisherResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/publishers',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List all publishers
+     * Retrieve all publishers with pagination. Admin only.
      * @param data The data for the request.
      * @param data.skip
      * @param data.limit
-     * @returns ItemsPublic Successful Response
+     * @returns PublisherPublic Successful Response
      * @throws ApiError
      */
-    public static readItems(data: ItemsReadItemsData = {}): CancelablePromise<ItemsReadItemsResponse> {
+    public static listPublishers(data: AdminListPublishersData = {}): CancelablePromise<AdminListPublishersResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/items/',
+            url: '/api/v1/admin/publishers',
             query: {
                 skip: data.skip,
                 limit: data.limit
@@ -30,17 +50,17 @@ export class ItemsService {
     }
     
     /**
-     * Create Item
-     * Create new item.
+     * Create new school
+     * Creates a new school linked to a publisher. Admin only.
      * @param data The data for the request.
      * @param data.requestBody
-     * @returns ItemPublic Successful Response
+     * @returns SchoolPublic Successful Response
      * @throws ApiError
      */
-    public static createItem(data: ItemsCreateItemData): CancelablePromise<ItemsCreateItemResponse> {
+    public static createSchool(data: AdminCreateSchoolData): CancelablePromise<AdminCreateSchoolResponse> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/v1/items/',
+            url: '/api/v1/admin/schools',
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {
@@ -50,19 +70,23 @@ export class ItemsService {
     }
     
     /**
-     * Read Item
-     * Get item by ID.
+     * List all schools
+     * Retrieve all schools with optional publisher filter. Admin only.
      * @param data The data for the request.
-     * @param data.id
-     * @returns ItemPublic Successful Response
+     * @param data.publisherId
+     * @param data.skip
+     * @param data.limit
+     * @returns SchoolPublic Successful Response
      * @throws ApiError
      */
-    public static readItem(data: ItemsReadItemData): CancelablePromise<ItemsReadItemResponse> {
+    public static listSchools(data: AdminListSchoolsData = {}): CancelablePromise<AdminListSchoolsResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/items/{id}',
-            path: {
-                id: data.id
+            url: '/api/v1/admin/schools',
+            query: {
+                publisher_id: data.publisherId,
+                skip: data.skip,
+                limit: data.limit
             },
             errors: {
                 422: 'Validation Error'
@@ -71,23 +95,24 @@ export class ItemsService {
     }
     
     /**
-     * Update Item
-     * Update an item.
+     * List all teachers
+     * Retrieve all teachers with optional school filter. Admin only.
      * @param data The data for the request.
-     * @param data.id
-     * @param data.requestBody
-     * @returns ItemPublic Successful Response
+     * @param data.schoolId
+     * @param data.skip
+     * @param data.limit
+     * @returns TeacherPublic Successful Response
      * @throws ApiError
      */
-    public static updateItem(data: ItemsUpdateItemData): CancelablePromise<ItemsUpdateItemResponse> {
+    public static listTeachers(data: AdminListTeachersData = {}): CancelablePromise<AdminListTeachersResponse> {
         return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/v1/items/{id}',
-            path: {
-                id: data.id
+            method: 'GET',
+            url: '/api/v1/admin/teachers',
+            query: {
+                school_id: data.schoolId,
+                skip: data.skip,
+                limit: data.limit
             },
-            body: data.requestBody,
-            mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
             }
@@ -95,20 +120,82 @@ export class ItemsService {
     }
     
     /**
-     * Delete Item
-     * Delete an item.
+     * List all students
+     * Retrieve all students with pagination. Admin only.
      * @param data The data for the request.
-     * @param data.id
-     * @returns Message Successful Response
+     * @param data.skip
+     * @param data.limit
+     * @returns StudentPublic Successful Response
      * @throws ApiError
      */
-    public static deleteItem(data: ItemsDeleteItemData): CancelablePromise<ItemsDeleteItemResponse> {
+    public static listStudents(data: AdminListStudentsData = {}): CancelablePromise<AdminListStudentsResponse> {
         return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/v1/items/{id}',
-            path: {
-                id: data.id
+            method: 'GET',
+            url: '/api/v1/admin/students',
+            query: {
+                skip: data.skip,
+                limit: data.limit
             },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Bulk import publishers from Excel
+     * Upload Excel file to create multiple publisher accounts. Admin only.
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns BulkImportResponse Successful Response
+     * @throws ApiError
+     */
+    public static bulkImportPublishers(data: AdminBulkImportPublishersData): CancelablePromise<AdminBulkImportPublishersResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/bulk-import/publishers',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Bulk import teachers from Excel
+     * Upload Excel file to create multiple teacher accounts. Admin only.
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns BulkImportResponse Successful Response
+     * @throws ApiError
+     */
+    public static bulkImportTeachers(data: AdminBulkImportTeachersData): CancelablePromise<AdminBulkImportTeachersResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/bulk-import/teachers',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Bulk import students from Excel
+     * Upload Excel file to create multiple student accounts. Admin only.
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns BulkImportResponse Successful Response
+     * @throws ApiError
+     */
+    public static bulkImportStudents(data: AdminBulkImportStudentsData): CancelablePromise<AdminBulkImportStudentsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/bulk-import/students',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
             errors: {
                 422: 'Validation Error'
             }
@@ -228,6 +315,96 @@ export class PrivateService {
             url: '/api/v1/private/users/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class PublishersService {
+    /**
+     * List my schools
+     * Retrieve schools assigned to authenticated publisher. Publisher only.
+     * @returns SchoolPublic Successful Response
+     * @throws ApiError
+     */
+    public static listMySchools(): CancelablePromise<PublishersListMySchoolsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/publishers/me/schools'
+        });
+    }
+    
+    /**
+     * Create new teacher
+     * Creates a new teacher user linked to publisher's school. Publisher only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserCreationResponse Successful Response
+     * @throws ApiError
+     */
+    public static createTeacher(data: PublishersCreateTeacherData): CancelablePromise<PublishersCreateTeacherResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/publishers/me/teachers',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class TeachersService {
+    /**
+     * List my students
+     * Retrieve students enrolled in authenticated teacher's classes. Teacher only.
+     * @returns StudentPublic Successful Response
+     * @throws ApiError
+     */
+    public static listMyStudents(): CancelablePromise<TeachersListMyStudentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/me/students'
+        });
+    }
+    
+    /**
+     * Create new student
+     * Creates a new student user. Teacher only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserCreationResponse Successful Response
+     * @throws ApiError
+     */
+    public static createStudent(data: TeachersCreateStudentData): CancelablePromise<TeachersCreateStudentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/me/students',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Bulk import students from Excel
+     * Upload Excel file to create multiple student accounts. Teacher only.
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns BulkImportResponse Successful Response
+     * @throws ApiError
+     */
+    public static bulkImportStudents(data: TeachersBulkImportStudentsData): CancelablePromise<TeachersBulkImportStudentsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/me/students/bulk-import',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
             errors: {
                 422: 'Validation Error'
             }

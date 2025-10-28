@@ -1,11 +1,10 @@
-import { Input } from "@/components/ui/input"
 import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
-
 import { type ApiError, LoginService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { InputGroup } from "@/components/ui/input-group"
 import { isLoggedIn } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
@@ -31,7 +30,7 @@ function RecoverPassword() {
     register,
     handleSubmit,
     reset,
-    formState: {  isSubmitting },
+    formState: { isSubmitting },
   } = useForm<FormData>()
   const { showSuccessToast } = useCustomToast()
 
@@ -61,9 +60,7 @@ function RecoverPassword() {
       onSubmit={handleSubmit(onSubmit)}
       className="h-screen max-w-sm flex flex-col items-stretch justify-center gap-4 mx-auto px-4"
     >
-      <h1 className="text-3xl text-center mb-2">
-        Password Recovery
-      </h1>
+      <h1 className="text-3xl text-center mb-2">Password Recovery</h1>
       <p className="text-center">
         A password recovery email will be sent to the registered account.
       </p>

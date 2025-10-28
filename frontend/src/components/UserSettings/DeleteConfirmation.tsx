@@ -1,9 +1,8 @@
-import { Button } from "@/components/ui/button"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-
 import { type ApiError, UsersService } from "@/client"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -70,19 +69,11 @@ const DeleteConfirmation = () => {
 
           <DialogFooter className="gap-2">
             <DialogClose asChild>
-              <Button
-                variant="ghost"
-                disabled={isSubmitting}
-                type="button"
-              >
+              <Button variant="ghost" disabled={isSubmitting} type="button">
                 Cancel
               </Button>
             </DialogClose>
-            <Button
-              variant="destructive"
-              type="submit"
-              disabled={isSubmitting}
-            >
+            <Button variant="destructive" type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

@@ -51,6 +51,8 @@ const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: () => {
+      // Invalidate currentUser to fetch fresh data for the new user
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       navigate({ to: "/" })
     },
     onError: (err: ApiError) => {
@@ -59,7 +61,13 @@ const useAuth = () => {
   })
 
   const logout = () => {
+    // Remove token
     localStorage.removeItem("access_token")
+
+    // Clear all query cache to remove old user data
+    queryClient.clear()
+
+    // Navigate to login
     navigate({ to: "/login" })
   }
 
