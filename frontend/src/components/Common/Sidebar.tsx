@@ -2,8 +2,8 @@ import SidebarItems from "./SidebarItems"
 
 const Sidebar = () => {
   return (
-    <div className="flex sticky top-0 bg-subtle min-w-xs h-screen p-4 shadow-neuro">
-      <div className="w-full">
+    <div className="flex flex-col sticky top-0 bg-subtle min-w-xs h-screen shadow-neuro">
+      <div className="flex flex-col flex-1 py-4 overflow-y-auto">
         <SidebarItems />
       </div>
     </div>
