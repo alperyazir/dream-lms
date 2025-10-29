@@ -117,6 +117,80 @@ export interface Activity {
   duration_minutes?: number
 }
 
+// ============================================================================
+// ACTIVITY CONFIG TYPE DEFINITIONS (Story 2.5)
+// ============================================================================
+
+export interface Coordinates {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+export interface DragDropAnswer {
+  no: number
+  coords: Coordinates
+  text: string
+}
+
+export interface DragDropPictureActivity {
+  id: string
+  bookId: string
+  type: "dragdroppicture"
+  section_path: string // Background image URL
+  words: string[] // Draggable word bank
+  answer: DragDropAnswer[] // Correct placements
+}
+
+export interface MatchWord {
+  word: string
+}
+
+export interface MatchSentence {
+  sentence: string
+  word: string // Correct matching term
+}
+
+export interface MatchTheWordsActivity {
+  id: string
+  bookId: string
+  type: "matchTheWords"
+  headerText: string
+  match_words: MatchWord[]
+  sentences: MatchSentence[]
+}
+
+export interface CircleAnswer {
+  coords: Coordinates
+  isCorrect: boolean
+}
+
+export interface CircleActivity {
+  id: string
+  bookId: string
+  type: "circle" | "markwithx"
+  circleCount: number // Max selections
+  section_path: string // Background image
+  answer: CircleAnswer[]
+}
+
+export interface PuzzleFindWordsActivity {
+  id: string
+  bookId: string
+  type: "puzzleFindWords"
+  headerText: string
+  words: string[] // Words to find in grid
+}
+
+export type ActivityConfig =
+  | DragDropPictureActivity
+  | MatchTheWordsActivity
+  | CircleActivity
+  | PuzzleFindWordsActivity
+
+// ============================================================================
+
 export interface AssignmentFull {
   id: string
   teacherId: string
@@ -1133,6 +1207,140 @@ export const mockActivities: Activity[] = [
     activityType: "circle",
     order_index: 2,
     duration_minutes: 15,
+  },
+]
+
+/**
+ * Mock Activity Configs - Detailed configuration for interactive activities (Story 2.5)
+ */
+export const mockActivityConfigs: ActivityConfig[] = [
+  // DragDropPicture Activity 1 - Parts of Speech
+  {
+    id: "config_1",
+    bookId: "1",
+    type: "dragdroppicture",
+    section_path: "https://via.placeholder.com/1200x800/e0f2fe/0891b2?text=Parts+of+Speech+Exercise",
+    words: ["noun", "verb", "adjective", "adverb", "pronoun"],
+    answer: [
+      { no: 1, coords: { x: 150, y: 200, w: 120, h: 50 }, text: "noun" },
+      { no: 2, coords: { x: 450, y: 200, w: 120, h: 50 }, text: "verb" },
+      { no: 3, coords: { x: 750, y: 200, w: 120, h: 50 }, text: "adjective" },
+      { no: 4, coords: { x: 300, y: 450, w: 120, h: 50 }, text: "adverb" },
+      { no: 5, coords: { x: 600, y: 450, w: 120, h: 50 }, text: "pronoun" },
+    ],
+  },
+  // DragDropPicture Activity 2 - Math Equations
+  {
+    id: "config_2",
+    bookId: "2",
+    type: "dragdroppicture",
+    section_path: "https://via.placeholder.com/1200x800/fef3c7/f59e0b?text=Complete+the+Equations",
+    words: ["5", "10", "15", "20"],
+    answer: [
+      { no: 1, coords: { x: 200, y: 250, w: 80, h: 50 }, text: "5" },
+      { no: 2, coords: { x: 500, y: 250, w: 80, h: 50 }, text: "10" },
+      { no: 3, coords: { x: 200, y: 450, w: 80, h: 50 }, text: "15" },
+      { no: 4, coords: { x: 500, y: 450, w: 80, h: 50 }, text: "20" },
+    ],
+  },
+  // MatchTheWords Activity 1 - Vocabulary
+  {
+    id: "config_3",
+    bookId: "1",
+    type: "matchTheWords",
+    headerText: "Match each word with its definition",
+    match_words: [
+      { word: "Abundant" },
+      { word: "Benevolent" },
+      { word: "Diligent" },
+      { word: "Eloquent" },
+    ],
+    sentences: [
+      { sentence: "Existing in large quantities", word: "Abundant" },
+      { sentence: "Well-meaning and kindly", word: "Benevolent" },
+      { sentence: "Showing care in one's work", word: "Diligent" },
+      { sentence: "Fluent and persuasive in speaking", word: "Eloquent" },
+    ],
+  },
+  // MatchTheWords Activity 2 - Science Terms
+  {
+    id: "config_4",
+    bookId: "5",
+    type: "matchTheWords",
+    headerText: "Match the scientific term with its description",
+    match_words: [
+      { word: "Photosynthesis" },
+      { word: "Evaporation" },
+      { word: "Condensation" },
+      { word: "Precipitation" },
+    ],
+    sentences: [
+      { sentence: "Process by which plants make food using sunlight", word: "Photosynthesis" },
+      { sentence: "Water changing from liquid to gas", word: "Evaporation" },
+      { sentence: "Water vapor changing to liquid", word: "Condensation" },
+      { sentence: "Water falling from clouds as rain or snow", word: "Precipitation" },
+    ],
+  },
+  // Circle Activity 1 - True/False (circleCount: 2)
+  {
+    id: "config_5",
+    bookId: "1",
+    type: "circle",
+    circleCount: 2,
+    section_path: "https://via.placeholder.com/1200x800/dbeafe/3b82f6?text=Circle+the+Correct+Statements",
+    answer: [
+      { coords: { x: 100, y: 150, w: 500, h: 60 }, isCorrect: true },
+      { coords: { x: 100, y: 250, w: 500, h: 60 }, isCorrect: false },
+      { coords: { x: 100, y: 350, w: 500, h: 60 }, isCorrect: true },
+      { coords: { x: 100, y: 450, w: 500, h: 60 }, isCorrect: false },
+    ],
+  },
+  // Circle Activity 2 - Multiple Choice (circleCount: 3)
+  {
+    id: "config_6",
+    bookId: "2",
+    type: "circle",
+    circleCount: 3,
+    section_path: "https://via.placeholder.com/1200x800/fce7f3/ec4899?text=Select+All+Prime+Numbers",
+    answer: [
+      { coords: { x: 150, y: 200, w: 100, h: 80 }, isCorrect: true }, // 2
+      { coords: { x: 350, y: 200, w: 100, h: 80 }, isCorrect: true }, // 3
+      { coords: { x: 550, y: 200, w: 100, h: 80 }, isCorrect: false }, // 4
+      { coords: { x: 750, y: 200, w: 100, h: 80 }, isCorrect: true }, // 5
+      { coords: { x: 350, y: 350, w: 100, h: 80 }, isCorrect: false }, // 6
+      { coords: { x: 550, y: 350, w: 100, h: 80 }, isCorrect: false }, // 8
+    ],
+  },
+  // MarkWithX Activity - Incorrect Grammar
+  {
+    id: "config_7",
+    bookId: "1",
+    type: "markwithx",
+    circleCount: 3,
+    section_path: "https://via.placeholder.com/1200x800/fee2e2/ef4444?text=Mark+Grammatical+Errors",
+    answer: [
+      { coords: { x: 100, y: 150, w: 450, h: 50 }, isCorrect: false },
+      { coords: { x: 100, y: 250, w: 450, h: 50 }, isCorrect: true }, // Error
+      { coords: { x: 100, y: 350, w: 450, h: 50 }, isCorrect: true }, // Error
+      { coords: { x: 100, y: 450, w: 450, h: 50 }, isCorrect: false },
+      { coords: { x: 100, y: 550, w: 450, h: 50 }, isCorrect: true }, // Error
+    ],
+  },
+  // PuzzleFindWords Activity 1 - Animals
+  {
+    id: "config_8",
+    bookId: "5",
+    type: "puzzleFindWords",
+    headerText: "Find all the animal names hidden in the grid",
+    words: ["LION", "TIGER", "BEAR", "WOLF", "EAGLE", "SHARK", "DOLPHIN", "ZEBRA"],
+  },
+  // PuzzleFindWords Activity 2 - Countries
+  {
+    id: "config_9",
+    bookId: "8",
+    type: "puzzleFindWords",
+    headerText: "Find all the country names in the puzzle",
+    words: ["FRANCE", "SPAIN", "ITALY", "BRAZIL", "CANADA", "JAPAN", "EGYPT"],
   },
 ]
 

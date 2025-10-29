@@ -26,6 +26,7 @@ import { Route as LayoutTeacherAssignmentsIndexRouteImport } from './routes/_lay
 import { Route as LayoutStudentAssignmentsIndexRouteImport } from './routes/_layout/student/assignments/index'
 import { Route as LayoutTeacherBooksBookIdRouteImport } from './routes/_layout/teacher/books/$bookId'
 import { Route as LayoutTeacherAssignmentsAssignmentIdRouteImport } from './routes/_layout/teacher/assignments/$assignmentId'
+import { Route as LayoutStudentAssignmentsAssignmentIdPlayRouteImport } from './routes/_layout/student/assignments/$assignmentId/play'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -116,6 +117,12 @@ const LayoutTeacherAssignmentsAssignmentIdRoute =
     path: '/teacher/assignments/$assignmentId',
     getParentRoute: () => LayoutRoute,
   } as any)
+const LayoutStudentAssignmentsAssignmentIdPlayRoute =
+  LayoutStudentAssignmentsAssignmentIdPlayRouteImport.update({
+    id: '/student/assignments/$assignmentId/play',
+    path: '/student/assignments/$assignmentId/play',
+    getParentRoute: () => LayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/student/assignments': typeof LayoutStudentAssignmentsIndexRoute
   '/teacher/assignments': typeof LayoutTeacherAssignmentsIndexRoute
   '/teacher/books': typeof LayoutTeacherBooksIndexRoute
+  '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -152,6 +160,7 @@ export interface FileRoutesByTo {
   '/student/assignments': typeof LayoutStudentAssignmentsIndexRoute
   '/teacher/assignments': typeof LayoutTeacherAssignmentsIndexRoute
   '/teacher/books': typeof LayoutTeacherBooksIndexRoute
+  '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -172,6 +181,7 @@ export interface FileRoutesById {
   '/_layout/student/assignments/': typeof LayoutStudentAssignmentsIndexRoute
   '/_layout/teacher/assignments/': typeof LayoutTeacherAssignmentsIndexRoute
   '/_layout/teacher/books/': typeof LayoutTeacherBooksIndexRoute
+  '/_layout/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/student/assignments'
     | '/teacher/assignments'
     | '/teacher/books'
+    | '/student/assignments/$assignmentId/play'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/student/assignments'
     | '/teacher/assignments'
     | '/teacher/books'
+    | '/student/assignments/$assignmentId/play'
   id:
     | '__root__'
     | '/_layout'
@@ -229,6 +241,7 @@ export interface FileRouteTypes {
     | '/_layout/student/assignments/'
     | '/_layout/teacher/assignments/'
     | '/_layout/teacher/books/'
+    | '/_layout/student/assignments/$assignmentId/play'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -360,6 +373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutTeacherAssignmentsAssignmentIdRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/student/assignments/$assignmentId/play': {
+      id: '/_layout/student/assignments/$assignmentId/play'
+      path: '/student/assignments/$assignmentId/play'
+      fullPath: '/student/assignments/$assignmentId/play'
+      preLoaderRoute: typeof LayoutStudentAssignmentsAssignmentIdPlayRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
@@ -376,6 +396,7 @@ interface LayoutRouteChildren {
   LayoutStudentAssignmentsIndexRoute: typeof LayoutStudentAssignmentsIndexRoute
   LayoutTeacherAssignmentsIndexRoute: typeof LayoutTeacherAssignmentsIndexRoute
   LayoutTeacherBooksIndexRoute: typeof LayoutTeacherBooksIndexRoute
+  LayoutStudentAssignmentsAssignmentIdPlayRoute: typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -392,6 +413,8 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutStudentAssignmentsIndexRoute: LayoutStudentAssignmentsIndexRoute,
   LayoutTeacherAssignmentsIndexRoute: LayoutTeacherAssignmentsIndexRoute,
   LayoutTeacherBooksIndexRoute: LayoutTeacherBooksIndexRoute,
+  LayoutStudentAssignmentsAssignmentIdPlayRoute:
+    LayoutStudentAssignmentsAssignmentIdPlayRoute,
 }
 
 const LayoutRouteWithChildren =
