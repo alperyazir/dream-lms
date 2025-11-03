@@ -3,7 +3,7 @@
  * Story 2.5 - Phase 1, Task 1.2
  */
 
-import { useEffect, useState, memo } from "react"
+import { memo, useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 
 interface ActivityHeaderProps {

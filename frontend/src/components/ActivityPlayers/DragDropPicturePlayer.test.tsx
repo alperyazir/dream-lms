@@ -3,10 +3,10 @@
  * Story 2.5 - Phase 9: Testing & Verification
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
-import { describe, it, expect, vi } from "vitest"
-import { DragDropPicturePlayer } from "./DragDropPicturePlayer"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
 import type { DragDropPictureActivity } from "@/lib/mockData"
+import { DragDropPicturePlayer } from "./DragDropPicturePlayer"
 
 const mockActivity: DragDropPictureActivity = {
   id: "activity-1",
@@ -29,7 +29,7 @@ describe("DragDropPicturePlayer", () => {
       <DragDropPicturePlayer
         activity={mockActivity}
         onAnswersChange={onAnswersChange}
-      />
+      />,
     )
 
     // Check word bank renders all words
@@ -56,7 +56,7 @@ describe("DragDropPicturePlayer", () => {
       <DragDropPicturePlayer
         activity={mockActivity}
         onAnswersChange={onAnswersChange}
-      />
+      />,
     )
 
     // Select a word (mobile interaction)
@@ -100,7 +100,7 @@ describe("DragDropPicturePlayer", () => {
         showResults={true}
         correctAnswers={correctAnswers}
         initialAnswers={initialAnswers}
-      />
+      />,
     )
 
     // Check that drop zones show correct/incorrect styling

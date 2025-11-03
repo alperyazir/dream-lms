@@ -3,15 +3,14 @@
  * Story 2.5 - Phase 9: Testing & Verification
  */
 
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
+import type { CircleAnswer, DragDropAnswer, MatchSentence } from "./mockData"
 import {
+  scoreCircle,
   scoreDragDrop,
   scoreMatch,
-  scoreCircle,
   scoreWordSearch,
-  type ScoreResult,
 } from "./scoring"
-import type { DragDropAnswer, MatchSentence, CircleAnswer } from "./mockData"
 
 describe("scoreDragDrop", () => {
   const correctAnswers: DragDropAnswer[] = [
@@ -211,7 +210,7 @@ describe("scoreWordSearch", () => {
     expect(result.total).toBe(5)
     expect(result.breakdown?.activity_type).toBe("Word Search")
     expect(result.breakdown?.words_found).toBe(
-      "APPLE, BANANA, CHERRY, DATE, ELDERBERRY"
+      "APPLE, BANANA, CHERRY, DATE, ELDERBERRY",
     )
   })
 

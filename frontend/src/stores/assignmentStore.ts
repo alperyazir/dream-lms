@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { mockAssignments, type AssignmentFull } from "@/lib/mockData"
+import { type AssignmentFull, mockAssignments } from "@/lib/mockData"
 
 interface AssignmentStore {
   assignments: AssignmentFull[]
@@ -19,7 +19,7 @@ export const useAssignmentStore = create<AssignmentStore>((set) => ({
   updateAssignment: (id, updates) =>
     set((state) => ({
       assignments: state.assignments.map((a) =>
-        a.id === id ? { ...a, ...updates } : a
+        a.id === id ? { ...a, ...updates } : a,
       ),
     })),
 

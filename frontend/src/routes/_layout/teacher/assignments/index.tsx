@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { useState, useMemo } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { useCallback, useMemo, useState } from "react"
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import {
   Table,
   TableBody,
@@ -11,8 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Progress } from "@/components/ui/progress"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { mockBooks } from "@/lib/mockData"
 import { useAssignmentStore } from "@/stores/assignmentStore"
 
@@ -37,18 +37,21 @@ function TeacherAssignmentsContent() {
   const assignments = useAssignmentStore((state) => state.assignments)
 
   // Calculate assignment status based on due date and completion rate
-  const getAssignmentStatus = (assignment: typeof assignments[0]): AssignmentStatus => {
-    const now = new Date()
-    const dueDate = new Date(assignment.due_date)
+  const getAssignmentStatus = useCallback(
+    (assignment: (typeof assignments)[0]): AssignmentStatus => {
+      const now = new Date()
+      const dueDate = new Date(assignment.due_date)
 
-    if (assignment.completionRate === 100) {
-      return "completed"
-    } else if (dueDate < now) {
-      return "past-due"
-    } else {
+      if (assignment.completionRate === 100) {
+        return "completed"
+      }
+      if (dueDate < now) {
+        return "past-due"
+      }
       return "active"
-    }
-  }
+    },
+    [],
+  )
 
   // Filter and sort assignments
   const filteredAndSortedAssignments = useMemo(() => {
@@ -74,23 +77,11 @@ function TeacherAssignmentsContent() {
   const getStatusBadge = (status: AssignmentStatus) => {
     switch (status) {
       case "completed":
-        return (
-          <Badge className="bg-green-100 text-green-800">
-            Completed
-          </Badge>
-        )
+        return <Badge className="bg-green-100 text-green-800">Completed</Badge>
       case "active":
-        return (
-          <Badge className="bg-blue-100 text-blue-800">
-            Active
-          </Badge>
-        )
+        return <Badge className="bg-blue-100 text-blue-800">Active</Badge>
       case "past-due":
-        return (
-          <Badge className="bg-red-100 text-red-800">
-            Past Due
-          </Badge>
-        )
+        return <Badge className="bg-red-100 text-red-800">Past Due</Badge>
       default:
         return null
     }
@@ -100,7 +91,9 @@ function TeacherAssignmentsContent() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Assignments</h1>
-        <p className="text-muted-foreground">Manage and track student assignments</p>
+        <p className="text-muted-foreground">
+          Manage and track student assignments
+        </p>
       </div>
 
       {/* Filters and Actions */}
@@ -109,7 +102,9 @@ function TeacherAssignmentsContent() {
           {/* Status Filter */}
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as AssignmentStatus)}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as AssignmentStatus)
+            }
             className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Filter by status"
           >
@@ -131,15 +126,14 @@ function TeacherAssignmentsContent() {
 
         {/* Create Assignment Button */}
         <Button asChild className="bg-teal-600 hover:bg-teal-700">
-          <Link to="/teacher/books">
-            + Create Assignment
-          </Link>
+          <Link to="/teacher/books">+ Create Assignment</Link>
         </Button>
       </div>
 
       {/* Results count */}
       <div className="mb-4 text-sm text-muted-foreground">
-        Showing {filteredAndSortedAssignments.length} of {assignments.length} assignments
+        Showing {filteredAndSortedAssignments.length} of {assignments.length}{" "}
+        assignments
       </div>
 
       {/* Assignments Table */}
@@ -169,7 +163,9 @@ function TeacherAssignmentsContent() {
                 </TableHeader>
                 <TableBody>
                   {filteredAndSortedAssignments.map((assignment) => {
-                    const book = mockBooks.find((b) => b.id === assignment.bookId)
+                    const book = mockBooks.find(
+                      (b) => b.id === assignment.bookId,
+                    )
                     const status = getAssignmentStatus(assignment)
                     const dueDate = new Date(assignment.due_date)
 
@@ -180,9 +176,7 @@ function TeacherAssignmentsContent() {
                         </TableCell>
                         <TableCell>{book?.title || "Unknown"}</TableCell>
                         <TableCell>
-                          <div>
-                            {dueDate.toLocaleDateString()}
-                          </div>
+                          <div>{dueDate.toLocaleDateString()}</div>
                           <div className="text-xs text-muted-foreground">
                             {dueDate.toLocaleTimeString([], {
                               hour: "2-digit",

@@ -1,14 +1,14 @@
 import React from "react"
 import {
-  LineChart,
+  CartesianGrid,
+  Legend,
   Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  ReferenceLine,
 } from "recharts"
 
 export interface StudentProgressChartProps {
@@ -23,7 +23,8 @@ export interface StudentProgressChartProps {
 export const StudentProgressChart = React.memo(
   ({ scores, dates }: StudentProgressChartProps) => {
     // Calculate average score
-    const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length
+    const averageScore =
+      scores.reduce((sum, score) => sum + score, 0) / scores.length
 
     // Prepare chart data
     const chartData = scores.map((score, index) => ({
@@ -45,11 +46,7 @@ export const StudentProgressChart = React.memo(
         <ResponsiveContainer width="100%" height={350}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis
-              dataKey="assignment"
-              tick={{ fontSize: 12 }}
-              height={50}
-            />
+            <XAxis dataKey="assignment" tick={{ fontSize: 12 }} height={50} />
             <YAxis
               domain={[0, 100]}
               tick={{ fontSize: 12 }}

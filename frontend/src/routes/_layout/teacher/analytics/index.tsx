@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useState, useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Download, Filter } from "lucide-react"
+import { useId, useMemo, useState } from "react"
+import { ActivityBreakdownChart } from "@/components/charts/ActivityBreakdownChart"
+import { ErrorPatternsCard } from "@/components/charts/ErrorPatternsCard"
+import { PerformanceChart } from "@/components/charts/PerformanceChart"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -9,21 +13,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Download, Filter } from "lucide-react"
-import { PerformanceChart } from "@/components/charts/PerformanceChart"
-import { ActivityBreakdownChart } from "@/components/charts/ActivityBreakdownChart"
-import { ErrorPatternsCard } from "@/components/charts/ErrorPatternsCard"
-import {
-  mockAnalyticsData,
-  mockStudents,
-  mockClasses,
-} from "@/lib/mockData"
+import { mockAnalyticsData, mockClasses, mockStudents } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/teacher/analytics/")({
   component: AnalyticsDashboard,
 })
 
 function AnalyticsDashboard() {
+  // Generate unique IDs
+  const dateRangeId = useId()
+  const classFilterId = useId()
+  const studentFilterId = useId()
+
   // Filter state
   const [dateRange, setDateRange] = useState<string>("30")
   const [selectedClass, setSelectedClass] = useState<string>("all")
@@ -34,7 +35,7 @@ function AnalyticsDashboard() {
     let data = [...mockAnalyticsData]
 
     // Date range filter
-    const daysAgo = Number.parseInt(dateRange)
+    const daysAgo = Number.parseInt(dateRange, 10)
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - daysAgo)
 
@@ -46,7 +47,7 @@ function AnalyticsDashboard() {
     }
 
     return data
-  }, [dateRange, selectedClass, selectedStudent])
+  }, [dateRange, selectedStudent])
 
   // Prepare performance chart data (average scores by date)
   const performanceData = useMemo(() => {
@@ -101,10 +102,8 @@ function AnalyticsDashboard() {
     }
 
     const errorDescriptions: Record<string, string> = {
-      dragdroppicture:
-        "Students frequently place items in incorrect positions",
-      dragdroppicturegroup:
-        "Difficulty grouping items into correct categories",
+      dragdroppicture: "Students frequently place items in incorrect positions",
+      dragdroppicturegroup: "Difficulty grouping items into correct categories",
       matchTheWords: "Confusion between similar vocabulary terms",
       circle: "Incorrect selections or missing correct answers",
       markwithx: "Difficulty identifying errors in text",
@@ -114,7 +113,8 @@ function AnalyticsDashboard() {
     return Array.from(activityErrorMap.entries())
       .map(([activity_type, { count, students }]) => ({
         activity_type,
-        error_description: errorDescriptions[activity_type] || "Low performance detected",
+        error_description:
+          errorDescriptions[activity_type] || "Low performance detected",
         frequency: count,
         student_ids: Array.from(students),
       }))
@@ -124,7 +124,13 @@ function AnalyticsDashboard() {
   // Handle export (mock CSV download)
   const handleExport = () => {
     // Create CSV content
-    const headers = ["Date", "Student ID", "Activity Type", "Score", "Time Spent"]
+    const headers = [
+      "Date",
+      "Student ID",
+      "Activity Type",
+      "Score",
+      "Time Spent",
+    ]
     const rows = filteredData.map((point) => [
       point.date,
       point.student_id,
@@ -179,13 +185,13 @@ function AnalyticsDashboard() {
             {/* Date Range Filter */}
             <div className="space-y-2">
               <label
-                htmlFor="dateRange"
+                htmlFor={dateRangeId}
                 className="text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Date Range
               </label>
               <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger id="dateRange" aria-label="Select date range">
+                <SelectTrigger id={dateRangeId} aria-label="Select date range">
                   <SelectValue placeholder="Select range" />
                 </SelectTrigger>
                 <SelectContent>
@@ -201,13 +207,13 @@ function AnalyticsDashboard() {
             {/* Class Filter */}
             <div className="space-y-2">
               <label
-                htmlFor="classFilter"
+                htmlFor={classFilterId}
                 className="text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Class
               </label>
               <Select value={selectedClass} onValueChange={setSelectedClass}>
-                <SelectTrigger id="classFilter" aria-label="Select class">
+                <SelectTrigger id={classFilterId} aria-label="Select class">
                   <SelectValue placeholder="All classes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -224,7 +230,7 @@ function AnalyticsDashboard() {
             {/* Student Filter */}
             <div className="space-y-2">
               <label
-                htmlFor="studentFilter"
+                htmlFor={studentFilterId}
                 className="text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Student
@@ -233,7 +239,7 @@ function AnalyticsDashboard() {
                 value={selectedStudent}
                 onValueChange={setSelectedStudent}
               >
-                <SelectTrigger id="studentFilter" aria-label="Select student">
+                <SelectTrigger id={studentFilterId} aria-label="Select student">
                   <SelectValue placeholder="All students" />
                 </SelectTrigger>
                 <SelectContent>
@@ -265,9 +271,7 @@ function AnalyticsDashboard() {
         {/* Activity Type Breakdown Chart */}
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg">
-              Activity Type Breakdown
-            </CardTitle>
+            <CardTitle className="text-lg">Activity Type Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
             <ActivityBreakdownChart data={activityBreakdownData} />

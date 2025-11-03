@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { AssignmentWizard } from "@/components/assignments/AssignmentWizard"
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -11,9 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { mockBooks, mockActivities, type Activity } from "@/lib/mockData"
-import { AssignmentWizard } from "@/components/assignments/AssignmentWizard"
+import { type Activity, mockActivities, mockBooks } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/teacher/books/$bookId")({
   component: BookDetailPage,
@@ -30,7 +30,9 @@ function BookDetailPage() {
 function BookDetailContent() {
   const { bookId } = Route.useParams()
   const [wizardOpen, setWizardOpen] = useState(false)
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
+    null,
+  )
 
   // Find the book
   const book = mockBooks.find((b) => b.id === bookId)
@@ -91,21 +93,29 @@ function BookDetailContent() {
                 <h1 className="text-3xl font-bold mb-4">{book.title}</h1>
 
                 <div className="flex items-center gap-2 mb-4 flex-wrap">
-                  <Badge variant="secondary" className="bg-teal-100 text-teal-800">
+                  <Badge
+                    variant="secondary"
+                    className="bg-teal-100 text-teal-800"
+                  >
                     Grade {book.grade}
                   </Badge>
                   <Badge variant="outline">
-                    {book.activityCount} {book.activityCount === 1 ? "activity" : "activities"}
+                    {book.activityCount}{" "}
+                    {book.activityCount === 1 ? "activity" : "activities"}
                   </Badge>
                 </div>
 
                 <div className="space-y-3 text-sm">
                   <div>
-                    <span className="font-semibold text-muted-foreground">Publisher:</span>{" "}
+                    <span className="font-semibold text-muted-foreground">
+                      Publisher:
+                    </span>{" "}
                     <span>{book.publisher}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-muted-foreground">Description:</span>{" "}
+                    <span className="font-semibold text-muted-foreground">
+                      Description:
+                    </span>{" "}
                     <p className="mt-1">{book.description}</p>
                   </div>
                 </div>
@@ -121,7 +131,9 @@ function BookDetailContent() {
 
         {activities.length === 0 ? (
           <Card className="shadow-neuro p-8 text-center">
-            <p className="text-muted-foreground">No activities available for this book.</p>
+            <p className="text-muted-foreground">
+              No activities available for this book.
+            </p>
           </Card>
         ) : (
           <Card className="shadow-neuro">
@@ -139,15 +151,23 @@ function BookDetailContent() {
                 <TableBody>
                   {activities.map((activity) => (
                     <TableRow key={activity.id}>
-                      <TableCell className="font-medium">{activity.order_index}</TableCell>
-                      <TableCell className="font-medium">{activity.title}</TableCell>
+                      <TableCell className="font-medium">
+                        {activity.order_index}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {activity.title}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {activity.activityType.replace(/([A-Z])/g, " $1").trim()}
+                          {activity.activityType
+                            .replace(/([A-Z])/g, " $1")
+                            .trim()}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {activity.duration_minutes ? `${activity.duration_minutes} min` : "N/A"}
+                        {activity.duration_minutes
+                          ? `${activity.duration_minutes} min`
+                          : "N/A"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button

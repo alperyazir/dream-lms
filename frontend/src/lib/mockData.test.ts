@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
 import {
-  mockBooks,
-  mockActivities,
-  mockAssignments,
-  mockAssignmentStudents,
-  type Book,
   type Activity,
   type AssignmentFull,
   type AssignmentStudent,
+  type Book,
+  mockActivities,
+  mockAssignmentStudents,
+  mockAssignments,
+  mockBooks,
 } from "./mockData"
 
 describe("Mock Data Structures", () => {
@@ -147,11 +147,15 @@ describe("Mock Data Structures", () => {
         expect(() => new Date(assignment.due_date)).not.toThrow()
 
         // Check activityId references a valid activity
-        const activityExists = mockActivities.some((activity) => activity.id === assignment.activityId)
+        const activityExists = mockActivities.some(
+          (activity) => activity.id === assignment.activityId,
+        )
         expect(activityExists).toBe(true)
 
         // Check bookId references a valid book
-        const bookExists = mockBooks.some((book) => book.id === assignment.bookId)
+        const bookExists = mockBooks.some(
+          (book) => book.id === assignment.bookId,
+        )
         expect(bookExists).toBe(true)
       })
     })
@@ -159,7 +163,9 @@ describe("Mock Data Structures", () => {
     it("should have varied due dates (past, present, future)", () => {
       const now = new Date()
       const pastDue = mockAssignments.filter((a) => new Date(a.due_date) < now)
-      const futureDue = mockAssignments.filter((a) => new Date(a.due_date) > now)
+      const futureDue = mockAssignments.filter(
+        (a) => new Date(a.due_date) > now,
+      )
 
       // Check we have both past and future due dates
       expect(pastDue.length).toBeGreaterThan(0)
@@ -201,7 +207,9 @@ describe("Mock Data Structures", () => {
         }
 
         // Check assignmentId references a valid assignment
-        const assignmentExists = mockAssignments.some((assignment) => assignment.id === submission.assignmentId)
+        const assignmentExists = mockAssignments.some(
+          (assignment) => assignment.id === submission.assignmentId,
+        )
         expect(assignmentExists).toBe(true)
       })
     })
@@ -217,7 +225,9 @@ describe("Mock Data Structures", () => {
 
     it("should have assignments linked to activities and books", () => {
       mockAssignments.forEach((assignment) => {
-        const activity = mockActivities.find((a) => a.id === assignment.activityId)
+        const activity = mockActivities.find(
+          (a) => a.id === assignment.activityId,
+        )
         const book = mockBooks.find((b) => b.id === assignment.bookId)
 
         expect(activity).toBeDefined()
@@ -227,7 +237,9 @@ describe("Mock Data Structures", () => {
 
     it("should have assignment students linked to assignments", () => {
       mockAssignmentStudents.forEach((submission) => {
-        const assignment = mockAssignments.find((a) => a.id === submission.assignmentId)
+        const assignment = mockAssignments.find(
+          (a) => a.id === submission.assignmentId,
+        )
         expect(assignment).toBeDefined()
       })
     })

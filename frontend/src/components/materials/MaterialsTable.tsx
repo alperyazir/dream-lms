@@ -1,4 +1,15 @@
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileText,
+  Image,
+  Share2,
+  Video,
+} from "lucide-react"
 import React, { useState } from "react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -7,9 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { FileText, Image, Video, Share2, Download, ChevronLeft, ChevronRight } from "lucide-react"
 import type { Material } from "@/lib/mockData"
 
 export interface MaterialsTableProps {
@@ -37,8 +45,7 @@ export const MaterialsTable = React.memo(
     const sortedMaterials = [...materials].sort((a, b) => {
       if (sortBy === "date") {
         return (
-          new Date(b.uploaded_at).getTime() -
-          new Date(a.uploaded_at).getTime()
+          new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime()
         )
       }
       return a.name.localeCompare(b.name)
@@ -91,9 +98,7 @@ export const MaterialsTable = React.memo(
             variant={sortBy === "date" ? "default" : "outline"}
             size="sm"
             onClick={() => setSortBy("date")}
-            className={
-              sortBy === "date" ? "bg-teal-600 hover:bg-teal-700" : ""
-            }
+            className={sortBy === "date" ? "bg-teal-600 hover:bg-teal-700" : ""}
           >
             Date
           </Button>
@@ -101,9 +106,7 @@ export const MaterialsTable = React.memo(
             variant={sortBy === "name" ? "default" : "outline"}
             size="sm"
             onClick={() => setSortBy("name")}
-            className={
-              sortBy === "name" ? "bg-teal-600 hover:bg-teal-700" : ""
-            }
+            className={sortBy === "name" ? "bg-teal-600 hover:bg-teal-700" : ""}
           >
             Name
           </Button>
@@ -190,7 +193,9 @@ export const MaterialsTable = React.memo(
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Showing {startIndex + 1}-{Math.min(endIndex, sortedMaterials.length)} of {sortedMaterials.length} materials
+              Showing {startIndex + 1}-
+              {Math.min(endIndex, sortedMaterials.length)} of{" "}
+              {sortedMaterials.length} materials
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -208,7 +213,9 @@ export const MaterialsTable = React.memo(
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
                 aria-label="Next page"
               >

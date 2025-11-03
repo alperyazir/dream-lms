@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useState, useMemo } from "react"
+import { useMemo, useState } from "react"
 import { BookCard } from "@/components/books/BookCard"
-import { Input } from "@/components/ui/input"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { mockBooks, mockActivities } from "@/lib/mockData"
+import { Input } from "@/components/ui/input"
+import { mockActivities, mockBooks } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/teacher/books/")({
   component: TeacherBooksPage,
@@ -21,7 +21,8 @@ function TeacherBooksContent() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedPublisher, setSelectedPublisher] = useState<string>("all")
   const [selectedGrade, setSelectedGrade] = useState<string>("all")
-  const [selectedActivityType, setSelectedActivityType] = useState<string>("all")
+  const [selectedActivityType, setSelectedActivityType] =
+    useState<string>("all")
 
   // Extract unique publishers and grades for filter dropdowns
   const publishers = useMemo(() => {
@@ -35,7 +36,9 @@ function TeacherBooksContent() {
   }, [])
 
   const activityTypes = useMemo(() => {
-    const unique = Array.from(new Set(mockActivities.map((a) => a.activityType)))
+    const unique = Array.from(
+      new Set(mockActivities.map((a) => a.activityType)),
+    )
     return unique.sort()
   }, [])
 
@@ -52,7 +55,8 @@ function TeacherBooksContent() {
         selectedPublisher === "all" || book.publisher === selectedPublisher
 
       // Grade filter
-      const matchesGrade = selectedGrade === "all" || book.grade === selectedGrade
+      const matchesGrade =
+        selectedGrade === "all" || book.grade === selectedGrade
 
       // Activity type filter: check if book has any activities of selected type
       const matchesActivityType =

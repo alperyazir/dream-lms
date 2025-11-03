@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react"
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { AssignmentFull, AssignmentStudent, Book } from "@/lib/mockData"
 import { AssignmentCard } from "./AssignmentCard"
-import type { AssignmentFull, Book, AssignmentStudent } from "@/lib/mockData"
 
 // Mock useCountdown hook
 vi.mock("@/hooks/useCountdown", () => ({
@@ -59,7 +59,7 @@ describe("AssignmentCard", () => {
         assignment={mockAssignment}
         book={mockBook}
         submission={mockSubmission}
-      />
+      />,
     )
 
     // Check assignment name is rendered
@@ -73,7 +73,9 @@ describe("AssignmentCard", () => {
     expect(screen.getByText("2 days 5 hours")).toBeInTheDocument()
 
     // Check "Start Assignment" button is present
-    expect(screen.getByRole("button", { name: /start assignment/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /start assignment/i }),
+    ).toBeInTheDocument()
 
     // Check status badge shows "Not Started"
     expect(screen.getByText("Not Started")).toBeInTheDocument()
@@ -97,7 +99,7 @@ describe("AssignmentCard", () => {
         assignment={mockAssignment}
         book={mockBook}
         submission={mockSubmission}
-      />
+      />,
     )
 
     // Check assignment name is rendered
@@ -108,7 +110,9 @@ describe("AssignmentCard", () => {
     expect(screen.getByText("85%")).toBeInTheDocument()
 
     // Check "Review" button is present
-    expect(screen.getByRole("button", { name: /review assignment/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /review assignment/i }),
+    ).toBeInTheDocument()
 
     // Check status badge shows "Completed"
     expect(screen.getByText("Completed")).toBeInTheDocument()
@@ -129,7 +133,7 @@ describe("AssignmentCard", () => {
           studentName: "John Doe",
           status: "not_started",
         }}
-      />
+      />,
     )
 
     // Check "Not Started" badge has blue background
@@ -150,7 +154,7 @@ describe("AssignmentCard", () => {
           status: "in_progress",
           started_at: new Date().toISOString(),
         }}
-      />
+      />,
     )
 
     // Check "In Progress" badge has yellow background
@@ -172,7 +176,7 @@ describe("AssignmentCard", () => {
           score: 90,
           completed_at: new Date().toISOString(),
         }}
-      />
+      />,
     )
 
     // Check "Completed" badge has green background

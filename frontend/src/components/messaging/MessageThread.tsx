@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from "react"
+import React, { useRef } from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
 import type { Message } from "@/lib/mockData"
+import { cn } from "@/lib/utils"
 
 export interface MessageThreadProps {
   messages: Message[]

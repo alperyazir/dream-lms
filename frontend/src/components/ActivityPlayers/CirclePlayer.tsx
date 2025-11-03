@@ -23,7 +23,7 @@ export function CirclePlayer({
   initialAnswers,
 }: CirclePlayerProps) {
   const [selections, setSelections] = useState<Set<string>>(
-    initialAnswers || new Set()
+    initialAnswers || new Set(),
   )
 
   const icon = activity.type === "markwithx" ? "✗" : "✓"
@@ -96,24 +96,26 @@ export function CirclePlayer({
           const wasSelected = selections.has(coordKey)
 
           return (
-            <div
+            <button
+              type="button"
               key={index}
               onClick={() => handleAreaClick(coordKey)}
               className={`
                 absolute flex items-center justify-center rounded-md border-2 transition-all duration-200
-                ${showResults
-                  ? wasSelected
-                    ? correct
-                      ? "border-green-500 bg-green-100/80 dark:bg-green-900/50"
-                      : "border-red-500 bg-red-100/80 dark:bg-red-900/50"
-                    : !correct
-                      ? "border-gray-300 bg-white/20 dark:border-gray-600"
-                      : "border-orange-500 bg-orange-100/80 dark:bg-orange-900/50"
-                  : isSelected
-                    ? activity.type === "markwithx"
-                      ? "cursor-pointer border-red-500 bg-red-100/80 hover:bg-red-200/80 dark:bg-red-900/50"
-                      : "cursor-pointer border-blue-500 bg-blue-100/80 hover:bg-blue-200/80 dark:bg-blue-900/50"
-                    : "cursor-pointer border-gray-400 border-dashed bg-white/20 hover:border-gray-500 hover:bg-white/40 dark:border-gray-500 dark:hover:bg-gray-700/30"
+                ${
+                  showResults
+                    ? wasSelected
+                      ? correct
+                        ? "border-green-500 bg-green-100/80 dark:bg-green-900/50"
+                        : "border-red-500 bg-red-100/80 dark:bg-red-900/50"
+                      : !correct
+                        ? "border-gray-300 bg-white/20 dark:border-gray-600"
+                        : "border-orange-500 bg-orange-100/80 dark:bg-orange-900/50"
+                    : isSelected
+                      ? activity.type === "markwithx"
+                        ? "cursor-pointer border-red-500 bg-red-100/80 hover:bg-red-200/80 dark:bg-red-900/50"
+                        : "cursor-pointer border-blue-500 bg-blue-100/80 hover:bg-blue-200/80 dark:bg-blue-900/50"
+                      : "cursor-pointer border-gray-400 border-dashed bg-white/20 hover:border-gray-500 hover:bg-white/40 dark:border-gray-500 dark:hover:bg-gray-700/30"
                 }
               `}
               style={{
@@ -122,19 +124,20 @@ export function CirclePlayer({
                 width: `${answer.coords.w}px`,
                 height: `${answer.coords.h}px`,
               }}
-              role="checkbox"
-              aria-checked={isSelected}
+              aria-pressed={isSelected}
               tabIndex={!showResults ? 0 : -1}
               aria-label={`Selectable area ${index + 1}${isSelected ? ` (selected with ${icon})` : ""}`}
+              disabled={showResults}
             >
               {/* Selection indicator */}
               {isSelected && (
                 <div
                   className={`
                     flex h-8 w-8 items-center justify-center rounded-full text-xl font-bold shadow-lg
-                    ${activity.type === "markwithx"
-                      ? "bg-red-500 text-white"
-                      : "bg-blue-500 text-white"
+                    ${
+                      activity.type === "markwithx"
+                        ? "bg-red-500 text-white"
+                        : "bg-blue-500 text-white"
                     }
                   `}
                 >
@@ -147,20 +150,21 @@ export function CirclePlayer({
                 <div
                   className={`
                     flex h-8 w-8 items-center justify-center rounded-full text-xl font-bold shadow-lg
-                    ${wasSelected
-                      ? correct
-                        ? "bg-green-500 text-white"
-                        : "bg-red-500 text-white"
-                      : correct
-                        ? "bg-orange-500 text-white"
-                        : ""
+                    ${
+                      wasSelected
+                        ? correct
+                          ? "bg-green-500 text-white"
+                          : "bg-red-500 text-white"
+                        : correct
+                          ? "bg-orange-500 text-white"
+                          : ""
                     }
                   `}
                 >
                   {wasSelected ? (correct ? "✓" : "✗") : correct ? "!" : ""}
                 </div>
               )}
-            </div>
+            </button>
           )
         })}
       </div>

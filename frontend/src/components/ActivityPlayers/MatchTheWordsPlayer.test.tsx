@@ -3,21 +3,17 @@
  * Story 2.5 - Phase 9: Testing & Verification
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
-import { describe, it, expect, vi } from "vitest"
-import { MatchTheWordsPlayer } from "./MatchTheWordsPlayer"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
 import type { MatchTheWordsActivity } from "@/lib/mockData"
+import { MatchTheWordsPlayer } from "./MatchTheWordsPlayer"
 
 const mockActivity: MatchTheWordsActivity = {
   id: "activity-1",
   bookId: "book-1",
   type: "matchTheWords",
   headerText: "Match the definitions with the correct words",
-  match_words: [
-    { word: "Apple" },
-    { word: "Banana" },
-    { word: "Cherry" },
-  ],
+  match_words: [{ word: "Apple" }, { word: "Banana" }, { word: "Cherry" }],
   sentences: [
     { sentence: "A red or green fruit", word: "Apple" },
     { sentence: "A yellow tropical fruit", word: "Banana" },
@@ -33,12 +29,12 @@ describe("MatchTheWordsPlayer", () => {
       <MatchTheWordsPlayer
         activity={mockActivity}
         onAnswersChange={onAnswersChange}
-      />
+      />,
     )
 
     // Check header text is rendered
     expect(
-      screen.getByText("Match the definitions with the correct words")
+      screen.getByText("Match the definitions with the correct words"),
     ).toBeInTheDocument()
 
     // Check all sentences are rendered
@@ -67,7 +63,7 @@ describe("MatchTheWordsPlayer", () => {
       <MatchTheWordsPlayer
         activity={mockActivity}
         onAnswersChange={onAnswersChange}
-      />
+      />,
     )
 
     // Click on first sentence
@@ -80,7 +76,7 @@ describe("MatchTheWordsPlayer", () => {
     // Click on correct word "Apple"
     const wordElements = screen.getAllByText("Apple")
     const wordCard = wordElements.find((el) =>
-      el.parentElement?.classList.contains("border-gray-300")
+      el.parentElement?.classList.contains("border-gray-300"),
     )
     if (wordCard) {
       fireEvent.click(wordCard)
@@ -90,7 +86,8 @@ describe("MatchTheWordsPlayer", () => {
     expect(onAnswersChange).toHaveBeenCalled()
 
     // Get the matches from the call
-    const callArg = onAnswersChange.mock.calls[onAnswersChange.mock.calls.length - 1][0]
+    const callArg =
+      onAnswersChange.mock.calls[onAnswersChange.mock.calls.length - 1][0]
     expect(callArg).toBeInstanceOf(Map)
     expect(callArg.get("A red or green fruit")).toBe("Apple")
 

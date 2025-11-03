@@ -1,7 +1,7 @@
+import { Lightbulb, TrendingDown, TrendingUp } from "lucide-react"
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, TrendingDown, Lightbulb } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export interface StrengthsWeaknessesCardProps {
   strengths: string[]
@@ -43,8 +43,7 @@ export const StrengthsWeaknessesCard = React.memo(
       "Consider peer tutoring opportunities to reinforce learning",
     ]
 
-    const displayRecommendations =
-      recommendations || defaultRecommendations
+    const displayRecommendations = recommendations || defaultRecommendations
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

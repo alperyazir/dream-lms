@@ -1,8 +1,8 @@
+import { AlertCircle } from "lucide-react"
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { AlertCircle } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export interface ErrorPattern {
   activity_type: string
@@ -25,12 +25,17 @@ export const ErrorPatternsCard = React.memo(
     // Activity type color mapping
     const getActivityTypeColor = (activityType: string): string => {
       const colorMap: Record<string, string> = {
-        dragdroppicture: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
-        dragdroppicturegroup: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
-        matchTheWords: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-        circle: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+        dragdroppicture:
+          "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+        dragdroppicturegroup:
+          "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+        matchTheWords:
+          "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+        circle:
+          "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
         markwithx: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-        puzzleFindWords: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+        puzzleFindWords:
+          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       }
       return (
         colorMap[activityType] ||
@@ -98,9 +103,7 @@ export const ErrorPatternsCard = React.memo(
                       variant="ghost"
                       size="sm"
                       className="mt-2 text-teal-600 hover:text-teal-700"
-                      onClick={() =>
-                        onViewDetails(pattern.student_ids[0])
-                      }
+                      onClick={() => onViewDetails(pattern.student_ids[0])}
                     >
                       View Details →
                     </Button>

@@ -1,18 +1,23 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useId, useState } from "react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useState } from "react"
+import useCustomToast from "@/hooks/useCustomToast"
 import {
   type Activity,
-  type Book,
   type AssignmentFull,
-  mockStudents,
+  type Book,
   mockClasses,
+  mockStudents,
 } from "@/lib/mockData"
-import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { useAssignmentStore } from "@/stores/assignmentStore"
 
@@ -62,7 +67,10 @@ export function AssignmentWizard({
 
     switch (step) {
       case 2:
-        if (formData.selectedStudents.length === 0 && formData.selectedClasses.length === 0) {
+        if (
+          formData.selectedStudents.length === 0 &&
+          formData.selectedClasses.length === 0
+        ) {
           errors.push("Please select at least one student or class")
         }
         break
@@ -107,7 +115,9 @@ export function AssignmentWizard({
       name: formData.assignmentName,
       instructions: formData.instructions,
       due_date: new Date(formData.dueDate).toISOString(),
-      time_limit_minutes: formData.timeLimit ? parseInt(formData.timeLimit) : undefined,
+      time_limit_minutes: formData.timeLimit
+        ? parseInt(formData.timeLimit, 10)
+        : undefined,
       created_at: new Date().toISOString(),
       completionRate: 0,
     }
@@ -163,7 +173,14 @@ export function AssignmentWizard({
 
         <div className="space-y-6">
           {/* Step Indicator */}
-          <div className="flex gap-2">
+          <div
+            className="flex gap-2"
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={4}
+            aria-valuenow={currentStep}
+            aria-label="Assignment creation progress"
+          >
             {[1, 2, 3, 4].map((step) => (
               <div
                 key={step}
@@ -175,7 +192,7 @@ export function AssignmentWizard({
                       ? "bg-teal-300"
                       : "bg-gray-200",
                 )}
-                aria-label={`Step ${step} ${step === currentStep ? "active" : step < currentStep ? "completed" : "pending"}`}
+                aria-hidden="true"
               />
             ))}
           </div>
@@ -192,7 +209,9 @@ export function AssignmentWizard({
           )}
 
           {/* Step Content */}
-          {currentStep === 1 && <Step1ReviewActivity activity={activity} book={book} />}
+          {currentStep === 1 && (
+            <Step1ReviewActivity activity={activity} book={book} />
+          )}
           {currentStep === 2 && (
             <Step2SelectStudents
               selectedStudents={formData.selectedStudents}
@@ -223,11 +242,17 @@ export function AssignmentWizard({
                 </Button>
               )}
               {currentStep < 4 ? (
-                <Button onClick={handleNext} className="bg-teal-600 hover:bg-teal-700">
+                <Button
+                  onClick={handleNext}
+                  className="bg-teal-600 hover:bg-teal-700"
+                >
                   Next
                 </Button>
               ) : (
-                <Button onClick={handleCreate} className="bg-teal-600 hover:bg-teal-700">
+                <Button
+                  onClick={handleCreate}
+                  className="bg-teal-600 hover:bg-teal-700"
+                >
                   Create Assignment
                 </Button>
               )}
@@ -240,21 +265,33 @@ export function AssignmentWizard({
 }
 
 // Step 1: Review Activity
-function Step1ReviewActivity({ activity, book }: { activity: Activity; book: Book }) {
+function Step1ReviewActivity({
+  activity,
+  book,
+}: {
+  activity: Activity
+  book: Book
+}) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Review Activity</h3>
       <div className="bg-gray-50 rounded-lg p-4 space-y-3">
         <div>
-          <span className="text-sm font-semibold text-muted-foreground">Book:</span>
+          <span className="text-sm font-semibold text-muted-foreground">
+            Book:
+          </span>
           <p className="text-base">{book.title}</p>
         </div>
         <div>
-          <span className="text-sm font-semibold text-muted-foreground">Activity:</span>
+          <span className="text-sm font-semibold text-muted-foreground">
+            Activity:
+          </span>
           <p className="text-base">{activity.title}</p>
         </div>
         <div>
-          <span className="text-sm font-semibold text-muted-foreground">Type:</span>
+          <span className="text-sm font-semibold text-muted-foreground">
+            Type:
+          </span>
           <div className="mt-1">
             <Badge variant="outline">
               {activity.activityType.replace(/([A-Z])/g, " $1").trim()}
@@ -338,7 +375,8 @@ function Step2SelectStudents({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Selected: {selectedClasses.length} class(es), {selectedStudents.length} student(s)
+        Selected: {selectedClasses.length} class(es), {selectedStudents.length}{" "}
+        student(s)
       </p>
     </div>
   )
@@ -352,6 +390,11 @@ function Step3Configure({
   formData: WizardFormData
   onChange: (updates: Partial<WizardFormData>) => void
 }) {
+  const assignmentNameId = useId()
+  const instructionsId = useId()
+  const dueDateId = useId()
+  const timeLimitId = useId()
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Configure Assignment</h3>
@@ -359,11 +402,14 @@ function Step3Configure({
       <div className="space-y-4">
         {/* Assignment Name */}
         <div>
-          <label htmlFor="assignmentName" className="block text-sm font-medium mb-1">
+          <label
+            htmlFor={assignmentNameId}
+            className="block text-sm font-medium mb-1"
+          >
             Assignment Name <span className="text-red-500">*</span>
           </label>
           <Input
-            id="assignmentName"
+            id={assignmentNameId}
             value={formData.assignmentName}
             onChange={(e) => onChange({ assignmentName: e.target.value })}
             placeholder="Enter assignment name"
@@ -372,11 +418,14 @@ function Step3Configure({
 
         {/* Instructions */}
         <div>
-          <label htmlFor="instructions" className="block text-sm font-medium mb-1">
+          <label
+            htmlFor={instructionsId}
+            className="block text-sm font-medium mb-1"
+          >
             Instructions
           </label>
           <Textarea
-            id="instructions"
+            id={instructionsId}
             value={formData.instructions}
             onChange={(e) => onChange({ instructions: e.target.value })}
             placeholder="Enter instructions for students (optional)"
@@ -386,11 +435,11 @@ function Step3Configure({
 
         {/* Due Date */}
         <div>
-          <label htmlFor="dueDate" className="block text-sm font-medium mb-1">
+          <label htmlFor={dueDateId} className="block text-sm font-medium mb-1">
             Due Date <span className="text-red-500">*</span>
           </label>
           <Input
-            id="dueDate"
+            id={dueDateId}
             type="datetime-local"
             value={formData.dueDate}
             onChange={(e) => onChange({ dueDate: e.target.value })}
@@ -399,11 +448,14 @@ function Step3Configure({
 
         {/* Time Limit */}
         <div>
-          <label htmlFor="timeLimit" className="block text-sm font-medium mb-1">
+          <label
+            htmlFor={timeLimitId}
+            className="block text-sm font-medium mb-1"
+          >
             Time Limit (minutes)
           </label>
           <Input
-            id="timeLimit"
+            id={timeLimitId}
             type="number"
             min="1"
             value={formData.timeLimit}
@@ -418,7 +470,8 @@ function Step3Configure({
 
 // Step 4: Review & Create
 function Step4Review({ formData }: { formData: WizardFormData }) {
-  const totalRecipients = formData.selectedStudents.length +
+  const totalRecipients =
+    formData.selectedStudents.length +
     formData.selectedClasses.reduce((sum, classId) => {
       const classItem = mockClasses.find((c) => c.id === classId)
       return sum + (classItem?.studentCount || 0)
@@ -430,37 +483,52 @@ function Step4Review({ formData }: { formData: WizardFormData }) {
 
       <div className="bg-gray-50 rounded-lg p-4 space-y-3">
         <div>
-          <span className="text-sm font-semibold text-muted-foreground">Assignment Name:</span>
+          <span className="text-sm font-semibold text-muted-foreground">
+            Assignment Name:
+          </span>
           <p className="text-base">{formData.assignmentName}</p>
         </div>
 
         <div>
-          <span className="text-sm font-semibold text-muted-foreground">Activity:</span>
+          <span className="text-sm font-semibold text-muted-foreground">
+            Activity:
+          </span>
           <p className="text-base">{formData.activityName}</p>
         </div>
 
         <div>
-          <span className="text-sm font-semibold text-muted-foreground">Book:</span>
+          <span className="text-sm font-semibold text-muted-foreground">
+            Book:
+          </span>
           <p className="text-base">{formData.bookName}</p>
         </div>
 
         <div>
-          <span className="text-sm font-semibold text-muted-foreground">Recipients:</span>
+          <span className="text-sm font-semibold text-muted-foreground">
+            Recipients:
+          </span>
           <p className="text-base">~{totalRecipients} student(s)</p>
           <p className="text-xs text-muted-foreground mt-1">
-            {formData.selectedClasses.length} class(es), {formData.selectedStudents.length} individual student(s)
+            {formData.selectedClasses.length} class(es),{" "}
+            {formData.selectedStudents.length} individual student(s)
           </p>
         </div>
 
         {formData.instructions && (
           <div>
-            <span className="text-sm font-semibold text-muted-foreground">Instructions:</span>
-            <p className="text-base whitespace-pre-wrap">{formData.instructions}</p>
+            <span className="text-sm font-semibold text-muted-foreground">
+              Instructions:
+            </span>
+            <p className="text-base whitespace-pre-wrap">
+              {formData.instructions}
+            </p>
           </div>
         )}
 
         <div>
-          <span className="text-sm font-semibold text-muted-foreground">Due Date:</span>
+          <span className="text-sm font-semibold text-muted-foreground">
+            Due Date:
+          </span>
           <p className="text-base">
             {new Date(formData.dueDate).toLocaleString()}
           </p>
@@ -468,7 +536,9 @@ function Step4Review({ formData }: { formData: WizardFormData }) {
 
         {formData.timeLimit && (
           <div>
-            <span className="text-sm font-semibold text-muted-foreground">Time Limit:</span>
+            <span className="text-sm font-semibold text-muted-foreground">
+              Time Limit:
+            </span>
             <p className="text-base">{formData.timeLimit} minutes</p>
           </div>
         )}

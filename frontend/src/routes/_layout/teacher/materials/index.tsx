@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useState, useMemo } from "react"
+import { Filter, FolderOpen } from "lucide-react"
+import { useId, useMemo, useState } from "react"
+import { FileUploadDropzone } from "@/components/materials/FileUploadDropzone"
+import { MaterialsTable } from "@/components/materials/MaterialsTable"
+import { ShareMaterialDialog } from "@/components/materials/ShareMaterialDialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
@@ -8,18 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Filter, FolderOpen } from "lucide-react"
-import { FileUploadDropzone } from "@/components/materials/FileUploadDropzone"
-import { MaterialsTable } from "@/components/materials/MaterialsTable"
-import { ShareMaterialDialog } from "@/components/materials/ShareMaterialDialog"
 import useCustomToast from "@/hooks/useCustomToast"
-import { mockMaterials, type Material } from "@/lib/mockData"
+import { type Material, mockMaterials } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/teacher/materials/")({
   component: MaterialsLibrary,
 })
 
 function MaterialsLibrary() {
+  // Generate unique IDs
+  const fileTypeId = useId()
+  const sharedStatusId = useId()
+
   const { showSuccessToast } = useCustomToast()
   const [materials, setMaterials] = useState<Material[]>(mockMaterials)
   const [fileTypeFilter, setFileTypeFilter] = useState<string>("all")
@@ -91,10 +95,7 @@ function MaterialsLibrary() {
   }
 
   // Handle share submit
-  const handleShareSubmit = (
-    materialId: string,
-    selectedClasses: string[],
-  ) => {
+  const handleShareSubmit = (materialId: string, selectedClasses: string[]) => {
     setMaterials((prev) =>
       prev.map((m) =>
         m.id === materialId ? { ...m, shared_with: selectedClasses } : m,
@@ -109,10 +110,7 @@ function MaterialsLibrary() {
       const updatedMaterials = existingMaterials.map((m: Material) =>
         m.id === materialId ? { ...m, shared_with: selectedClasses } : m,
       )
-      localStorage.setItem(
-        "mockMaterials",
-        JSON.stringify(updatedMaterials),
-      )
+      localStorage.setItem("mockMaterials", JSON.stringify(updatedMaterials))
     } catch (error) {
       console.error("Error updating localStorage:", error)
     }
@@ -166,13 +164,13 @@ function MaterialsLibrary() {
             {/* File Type Filter */}
             <div className="space-y-2">
               <label
-                htmlFor="fileType"
+                htmlFor={fileTypeId}
                 className="text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 File Type
               </label>
               <Select value={fileTypeFilter} onValueChange={setFileTypeFilter}>
-                <SelectTrigger id="fileType" aria-label="Select file type">
+                <SelectTrigger id={fileTypeId} aria-label="Select file type">
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,14 +185,14 @@ function MaterialsLibrary() {
             {/* Shared Status Filter */}
             <div className="space-y-2">
               <label
-                htmlFor="sharedStatus"
+                htmlFor={sharedStatusId}
                 className="text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Shared Status
               </label>
               <Select value={sharedFilter} onValueChange={setSharedFilter}>
                 <SelectTrigger
-                  id="sharedStatus"
+                  id={sharedStatusId}
                   aria-label="Select shared status"
                 >
                   <SelectValue placeholder="All materials" />

@@ -4,9 +4,9 @@
  */
 
 import { render, screen } from "@testing-library/react"
-import { describe, it, expect, vi } from "vitest"
-import { PuzzleFindWordsPlayer } from "./PuzzleFindWordsPlayer"
+import { describe, expect, it, vi } from "vitest"
 import type { PuzzleFindWordsActivity } from "@/lib/mockData"
+import { PuzzleFindWordsPlayer } from "./PuzzleFindWordsPlayer"
 
 const mockActivity: PuzzleFindWordsActivity = {
   id: "activity-1",
@@ -26,12 +26,12 @@ describe("PuzzleFindWordsPlayer", () => {
         activity={mockActivity}
         onAnswersChange={onAnswersChange}
         assignmentId={assignmentId}
-      />
+      />,
     )
 
     // Check header text is rendered
     expect(
-      screen.getByText("Find all the fruit names in the grid")
+      screen.getByText("Find all the fruit names in the grid"),
     ).toBeInTheDocument()
 
     // Check word list is rendered
@@ -48,7 +48,8 @@ describe("PuzzleFindWordsPlayer", () => {
     // Grid should be rendered - check for grid structure
     // The grid is rendered as individual letter cells
     // We can verify by checking that there are multiple letter cells
-    const container = screen.getByText("APPLE").closest("div")?.parentElement?.parentElement
+    const container = screen.getByText("APPLE").closest("div")
+      ?.parentElement?.parentElement
     expect(container).toBeInTheDocument()
 
     // Verify deterministic generation by rendering again with same assignmentId
@@ -57,7 +58,7 @@ describe("PuzzleFindWordsPlayer", () => {
         activity={mockActivity}
         onAnswersChange={vi.fn()}
         assignmentId={assignmentId}
-      />
+      />,
     )
 
     // Both renders should produce the same grid structure
@@ -78,7 +79,7 @@ describe("PuzzleFindWordsPlayer", () => {
         onAnswersChange={onAnswersChange}
         assignmentId={assignmentId}
         initialAnswers={initialAnswers}
-      />
+      />,
     )
 
     // Check that initial answer is reflected in progress

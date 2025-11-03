@@ -3,10 +3,10 @@
  * Story 2.5 - Phase 9: Testing & Verification
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
-import { describe, it, expect, vi } from "vitest"
-import { CirclePlayer } from "./CirclePlayer"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
 import type { CircleActivity } from "@/lib/mockData"
+import { CirclePlayer } from "./CirclePlayer"
 
 const mockActivity: CircleActivity = {
   id: "activity-1",
@@ -27,7 +27,10 @@ describe("CirclePlayer", () => {
     const onAnswersChange = vi.fn()
 
     render(
-      <CirclePlayer activity={mockActivity} onAnswersChange={onAnswersChange} />
+      <CirclePlayer
+        activity={mockActivity}
+        onAnswersChange={onAnswersChange}
+      />,
     )
 
     // Check background image is rendered
@@ -46,7 +49,10 @@ describe("CirclePlayer", () => {
     const onAnswersChange = vi.fn()
 
     render(
-      <CirclePlayer activity={mockActivity} onAnswersChange={onAnswersChange} />
+      <CirclePlayer
+        activity={mockActivity}
+        onAnswersChange={onAnswersChange}
+      />,
     )
 
     const selectableAreas = screen.getAllByRole("checkbox")
@@ -56,7 +62,8 @@ describe("CirclePlayer", () => {
 
     // onAnswersChange should be called
     expect(onAnswersChange).toHaveBeenCalled()
-    let callArg = onAnswersChange.mock.calls[onAnswersChange.mock.calls.length - 1][0]
+    let callArg =
+      onAnswersChange.mock.calls[onAnswersChange.mock.calls.length - 1][0]
     expect(callArg).toBeInstanceOf(Set)
     expect(callArg.has("100-100")).toBe(true)
 
@@ -74,7 +81,8 @@ describe("CirclePlayer", () => {
 
     // onAnswersChange should be called again
     expect(onAnswersChange).toHaveBeenCalled()
-    callArg = onAnswersChange.mock.calls[onAnswersChange.mock.calls.length - 1][0]
+    callArg =
+      onAnswersChange.mock.calls[onAnswersChange.mock.calls.length - 1][0]
 
     // Should have exactly 2 selections (circleCount limit)
     expect(callArg.size).toBe(2)

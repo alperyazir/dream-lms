@@ -1,7 +1,7 @@
+import { Send } from "lucide-react"
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Send } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface MessageFormProps {
@@ -53,7 +53,10 @@ export const MessageForm = React.memo(
     }
 
     return (
-      <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-700 p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="border-t border-gray-200 dark:border-gray-700 p-4"
+      >
         <div className="space-y-3">
           {/* Textarea */}
           <Textarea
@@ -89,7 +92,7 @@ export const MessageForm = React.memo(
                 className="bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSending ? (
-                  <>Sending...</>
+                  "Sending..."
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-2" />

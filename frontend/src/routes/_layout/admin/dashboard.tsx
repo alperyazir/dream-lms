@@ -1,12 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import {
   BookOpen,
-  Building,
   FileText,
   GraduationCap,
-  Mail,
-  MapPin,
-  Plus,
   School,
   UserCheck,
   Users,
@@ -25,18 +21,7 @@ import {
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { ActivityFeedItem } from "@/components/dashboard/ActivityFeedItem"
 import { StatCard } from "@/components/dashboard/StatCard"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { toast } from "@/hooks/use-toast"
 import { adminDashboardData } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/admin/dashboard")({
@@ -48,29 +33,7 @@ export const Route = createFileRoute("/_layout/admin/dashboard")({
 })
 
 function AdminDashboard() {
-  const {
-    stats,
-    schools,
-    publishers,
-    teachers,
-    activityFeed,
-    userGrowth,
-    activityByType,
-  } = adminDashboardData
-
-  const handleAddPublisher = () => {
-    toast({
-      title: "Add Publisher",
-      description: "Publisher creation feature coming soon!",
-    })
-  }
-
-  const handleAddSchool = () => {
-    toast({
-      title: "Add School",
-      description: "School creation feature coming soon!",
-    })
-  }
+  const { stats, activityFeed, userGrowth, activityByType } = adminDashboardData
 
   return (
     <div className="max-w-full p-6 space-y-8">
@@ -136,31 +99,6 @@ function AdminDashboard() {
           />
         </div>
       </div>
-
-      {/* Quick Actions */}
-      <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
-        <CardHeader>
-          <CardTitle className="text-xl">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={handleAddPublisher}
-              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Publisher
-            </Button>
-            <Button
-              onClick={handleAddSchool}
-              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-            >
-              <Building className="w-4 h-4 mr-2" />
-              Add School
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -235,177 +173,6 @@ function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Schools Overview */}
-      <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <School className="w-5 h-5 text-teal-500" />
-                Schools Overview
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Active schools in the system
-              </p>
-            </div>
-            <Button
-              onClick={handleAddSchool}
-              size="sm"
-              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add School
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>School Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead className="text-center">Teachers</TableHead>
-                <TableHead className="text-center">Students</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {schools.map((school) => (
-                <TableRow key={school.id}>
-                  <TableCell className="font-medium">{school.name}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <MapPin className="w-3 h-3" />
-                      <span className="text-sm">{school.location}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline">{school.teacherCount}</Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline">{school.studentCount}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Publishers Overview */}
-      <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-teal-500" />
-                Publishers Overview
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Content publishers in the system
-              </p>
-            </div>
-            <Button
-              onClick={handleAddPublisher}
-              size="sm"
-              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Publisher
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Publisher Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead className="text-center">Books</TableHead>
-                <TableHead className="text-center">Schools Served</TableHead>
-                <TableHead>Joined</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {publishers.map((publisher) => (
-                <TableRow key={publisher.id}>
-                  <TableCell className="font-medium">
-                    {publisher.name}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Mail className="w-3 h-3" />
-                      <span className="text-sm">{publisher.email}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline">{publisher.booksPublished}</Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline">{publisher.schoolsServed}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(publisher.joinedDate).toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      },
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Teachers Overview */}
-      <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-teal-500" />
-            Top Teachers
-          </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Most active teachers in the system
-          </p>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Teacher Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>School</TableHead>
-                <TableHead className="text-center">Classes</TableHead>
-                <TableHead className="text-center">Students</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {teachers.map((teacher) => (
-                <TableRow key={teacher.id}>
-                  <TableCell className="font-medium">{teacher.name}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Mail className="w-3 h-3" />
-                      <span className="text-sm">{teacher.email}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">{teacher.school}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline">{teacher.classCount}</Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline">{teacher.studentCount}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
 
       {/* Recent Activity Feed */}
       <Card className="shadow-neuro border-teal-100 dark:border-teal-900">

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react"
-import { describe, it, expect, vi } from "vitest"
-import { BookCard } from "./BookCard"
+import { describe, expect, it, vi } from "vitest"
 import type { Book } from "@/lib/mockData"
+import { BookCard } from "./BookCard"
 
 // Mock TanStack Router Link component
 vi.mock("@tanstack/react-router", () => ({
@@ -31,7 +31,10 @@ describe("BookCard", () => {
     // Check cover image is rendered with correct alt text
     const coverImage = screen.getByAltText("Mathematics Grade 3 cover")
     expect(coverImage).toBeInTheDocument()
-    expect(coverImage).toHaveAttribute("src", "https://via.placeholder.com/200x300?text=Math+Book")
+    expect(coverImage).toHaveAttribute(
+      "src",
+      "https://via.placeholder.com/200x300?text=Math+Book",
+    )
 
     // Check book title is rendered
     expect(screen.getByText("Mathematics Grade 3")).toBeInTheDocument()
@@ -46,7 +49,9 @@ describe("BookCard", () => {
     expect(screen.getByText("12 activities")).toBeInTheDocument()
 
     // Check "View Activities" link is present
-    const viewActivitiesLink = screen.getByRole("link", { name: /view activities/i })
+    const viewActivitiesLink = screen.getByRole("link", {
+      name: /view activities/i,
+    })
     expect(viewActivitiesLink).toBeInTheDocument()
     expect(viewActivitiesLink).toHaveAttribute("href", "/teacher/books/book-1")
   })

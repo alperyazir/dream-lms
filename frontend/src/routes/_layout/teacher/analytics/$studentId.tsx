@@ -1,16 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, Award, Clock, Target } from "lucide-react"
-import { StudentProgressChart } from "@/components/charts/StudentProgressChart"
+import { useMemo } from "react"
 import { ActivityHistoryTable } from "@/components/charts/ActivityHistoryTable"
 import { StrengthsWeaknessesCard } from "@/components/charts/StrengthsWeaknessesCard"
-import {
-  mockStudentAnalytics,
-  mockAnalyticsData,
-} from "@/lib/mockData"
+import { StudentProgressChart } from "@/components/charts/StudentProgressChart"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { mockAnalyticsData, mockStudentAnalytics } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/teacher/analytics/$studentId")({
   component: StudentAnalyticsDetail,
@@ -31,8 +28,7 @@ function StudentAnalyticsDetail() {
       mockAnalyticsData
         .filter((point) => point.student_id === studentId)
         .sort(
-          (a, b) =>
-            new Date(b.date).getTime() - new Date(a.date).getTime(),
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         ),
     [studentId],
   )

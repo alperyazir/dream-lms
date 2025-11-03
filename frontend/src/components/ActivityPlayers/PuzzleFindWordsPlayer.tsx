@@ -3,7 +3,7 @@
  * Story 2.5 - Phase 5, Tasks 5.1-5.6
  */
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { PuzzleFindWordsActivity } from "@/lib/mockData"
 import { generateWordSearch } from "@/lib/wordSearchGenerator"
 
@@ -29,13 +29,18 @@ export function PuzzleFindWordsPlayer({
   )
 
   const [foundWords, setFoundWords] = useState<Set<string>>(
-    initialAnswers || new Set()
+    initialAnswers || new Set(),
   )
-  const [selection, setSelection] = useState<Array<{ row: number; col: number }>>([])
+  const [selection, setSelection] = useState<
+    Array<{ row: number; col: number }>
+  >([])
   const [isSelecting, setIsSelecting] = useState(false)
 
   // Keyboard navigation state
-  const [focusedCell, setFocusedCell] = useState<{ row: number; col: number } | null>(null)
+  const [_focusedCell, setFocusedCell] = useState<{
+    row: number
+    col: number
+  } | null>(null)
   const cellRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   // Word colors (unique for each found word)
@@ -163,7 +168,11 @@ export function PuzzleFindWordsPlayer({
   }, [isSelecting])
 
   // Keyboard navigation: Handle arrow keys and Space/Enter
-  const handleCellKeyDown = (e: React.KeyboardEvent, row: number, col: number) => {
+  const handleCellKeyDown = (
+    e: React.KeyboardEvent,
+    row: number,
+    col: number,
+  ) => {
     if (showResults) return
 
     if (e.key === " " || e.key === "Enter") {
@@ -208,49 +217,54 @@ export function PuzzleFindWordsPlayer({
           {activity.headerText}
         </h2>
 
-        <div
-          className="inline-grid gap-1"
-          style={{
-            gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`,
-          }}
+        <table
+          className="border-separate border-spacing-1"
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          aria-label="Word search puzzle grid"
         >
-          {grid.map((row, rowIndex) =>
-            row.map((letter, colIndex) => {
-              const cellColor = getCellColor(rowIndex, colIndex)
-              const inSelection = isInSelection(rowIndex, colIndex)
+          <tbody>
+            {grid.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((letter, colIndex) => {
+                  const cellColor = getCellColor(rowIndex, colIndex)
+                  const inSelection = isInSelection(rowIndex, colIndex)
 
-              const cellKey = `${rowIndex}-${colIndex}`
+                  const cellKey = `${rowIndex}-${colIndex}`
 
-              return (
-                <div
-                  key={cellKey}
-                  ref={(el) => {
-                    if (el) cellRefs.current.set(cellKey, el)
-                    else cellRefs.current.delete(cellKey)
-                  }}
-                  onClick={() => handleCellClick(rowIndex, colIndex)}
-                  onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
-                  onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
-                  onKeyDown={(e) => handleCellKeyDown(e, rowIndex, colIndex)}
-                  tabIndex={!showResults ? 0 : -1}
-                  className={`
-                    flex h-8 w-8 cursor-pointer items-center justify-center rounded border text-sm font-bold transition-all duration-100 md:h-10 md:w-10 md:text-base
-                    ${cellColor || (inSelection ? "bg-blue-100 dark:bg-blue-900" : "bg-white dark:bg-gray-800")}
-                    ${inSelection ? "border-blue-500 shadow-md" : "border-gray-300 dark:border-gray-600"}
-                    hover:shadow-md
-                  `}
-                  style={{
-                    userSelect: "none",
-                  }}
-                >
-                  {letter}
-                </div>
-              )
-            }),
-          )}
-        </div>
+                  return (
+                    <td
+                      key={cellKey}
+                      ref={(el) => {
+                        if (el) cellRefs.current.set(cellKey, el)
+                        else cellRefs.current.delete(cellKey)
+                      }}
+                      onClick={() => handleCellClick(rowIndex, colIndex)}
+                      onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
+                      onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                      onKeyDown={(e) =>
+                        handleCellKeyDown(e, rowIndex, colIndex)
+                      }
+                      tabIndex={!showResults ? 0 : -1}
+                      aria-label={`Cell ${letter} at row ${rowIndex + 1}, column ${colIndex + 1}`}
+                      className={`
+                        h-8 w-8 cursor-pointer text-center text-sm font-bold transition-all duration-100 rounded border md:h-10 md:w-10 md:text-base
+                        ${cellColor || (inSelection ? "bg-blue-100 dark:bg-blue-900" : "bg-white dark:bg-gray-800")}
+                        ${inSelection ? "border-blue-500 shadow-md" : "border-gray-300 dark:border-gray-600"}
+                        hover:shadow-md
+                      `}
+                      style={{
+                        userSelect: "none",
+                      }}
+                    >
+                      {letter}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Right: Word List */}
@@ -271,18 +285,20 @@ export function PuzzleFindWordsPlayer({
                 key={index}
                 className={`
                   flex items-center gap-2 rounded-lg border-2 p-3 transition-all duration-200
-                  ${found
-                    ? `${getWordColor(word.toUpperCase())} border-transparent`
-                    : "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800"
+                  ${
+                    found
+                      ? `${getWordColor(word.toUpperCase())} border-transparent`
+                      : "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800"
                   }
                 `}
               >
                 <div
                   className={`
                     flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold
-                    ${found
-                      ? "bg-green-500 text-white"
-                      : "border-2 border-gray-400 text-gray-400"
+                    ${
+                      found
+                        ? "bg-green-500 text-white"
+                        : "border-2 border-gray-400 text-gray-400"
                     }
                   `}
                 >

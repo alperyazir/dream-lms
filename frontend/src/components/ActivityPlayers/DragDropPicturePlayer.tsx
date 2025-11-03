@@ -3,11 +3,8 @@
  * Story 2.5 - Phase 2, Tasks 2.1-2.4
  */
 
-import { useState, useRef, useEffect } from "react"
-import type {
-  DragDropPictureActivity,
-  DragDropAnswer,
-} from "@/lib/mockData"
+import { useEffect, useRef, useState } from "react"
+import type { DragDropAnswer, DragDropPictureActivity } from "@/lib/mockData"
 
 interface DragDropPicturePlayerProps {
   activity: DragDropPictureActivity
@@ -25,14 +22,14 @@ export function DragDropPicturePlayer({
   initialAnswers,
 }: DragDropPicturePlayerProps) {
   const [answers, setAnswers] = useState<Map<string, string>>(
-    initialAnswers || new Map()
+    initialAnswers || new Map(),
   )
   const [draggedWord, setDraggedWord] = useState<string | null>(null)
   const [selectedWord, setSelectedWord] = useState<string | null>(null) // For mobile
   const [hoveredZone, setHoveredZone] = useState<string | null>(null)
 
   // Keyboard navigation state
-  const [focusedDropZoneIndex, setFocusedDropZoneIndex] = useState<number>(-1)
+  const [_focusedDropZoneIndex, setFocusedDropZoneIndex] = useState<number>(-1)
   const dropZoneRefs = useRef<(HTMLDivElement | null)[]>([])
   const wordRefs = useRef<(HTMLDivElement | null)[]>([])
 
@@ -141,7 +138,7 @@ export function DragDropPicturePlayer({
   }
 
   // Keyboard navigation: Handle word selection with Space/Enter
-  const handleWordKeyDown = (e: React.KeyboardEvent, word: string) => {
+  const _handleWordKeyDown = (e: React.KeyboardEvent, word: string) => {
     if (showResults || usedWords.has(word)) return
 
     if (e.key === " " || e.key === "Enter") {
@@ -159,7 +156,11 @@ export function DragDropPicturePlayer({
   }
 
   // Keyboard navigation: Handle drop zone interaction with Space/Enter and arrow keys
-  const handleDropZoneKeyDown = (e: React.KeyboardEvent, dropZoneId: string, index: number) => {
+  const _handleDropZoneKeyDown = (
+    e: React.KeyboardEvent,
+    dropZoneId: string,
+    index: number,
+  ) => {
     if (showResults) return
 
     if (e.key === " " || e.key === "Enter") {
@@ -197,31 +198,36 @@ export function DragDropPicturePlayer({
         </h3>
         <div className="flex flex-wrap gap-2">
           {activity.words.map((word, index) => (
-            <div
+            <button
+              type="button"
               key={index}
-              ref={(el) => (wordRefs.current[index] = el)}
+              ref={(el) => {
+                if (el) {
+                  wordRefs.current[index] = el
+                }
+              }}
               draggable={!usedWords.has(word) && !showResults}
               onDragStart={() => handleDragStart(word)}
               onDragEnd={handleDragEnd}
               onClick={() => !showResults && handleWordClick(word)}
-              onKeyDown={(e) => handleWordKeyDown(e, word)}
               className={`
                 cursor-pointer rounded-lg border-2 px-4 py-2 font-semibold shadow-neuro-sm transition-all duration-200
-                ${usedWords.has(word)
-                  ? "pointer-events-none border-gray-300 bg-gray-100 opacity-30 dark:border-gray-600 dark:bg-gray-800"
-                  : selectedWord === word
-                    ? "border-blue-500 bg-blue-50 shadow-neuro dark:border-blue-400 dark:bg-blue-900/30"
-                    : draggedWord === word
-                      ? "scale-105 border-teal-500 bg-teal-50 shadow-neuro dark:border-teal-400 dark:bg-teal-900/30"
-                      : "border-gray-300 bg-white hover:scale-105 hover:border-teal-400 hover:shadow-neuro dark:border-gray-600 dark:bg-gray-800 dark:hover:border-teal-500"
+                ${
+                  usedWords.has(word)
+                    ? "pointer-events-none border-gray-300 bg-gray-100 opacity-30 dark:border-gray-600 dark:bg-gray-800"
+                    : selectedWord === word
+                      ? "border-blue-500 bg-blue-50 shadow-neuro dark:border-blue-400 dark:bg-blue-900/30"
+                      : draggedWord === word
+                        ? "scale-105 border-teal-500 bg-teal-50 shadow-neuro dark:border-teal-400 dark:bg-teal-900/30"
+                        : "border-gray-300 bg-white hover:scale-105 hover:border-teal-400 hover:shadow-neuro dark:border-gray-600 dark:bg-gray-800 dark:hover:border-teal-500"
                 }
               `}
-              role="button"
               tabIndex={!usedWords.has(word) && !showResults ? 0 : -1}
               aria-label={`Word: ${word}${usedWords.has(word) ? " (already used)" : ""}`}
+              disabled={usedWords.has(word)}
             >
               {word}
-            </div>
+            </button>
           ))}
         </div>
 
@@ -247,25 +253,30 @@ export function DragDropPicturePlayer({
           const correct = isCorrect(dropZoneId)
 
           return (
-            <div
+            <button
+              type="button"
               key={dropZoneId}
-              ref={(el) => (dropZoneRefs.current[index] = el)}
+              ref={(el) => {
+                if (el) {
+                  dropZoneRefs.current[index] = el
+                }
+              }}
               onDragOver={(e) => !showResults && handleDragOver(e, dropZoneId)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => !showResults && handleDrop(e, dropZoneId)}
               onClick={() => !showResults && handleDropZoneClick(dropZoneId)}
-              onKeyDown={(e) => handleDropZoneKeyDown(e, dropZoneId, index)}
               className={`
                 absolute flex items-center justify-center rounded-md transition-all duration-200
-                ${placedWord
-                  ? showResults
-                    ? correct
-                      ? "border-2 border-green-500 bg-green-100/90 text-green-900 dark:bg-green-900/70 dark:text-green-100"
-                      : "border-2 border-red-500 bg-red-100/90 text-red-900 dark:bg-red-900/70 dark:text-red-100"
-                    : "border-2 border-teal-500 bg-teal-100/90 text-teal-900 dark:bg-teal-900/70 dark:text-teal-100"
-                  : isHovered
-                    ? "border-2 border-dashed border-teal-500 bg-teal-50/50 dark:bg-teal-900/30"
-                    : "border-2 border-dashed border-gray-400 bg-white/50 hover:border-gray-500 dark:border-gray-500 dark:bg-gray-800/50"
+                ${
+                  placedWord
+                    ? showResults
+                      ? correct
+                        ? "border-2 border-green-500 bg-green-100/90 text-green-900 dark:bg-green-900/70 dark:text-green-100"
+                        : "border-2 border-red-500 bg-red-100/90 text-red-900 dark:bg-red-900/70 dark:text-red-100"
+                      : "border-2 border-teal-500 bg-teal-100/90 text-teal-900 dark:bg-teal-900/70 dark:text-teal-100"
+                    : isHovered
+                      ? "border-2 border-dashed border-teal-500 bg-teal-50/50 dark:bg-teal-900/30"
+                      : "border-2 border-dashed border-gray-400 bg-white/50 hover:border-gray-500 dark:border-gray-500 dark:bg-gray-800/50"
                 }
               `}
               style={{
@@ -274,7 +285,6 @@ export function DragDropPicturePlayer({
                 width: `${answer.coords.w}px`,
                 height: `${answer.coords.h}px`,
               }}
-              role="button"
               tabIndex={!showResults ? 0 : -1}
               aria-label={
                 placedWord
@@ -282,12 +292,14 @@ export function DragDropPicturePlayer({
                   : `Drop zone ${answer.no}: empty`
               }
               data-testid="drop-zone"
+              disabled={showResults}
             >
               {placedWord && (
                 <div className="flex items-center gap-1">
                   <span className="text-sm font-semibold">{placedWord}</span>
                   {!showResults && (
                     <button
+                      type="button"
                       onClick={(e) => handleRemove(dropZoneId, e)}
                       className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:bg-red-500 hover:text-white dark:bg-gray-700 dark:text-gray-300"
                       aria-label={`Remove ${placedWord}`}
@@ -296,13 +308,11 @@ export function DragDropPicturePlayer({
                     </button>
                   )}
                   {showResults && (
-                    <span className="ml-1">
-                      {correct ? "✓" : "✗"}
-                    </span>
+                    <span className="ml-1">{correct ? "✓" : "✗"}</span>
                   )}
                 </div>
               )}
-            </div>
+            </button>
           )
         })}
       </div>

@@ -11,7 +11,7 @@ function Navbar() {
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce(
     (total, conv) => total + conv.unread_count,
-    0
+    0,
   )
 
   return (

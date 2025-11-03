@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useState, useMemo } from "react"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { useMemo, useState } from "react"
 import { AssignmentCard } from "@/components/assignments/AssignmentCard"
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import {
-  mockAssignments,
-  mockBooks,
-  mockAssignmentStudents,
   type AssignmentFull,
   type AssignmentStudent,
+  mockAssignmentStudents,
+  mockAssignments,
+  mockBooks,
 } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/student/assignments/")({
@@ -38,12 +38,23 @@ function StudentAssignmentsContent() {
   // Categorize assignments by tab
   const categorizedAssignments = useMemo(() => {
     const now = new Date()
-    const todo: Array<{ assignment: AssignmentFull; submission: AssignmentStudent }> = []
-    const completed: Array<{ assignment: AssignmentFull; submission: AssignmentStudent }> = []
-    const pastDue: Array<{ assignment: AssignmentFull; submission: AssignmentStudent }> = []
+    const todo: Array<{
+      assignment: AssignmentFull
+      submission: AssignmentStudent
+    }> = []
+    const completed: Array<{
+      assignment: AssignmentFull
+      submission: AssignmentStudent
+    }> = []
+    const pastDue: Array<{
+      assignment: AssignmentFull
+      submission: AssignmentStudent
+    }> = []
 
     studentSubmissions.forEach((submission) => {
-      const assignment = mockAssignments.find((a) => a.id === submission.assignmentId)
+      const assignment = mockAssignments.find(
+        (a) => a.id === submission.assignmentId,
+      )
       if (!assignment) return
 
       const dueDate = new Date(assignment.due_date)
@@ -63,7 +74,10 @@ function StudentAssignmentsContent() {
       a: { assignment: AssignmentFull },
       b: { assignment: AssignmentFull },
     ) => {
-      return new Date(a.assignment.due_date).getTime() - new Date(b.assignment.due_date).getTime()
+      return (
+        new Date(a.assignment.due_date).getTime() -
+        new Date(b.assignment.due_date).getTime()
+      )
     }
 
     todo.sort(sortByDueDate)
@@ -125,6 +139,7 @@ function StudentAssignmentsContent() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex gap-6" aria-label="Assignment tabs">
             <button
+              type="button"
               onClick={() => setActiveTab("todo")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "todo"
@@ -139,6 +154,7 @@ function StudentAssignmentsContent() {
               </span>
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab("completed")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "completed"
@@ -153,6 +169,7 @@ function StudentAssignmentsContent() {
               </span>
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab("past-due")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "past-due"
@@ -172,9 +189,12 @@ function StudentAssignmentsContent() {
 
       {/* Tab Content */}
       <div className="mt-6">
-        {activeTab === "todo" && renderAssignmentGrid(categorizedAssignments.todo)}
-        {activeTab === "completed" && renderAssignmentGrid(categorizedAssignments.completed)}
-        {activeTab === "past-due" && renderAssignmentGrid(categorizedAssignments.pastDue)}
+        {activeTab === "todo" &&
+          renderAssignmentGrid(categorizedAssignments.todo)}
+        {activeTab === "completed" &&
+          renderAssignmentGrid(categorizedAssignments.completed)}
+        {activeTab === "past-due" &&
+          renderAssignmentGrid(categorizedAssignments.pastDue)}
       </div>
     </div>
   )

@@ -133,8 +133,18 @@ function canPlaceWord(
   direction: WordPlacement["direction"],
   size: number,
 ): boolean {
-  const rowDelta = direction === "vertical" || direction === "diagonal-down" ? 1 : direction === "diagonal-up" ? -1 : 0
-  const colDelta = direction === "horizontal" || direction === "diagonal-down" || direction === "diagonal-up" ? 1 : 0
+  const rowDelta =
+    direction === "vertical" || direction === "diagonal-down"
+      ? 1
+      : direction === "diagonal-up"
+        ? -1
+        : 0
+  const colDelta =
+    direction === "horizontal" ||
+    direction === "diagonal-down" ||
+    direction === "diagonal-up"
+      ? 1
+      : 0
 
   for (let i = 0; i < word.length; i++) {
     const row = startRow + i * rowDelta
@@ -164,8 +174,18 @@ function placeWord(
   startCol: number,
   direction: WordPlacement["direction"],
 ): Array<{ row: number; col: number }> {
-  const rowDelta = direction === "vertical" || direction === "diagonal-down" ? 1 : direction === "diagonal-up" ? -1 : 0
-  const colDelta = direction === "horizontal" || direction === "diagonal-down" || direction === "diagonal-up" ? 1 : 0
+  const rowDelta =
+    direction === "vertical" || direction === "diagonal-down"
+      ? 1
+      : direction === "diagonal-up"
+        ? -1
+        : 0
+  const colDelta =
+    direction === "horizontal" ||
+    direction === "diagonal-down" ||
+    direction === "diagonal-up"
+      ? 1
+      : 0
 
   const cells: Array<{ row: number; col: number }> = []
 

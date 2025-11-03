@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useState, useMemo } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { useMemo, useState } from "react"
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -11,15 +12,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import {
-  mockAssignments,
-  mockBooks,
   mockActivities,
   mockAssignmentStudents,
+  mockAssignments,
+  mockBooks,
 } from "@/lib/mockData"
 
-export const Route = createFileRoute("/_layout/teacher/assignments/$assignmentId")({
+export const Route = createFileRoute(
+  "/_layout/teacher/assignments/$assignmentId",
+)({
   component: AssignmentDetailPage,
 })
 
@@ -41,8 +43,12 @@ function AssignmentDetailContent() {
 
   // Find assignment
   const assignment = mockAssignments.find((a) => a.id === assignmentId)
-  const book = assignment ? mockBooks.find((b) => b.id === assignment.bookId) : null
-  const activity = assignment ? mockActivities.find((a) => a.id === assignment.activityId) : null
+  const book = assignment
+    ? mockBooks.find((b) => b.id === assignment.bookId)
+    : null
+  const activity = assignment
+    ? mockActivities.find((a) => a.id === assignment.activityId)
+    : null
 
   // Get student submissions for this assignment
   const studentSubmissions = mockAssignmentStudents.filter(
@@ -66,7 +72,10 @@ function AssignmentDetailContent() {
         case "completion":
           if (!a.completed_at) return 1
           if (!b.completed_at) return -1
-          return new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+          return (
+            new Date(b.completed_at).getTime() -
+            new Date(a.completed_at).getTime()
+          )
         default:
           return 0
       }
@@ -91,23 +100,13 @@ function AssignmentDetailContent() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return (
-          <Badge className="bg-green-100 text-green-800">
-            Completed
-          </Badge>
-        )
+        return <Badge className="bg-green-100 text-green-800">Completed</Badge>
       case "in_progress":
         return (
-          <Badge className="bg-yellow-100 text-yellow-800">
-            In Progress
-          </Badge>
+          <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>
         )
       case "not_started":
-        return (
-          <Badge className="bg-blue-100 text-blue-800">
-            Not Started
-          </Badge>
-        )
+        return <Badge className="bg-blue-100 text-blue-800">Not Started</Badge>
       default:
         return null
     }
@@ -136,9 +135,7 @@ function AssignmentDetailContent() {
                 <span>Activity: {activity?.title || "Unknown"}</span>
               </div>
             </div>
-            <Badge
-              className="bg-teal-100 text-teal-800"
-            >
+            <Badge className="bg-teal-100 text-teal-800">
               {assignment.completionRate}% Complete
             </Badge>
           </div>
@@ -146,7 +143,9 @@ function AssignmentDetailContent() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <span className="text-sm font-semibold text-muted-foreground">Due Date</span>
+              <span className="text-sm font-semibold text-muted-foreground">
+                Due Date
+              </span>
               <p className="text-base">
                 {new Date(assignment.due_date).toLocaleDateString()}
               </p>
@@ -159,20 +158,30 @@ function AssignmentDetailContent() {
             </div>
             {assignment.time_limit_minutes && (
               <div>
-                <span className="text-sm font-semibold text-muted-foreground">Time Limit</span>
-                <p className="text-base">{assignment.time_limit_minutes} minutes</p>
+                <span className="text-sm font-semibold text-muted-foreground">
+                  Time Limit
+                </span>
+                <p className="text-base">
+                  {assignment.time_limit_minutes} minutes
+                </p>
               </div>
             )}
             <div>
-              <span className="text-sm font-semibold text-muted-foreground">Created</span>
+              <span className="text-sm font-semibold text-muted-foreground">
+                Created
+              </span>
               <p className="text-base">
                 {new Date(assignment.created_at).toLocaleDateString()}
               </p>
             </div>
             {assignment.instructions && (
               <div className="md:col-span-2 lg:col-span-4">
-                <span className="text-sm font-semibold text-muted-foreground">Instructions</span>
-                <p className="text-base whitespace-pre-wrap">{assignment.instructions}</p>
+                <span className="text-sm font-semibold text-muted-foreground">
+                  Instructions
+                </span>
+                <p className="text-base whitespace-pre-wrap">
+                  {assignment.instructions}
+                </p>
               </div>
             )}
           </div>
@@ -214,7 +223,8 @@ function AssignmentDetailContent() {
 
         {/* Results count */}
         <div className="mb-4 text-sm text-muted-foreground">
-          Showing {filteredAndSortedSubmissions.length} of {studentSubmissions.length} students
+          Showing {filteredAndSortedSubmissions.length} of{" "}
+          {studentSubmissions.length} students
         </div>
 
         {filteredAndSortedSubmissions.length === 0 ? (
@@ -245,7 +255,9 @@ function AssignmentDetailContent() {
                         <TableCell className="font-medium">
                           {submission.studentName}
                         </TableCell>
-                        <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                        <TableCell>
+                          {getStatusBadge(submission.status)}
+                        </TableCell>
                         <TableCell>
                           {submission.score !== undefined ? (
                             <span className="font-semibold text-green-600">
@@ -265,9 +277,13 @@ function AssignmentDetailContent() {
                         <TableCell>
                           {submission.started_at ? (
                             <div>
-                              {new Date(submission.started_at).toLocaleDateString()}
+                              {new Date(
+                                submission.started_at,
+                              ).toLocaleDateString()}
                               <div className="text-xs text-muted-foreground">
-                                {new Date(submission.started_at).toLocaleTimeString([], {
+                                {new Date(
+                                  submission.started_at,
+                                ).toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })}
@@ -280,9 +296,13 @@ function AssignmentDetailContent() {
                         <TableCell>
                           {submission.completed_at ? (
                             <div>
-                              {new Date(submission.completed_at).toLocaleDateString()}
+                              {new Date(
+                                submission.completed_at,
+                              ).toLocaleDateString()}
                               <div className="text-xs text-muted-foreground">
-                                {new Date(submission.completed_at).toLocaleTimeString([], {
+                                {new Date(
+                                  submission.completed_at,
+                                ).toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })}

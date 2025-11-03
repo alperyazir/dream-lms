@@ -1,8 +1,8 @@
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import type { Book } from "@/lib/mockData"
 import { Link } from "@tanstack/react-router"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import type { Book } from "@/lib/mockData"
 
 export interface BookCardProps {
   book: Book
@@ -31,7 +31,8 @@ export function BookCard({ book }: BookCardProps) {
             {book.grade}
           </Badge>
           <Badge variant="outline">
-            {book.activityCount} {book.activityCount === 1 ? "activity" : "activities"}
+            {book.activityCount}{" "}
+            {book.activityCount === 1 ? "activity" : "activities"}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">{book.publisher}</p>

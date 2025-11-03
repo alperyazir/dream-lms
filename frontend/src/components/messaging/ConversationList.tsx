@@ -1,8 +1,8 @@
 import React from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
 import type { Conversation } from "@/lib/mockData"
+import { cn } from "@/lib/utils"
 
 export interface ConversationListProps {
   conversations: Conversation[]
@@ -99,7 +99,8 @@ export const ConversationList = React.memo(
                 <p
                   className={cn(
                     "text-sm text-gray-600 dark:text-gray-400 truncate",
-                    conversation.unread_count > 0 && "font-semibold text-gray-900 dark:text-white",
+                    conversation.unread_count > 0 &&
+                      "font-semibold text-gray-900 dark:text-white",
                   )}
                 >
                   {conversation.last_message_preview}

@@ -1,19 +1,25 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { Link as RouterLink, useLocation } from "@tanstack/react-router"
 import {
-  FiHome,
-  FiSettings,
-  FiUsers,
+  FiBarChart2,
   FiBook,
+  FiBriefcase,
   FiCalendar,
   FiClipboard,
-  FiBarChart2,
-  FiBriefcase,
+  FiHome,
+  FiSettings,
   FiTrendingUp,
+  FiUsers,
 } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
 import type { UserPublic, UserRole } from "@/client"
+import {
+  adminDashboardData,
+  mockAssignments,
+  mockBooks,
+  mockStudents,
+} from "@/lib/mockData"
 
 interface SidebarItemsProps {
   onClose?: () => void
@@ -30,33 +36,78 @@ interface Item {
 const roleMenuItems: Record<UserRole, Item[]> = {
   admin: [
     { icon: FiHome, title: "Dashboard", path: "/admin/dashboard" },
-    { icon: FiBriefcase, title: "Publishers", path: "/admin/publishers", comingSoon: true },
-    { icon: FiTrendingUp, title: "Schools", path: "/admin/schools", comingSoon: true },
-    { icon: FiUsers, title: "Teachers", path: "/admin/teachers", comingSoon: true },
-    { icon: FiBook, title: "Books", path: "/admin/books", comingSoon: true },
-    { icon: FiUsers, title: "Students", path: "/admin/students", comingSoon: true },
-    { icon: FiClipboard, title: "Assignments", path: "/admin/assignments", comingSoon: true },
+    { icon: FiBriefcase, title: "Publishers", path: "/admin/publishers" },
+    { icon: FiTrendingUp, title: "Schools", path: "/admin/schools" },
+    { icon: FiUsers, title: "Teachers", path: "/admin/teachers" },
+    { icon: FiBook, title: "Books", path: "/admin/books" },
+    { icon: FiUsers, title: "Students", path: "/admin/students" },
+    { icon: FiClipboard, title: "Assignments", path: "/admin/assignments" },
   ],
   publisher: [
     { icon: FiHome, title: "Dashboard", path: "/publisher/dashboard" },
-    { icon: FiBook, title: "Library", path: "/publisher/library", comingSoon: true },
-    { icon: FiTrendingUp, title: "Schools", path: "/publisher/schools", comingSoon: true },
-    { icon: FiUsers, title: "Teachers", path: "/publisher/teachers", comingSoon: true },
+    {
+      icon: FiBook,
+      title: "Library",
+      path: "/publisher/library",
+      comingSoon: true,
+    },
+    {
+      icon: FiTrendingUp,
+      title: "Schools",
+      path: "/publisher/schools",
+      comingSoon: true,
+    },
+    {
+      icon: FiUsers,
+      title: "Teachers",
+      path: "/publisher/teachers",
+      comingSoon: true,
+    },
   ],
   teacher: [
     { icon: FiHome, title: "Dashboard", path: "/teacher/dashboard" },
-    { icon: FiCalendar, title: "Calendar", path: "/teacher/calendar", comingSoon: true },
+    {
+      icon: FiCalendar,
+      title: "Calendar",
+      path: "/teacher/calendar",
+      comingSoon: true,
+    },
     { icon: FiBook, title: "Library", path: "/teacher/books" },
-    { icon: FiTrendingUp, title: "Classrooms", path: "/teacher/classrooms", comingSoon: true },
-    { icon: FiUsers, title: "Students", path: "/teacher/students", comingSoon: true },
+    {
+      icon: FiTrendingUp,
+      title: "Classrooms",
+      path: "/teacher/classrooms",
+      comingSoon: true,
+    },
+    {
+      icon: FiUsers,
+      title: "Students",
+      path: "/teacher/students",
+      comingSoon: true,
+    },
     { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments" },
-    { icon: FiBarChart2, title: "Reports", path: "/teacher/reports", comingSoon: true },
+    {
+      icon: FiBarChart2,
+      title: "Reports",
+      path: "/teacher/reports",
+      comingSoon: true,
+    },
   ],
   student: [
     { icon: FiHome, title: "Dashboard", path: "/student/dashboard" },
-    { icon: FiCalendar, title: "Calendar", path: "/student/calendar", comingSoon: true },
+    {
+      icon: FiCalendar,
+      title: "Calendar",
+      path: "/student/calendar",
+      comingSoon: true,
+    },
     { icon: FiClipboard, title: "Assignments", path: "/student/assignments" },
-    { icon: FiBarChart2, title: "Reports", path: "/student/reports", comingSoon: true },
+    {
+      icon: FiBarChart2,
+      title: "Reports",
+      path: "/student/reports",
+      comingSoon: true,
+    },
   ],
 }
 
@@ -68,9 +119,30 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const userRole = (currentUser?.role || "student") as UserRole
   const menuItems = roleMenuItems[userRole] || roleMenuItems.student
 
+  // Get count for each path
+  const getItemCount = (path: string): number | null => {
+    switch (path) {
+      case "/admin/publishers":
+        return adminDashboardData.publishers.length
+      case "/admin/schools":
+        return adminDashboardData.schools.length
+      case "/admin/teachers":
+        return adminDashboardData.teachers.length
+      case "/admin/books":
+        return mockBooks.length
+      case "/admin/students":
+        return mockStudents.length
+      case "/admin/assignments":
+        return mockAssignments.length
+      default:
+        return null
+    }
+  }
+
   const renderMenuItem = (item: Item) => {
     const { icon: IconComponent, title, path, comingSoon } = item
     const isActive = location.pathname === path
+    const itemCount = getItemCount(path)
 
     const content = (
       <div
@@ -83,9 +155,16 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         <IconComponent
           className={`self-center h-5 w-5 ${isActive ? "text-teal-600 dark:text-teal-400" : ""}`}
         />
-        <span className={`ml-2 ${isActive ? "font-semibold" : ""}`}>{title}</span>
+        <span className={`ml-2 flex-1 ${isActive ? "font-semibold" : ""}`}>
+          {title}
+        </span>
+        {itemCount !== null && !comingSoon && (
+          <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
+            {itemCount}
+          </span>
+        )}
         {comingSoon && (
-          <span className="ml-auto text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
+          <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
             Soon
           </span>
         )}

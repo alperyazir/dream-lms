@@ -4,14 +4,14 @@
  */
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { ActivityPlayer } from "@/components/ActivityPlayers/ActivityPlayer"
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import {
-  mockAssignments,
+  type ActivityConfig,
   mockActivities,
   mockActivityConfigs,
+  mockAssignments,
   mockBooks,
-  type ActivityConfig,
 } from "@/lib/mockData"
 
 export const Route = createFileRoute(
@@ -46,6 +46,7 @@ function ActivityPlayerContent() {
             The assignment you're looking for doesn't exist.
           </p>
           <button
+            type="button"
             onClick={() => navigate({ to: "/student/assignments" })}
             className="rounded-lg bg-teal-600 px-6 py-2 font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
           >
@@ -70,6 +71,7 @@ function ActivityPlayerContent() {
             The activity for this assignment is missing.
           </p>
           <button
+            type="button"
             onClick={() => navigate({ to: "/student/assignments" })}
             className="rounded-lg bg-teal-600 px-6 py-2 font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
           >
@@ -83,7 +85,8 @@ function ActivityPlayerContent() {
   // Find activity config by matching bookId and activity type
   const activityConfig = mockActivityConfigs.find(
     (config) =>
-      config.bookId === activity.bookId && config.type === activity.activityType,
+      config.bookId === activity.bookId &&
+      config.type === activity.activityType,
   ) as ActivityConfig | undefined
 
   if (!activityConfig) {
@@ -97,9 +100,11 @@ function ActivityPlayerContent() {
             This activity type is not yet configured.
           </p>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-500">
-            Activity Type: <span className="font-mono">{activity.activityType}</span>
+            Activity Type:{" "}
+            <span className="font-mono">{activity.activityType}</span>
           </p>
           <button
+            type="button"
             onClick={() => navigate({ to: "/student/assignments" })}
             className="rounded-lg bg-teal-600 px-6 py-2 font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
           >

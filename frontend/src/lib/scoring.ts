@@ -5,9 +5,9 @@
  */
 
 import type {
+  CircleAnswer,
   DragDropAnswer,
   MatchSentence,
-  CircleAnswer,
 } from "@/lib/mockData"
 
 export interface ScoreResult {

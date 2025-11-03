@@ -1,8 +1,8 @@
-import React, { useState, useRef } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { File, Upload, X } from "lucide-react"
+import React, { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Upload, File, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface UploadedFile {
@@ -79,13 +79,11 @@ export const FileUploadDropzone = React.memo(
       if (validFiles.length === 0) return
 
       // Add files to uploading state with initial progress
-      const uploadingFileObjects: UploadedFile[] = validFiles.map(
-        (file) => ({
-          file,
-          progress: 0,
-          id: `${file.name}-${Date.now()}`,
-        }),
-      )
+      const uploadingFileObjects: UploadedFile[] = validFiles.map((file) => ({
+        file,
+        progress: 0,
+        id: `${file.name}-${Date.now()}`,
+      }))
 
       setUploadingFiles((prev) => [...prev, ...uploadingFileObjects])
 
@@ -179,9 +177,7 @@ export const FileUploadDropzone = React.memo(
                 )}
               />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {isDragging
-                  ? "Drop files here"
-                  : "Drag and drop files here"}
+                {isDragging ? "Drop files here" : "Drag and drop files here"}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 or click to browse

@@ -1,4 +1,6 @@
 import React, { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -7,10 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { mockClasses, type Material } from "@/lib/mockData"
+import { type Material, mockClasses } from "@/lib/mockData"
 
 export interface ShareMaterialDialogProps {
   material: Material | null
@@ -24,12 +24,7 @@ export interface ShareMaterialDialogProps {
  * Allows sharing materials with classes using checkboxes
  */
 export const ShareMaterialDialog = React.memo(
-  ({
-    material,
-    open,
-    onOpenChange,
-    onShare,
-  }: ShareMaterialDialogProps) => {
+  ({ material, open, onOpenChange, onShare }: ShareMaterialDialogProps) => {
     const [selectedClasses, setSelectedClasses] = useState<string[]>(
       material?.shared_with || [],
     )
@@ -90,10 +85,7 @@ export const ShareMaterialDialog = React.memo(
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button

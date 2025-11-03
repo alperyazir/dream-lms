@@ -3,28 +3,28 @@
  * Story 2.5 - Phase 1, Task 1.1
  */
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import type {
   ActivityConfig,
+  CircleActivity,
   DragDropPictureActivity,
   MatchTheWordsActivity,
-  CircleActivity,
   PuzzleFindWordsActivity,
 } from "@/lib/mockData"
-import { ActivityHeader } from "./ActivityHeader"
-import { ActivityFooter } from "./ActivityFooter"
-import { ActivityResults, type ScoreResult } from "./ActivityResults"
-import { DragDropPicturePlayer } from "./DragDropPicturePlayer"
-import { MatchTheWordsPlayer } from "./MatchTheWordsPlayer"
-import { CirclePlayer } from "./CirclePlayer"
-import { PuzzleFindWordsPlayer } from "./PuzzleFindWordsPlayer"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import {
+  scoreCircle,
   scoreDragDrop,
   scoreMatch,
-  scoreCircle,
   scoreWordSearch,
 } from "@/lib/scoring"
+import { ActivityFooter } from "./ActivityFooter"
+import { ActivityHeader } from "./ActivityHeader"
+import { ActivityResults, type ScoreResult } from "./ActivityResults"
+import { CirclePlayer } from "./CirclePlayer"
+import { DragDropPicturePlayer } from "./DragDropPicturePlayer"
+import { MatchTheWordsPlayer } from "./MatchTheWordsPlayer"
+import { PuzzleFindWordsPlayer } from "./PuzzleFindWordsPlayer"
 
 interface ActivityPlayerProps {
   activityConfig: ActivityConfig
@@ -66,11 +66,12 @@ export function ActivityPlayer({
       // Save to localStorage for now (can be Zustand store later)
       try {
         // Convert Map/Set to serializable format
-        const serializableAnswers = answers instanceof Map
-          ? Array.from(answers.entries())
-          : answers instanceof Set
-            ? Array.from(answers)
-            : answers
+        const serializableAnswers =
+          answers instanceof Map
+            ? Array.from(answers.entries())
+            : answers instanceof Set
+              ? Array.from(answers)
+              : answers
 
         localStorage.setItem(
           `activity_progress_${assignmentId}`,
@@ -95,10 +96,17 @@ export function ActivityPlayer({
       if (saved) {
         const { answers: savedAnswers } = JSON.parse(saved)
         // Convert saved answers to appropriate type based on activity
-        if (activityConfig.type === "dragdroppicture" || activityConfig.type === "matchTheWords") {
+        if (
+          activityConfig.type === "dragdroppicture" ||
+          activityConfig.type === "matchTheWords"
+        ) {
           // Convert array of entries back to Map
           setAnswers(new Map(savedAnswers))
-        } else if (activityConfig.type === "circle" || activityConfig.type === "markwithx" || activityConfig.type === "puzzleFindWords") {
+        } else if (
+          activityConfig.type === "circle" ||
+          activityConfig.type === "markwithx" ||
+          activityConfig.type === "puzzleFindWords"
+        ) {
           // Convert array back to Set
           setAnswers(new Set(savedAnswers))
         }
@@ -162,7 +170,9 @@ export function ActivityPlayer({
       score = scoreWordSearch(foundWords, config.words)
 
       // Add all found words to correct set for results view
-      foundWords.forEach((word) => correctSet.add(word))
+      for (const word of foundWords) {
+        correctSet.add(word)
+      }
     } else {
       // Mock score for other activity types (to be implemented)
       score = {
@@ -198,11 +208,12 @@ export function ActivityPlayer({
     setIsSaving(true)
     try {
       // Convert Map/Set to serializable format
-      const serializableAnswers = answers instanceof Map
-        ? Array.from(answers.entries())
-        : answers instanceof Set
-          ? Array.from(answers)
-          : answers
+      const serializableAnswers =
+        answers instanceof Map
+          ? Array.from(answers.entries())
+          : answers instanceof Set
+            ? Array.from(answers)
+            : answers
 
       localStorage.setItem(
         `activity_progress_${assignmentId}`,
@@ -238,6 +249,7 @@ export function ActivityPlayer({
             Something went wrong while loading this activity.
           </p>
           <button
+            type="button"
             onClick={onExit}
             className="rounded-lg bg-teal-600 px-6 py-2 font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
           >

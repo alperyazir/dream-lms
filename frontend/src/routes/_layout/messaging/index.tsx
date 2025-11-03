@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useState, useMemo } from "react"
+import { ArrowLeft, Inbox, Plus, Search, User } from "lucide-react"
+import { useMemo, useState } from "react"
+import { ConversationList } from "@/components/messaging/ConversationList"
+import { MessageForm } from "@/components/messaging/MessageForm"
+import { MessageThread } from "@/components/messaging/MessageThread"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Search, Plus, Inbox, ArrowLeft, User } from "lucide-react"
-import { ConversationList } from "@/components/messaging/ConversationList"
-import { MessageThread } from "@/components/messaging/MessageThread"
-import { MessageForm } from "@/components/messaging/MessageForm"
-import { mockConversations, type Message } from "@/lib/mockData"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { type Message, mockConversations } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/messaging/")({
   component: MessagingInbox,
@@ -18,16 +18,14 @@ export const Route = createFileRoute("/_layout/messaging/")({
 
 function MessagingInbox() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    string | null
+  >(null)
   const debouncedSearch = useDebouncedValue(searchTerm, 300)
 
   // Calculate total unread count
   const totalUnread = useMemo(
-    () =>
-      mockConversations.reduce(
-        (sum, conv) => sum + conv.unread_count,
-        0,
-      ),
+    () => mockConversations.reduce((sum, conv) => sum + conv.unread_count, 0),
     [],
   )
 
@@ -50,8 +48,11 @@ function MessagingInbox() {
 
   // Get selected conversation
   const selectedConversation = useMemo(
-    () => selectedConversationId ? mockConversations.find((c) => c.id === selectedConversationId) : null,
-    [selectedConversationId]
+    () =>
+      selectedConversationId
+        ? mockConversations.find((c) => c.id === selectedConversationId)
+        : null,
+    [selectedConversationId],
   )
 
   // Local messages state for selected conversation

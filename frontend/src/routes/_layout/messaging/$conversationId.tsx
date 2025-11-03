@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { useState, useMemo } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, User } from "lucide-react"
-import { MessageThread } from "@/components/messaging/MessageThread"
+import { useMemo, useState } from "react"
 import { MessageForm } from "@/components/messaging/MessageForm"
-import { mockConversations, type Message } from "@/lib/mockData"
+import { MessageThread } from "@/components/messaging/MessageThread"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { type Message, mockConversations } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/messaging/$conversationId")({
   component: ConversationView,

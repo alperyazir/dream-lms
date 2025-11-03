@@ -50,7 +50,11 @@ export function ActivityResults({
         {/* Score Circle */}
         <div className="mx-auto mb-6 flex h-64 w-64 items-center justify-center">
           <div className="relative">
-            <svg className="h-64 w-64 -rotate-90 transform">
+            <svg
+              className="h-64 w-64 -rotate-90 transform"
+              role="img"
+              aria-label="Score progress circle"
+            >
               {/* Background circle */}
               <circle
                 cx="128"
@@ -77,13 +81,12 @@ export function ActivityResults({
             </svg>
             {/* Score text in center */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span
+              <output
                 className={`text-5xl font-bold ${getScoreColor()}`}
-                role="status"
                 aria-label={`Your score is ${score} percent`}
               >
                 {score}%
-              </span>
+              </output>
               <span className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 {correct} / {total} correct
               </span>

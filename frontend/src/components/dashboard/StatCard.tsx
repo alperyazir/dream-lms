@@ -35,9 +35,8 @@ export function StatCard({ icon, label, value, trend }: StatCardProps) {
               {value}
             </h3>
             {trend && (
-              <div
+              <output
                 className="flex items-center gap-1 mt-2"
-                role="status"
                 aria-label={`Trend: ${trend.direction === "up" ? "increasing" : "decreasing"} by ${trend.value} percent`}
               >
                 {trend.direction === "up" ? (
@@ -58,7 +57,7 @@ export function StatCard({ icon, label, value, trend }: StatCardProps) {
                 >
                   {trend.value}%
                 </span>
-              </div>
+              </output>
             )}
           </div>
           <div

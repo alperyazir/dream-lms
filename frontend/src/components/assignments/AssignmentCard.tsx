@@ -1,8 +1,8 @@
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import type { AssignmentFull, Book, AssignmentStudent } from "@/lib/mockData"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { useCountdown } from "@/hooks/useCountdown"
+import type { AssignmentFull, AssignmentStudent, Book } from "@/lib/mockData"
 
 export interface AssignmentCardProps {
   assignment: AssignmentFull
@@ -15,7 +15,11 @@ export interface AssignmentCardProps {
  *
  * Displays an assignment card for students with status, countdown timer, and action button.
  */
-export function AssignmentCard({ assignment, book, submission }: AssignmentCardProps) {
+export function AssignmentCard({
+  assignment,
+  book,
+  submission,
+}: AssignmentCardProps) {
   const { timeLeft, isPastDue } = useCountdown(assignment.due_date)
 
   const status = submission?.status || "not_started"
@@ -41,7 +45,9 @@ export function AssignmentCard({ assignment, book, submission }: AssignmentCardP
             <h3 className="text-lg font-semibold mb-1 line-clamp-2">
               {assignment.name}
             </h3>
-            <p className="text-sm text-muted-foreground line-clamp-1">{book.title}</p>
+            <p className="text-sm text-muted-foreground line-clamp-1">
+              {book.title}
+            </p>
           </div>
           <Badge className={statusColors[status]}>{statusLabels[status]}</Badge>
         </div>
