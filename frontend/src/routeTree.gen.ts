@@ -19,6 +19,9 @@ import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutMessagingIndexRouteImport } from './routes/_layout/messaging/index'
 import { Route as LayoutTeacherDashboardRouteImport } from './routes/_layout/teacher/dashboard'
 import { Route as LayoutStudentDashboardRouteImport } from './routes/_layout/student/dashboard'
+import { Route as LayoutPublisherTeachersRouteImport } from './routes/_layout/publisher/teachers'
+import { Route as LayoutPublisherSchoolsRouteImport } from './routes/_layout/publisher/schools'
+import { Route as LayoutPublisherLibraryRouteImport } from './routes/_layout/publisher/library'
 import { Route as LayoutPublisherDashboardRouteImport } from './routes/_layout/publisher/dashboard'
 import { Route as LayoutMessagingConversationIdRouteImport } from './routes/_layout/messaging/$conversationId'
 import { Route as LayoutAdminUsersRouteImport } from './routes/_layout/admin.users'
@@ -86,6 +89,21 @@ const LayoutTeacherDashboardRoute = LayoutTeacherDashboardRouteImport.update({
 const LayoutStudentDashboardRoute = LayoutStudentDashboardRouteImport.update({
   id: '/student/dashboard',
   path: '/student/dashboard',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutPublisherTeachersRoute = LayoutPublisherTeachersRouteImport.update({
+  id: '/publisher/teachers',
+  path: '/publisher/teachers',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutPublisherSchoolsRoute = LayoutPublisherSchoolsRouteImport.update({
+  id: '/publisher/schools',
+  path: '/publisher/schools',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutPublisherLibraryRoute = LayoutPublisherLibraryRouteImport.update({
+  id: '/publisher/library',
+  path: '/publisher/library',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutPublisherDashboardRoute =
@@ -211,6 +229,9 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof LayoutAdminUsersRoute
   '/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
   '/publisher/dashboard': typeof LayoutPublisherDashboardRoute
+  '/publisher/library': typeof LayoutPublisherLibraryRoute
+  '/publisher/schools': typeof LayoutPublisherSchoolsRoute
+  '/publisher/teachers': typeof LayoutPublisherTeachersRoute
   '/student/dashboard': typeof LayoutStudentDashboardRoute
   '/teacher/dashboard': typeof LayoutTeacherDashboardRoute
   '/messaging': typeof LayoutMessagingIndexRoute
@@ -241,6 +262,9 @@ export interface FileRoutesByTo {
   '/admin/users': typeof LayoutAdminUsersRoute
   '/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
   '/publisher/dashboard': typeof LayoutPublisherDashboardRoute
+  '/publisher/library': typeof LayoutPublisherLibraryRoute
+  '/publisher/schools': typeof LayoutPublisherSchoolsRoute
+  '/publisher/teachers': typeof LayoutPublisherTeachersRoute
   '/student/dashboard': typeof LayoutStudentDashboardRoute
   '/teacher/dashboard': typeof LayoutTeacherDashboardRoute
   '/messaging': typeof LayoutMessagingIndexRoute
@@ -273,6 +297,9 @@ export interface FileRoutesById {
   '/_layout/admin/users': typeof LayoutAdminUsersRoute
   '/_layout/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
   '/_layout/publisher/dashboard': typeof LayoutPublisherDashboardRoute
+  '/_layout/publisher/library': typeof LayoutPublisherLibraryRoute
+  '/_layout/publisher/schools': typeof LayoutPublisherSchoolsRoute
+  '/_layout/publisher/teachers': typeof LayoutPublisherTeachersRoute
   '/_layout/student/dashboard': typeof LayoutStudentDashboardRoute
   '/_layout/teacher/dashboard': typeof LayoutTeacherDashboardRoute
   '/_layout/messaging/': typeof LayoutMessagingIndexRoute
@@ -305,6 +332,9 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/messaging/$conversationId'
     | '/publisher/dashboard'
+    | '/publisher/library'
+    | '/publisher/schools'
+    | '/publisher/teachers'
     | '/student/dashboard'
     | '/teacher/dashboard'
     | '/messaging'
@@ -335,6 +365,9 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/messaging/$conversationId'
     | '/publisher/dashboard'
+    | '/publisher/library'
+    | '/publisher/schools'
+    | '/publisher/teachers'
     | '/student/dashboard'
     | '/teacher/dashboard'
     | '/messaging'
@@ -366,6 +399,9 @@ export interface FileRouteTypes {
     | '/_layout/admin/users'
     | '/_layout/messaging/$conversationId'
     | '/_layout/publisher/dashboard'
+    | '/_layout/publisher/library'
+    | '/_layout/publisher/schools'
+    | '/_layout/publisher/teachers'
     | '/_layout/student/dashboard'
     | '/_layout/teacher/dashboard'
     | '/_layout/messaging/'
@@ -458,6 +494,27 @@ declare module '@tanstack/react-router' {
       path: '/student/dashboard'
       fullPath: '/student/dashboard'
       preLoaderRoute: typeof LayoutStudentDashboardRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/publisher/teachers': {
+      id: '/_layout/publisher/teachers'
+      path: '/publisher/teachers'
+      fullPath: '/publisher/teachers'
+      preLoaderRoute: typeof LayoutPublisherTeachersRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/publisher/schools': {
+      id: '/_layout/publisher/schools'
+      path: '/publisher/schools'
+      fullPath: '/publisher/schools'
+      preLoaderRoute: typeof LayoutPublisherSchoolsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/publisher/library': {
+      id: '/_layout/publisher/library'
+      path: '/publisher/library'
+      fullPath: '/publisher/library'
+      preLoaderRoute: typeof LayoutPublisherLibraryRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/publisher/dashboard': {
@@ -609,6 +666,9 @@ interface LayoutRouteChildren {
   LayoutAdminUsersRoute: typeof LayoutAdminUsersRoute
   LayoutMessagingConversationIdRoute: typeof LayoutMessagingConversationIdRoute
   LayoutPublisherDashboardRoute: typeof LayoutPublisherDashboardRoute
+  LayoutPublisherLibraryRoute: typeof LayoutPublisherLibraryRoute
+  LayoutPublisherSchoolsRoute: typeof LayoutPublisherSchoolsRoute
+  LayoutPublisherTeachersRoute: typeof LayoutPublisherTeachersRoute
   LayoutStudentDashboardRoute: typeof LayoutStudentDashboardRoute
   LayoutTeacherDashboardRoute: typeof LayoutTeacherDashboardRoute
   LayoutMessagingIndexRoute: typeof LayoutMessagingIndexRoute
@@ -636,6 +696,9 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminUsersRoute: LayoutAdminUsersRoute,
   LayoutMessagingConversationIdRoute: LayoutMessagingConversationIdRoute,
   LayoutPublisherDashboardRoute: LayoutPublisherDashboardRoute,
+  LayoutPublisherLibraryRoute: LayoutPublisherLibraryRoute,
+  LayoutPublisherSchoolsRoute: LayoutPublisherSchoolsRoute,
+  LayoutPublisherTeachersRoute: LayoutPublisherTeachersRoute,
   LayoutStudentDashboardRoute: LayoutStudentDashboardRoute,
   LayoutTeacherDashboardRoute: LayoutTeacherDashboardRoute,
   LayoutMessagingIndexRoute: LayoutMessagingIndexRoute,

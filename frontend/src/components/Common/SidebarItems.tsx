@@ -19,6 +19,7 @@ import {
   mockAssignments,
   mockBooks,
   mockStudents,
+  publisherDashboardData,
 } from "@/lib/mockData"
 
 interface SidebarItemsProps {
@@ -49,19 +50,16 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       icon: FiBook,
       title: "Library",
       path: "/publisher/library",
-      comingSoon: true,
     },
     {
       icon: FiTrendingUp,
       title: "Schools",
       path: "/publisher/schools",
-      comingSoon: true,
     },
     {
       icon: FiUsers,
       title: "Teachers",
       path: "/publisher/teachers",
-      comingSoon: true,
     },
   ],
   teacher: [
@@ -134,6 +132,12 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         return mockStudents.length
       case "/admin/assignments":
         return mockAssignments.length
+      case "/publisher/library":
+        return publisherDashboardData.books.length
+      case "/publisher/schools":
+        return publisherDashboardData.schools.length
+      case "/publisher/teachers":
+        return adminDashboardData.teachers.length
       default:
         return null
     }

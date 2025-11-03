@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, Link as LinkIcon, Plus, School, Users } from "lucide-react"
+import { BookOpen, School, Users } from "lucide-react"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { BookCard } from "@/components/dashboard/BookCard"
 import { SchoolCard } from "@/components/dashboard/SchoolCard"
 import { StatCard } from "@/components/dashboard/StatCard"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "@/hooks/use-toast"
 import { publisherDashboardData } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/publisher/dashboard")({
@@ -19,20 +16,6 @@ export const Route = createFileRoute("/_layout/publisher/dashboard")({
 
 function PublisherDashboard() {
   const { schools, books, stats } = publisherDashboardData
-
-  const handleCreateTeacher = () => {
-    toast({
-      title: "Create Teacher",
-      description: "Teacher creation feature coming soon!",
-    })
-  }
-
-  const handleAssignBook = () => {
-    toast({
-      title: "Assign Book",
-      description: "Book assignment feature coming soon!",
-    })
-  }
 
   return (
     <div className="max-w-full p-6 space-y-8">
@@ -64,31 +47,6 @@ function PublisherDashboard() {
           value={stats.teachersCreated}
         />
       </div>
-
-      {/* Quick Actions */}
-      <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
-        <CardHeader>
-          <CardTitle className="text-xl">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={handleCreateTeacher}
-              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Teacher
-            </Button>
-            <Button
-              onClick={handleAssignBook}
-              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-            >
-              <LinkIcon className="w-4 h-4 mr-2" />
-              Assign Book
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* My Schools Section */}
       <div>
