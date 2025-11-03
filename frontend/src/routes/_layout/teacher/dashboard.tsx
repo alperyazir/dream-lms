@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, FileText, Plus } from "lucide-react"
+import { FileText } from "lucide-react"
 import {
   Bar,
   BarChart,
@@ -15,9 +15,7 @@ import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { AssignmentRow } from "@/components/dashboard/AssignmentRow"
 import { ClassCard } from "@/components/dashboard/ClassCard"
 import { DeadlineItem } from "@/components/dashboard/DeadlineItem"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "@/hooks/use-toast"
 import { teacherDashboardData } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/teacher/dashboard")({
@@ -37,20 +35,6 @@ function TeacherDashboard() {
     completionTrend,
   } = teacherDashboardData
 
-  const handleCreateAssignment = () => {
-    toast({
-      title: "Create Assignment",
-      description: "Assignment creation feature coming soon!",
-    })
-  }
-
-  const handleCreateClass = () => {
-    toast({
-      title: "Create Class",
-      description: "Class creation feature coming soon!",
-    })
-  }
-
   return (
     <div className="max-w-full p-6 space-y-8">
       {/* Header */}
@@ -62,31 +46,6 @@ function TeacherDashboard() {
           Manage your classes and assignments
         </p>
       </div>
-
-      {/* Quick Actions */}
-      <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
-        <CardHeader>
-          <CardTitle className="text-xl">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={handleCreateAssignment}
-              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Assignment
-            </Button>
-            <Button
-              onClick={handleCreateClass}
-              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              Create Class
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* My Classes */}
       <div>

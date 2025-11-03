@@ -68,27 +68,23 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       icon: FiCalendar,
       title: "Calendar",
       path: "/teacher/calendar",
-      comingSoon: true,
     },
     { icon: FiBook, title: "Library", path: "/teacher/books" },
     {
       icon: FiTrendingUp,
       title: "Classrooms",
       path: "/teacher/classrooms",
-      comingSoon: true,
     },
     {
       icon: FiUsers,
       title: "Students",
       path: "/teacher/students",
-      comingSoon: true,
     },
     { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments" },
     {
       icon: FiBarChart2,
       title: "Reports",
       path: "/teacher/reports",
-      comingSoon: true,
     },
   ],
   student: [
@@ -97,14 +93,12 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       icon: FiCalendar,
       title: "Calendar",
       path: "/student/calendar",
-      comingSoon: true,
     },
     { icon: FiClipboard, title: "Assignments", path: "/student/assignments" },
     {
       icon: FiBarChart2,
       title: "Reports",
       path: "/student/reports",
-      comingSoon: true,
     },
   ],
 }
