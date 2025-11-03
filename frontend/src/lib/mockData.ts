@@ -272,6 +272,68 @@ export interface Achievement {
 }
 
 // ============================================================================
+// ANALYTICS, MESSAGING, MATERIALS TYPE DEFINITIONS (Story 2.6)
+// ============================================================================
+
+export interface AnalyticsDataPoint {
+  id: string
+  date: string // ISO 8601 date
+  student_id: string
+  activity_type:
+    | "dragdroppicture"
+    | "dragdroppicturegroup"
+    | "matchTheWords"
+    | "circle"
+    | "markwithx"
+    | "puzzleFindWords"
+  score: number // 0-100
+  time_spent_minutes: number
+  assignment_id: string
+}
+
+export interface StudentAnalytics {
+  student_id: string
+  student_name: string
+  avg_score: number
+  completed_count: number
+  strengths: string[] // Activity types with high scores
+  weaknesses: string[] // Activity types needing improvement
+  recent_scores: number[] // Last 10 scores for trend analysis
+}
+
+export interface Message {
+  id: string
+  from_id: string
+  from_name: string
+  to_id: string
+  to_name: string
+  subject: string
+  body: string
+  timestamp: string // ISO 8601
+  read: boolean
+}
+
+export interface Conversation {
+  id: string
+  participant_id: string
+  participant_name: string
+  participant_avatar: string
+  messages: Message[]
+  unread_count: number
+  last_message_preview: string
+  last_message_timestamp: string
+}
+
+export interface Material {
+  id: string
+  name: string
+  type: "pdf" | "image" | "video"
+  size: number // in bytes
+  uploaded_at: string // ISO 8601
+  shared_with: string[] // Array of class IDs or student IDs
+}
+
+// ============================================================================
 // ADMIN DASHBOARD DATA
 // ============================================================================
 
@@ -1686,5 +1748,530 @@ export const mockAssignmentStudents: AssignmentStudent[] = [
     started_at: getRelativeDateTime(-3, 14, 0),
     completed_at: getRelativeDateTime(-3, 14, 28),
     time_spent_minutes: 28,
+  },
+]
+
+// ============================================================================
+// ANALYTICS, MESSAGING, MATERIALS MOCK DATA (Story 2.6)
+// ============================================================================
+
+/**
+ * Mock Analytics Data Points - 60+ data points covering last 30 days
+ */
+export const mockAnalyticsData: AnalyticsDataPoint[] = [
+  // Student 1 - Alex Johnson (High performer)
+  { id: "a1", date: getRelativeDate(-29), student_id: "1", activity_type: "dragdroppicture", score: 88, time_spent_minutes: 22, assignment_id: "1" },
+  { id: "a2", date: getRelativeDate(-27), student_id: "1", activity_type: "matchTheWords", score: 92, time_spent_minutes: 18, assignment_id: "2" },
+  { id: "a3", date: getRelativeDate(-25), student_id: "1", activity_type: "circle", score: 95, time_spent_minutes: 15, assignment_id: "3" },
+  { id: "a4", date: getRelativeDate(-22), student_id: "1", activity_type: "puzzleFindWords", score: 90, time_spent_minutes: 20, assignment_id: "4" },
+  { id: "a5", date: getRelativeDate(-20), student_id: "1", activity_type: "dragdroppicturegroup", score: 93, time_spent_minutes: 25, assignment_id: "5" },
+  { id: "a6", date: getRelativeDate(-18), student_id: "1", activity_type: "markwithx", score: 87, time_spent_minutes: 17, assignment_id: "6" },
+  { id: "a7", date: getRelativeDate(-15), student_id: "1", activity_type: "dragdroppicture", score: 91, time_spent_minutes: 21, assignment_id: "7" },
+  { id: "a8", date: getRelativeDate(-12), student_id: "1", activity_type: "matchTheWords", score: 94, time_spent_minutes: 19, assignment_id: "8" },
+  { id: "a9", date: getRelativeDate(-10), student_id: "1", activity_type: "circle", score: 96, time_spent_minutes: 14, assignment_id: "9" },
+  { id: "a10", date: getRelativeDate(-7), student_id: "1", activity_type: "puzzleFindWords", score: 89, time_spent_minutes: 23, assignment_id: "10" },
+
+  // Student 2 - Maria Garcia (Average performer)
+  { id: "a11", date: getRelativeDate(-28), student_id: "2", activity_type: "matchTheWords", score: 78, time_spent_minutes: 25, assignment_id: "1" },
+  { id: "a12", date: getRelativeDate(-26), student_id: "2", activity_type: "dragdroppicture", score: 82, time_spent_minutes: 28, assignment_id: "2" },
+  { id: "a13", date: getRelativeDate(-24), student_id: "2", activity_type: "circle", score: 75, time_spent_minutes: 22, assignment_id: "3" },
+  { id: "a14", date: getRelativeDate(-21), student_id: "2", activity_type: "markwithx", score: 80, time_spent_minutes: 24, assignment_id: "4" },
+  { id: "a15", date: getRelativeDate(-19), student_id: "2", activity_type: "puzzleFindWords", score: 83, time_spent_minutes: 26, assignment_id: "5" },
+  { id: "a16", date: getRelativeDate(-17), student_id: "2", activity_type: "dragdroppicturegroup", score: 79, time_spent_minutes: 30, assignment_id: "6" },
+  { id: "a17", date: getRelativeDate(-14), student_id: "2", activity_type: "matchTheWords", score: 81, time_spent_minutes: 23, assignment_id: "7" },
+  { id: "a18", date: getRelativeDate(-11), student_id: "2", activity_type: "dragdroppicture", score: 84, time_spent_minutes: 27, assignment_id: "8" },
+  { id: "a19", date: getRelativeDate(-9), student_id: "2", activity_type: "circle", score: 77, time_spent_minutes: 21, assignment_id: "9" },
+  { id: "a20", date: getRelativeDate(-6), student_id: "2", activity_type: "puzzleFindWords", score: 85, time_spent_minutes: 25, assignment_id: "10" },
+
+  // Student 3 - James Wilson (Excellent performer)
+  { id: "a21", date: getRelativeDate(-29), student_id: "3", activity_type: "circle", score: 97, time_spent_minutes: 12, assignment_id: "1" },
+  { id: "a22", date: getRelativeDate(-27), student_id: "3", activity_type: "dragdroppicture", score: 95, time_spent_minutes: 15, assignment_id: "2" },
+  { id: "a23", date: getRelativeDate(-25), student_id: "3", activity_type: "matchTheWords", score: 98, time_spent_minutes: 14, assignment_id: "3" },
+  { id: "a24", date: getRelativeDate(-22), student_id: "3", activity_type: "puzzleFindWords", score: 96, time_spent_minutes: 16, assignment_id: "4" },
+  { id: "a25", date: getRelativeDate(-20), student_id: "3", activity_type: "markwithx", score: 94, time_spent_minutes: 13, assignment_id: "5" },
+  { id: "a26", date: getRelativeDate(-18), student_id: "3", activity_type: "dragdroppicturegroup", score: 99, time_spent_minutes: 18, assignment_id: "6" },
+  { id: "a27", date: getRelativeDate(-15), student_id: "3", activity_type: "circle", score: 97, time_spent_minutes: 11, assignment_id: "7" },
+  { id: "a28", date: getRelativeDate(-12), student_id: "3", activity_type: "dragdroppicture", score: 95, time_spent_minutes: 14, assignment_id: "8" },
+  { id: "a29", date: getRelativeDate(-10), student_id: "3", activity_type: "matchTheWords", score: 98, time_spent_minutes: 15, assignment_id: "9" },
+  { id: "a30", date: getRelativeDate(-7), student_id: "3", activity_type: "puzzleFindWords", score: 100, time_spent_minutes: 17, assignment_id: "10" },
+
+  // Student 4 - Emily Chen (Struggling with puzzles)
+  { id: "a31", date: getRelativeDate(-28), student_id: "4", activity_type: "dragdroppicture", score: 72, time_spent_minutes: 30, assignment_id: "1" },
+  { id: "a32", date: getRelativeDate(-26), student_id: "4", activity_type: "matchTheWords", score: 76, time_spent_minutes: 28, assignment_id: "2" },
+  { id: "a33", date: getRelativeDate(-24), student_id: "4", activity_type: "puzzleFindWords", score: 58, time_spent_minutes: 35, assignment_id: "3" },
+  { id: "a34", date: getRelativeDate(-21), student_id: "4", activity_type: "circle", score: 74, time_spent_minutes: 26, assignment_id: "4" },
+  { id: "a35", date: getRelativeDate(-19), student_id: "4", activity_type: "markwithx", score: 70, time_spent_minutes: 29, assignment_id: "5" },
+  { id: "a36", date: getRelativeDate(-17), student_id: "4", activity_type: "puzzleFindWords", score: 62, time_spent_minutes: 38, assignment_id: "6" },
+  { id: "a37", date: getRelativeDate(-14), student_id: "4", activity_type: "dragdroppicturegroup", score: 75, time_spent_minutes: 32, assignment_id: "7" },
+  { id: "a38", date: getRelativeDate(-11), student_id: "4", activity_type: "matchTheWords", score: 78, time_spent_minutes: 27, assignment_id: "8" },
+  { id: "a39", date: getRelativeDate(-9), student_id: "4", activity_type: "puzzleFindWords", score: 65, time_spent_minutes: 36, assignment_id: "9" },
+  { id: "a40", date: getRelativeDate(-6), student_id: "4", activity_type: "circle", score: 73, time_spent_minutes: 25, assignment_id: "10" },
+
+  // Student 5 - Michael Brown (Consistent mid-range)
+  { id: "a41", date: getRelativeDate(-29), student_id: "5", activity_type: "matchTheWords", score: 85, time_spent_minutes: 20, assignment_id: "1" },
+  { id: "a42", date: getRelativeDate(-27), student_id: "5", activity_type: "dragdroppicture", score: 83, time_spent_minutes: 24, assignment_id: "2" },
+  { id: "a43", date: getRelativeDate(-25), student_id: "5", activity_type: "circle", score: 86, time_spent_minutes: 19, assignment_id: "3" },
+  { id: "a44", date: getRelativeDate(-22), student_id: "5", activity_type: "puzzleFindWords", score: 84, time_spent_minutes: 22, assignment_id: "4" },
+  { id: "a45", date: getRelativeDate(-20), student_id: "5", activity_type: "markwithx", score: 82, time_spent_minutes: 23, assignment_id: "5" },
+  { id: "a46", date: getRelativeDate(-18), student_id: "5", activity_type: "dragdroppicturegroup", score: 85, time_spent_minutes: 26, assignment_id: "6" },
+  { id: "a47", date: getRelativeDate(-15), student_id: "5", activity_type: "matchTheWords", score: 87, time_spent_minutes: 21, assignment_id: "7" },
+  { id: "a48", date: getRelativeDate(-12), student_id: "5", activity_type: "dragdroppicture", score: 84, time_spent_minutes: 23, assignment_id: "8" },
+  { id: "a49", date: getRelativeDate(-10), student_id: "5", activity_type: "circle", score: 86, time_spent_minutes: 20, assignment_id: "9" },
+  { id: "a50", date: getRelativeDate(-7), student_id: "5", activity_type: "puzzleFindWords", score: 85, time_spent_minutes: 24, assignment_id: "10" },
+
+  // Additional data points for more students (6-8)
+  { id: "a51", date: getRelativeDate(-28), student_id: "6", activity_type: "dragdroppicture", score: 90, time_spent_minutes: 21, assignment_id: "1" },
+  { id: "a52", date: getRelativeDate(-25), student_id: "6", activity_type: "matchTheWords", score: 88, time_spent_minutes: 19, assignment_id: "2" },
+  { id: "a53", date: getRelativeDate(-20), student_id: "6", activity_type: "circle", score: 92, time_spent_minutes: 17, assignment_id: "3" },
+  { id: "a54", date: getRelativeDate(-15), student_id: "6", activity_type: "puzzleFindWords", score: 87, time_spent_minutes: 22, assignment_id: "4" },
+  { id: "a55", date: getRelativeDate(-10), student_id: "6", activity_type: "markwithx", score: 89, time_spent_minutes: 20, assignment_id: "5" },
+
+  { id: "a56", date: getRelativeDate(-27), student_id: "7", activity_type: "matchTheWords", score: 68, time_spent_minutes: 32, assignment_id: "1" },
+  { id: "a57", date: getRelativeDate(-24), student_id: "7", activity_type: "dragdroppicture", score: 71, time_spent_minutes: 29, assignment_id: "2" },
+  { id: "a58", date: getRelativeDate(-19), student_id: "7", activity_type: "circle", score: 69, time_spent_minutes: 27, assignment_id: "3" },
+  { id: "a59", date: getRelativeDate(-14), student_id: "7", activity_type: "puzzleFindWords", score: 73, time_spent_minutes: 31, assignment_id: "4" },
+  { id: "a60", date: getRelativeDate(-9), student_id: "7", activity_type: "markwithx", score: 70, time_spent_minutes: 28, assignment_id: "5" },
+
+  { id: "a61", date: getRelativeDate(-26), student_id: "8", activity_type: "dragdroppicture", score: 91, time_spent_minutes: 18, assignment_id: "1" },
+  { id: "a62", date: getRelativeDate(-23), student_id: "8", activity_type: "matchTheWords", score: 93, time_spent_minutes: 16, assignment_id: "2" },
+  { id: "a63", date: getRelativeDate(-18), student_id: "8", activity_type: "circle", score: 89, time_spent_minutes: 20, assignment_id: "3" },
+  { id: "a64", date: getRelativeDate(-13), student_id: "8", activity_type: "puzzleFindWords", score: 92, time_spent_minutes: 19, assignment_id: "4" },
+  { id: "a65", date: getRelativeDate(-8), student_id: "8", activity_type: "markwithx", score: 90, time_spent_minutes: 17, assignment_id: "5" },
+]
+
+/**
+ * Mock Student Analytics - Aggregate performance data for 8 students
+ */
+export const mockStudentAnalytics: StudentAnalytics[] = [
+  {
+    student_id: "1",
+    student_name: "Alex Johnson",
+    avg_score: 91,
+    completed_count: 10,
+    strengths: ["circle", "matchTheWords", "dragdroppicturegroup"],
+    weaknesses: ["markwithx"],
+    recent_scores: [88, 92, 95, 90, 93, 87, 91, 94, 96, 89],
+  },
+  {
+    student_id: "2",
+    student_name: "Maria Garcia",
+    avg_score: 80,
+    completed_count: 10,
+    strengths: ["puzzleFindWords", "dragdroppicture"],
+    weaknesses: ["circle", "matchTheWords"],
+    recent_scores: [78, 82, 75, 80, 83, 79, 81, 84, 77, 85],
+  },
+  {
+    student_id: "3",
+    student_name: "James Wilson",
+    avg_score: 97,
+    completed_count: 10,
+    strengths: ["matchTheWords", "dragdroppicturegroup", "circle"],
+    weaknesses: [],
+    recent_scores: [97, 95, 98, 96, 94, 99, 97, 95, 98, 100],
+  },
+  {
+    student_id: "4",
+    student_name: "Emily Chen",
+    avg_score: 70,
+    completed_count: 10,
+    strengths: ["matchTheWords", "dragdroppicturegroup"],
+    weaknesses: ["puzzleFindWords", "markwithx"],
+    recent_scores: [72, 76, 58, 74, 70, 62, 75, 78, 65, 73],
+  },
+  {
+    student_id: "5",
+    student_name: "Michael Brown",
+    avg_score: 85,
+    completed_count: 10,
+    strengths: ["matchTheWords", "circle"],
+    weaknesses: ["markwithx"],
+    recent_scores: [85, 83, 86, 84, 82, 85, 87, 84, 86, 85],
+  },
+  {
+    student_id: "6",
+    student_name: "Sarah Davis",
+    avg_score: 89,
+    completed_count: 5,
+    strengths: ["circle", "dragdroppicture"],
+    weaknesses: ["puzzleFindWords"],
+    recent_scores: [90, 88, 92, 87, 89],
+  },
+  {
+    student_id: "7",
+    student_name: "David Martinez",
+    avg_score: 70,
+    completed_count: 5,
+    strengths: ["puzzleFindWords"],
+    weaknesses: ["matchTheWords", "circle"],
+    recent_scores: [68, 71, 69, 73, 70],
+  },
+  {
+    student_id: "8",
+    student_name: "Lisa Anderson",
+    avg_score: 91,
+    completed_count: 5,
+    strengths: ["matchTheWords", "puzzleFindWords"],
+    weaknesses: [],
+    recent_scores: [91, 93, 89, 92, 90],
+  },
+]
+
+/**
+ * Mock Messages - 20+ messages across 5 conversations
+ */
+const mockMessagesRaw: Message[] = [
+  // Conversation 1: Teacher <-> Emily Chen's Parent
+  {
+    id: "msg1",
+    from_id: "teacher1",
+    from_name: "Dr. Sarah Johnson",
+    to_id: "parent1",
+    to_name: "Mrs. Chen",
+    subject: "Emily's Progress in Math",
+    body: "Hello Mrs. Chen, I wanted to discuss Emily's recent performance in math activities. She's doing well overall but seems to struggle with word puzzles. Would you like to schedule a meeting?",
+    timestamp: getRelativeDateTime(-5, 14, 30),
+    read: true,
+  },
+  {
+    id: "msg2",
+    from_id: "parent1",
+    from_name: "Mrs. Chen",
+    to_id: "teacher1",
+    to_name: "Dr. Sarah Johnson",
+    subject: "Re: Emily's Progress in Math",
+    body: "Thank you for reaching out! Yes, I've noticed she takes longer on puzzle activities at home too. A meeting would be great. Are afternoons this week convenient for you?",
+    timestamp: getRelativeDateTime(-5, 16, 45),
+    read: true,
+  },
+  {
+    id: "msg3",
+    from_id: "teacher1",
+    from_name: "Dr. Sarah Johnson",
+    to_id: "parent1",
+    to_name: "Mrs. Chen",
+    subject: "Re: Emily's Progress in Math",
+    body: "Wednesday at 3:30 PM works perfectly. I'll send you a calendar invite. We can discuss strategies to help Emily improve her puzzle-solving skills.",
+    timestamp: getRelativeDateTime(-4, 10, 15),
+    read: true,
+  },
+  {
+    id: "msg4",
+    from_id: "parent1",
+    from_name: "Mrs. Chen",
+    to_id: "teacher1",
+    to_name: "Dr. Sarah Johnson",
+    subject: "Re: Emily's Progress in Math",
+    body: "Perfect! Looking forward to it. Should I bring Emily or is this parent-teacher only?",
+    timestamp: getRelativeDateTime(-4, 11, 20),
+    read: false,
+  },
+
+  // Conversation 2: Teacher <-> Alex Johnson's Parent
+  {
+    id: "msg5",
+    from_id: "parent2",
+    from_name: "Mr. Johnson",
+    to_id: "teacher1",
+    to_name: "Dr. Sarah Johnson",
+    subject: "Thank you!",
+    body: "Hi Dr. Johnson, I just wanted to thank you for the extra attention you've been giving Alex. His confidence has really grown this semester!",
+    timestamp: getRelativeDateTime(-3, 9, 0),
+    read: true,
+  },
+  {
+    id: "msg6",
+    from_id: "teacher1",
+    from_name: "Dr. Sarah Johnson",
+    to_id: "parent2",
+    to_name: "Mr. Johnson",
+    subject: "Re: Thank you!",
+    body: "It's wonderful to hear that! Alex is a pleasure to teach. He's consistently one of the top performers in class and always helps his classmates.",
+    timestamp: getRelativeDateTime(-3, 14, 30),
+    read: true,
+  },
+
+  // Conversation 3: Teacher <-> James Wilson's Parent
+  {
+    id: "msg7",
+    from_id: "teacher1",
+    from_name: "Dr. Sarah Johnson",
+    to_id: "parent3",
+    to_name: "Dr. Wilson",
+    subject: "James's Exceptional Performance",
+    body: "Good afternoon Dr. Wilson, I wanted to let you know that James scored 100% on his latest assignment! His problem-solving skills are truly impressive.",
+    timestamp: getRelativeDateTime(-2, 15, 45),
+    read: true,
+  },
+  {
+    id: "msg8",
+    from_id: "parent3",
+    from_name: "Dr. Wilson",
+    to_id: "teacher1",
+    to_name: "Dr. Sarah Johnson",
+    subject: "Re: James's Exceptional Performance",
+    body: "That's fantastic news! We're so proud of him. Thank you for challenging him and keeping him engaged in learning.",
+    timestamp: getRelativeDateTime(-2, 18, 20),
+    read: true,
+  },
+  {
+    id: "msg9",
+    from_id: "teacher1",
+    from_name: "Dr. Sarah Johnson",
+    to_id: "parent3",
+    to_name: "Dr. Wilson",
+    subject: "Re: James's Exceptional Performance",
+    body: "Of course! I'm also considering recommending him for the advanced math program next year. Would you be interested in discussing this further?",
+    timestamp: getRelativeDateTime(-1, 10, 30),
+    read: false,
+  },
+
+  // Conversation 4: Teacher <-> Maria Garcia's Parent
+  {
+    id: "msg10",
+    from_id: "parent4",
+    from_name: "Ms. Garcia",
+    to_id: "teacher1",
+    to_name: "Dr. Sarah Johnson",
+    subject: "Assignment Question",
+    body: "Hello Dr. Johnson, Maria is working on the matching words assignment and has a question about the instructions. Can you clarify what 'match by context' means?",
+    timestamp: getRelativeDateTime(-1, 19, 15),
+    read: true,
+  },
+  {
+    id: "msg11",
+    from_id: "teacher1",
+    from_name: "Dr. Sarah Johnson",
+    to_id: "parent4",
+    to_name: "Ms. Garcia",
+    subject: "Re: Assignment Question",
+    body: "Of course! 'Match by context' means reading the full sentence and finding which word makes the most sense. I'll send Maria a helpful video link tomorrow that explains the strategy.",
+    timestamp: getRelativeDateTime(-1, 20, 30),
+    read: true,
+  },
+  {
+    id: "msg12",
+    from_id: "parent4",
+    from_name: "Ms. Garcia",
+    to_id: "teacher1",
+    to_name: "Dr. Sarah Johnson",
+    subject: "Re: Assignment Question",
+    body: "Thank you so much! That really helps. Maria is excited to try the video.",
+    timestamp: getRelativeDateTime(0, 8, 45),
+    read: false,
+  },
+
+  // Conversation 5: Teacher <-> School Principal
+  {
+    id: "msg13",
+    from_id: "principal",
+    from_name: "Principal Roberts",
+    to_id: "teacher1",
+    to_name: "Dr. Sarah Johnson",
+    subject: "Next Week's Curriculum Meeting",
+    body: "Hi Sarah, can you prepare a 5-minute presentation on the Dream LMS platform for next Tuesday's curriculum meeting? The board is interested in our digital learning initiatives.",
+    timestamp: getRelativeDateTime(-7, 11, 0),
+    read: true,
+  },
+  {
+    id: "msg14",
+    from_id: "teacher1",
+    from_name: "Dr. Sarah Johnson",
+    to_id: "principal",
+    to_name: "Principal Roberts",
+    subject: "Re: Next Week's Curriculum Meeting",
+    body: "Absolutely! I'd be happy to showcase how we're using the platform and share some student success metrics. I'll have the presentation ready by Monday.",
+    timestamp: getRelativeDateTime(-7, 13, 30),
+    read: true,
+  },
+  {
+    id: "msg15",
+    from_id: "principal",
+    from_name: "Principal Roberts",
+    to_id: "teacher1",
+    to_name: "Dr. Sarah Johnson",
+    subject: "Re: Next Week's Curriculum Meeting",
+    body: "Perfect! Also, bring examples of student work if you can. The board loves seeing real results.",
+    timestamp: getRelativeDateTime(-6, 9, 15),
+    read: true,
+  },
+  {
+    id: "msg16",
+    from_id: "teacher1",
+    from_name: "Dr. Sarah Johnson",
+    to_id: "principal",
+    to_name: "Principal Roberts",
+    subject: "Re: Next Week's Curriculum Meeting",
+    body: "Will do! I'll include before/after analytics and some anonymized student assignment samples.",
+    timestamp: getRelativeDateTime(-6, 10, 45),
+    read: false,
+  },
+]
+
+/**
+ * Mock Conversations - 5 conversation threads
+ */
+export const mockConversations: Conversation[] = [
+  {
+    id: "conv1",
+    participant_id: "parent1",
+    participant_name: "Mrs. Chen",
+    participant_avatar: "MC",
+    messages: mockMessagesRaw.filter(m =>
+      (m.from_id === "parent1" || m.to_id === "parent1")
+    ),
+    unread_count: 1,
+    last_message_preview: "Perfect! Looking forward to it. Should I bring Emily or is this parent-teacher only?",
+    last_message_timestamp: getRelativeDateTime(-4, 11, 20),
+  },
+  {
+    id: "conv2",
+    participant_id: "parent2",
+    participant_name: "Mr. Johnson",
+    participant_avatar: "MJ",
+    messages: mockMessagesRaw.filter(m =>
+      (m.from_id === "parent2" || m.to_id === "parent2")
+    ),
+    unread_count: 0,
+    last_message_preview: "It's wonderful to hear that! Alex is a pleasure to teach...",
+    last_message_timestamp: getRelativeDateTime(-3, 14, 30),
+  },
+  {
+    id: "conv3",
+    participant_id: "parent3",
+    participant_name: "Dr. Wilson",
+    participant_avatar: "DW",
+    messages: mockMessagesRaw.filter(m =>
+      (m.from_id === "parent3" || m.to_id === "parent3")
+    ),
+    unread_count: 1,
+    last_message_preview: "I'm also considering recommending him for the advanced math program...",
+    last_message_timestamp: getRelativeDateTime(-1, 10, 30),
+  },
+  {
+    id: "conv4",
+    participant_id: "parent4",
+    participant_name: "Ms. Garcia",
+    participant_avatar: "MG",
+    messages: mockMessagesRaw.filter(m =>
+      (m.from_id === "parent4" || m.to_id === "parent4")
+    ),
+    unread_count: 1,
+    last_message_preview: "Thank you so much! That really helps. Maria is excited to try the video.",
+    last_message_timestamp: getRelativeDateTime(0, 8, 45),
+  },
+  {
+    id: "conv5",
+    participant_id: "principal",
+    participant_name: "Principal Roberts",
+    participant_avatar: "PR",
+    messages: mockMessagesRaw.filter(m =>
+      (m.from_id === "principal" || m.to_id === "principal")
+    ),
+    unread_count: 1,
+    last_message_preview: "Will do! I'll include before/after analytics and some anonymized student...",
+    last_message_timestamp: getRelativeDateTime(-6, 10, 45),
+  },
+]
+
+/**
+ * Mock Materials - 12 educational materials with various file types
+ */
+export const mockMaterials: Material[] = [
+  {
+    id: "mat1",
+    name: "Grammar Rules Reference Guide.pdf",
+    type: "pdf",
+    size: 2458000, // ~2.4 MB
+    uploaded_at: getRelativeDateTime(-15, 10, 0),
+    shared_with: ["1", "2"], // Math 101, Science Advanced classes
+  },
+  {
+    id: "mat2",
+    name: "Math Formulas Cheat Sheet.pdf",
+    type: "pdf",
+    size: 1250000, // ~1.2 MB
+    uploaded_at: getRelativeDateTime(-12, 14, 30),
+    shared_with: ["1"], // Math 101 class
+  },
+  {
+    id: "mat3",
+    name: "Parts of Speech Poster.png",
+    type: "image",
+    size: 580000, // ~580 KB
+    uploaded_at: getRelativeDateTime(-10, 9, 15),
+    shared_with: ["1", "3"], // Math 101, English Literature
+  },
+  {
+    id: "mat4",
+    name: "Introduction to Fractions Video.mp4",
+    type: "video",
+    size: 8500000, // ~8.5 MB
+    uploaded_at: getRelativeDateTime(-9, 16, 45),
+    shared_with: ["1"], // Math 101 class
+  },
+  {
+    id: "mat5",
+    name: "Science Lab Safety Guide.pdf",
+    type: "pdf",
+    size: 3200000, // ~3.2 MB
+    uploaded_at: getRelativeDateTime(-8, 11, 20),
+    shared_with: ["2"], // Science Advanced class
+  },
+  {
+    id: "mat6",
+    name: "Multiplication Table Chart.png",
+    type: "image",
+    size: 450000, // ~450 KB
+    uploaded_at: getRelativeDateTime(-7, 13, 0),
+    shared_with: ["1"], // Math 101 class
+  },
+  {
+    id: "mat7",
+    name: "Reading Comprehension Strategies.pdf",
+    type: "pdf",
+    size: 1850000, // ~1.8 MB
+    uploaded_at: getRelativeDateTime(-6, 15, 30),
+    shared_with: ["3"], // English Literature class
+  },
+  {
+    id: "mat8",
+    name: "Solar System Diagram.png",
+    type: "image",
+    size: 720000, // ~720 KB
+    uploaded_at: getRelativeDateTime(-5, 10, 45),
+    shared_with: ["2"], // Science Advanced class
+  },
+  {
+    id: "mat9",
+    name: "How to Solve Word Problems.mp4",
+    type: "video",
+    size: 6400000, // ~6.4 MB
+    uploaded_at: getRelativeDateTime(-4, 14, 15),
+    shared_with: ["1"], // Math 101 class
+  },
+  {
+    id: "mat10",
+    name: "Vocabulary Building Worksheet.pdf",
+    type: "pdf",
+    size: 980000, // ~980 KB
+    uploaded_at: getRelativeDateTime(-3, 9, 30),
+    shared_with: ["3"], // English Literature class
+  },
+  {
+    id: "mat11",
+    name: "Geometry Shapes Reference.png",
+    type: "image",
+    size: 520000, // ~520 KB
+    uploaded_at: getRelativeDateTime(-2, 11, 0),
+    shared_with: ["1"], // Math 101 class
+  },
+  {
+    id: "mat12",
+    name: "Phonics Practice Guide.pdf",
+    type: "pdf",
+    size: 1400000, // ~1.4 MB
+    uploaded_at: getRelativeDateTime(-1, 16, 20),
+    shared_with: [], // Not shared yet
   },
 ]

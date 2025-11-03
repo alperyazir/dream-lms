@@ -16,16 +16,21 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutMessagingIndexRouteImport } from './routes/_layout/messaging/index'
 import { Route as LayoutTeacherDashboardRouteImport } from './routes/_layout/teacher/dashboard'
 import { Route as LayoutStudentDashboardRouteImport } from './routes/_layout/student/dashboard'
 import { Route as LayoutPublisherDashboardRouteImport } from './routes/_layout/publisher/dashboard'
+import { Route as LayoutMessagingConversationIdRouteImport } from './routes/_layout/messaging/$conversationId'
 import { Route as LayoutAdminUsersRouteImport } from './routes/_layout/admin.users'
 import { Route as LayoutAdminDashboardRouteImport } from './routes/_layout/admin/dashboard'
+import { Route as LayoutTeacherMaterialsIndexRouteImport } from './routes/_layout/teacher/materials/index'
 import { Route as LayoutTeacherBooksIndexRouteImport } from './routes/_layout/teacher/books/index'
 import { Route as LayoutTeacherAssignmentsIndexRouteImport } from './routes/_layout/teacher/assignments/index'
+import { Route as LayoutTeacherAnalyticsIndexRouteImport } from './routes/_layout/teacher/analytics/index'
 import { Route as LayoutStudentAssignmentsIndexRouteImport } from './routes/_layout/student/assignments/index'
 import { Route as LayoutTeacherBooksBookIdRouteImport } from './routes/_layout/teacher/books/$bookId'
 import { Route as LayoutTeacherAssignmentsAssignmentIdRouteImport } from './routes/_layout/teacher/assignments/$assignmentId'
+import { Route as LayoutTeacherAnalyticsStudentIdRouteImport } from './routes/_layout/teacher/analytics/$studentId'
 import { Route as LayoutStudentAssignmentsAssignmentIdPlayRouteImport } from './routes/_layout/student/assignments/$assignmentId/play'
 
 const SignupRoute = SignupRouteImport.update({
@@ -62,6 +67,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutMessagingIndexRoute = LayoutMessagingIndexRouteImport.update({
+  id: '/messaging/',
+  path: '/messaging/',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutTeacherDashboardRoute = LayoutTeacherDashboardRouteImport.update({
   id: '/teacher/dashboard',
   path: '/teacher/dashboard',
@@ -78,6 +88,12 @@ const LayoutPublisherDashboardRoute =
     path: '/publisher/dashboard',
     getParentRoute: () => LayoutRoute,
   } as any)
+const LayoutMessagingConversationIdRoute =
+  LayoutMessagingConversationIdRouteImport.update({
+    id: '/messaging/$conversationId',
+    path: '/messaging/$conversationId',
+    getParentRoute: () => LayoutRoute,
+  } as any)
 const LayoutAdminUsersRoute = LayoutAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -88,6 +104,12 @@ const LayoutAdminDashboardRoute = LayoutAdminDashboardRouteImport.update({
   path: '/admin/dashboard',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTeacherMaterialsIndexRoute =
+  LayoutTeacherMaterialsIndexRouteImport.update({
+    id: '/teacher/materials/',
+    path: '/teacher/materials/',
+    getParentRoute: () => LayoutRoute,
+  } as any)
 const LayoutTeacherBooksIndexRoute = LayoutTeacherBooksIndexRouteImport.update({
   id: '/teacher/books/',
   path: '/teacher/books/',
@@ -97,6 +119,12 @@ const LayoutTeacherAssignmentsIndexRoute =
   LayoutTeacherAssignmentsIndexRouteImport.update({
     id: '/teacher/assignments/',
     path: '/teacher/assignments/',
+    getParentRoute: () => LayoutRoute,
+  } as any)
+const LayoutTeacherAnalyticsIndexRoute =
+  LayoutTeacherAnalyticsIndexRouteImport.update({
+    id: '/teacher/analytics/',
+    path: '/teacher/analytics/',
     getParentRoute: () => LayoutRoute,
   } as any)
 const LayoutStudentAssignmentsIndexRoute =
@@ -117,6 +145,12 @@ const LayoutTeacherAssignmentsAssignmentIdRoute =
     path: '/teacher/assignments/$assignmentId',
     getParentRoute: () => LayoutRoute,
   } as any)
+const LayoutTeacherAnalyticsStudentIdRoute =
+  LayoutTeacherAnalyticsStudentIdRouteImport.update({
+    id: '/teacher/analytics/$studentId',
+    path: '/teacher/analytics/$studentId',
+    getParentRoute: () => LayoutRoute,
+  } as any)
 const LayoutStudentAssignmentsAssignmentIdPlayRoute =
   LayoutStudentAssignmentsAssignmentIdPlayRouteImport.update({
     id: '/student/assignments/$assignmentId/play',
@@ -133,14 +167,19 @@ export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/admin/dashboard': typeof LayoutAdminDashboardRoute
   '/admin/users': typeof LayoutAdminUsersRoute
+  '/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
   '/publisher/dashboard': typeof LayoutPublisherDashboardRoute
   '/student/dashboard': typeof LayoutStudentDashboardRoute
   '/teacher/dashboard': typeof LayoutTeacherDashboardRoute
+  '/messaging': typeof LayoutMessagingIndexRoute
+  '/teacher/analytics/$studentId': typeof LayoutTeacherAnalyticsStudentIdRoute
   '/teacher/assignments/$assignmentId': typeof LayoutTeacherAssignmentsAssignmentIdRoute
   '/teacher/books/$bookId': typeof LayoutTeacherBooksBookIdRoute
   '/student/assignments': typeof LayoutStudentAssignmentsIndexRoute
+  '/teacher/analytics': typeof LayoutTeacherAnalyticsIndexRoute
   '/teacher/assignments': typeof LayoutTeacherAssignmentsIndexRoute
   '/teacher/books': typeof LayoutTeacherBooksIndexRoute
+  '/teacher/materials': typeof LayoutTeacherMaterialsIndexRoute
   '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
 }
 export interface FileRoutesByTo {
@@ -152,14 +191,19 @@ export interface FileRoutesByTo {
   '/': typeof LayoutIndexRoute
   '/admin/dashboard': typeof LayoutAdminDashboardRoute
   '/admin/users': typeof LayoutAdminUsersRoute
+  '/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
   '/publisher/dashboard': typeof LayoutPublisherDashboardRoute
   '/student/dashboard': typeof LayoutStudentDashboardRoute
   '/teacher/dashboard': typeof LayoutTeacherDashboardRoute
+  '/messaging': typeof LayoutMessagingIndexRoute
+  '/teacher/analytics/$studentId': typeof LayoutTeacherAnalyticsStudentIdRoute
   '/teacher/assignments/$assignmentId': typeof LayoutTeacherAssignmentsAssignmentIdRoute
   '/teacher/books/$bookId': typeof LayoutTeacherBooksBookIdRoute
   '/student/assignments': typeof LayoutStudentAssignmentsIndexRoute
+  '/teacher/analytics': typeof LayoutTeacherAnalyticsIndexRoute
   '/teacher/assignments': typeof LayoutTeacherAssignmentsIndexRoute
   '/teacher/books': typeof LayoutTeacherBooksIndexRoute
+  '/teacher/materials': typeof LayoutTeacherMaterialsIndexRoute
   '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
 }
 export interface FileRoutesById {
@@ -173,14 +217,19 @@ export interface FileRoutesById {
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/admin/dashboard': typeof LayoutAdminDashboardRoute
   '/_layout/admin/users': typeof LayoutAdminUsersRoute
+  '/_layout/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
   '/_layout/publisher/dashboard': typeof LayoutPublisherDashboardRoute
   '/_layout/student/dashboard': typeof LayoutStudentDashboardRoute
   '/_layout/teacher/dashboard': typeof LayoutTeacherDashboardRoute
+  '/_layout/messaging/': typeof LayoutMessagingIndexRoute
+  '/_layout/teacher/analytics/$studentId': typeof LayoutTeacherAnalyticsStudentIdRoute
   '/_layout/teacher/assignments/$assignmentId': typeof LayoutTeacherAssignmentsAssignmentIdRoute
   '/_layout/teacher/books/$bookId': typeof LayoutTeacherBooksBookIdRoute
   '/_layout/student/assignments/': typeof LayoutStudentAssignmentsIndexRoute
+  '/_layout/teacher/analytics/': typeof LayoutTeacherAnalyticsIndexRoute
   '/_layout/teacher/assignments/': typeof LayoutTeacherAssignmentsIndexRoute
   '/_layout/teacher/books/': typeof LayoutTeacherBooksIndexRoute
+  '/_layout/teacher/materials/': typeof LayoutTeacherMaterialsIndexRoute
   '/_layout/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
 }
 export interface FileRouteTypes {
@@ -194,14 +243,19 @@ export interface FileRouteTypes {
     | '/'
     | '/admin/dashboard'
     | '/admin/users'
+    | '/messaging/$conversationId'
     | '/publisher/dashboard'
     | '/student/dashboard'
     | '/teacher/dashboard'
+    | '/messaging'
+    | '/teacher/analytics/$studentId'
     | '/teacher/assignments/$assignmentId'
     | '/teacher/books/$bookId'
     | '/student/assignments'
+    | '/teacher/analytics'
     | '/teacher/assignments'
     | '/teacher/books'
+    | '/teacher/materials'
     | '/student/assignments/$assignmentId/play'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -213,14 +267,19 @@ export interface FileRouteTypes {
     | '/'
     | '/admin/dashboard'
     | '/admin/users'
+    | '/messaging/$conversationId'
     | '/publisher/dashboard'
     | '/student/dashboard'
     | '/teacher/dashboard'
+    | '/messaging'
+    | '/teacher/analytics/$studentId'
     | '/teacher/assignments/$assignmentId'
     | '/teacher/books/$bookId'
     | '/student/assignments'
+    | '/teacher/analytics'
     | '/teacher/assignments'
     | '/teacher/books'
+    | '/teacher/materials'
     | '/student/assignments/$assignmentId/play'
   id:
     | '__root__'
@@ -233,14 +292,19 @@ export interface FileRouteTypes {
     | '/_layout/'
     | '/_layout/admin/dashboard'
     | '/_layout/admin/users'
+    | '/_layout/messaging/$conversationId'
     | '/_layout/publisher/dashboard'
     | '/_layout/student/dashboard'
     | '/_layout/teacher/dashboard'
+    | '/_layout/messaging/'
+    | '/_layout/teacher/analytics/$studentId'
     | '/_layout/teacher/assignments/$assignmentId'
     | '/_layout/teacher/books/$bookId'
     | '/_layout/student/assignments/'
+    | '/_layout/teacher/analytics/'
     | '/_layout/teacher/assignments/'
     | '/_layout/teacher/books/'
+    | '/_layout/teacher/materials/'
     | '/_layout/student/assignments/$assignmentId/play'
   fileRoutesById: FileRoutesById
 }
@@ -303,6 +367,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/messaging/': {
+      id: '/_layout/messaging/'
+      path: '/messaging'
+      fullPath: '/messaging'
+      preLoaderRoute: typeof LayoutMessagingIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/teacher/dashboard': {
       id: '/_layout/teacher/dashboard'
       path: '/teacher/dashboard'
@@ -324,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutPublisherDashboardRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/messaging/$conversationId': {
+      id: '/_layout/messaging/$conversationId'
+      path: '/messaging/$conversationId'
+      fullPath: '/messaging/$conversationId'
+      preLoaderRoute: typeof LayoutMessagingConversationIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/admin/users': {
       id: '/_layout/admin/users'
       path: '/admin/users'
@@ -338,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminDashboardRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/teacher/materials/': {
+      id: '/_layout/teacher/materials/'
+      path: '/teacher/materials'
+      fullPath: '/teacher/materials'
+      preLoaderRoute: typeof LayoutTeacherMaterialsIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/teacher/books/': {
       id: '/_layout/teacher/books/'
       path: '/teacher/books'
@@ -350,6 +435,13 @@ declare module '@tanstack/react-router' {
       path: '/teacher/assignments'
       fullPath: '/teacher/assignments'
       preLoaderRoute: typeof LayoutTeacherAssignmentsIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/teacher/analytics/': {
+      id: '/_layout/teacher/analytics/'
+      path: '/teacher/analytics'
+      fullPath: '/teacher/analytics'
+      preLoaderRoute: typeof LayoutTeacherAnalyticsIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/student/assignments/': {
@@ -373,6 +465,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutTeacherAssignmentsAssignmentIdRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/teacher/analytics/$studentId': {
+      id: '/_layout/teacher/analytics/$studentId'
+      path: '/teacher/analytics/$studentId'
+      fullPath: '/teacher/analytics/$studentId'
+      preLoaderRoute: typeof LayoutTeacherAnalyticsStudentIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/student/assignments/$assignmentId/play': {
       id: '/_layout/student/assignments/$assignmentId/play'
       path: '/student/assignments/$assignmentId/play'
@@ -388,14 +487,19 @@ interface LayoutRouteChildren {
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutAdminDashboardRoute: typeof LayoutAdminDashboardRoute
   LayoutAdminUsersRoute: typeof LayoutAdminUsersRoute
+  LayoutMessagingConversationIdRoute: typeof LayoutMessagingConversationIdRoute
   LayoutPublisherDashboardRoute: typeof LayoutPublisherDashboardRoute
   LayoutStudentDashboardRoute: typeof LayoutStudentDashboardRoute
   LayoutTeacherDashboardRoute: typeof LayoutTeacherDashboardRoute
+  LayoutMessagingIndexRoute: typeof LayoutMessagingIndexRoute
+  LayoutTeacherAnalyticsStudentIdRoute: typeof LayoutTeacherAnalyticsStudentIdRoute
   LayoutTeacherAssignmentsAssignmentIdRoute: typeof LayoutTeacherAssignmentsAssignmentIdRoute
   LayoutTeacherBooksBookIdRoute: typeof LayoutTeacherBooksBookIdRoute
   LayoutStudentAssignmentsIndexRoute: typeof LayoutStudentAssignmentsIndexRoute
+  LayoutTeacherAnalyticsIndexRoute: typeof LayoutTeacherAnalyticsIndexRoute
   LayoutTeacherAssignmentsIndexRoute: typeof LayoutTeacherAssignmentsIndexRoute
   LayoutTeacherBooksIndexRoute: typeof LayoutTeacherBooksIndexRoute
+  LayoutTeacherMaterialsIndexRoute: typeof LayoutTeacherMaterialsIndexRoute
   LayoutStudentAssignmentsAssignmentIdPlayRoute: typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
 }
 
@@ -404,15 +508,20 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutAdminDashboardRoute: LayoutAdminDashboardRoute,
   LayoutAdminUsersRoute: LayoutAdminUsersRoute,
+  LayoutMessagingConversationIdRoute: LayoutMessagingConversationIdRoute,
   LayoutPublisherDashboardRoute: LayoutPublisherDashboardRoute,
   LayoutStudentDashboardRoute: LayoutStudentDashboardRoute,
   LayoutTeacherDashboardRoute: LayoutTeacherDashboardRoute,
+  LayoutMessagingIndexRoute: LayoutMessagingIndexRoute,
+  LayoutTeacherAnalyticsStudentIdRoute: LayoutTeacherAnalyticsStudentIdRoute,
   LayoutTeacherAssignmentsAssignmentIdRoute:
     LayoutTeacherAssignmentsAssignmentIdRoute,
   LayoutTeacherBooksBookIdRoute: LayoutTeacherBooksBookIdRoute,
   LayoutStudentAssignmentsIndexRoute: LayoutStudentAssignmentsIndexRoute,
+  LayoutTeacherAnalyticsIndexRoute: LayoutTeacherAnalyticsIndexRoute,
   LayoutTeacherAssignmentsIndexRoute: LayoutTeacherAssignmentsIndexRoute,
   LayoutTeacherBooksIndexRoute: LayoutTeacherBooksIndexRoute,
+  LayoutTeacherMaterialsIndexRoute: LayoutTeacherMaterialsIndexRoute,
   LayoutStudentAssignmentsAssignmentIdPlayRoute:
     LayoutStudentAssignmentsAssignmentIdPlayRoute,
 }

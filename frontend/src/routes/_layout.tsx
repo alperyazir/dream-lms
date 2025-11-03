@@ -30,7 +30,7 @@ function Layout() {
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 flex flex-col p-4 overflow-y-auto">
+        <div className="flex-1 flex flex-col p-4 overflow-y-auto relative">
           <Outlet />
         </div>
       </div>
