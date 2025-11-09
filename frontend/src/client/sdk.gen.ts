@@ -3,9 +3,22 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminListTeachersData, AdminListTeachersResponse, AdminListStudentsData, AdminListStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersListMySchoolsResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminUpdatePublisherResponse, AdminDeletePublisherData, AdminDeletePublisherResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, DashboardStats, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersListMySchoolsResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class AdminService {
+    /**
+     * Get dashboard statistics
+     * Retrieve system-wide statistics for admin dashboard. Admin only.
+     * @returns DashboardStats Successful Response
+     * @throws ApiError
+     */
+    public static getStats(): CancelablePromise<DashboardStats> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/stats',
+        });
+    }
+
     /**
      * Create new publisher
      * Creates a new publisher user and Publisher record. Admin only.
@@ -95,6 +108,116 @@ export class AdminService {
     }
     
     /**
+     * Update a publisher
+     * Update a publisher by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.publisherId
+     * @param data.requestBody
+     * @returns PublisherPublic Successful Response
+     * @throws ApiError
+     */
+    public static updatePublisher(data: AdminUpdatePublisherData): CancelablePromise<AdminUpdatePublisherResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/admin/publishers/{publisher_id}',
+            path: {
+                publisher_id: data.publisherId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete a publisher
+     * Delete a publisher by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.publisherId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deletePublisher(data: AdminDeletePublisherData): CancelablePromise<AdminDeletePublisherResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/admin/publishers/{publisher_id}',
+            path: {
+                publisher_id: data.publisherId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update a school
+     * Update a school by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.schoolId
+     * @param data.requestBody
+     * @returns SchoolPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateSchool(data: AdminUpdateSchoolData): CancelablePromise<AdminUpdateSchoolResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/admin/schools/{school_id}',
+            path: {
+                school_id: data.schoolId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete a school
+     * Delete a school by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.schoolId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteSchool(data: AdminDeleteSchoolData): CancelablePromise<AdminDeleteSchoolResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/admin/schools/{school_id}',
+            path: {
+                school_id: data.schoolId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create new teacher
+     * Creates a new teacher user and Teacher record. Admin only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserCreationResponse Successful Response
+     * @throws ApiError
+     */
+    public static createTeacher(data: AdminCreateTeacherData): CancelablePromise<AdminCreateTeacherResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/teachers',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
      * List all teachers
      * Retrieve all teachers with optional school filter. Admin only.
      * @param data The data for the request.
@@ -118,7 +241,72 @@ export class AdminService {
             }
         });
     }
+
+    /**
+     * Update a teacher
+     * Update a teacher by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.teacherId
+     * @param data.requestBody
+     * @returns TeacherPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateTeacher(data: AdminUpdateTeacherData): CancelablePromise<AdminUpdateTeacherResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/admin/teachers/{teacher_id}',
+            path: {
+                teacher_id: data.teacherId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
     
+    /**
+     * Delete a teacher
+     * Delete a teacher by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.teacherId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteTeacher(data: AdminDeleteTeacherData): CancelablePromise<AdminDeleteTeacherResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/admin/teachers/{teacher_id}',
+            path: {
+                teacher_id: data.teacherId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
+     * Create new student
+     * Creates a new student user and Student record. Admin only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserCreationResponse Successful Response
+     * @throws ApiError
+     */
+    public static createStudent(data: AdminCreateStudentData): CancelablePromise<AdminCreateStudentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/students',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
     /**
      * List all students
      * Retrieve all students with pagination. Admin only.
@@ -135,6 +323,51 @@ export class AdminService {
             query: {
                 skip: data.skip,
                 limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update a student
+     * Update a student by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.studentId
+     * @param data.requestBody
+     * @returns StudentPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateStudent(data: AdminUpdateStudentData): CancelablePromise<AdminUpdateStudentResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/admin/students/{student_id}',
+            path: {
+                student_id: data.studentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete a student
+     * Delete a student by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.studentId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteStudent(data: AdminDeleteStudentData): CancelablePromise<AdminDeleteStudentResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/admin/students/{student_id}',
+            path: {
+                student_id: data.studentId
             },
             errors: {
                 422: 'Validation Error'

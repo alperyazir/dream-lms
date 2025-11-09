@@ -120,7 +120,8 @@ function TeacherStudentsPage() {
                         variant="outline"
                         className="bg-blue-50 text-blue-700"
                       >
-                        {student.completedAssignments}/{student.totalAssignments}
+                        {student.completedAssignments}/
+                        {student.totalAssignments}
                       </Badge>
                     </div>
                   )}

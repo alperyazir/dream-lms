@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link as RouterLink, useLocation } from "@tanstack/react-router"
 import {
   FiBarChart2,
@@ -13,14 +13,7 @@ import {
 } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
-import type { UserPublic, UserRole } from "@/client"
-import {
-  adminDashboardData,
-  mockAssignments,
-  mockBooks,
-  mockStudents,
-  publisherDashboardData,
-} from "@/lib/mockData"
+import { AdminService, type UserPublic, type UserRole } from "@/client"
 
 interface SidebarItemsProps {
   onClose?: () => void
@@ -111,27 +104,34 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const userRole = (currentUser?.role || "student") as UserRole
   const menuItems = roleMenuItems[userRole] || roleMenuItems.student
 
+  // Fetch real stats for admin users
+  const { data: adminStats } = useQuery({
+    queryKey: ["adminStats"],
+    queryFn: () => AdminService.getStats(),
+    enabled: userRole === "admin",
+  })
+
   // Get count for each path
   const getItemCount = (path: string): number | null => {
     switch (path) {
       case "/admin/publishers":
-        return adminDashboardData.publishers.length
+        return adminStats?.total_publishers ?? null
       case "/admin/schools":
-        return adminDashboardData.schools.length
+        return adminStats?.active_schools ?? null
       case "/admin/teachers":
-        return adminDashboardData.teachers.length
+        return adminStats?.total_teachers ?? null
       case "/admin/books":
-        return mockBooks.length
+        return adminStats?.total_books ?? null
       case "/admin/students":
-        return mockStudents.length
+        return adminStats?.total_students ?? null
       case "/admin/assignments":
-        return mockAssignments.length
+        return adminStats?.total_assignments ?? null
       case "/publisher/library":
-        return publisherDashboardData.books.length
+        return null // Will be implemented later
       case "/publisher/schools":
-        return publisherDashboardData.schools.length
+        return null // Will be implemented later
       case "/publisher/teachers":
-        return adminDashboardData.teachers.length
+        return null // Will be implemented later
       default:
         return null
     }

@@ -28,7 +28,9 @@ function TeacherAssignmentsPage() {
   const filteredAssignments = mockAssignments.filter(
     (assignment) =>
       assignment.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assignment.instructions?.toLowerCase().includes(searchQuery.toLowerCase()),
+      assignment.instructions
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()),
   )
 
   return (

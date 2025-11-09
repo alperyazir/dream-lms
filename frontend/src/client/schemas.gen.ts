@@ -332,6 +332,38 @@ export const PublisherPublicSchema = {
     description: 'Properties to return via API'
 } as const;
 
+export const PublisherUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        contact_email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Contact Email'
+        }
+    },
+    type: 'object',
+    title: 'PublisherUpdate',
+    description: 'Properties to receive via API on Publisher update'
+} as const;
+
 export const SchoolCreateSchema = {
     properties: {
         name: {
@@ -427,6 +459,48 @@ export const SchoolPublicSchema = {
     required: ['name', 'id', 'publisher_id', 'created_at', 'updated_at'],
     title: 'SchoolPublic',
     description: 'Properties to return via API'
+} as const;
+
+export const SchoolUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        address: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Address'
+        },
+        contact_info: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Contact Info'
+        }
+    },
+    type: 'object',
+    title: 'SchoolUpdate',
+    description: 'Properties to receive via API on School update'
 } as const;
 
 export const StudentCreateAPISchema = {
@@ -527,6 +601,38 @@ export const StudentPublicSchema = {
     description: 'Properties to return via API'
 } as const;
 
+export const StudentUpdateSchema = {
+    properties: {
+        grade_level: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Grade Level'
+        },
+        parent_email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Parent Email'
+        }
+    },
+    type: 'object',
+    title: 'StudentUpdate',
+    description: 'Properties to receive via API on Student update'
+} as const;
+
 export const TeacherCreateAPISchema = {
     properties: {
         user_email: {
@@ -608,6 +714,38 @@ export const TeacherPublicSchema = {
     required: ['id', 'user_id', 'school_id', 'created_at', 'updated_at'],
     title: 'TeacherPublic',
     description: 'Properties to return via API'
+} as const;
+
+export const TeacherUpdateSchema = {
+    properties: {
+        school_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'School Id'
+        },
+        subject_specialization: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Subject Specialization'
+        }
+    },
+    type: 'object',
+    title: 'TeacherUpdate',
+    description: 'Properties to receive via API on Teacher update'
 } as const;
 
 export const TokenSchema = {

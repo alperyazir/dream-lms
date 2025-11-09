@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   BookOpen,
@@ -18,6 +19,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import { AdminService } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { ActivityFeedItem } from "@/components/dashboard/ActivityFeedItem"
 import { StatCard } from "@/components/dashboard/StatCard"
@@ -33,7 +35,13 @@ export const Route = createFileRoute("/_layout/admin/dashboard")({
 })
 
 function AdminDashboard() {
-  const { stats, activityFeed, userGrowth, activityByType } = adminDashboardData
+  const { activityFeed, userGrowth, activityByType } = adminDashboardData
+
+  // Fetch real stats from API
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["adminStats"],
+    queryFn: () => AdminService.getStats(),
+  })
 
   return (
     <div className="max-w-full p-6 space-y-8">
@@ -52,28 +60,34 @@ function AdminDashboard() {
         <h2 className="text-xl font-semibold text-foreground mb-4">
           System Overview
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={<Users className="w-6 h-6" />}
-            label="Total Users"
-            value={stats.totalUsers}
-          />
-          <StatCard
-            icon={<BookOpen className="w-6 h-6" />}
-            label="Publishers"
-            value={stats.totalPublishers}
-          />
-          <StatCard
-            icon={<UserCheck className="w-6 h-6" />}
-            label="Teachers"
-            value={stats.totalTeachers}
-          />
-          <StatCard
-            icon={<GraduationCap className="w-6 h-6" />}
-            label="Students"
-            value={stats.totalStudents}
-          />
-        </div>
+        {statsLoading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Loading statistics...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              icon={<Users className="w-6 h-6" />}
+              label="Total Users"
+              value={stats?.total_users || 0}
+            />
+            <StatCard
+              icon={<BookOpen className="w-6 h-6" />}
+              label="Publishers"
+              value={stats?.total_publishers || 0}
+            />
+            <StatCard
+              icon={<UserCheck className="w-6 h-6" />}
+              label="Teachers"
+              value={stats?.total_teachers || 0}
+            />
+            <StatCard
+              icon={<GraduationCap className="w-6 h-6" />}
+              label="Students"
+              value={stats?.total_students || 0}
+            />
+          </div>
+        )}
       </div>
 
       {/* Secondary Stats */}
@@ -81,23 +95,29 @@ function AdminDashboard() {
         <h2 className="text-xl font-semibold text-foreground mb-4">
           Content & Activity
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <StatCard
-            icon={<School className="w-6 h-6" />}
-            label="Active Schools"
-            value={stats.activeSchools}
-          />
-          <StatCard
-            icon={<BookOpen className="w-6 h-6" />}
-            label="Total Books"
-            value={stats.totalBooks}
-          />
-          <StatCard
-            icon={<FileText className="w-6 h-6" />}
-            label="Total Assignments"
-            value={stats.totalAssignments}
-          />
-        </div>
+        {statsLoading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Loading statistics...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <StatCard
+              icon={<School className="w-6 h-6" />}
+              label="Active Schools"
+              value={stats?.active_schools || 0}
+            />
+            <StatCard
+              icon={<BookOpen className="w-6 h-6" />}
+              label="Total Books"
+              value={stats?.total_books || 0}
+            />
+            <StatCard
+              icon={<FileText className="w-6 h-6" />}
+              label="Total Assignments"
+              value={stats?.total_assignments || 0}
+            />
+          </div>
+        )}
       </div>
 
       {/* Charts Row */}

@@ -130,6 +130,8 @@ class PublisherUpdate(SQLModel):
     """Properties to receive via API on Publisher update"""
     name: str | None = Field(default=None, max_length=255)
     contact_email: str | None = Field(default=None, max_length=255)
+    user_email: str | None = Field(default=None, max_length=255)
+    user_full_name: str | None = Field(default=None, max_length=255)
 
 
 class Publisher(PublisherBase, table=True):
@@ -151,6 +153,8 @@ class PublisherPublic(PublisherBase):
     """Properties to return via API"""
     id: uuid.UUID
     user_id: uuid.UUID
+    user_email: str
+    user_full_name: str
     created_at: datetime
     updated_at: datetime
 
@@ -182,6 +186,7 @@ class SchoolUpdate(SQLModel):
     name: str | None = Field(default=None, max_length=255)
     address: str | None = Field(default=None)
     contact_info: str | None = Field(default=None)
+    publisher_id: uuid.UUID | None = Field(default=None)
 
 
 class School(SchoolBase, table=True):
@@ -224,6 +229,8 @@ class TeacherUpdate(SQLModel):
     """Properties to receive via API on Teacher update"""
     school_id: uuid.UUID | None = Field(default=None)
     subject_specialization: str | None = Field(default=None, max_length=255)
+    user_email: str | None = Field(default=None, max_length=255)
+    user_full_name: str | None = Field(default=None, max_length=255)
 
 
 class Teacher(TeacherBase, table=True):
@@ -247,6 +254,8 @@ class TeacherPublic(TeacherBase):
     """Properties to return via API"""
     id: uuid.UUID
     user_id: uuid.UUID
+    user_email: str
+    user_full_name: str
     school_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
@@ -275,6 +284,8 @@ class StudentCreate(StudentBase):
 
 class StudentUpdate(SQLModel):
     """Properties to receive via API on Student update"""
+    user_email: str | None = Field(default=None, max_length=255)
+    user_full_name: str | None = Field(default=None, max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
     parent_email: str | None = Field(default=None, max_length=255)
 
@@ -298,6 +309,8 @@ class StudentPublic(StudentBase):
     """Properties to return via API"""
     id: uuid.UUID
     user_id: uuid.UUID
+    user_email: str
+    user_full_name: str
     created_at: datetime
     updated_at: datetime
 
@@ -316,6 +329,18 @@ class UserCreationResponse(SQLModel):
     user: UserPublic
     temp_password: str
     role_record: PublisherPublic | TeacherPublic | StudentPublic
+
+
+# Dashboard statistics
+class DashboardStats(SQLModel):
+    """Dashboard statistics for admin view"""
+    total_users: int
+    total_publishers: int
+    total_teachers: int
+    total_students: int
+    active_schools: int
+    total_books: int
+    total_assignments: int
 
 
 # ============================================================================

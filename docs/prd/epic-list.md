@@ -65,3 +65,16 @@ Build backend APIs for teacher-student messaging, notifications, feedback, and m
 **Deliverable:** Full communication system - messaging, notifications, feedback, file sharing
 
 ---
+
+## Epic 7: Authentication & User Management Overhaul
+
+**Estimated Effort:** 1-2 weeks | **Status:** 🚀 READY TO START
+
+Transform authentication from open self-registration with email-only login to secure hierarchical user management. Add username field, remove public signup, implement role-based user creation permissions (Admin→All, Publisher→Teacher/Student, Teacher→Student), clean mock data, and update UI/API for username-based operations.
+
+**What Currently Exists:** Email-only login, public signup route, mock data seeding, hardcoded quick test logins
+**What We Build:** Username field + username/email login + removed signup + hierarchical permissions + clean database + dynamic test login
+
+**Deliverable:** Production-ready authentication with hierarchical user management and no mock data
+
+---

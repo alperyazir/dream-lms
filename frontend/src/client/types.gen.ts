@@ -86,8 +86,20 @@ export type PublisherPublic = {
     contact_email?: (string | null);
     id: string;
     user_id: string;
+    user_email: string;
+    user_full_name: string;
     created_at: string;
     updated_at: string;
+};
+
+/**
+ * Properties to receive via API on Publisher update
+ */
+export type PublisherUpdate = {
+    name?: (string | null);
+    contact_email?: (string | null);
+    user_email?: (string | null);
+    user_full_name?: (string | null);
 };
 
 /**
@@ -114,6 +126,16 @@ export type SchoolPublic = {
 };
 
 /**
+ * Properties to receive via API on School update
+ */
+export type SchoolUpdate = {
+    name?: (string | null);
+    address?: (string | null);
+    contact_info?: (string | null);
+    publisher_id?: (string | null);
+};
+
+/**
  * Properties for API endpoint student creation (includes user creation)
  */
 export type StudentCreateAPI = {
@@ -131,8 +153,20 @@ export type StudentPublic = {
     parent_email?: (string | null);
     id: string;
     user_id: string;
+    user_email: string;
+    user_full_name: string;
     created_at: string;
     updated_at: string;
+};
+
+/**
+ * Properties to receive via API on Student update
+ */
+export type StudentUpdate = {
+    user_email?: (string | null);
+    user_full_name?: (string | null);
+    grade_level?: (string | null);
+    parent_email?: (string | null);
 };
 
 /**
@@ -152,9 +186,21 @@ export type TeacherPublic = {
     subject_specialization?: (string | null);
     id: string;
     user_id: string;
+    user_email: string;
+    user_full_name: string;
     school_id: string;
     created_at: string;
     updated_at: string;
+};
+
+/**
+ * Properties to receive via API on Teacher update
+ */
+export type TeacherUpdate = {
+    school_id?: (string | null);
+    subject_specialization?: (string | null);
+    user_email?: (string | null);
+    user_full_name?: (string | null);
 };
 
 export type Token = {
@@ -183,6 +229,19 @@ export type UserCreationResponse = {
     user: UserPublic;
     temp_password: string;
     role_record: (PublisherPublic | TeacherPublic | StudentPublic);
+};
+
+/**
+ * Dashboard statistics for admin view
+ */
+export type DashboardStats = {
+    total_users: number;
+    total_publishers: number;
+    total_teachers: number;
+    total_students: number;
+    active_schools: number;
+    total_books: number;
+    total_assignments: number;
 };
 
 export type UserPublic = {
@@ -257,6 +316,32 @@ export type AdminListSchoolsData = {
 
 export type AdminListSchoolsResponse = (Array<SchoolPublic>);
 
+export type AdminUpdatePublisherData = {
+    publisherId: string;
+    requestBody: PublisherUpdate;
+};
+
+export type AdminUpdatePublisherResponse = (PublisherPublic);
+
+export type AdminDeletePublisherData = {
+    publisherId: string;
+};
+
+export type AdminDeletePublisherResponse = (void);
+
+export type AdminUpdateSchoolData = {
+    requestBody: SchoolUpdate;
+    schoolId: string;
+};
+
+export type AdminUpdateSchoolResponse = (SchoolPublic);
+
+export type AdminDeleteSchoolData = {
+    schoolId: string;
+};
+
+export type AdminDeleteSchoolResponse = (void);
+
 export type AdminListTeachersData = {
     limit?: number;
     schoolId?: (string | null);
@@ -265,12 +350,50 @@ export type AdminListTeachersData = {
 
 export type AdminListTeachersResponse = (Array<TeacherPublic>);
 
+export type AdminCreateTeacherData = {
+    requestBody: TeacherCreateAPI;
+};
+
+export type AdminCreateTeacherResponse = (UserCreationResponse);
+
+export type AdminUpdateTeacherData = {
+    requestBody: TeacherUpdate;
+    teacherId: string;
+};
+
+export type AdminUpdateTeacherResponse = (TeacherPublic);
+
+export type AdminDeleteTeacherData = {
+    teacherId: string;
+};
+
+export type AdminDeleteTeacherResponse = (void);
+
+export type AdminCreateStudentData = {
+    requestBody: StudentCreateAPI;
+};
+
+export type AdminCreateStudentResponse = (UserCreationResponse);
+
 export type AdminListStudentsData = {
     limit?: number;
     skip?: number;
 };
 
 export type AdminListStudentsResponse = (Array<StudentPublic>);
+
+export type AdminUpdateStudentData = {
+    requestBody: StudentUpdate;
+    studentId: string;
+};
+
+export type AdminUpdateStudentResponse = (StudentPublic);
+
+export type AdminDeleteStudentData = {
+    studentId: string;
+};
+
+export type AdminDeleteStudentResponse = (void);
 
 export type AdminBulkImportPublishersData = {
     formData: Body_admin_bulk_import_publishers;
