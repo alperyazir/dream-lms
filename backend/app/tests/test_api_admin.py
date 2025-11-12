@@ -19,6 +19,7 @@ def test_create_publisher_as_admin(
     publisher_data = {
         "name": "Test Publisher Inc",
         "contact_email": "contact@testpublisher.com",
+        "username": "publisher1",
         "user_email": "publisher1@example.com",
         "full_name": "Publisher One"
     }
@@ -34,7 +35,7 @@ def test_create_publisher_as_admin(
 
     # Verify response structure
     assert "user" in data
-    assert "temp_password" in data
+    assert "initial_password" in data
     assert "role_record" in data
 
     # Verify user data
@@ -42,10 +43,10 @@ def test_create_publisher_as_admin(
     assert data["user"]["full_name"] == publisher_data["full_name"]
     assert data["user"]["role"] == "publisher"
 
-    # Verify temp password is present and has correct format
-    temp_password = data["temp_password"]
-    assert len(temp_password) == 12
-    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', temp_password)
+    # Verify initial password is present and properly formatted
+    initial_password = data["initial_password"]
+    assert len(initial_password) == 12
+    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', initial_password)
 
     # Verify publisher record
     assert data["role_record"]["name"] == publisher_data["name"]
@@ -92,6 +93,7 @@ def test_create_school_as_admin(
     user = User(
         id=uuid.uuid4(),
         email="pub@test.com",
+        username="pubtest",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
         full_name="Test Publisher User"
@@ -150,6 +152,7 @@ def test_list_publishers_as_admin(
         user = User(
             id=uuid.uuid4(),
             email=f"pub{i}@test.com",
+            username=f"pub{i}",
             hashed_password=get_password_hash("password"),
             role=UserRole.publisher,
             full_name=f"Publisher {i}"
@@ -189,6 +192,7 @@ def test_list_schools_filtered_by_publisher(
     user1 = User(
         id=uuid.uuid4(),
         email="pub1@test.com",
+        username="pub1",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
         full_name="Publisher 1"
@@ -208,6 +212,7 @@ def test_list_schools_filtered_by_publisher(
     user2 = User(
         id=uuid.uuid4(),
         email="pub2@test.com",
+        username="pub2",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
         full_name="Publisher 2"
@@ -261,14 +266,15 @@ def test_list_schools_filtered_by_publisher(
         assert school["publisher_id"] == str(publisher1.id)
 
 
-def test_temp_password_format(
+def test_initial_password_format(
     client: TestClient, admin_token: str
 ) -> None:
     """Test generated temporary password meets requirements"""
     publisher_data = {
         "name": "Password Test Publisher",
-        "contact_email": "pwtest@testpublisher.com",
+        "contact_email": "pwtest@example.com",
         "user_email": "pwtest@example.com",
+        "username": "pwtest",
         "full_name": "Password Test User"
     }
 
@@ -281,11 +287,145 @@ def test_temp_password_format(
     assert response.status_code == 201
     data = response.json()
 
-    temp_password = data["temp_password"]
+    initial_password = data["initial_password"]
 
     # Verify password meets requirements
-    assert len(temp_password) == 12, "Password should be 12 characters"
-    assert any(c.isupper() for c in temp_password), "Password should contain uppercase"
-    assert any(c.islower() for c in temp_password), "Password should contain lowercase"
+    assert len(initial_password) == 12, "Password should be 12 characters"
+    assert any(c.isupper() for c in initial_password), "Password should contain uppercase"
+    assert any(c.islower() for c in initial_password), "Password should contain lowercase"
     # Note: digits and special characters check is probabilistic but should pass most times
     # Given the alphabet includes both, at least one should be present in 12 chars
+
+
+# Story 7.5: Integration tests for clean database initialization
+
+
+def test_admin_can_login_after_init_db(
+    client: TestClient, session: Session
+) -> None:
+    """Test that admin can log in immediately after database initialization."""
+    from app.core.db import init_db
+
+    # Initialize database (creates only admin)
+    init_db(session)
+
+    # Attempt login with admin credentials
+    login_data = {
+        "username": settings.FIRST_SUPERUSER,
+        "password": settings.FIRST_SUPERUSER_PASSWORD,
+    }
+
+    response = client.post(
+        f"{settings.API_V1_STR}/login/access-token",
+        data=login_data
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+
+
+def test_get_users_returns_only_admin(
+    client: TestClient, session: Session, admin_token: str
+) -> None:
+    """Test that GET /api/users returns only the admin user after init_db."""
+    from app.core.db import init_db
+
+    # Initialize database (creates only admin)
+    init_db(session)
+
+    # Get all users
+    response = client.get(
+        f"{settings.API_V1_STR}/users/",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "data" in data
+    users = data["data"]
+    assert len(users) == 1, "Should have exactly one user (admin)"
+    assert users[0]["email"] == settings.FIRST_SUPERUSER
+    assert users[0]["role"] == "admin"
+
+
+def test_get_publishers_returns_empty_list(
+    client: TestClient, session: Session, admin_token: str
+) -> None:
+    """Test that GET /api/admin/publishers returns empty list after init_db."""
+    from app.core.db import init_db
+
+    # Initialize database (creates only admin)
+    init_db(session)
+
+    # Get all publishers
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/publishers",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert len(data) == 0, "Should have zero publishers after init_db"
+
+
+def test_get_teachers_returns_empty_list(
+    client: TestClient, session: Session, admin_token: str
+) -> None:
+    """Test that GET /api/admin/teachers returns empty list after init_db."""
+    from app.core.db import init_db
+
+    # Initialize database (creates only admin)
+    init_db(session)
+
+    # Get all teachers
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/teachers",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert len(data) == 0, "Should have zero teachers after init_db"
+
+
+def test_get_students_returns_empty_list(
+    client: TestClient, session: Session, admin_token: str
+) -> None:
+    """Test that GET /api/admin/students returns empty list after init_db."""
+    from app.core.db import init_db
+
+    # Initialize database (creates only admin)
+    init_db(session)
+
+    # Get all students
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/students",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert len(data) == 0, "Should have zero students after init_db"
+
+
+def test_application_starts_without_errors_after_init(
+    client: TestClient, session: Session
+) -> None:
+    """Test that application starts without errors (no foreign key violations) after init_db."""
+    from app.core.db import init_db
+
+    # Initialize database (creates only admin)
+    init_db(session)
+
+    # Test that health check endpoint works (indicates app started successfully)
+    response = client.get("/api/v1/utils/health-check/")
+
+    assert response.status_code == 200
+    # Health check returns True on success
+    assert response.json() is True

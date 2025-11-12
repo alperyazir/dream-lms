@@ -3,8 +3,10 @@ import {
   Link as RouterLink,
   redirect,
 } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import type { Body_login_login_access_token as AccessToken } from "@/client"
+import { OpenAPI } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -13,6 +15,14 @@ import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 import Logo from "/assets/images/fastapi-logo.svg"
 import { emailPattern, passwordRules } from "../utils"
+
+// Type for quick login users response
+interface QuickLoginUsers {
+  admin: Array<{ username: string; email: string; password: string }>
+  publisher: Array<{ username: string; email: string; password: string }>
+  teacher: Array<{ username: string; email: string; password: string }>
+  student: Array<{ username: string; email: string; password: string }>
+}
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -40,6 +50,26 @@ function Login() {
     },
   })
 
+  // Fetch quick login users (development only)
+  const { data: quickLoginUsers, isError } = useQuery<QuickLoginUsers>({
+    queryKey: ["quick-login-users"],
+    queryFn: async () => {
+      const response = await fetch(`${OpenAPI.BASE}/api/v1/dev/quick-login-users`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+      if (!response.ok) {
+        throw new Error("Failed to fetch quick login users")
+      }
+      return response.json()
+    },
+    enabled: import.meta.env.DEV, // Only in development
+    retry: false, // Don't retry on failure
+    staleTime: Infinity, // Cache forever (session-scoped)
+  })
+
   const onSubmit: SubmitHandler<AccessToken> = async (data) => {
     if (isSubmitting) return
 
@@ -52,11 +82,11 @@ function Login() {
     }
   }
 
-  // Test login helper
-  const testLogin = async (email: string, password: string) => {
+  // Test login helper - now accepts username
+  const testLogin = async (username: string, password: string) => {
     resetError()
     try {
-      await loginMutation.mutateAsync({ username: email, password })
+      await loginMutation.mutateAsync({ username, password })
     } catch {
       // error is handled by useAuth hook
     }
@@ -78,16 +108,14 @@ function Login() {
         <InputGroup className="w-full">
           <Input
             {...register("username", {
-              required: "Username is required",
-              pattern: emailPattern,
+              required: "Username or email is required",
             })}
-            placeholder="Email"
-            type="email"
+            placeholder="Enter username or email"
+            type="text"
           />
         </InputGroup>
       </Field>
       <PasswordInput
-        type="password"
         {...register("password", passwordRules())}
         placeholder="Password"
       />
@@ -104,57 +132,40 @@ function Login() {
           <p className="text-xs text-center text-muted-foreground mb-3 font-semibold">
             🧪 Quick Test Login
           </p>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => testLogin("admin@example.com", "changethis")}
-              disabled={isSubmitting}
-              className="text-xs"
-            >
-              👑 Admin
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => testLogin("publisher@example.com", "changethis")}
-              disabled={isSubmitting}
-              className="text-xs"
-            >
-              📚 Publisher
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => testLogin("teacher@example.com", "changethis")}
-              disabled={isSubmitting}
-              className="text-xs"
-            >
-              🍎 Teacher
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => testLogin("student1@example.com", "changethis")}
-              disabled={isSubmitting}
-              className="text-xs"
-            >
-              🎓 Student
-            </Button>
-          </div>
+          {isError && (
+            <p className="text-xs text-center text-red-500">
+              Quick login unavailable
+            </p>
+          )}
+          {!isError && quickLoginUsers && (
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: "admin" as const, emoji: "👑", label: "Admin" },
+                { key: "publisher" as const, emoji: "📚", label: "Publisher" },
+                { key: "teacher" as const, emoji: "🍎", label: "Teacher" },
+                { key: "student" as const, emoji: "🎓", label: "Student" },
+              ].map((role) => {
+                const users = quickLoginUsers[role.key]?.slice(0, 2) || []
+                return users.map((user) => (
+                  <Button
+                    key={user.username}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => testLogin(user.username, user.password)}
+                    disabled={isSubmitting}
+                    className="text-xs"
+                    title={user.email} // Tooltip showing email
+                  >
+                    {role.emoji} {user.username}
+                  </Button>
+                ))
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      <p>
-        Don't have an account?{" "}
-        <RouterLink to="/signup" className="main-link">
-          Sign Up
-        </RouterLink>
-      </p>
     </form>
   )
 }

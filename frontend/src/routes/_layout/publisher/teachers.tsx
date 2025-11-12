@@ -1,13 +1,29 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Mail, Plus, School, User } from "lucide-react"
+import { GraduationCap, Mail, Plus, User } from "lucide-react"
 import { useState } from "react"
+import { PublishersService, type TeacherCreateAPI } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import useCustomToast from "@/hooks/useCustomToast"
-import { adminDashboardData } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/publisher/teachers")({
   component: () => (
@@ -18,20 +34,83 @@ export const Route = createFileRoute("/_layout/publisher/teachers")({
 })
 
 function PublisherTeachersPage() {
-  const teachers = adminDashboardData.teachers
-  const [searchQuery, setSearchQuery] = useState("")
-  const { showSuccessToast } = useCustomToast()
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [newTeacher, setNewTeacher] = useState<TeacherCreateAPI>({
+    username: "",
+    user_email: "",
+    full_name: "",
+    school_id: "",
+    subject_specialization: "",
+  })
+
+  // Fetch teachers from API
+  const { data: teachers = [], isLoading, error } = useQuery({
+    queryKey: ["publisherTeachers"],
+    queryFn: () => PublishersService.listMyTeachers(),
+  })
+
+  // Fetch schools for dropdown
+  const { data: schools = [] } = useQuery({
+    queryKey: ["publisherSchools"],
+    queryFn: () => PublishersService.listMySchools(),
+  })
+
+  // Create teacher mutation
+  const createTeacherMutation = useMutation({
+    mutationFn: (data: TeacherCreateAPI) =>
+      PublishersService.createTeacher({ requestBody: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publisherTeachers"] })
+      queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
+      setIsAddDialogOpen(false)
+      setNewTeacher({
+        username: "",
+        user_email: "",
+        full_name: "",
+        school_id: "",
+        subject_specialization: "",
+      })
+      showSuccessToast("Teacher created successfully!")
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to create teacher. Please try again."
+
+      if (error.body?.detail) {
+        if (typeof error.body.detail === 'string') {
+          errorMessage = error.body.detail
+        } else if (Array.isArray(error.body.detail)) {
+          // Handle validation errors
+          errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
+        }
+      }
+
+      showErrorToast(errorMessage)
+    },
+  })
 
   const handleAddTeacher = () => {
-    showSuccessToast("Add Teacher feature coming soon!")
-  }
+    if (
+      !newTeacher.username ||
+      !newTeacher.user_email ||
+      !newTeacher.full_name ||
+      !newTeacher.school_id
+    ) {
+      showErrorToast("Please fill in all required fields")
+      return
+    }
 
-  const filteredTeachers = teachers.filter(
-    (teacher) =>
-      teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      teacher.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      teacher.school.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+    // Validate username format
+    if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newTeacher.username)) {
+      showErrorToast(
+        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen"
+      )
+      return
+    }
+
+    createTeacherMutation.mutate(newTeacher)
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -43,19 +122,10 @@ function PublisherTeachersPage() {
         </p>
       </div>
 
-      {/* Search and Add */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <Input
-            type="search"
-            placeholder="Search teachers by name, email, or school..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
-          />
-        </div>
+      {/* Add Button */}
+      <div className="flex justify-end mb-6">
         <Button
-          onClick={handleAddTeacher}
+          onClick={() => setIsAddDialogOpen(true)}
           className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -63,62 +133,176 @@ function PublisherTeachersPage() {
         </Button>
       </div>
 
-      {/* Teachers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTeachers.map((teacher) => (
-          <Card
-            key={teacher.id}
-            className="shadow-neuro border-teal-100 dark:border-teal-900 hover:shadow-neuro-lg transition-shadow"
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground mb-1">
-                    {teacher.name}
-                  </h3>
-                  <Badge
-                    variant="outline"
-                    className="bg-teal-50 text-teal-700 text-xs"
-                  >
-                    {teacher.classCount} Classes
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-neuro-sm">
-                  <User className="w-6 h-6" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{teacher.email}</span>
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <School className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{teacher.school}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Students:</span>
-                  <Badge
-                    variant="outline"
-                    className="bg-blue-50 text-blue-700 text-xs"
-                  >
-                    {teacher.studentCount}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredTeachers.length === 0 && (
+      {/* Loading/Error States */}
+      {error ? (
+        <div className="text-center py-12 text-red-500">
+          Error loading teachers. Please try again later.
+        </div>
+      ) : isLoading ? (
+        <div className="text-center py-12 text-muted-foreground">
+          Loading teachers...
+        </div>
+      ) : teachers.length === 0 ? (
+        /* Empty State */
         <div className="text-center py-12">
           <User className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <p className="text-lg text-muted-foreground">No teachers found</p>
+          <p className="text-lg text-muted-foreground mb-2">No teachers yet</p>
+          <p className="text-sm text-muted-foreground">
+            Teachers will appear here once they are created
+          </p>
+        </div>
+      ) : (
+        /* Teachers Grid */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {teachers.map((teacher) => (
+            <Card
+              key={teacher.id}
+              className="shadow-neuro border-teal-100 dark:border-teal-900 hover:shadow-neuro-lg transition-shadow"
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
+                      {teacher.user_full_name}
+                    </h3>
+                    <div className="flex items-center text-sm text-muted-foreground mb-1">
+                      <Mail className="w-4 h-4 mr-1" />
+                      {teacher.user_email}
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-1">
+                      @{teacher.user_username}
+                    </div>
+                    {teacher.subject_specialization && (
+                      <div className="flex items-center text-sm text-teal-600 dark:text-teal-400 mt-2">
+                        <GraduationCap className="w-4 h-4 mr-1" />
+                        {teacher.subject_specialization}
+                      </div>
+                    )}
+                  </div>
+                  <User className="w-8 h-8 text-teal-500" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
+
+      {/* Add Teacher Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Teacher</DialogTitle>
+            <DialogDescription>Create a new teacher account</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="full-name">Full Name *</Label>
+              <Input
+                id="full-name"
+                placeholder="e.g., John Doe"
+                value={newTeacher.full_name}
+                onChange={(e) => {
+                  const fullName = e.target.value
+                  // Auto-generate username from full name
+                  const generatedUsername = fullName
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^a-z0-9_-]/g, '')
+                    .slice(0, 50)
+
+                  setNewTeacher({
+                    ...newTeacher,
+                    full_name: fullName,
+                    username: generatedUsername,
+                  })
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="username">Username *</Label>
+              <Input
+                id="username"
+                placeholder="e.g., johndoe"
+                value={newTeacher.username}
+                onChange={(e) =>
+                  setNewTeacher({
+                    ...newTeacher,
+                    username: e.target.value,
+                  })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Auto-generated from full name (editable)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="e.g., teacher@school.com"
+                value={newTeacher.user_email}
+                onChange={(e) =>
+                  setNewTeacher({ ...newTeacher, user_email: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="school">School *</Label>
+              <Select
+                value={newTeacher.school_id}
+                onValueChange={(value) =>
+                  setNewTeacher({ ...newTeacher, school_id: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a school" />
+                </SelectTrigger>
+                <SelectContent>
+                  {schools.map((school) => (
+                    <SelectItem key={school.id} value={school.id}>
+                      {school.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="subject">Subject Specialization</Label>
+              <Input
+                id="subject"
+                placeholder="e.g., Mathematics"
+                value={newTeacher.subject_specialization || ""}
+                onChange={(e) =>
+                  setNewTeacher({
+                    ...newTeacher,
+                    subject_specialization: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(false)}
+              disabled={createTeacherMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddTeacher}
+              disabled={createTeacherMutation.isPending}
+              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
+            >
+              {createTeacherMutation.isPending
+                ? "Creating..."
+                : "Create Teacher"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

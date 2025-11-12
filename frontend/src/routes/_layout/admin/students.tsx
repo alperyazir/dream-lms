@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   Edit,
+  Eye,
+  EyeOff,
   GraduationCap,
   Mail,
   Plus,
@@ -63,10 +65,11 @@ function AdminStudents() {
     name: string
   } | null>(null)
   const [newStudent, setNewStudent] = useState<StudentCreateAPI>({
+    username: "",
     user_email: "",
     full_name: "",
-    grade_level: "",
-    parent_email: "",
+    grade_level: undefined,
+    parent_email: undefined,
   })
   const [editStudent, setEditStudent] = useState<StudentUpdate>({
     user_email: "",
@@ -74,6 +77,9 @@ function AdminStudents() {
     grade_level: "",
     parent_email: "",
   })
+
+  // Track which passwords are revealed (Eye icon state)
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({})
 
   // Fetch students from API
   const {
@@ -89,16 +95,18 @@ function AdminStudents() {
   const createStudentMutation = useMutation({
     mutationFn: (data: StudentCreateAPI) =>
       AdminService.createStudent({ requestBody: data }),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["students"] })
       setIsAddDialogOpen(false)
       setNewStudent({
+        username: "",
         user_email: "",
         full_name: "",
-        grade_level: "",
-        parent_email: "",
+        grade_level: undefined,
+        parent_email: undefined,
       })
-      showSuccessToast("Student created successfully!")
+
+      showSuccessToast("Student created successfully! Password visible in table.")
     },
     onError: (error: any) => {
       showErrorToast(
@@ -145,10 +153,19 @@ function AdminStudents() {
   })
 
   const handleAddStudent = () => {
-    if (!newStudent.user_email || !newStudent.full_name) {
+    if (!newStudent.username || !newStudent.user_email || !newStudent.full_name) {
       showErrorToast("Please fill in all required fields")
       return
     }
+
+    // Validate username format
+    if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newStudent.username)) {
+      showErrorToast(
+        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen"
+      )
+      return
+    }
+
     createStudentMutation.mutate(newStudent)
   }
 
@@ -188,6 +205,9 @@ function AdminStudents() {
       student.user_full_name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
+      student.user_username
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       student.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.grade_level?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.parent_email?.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -225,7 +245,7 @@ function AdminStudents() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search students by name, email, grade, or parent email..."
+            placeholder="Search students by name, username, email, grade, or parent email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -257,10 +277,12 @@ function AdminStudents() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Student Name</TableHead>
+                  <TableHead>Username</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Grade Level</TableHead>
                   <TableHead>Parent Email</TableHead>
                   <TableHead>Created At</TableHead>
+                  <TableHead>Password</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -272,6 +294,9 @@ function AdminStudents() {
                         <User className="w-4 h-4 text-teal-500" />
                         {student.user_full_name}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-sm font-mono">
+                      {student.user_username || "N/A"}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-muted-foreground">
@@ -293,6 +318,36 @@ function AdminStudents() {
                           day: "numeric",
                           year: "numeric",
                         },
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {(student as any).user_initial_password ? (
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm">
+                            {revealedPasswords[student.user_id]
+                              ? (student as any).user_initial_password
+                              : "••••••••••••"}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setRevealedPasswords((prev) => ({
+                                ...prev,
+                                [student.user_id]: !prev[student.user_id],
+                              }))
+                            }
+                            className="h-7 w-7 p-0"
+                          >
+                            {revealedPasswords[student.user_id] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">N/A</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -345,10 +400,40 @@ function AdminStudents() {
                 id="student-full-name"
                 placeholder="e.g., John Doe"
                 value={newStudent.full_name}
+                onChange={(e) => {
+                  const fullName = e.target.value
+                  // Auto-generate username from full name
+                  const generatedUsername = fullName
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, '-') // Replace spaces with hyphens
+                    .replace(/[^a-z0-9_-]/g, '') // Remove non-alphanumeric except _ and -
+                    .slice(0, 50) // Max 50 characters
+
+                  setNewStudent({
+                    ...newStudent,
+                    full_name: fullName,
+                    username: generatedUsername,
+                  })
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="student-username">Username *</Label>
+              <Input
+                id="student-username"
+                placeholder="e.g., johndoe"
+                value={newStudent.username}
                 onChange={(e) =>
-                  setNewStudent({ ...newStudent, full_name: e.target.value })
+                  setNewStudent({
+                    ...newStudent,
+                    username: e.target.value,
+                  })
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Auto-generated from full name (editable)
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="student-email">Email *</Label>
@@ -369,7 +454,10 @@ function AdminStudents() {
                 placeholder="e.g., 10th Grade"
                 value={newStudent.grade_level || ""}
                 onChange={(e) =>
-                  setNewStudent({ ...newStudent, grade_level: e.target.value })
+                  setNewStudent({
+                    ...newStudent,
+                    grade_level: e.target.value || undefined
+                  })
                 }
               />
             </div>
@@ -381,7 +469,10 @@ function AdminStudents() {
                 placeholder="e.g., parent@email.com"
                 value={newStudent.parent_email || ""}
                 onChange={(e) =>
-                  setNewStudent({ ...newStudent, parent_email: e.target.value })
+                  setNewStudent({
+                    ...newStudent,
+                    parent_email: e.target.value || undefined
+                  })
                 }
               />
             </div>

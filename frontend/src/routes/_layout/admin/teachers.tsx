@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Edit, Mail, Plus, Search, Trash2, UserCheck } from "lucide-react"
+import { Edit, Eye, EyeOff, Mail, Plus, Search, Trash2, UserCheck } from "lucide-react"
 import { useState } from "react"
 import {
   AdminService,
@@ -63,6 +63,7 @@ function AdminTeachers() {
     userName: string
   } | null>(null)
   const [newTeacher, setNewTeacher] = useState<TeacherCreateAPI>({
+    username: "",
     user_email: "",
     full_name: "",
     school_id: "",
@@ -74,6 +75,9 @@ function AdminTeachers() {
     user_email: "",
     user_full_name: "",
   })
+
+  // Track which passwords are revealed (Eye icon state)
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({})
 
   // Fetch teachers from API
   const {
@@ -95,16 +99,18 @@ function AdminTeachers() {
   const createTeacherMutation = useMutation({
     mutationFn: (data: TeacherCreateAPI) =>
       AdminService.createTeacher({ requestBody: data }),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] })
       setIsAddDialogOpen(false)
       setNewTeacher({
+        username: "",
         user_email: "",
         full_name: "",
         school_id: "",
         subject_specialization: "",
       })
-      showSuccessToast("Teacher created successfully!")
+
+      showSuccessToast("Teacher created successfully! Password visible in table.")
     },
     onError: (error: any) => {
       showErrorToast(
@@ -152,6 +158,7 @@ function AdminTeachers() {
 
   const handleAddTeacher = () => {
     if (
+      !newTeacher.username ||
       !newTeacher.user_email ||
       !newTeacher.full_name ||
       !newTeacher.school_id
@@ -159,6 +166,15 @@ function AdminTeachers() {
       showErrorToast("Please fill in all required fields")
       return
     }
+
+    // Validate username format
+    if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newTeacher.username)) {
+      showErrorToast(
+        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen"
+      )
+      return
+    }
+
     createTeacherMutation.mutate(newTeacher)
   }
 
@@ -209,6 +225,9 @@ function AdminTeachers() {
       teacher.user_full_name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
+      teacher.user_username
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       teacher.user_email?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
@@ -250,7 +269,7 @@ function AdminTeachers() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search teachers by name, email or subject..."
+            placeholder="Search teachers by name, username, email or subject..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -282,10 +301,12 @@ function AdminTeachers() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Teacher Name</TableHead>
+                  <TableHead>Username</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>School</TableHead>
                   <TableHead>Subject Specialization</TableHead>
                   <TableHead>Created At</TableHead>
+                  <TableHead>Password</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -294,6 +315,9 @@ function AdminTeachers() {
                   <TableRow key={teacher.id}>
                     <TableCell className="font-medium">
                       {teacher.user_full_name || "N/A"}
+                    </TableCell>
+                    <TableCell className="text-sm font-mono">
+                      {teacher.user_username || "N/A"}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-muted-foreground">
@@ -319,6 +343,36 @@ function AdminTeachers() {
                           day: "numeric",
                           year: "numeric",
                         },
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {(teacher as any).user_initial_password ? (
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm">
+                            {revealedPasswords[teacher.user_id]
+                              ? (teacher as any).user_initial_password
+                              : "••••••••••••"}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setRevealedPasswords((prev) => ({
+                                ...prev,
+                                [teacher.user_id]: !prev[teacher.user_id],
+                              }))
+                            }
+                            className="h-7 w-7 p-0"
+                          >
+                            {revealedPasswords[teacher.user_id] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">N/A</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -461,10 +515,40 @@ function AdminTeachers() {
                 id="full-name"
                 placeholder="e.g., John Doe"
                 value={newTeacher.full_name}
+                onChange={(e) => {
+                  const fullName = e.target.value
+                  // Auto-generate username from full name
+                  const generatedUsername = fullName
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, '-') // Replace spaces with hyphens
+                    .replace(/[^a-z0-9_-]/g, '') // Remove non-alphanumeric except _ and -
+                    .slice(0, 50) // Max 50 characters
+
+                  setNewTeacher({
+                    ...newTeacher,
+                    full_name: fullName,
+                    username: generatedUsername,
+                  })
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="username">Username *</Label>
+              <Input
+                id="username"
+                placeholder="e.g., johndoe"
+                value={newTeacher.username}
                 onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, full_name: e.target.value })
+                  setNewTeacher({
+                    ...newTeacher,
+                    username: e.target.value,
+                  })
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Auto-generated from full name (editable)
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>

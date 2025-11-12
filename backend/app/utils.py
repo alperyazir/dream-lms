@@ -1,5 +1,6 @@
 import io
 import logging
+import re
 import secrets
 import string
 from dataclasses import dataclass
@@ -13,6 +14,8 @@ from fastapi import UploadFile
 from jinja2 import Template
 from jwt.exceptions import InvalidTokenError
 from openpyxl import load_workbook
+from sqlmodel import Session
+from unidecode import unidecode
 
 from app.core import security
 from app.core.config import settings
@@ -147,6 +150,84 @@ def generate_temp_password(length: int = 12) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
+def generate_username(full_name: str, session: Session) -> str:
+    """
+    Generate unique username from full name.
+
+    Algorithm:
+    1. Extract first and last name from full_name
+    2. Generate base: {first_initial}{last_name} (e.g., "John Doe" → "jdoe")
+    3. Convert to lowercase, strip special characters
+    4. Check uniqueness with crud.get_user_by_username()
+    5. If exists, append incrementing number: jdoe1, jdoe2, etc.
+
+    Args:
+        full_name: User's full name (e.g., "John Doe")
+        session: Database session for uniqueness checks
+
+    Returns:
+        Unique username (e.g., "jdoe", "jdoe1", etc.)
+
+    Raises:
+        ValueError: If full_name is empty or all variations taken
+
+    Examples:
+        >>> generate_username("John Doe", session)
+        "jdoe"
+        >>> generate_username("Madonna", session)
+        "madonna"
+        >>> generate_username("José García", session)
+        "jgarcia"
+    """
+    # Import here to avoid circular dependency
+    from app import crud
+
+    if not full_name or not full_name.strip():
+        raise ValueError("Full name cannot be empty")
+
+    # Normalize unicode characters (José → Jose)
+    normalized_name = unidecode(full_name.strip())
+
+    # Remove special characters, keep only alphanumeric and spaces
+    cleaned_name = re.sub(r'[^a-zA-Z0-9\s]', '', normalized_name)
+
+    # Split into parts
+    parts = cleaned_name.split()
+
+    if not parts:
+        raise ValueError("Full name must contain at least one valid character")
+
+    # Generate base username
+    if len(parts) == 1:
+        # Single name: "Madonna" → "madonna"
+        base_username = parts[0].lower()
+    else:
+        # Multiple parts: "John Doe" → "jdoe"
+        first_initial = parts[0][0].lower()
+        last_name = parts[-1].lower()
+        base_username = f"{first_initial}{last_name}"
+
+    # Validate base username format
+    if not re.match(r'^[a-zA-Z0-9_-]+$', base_username):
+        raise ValueError(f"Generated username '{base_username}' contains invalid characters")
+
+    # Check uniqueness and increment if needed
+    max_attempts = 100
+    username = base_username
+
+    for attempt in range(max_attempts):
+        existing_user = crud.get_user_by_username(session=session, username=username)
+
+        if not existing_user:
+            return username
+
+        # Username exists, try next variation
+        username = f"{base_username}{attempt + 1}"
+
+    # All variations taken
+    raise ValueError(f"Could not generate unique username for '{full_name}' after {max_attempts} attempts")
+
+
 async def validate_file_size(file: UploadFile, max_size_mb: int = 5) -> bool:
     """
     Validate file size does not exceed limit.
@@ -220,7 +301,7 @@ async def parse_excel_file(file: UploadFile) -> list[dict[str, Any]]:
             row_dict: dict[str, Any] = {}
 
             # Map headers to values
-            for header, value in zip(headers, row):
+            for header, value in zip(headers, row, strict=False):
                 if header:  # Skip empty header columns
                     row_dict[str(header)] = value
 

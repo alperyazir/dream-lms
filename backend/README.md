@@ -163,6 +163,66 @@ $ alembic upgrade head
 
 If you don't want to start with the default models and want to remove them / modify them, from the beginning, without having any previous revision, you can remove the revision files (`.py` Python files) under `./backend/app/alembic/versions/`. And then create a first migration as described above.
 
+## Database Initialization
+
+**Important:** As of Story 7.5, the database initialization (`init_db()` in `./backend/app/core/db.py`) creates ONLY the admin superuser. All mock/test data has been removed for production security.
+
+### Initial Admin User
+
+On first run, the system automatically creates a single admin user with credentials from your `.env` file:
+- **Email:** Value of `FIRST_SUPERUSER` environment variable
+- **Username:** `admin`
+- **Password:** Value of `FIRST_SUPERUSER_PASSWORD` environment variable
+- **Role:** Admin (superuser)
+
+This admin account is the only user created by default. All other users must be created through the hierarchical user creation workflows.
+
+### Creating Test Users for Development
+
+After initialization, you can create test users through the hierarchical permission endpoints:
+
+1. **Admin can create Publishers:**
+   - `POST /api/v1/admin/publishers`
+   - Requires admin authentication
+
+2. **Admin or Publisher can create Teachers:**
+   - `POST /api/v1/admin/teachers`
+   - Requires admin or publisher authentication
+   - Publishers can only create teachers in their own schools
+
+3. **Admin, Publisher, or Teacher can create Students:**
+   - `POST /api/v1/admin/students` (admin/publisher route)
+   - `POST /api/v1/teachers/me/students` (teacher route)
+   - Requires appropriate authentication
+
+All user creation endpoints include automatic username generation from full names (e.g., "John Doe" → "jdoe").
+
+### Resetting the Database (Development Only)
+
+During development, you can reset the database to a clean state using the provided script:
+
+```bash
+# From project root
+./backend/scripts/reset_db.sh
+```
+
+This script:
+1. Drops all database tables (via Alembic downgrade)
+2. Runs all migrations (via Alembic upgrade)
+3. Initializes the database with only the admin user
+
+**⚠️ Warning:** This script is destructive and should NEVER be run in production environments!
+
+### Database State After Initialization
+
+After running `init_db()`, the database will have:
+- ✅ 1 admin user (from environment variables)
+- ❌ 0 publishers, teachers, or students
+- ❌ 0 schools, classes, or books
+- ❌ 0 assignments or activities
+
+This clean state ensures production deployments don't contain test data and forces proper use of the hierarchical user creation system.
+
 ## Email Templates
 
 The email templates are in `./backend/app/email-templates/`. Here, there are two directories: `build` and `src`. The `src` directory contains the source files that are used to build the final email templates. The `build` directory contains the final email templates that are used by the application.

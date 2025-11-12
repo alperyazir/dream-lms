@@ -52,18 +52,28 @@ function StudentDashboard() {
             Assignments Due
           </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {assignmentsDue.map((assignment) => (
-            <AssignmentDueCard
-              key={assignment.id}
-              id={assignment.id}
-              name={assignment.name}
-              subject={assignment.subject}
-              dueDate={assignment.dueDate}
-              status={assignment.status}
-            />
-          ))}
-        </div>
+        {assignmentsDue.length === 0 ? (
+          <div className="text-center py-12 border border-dashed rounded-lg">
+            <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-lg text-muted-foreground">No assignments due</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Your assignments will appear here when your teacher assigns them
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {assignmentsDue.map((assignment) => (
+              <AssignmentDueCard
+                key={assignment.id}
+                id={assignment.id}
+                name={assignment.name}
+                subject={assignment.subject}
+                dueDate={assignment.dueDate}
+                status={assignment.status}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Progress Chart */}
@@ -146,18 +156,28 @@ function StudentDashboard() {
             Recent Feedback
           </h2>
         </div>
-        <div className="space-y-3">
-          {recentFeedback.map((feedback) => (
-            <FeedbackItem
-              key={feedback.id}
-              assignmentName={feedback.assignmentName}
-              teacherName={feedback.teacherName}
-              comment={feedback.comment}
-              score={feedback.score}
-              date={feedback.date}
-            />
-          ))}
-        </div>
+        {recentFeedback.length === 0 ? (
+          <div className="text-center py-12 border border-dashed rounded-lg">
+            <MessageSquare className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-lg text-muted-foreground">No feedback yet</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Feedback from your teachers will appear here
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentFeedback.map((feedback) => (
+              <FeedbackItem
+                key={feedback.id}
+                assignmentName={feedback.assignmentName}
+                teacherName={feedback.teacherName}
+                comment={feedback.comment}
+                score={feedback.score}
+                date={feedback.date}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Achievements */}
@@ -166,17 +186,27 @@ function StudentDashboard() {
           <Trophy className="w-6 h-6 text-teal-500" />
           <h2 className="text-2xl font-bold text-foreground">Achievements</h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {achievements.map((achievement) => (
-            <AchievementBadge
-              key={achievement.id}
-              title={achievement.title}
-              description={achievement.description}
-              icon={achievement.icon}
-              earnedDate={achievement.earnedDate}
-            />
-          ))}
-        </div>
+        {achievements.length === 0 ? (
+          <div className="text-center py-12 border border-dashed rounded-lg">
+            <Trophy className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-lg text-muted-foreground">No achievements yet</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Complete assignments and reach milestones to earn achievements
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {achievements.map((achievement) => (
+              <AchievementBadge
+                key={achievement.id}
+                title={achievement.title}
+                description={achievement.description}
+                icon={achievement.icon}
+                earnedDate={achievement.earnedDate}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

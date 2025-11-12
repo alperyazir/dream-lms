@@ -131,7 +131,7 @@ def test_publisher_create_teacher_in_own_school(
 
     # Verify response structure
     assert "user" in data
-    assert "temp_password" in data
+    assert "initial_password" in data
     assert "role_record" in data
 
     # Verify user data
@@ -140,7 +140,7 @@ def test_publisher_create_teacher_in_own_school(
     assert data["user"]["role"] == "teacher"
 
     # Verify temp password
-    assert len(data["temp_password"]) == 12
+    assert len(data["initial_password"]) == 12
 
     # Verify teacher record
     assert data["role_record"]["school_id"] == teacher_data["school_id"]
@@ -218,7 +218,7 @@ def test_publisher_cannot_create_teacher_in_other_school(
     assert "Cannot create teacher in another publisher's school" in response.json()["detail"]
 
 
-def test_publisher_receives_temp_password(
+def test_publisher_receives_initial_password(
     client: TestClient, session: Session, publisher_token: str, publisher_user: User
 ) -> None:
     """Test response includes temporary password"""
@@ -259,6 +259,6 @@ def test_publisher_receives_temp_password(
     data = response.json()
 
     # Verify temp password format
-    temp_password = data["temp_password"]
-    assert len(temp_password) == 12
-    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', temp_password)
+    initial_password = data["initial_password"]
+    assert len(initial_password) == 12
+    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', initial_password)

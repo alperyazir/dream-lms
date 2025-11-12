@@ -1,13 +1,48 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Mail, Plus, User, Users } from "lucide-react"
-import { useState } from "react"
+import { Edit, Mail, Plus, Trash2, User, Users } from "lucide-react"
+import { useEffect, useState } from "react"
+import { TeachersService, type StudentCreateAPI, type StudentPublic, type StudentUpdate } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import useCustomToast from "@/hooks/useCustomToast"
-import { mockStudents } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/teacher/students")({
   component: () => (
@@ -18,18 +53,255 @@ export const Route = createFileRoute("/_layout/teacher/students")({
 })
 
 function TeacherStudentsPage() {
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
   const [searchQuery, setSearchQuery] = useState("")
-  const { showSuccessToast } = useCustomToast()
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedClassroomIds, setSelectedClassroomIds] = useState<string[]>([])
+  const [selectedStudent, setSelectedStudent] = useState<StudentPublic | null>(null)
+  const [studentClassrooms, setStudentClassrooms] = useState<string[]>([])
+  const [newStudent, setNewStudent] = useState<StudentCreateAPI>({
+    username: "",
+    user_email: "",
+    full_name: "",
+    grade_level: undefined,
+    parent_email: undefined,
+  })
+  const [editStudent, setEditStudent] = useState<StudentUpdate>({
+    user_email: undefined,
+    user_username: undefined,
+    user_full_name: undefined,
+    grade_level: undefined,
+    parent_email: undefined,
+  })
+  const [studentClassroomsMap, setStudentClassroomsMap] = useState<Record<string, string[]>>({})
+
+  // Fetch students from API
+  const { data: students = [], isLoading, error } = useQuery({
+    queryKey: ["teacherStudents"],
+    queryFn: () => TeachersService.listMyStudents(),
+  })
+
+  // Fetch classes for classroom dropdown
+  const { data: classes = [] } = useQuery({
+    queryKey: ["teacherClasses"],
+    queryFn: () => TeachersService.listMyClasses(),
+  })
+
+  // Fetch classroom information for all students
+  useEffect(() => {
+    const fetchStudentClassrooms = async () => {
+      if (students.length === 0 || classes.length === 0) return
+
+      const classroomsMap: Record<string, string[]> = {}
+
+      for (const classroom of classes) {
+        try {
+          const classStudents = await TeachersService.getClassStudents({ classId: classroom.id })
+          for (const student of classStudents) {
+            if (!classroomsMap[student.id]) {
+              classroomsMap[student.id] = []
+            }
+            classroomsMap[student.id].push(classroom.name)
+          }
+        } catch (error) {
+          console.error(`Failed to fetch students for classroom ${classroom.name}:`, error)
+        }
+      }
+
+      setStudentClassroomsMap(classroomsMap)
+    }
+
+    fetchStudentClassrooms()
+  }, [students, classes])
+
+  // Create student mutation
+  const createStudentMutation = useMutation({
+    mutationFn: (data: StudentCreateAPI) =>
+      TeachersService.createStudent({ requestBody: data }),
+    onSuccess: async (createdStudent) => {
+      console.log("Created student:", createdStudent)
+      console.log("Selected classroom IDs:", selectedClassroomIds)
+
+      // If classrooms were selected, add the student to them
+      if (selectedClassroomIds.length > 0) {
+        try {
+          // The student ID is in role_record.id
+          const studentId = createdStudent.role_record.id
+
+          // Add student to each selected classroom
+          for (const classId of selectedClassroomIds) {
+            await TeachersService.addStudentsToClass({
+              classId: classId,
+              requestBody: [studentId],
+            })
+            queryClient.invalidateQueries({ queryKey: ["classStudents", classId] })
+          }
+
+          const message = `Student created and added to ${selectedClassroomIds.length} classroom(s) successfully!`
+          queryClient.invalidateQueries({ queryKey: ["teacherStudents"] })
+          queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
+          setIsAddDialogOpen(false)
+          setNewStudent({
+            username: "",
+            user_email: "",
+            full_name: "",
+            grade_level: undefined,
+            parent_email: undefined,
+          })
+          setSelectedClassroomIds([])
+          showSuccessToast(message)
+        } catch (error: any) {
+          console.error("Failed to add student to classrooms:", error)
+          console.error("Error details:", error.body || error.message)
+          queryClient.invalidateQueries({ queryKey: ["teacherStudents"] })
+          setIsAddDialogOpen(false)
+          setNewStudent({
+            username: "",
+            user_email: "",
+            full_name: "",
+            grade_level: undefined,
+            parent_email: undefined,
+          })
+          setSelectedClassroomIds([])
+
+          let errorMsg = "Student created but failed to add to some classrooms. You can add them later."
+          if (error.body?.detail) {
+            errorMsg = `Student created. Error adding to classrooms: ${error.body.detail}`
+          }
+          showErrorToast(errorMsg)
+        }
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["teacherStudents"] })
+        queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
+        setIsAddDialogOpen(false)
+        setNewStudent({
+          username: "",
+          user_email: "",
+          full_name: "",
+          grade_level: undefined,
+          parent_email: undefined,
+        })
+        setSelectedClassroomIds([])
+        showSuccessToast("Student created successfully!")
+      }
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to create student. Please try again."
+
+      if (error.body?.detail) {
+        if (typeof error.body.detail === 'string') {
+          errorMessage = error.body.detail
+        } else if (Array.isArray(error.body.detail)) {
+          errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
+        }
+      }
+
+      showErrorToast(errorMessage)
+    },
+  })
+
+  // Update student mutation
+  const updateStudentMutation = useMutation({
+    mutationFn: ({ studentId, data }: { studentId: string, data: StudentUpdate }) =>
+      TeachersService.updateStudent({ studentId, requestBody: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teacherStudents"] })
+      setIsEditDialogOpen(false)
+      setSelectedStudent(null)
+      showSuccessToast("Student updated successfully!")
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to update student. Please try again."
+      if (error.body?.detail) {
+        if (typeof error.body.detail === 'string') {
+          errorMessage = error.body.detail
+        } else if (Array.isArray(error.body.detail)) {
+          errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
+        }
+      }
+      showErrorToast(errorMessage)
+    },
+  })
+
+  // Delete student mutation
+  const deleteStudentMutation = useMutation({
+    mutationFn: (studentId: string) =>
+      TeachersService.deleteStudent({ studentId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teacherStudents"] })
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
+      setIsDeleteDialogOpen(false)
+      setSelectedStudent(null)
+      showSuccessToast("Student deleted successfully!")
+    },
+    onError: (error: any) => {
+      showErrorToast("Failed to delete student. Please try again.")
+    },
+  })
 
   const handleAddStudent = () => {
-    showSuccessToast("Add Student feature coming soon!")
+    if (
+      !newStudent.username ||
+      !newStudent.user_email ||
+      !newStudent.full_name
+    ) {
+      showErrorToast("Please fill in all required fields")
+      return
+    }
+
+    // Validate username format
+    if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newStudent.username)) {
+      showErrorToast(
+        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen"
+      )
+      return
+    }
+
+    createStudentMutation.mutate(newStudent)
   }
 
-  const filteredStudents = mockStudents.filter(
+  const handleEditStudent = async (student: StudentPublic) => {
+    setSelectedStudent(student)
+    setEditStudent({
+      user_email: student.user_email,
+      user_username: student.user_username,
+      user_full_name: student.user_full_name,
+      grade_level: student.grade_level,
+      parent_email: student.parent_email,
+    })
+
+    // Get classrooms from the map
+    setStudentClassrooms(studentClassroomsMap[student.id] || [])
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdateStudent = () => {
+    if (!selectedStudent) return
+
+    updateStudentMutation.mutate({
+      studentId: selectedStudent.id,
+      data: editStudent,
+    })
+  }
+
+  const handleDeleteClick = (student: StudentPublic) => {
+    setSelectedStudent(student)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = () => {
+    if (!selectedStudent) return
+    deleteStudentMutation.mutate(selectedStudent.id)
+  }
+
+  const filteredStudents = students.filter(
     (student) =>
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.className.toLowerCase().includes(searchQuery.toLowerCase()),
+      student.user_full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.user_username?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   return (
@@ -54,7 +326,7 @@ function TeacherStudentsPage() {
           />
         </div>
         <Button
-          onClick={handleAddStudent}
+          onClick={() => setIsAddDialogOpen(true)}
           className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -62,81 +334,406 @@ function TeacherStudentsPage() {
         </Button>
       </div>
 
-      {/* Students Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredStudents.map((student) => (
-          <Card
-            key={student.id}
-            className="shadow-neuro border-teal-100 dark:border-teal-900 hover:shadow-neuro-lg transition-shadow"
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground mb-1">
-                    {student.name}
-                  </h3>
-                  <Badge
-                    variant="outline"
-                    className="bg-teal-50 text-teal-700 text-xs"
-                  >
-                    {student.className}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-neuro-sm">
-                  <User className="w-6 h-6" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{student.email}</span>
-                </div>
-                {student.averageScore !== undefined && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Avg Score:</span>
-                    <Badge
-                      variant="outline"
-                      className={
-                        student.averageScore >= 80
-                          ? "bg-green-50 text-green-700"
-                          : student.averageScore >= 60
-                            ? "bg-yellow-50 text-yellow-700"
-                            : "bg-red-50 text-red-700"
-                      }
-                    >
-                      {student.averageScore}%
-                    </Badge>
-                  </div>
-                )}
-                {student.completedAssignments !== undefined &&
-                  student.totalAssignments !== undefined && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Assignments:
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className="bg-blue-50 text-blue-700"
-                      >
-                        {student.completedAssignments}/
-                        {student.totalAssignments}
-                      </Badge>
-                    </div>
-                  )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredStudents.length === 0 && (
+      {/* Loading/Error States */}
+      {error ? (
+        <div className="text-center py-12 text-red-500">
+          Error loading students. Please try again later.
+        </div>
+      ) : isLoading ? (
+        <div className="text-center py-12 text-muted-foreground">
+          Loading students...
+        </div>
+      ) : filteredStudents.length === 0 ? (
+        /* Empty State */
         <div className="text-center py-12">
           <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <p className="text-lg text-muted-foreground">No students found</p>
+          <p className="text-lg text-muted-foreground mb-2">No students yet</p>
+          <p className="text-sm text-muted-foreground">
+            Students you create will appear here
+          </p>
+        </div>
+      ) : (
+        /* Students Table */
+        <div className="border rounded-lg shadow-neuro">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Grade</TableHead>
+                <TableHead>Classrooms</TableHead>
+                <TableHead>Parent Email</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredStudents.map((student) => (
+                <TableRow key={student.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-xs">
+                        {student.user_full_name?.charAt(0).toUpperCase()}
+                      </div>
+                      {student.user_full_name}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground">@{student.user_username}</span>
+                  </TableCell>
+                  <TableCell>{student.user_email}</TableCell>
+                  <TableCell>
+                    {student.grade_level ? (
+                      <Badge variant="outline" className="bg-teal-50 text-teal-700">
+                        Grade {student.grade_level}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {studentClassroomsMap[student.id] && studentClassroomsMap[student.id].length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {studentClassroomsMap[student.id].map((classroom, index) => (
+                          <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 text-xs">
+                            {classroom}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">None</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {student.parent_email || (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditStudent(student)}
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteClick(student)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
+
+      {/* Add Student Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Student</DialogTitle>
+            <DialogDescription>Create a new student account</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="full-name">Full Name *</Label>
+              <Input
+                id="full-name"
+                placeholder="e.g., John Doe"
+                value={newStudent.full_name}
+                onChange={(e) => {
+                  const fullName = e.target.value
+                  // Auto-generate username
+                  const generatedUsername = fullName
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^a-z0-9_-]/g, '')
+                    .slice(0, 50)
+
+                  setNewStudent({
+                    ...newStudent,
+                    full_name: fullName,
+                    username: generatedUsername,
+                  })
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="username">Username *</Label>
+              <Input
+                id="username"
+                placeholder="e.g., johndoe"
+                value={newStudent.username}
+                onChange={(e) =>
+                  setNewStudent({
+                    ...newStudent,
+                    username: e.target.value,
+                  })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Auto-generated from full name (editable)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="e.g., student@school.com"
+                value={newStudent.user_email}
+                onChange={(e) =>
+                  setNewStudent({ ...newStudent, user_email: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="grade">Grade Level</Label>
+              <Input
+                id="grade"
+                placeholder="e.g., 5"
+                value={newStudent.grade_level || ""}
+                onChange={(e) =>
+                  setNewStudent({
+                    ...newStudent,
+                    grade_level: e.target.value || undefined,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="parent-email">Parent Email</Label>
+              <Input
+                id="parent-email"
+                type="email"
+                placeholder="e.g., parent@email.com"
+                value={newStudent.parent_email || ""}
+                onChange={(e) =>
+                  setNewStudent({
+                    ...newStudent,
+                    parent_email: e.target.value || undefined,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Classrooms (Optional)</Label>
+              {classes.length > 0 ? (
+                <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
+                  {classes.map((classroom) => (
+                    <div key={classroom.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`create-class-${classroom.id}`}
+                        checked={selectedClassroomIds.includes(classroom.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedClassroomIds([...selectedClassroomIds, classroom.id])
+                          } else {
+                            setSelectedClassroomIds(selectedClassroomIds.filter(id => id !== classroom.id))
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor={`create-class-${classroom.id}`}
+                        className="cursor-pointer flex-1"
+                      >
+                        {classroom.name}
+                        {classroom.subject && ` - ${classroom.subject}`}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No classrooms available</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Select one or more classrooms, or leave unselected to assign later
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddDialogOpen(false)
+                setSelectedClassroomIds([])
+              }}
+              disabled={createStudentMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddStudent}
+              disabled={createStudentMutation.isPending}
+              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
+            >
+              {createStudentMutation.isPending
+                ? "Creating..."
+                : "Create Student"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+            <DialogDescription>
+              Update student information for {selectedStudent?.user_full_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-full-name">Full Name *</Label>
+              <Input
+                id="edit-full-name"
+                placeholder="e.g., John Doe"
+                value={editStudent.user_full_name || ""}
+                onChange={(e) =>
+                  setEditStudent({
+                    ...editStudent,
+                    user_full_name: e.target.value || undefined,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-username">Username *</Label>
+              <Input
+                id="edit-username"
+                placeholder="e.g., johndoe"
+                value={editStudent.user_username || ""}
+                onChange={(e) =>
+                  setEditStudent({
+                    ...editStudent,
+                    user_username: e.target.value || undefined,
+                  })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                3-50 characters, alphanumeric, underscore, or hyphen
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email *</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                placeholder="e.g., student@school.com"
+                value={editStudent.user_email || ""}
+                onChange={(e) =>
+                  setEditStudent({
+                    ...editStudent,
+                    user_email: e.target.value || undefined,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Enrolled Classrooms</Label>
+              {studentClassrooms.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {studentClassrooms.map((classroom, index) => (
+                    <Badge key={index} variant="outline" className="bg-teal-50 text-teal-700">
+                      {classroom}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Not enrolled in any classroom</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Manage classroom enrollment from the Classrooms page
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-grade">Grade Level</Label>
+              <Input
+                id="edit-grade"
+                placeholder="e.g., 5"
+                value={editStudent.grade_level || ""}
+                onChange={(e) =>
+                  setEditStudent({
+                    ...editStudent,
+                    grade_level: e.target.value || undefined,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-parent-email">Parent Email</Label>
+              <Input
+                id="edit-parent-email"
+                type="email"
+                placeholder="e.g., parent@email.com"
+                value={editStudent.parent_email || ""}
+                onChange={(e) =>
+                  setEditStudent({
+                    ...editStudent,
+                    parent_email: e.target.value || undefined,
+                  })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateStudentMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateStudent}
+              disabled={updateStudentMutation.isPending}
+              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
+            >
+              {updateStudentMutation.isPending
+                ? "Updating..."
+                : "Update Student"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the student <strong>{selectedStudent?.user_full_name}</strong> and
+              remove them from all classrooms. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteStudentMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteStudentMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteStudentMutation.isPending ? "Deleting..." : "Delete Student"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

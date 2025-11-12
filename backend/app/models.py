@@ -1,17 +1,18 @@
+import re
 import uuid
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import EmailStr, field_validator, model_validator
-from sqlalchemy import Column, JSON, UniqueConstraint
+from sqlalchemy import JSON, Column, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from app.models import (
+        Activity,
         Assignment,
         AssignmentStudent,
-        Activity,
         Book,
         Class,
         ClassStudent,
@@ -30,13 +31,45 @@ class UserRole(str, Enum):
     student = "student"
 
 
+def validate_username_format(username: str | None) -> str | None:
+    """
+    Validate username contains only alphanumeric characters, underscores, and hyphens.
+
+    Args:
+        username: The username to validate (can be None for optional fields)
+
+    Returns:
+        The validated username
+
+    Raises:
+        ValueError: If username contains invalid characters
+    """
+    if username is None:
+        return username
+    if not re.match(r'^[a-zA-Z0-9_-]+$', username):
+        raise ValueError('Username must contain only letters, numbers, underscores, and hyphens')
+    return username
+
+
 # Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
+    username: str = Field(
+        unique=True,
+        index=True,
+        min_length=3,
+        max_length=50
+    )
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
     role: UserRole = Field(default=UserRole.student)
+
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, v: str) -> str:
+        """Validate username format."""
+        return validate_username_format(v)
 
 
 # Properties to receive via API on creation
@@ -44,21 +77,29 @@ class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=40)
 
 
-class UserRegister(SQLModel):
-    email: EmailStr = Field(max_length=255)
-    password: str = Field(min_length=8, max_length=40)
-    full_name: str | None = Field(default=None, max_length=255)
-
-
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
     email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
+    username: str | None = Field(default=None, min_length=3, max_length=50)  # type: ignore
     password: str | None = Field(default=None, min_length=8, max_length=40)
+
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, v: str | None) -> str | None:
+        """Validate username format."""
+        return validate_username_format(v)
 
 
 class UserUpdateMe(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
     email: EmailStr | None = Field(default=None, max_length=255)
+    username: str | None = Field(default=None, min_length=3, max_length=50)
+
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, v: str | None) -> str | None:
+        """Validate username format."""
+        return validate_username_format(v)
 
 
 class UpdatePassword(SQLModel):
@@ -70,6 +111,7 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    initial_password: str | None = Field(default=None, max_length=255)  # Stored for admin reference
 
     # Relationships to role-specific tables (one-to-one, optional)
     publisher: Optional["Publisher"] = Relationship(back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
@@ -80,6 +122,7 @@ class User(UserBase, table=True):
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
+    initial_password: str | None = None  # Only visible to admins
 
 
 class UsersPublic(SQLModel):
@@ -154,7 +197,9 @@ class PublisherPublic(PublisherBase):
     id: uuid.UUID
     user_id: uuid.UUID
     user_email: str
+    user_username: str
     user_full_name: str
+    user_initial_password: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -163,6 +208,7 @@ class PublisherCreateAPI(SQLModel):
     """Properties for API endpoint publisher creation (includes user creation)"""
     name: str = Field(max_length=255)
     contact_email: EmailStr = Field(max_length=255)
+    username: str = Field(min_length=3, max_length=50)
     user_email: EmailStr = Field(max_length=255)
     full_name: str = Field(max_length=255)
 
@@ -179,6 +225,11 @@ class SchoolBase(SQLModel):
 class SchoolCreate(SchoolBase):
     """Properties to receive via API on School creation"""
     publisher_id: uuid.UUID
+
+
+class SchoolCreateByPublisher(SchoolBase):
+    """Properties to receive via API on School creation by Publisher (publisher_id set automatically)"""
+    pass
 
 
 class SchoolUpdate(SQLModel):
@@ -255,7 +306,9 @@ class TeacherPublic(TeacherBase):
     id: uuid.UUID
     user_id: uuid.UUID
     user_email: str
+    user_username: str
     user_full_name: str
+    user_initial_password: str | None = None
     school_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
@@ -263,6 +316,7 @@ class TeacherPublic(TeacherBase):
 
 class TeacherCreateAPI(SQLModel):
     """Properties for API endpoint teacher creation (includes user creation)"""
+    username: str = Field(min_length=3, max_length=50)
     user_email: EmailStr = Field(max_length=255)
     full_name: str = Field(max_length=255)
     school_id: uuid.UUID
@@ -285,6 +339,7 @@ class StudentCreate(StudentBase):
 class StudentUpdate(SQLModel):
     """Properties to receive via API on Student update"""
     user_email: str | None = Field(default=None, max_length=255)
+    user_username: str | None = Field(default=None, min_length=3, max_length=50)
     user_full_name: str | None = Field(default=None, max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
     parent_email: str | None = Field(default=None, max_length=255)
@@ -310,13 +365,16 @@ class StudentPublic(StudentBase):
     id: uuid.UUID
     user_id: uuid.UUID
     user_email: str
+    user_username: str
     user_full_name: str
+    user_initial_password: str | None = None
     created_at: datetime
     updated_at: datetime
 
 
 class StudentCreateAPI(SQLModel):
     """Properties for API endpoint student creation (includes user creation)"""
+    username: str = Field(min_length=3, max_length=50)
     user_email: EmailStr = Field(max_length=255)
     full_name: str = Field(max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
@@ -327,7 +385,7 @@ class StudentCreateAPI(SQLModel):
 class UserCreationResponse(SQLModel):
     """Response schema for role-specific user creation endpoints"""
     user: UserPublic
-    temp_password: str
+    initial_password: str
     role_record: PublisherPublic | TeacherPublic | StudentPublic
 
 
@@ -339,8 +397,6 @@ class DashboardStats(SQLModel):
     total_teachers: int
     total_students: int
     active_schools: int
-    total_books: int
-    total_assignments: int
 
 
 # ============================================================================
@@ -362,6 +418,11 @@ class ClassCreate(ClassBase):
     """Properties to receive via API on Class creation"""
     teacher_id: uuid.UUID
     school_id: uuid.UUID
+
+
+class ClassCreateByTeacher(ClassBase):
+    """Properties to receive via API on Class creation by Teacher (teacher_id and school_id set automatically from teacher's record)"""
+    pass
 
 
 class ClassUpdate(SQLModel):

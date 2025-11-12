@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Edit, MapPin, Plus, School, Search, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   AdminService,
   type SchoolCreate,
@@ -86,10 +86,22 @@ function AdminSchools() {
   })
 
   // Fetch publishers for dropdown
-  const { data: publishers = [] } = useQuery({
+  const { data: allPublishers = [] } = useQuery({
     queryKey: ["publishers"],
     queryFn: () => AdminService.listPublishers(),
   })
+
+  // Deduplicate publishers by name (keep first occurrence)
+  const publishers = useMemo(() => {
+    const seen = new Set<string>()
+    return allPublishers.filter((publisher) => {
+      if (seen.has(publisher.name)) {
+        return false
+      }
+      seen.add(publisher.name)
+      return true
+    })
+  }, [allPublishers])
 
   // Create school mutation
   const createSchoolMutation = useMutation({

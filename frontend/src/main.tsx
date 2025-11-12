@@ -16,7 +16,9 @@ OpenAPI.TOKEN = async () => {
 const queryClient = new QueryClient()
 
 const handleApiError = (error: Error) => {
-  if (error instanceof ApiError && [401, 403].includes(error.status)) {
+  // Handle auth errors (401, 403) and missing user errors (404)
+  // 404 can happen when a user's token is valid but the user was deleted from the database
+  if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
     localStorage.removeItem("access_token")
     // Clear query cache to remove stale user data
     queryClient.clear()
@@ -28,8 +30,8 @@ const handleApiError = (error: Error) => {
 queryClient.setDefaultOptions({
   queries: {
     retry: (failureCount, error) => {
-      // Don't retry on auth errors
-      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+      // Don't retry on auth errors or missing user errors
+      if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
         return false
       }
       return failureCount < 3

@@ -7,8 +7,11 @@ from sqlmodel import select
 from app import crud
 from app.api.deps import SessionDep, require_role
 from app.models import (
+    DashboardStats,
     Publisher,
     School,
+    SchoolCreate,
+    SchoolCreateByPublisher,
     SchoolPublic,
     Teacher,
     TeacherCreate,
@@ -19,7 +22,7 @@ from app.models import (
     UserPublic,
     UserRole,
 )
-from app.utils import generate_temp_password
+from app.utils import generate_temp_password, generate_username
 
 router = APIRouter(prefix="/publishers", tags=["publishers"])
 
@@ -50,11 +53,65 @@ def list_my_schools(
             detail="Publisher record not found for this user"
         )
 
-    # Query schools belonging to this publisher
-    schools_statement = select(School).where(School.publisher_id == publisher.id)
+    # Get ALL publishers with the same organization name
+    same_org_publishers = session.exec(
+        select(Publisher).where(Publisher.name == publisher.name)
+    ).all()
+
+    publisher_ids = [p.id for p in same_org_publishers]
+
+    # Query schools belonging to ANY publisher in the same organization
+    schools_statement = select(School).where(School.publisher_id.in_(publisher_ids))
     schools = session.exec(schools_statement).all()
 
     return [SchoolPublic.model_validate(s) for s in schools]
+
+
+@router.post(
+    "/me/schools",
+    response_model=SchoolPublic,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create new school",
+    description="Creates a new school for the publisher's organization. Publisher only.",
+)
+def create_school(
+    *,
+    session: SessionDep,
+    school_in: SchoolCreateByPublisher,
+    current_user: User = require_role(UserRole.publisher)
+) -> Any:
+    """
+    Create a new school for the publisher's organization.
+
+    - **name**: School name
+    - **address**: Optional school address
+    - **contact_info**: Optional contact information
+
+    Note: publisher_id will be set automatically to the current publisher's ID.
+
+    Returns the created school record.
+    """
+    # Get Publisher record for current user
+    statement = select(Publisher).where(Publisher.user_id == current_user.id)
+    publisher = session.exec(statement).first()
+
+    if not publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher record not found for this user"
+        )
+
+    # Add publisher_id to school data
+    school_data = school_in.model_dump()
+    school_data['publisher_id'] = publisher.id
+
+    # Create school
+    db_school = School.model_validate(school_data)
+    session.add(db_school)
+    session.commit()
+    session.refresh(db_school)
+
+    return SchoolPublic.model_validate(db_school)
 
 
 @router.post(
@@ -73,6 +130,7 @@ def create_teacher(
     """
     Create a new teacher for one of the publisher's schools.
 
+    - **username**: Username for user account (3-50 characters, alphanumeric, underscore, or hyphen)
     - **user_email**: Email for user account
     - **full_name**: Full name for user account
     - **school_id**: ID of the school (must belong to this publisher)
@@ -112,8 +170,16 @@ def create_teacher(
             detail="User with this email already exists"
         )
 
-    # Generate temporary password
-    temp_password = generate_temp_password()
+    # Check if username already exists
+    existing_username = crud.get_user_by_username(session=session, username=teacher_in.username)
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this username already exists"
+        )
+
+    # Generate secure temporary password
+    initial_password = generate_temp_password()
 
     # Create Teacher record data
     teacher_create = TeacherCreate(
@@ -126,13 +192,156 @@ def create_teacher(
     user, teacher = crud.create_teacher(
         session=session,
         email=teacher_in.user_email,
-        password=temp_password,
+        username=teacher_in.username,
+        password=initial_password,
         full_name=teacher_in.full_name,
         teacher_create=teacher_create
     )
 
+    # Build teacher response with user information
+    teacher_data = TeacherPublic(
+        id=teacher.id,
+        subject_specialization=teacher.subject_specialization,
+        user_id=teacher.user_id,
+        user_email=user.email,
+        user_username=user.username,
+        user_full_name=user.full_name or "",
+        school_id=teacher.school_id,
+        created_at=teacher.created_at,
+        updated_at=teacher.updated_at
+    )
+
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        temp_password=temp_password,
-        role_record=TeacherPublic.model_validate(teacher)
+        initial_password=initial_password,
+        role_record=teacher_data
+    )
+
+
+@router.get(
+    "/me/teachers",
+    response_model=list[TeacherPublic],
+    summary="List my organization's teachers",
+    description="Retrieve all teachers from schools belonging to the publisher's organization. Publisher only.",
+)
+def list_my_teachers(
+    *,
+    session: SessionDep,
+    current_user: User = require_role(UserRole.publisher)
+) -> Any:
+    """
+    List all teachers belonging to schools of the authenticated publisher's organization.
+
+    Returns list of teachers with their user information.
+    """
+    # Get Publisher record for current user
+    statement = select(Publisher).where(Publisher.user_id == current_user.id)
+    publisher = session.exec(statement).first()
+
+    if not publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher record not found for this user"
+        )
+
+    # Get ALL publishers with the same organization name
+    same_org_publishers = session.exec(
+        select(Publisher).where(Publisher.name == publisher.name)
+    ).all()
+
+    publisher_ids = [p.id for p in same_org_publishers]
+
+    # Get all schools belonging to the organization
+    schools = session.exec(
+        select(School).where(School.publisher_id.in_(publisher_ids))
+    ).all()
+
+    school_ids = [s.id for s in schools]
+
+    # Query teachers belonging to these schools
+    teachers = session.exec(
+        select(Teacher).where(Teacher.school_id.in_(school_ids))
+    ).all()
+
+    # Build response with user information
+    result = []
+    for teacher in teachers:
+        user = session.get(User, teacher.user_id)
+        if user:
+            teacher_data = TeacherPublic(
+                id=teacher.id,
+                subject_specialization=teacher.subject_specialization,
+                user_id=teacher.user_id,
+                user_email=user.email,
+                user_username=user.username,
+                user_full_name=user.full_name or "",
+                school_id=teacher.school_id,
+                created_at=teacher.created_at,
+                updated_at=teacher.updated_at
+            )
+            result.append(teacher_data)
+
+    return result
+
+
+@router.get(
+    "/me/stats",
+    response_model=DashboardStats,
+    summary="Get my organization's dashboard stats",
+    description="Retrieve statistics for the publisher's organization. Publisher only.",
+)
+def get_my_stats(
+    *,
+    session: SessionDep,
+    current_user: User = require_role(UserRole.publisher)
+) -> DashboardStats:
+    """
+    Get dashboard statistics for the authenticated publisher's organization.
+
+    Returns counts for schools, books, and teachers.
+    """
+    # Get Publisher record for current user
+    statement = select(Publisher).where(Publisher.user_id == current_user.id)
+    publisher = session.exec(statement).first()
+
+    if not publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher record not found for this user"
+        )
+
+    # Get ALL publishers with the same organization name
+    same_org_publishers = session.exec(
+        select(Publisher).where(Publisher.name == publisher.name)
+    ).all()
+
+    publisher_ids = [p.id for p in same_org_publishers]
+
+    # Count schools
+    from sqlmodel import func
+    total_schools = session.exec(
+        select(func.count(School.id)).where(School.publisher_id.in_(publisher_ids))
+    ).one()
+
+    # Get all schools for teacher count
+    schools = session.exec(
+        select(School).where(School.publisher_id.in_(publisher_ids))
+    ).all()
+
+    school_ids = [s.id for s in schools]
+
+    # Count teachers
+    teachers_created = session.exec(
+        select(func.count(Teacher.id)).where(Teacher.school_id.in_(school_ids))
+    ).one() if school_ids else 0
+
+    # TODO: Implement book counting when book functionality is ready
+    total_books = 0
+
+    return DashboardStats(
+        total_users=0,  # Not applicable for publisher dashboard
+        total_publishers=0,  # Not applicable
+        total_teachers=teachers_created,
+        total_students=0,  # Not applicable
+        active_schools=total_schools,
     )

@@ -48,6 +48,55 @@ export type BulkImportResponse = {
 }> | null);
 };
 
+/**
+ * Properties to receive via API on Class creation by Teacher (teacher_id and school_id set automatically from teacher's record)
+ */
+export type ClassCreateByTeacher = {
+    name: string;
+    grade_level?: (string | null);
+    subject?: (string | null);
+    academic_year?: (string | null);
+    is_active?: boolean;
+};
+
+/**
+ * Properties to return via API
+ */
+export type ClassPublic = {
+    name: string;
+    grade_level?: (string | null);
+    subject?: (string | null);
+    academic_year?: (string | null);
+    is_active?: boolean;
+    id: string;
+    teacher_id: string;
+    school_id: string;
+    created_at: string;
+    updated_at: string;
+};
+
+/**
+ * Properties to receive via API on Class update
+ */
+export type ClassUpdate = {
+    name?: (string | null);
+    grade_level?: (string | null);
+    subject?: (string | null);
+    academic_year?: (string | null);
+    is_active?: (boolean | null);
+};
+
+/**
+ * Dashboard statistics for admin view
+ */
+export type DashboardStats = {
+    total_users: number;
+    total_publishers: number;
+    total_teachers: number;
+    total_students: number;
+    active_schools: number;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -74,6 +123,7 @@ export type PrivateUserCreate = {
 export type PublisherCreateAPI = {
     name: string;
     contact_email: string;
+    username: string;
     user_email: string;
     full_name: string;
 };
@@ -87,7 +137,9 @@ export type PublisherPublic = {
     id: string;
     user_id: string;
     user_email: string;
+    user_username: string;
     user_full_name: string;
+    user_initial_password?: (string | null);
     created_at: string;
     updated_at: string;
 };
@@ -110,6 +162,15 @@ export type SchoolCreate = {
     address?: (string | null);
     contact_info?: (string | null);
     publisher_id: string;
+};
+
+/**
+ * Properties to receive via API on School creation by Publisher (publisher_id set automatically)
+ */
+export type SchoolCreateByPublisher = {
+    name: string;
+    address?: (string | null);
+    contact_info?: (string | null);
 };
 
 /**
@@ -139,6 +200,7 @@ export type SchoolUpdate = {
  * Properties for API endpoint student creation (includes user creation)
  */
 export type StudentCreateAPI = {
+    username: string;
     user_email: string;
     full_name: string;
     grade_level?: (string | null);
@@ -154,7 +216,9 @@ export type StudentPublic = {
     id: string;
     user_id: string;
     user_email: string;
+    user_username: string;
     user_full_name: string;
+    user_initial_password?: (string | null);
     created_at: string;
     updated_at: string;
 };
@@ -164,6 +228,7 @@ export type StudentPublic = {
  */
 export type StudentUpdate = {
     user_email?: (string | null);
+    user_username?: (string | null);
     user_full_name?: (string | null);
     grade_level?: (string | null);
     parent_email?: (string | null);
@@ -173,6 +238,7 @@ export type StudentUpdate = {
  * Properties for API endpoint teacher creation (includes user creation)
  */
 export type TeacherCreateAPI = {
+    username: string;
     user_email: string;
     full_name: string;
     school_id: string;
@@ -187,7 +253,9 @@ export type TeacherPublic = {
     id: string;
     user_id: string;
     user_email: string;
+    user_username: string;
     user_full_name: string;
+    user_initial_password?: (string | null);
     school_id: string;
     created_at: string;
     updated_at: string;
@@ -215,6 +283,7 @@ export type UpdatePassword = {
 
 export type UserCreate = {
     email: string;
+    username: string;
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
@@ -227,36 +296,19 @@ export type UserCreate = {
  */
 export type UserCreationResponse = {
     user: UserPublic;
-    temp_password: string;
+    initial_password: string;
     role_record: (PublisherPublic | TeacherPublic | StudentPublic);
-};
-
-/**
- * Dashboard statistics for admin view
- */
-export type DashboardStats = {
-    total_users: number;
-    total_publishers: number;
-    total_teachers: number;
-    total_students: number;
-    active_schools: number;
-    total_books: number;
-    total_assignments: number;
 };
 
 export type UserPublic = {
     email: string;
+    username: string;
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
     role?: UserRole;
     id: string;
-};
-
-export type UserRegister = {
-    email: string;
-    password: string;
-    full_name?: (string | null);
+    initial_password?: (string | null);
 };
 
 /**
@@ -271,6 +323,7 @@ export type UsersPublic = {
 
 export type UserUpdate = {
     email?: (string | null);
+    username?: (string | null);
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
@@ -281,6 +334,7 @@ export type UserUpdate = {
 export type UserUpdateMe = {
     full_name?: (string | null);
     email?: (string | null);
+    username?: (string | null);
 };
 
 export type ValidationError = {
@@ -342,6 +396,12 @@ export type AdminDeleteSchoolData = {
 
 export type AdminDeleteSchoolResponse = (void);
 
+export type AdminCreateTeacherData = {
+    requestBody: TeacherCreateAPI;
+};
+
+export type AdminCreateTeacherResponse = (UserCreationResponse);
+
 export type AdminListTeachersData = {
     limit?: number;
     schoolId?: (string | null);
@@ -349,12 +409,6 @@ export type AdminListTeachersData = {
 };
 
 export type AdminListTeachersResponse = (Array<TeacherPublic>);
-
-export type AdminCreateTeacherData = {
-    requestBody: TeacherCreateAPI;
-};
-
-export type AdminCreateTeacherResponse = (UserCreationResponse);
 
 export type AdminUpdateTeacherData = {
     requestBody: TeacherUpdate;
@@ -413,6 +467,14 @@ export type AdminBulkImportStudentsData = {
 
 export type AdminBulkImportStudentsResponse = (BulkImportResponse);
 
+export type AdminGetStatsResponse = (DashboardStats);
+
+export type DevGetQuickLoginUsersResponse = ({
+    [key: string]: Array<{
+        [key: string]: (string);
+    }>;
+});
+
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;
 };
@@ -447,11 +509,21 @@ export type PrivateCreateUserResponse = (UserPublic);
 
 export type PublishersListMySchoolsResponse = (Array<SchoolPublic>);
 
+export type PublishersCreateSchoolData = {
+    requestBody: SchoolCreateByPublisher;
+};
+
+export type PublishersCreateSchoolResponse = (SchoolPublic);
+
+export type PublishersListMyTeachersResponse = (Array<TeacherPublic>);
+
 export type PublishersCreateTeacherData = {
     requestBody: TeacherCreateAPI;
 };
 
 export type PublishersCreateTeacherResponse = (UserCreationResponse);
+
+export type PublishersGetMyStatsResponse = (DashboardStats);
 
 export type TeachersListMyStudentsResponse = (Array<StudentPublic>);
 
@@ -466,6 +538,60 @@ export type TeachersBulkImportStudentsData = {
 };
 
 export type TeachersBulkImportStudentsResponse = (BulkImportResponse);
+
+export type TeachersUpdateStudentData = {
+    requestBody: StudentUpdate;
+    studentId: string;
+};
+
+export type TeachersUpdateStudentResponse = (StudentPublic);
+
+export type TeachersDeleteStudentData = {
+    studentId: string;
+};
+
+export type TeachersDeleteStudentResponse = (unknown);
+
+export type TeachersListMyClassesResponse = (Array<ClassPublic>);
+
+export type TeachersCreateClassData = {
+    requestBody: ClassCreateByTeacher;
+};
+
+export type TeachersCreateClassResponse = (ClassPublic);
+
+export type TeachersGetClassDetailsData = {
+    classId: string;
+};
+
+export type TeachersGetClassDetailsResponse = (ClassPublic);
+
+export type TeachersUpdateClassData = {
+    classId: string;
+    requestBody: ClassUpdate;
+};
+
+export type TeachersUpdateClassResponse = (ClassPublic);
+
+export type TeachersAddStudentsToClassData = {
+    classId: string;
+    requestBody: Array<(string)>;
+};
+
+export type TeachersAddStudentsToClassResponse = (unknown);
+
+export type TeachersGetClassStudentsData = {
+    classId: string;
+};
+
+export type TeachersGetClassStudentsResponse = (Array<StudentPublic>);
+
+export type TeachersRemoveStudentFromClassData = {
+    classId: string;
+    studentId: string;
+};
+
+export type TeachersRemoveStudentFromClassResponse = (unknown);
 
 export type UsersReadUsersData = {
     limit?: number;
@@ -495,12 +621,6 @@ export type UsersUpdatePasswordMeData = {
 };
 
 export type UsersUpdatePasswordMeResponse = (Message);
-
-export type UsersRegisterUserData = {
-    requestBody: UserRegister;
-};
-
-export type UsersRegisterUserResponse = (UserPublic);
 
 export type UsersReadUserByIdData = {
     userId: string;

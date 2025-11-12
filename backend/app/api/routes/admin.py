@@ -8,6 +8,8 @@ from sqlmodel import func, select
 from app import crud
 from app.api.deps import SessionDep, require_role
 from app.models import (
+    Assignment,
+    Book,
     BulkImportErrorDetail,
     BulkImportResponse,
     DashboardStats,
@@ -38,6 +40,7 @@ from app.models import (
 from app.services.bulk_import import validate_bulk_import
 from app.utils import (
     generate_temp_password,
+    generate_username,
     parse_excel_file,
     validate_excel_headers,
     validate_file_size,
@@ -46,52 +49,6 @@ from app.utils import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-
-
-@router.get(
-    "/stats",
-    response_model=DashboardStats,
-    summary="Get dashboard statistics",
-    description="Retrieve system-wide statistics for admin dashboard. Admin only.",
-)
-def get_dashboard_stats(
-    *,
-    session: SessionDep,
-    current_user: User = require_role(UserRole.admin)
-) -> Any:
-    """
-    Get dashboard statistics including counts of users, publishers, teachers, students, schools, books, and assignments.
-
-    Returns system-wide counts for the admin dashboard.
-    """
-    # Count total users
-    total_users = session.exec(select(func.count(User.id))).one()
-
-    # Count publishers
-    total_publishers = session.exec(select(func.count(Publisher.id))).one()
-
-    # Count teachers
-    total_teachers = session.exec(select(func.count(Teacher.id))).one()
-
-    # Count students
-    total_students = session.exec(select(func.count(Student.id))).one()
-
-    # Count schools
-    active_schools = session.exec(select(func.count(School.id))).one()
-
-    # Books and assignments are 0 for now (external service / not implemented)
-    total_books = 0
-    total_assignments = 0
-
-    return DashboardStats(
-        total_users=total_users,
-        total_publishers=total_publishers,
-        total_teachers=total_teachers,
-        total_students=total_students,
-        active_schools=active_schools,
-        total_books=total_books,
-        total_assignments=total_assignments
-    )
 
 
 @router.post(
@@ -112,6 +69,7 @@ def create_publisher(
 
     - **name**: Publisher name
     - **contact_email**: Publisher contact email
+    - **username**: Username for user account
     - **user_email**: Email for user account
     - **full_name**: Full name for user account
 
@@ -125,8 +83,16 @@ def create_publisher(
             detail="User with this email already exists"
         )
 
-    # Generate temporary password
-    temp_password = generate_temp_password()
+    # Check if username already exists
+    existing_username = crud.get_user_by_username(session=session, username=publisher_in.username)
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this username already exists"
+        )
+
+    # Generate secure temporary password
+    initial_password = generate_temp_password()
 
     # Create Publisher record data
     publisher_create = PublisherCreate(
@@ -139,7 +105,8 @@ def create_publisher(
     user, publisher = crud.create_publisher(
         session=session,
         email=publisher_in.user_email,
-        password=temp_password,
+        username=publisher_in.username,
+        password=initial_password,
         full_name=publisher_in.full_name,
         publisher_create=publisher_create
     )
@@ -151,14 +118,16 @@ def create_publisher(
         contact_email=publisher.contact_email,
         user_id=publisher.user_id,
         user_email=user.email,
+        user_username=user.username,
         user_full_name=user.full_name or "",
+        user_initial_password=user.initial_password,
         created_at=publisher.created_at,
         updated_at=publisher.updated_at
     )
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        temp_password=temp_password,
+        initial_password=initial_password,
         role_record=publisher_data
     )
 
@@ -238,7 +207,9 @@ def list_publishers(
             contact_email=p.contact_email,
             user_id=p.user_id,
             user_email=user.email if user else "",
+            user_username=user.username if user else "",
             user_full_name=user.full_name if user else "",
+            user_initial_password=user.initial_password if user else None,
             created_at=p.created_at,
             updated_at=p.updated_at
         )
@@ -337,7 +308,9 @@ def update_publisher(
         contact_email=publisher.contact_email,
         user_id=publisher.user_id,
         user_email=user.email,
+        user_username=user.username,
         user_full_name=user.full_name or "",
+        user_initial_password=user.initial_password,
         created_at=publisher.created_at,
         updated_at=publisher.updated_at
     )
@@ -370,8 +343,16 @@ def delete_publisher(
             detail="Publisher not found"
         )
 
-    # Delete the publisher (will cascade to user)
-    session.delete(publisher)
+    # Get the associated user
+    user = session.get(User, publisher.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Associated user not found"
+        )
+
+    # Delete the user (will cascade to publisher via database ondelete CASCADE)
+    session.delete(user)
     session.commit()
 
 
@@ -501,20 +482,23 @@ def delete_school(
     response_model=UserCreationResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create new teacher",
-    description="Creates a new teacher user and Teacher record. Admin only.",
+    description="Creates a new teacher user and Teacher record. Admin OR Publisher.",
 )
 def create_teacher(
     *,
     session: SessionDep,
     teacher_in: TeacherCreateAPI,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = require_role(UserRole.admin, UserRole.publisher)
 ) -> Any:
     """
     Create a new teacher with user account.
 
+    **Permissions:** Admin OR Publisher
+
+    - **username**: Username for user account (3-50 characters, alphanumeric, underscore, or hyphen)
     - **user_email**: Email for user account
     - **full_name**: Full name for user account
-    - **school_id**: ID of the school this teacher belongs to
+    - **school_id**: ID of the school (must belong to this publisher if Publisher role)
     - **subject_specialization**: Optional subject specialization
 
     Returns user, temp_password, and teacher record.
@@ -527,6 +511,14 @@ def create_teacher(
             detail="User with this email already exists"
         )
 
+    # Check if username already exists
+    existing_username = crud.get_user_by_username(session=session, username=teacher_in.username)
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this username already exists"
+        )
+
     # Validate school exists
     school = session.get(School, teacher_in.school_id)
     if not school:
@@ -535,8 +527,25 @@ def create_teacher(
             detail="School not found"
         )
 
-    # Generate temporary password
-    temp_password = generate_temp_password()
+    # If current user is Publisher, verify school ownership
+    if current_user.role == UserRole.publisher:
+        publisher_statement = select(Publisher).where(Publisher.user_id == current_user.id)
+        publisher = session.exec(publisher_statement).first()
+
+        if not publisher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Publisher record not found for this user"
+            )
+
+        if school.publisher_id != publisher.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot create teacher in another publisher's school"
+            )
+
+    # Generate secure temporary password
+    initial_password = generate_temp_password()
 
     # Create Teacher record data
     teacher_create = TeacherCreate(
@@ -549,7 +558,8 @@ def create_teacher(
     user, teacher = crud.create_teacher(
         session=session,
         email=teacher_in.user_email,
-        password=temp_password,
+        username=teacher_in.username,
+        password=initial_password,
         full_name=teacher_in.full_name,
         teacher_create=teacher_create
     )
@@ -560,7 +570,9 @@ def create_teacher(
         subject_specialization=teacher.subject_specialization,
         user_id=teacher.user_id,
         user_email=user.email,
+        user_username=user.username,
         user_full_name=user.full_name or "",
+        user_initial_password=user.initial_password,
         school_id=teacher.school_id,
         created_at=teacher.created_at,
         updated_at=teacher.updated_at
@@ -568,7 +580,7 @@ def create_teacher(
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        temp_password=temp_password,
+        initial_password=initial_password,
         role_record=teacher_data
     )
 
@@ -611,7 +623,9 @@ def list_teachers(
             subject_specialization=t.subject_specialization,
             user_id=t.user_id,
             user_email=user.email if user else "",
+            user_username=user.username if user else "",
             user_full_name=user.full_name if user else "",
+            user_initial_password=user.initial_password if user else None,
             school_id=t.school_id,
             created_at=t.created_at,
             updated_at=t.updated_at
@@ -719,7 +733,9 @@ def update_teacher(
         subject_specialization=teacher.subject_specialization,
         user_id=teacher.user_id,
         user_email=user.email,
+        user_username=user.username,
         user_full_name=user.full_name or "",
+        user_initial_password=user.initial_password,
         school_id=teacher.school_id,
         created_at=teacher.created_at,
         updated_at=teacher.updated_at
@@ -753,8 +769,16 @@ def delete_teacher(
             detail="Teacher not found"
         )
 
-    # Delete the teacher
-    session.delete(teacher)
+    # Get the associated user
+    user = session.get(User, teacher.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Associated user not found"
+        )
+
+    # Delete the user (will cascade to teacher via database ondelete CASCADE)
+    session.delete(user)
     session.commit()
 
 
@@ -763,17 +787,20 @@ def delete_teacher(
     response_model=UserCreationResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create new student",
-    description="Creates a new student user and Student record. Admin only.",
+    description="Creates a new student user and Student record. Admin, Publisher, OR Teacher.",
 )
 def create_student(
     *,
     session: SessionDep,
     student_in: StudentCreateAPI,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
 ) -> Any:
     """
     Create a new student with user account.
 
+    **Permissions:** Admin, Publisher, OR Teacher
+
+    - **username**: Username for user account (3-50 characters, alphanumeric, underscore, or hyphen)
     - **user_email**: Email for user account
     - **full_name**: Full name for user account
     - **grade_level**: Optional grade level
@@ -789,8 +816,16 @@ def create_student(
             detail="User with this email already exists"
         )
 
-    # Generate temporary password
-    temp_password = generate_temp_password()
+    # Check if username already exists
+    existing_username = crud.get_user_by_username(session=session, username=student_in.username)
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this username already exists"
+        )
+
+    # Generate secure temporary password
+    initial_password = generate_temp_password()
 
     # Create Student record data
     student_create = StudentCreate(
@@ -803,7 +838,8 @@ def create_student(
     user, student = crud.create_student(
         session=session,
         email=student_in.user_email,
-        password=temp_password,
+        username=student_in.username,
+        password=initial_password,
         full_name=student_in.full_name,
         student_create=student_create
     )
@@ -815,14 +851,16 @@ def create_student(
         id=student.id,
         user_id=student.user_id,
         user_email=user.email,
+        user_username=user.username,
         user_full_name=user.full_name or "",
+        user_initial_password=user.initial_password,
         created_at=student.created_at,
         updated_at=student.updated_at
     )
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        temp_password=temp_password,
+        initial_password=initial_password,
         role_record=student_data
     )
 
@@ -861,7 +899,9 @@ def list_students(
             id=s.id,
             user_id=s.user_id,
             user_email=user.email if user else "",
+            user_username=user.username if user else "",
             user_full_name=user.full_name if user else "",
+            user_initial_password=user.initial_password if user else None,
             created_at=s.created_at,
             updated_at=s.updated_at
         )
@@ -960,7 +1000,9 @@ def update_student(
         id=student.id,
         user_id=student.user_id,
         user_email=user.email,
+        user_username=user.username,
         user_full_name=user.full_name or "",
+        user_initial_password=user.initial_password,
         created_at=student.created_at,
         updated_at=student.updated_at
     )
@@ -993,8 +1035,16 @@ def delete_student(
             detail="Student not found"
         )
 
-    # Delete the student
-    session.delete(student)
+    # Get the associated user
+    user = session.get(User, student.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Associated user not found"
+        )
+
+    # Delete the user (will cascade to student via database ondelete CASCADE)
+    session.delete(user)
     session.commit()
 
 
@@ -1096,6 +1146,9 @@ async def bulk_import_publishers(
             # Generate temporary password
             temp_password = generate_temp_password()
 
+            # Generate unique username
+            username = generate_username(full_name, session)
+
             # Create Publisher record data
             publisher_create = PublisherCreate(
                 user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
@@ -1107,6 +1160,7 @@ async def bulk_import_publishers(
             user, publisher = crud.create_publisher(
                 session=session,
                 email=email,
+                username=username,
                 password=temp_password,
                 full_name=full_name,
                 publisher_create=publisher_create
@@ -1254,6 +1308,9 @@ async def bulk_import_teachers(
             # Generate temporary password
             temp_password = generate_temp_password()
 
+            # Generate unique username
+            username = generate_username(full_name, session)
+
             # Create Teacher record data
             teacher_create = TeacherCreate(
                 user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
@@ -1265,6 +1322,7 @@ async def bulk_import_teachers(
             user, teacher = crud.create_teacher(
                 session=session,
                 email=email,
+                username=username,
                 password=temp_password,
                 full_name=full_name,
                 teacher_create=teacher_create
@@ -1395,6 +1453,9 @@ async def bulk_import_students(
             # Generate temporary password
             temp_password = generate_temp_password()
 
+            # Generate unique username
+            username = generate_username(full_name, session)
+
             # Create Student record data
             student_create = StudentCreate(
                 user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
@@ -1406,6 +1467,7 @@ async def bulk_import_students(
             user, student = crud.create_student(
                 session=session,
                 email=email,
+                username=username,
                 password=temp_password,
                 full_name=full_name,
                 student_create=student_create
@@ -1435,4 +1497,42 @@ async def bulk_import_students(
         error_count=0,
         errors=[],
         credentials=created_credentials
+    )
+
+
+# ============================================================================
+# Dashboard Statistics
+# ============================================================================
+
+
+@router.get("/stats", response_model=DashboardStats)
+def get_stats(
+    session: SessionDep,
+    current_user: User = require_role(UserRole.admin)
+) -> DashboardStats:
+    """
+    Get dashboard statistics for admin.
+    Returns counts for users, publishers, teachers, students, and schools.
+    """
+    # Count total users
+    total_users = session.exec(select(func.count(User.id))).one()
+
+    # Count publishers
+    total_publishers = session.exec(select(func.count(Publisher.id))).one()
+
+    # Count teachers
+    total_teachers = session.exec(select(func.count(Teacher.id))).one()
+
+    # Count students
+    total_students = session.exec(select(func.count(Student.id))).one()
+
+    # Count schools (all schools are considered "active" for now)
+    active_schools = session.exec(select(func.count(School.id))).one()
+
+    return DashboardStats(
+        total_users=total_users,
+        total_publishers=total_publishers,
+        total_teachers=total_teachers,
+        total_students=total_students,
+        active_schools=active_schools,
     )

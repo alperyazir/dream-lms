@@ -1,10 +1,9 @@
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { BookOpen, School, Users } from "lucide-react"
+import { PublishersService } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { BookCard } from "@/components/dashboard/BookCard"
-import { SchoolCard } from "@/components/dashboard/SchoolCard"
 import { StatCard } from "@/components/dashboard/StatCard"
-import { publisherDashboardData } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/publisher/dashboard")({
   component: () => (
@@ -15,7 +14,12 @@ export const Route = createFileRoute("/_layout/publisher/dashboard")({
 })
 
 function PublisherDashboard() {
-  const { schools, books, stats } = publisherDashboardData
+  // Fetch real stats from API
+  const { data: stats, isLoading, error } = useQuery({
+    queryKey: ["publisherStats"],
+    queryFn: () => PublishersService.getMyStats(),
+    staleTime: 30000, // Cache for 30 seconds
+  })
 
   return (
     <div className="max-w-full p-6 space-y-8">
@@ -25,60 +29,38 @@ function PublisherDashboard() {
           Publisher Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Manage your schools, books, and teachers
+          Overview of your organization's schools, books, and teachers
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          icon={<School className="w-6 h-6" />}
-          label="Total Schools"
-          value={stats.totalSchools}
-        />
-        <StatCard
-          icon={<BookOpen className="w-6 h-6" />}
-          label="Total Books"
-          value={stats.totalBooks}
-        />
-        <StatCard
-          icon={<Users className="w-6 h-6" />}
-          label="Teachers Created"
-          value={stats.teachersCreated}
-        />
-      </div>
-
-      {/* My Schools Section */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground mb-4">My Schools</h2>
+      {error ? (
+        <div className="text-center py-8 text-red-500">
+          Error loading statistics. Please try again later.
+        </div>
+      ) : isLoading ? (
+        <div className="text-center py-8 text-muted-foreground">
+          Loading statistics...
+        </div>
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {schools.map((school) => (
-            <SchoolCard
-              key={school.id}
-              name={school.name}
-              location={school.location}
-              teacherCount={school.teacherCount}
-              studentCount={school.studentCount}
-            />
-          ))}
+          <StatCard
+            icon={<School className="w-6 h-6" />}
+            label="Total Schools"
+            value={stats?.active_schools || 0}
+          />
+          <StatCard
+            icon={<BookOpen className="w-6 h-6" />}
+            label="Total Books"
+            value={0}
+          />
+          <StatCard
+            icon={<Users className="w-6 h-6" />}
+            label="Teachers Created"
+            value={stats?.total_teachers || 0}
+          />
         </div>
-      </div>
-
-      {/* My Books Section */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground mb-4">My Books</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {books.map((book) => (
-            <BookCard
-              key={book.id}
-              title={book.title}
-              coverUrl={book.coverUrl}
-              activityCount={book.activityCount}
-              grade={book.grade}
-            />
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   )
 }

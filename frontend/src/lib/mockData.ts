@@ -812,126 +812,18 @@ export const teacherDashboardData = {
 // ============================================================================
 
 export const studentDashboardData = {
-  assignmentsDue: [
-    {
-      id: "1",
-      name: "Algebra Quiz #3",
-      subject: "Mathematics",
-      dueDate: getRelativeDateTime(0, 14, 30), // today at 2:30 PM
-      status: "due-today" as const,
-    },
-    {
-      id: "2",
-      name: "Chemistry Lab Report",
-      subject: "Science",
-      dueDate: getRelativeDateTime(1), // tomorrow at 11:59 PM
-      status: "due-week" as const,
-    },
-    {
-      id: "3",
-      name: "Shakespeare Essay",
-      subject: "English",
-      dueDate: getRelativeDateTime(4), // 4 days from now
-      status: "due-week" as const,
-    },
-    {
-      id: "4",
-      name: "History Presentation",
-      subject: "History",
-      dueDate: getRelativeDateTime(10, 10, 0), // 10 days from now at 10:00 AM
-      status: "upcoming" as const,
-    },
-  ] as AssignmentDue[],
+  assignmentsDue: [] as AssignmentDue[],
 
-  scoreHistory: [
-    { assignmentName: "Quiz 1", score: 85, date: getRelativeDate(-23) }, // ~3 weeks ago
-    { assignmentName: "Essay 1", score: 88, date: getRelativeDate(-18) },
-    { assignmentName: "Lab 1", score: 92, date: getRelativeDate(-13) },
-    { assignmentName: "Quiz 2", score: 78, date: getRelativeDate(-10) },
-    { assignmentName: "Project", score: 95, date: getRelativeDate(-6) },
-    { assignmentName: "Test 1", score: 87, date: getRelativeDate(-3) },
-    { assignmentName: "Lab 2", score: 90, date: getRelativeDate(-1) }, // yesterday
-  ] as ScoreHistory[],
+  scoreHistory: [] as ScoreHistory[],
 
-  recentFeedback: [
-    {
-      id: "1",
-      assignmentName: "Lab 2: Chemical Reactions",
-      teacherName: "Dr. Smith",
-      comment:
-        "Excellent work on the lab report! Your analysis was thorough and well-documented.",
-      score: 90,
-      date: getRelativeDate(-1), // yesterday
-    },
-    {
-      id: "2",
-      assignmentName: "Test 1: World History",
-      teacherName: "Ms. Johnson",
-      comment:
-        "Good understanding of the material. Review your notes on the Renaissance period.",
-      score: 87,
-      date: getRelativeDate(-3), // 3 days ago
-    },
-    {
-      id: "3",
-      assignmentName: "Project: Ecosystem Analysis",
-      teacherName: "Dr. Smith",
-      comment:
-        "Outstanding presentation! Your visual aids were excellent and clearly explained.",
-      score: 95,
-      date: getRelativeDate(-6), // 6 days ago
-    },
-  ] as Feedback[],
+  recentFeedback: [] as Feedback[],
 
-  achievements: [
-    {
-      id: "1",
-      title: "Perfect Score",
-      description: "Achieved 100% on an assignment",
-      icon: "🏆",
-      earnedDate: getRelativeDate(-13), // ~2 weeks ago
-    },
-    {
-      id: "2",
-      title: "Speed Demon",
-      description: "Completed 5 assignments ahead of schedule",
-      icon: "⚡",
-      earnedDate: getRelativeDate(-8),
-    },
-    {
-      id: "3",
-      title: "Consistent Performer",
-      description: "Maintained 85%+ average for 4 weeks",
-      icon: "📈",
-      earnedDate: getRelativeDate(-3),
-    },
-    {
-      id: "4",
-      title: "Team Player",
-      description: "Helped 3 classmates with assignments",
-      icon: "🤝",
-      earnedDate: getRelativeDate(-10),
-    },
-    {
-      id: "5",
-      title: "Early Bird",
-      description: "Submitted all assignments before deadline for 2 weeks",
-      icon: "🐦",
-      earnedDate: getRelativeDate(-16),
-    },
-    {
-      id: "6",
-      title: "Science Star",
-      description: "Scored 90%+ on all science assignments",
-      icon: "🔬",
-      earnedDate: getRelativeDate(-1), // yesterday
-    },
-  ] as Achievement[],
+  achievements: [] as Achievement[],
 
   stats: {
-    averageScore: 88,
-    completedAssignments: 24,
-    upcomingAssignments: 4,
+    averageScore: 0,
+    completedAssignments: 0,
+    upcomingAssignments: 0,
   },
 }
 
@@ -942,145 +834,14 @@ export const studentDashboardData = {
 /**
  * Mock Books - 12 books across different grades and publishers
  */
-export const mockBooks: Book[] = [
-  {
-    id: "1",
-    title: "Grammar Essentials",
-    publisher: "EduPress Publishing",
-    publisherId: "1",
-    coverUrl: "https://picsum.photos/seed/book1/200/300",
-    description: "Master grammar fundamentals with engaging activities",
-    activityCount: 2,
-    grade: "6-8",
-    created_at: getRelativeDate(-120),
-  },
-  {
-    id: "2",
-    title: "Math Adventures",
-    publisher: "Learning Materials Inc",
-    publisherId: "2",
-    coverUrl: "https://picsum.photos/seed/book2/200/300",
-    description: "Make math fun with interactive problem-solving exercises",
-    activityCount: 2,
-    grade: "5-7",
-    created_at: getRelativeDate(-95),
-  },
-  {
-    id: "3",
-    title: "Science Explorers",
-    publisher: "Academic Publishers Co",
-    publisherId: "3",
-    coverUrl: "https://picsum.photos/seed/book3/200/300",
-    description: "Discover the wonders of science through hands-on activities",
-    activityCount: 2,
-    grade: "7-9",
-    created_at: getRelativeDate(-80),
-  },
-  {
-    id: "4",
-    title: "Reading Comprehension Pro",
-    publisher: "SchoolBooks Plus",
-    publisherId: "4",
-    coverUrl: "https://picsum.photos/seed/book4/200/300",
-    description: "Build strong reading skills with engaging passages",
-    activityCount: 2,
-    grade: "4-6",
-    created_at: getRelativeDate(-65),
-  },
-  {
-    id: "5",
-    title: "History Through Time",
-    publisher: "NextGen Education",
-    publisherId: "5",
-    coverUrl: "https://picsum.photos/seed/book5/200/300",
-    description: "Journey through history with interactive timelines",
-    activityCount: 2,
-    grade: "8-10",
-    created_at: getRelativeDate(-50),
-  },
-  {
-    id: "6",
-    title: "Creative Writing Workshop",
-    publisher: "Future Learning Press",
-    publisherId: "6",
-    coverUrl: "https://picsum.photos/seed/book6/200/300",
-    description: "Unleash creativity with guided writing exercises",
-    activityCount: 2,
-    grade: "6-8",
-    created_at: getRelativeDate(-35),
-  },
-  {
-    id: "7",
-    title: "Physics Fundamentals",
-    publisher: "EduPress Publishing",
-    publisherId: "1",
-    coverUrl: "https://picsum.photos/seed/book7/200/300",
-    description: "Explore the laws of physics with practical experiments",
-    activityCount: 2,
-    grade: "9-11",
-    created_at: getRelativeDate(-20),
-  },
-  {
-    id: "8",
-    title: "Spanish for Beginners",
-    publisher: "Learning Materials Inc",
-    publisherId: "2",
-    coverUrl: "https://picsum.photos/seed/book8/200/300",
-    description: "Learn Spanish through immersive activities",
-    activityCount: 2,
-    grade: "6-9",
-    created_at: getRelativeDate(-10),
-  },
-  {
-    id: "9",
-    title: "Kindergarten Basics",
-    publisher: "Academic Publishers Co",
-    publisherId: "3",
-    coverUrl: "https://picsum.photos/seed/book9/200/300",
-    description: "Essential skills for young learners",
-    activityCount: 2,
-    grade: "K",
-    created_at: getRelativeDate(-150),
-  },
-  {
-    id: "10",
-    title: "First Grade Fun",
-    publisher: "SchoolBooks Plus",
-    publisherId: "4",
-    coverUrl: "https://picsum.photos/seed/book10/200/300",
-    description: "Engaging activities for first graders",
-    activityCount: 2,
-    grade: "1",
-    created_at: getRelativeDate(-140),
-  },
-  {
-    id: "11",
-    title: "Second Grade Skills",
-    publisher: "NextGen Education",
-    publisherId: "5",
-    coverUrl: "https://picsum.photos/seed/book11/200/300",
-    description: "Build foundation skills with fun exercises",
-    activityCount: 2,
-    grade: "2-3",
-    created_at: getRelativeDate(-130),
-  },
-  {
-    id: "12",
-    title: "Third Grade Mastery",
-    publisher: "Future Learning Press",
-    publisherId: "6",
-    coverUrl: "https://picsum.photos/seed/book12/200/300",
-    description: "Master key concepts for third grade success",
-    activityCount: 2,
-    grade: "2-3",
-    created_at: getRelativeDate(-110),
-  },
-]
+export const mockBooks: Book[] = []
 
 /**
  * Mock Activities - 20 activities across all 6 activity types
  */
-export const mockActivities: Activity[] = [
+export const mockActivities: Activity[] = []
+
+/*
   // Book 1 - Grammar Essentials
   {
     id: "1",
@@ -1271,12 +1032,14 @@ export const mockActivities: Activity[] = [
     order_index: 2,
     duration_minutes: 15,
   },
-]
+*/
 
 /**
  * Mock Activity Configs - Detailed configuration for interactive activities (Story 2.5)
  */
-export const mockActivityConfigs: ActivityConfig[] = [
+export const mockActivityConfigs: ActivityConfig[] = []
+
+/*
   // DragDropPicture Activity 1 - Parts of Speech
   {
     id: "config_1",
@@ -1425,7 +1188,7 @@ export const mockActivityConfigs: ActivityConfig[] = [
     headerText: "Find all the country names in the puzzle",
     words: ["FRANCE", "SPAIN", "ITALY", "BRAZIL", "CANADA", "JAPAN", "EGYPT"],
   },
-]
+*/
 
 /**
  * Mock Students - For assignment wizard selection
@@ -1455,7 +1218,9 @@ export const mockClasses = [
 /**
  * Mock Assignments - 15 assignments with varied statuses
  */
-export const mockAssignments: AssignmentFull[] = [
+export const mockAssignments: AssignmentFull[] = []
+
+/*
   {
     id: "1",
     teacherId: "1",
@@ -1636,7 +1401,7 @@ export const mockAssignments: AssignmentFull[] = [
     created_at: getRelativeDate(-8),
     completionRate: 25,
   },
-]
+*/
 
 /**
  * Mock Assignment Students - Student progress on assignments

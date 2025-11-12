@@ -186,6 +186,237 @@ export const BulkImportResponseSchema = {
     description: 'Response schema for bulk import endpoints'
 } as const;
 
+export const ClassCreateByTeacherSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Name'
+        },
+        grade_level: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Grade Level'
+        },
+        subject: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Subject'
+        },
+        academic_year: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Academic Year'
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active',
+            default: true
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'ClassCreateByTeacher',
+    description: "Properties to receive via API on Class creation by Teacher (teacher_id and school_id set automatically from teacher's record)"
+} as const;
+
+export const ClassPublicSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Name'
+        },
+        grade_level: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Grade Level'
+        },
+        subject: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Subject'
+        },
+        academic_year: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Academic Year'
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active',
+            default: true
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        teacher_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Teacher Id'
+        },
+        school_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'School Id'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        }
+    },
+    type: 'object',
+    required: ['name', 'id', 'teacher_id', 'school_id', 'created_at', 'updated_at'],
+    title: 'ClassPublic',
+    description: 'Properties to return via API'
+} as const;
+
+export const ClassUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        grade_level: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Grade Level'
+        },
+        subject: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Subject'
+        },
+        academic_year: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Academic Year'
+        },
+        is_active: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Active'
+        }
+    },
+    type: 'object',
+    title: 'ClassUpdate',
+    description: 'Properties to receive via API on Class update'
+} as const;
+
+export const DashboardStatsSchema = {
+    properties: {
+        total_users: {
+            type: 'integer',
+            title: 'Total Users'
+        },
+        total_publishers: {
+            type: 'integer',
+            title: 'Total Publishers'
+        },
+        total_teachers: {
+            type: 'integer',
+            title: 'Total Teachers'
+        },
+        total_students: {
+            type: 'integer',
+            title: 'Total Students'
+        },
+        active_schools: {
+            type: 'integer',
+            title: 'Active Schools'
+        }
+    },
+    type: 'object',
+    required: ['total_users', 'total_publishers', 'total_teachers', 'total_students', 'active_schools'],
+    title: 'DashboardStats',
+    description: 'Dashboard statistics for admin view'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -268,6 +499,12 @@ export const PublisherCreateAPISchema = {
             format: 'email',
             title: 'Contact Email'
         },
+        username: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 3,
+            title: 'Username'
+        },
         user_email: {
             type: 'string',
             maxLength: 255,
@@ -281,7 +518,7 @@ export const PublisherCreateAPISchema = {
         }
     },
     type: 'object',
-    required: ['name', 'contact_email', 'user_email', 'full_name'],
+    required: ['name', 'contact_email', 'username', 'user_email', 'full_name'],
     title: 'PublisherCreateAPI',
     description: 'Properties for API endpoint publisher creation (includes user creation)'
 } as const;
@@ -315,6 +552,29 @@ export const PublisherPublicSchema = {
             format: 'uuid',
             title: 'User Id'
         },
+        user_email: {
+            type: 'string',
+            title: 'User Email'
+        },
+        user_username: {
+            type: 'string',
+            title: 'User Username'
+        },
+        user_full_name: {
+            type: 'string',
+            title: 'User Full Name'
+        },
+        user_initial_password: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Initial Password'
+        },
         created_at: {
             type: 'string',
             format: 'date-time',
@@ -327,7 +587,7 @@ export const PublisherPublicSchema = {
         }
     },
     type: 'object',
-    required: ['name', 'id', 'user_id', 'created_at', 'updated_at'],
+    required: ['name', 'id', 'user_id', 'user_email', 'user_username', 'user_full_name', 'created_at', 'updated_at'],
     title: 'PublisherPublic',
     description: 'Properties to return via API'
 } as const;
@@ -357,6 +617,30 @@ export const PublisherUpdateSchema = {
                 }
             ],
             title: 'Contact Email'
+        },
+        user_email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Email'
+        },
+        user_full_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Full Name'
         }
     },
     type: 'object',
@@ -403,6 +687,42 @@ export const SchoolCreateSchema = {
     required: ['name', 'publisher_id'],
     title: 'SchoolCreate',
     description: 'Properties to receive via API on School creation'
+} as const;
+
+export const SchoolCreateByPublisherSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Name'
+        },
+        address: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Address'
+        },
+        contact_info: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Contact Info'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'SchoolCreateByPublisher',
+    description: 'Properties to receive via API on School creation by Publisher (publisher_id set automatically)'
 } as const;
 
 export const SchoolPublicSchema = {
@@ -496,6 +816,18 @@ export const SchoolUpdateSchema = {
                 }
             ],
             title: 'Contact Info'
+        },
+        publisher_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Publisher Id'
         }
     },
     type: 'object',
@@ -505,6 +837,12 @@ export const SchoolUpdateSchema = {
 
 export const StudentCreateAPISchema = {
     properties: {
+        username: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 3,
+            title: 'Username'
+        },
         user_email: {
             type: 'string',
             maxLength: 255,
@@ -543,7 +881,7 @@ export const StudentCreateAPISchema = {
         }
     },
     type: 'object',
-    required: ['user_email', 'full_name'],
+    required: ['username', 'user_email', 'full_name'],
     title: 'StudentCreateAPI',
     description: 'Properties for API endpoint student creation (includes user creation)'
 } as const;
@@ -584,6 +922,29 @@ export const StudentPublicSchema = {
             format: 'uuid',
             title: 'User Id'
         },
+        user_email: {
+            type: 'string',
+            title: 'User Email'
+        },
+        user_username: {
+            type: 'string',
+            title: 'User Username'
+        },
+        user_full_name: {
+            type: 'string',
+            title: 'User Full Name'
+        },
+        user_initial_password: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Initial Password'
+        },
         created_at: {
             type: 'string',
             format: 'date-time',
@@ -596,13 +957,50 @@ export const StudentPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'user_id', 'created_at', 'updated_at'],
+    required: ['id', 'user_id', 'user_email', 'user_username', 'user_full_name', 'created_at', 'updated_at'],
     title: 'StudentPublic',
     description: 'Properties to return via API'
 } as const;
 
 export const StudentUpdateSchema = {
     properties: {
+        user_email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Email'
+        },
+        user_username: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50,
+                    minLength: 3
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Username'
+        },
+        user_full_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Full Name'
+        },
         grade_level: {
             anyOf: [
                 {
@@ -635,6 +1033,12 @@ export const StudentUpdateSchema = {
 
 export const TeacherCreateAPISchema = {
     properties: {
+        username: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 3,
+            title: 'Username'
+        },
         user_email: {
             type: 'string',
             maxLength: 255,
@@ -665,7 +1069,7 @@ export const TeacherCreateAPISchema = {
         }
     },
     type: 'object',
-    required: ['user_email', 'full_name', 'school_id'],
+    required: ['username', 'user_email', 'full_name', 'school_id'],
     title: 'TeacherCreateAPI',
     description: 'Properties for API endpoint teacher creation (includes user creation)'
 } as const;
@@ -694,6 +1098,29 @@ export const TeacherPublicSchema = {
             format: 'uuid',
             title: 'User Id'
         },
+        user_email: {
+            type: 'string',
+            title: 'User Email'
+        },
+        user_username: {
+            type: 'string',
+            title: 'User Username'
+        },
+        user_full_name: {
+            type: 'string',
+            title: 'User Full Name'
+        },
+        user_initial_password: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Initial Password'
+        },
         school_id: {
             type: 'string',
             format: 'uuid',
@@ -711,7 +1138,7 @@ export const TeacherPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'user_id', 'school_id', 'created_at', 'updated_at'],
+    required: ['id', 'user_id', 'user_email', 'user_username', 'user_full_name', 'school_id', 'created_at', 'updated_at'],
     title: 'TeacherPublic',
     description: 'Properties to return via API'
 } as const;
@@ -741,6 +1168,30 @@ export const TeacherUpdateSchema = {
                 }
             ],
             title: 'Subject Specialization'
+        },
+        user_email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Email'
+        },
+        user_full_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Full Name'
         }
     },
     type: 'object',
@@ -793,6 +1244,12 @@ export const UserCreateSchema = {
             format: 'email',
             title: 'Email'
         },
+        username: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 3,
+            title: 'Username'
+        },
         is_active: {
             type: 'boolean',
             title: 'Is Active',
@@ -827,7 +1284,7 @@ export const UserCreateSchema = {
         }
     },
     type: 'object',
-    required: ['email', 'password'],
+    required: ['email', 'username', 'password'],
     title: 'UserCreate'
 } as const;
 
@@ -836,9 +1293,9 @@ export const UserCreationResponseSchema = {
         user: {
             '$ref': '#/components/schemas/UserPublic'
         },
-        temp_password: {
+        initial_password: {
             type: 'string',
-            title: 'Temp Password'
+            title: 'Initial Password'
         },
         role_record: {
             anyOf: [
@@ -856,7 +1313,7 @@ export const UserCreationResponseSchema = {
         }
     },
     type: 'object',
-    required: ['user', 'temp_password', 'role_record'],
+    required: ['user', 'initial_password', 'role_record'],
     title: 'UserCreationResponse',
     description: 'Response schema for role-specific user creation endpoints'
 } as const;
@@ -868,6 +1325,12 @@ export const UserPublicSchema = {
             maxLength: 255,
             format: 'email',
             title: 'Email'
+        },
+        username: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 3,
+            title: 'Username'
         },
         is_active: {
             type: 'boolean',
@@ -899,43 +1362,22 @@ export const UserPublicSchema = {
             type: 'string',
             format: 'uuid',
             title: 'Id'
-        }
-    },
-    type: 'object',
-    required: ['email', 'id'],
-    title: 'UserPublic'
-} as const;
-
-export const UserRegisterSchema = {
-    properties: {
-        email: {
-            type: 'string',
-            maxLength: 255,
-            format: 'email',
-            title: 'Email'
         },
-        password: {
-            type: 'string',
-            maxLength: 40,
-            minLength: 8,
-            title: 'Password'
-        },
-        full_name: {
+        initial_password: {
             anyOf: [
                 {
-                    type: 'string',
-                    maxLength: 255
+                    type: 'string'
                 },
                 {
                     type: 'null'
                 }
             ],
-            title: 'Full Name'
+            title: 'Initial Password'
         }
     },
     type: 'object',
-    required: ['email', 'password'],
-    title: 'UserRegister'
+    required: ['email', 'username', 'id'],
+    title: 'UserPublic'
 } as const;
 
 export const UserRoleSchema = {
@@ -959,6 +1401,19 @@ export const UserUpdateSchema = {
                 }
             ],
             title: 'Email'
+        },
+        username: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50,
+                    minLength: 3
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Username'
         },
         is_active: {
             type: 'boolean',
@@ -1030,6 +1485,19 @@ export const UserUpdateMeSchema = {
                 }
             ],
             title: 'Email'
+        },
+        username: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50,
+                    minLength: 3
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Username'
         }
     },
     type: 'object',

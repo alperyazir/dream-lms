@@ -76,6 +76,7 @@ def admin_user_fixture(session: Session) -> User:
     user = User(
         id=uuid.uuid4(),
         email="admin@example.com",
+        username="testadmin",
         hashed_password=get_password_hash("adminpassword"),
         role=UserRole.admin,
         is_active=True,
@@ -94,6 +95,7 @@ def publisher_user_fixture(session: Session) -> User:
     user = User(
         id=uuid.uuid4(),
         email="publisher@example.com",
+        username="testpublisher",
         hashed_password=get_password_hash("publisherpassword"),
         role=UserRole.publisher,
         is_active=True,
@@ -112,6 +114,7 @@ def teacher_user_fixture(session: Session) -> User:
     user = User(
         id=uuid.uuid4(),
         email="teacher@example.com",
+        username="testteacher",
         hashed_password=get_password_hash("teacherpassword"),
         role=UserRole.teacher,
         is_active=True,
@@ -130,6 +133,7 @@ def student_user_fixture(session: Session) -> User:
     user = User(
         id=uuid.uuid4(),
         email="student@example.com",
+        username="teststudent",
         hashed_password=get_password_hash("studentpassword"),
         role=UserRole.student,
         is_active=True,
@@ -195,6 +199,7 @@ def publisher_user_with_record_fixture(session: Session) -> User:
     user = User(
         id=uuid.uuid4(),
         email="publisher_bulk@example.com",
+        username="publisherbulk",
         hashed_password=get_password_hash("publisherpassword"),
         role=UserRole.publisher,
         is_active=True,
@@ -226,6 +231,7 @@ def teacher_user_with_record_fixture(session: Session) -> User:
     pub_user = User(
         id=uuid.uuid4(),
         email="pub_for_teacher_bulk@example.com",
+        username="pubforteacherbulk",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher
     )
@@ -243,6 +249,7 @@ def teacher_user_with_record_fixture(session: Session) -> User:
     user = User(
         id=uuid.uuid4(),
         email="teacher_bulk@example.com",
+        username="teacherbulk",
         hashed_password=get_password_hash("teacherpassword"),
         role=UserRole.teacher,
         is_active=True,

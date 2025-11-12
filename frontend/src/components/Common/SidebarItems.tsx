@@ -107,7 +107,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   // Fetch real stats for admin users
   const { data: adminStats } = useQuery({
     queryKey: ["adminStats"],
-    queryFn: () => AdminService.getStats(),
+    queryFn: () => AdminService.getDashboardStats(),
     enabled: userRole === "admin",
   })
 
@@ -121,11 +121,11 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
       case "/admin/teachers":
         return adminStats?.total_teachers ?? null
       case "/admin/books":
-        return adminStats?.total_books ?? null
+        return null // Books not tracked in stats
       case "/admin/students":
         return adminStats?.total_students ?? null
       case "/admin/assignments":
-        return adminStats?.total_assignments ?? null
+        return null // Assignments not tracked in stats
       case "/publisher/library":
         return null // Will be implemented later
       case "/publisher/schools":

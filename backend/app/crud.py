@@ -1,6 +1,7 @@
 import uuid
 from typing import Any
 
+from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
@@ -20,6 +21,16 @@ from app.models import (
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
+    # Check email uniqueness
+    existing_user_email = get_user_by_email(session=session, email=user_create.email)
+    if existing_user_email:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Check username uniqueness
+    existing_user_username = get_user_by_username(session=session, username=user_create.username)
+    if existing_user_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
     db_obj = User.model_validate(
         user_create, update={"hashed_password": get_password_hash(user_create.password)}
     )
@@ -49,6 +60,17 @@ def get_user_by_email(*, session: Session, email: str) -> User | None:
     return session_user
 
 
+def get_user_by_username(*, session: Session, username: str) -> User | None:
+    """
+    Retrieve user by username.
+
+    Returns None if user not found.
+    """
+    statement = select(User).where(User.username == username)
+    session_user = session.exec(statement).first()
+    return session_user
+
+
 def authenticate(*, session: Session, email: str, password: str) -> User | None:
     db_user = get_user_by_email(session=session, email=email)
     if not db_user:
@@ -58,8 +80,39 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
+def authenticate_with_username_or_email(
+    *, session: Session, identifier: str, password: str
+) -> User | None:
+    """
+    Authenticate user with either username or email.
+
+    Detects format based on presence of '@' character.
+    If '@' present: treats as email
+    If no '@': treats as username
+
+    Args:
+        session: Database session
+        identifier: Username or email address
+        password: User password
+
+    Returns:
+        User object if authentication successful, None otherwise
+    """
+    # Detect if identifier is email or username based on '@' character
+    if "@" in identifier:
+        db_user = get_user_by_email(session=session, email=identifier)
+    else:
+        db_user = get_user_by_username(session=session, username=identifier)
+
+    if not db_user:
+        return None
+    if not verify_password(password, db_user.hashed_password):
+        return None
+    return db_user
+
+
 def create_publisher(
-    *, session: Session, email: str, password: str, full_name: str, publisher_create: PublisherCreate
+    *, session: Session, email: str, username: str, password: str, full_name: str, publisher_create: PublisherCreate
 ) -> tuple[User, Publisher]:
     """
     Create a new publisher user and associated publisher record atomically.
@@ -67,6 +120,7 @@ def create_publisher(
     Args:
         session: Database session
         email: User email address
+        username: User username
         password: User password (will be hashed)
         full_name: User full name
         publisher_create: Publisher-specific data
@@ -77,9 +131,20 @@ def create_publisher(
     Raises:
         Exception: If transaction fails (rolls back automatically)
     """
+    # Check email uniqueness
+    existing_user_email = get_user_by_email(session=session, email=email)
+    if existing_user_email:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Check username uniqueness
+    existing_user_username = get_user_by_username(session=session, username=username)
+    if existing_user_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
     # Create User with publisher role
     user_create = UserCreate(
         email=email,
+        username=username,
         password=password,
         full_name=full_name,
         role=UserRole.publisher,
@@ -87,7 +152,10 @@ def create_publisher(
         is_superuser=False
     )
     db_user = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(password)}
+        user_create, update={
+            "hashed_password": get_password_hash(password),
+            "initial_password": password  # Store for admin reference
+        }
     )
     session.add(db_user)
     session.flush()  # Get user.id without committing
@@ -107,7 +175,7 @@ def create_publisher(
 
 
 def create_teacher(
-    *, session: Session, email: str, password: str, full_name: str, teacher_create: TeacherCreate
+    *, session: Session, email: str, username: str, password: str, full_name: str, teacher_create: TeacherCreate
 ) -> tuple[User, Teacher]:
     """
     Create a new teacher user and associated teacher record atomically.
@@ -115,8 +183,9 @@ def create_teacher(
     Args:
         session: Database session
         email: User email address
+        username: User username
         password: User password (will be hashed)
-        full_name: User full name
+        full_name: User full_name
         teacher_create: Teacher-specific data (includes school_id)
 
     Returns:
@@ -125,9 +194,20 @@ def create_teacher(
     Raises:
         Exception: If transaction fails (rolls back automatically)
     """
+    # Check email uniqueness
+    existing_user_email = get_user_by_email(session=session, email=email)
+    if existing_user_email:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Check username uniqueness
+    existing_user_username = get_user_by_username(session=session, username=username)
+    if existing_user_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
     # Create User with teacher role
     user_create = UserCreate(
         email=email,
+        username=username,
         password=password,
         full_name=full_name,
         role=UserRole.teacher,
@@ -135,7 +215,10 @@ def create_teacher(
         is_superuser=False
     )
     db_user = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(password)}
+        user_create, update={
+            "hashed_password": get_password_hash(password),
+            "initial_password": password  # Store for admin reference
+        }
     )
     session.add(db_user)
     session.flush()  # Get user.id without committing
@@ -155,7 +238,7 @@ def create_teacher(
 
 
 def create_student(
-    *, session: Session, email: str, password: str, full_name: str, student_create: StudentCreate
+    *, session: Session, email: str, username: str, password: str, full_name: str, student_create: StudentCreate
 ) -> tuple[User, Student]:
     """
     Create a new student user and associated student record atomically.
@@ -163,6 +246,7 @@ def create_student(
     Args:
         session: Database session
         email: User email address
+        username: User username
         password: User password (will be hashed)
         full_name: User full name
         student_create: Student-specific data (grade_level, parent_email)
@@ -173,9 +257,20 @@ def create_student(
     Raises:
         Exception: If transaction fails (rolls back automatically)
     """
+    # Check email uniqueness
+    existing_user_email = get_user_by_email(session=session, email=email)
+    if existing_user_email:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Check username uniqueness
+    existing_user_username = get_user_by_username(session=session, username=username)
+    if existing_user_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
     # Create User with student role
     user_create = UserCreate(
         email=email,
+        username=username,
         password=password,
         full_name=full_name,
         role=UserRole.student,
@@ -183,7 +278,10 @@ def create_student(
         is_superuser=False
     )
     db_user = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(password)}
+        user_create, update={
+            "hashed_password": get_password_hash(password),
+            "initial_password": password  # Store for admin reference
+        }
     )
     session.add(db_user)
     session.flush()  # Get user.id without committing

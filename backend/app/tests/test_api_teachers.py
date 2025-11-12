@@ -83,7 +83,7 @@ def test_teacher_create_student(
 
     # Verify response structure
     assert "user" in data
-    assert "temp_password" in data
+    assert "initial_password" in data
     assert "role_record" in data
 
     # Verify user data
@@ -92,7 +92,7 @@ def test_teacher_create_student(
     assert data["user"]["role"] == "student"
 
     # Verify temp password
-    assert len(data["temp_password"]) == 12
+    assert len(data["initial_password"]) == 12
 
     # Verify student record
     assert data["role_record"]["grade_level"] == student_data["grade_level"]
@@ -230,7 +230,7 @@ def test_teacher_list_students(
     assert str(student2.id) in student_ids
 
 
-def test_teacher_receives_temp_password(
+def test_teacher_receives_initial_password(
     client: TestClient, session: Session, teacher_token: str, teacher_user: User
 ) -> None:
     """Test response includes temp password when creating student"""
@@ -291,9 +291,9 @@ def test_teacher_receives_temp_password(
     data = response.json()
 
     # Verify temp password format
-    temp_password = data["temp_password"]
-    assert len(temp_password) == 12
-    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', temp_password)
+    initial_password = data["initial_password"]
+    assert len(initial_password) == 12
+    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', initial_password)
 
 
 def test_students_appear_in_correct_teacher_list(

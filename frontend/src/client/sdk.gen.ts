@@ -3,22 +3,9 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminUpdatePublisherResponse, AdminDeletePublisherData, AdminDeletePublisherResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, DashboardStats, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersListMySchoolsResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminUpdatePublisherResponse, AdminDeletePublisherData, AdminDeletePublisherResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, DevGetQuickLoginUsersResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersListMySchoolsResponse, PublishersCreateSchoolData, PublishersCreateSchoolResponse, PublishersListMyTeachersResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, PublishersGetMyStatsResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class AdminService {
-    /**
-     * Get dashboard statistics
-     * Retrieve system-wide statistics for admin dashboard. Admin only.
-     * @returns DashboardStats Successful Response
-     * @throws ApiError
-     */
-    public static getStats(): CancelablePromise<DashboardStats> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/admin/stats',
-        });
-    }
-
     /**
      * Create new publisher
      * Creates a new publisher user and Publisher record. Admin only.
@@ -199,7 +186,7 @@ export class AdminService {
     
     /**
      * Create new teacher
-     * Creates a new teacher user and Teacher record. Admin only.
+     * Creates a new teacher user and Teacher record. Admin OR Publisher.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserCreationResponse Successful Response
@@ -216,7 +203,7 @@ export class AdminService {
             }
         });
     }
-
+    
     /**
      * List all teachers
      * Retrieve all teachers with optional school filter. Admin only.
@@ -241,7 +228,7 @@ export class AdminService {
             }
         });
     }
-
+    
     /**
      * Update a teacher
      * Update a teacher by ID. Admin only.
@@ -286,10 +273,10 @@ export class AdminService {
             }
         });
     }
-
+    
     /**
      * Create new student
-     * Creates a new student user and Student record. Admin only.
+     * Creates a new student user and Student record. Admin, Publisher, OR Teacher.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserCreationResponse Successful Response
@@ -306,7 +293,7 @@ export class AdminService {
             }
         });
     }
-
+    
     /**
      * List all students
      * Retrieve all students with pagination. Admin only.
@@ -432,6 +419,41 @@ export class AdminService {
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+    
+    /**
+     * Get Stats
+     * Get dashboard statistics for admin.
+     * Returns counts for users, publishers, teachers, students, and schools.
+     * @returns DashboardStats Successful Response
+     * @throws ApiError
+     */
+    public static getStats(): CancelablePromise<AdminGetStatsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/stats'
+        });
+    }
+}
+
+export class DevService {
+    /**
+     * Get Quick Login Users
+     * Get users for quick test login (development only).
+     *
+     * Returns users grouped by role, limited to 5 per role, sorted by newest first.
+     * Only accessible when ENVIRONMENT != "production".
+     *
+     * Returns:
+     * Dictionary with role names as keys and lists of user dicts (username, email, password) as values
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static getQuickLoginUsers(): CancelablePromise<DevGetQuickLoginUsersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/dev/quick-login-users'
         });
     }
 }
@@ -570,6 +592,39 @@ export class PublishersService {
     }
     
     /**
+     * Create new school
+     * Creates a new school for the publisher's organization. Publisher only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns SchoolPublic Successful Response
+     * @throws ApiError
+     */
+    public static createSchool(data: PublishersCreateSchoolData): CancelablePromise<PublishersCreateSchoolResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/publishers/me/schools',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List my organization's teachers
+     * Retrieve all teachers from schools belonging to the publisher's organization. Publisher only.
+     * @returns TeacherPublic Successful Response
+     * @throws ApiError
+     */
+    public static listMyTeachers(): CancelablePromise<PublishersListMyTeachersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/publishers/me/teachers'
+        });
+    }
+    
+    /**
      * Create new teacher
      * Creates a new teacher user linked to publisher's school. Publisher only.
      * @param data The data for the request.
@@ -588,12 +643,25 @@ export class PublishersService {
             }
         });
     }
+    
+    /**
+     * Get my organization's dashboard stats
+     * Retrieve statistics for the publisher's organization. Publisher only.
+     * @returns DashboardStats Successful Response
+     * @throws ApiError
+     */
+    public static getMyStats(): CancelablePromise<PublishersGetMyStatsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/publishers/me/stats'
+        });
+    }
 }
 
 export class TeachersService {
     /**
      * List my students
-     * Retrieve students enrolled in authenticated teacher's classes. Teacher only.
+     * Retrieve all students (teachers can see all students to enroll them in classes). Teacher only.
      * @returns StudentPublic Successful Response
      * @throws ApiError
      */
@@ -638,6 +706,197 @@ export class TeachersService {
             url: '/api/v1/teachers/me/students/bulk-import',
             formData: data.formData,
             mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update student
+     * Update a student's information. Teacher only.
+     * @param data The data for the request.
+     * @param data.studentId
+     * @param data.requestBody
+     * @returns StudentPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateStudent(data: TeachersUpdateStudentData): CancelablePromise<TeachersUpdateStudentResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/teachers/me/students/{student_id}',
+            path: {
+                student_id: data.studentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete student
+     * Delete a student and remove from all classes. Teacher only.
+     * @param data The data for the request.
+     * @param data.studentId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static deleteStudent(data: TeachersDeleteStudentData): CancelablePromise<TeachersDeleteStudentResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/teachers/me/students/{student_id}',
+            path: {
+                student_id: data.studentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List my classes
+     * Retrieve all classes taught by the authenticated teacher. Teacher only.
+     * @returns ClassPublic Successful Response
+     * @throws ApiError
+     */
+    public static listMyClasses(): CancelablePromise<TeachersListMyClassesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/me/classes'
+        });
+    }
+    
+    /**
+     * Create new class
+     * Creates a new class for the authenticated teacher. Teacher only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns ClassPublic Successful Response
+     * @throws ApiError
+     */
+    public static createClass(data: TeachersCreateClassData): CancelablePromise<TeachersCreateClassResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/me/classes',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get class details
+     * Retrieve details of a specific class. Teacher only.
+     * @param data The data for the request.
+     * @param data.classId
+     * @returns ClassPublic Successful Response
+     * @throws ApiError
+     */
+    public static getClassDetails(data: TeachersGetClassDetailsData): CancelablePromise<TeachersGetClassDetailsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/me/classes/{class_id}',
+            path: {
+                class_id: data.classId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update class
+     * Update a class's details. Teacher only.
+     * @param data The data for the request.
+     * @param data.classId
+     * @param data.requestBody
+     * @returns ClassPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateClass(data: TeachersUpdateClassData): CancelablePromise<TeachersUpdateClassResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/teachers/me/classes/{class_id}',
+            path: {
+                class_id: data.classId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Add students to class
+     * Enroll one or more students in a class. Teacher only.
+     * @param data The data for the request.
+     * @param data.classId
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static addStudentsToClass(data: TeachersAddStudentsToClassData): CancelablePromise<TeachersAddStudentsToClassResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/me/classes/{class_id}/students',
+            path: {
+                class_id: data.classId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get students in class
+     * Retrieve all students enrolled in a specific class. Teacher only.
+     * @param data The data for the request.
+     * @param data.classId
+     * @returns StudentPublic Successful Response
+     * @throws ApiError
+     */
+    public static getClassStudents(data: TeachersGetClassStudentsData): CancelablePromise<TeachersGetClassStudentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/me/classes/{class_id}/students',
+            path: {
+                class_id: data.classId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Remove student from class
+     * Unenroll a student from a class. Teacher only.
+     * @param data The data for the request.
+     * @param data.classId
+     * @param data.studentId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static removeStudentFromClass(data: TeachersRemoveStudentFromClassData): CancelablePromise<TeachersRemoveStudentFromClassResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/teachers/me/classes/{class_id}/students/{student_id}',
+            path: {
+                class_id: data.classId,
+                student_id: data.studentId
+            },
             errors: {
                 422: 'Validation Error'
             }
@@ -747,26 +1006,6 @@ export class UsersService {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/v1/users/me/password',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Register User
-     * Create new user without the need to be logged in.
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns UserPublic Successful Response
-     * @throws ApiError
-     */
-    public static registerUser(data: UsersRegisterUserData): CancelablePromise<UsersRegisterUserResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/users/signup',
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {

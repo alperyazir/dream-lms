@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlmodel import select
 
 from app import crud
@@ -11,11 +11,17 @@ from app.models import (
     BulkImportErrorDetail,
     BulkImportResponse,
     Class,
+    ClassCreateByTeacher,
+    ClassPublic,
     ClassStudent,
+    ClassStudentCreate,
+    ClassUpdate,
+    School,
     Student,
     StudentCreate,
     StudentCreateAPI,
     StudentPublic,
+    StudentUpdate,
     Teacher,
     User,
     UserCreationResponse,
@@ -25,6 +31,7 @@ from app.models import (
 from app.services.bulk_import import validate_bulk_import
 from app.utils import (
     generate_temp_password,
+    generate_username,
     parse_excel_file,
     validate_excel_headers,
     validate_file_size,
@@ -51,6 +58,7 @@ def create_student(
     """
     Create a new student.
 
+    - **username**: Username for user account (3-50 characters, alphanumeric, underscore, or hyphen)
     - **user_email**: Email for user account
     - **full_name**: Full name for user account
     - **grade_level**: Optional grade level
@@ -76,8 +84,16 @@ def create_student(
             detail="User with this email already exists"
         )
 
-    # Generate temporary password
-    temp_password = generate_temp_password()
+    # Check if username already exists
+    existing_username = crud.get_user_by_username(session=session, username=student_in.username)
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this username already exists"
+        )
+
+    # Generate secure temporary password
+    initial_password = generate_temp_password()
 
     # Create Student record data
     student_create = StudentCreate(
@@ -90,15 +106,29 @@ def create_student(
     user, student = crud.create_student(
         session=session,
         email=student_in.user_email,
-        password=temp_password,
+        username=student_in.username,
+        password=initial_password,
         full_name=student_in.full_name,
         student_create=student_create
     )
 
+    # Build student response with user information
+    student_data = StudentPublic(
+        grade_level=student.grade_level,
+        parent_email=student.parent_email,
+        id=student.id,
+        user_id=student.user_id,
+        user_email=user.email,
+        user_username=user.username,
+        user_full_name=user.full_name or "",
+        created_at=student.created_at,
+        updated_at=student.updated_at
+    )
+
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        temp_password=temp_password,
-        role_record=StudentPublic.model_validate(student)
+        initial_password=initial_password,
+        role_record=student_data
     )
 
 
@@ -212,6 +242,9 @@ async def bulk_import_students(
             # Generate temporary password
             temp_password = generate_temp_password()
 
+            # Generate unique username
+            username = generate_username(full_name, session)
+
             # Create Student record data
             student_create = StudentCreate(
                 user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
@@ -223,6 +256,7 @@ async def bulk_import_students(
             user, student = crud.create_student(
                 session=session,
                 email=email,
+                username=username,
                 password=temp_password,
                 full_name=full_name,
                 student_create=student_create
@@ -259,7 +293,7 @@ async def bulk_import_students(
     "/me/students",
     response_model=list[StudentPublic],
     summary="List my students",
-    description="Retrieve students enrolled in authenticated teacher's classes. Teacher only.",
+    description="Retrieve all students (teachers can see all students to enroll them in classes). Teacher only.",
 )
 def list_my_students(
     *,
@@ -267,9 +301,12 @@ def list_my_students(
     current_user: User = require_role(UserRole.teacher)
 ) -> Any:
     """
-    List all students enrolled in any of the teacher's classes.
+    List all students.
 
-    Returns distinct list of students.
+    Note: Shows all students so teachers can see students they created and enroll them in classes.
+    In a future update, this will be filtered by school or teacher relationship.
+
+    Returns list of students.
     """
     # Get Teacher record for current user
     teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
@@ -281,15 +318,590 @@ def list_my_students(
             detail="Teacher record not found for this user"
         )
 
-    # Query students enrolled in this teacher's classes
-    # Join ClassStudent -> Class -> Teacher
+    # Get all students (for now - will be filtered by school in future)
+    students_statement = select(Student)
+    students = session.exec(students_statement).all()
+
+    # Build response list with user information for each student
+    result = []
+    for s in students:
+        user = session.get(User, s.user_id)
+        student_data = StudentPublic(
+            grade_level=s.grade_level,
+            parent_email=s.parent_email,
+            id=s.id,
+            user_id=s.user_id,
+            user_email=user.email if user else "",
+            user_username=user.username if user else "",
+            user_full_name=user.full_name if user and user.full_name else "",
+            created_at=s.created_at,
+            updated_at=s.updated_at
+        )
+        result.append(student_data)
+
+    return result
+
+
+@router.put(
+    "/me/students/{student_id}",
+    response_model=StudentPublic,
+    summary="Update student",
+    description="Update a student's information. Teacher only.",
+)
+def update_student(
+    *,
+    session: SessionDep,
+    student_id: uuid.UUID,
+    student_in: StudentUpdate,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Update a student.
+
+    Teachers can update:
+    - grade_level
+    - parent_email
+
+    Note: User information (name, email, username) cannot be changed through this endpoint.
+    """
+    # Get Teacher record
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get student
+    student = session.get(Student, student_id)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+
+    # Update student fields (grade_level, parent_email)
+    update_data = student_in.model_dump(exclude_unset=True)
+
+    # Separate user fields from student fields
+    user_fields = {}
+    student_fields = {}
+
+    for key, value in update_data.items():
+        if key in ['user_email', 'user_username', 'user_full_name']:
+            # Map to User model fields
+            if key == 'user_email':
+                user_fields['email'] = value
+            elif key == 'user_username':
+                user_fields['username'] = value
+            elif key == 'user_full_name':
+                user_fields['full_name'] = value
+        else:
+            student_fields[key] = value
+
+    # Update student fields
+    for key, value in student_fields.items():
+        setattr(student, key, value)
+
+    # Update user fields if any
+    if user_fields:
+        user = session.get(User, student.user_id)
+        if user:
+            # Check if username is being changed
+            if 'username' in user_fields and user_fields['username'] != user.username:
+                # Check if new username already exists
+                existing_user = crud.get_user_by_username(session=session, username=user_fields['username'])
+                if existing_user and existing_user.id != user.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Username already exists"
+                    )
+
+            # Check if email is being changed
+            if 'email' in user_fields and user_fields['email'] != user.email:
+                # Check if new email already exists
+                existing_user = crud.get_user_by_email(session=session, email=user_fields['email'])
+                if existing_user and existing_user.id != user.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Email already exists"
+                    )
+
+            for key, value in user_fields.items():
+                setattr(user, key, value)
+            session.add(user)
+
+    session.add(student)
+    session.commit()
+    session.refresh(student)
+
+    # Get updated user info for response
+    user = session.get(User, student.user_id)
+
+    return StudentPublic(
+        grade_level=student.grade_level,
+        parent_email=student.parent_email,
+        id=student.id,
+        user_id=student.user_id,
+        user_email=user.email if user else "",
+        user_username=user.username if user else "",
+        user_full_name=user.full_name if user and user.full_name else "",
+        created_at=student.created_at,
+        updated_at=student.updated_at
+    )
+
+
+@router.delete(
+    "/me/students/{student_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete student",
+    description="Delete a student and remove from all classes. Teacher only.",
+)
+def delete_student(
+    *,
+    session: SessionDep,
+    student_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Delete a student.
+
+    This will:
+    - Remove student from all classes
+    - Delete the student record
+    - Delete the associated user account
+    """
+    # Get Teacher record
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get student
+    student = session.get(Student, student_id)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+
+    # Remove from all classes first
+    class_students = session.exec(
+        select(ClassStudent).where(ClassStudent.student_id == student_id)
+    ).all()
+
+    for cs in class_students:
+        session.delete(cs)
+
+    # Get user_id before deleting student
+    user_id = student.user_id
+
+    # Delete student
+    session.delete(student)
+
+    # Delete associated user
+    user = session.get(User, user_id)
+    if user:
+        session.delete(user)
+
+    session.commit()
+
+    return {"message": "Student deleted successfully"}
+
+
+@router.get(
+    "/me/classes",
+    response_model=list[ClassPublic],
+    summary="List my classes",
+    description="Retrieve all classes taught by the authenticated teacher. Teacher only.",
+)
+def list_my_classes(
+    *,
+    session: SessionDep,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    List all classes taught by this teacher.
+
+    Returns list of classes.
+    """
+    # Get Teacher record for current user
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get all classes for this teacher
+    classes_statement = select(Class).where(Class.teacher_id == teacher.id)
+    classes = session.exec(classes_statement).all()
+
+    return [ClassPublic.model_validate(c) for c in classes]
+
+
+@router.post(
+    "/me/classes",
+    response_model=ClassPublic,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create new class",
+    description="Creates a new class for the authenticated teacher. Teacher only.",
+)
+def create_class(
+    *,
+    session: SessionDep,
+    class_in: ClassCreateByTeacher,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Create a new class.
+
+    - **name**: Class name (e.g., "Math 101", "English Grade 5")
+    - **grade_level**: Optional grade level (e.g., "5", "10")
+    - **subject**: Optional subject (e.g., "Mathematics", "English")
+    - **academic_year**: Optional academic year (e.g., "2024-2025")
+
+    Note: teacher_id and school_id will be set automatically from the current teacher's record.
+
+    Returns the created class record.
+    """
+    # Get Teacher record for current user
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Add teacher_id and school_id to class data
+    class_data = class_in.model_dump()
+    class_data['teacher_id'] = teacher.id
+    class_data['school_id'] = teacher.school_id
+
+    # Create class
+    db_class = Class.model_validate(class_data)
+    session.add(db_class)
+    session.commit()
+    session.refresh(db_class)
+
+    return ClassPublic.model_validate(db_class)
+
+
+@router.get(
+    "/me/classes/{class_id}",
+    response_model=ClassPublic,
+    summary="Get class details",
+    description="Retrieve details of a specific class. Teacher only.",
+)
+def get_class_details(
+    *,
+    session: SessionDep,
+    class_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Get details of a specific class including enrolled students.
+
+    Returns class details.
+    """
+    # Get Teacher record for current user
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get class
+    db_class = session.get(Class, class_id)
+    if not db_class:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class not found"
+        )
+
+    # Verify class belongs to this teacher
+    if db_class.teacher_id != teacher.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access another teacher's class"
+        )
+
+    return ClassPublic.model_validate(db_class)
+
+
+@router.put(
+    "/me/classes/{class_id}",
+    response_model=ClassPublic,
+    summary="Update class",
+    description="Update a class's details. Teacher only.",
+)
+def update_class(
+    *,
+    session: SessionDep,
+    class_id: uuid.UUID,
+    class_in: ClassUpdate,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Update a class.
+
+    Only the teacher who owns the class can update it.
+
+    Returns updated class.
+    """
+    # Get Teacher record for current user
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get class
+    db_class = session.get(Class, class_id)
+    if not db_class:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class not found"
+        )
+
+    # Verify class belongs to this teacher
+    if db_class.teacher_id != teacher.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot update another teacher's class"
+        )
+
+    # Update class
+    update_data = class_in.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_class, key, value)
+
+    session.add(db_class)
+    session.commit()
+    session.refresh(db_class)
+
+    return ClassPublic.model_validate(db_class)
+
+
+@router.post(
+    "/me/classes/{class_id}/students",
+    status_code=status.HTTP_201_CREATED,
+    summary="Add students to class",
+    description="Enroll one or more students in a class. Teacher only.",
+)
+def add_students_to_class(
+    *,
+    session: SessionDep,
+    class_id: uuid.UUID,
+    student_ids: list[uuid.UUID],
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Add students to a class.
+
+    - **student_ids**: List of student IDs to enroll
+
+    Returns success message with count of students added.
+    """
+    # Get Teacher record for current user
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get class
+    db_class = session.get(Class, class_id)
+    if not db_class:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class not found"
+        )
+
+    # Verify class belongs to this teacher
+    if db_class.teacher_id != teacher.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot add students to another teacher's class"
+        )
+
+    added_count = 0
+    for student_id in student_ids:
+        # Check if student exists
+        student = session.get(Student, student_id)
+        if not student:
+            continue  # Skip non-existent students
+
+        # Check if already enrolled
+        existing = session.exec(
+            select(ClassStudent)
+            .where(ClassStudent.class_id == class_id)
+            .where(ClassStudent.student_id == student_id)
+        ).first()
+
+        if not existing:
+            # Add student to class
+            class_student = ClassStudent(
+                class_id=class_id,
+                student_id=student_id
+            )
+            session.add(class_student)
+            added_count += 1
+
+    session.commit()
+
+    return {
+        "message": f"Successfully added {added_count} student(s) to class",
+        "added_count": added_count
+    }
+
+
+@router.delete(
+    "/me/classes/{class_id}/students/{student_id}",
+    summary="Remove student from class",
+    description="Unenroll a student from a class. Teacher only.",
+)
+def remove_student_from_class(
+    *,
+    session: SessionDep,
+    class_id: uuid.UUID,
+    student_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Remove a student from a class.
+
+    Returns success message.
+    """
+    # Get Teacher record for current user
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get class
+    db_class = session.get(Class, class_id)
+    if not db_class:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class not found"
+        )
+
+    # Verify class belongs to this teacher
+    if db_class.teacher_id != teacher.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot remove students from another teacher's class"
+        )
+
+    # Find enrollment
+    class_student = session.exec(
+        select(ClassStudent)
+        .where(ClassStudent.class_id == class_id)
+        .where(ClassStudent.student_id == student_id)
+    ).first()
+
+    if not class_student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not enrolled in this class"
+        )
+
+    # Remove enrollment
+    session.delete(class_student)
+    session.commit()
+
+    return {"message": "Student removed from class successfully"}
+
+
+@router.get(
+    "/me/classes/{class_id}/students",
+    response_model=list[StudentPublic],
+    summary="Get students in class",
+    description="Retrieve all students enrolled in a specific class. Teacher only.",
+)
+def get_class_students(
+    *,
+    session: SessionDep,
+    class_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Get all students enrolled in a class.
+
+    Returns list of students.
+    """
+    # Get Teacher record for current user
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get class
+    db_class = session.get(Class, class_id)
+    if not db_class:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class not found"
+        )
+
+    # Verify class belongs to this teacher
+    if db_class.teacher_id != teacher.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access another teacher's class"
+        )
+
+    # Get enrolled students
     students_statement = (
         select(Student)
         .join(ClassStudent, ClassStudent.student_id == Student.id)
-        .join(Class, Class.id == ClassStudent.class_id)
-        .where(Class.teacher_id == teacher.id)
-        .distinct()
+        .where(ClassStudent.class_id == class_id)
     )
     students = session.exec(students_statement).all()
 
-    return [StudentPublic.model_validate(s) for s in students]
+    # Build response
+    result = []
+    for s in students:
+        user = session.get(User, s.user_id)
+        student_data = StudentPublic(
+            grade_level=s.grade_level,
+            parent_email=s.parent_email,
+            id=s.id,
+            user_id=s.user_id,
+            user_email=user.email if user else "",
+            user_username=user.username if user else "",
+            user_full_name=user.full_name if user and user.full_name else "",
+            created_at=s.created_at,
+            updated_at=s.updated_at
+        )
+        result.append(student_data)
+
+    return result
