@@ -1,18 +1,12 @@
-/**
- * Activity Player Route - Play an assignment's activity
- * Story 2.5 - Phase 1, Task 1.5
- */
-
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query"
+import { Loader2, AlertCircle } from "lucide-react"
 import { ActivityPlayer } from "@/components/ActivityPlayers/ActivityPlayer"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import {
-  type ActivityConfig,
-  mockActivities,
-  mockActivityConfigs,
-  mockAssignments,
-  mockBooks,
-} from "@/lib/mockData"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { startAssignment } from "@/services/assignmentsApi"
+import type { ActivityConfig } from "@/lib/mockData"
+import type { ActivityStartResponse } from "@/types/assignment"
 
 export const Route = createFileRoute(
   "/_layout/student/assignments/$assignmentId/play",
@@ -21,130 +15,109 @@ export const Route = createFileRoute(
 })
 
 function ActivityPlayerPage() {
-  return (
-    <ErrorBoundary>
-      <ActivityPlayerContent />
-    </ErrorBoundary>
-  )
-}
-
-function ActivityPlayerContent() {
   const { assignmentId } = Route.useParams()
   const navigate = useNavigate()
 
-  // Find assignment
-  const assignment = mockAssignments.find((a) => a.id === assignmentId)
-
-  if (!assignment) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
-        <div className="rounded-lg bg-white p-8 text-center shadow-lg dark:bg-gray-800">
-          <h2 className="mb-4 text-xl font-bold text-red-600 dark:text-red-400">
-            Assignment Not Found
-          </h2>
-          <p className="mb-6 text-gray-600 dark:text-gray-400">
-            The assignment you're looking for doesn't exist.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/student/assignments" })}
-            className="rounded-lg bg-teal-600 px-6 py-2 font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
-          >
-            Back to Assignments
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Find activity
-  const activity = mockActivities.find((a) => a.id === assignment.activityId)
-
-  if (!activity) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
-        <div className="rounded-lg bg-white p-8 text-center shadow-lg dark:bg-gray-800">
-          <h2 className="mb-4 text-xl font-bold text-red-600 dark:text-red-400">
-            Activity Not Found
-          </h2>
-          <p className="mb-6 text-gray-600 dark:text-gray-400">
-            The activity for this assignment is missing.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/student/assignments" })}
-            className="rounded-lg bg-teal-600 px-6 py-2 font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
-          >
-            Back to Assignments
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Find activity config by matching bookId and activity type
-  const activityConfig = mockActivityConfigs.find(
-    (config) =>
-      config.bookId === activity.bookId &&
-      config.type === activity.activityType,
-  ) as ActivityConfig | undefined
-
-  if (!activityConfig) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
-        <div className="rounded-lg bg-white p-8 text-center shadow-lg dark:bg-gray-800">
-          <h2 className="mb-4 text-xl font-bold text-orange-600 dark:text-orange-400">
-            Activity Configuration Missing
-          </h2>
-          <p className="mb-2 text-gray-600 dark:text-gray-400">
-            This activity type is not yet configured.
-          </p>
-          <p className="mb-6 text-sm text-gray-500 dark:text-gray-500">
-            Activity Type:{" "}
-            <span className="font-mono">{activity.activityType}</span>
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/student/assignments" })}
-            className="rounded-lg bg-teal-600 px-6 py-2 font-semibold text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
-          >
-            Back to Assignments
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Find book for title
-  const book = mockBooks.find((b) => b.id === activity.bookId)
-
-  // Navigation guard: Warn before leaving if activity is in progress
-  // TODO: Implement beforeunload event listener with unsaved progress check
+  // Fetch activity data using start endpoint
+  const {
+    data: activity,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["activities", assignmentId, "play"],
+    queryFn: (): Promise<ActivityStartResponse> => startAssignment(assignmentId),
+    retry: false,
+  })
 
   const handleExit = () => {
-    // Confirm exit if there's unsaved progress
-    const hasUnsavedProgress = localStorage.getItem(
-      `activity_progress_${assignmentId}`,
-    )
+    navigate({ to: "/student/assignments/$assignmentId", params: { assignmentId } })
+  }
 
-    if (hasUnsavedProgress) {
-      const confirmExit = window.confirm(
-        "You have unsaved progress. Are you sure you want to exit?",
-      )
-      if (!confirmExit) return
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Loading activity...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error states
+  if (error) {
+    const errorResponse = (error as any)?.response
+    const status = errorResponse?.status
+    const detail = errorResponse?.data?.detail || "An error occurred"
+
+    let errorTitle = "Error Loading Activity"
+    let errorMessage = detail
+
+    if (status === 404) {
+      errorTitle = "Assignment Not Found"
+      errorMessage = "This assignment doesn't exist or is not assigned to you."
+    } else if (status === 409) {
+      errorTitle = "Assignment Already Completed"
+      errorMessage = "You have already completed this assignment."
     }
 
-    navigate({ to: "/student/assignments" })
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>{errorTitle}</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => navigate({ to: "/student/assignments" })}>
+              Back to Assignments
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!activity) {
+    return null
+  }
+
+  // Parse config_json
+  let activityConfig: ActivityConfig
+  try {
+    activityConfig = typeof activity.config_json === 'string'
+      ? JSON.parse(activity.config_json)
+      : activity.config_json
+  } catch (error) {
+    console.error("Failed to parse activity config:", error)
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Invalid Activity Configuration</AlertTitle>
+            <AlertDescription>Unable to load activity.</AlertDescription>
+          </Alert>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => navigate({ to: "/student/assignments" })}>
+              Back to Assignments
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <ActivityPlayer
       activityConfig={activityConfig}
       assignmentId={assignmentId}
-      timeLimit={assignment.time_limit_minutes}
+      bookTitle={activity.book_title}
+      activityType={activity.activity_type as any}
+      timeLimit={activity.time_limit_minutes ?? undefined}
       onExit={handleExit}
-      bookTitle={book?.title || "Unknown Book"}
-      activityType={activity.activityType}
     />
   )
 }

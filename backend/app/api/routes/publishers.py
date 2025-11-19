@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from app import crud
@@ -10,7 +10,6 @@ from app.models import (
     DashboardStats,
     Publisher,
     School,
-    SchoolCreate,
     SchoolCreateByPublisher,
     SchoolPublic,
     Teacher,
@@ -22,7 +21,7 @@ from app.models import (
     UserPublic,
     UserRole,
 )
-from app.utils import generate_temp_password, generate_username
+from app.utils import generate_temp_password
 
 router = APIRouter(prefix="/publishers", tags=["publishers"])
 

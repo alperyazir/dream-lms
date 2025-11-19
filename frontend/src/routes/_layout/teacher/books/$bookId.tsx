@@ -1,19 +1,26 @@
-import { createFileRoute } from "@tanstack/react-router"
+/**
+ * Book Detail Page - Story 3.6
+ *
+ * Displays book details and activities with:
+ * - Book cover, title, publisher, description
+ * - Activity list with assign buttons
+ * - Back navigation to catalog
+ * - Loading and error states
+ */
+
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { ArrowLeft, BookOpen } from "lucide-react"
 import { useState } from "react"
-import { AssignmentWizard } from "@/components/assignments/AssignmentWizard"
+import { ActivityList } from "@/components/books/ActivityList"
+import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { type Activity, mockActivities, mockBooks } from "@/lib/mockData"
+import { Skeleton } from "@/components/ui/skeleton"
+import { booksApi } from "@/services/booksApi"
+import type { Activity } from "@/types/book"
 
 export const Route = createFileRoute("/_layout/teacher/books/$bookId")({
   component: BookDetailPage,
@@ -29,170 +36,193 @@ function BookDetailPage() {
 
 function BookDetailContent() {
   const { bookId } = Route.useParams()
-  const [wizardOpen, setWizardOpen] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
     null,
   )
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  // Find the book
-  const book = mockBooks.find((b) => b.id === bookId)
+  // Fetch book details (using list endpoint to find the book)
+  const {
+    data: book,
+    isLoading: bookLoading,
+    error: bookError,
+  } = useQuery({
+    queryKey: ["book", bookId],
+    queryFn: () => booksApi.getBookById(bookId),
+    staleTime: 5 * 60 * 1000,
+  })
 
-  // Find activities for this book
-  const activities = mockActivities.filter((a) => a.bookId === bookId)
+  // Fetch activities for this book
+  const { data: activities, isLoading: activitiesLoading } = useQuery({
+    queryKey: ["book-activities", bookId],
+    queryFn: () => booksApi.getBookActivities(bookId),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!book, // Only fetch if book exists
+  })
 
-  if (!book) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="shadow-neuro p-8 text-center">
-          <h2 className="text-2xl font-bold mb-2">Book Not Found</h2>
-          <p className="text-muted-foreground">
-            The book you're looking for doesn't exist.
-          </p>
-        </Card>
-      </div>
-    )
-  }
-
-  const handleAssignClick = (activity: Activity) => {
+  const handleAssign = (activity: Activity) => {
     setSelectedActivity(activity)
-    setWizardOpen(true)
+    setIsDialogOpen(true)
   }
 
-  const handleWizardClose = () => {
-    setWizardOpen(false)
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false)
     setSelectedActivity(null)
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Book Header */}
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => window.history.back()}
-          className="mb-4"
-          aria-label="Go back to book catalog"
-        >
-          ← Back to Books
-        </Button>
-
-        <Card className="shadow-neuro">
+  // Loading state
+  if (bookLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Skeleton className="h-10 w-32 mb-4" />
+        <Card>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Book Cover */}
-              <div className="md:col-span-1">
-                <img
-                  src={book.coverUrl}
-                  alt={`${book.title} cover`}
-                  className="w-full h-auto object-cover rounded-lg shadow-md"
-                />
-              </div>
-
-              {/* Book Info */}
-              <div className="md:col-span-2">
-                <h1 className="text-3xl font-bold mb-4">{book.title}</h1>
-
-                <div className="flex items-center gap-2 mb-4 flex-wrap">
-                  <Badge
-                    variant="secondary"
-                    className="bg-teal-100 text-teal-800"
-                  >
-                    Grade {book.grade}
-                  </Badge>
-                  <Badge variant="outline">
-                    {book.activityCount}{" "}
-                    {book.activityCount === 1 ? "activity" : "activities"}
-                  </Badge>
-                </div>
-
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <span className="font-semibold text-muted-foreground">
-                      Publisher:
-                    </span>{" "}
-                    <span>{book.publisher}</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-muted-foreground">
-                      Description:
-                    </span>{" "}
-                    <p className="mt-1">{book.description}</p>
-                  </div>
-                </div>
+              <Skeleton className="w-full aspect-[3/4]" />
+              <div className="md:col-span-2 space-y-4">
+                <Skeleton className="h-10 w-3/4" />
+                <Skeleton className="h-6 w-1/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+    )
+  }
+
+  // Error or not found
+  if (bookError || !book) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Button variant="ghost" asChild className="mb-4">
+          <Link to="/teacher/books">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Books
+          </Link>
+        </Button>
+
+        <Card className="p-8 text-center">
+          <h2 className="text-2xl font-bold mb-2">Book Not Found</h2>
+          <p className="text-muted-foreground mb-4">
+            The book you're looking for doesn't exist or you don't have access
+            to it.
+          </p>
+          <Button asChild>
+            <Link to="/teacher/books">Return to Catalog</Link>
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Back Button */}
+      <Button variant="ghost" asChild className="mb-4">
+        <Link to="/teacher/books">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Books
+        </Link>
+      </Button>
+
+      {/* Breadcrumb */}
+      <div className="mb-6 text-sm text-muted-foreground">
+        <Link to="/teacher/books" className="hover:text-foreground">
+          Books
+        </Link>
+        {" > "}
+        <span className="text-foreground">{book.title}</span>
+      </div>
+
+      {/* Book Header */}
+      <Card className="mb-8">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Book Cover */}
+            <div className="md:col-span-1">
+              {book.cover_image_url ? (
+                <img
+                  src={book.cover_image_url}
+                  alt={`${book.title} cover`}
+                  className="w-full h-auto object-cover rounded-lg shadow-md"
+                />
+              ) : (
+                <div className="w-full aspect-[3/4] bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-24 h-24 text-teal-600" />
+                </div>
+              )}
+            </div>
+
+            {/* Book Info */}
+            <div className="md:col-span-2">
+              <h1 className="text-3xl font-bold mb-4">{book.title}</h1>
+
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <Badge
+                  variant="secondary"
+                  className="bg-teal-100 text-teal-800"
+                >
+                  {book.publisher_name}
+                </Badge>
+                <Badge variant="outline">
+                  {book.activity_count}{" "}
+                  {book.activity_count === 1 ? "activity" : "activities"}
+                </Badge>
+              </div>
+
+              {book.description && (
+                <div className="space-y-3">
+                  <div>
+                    <span className="font-semibold text-muted-foreground block mb-2">
+                      Description:
+                    </span>
+                    <p className="text-sm leading-relaxed">
+                      {book.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Activities Section */}
       <div>
-        <h2 className="text-2xl font-bold mb-4">Activities</h2>
+        <h2 className="text-2xl font-bold mb-4">
+          Activities ({activities?.length ?? 0})
+        </h2>
 
-        {activities.length === 0 ? (
-          <Card className="shadow-neuro p-8 text-center">
-            <p className="text-muted-foreground">
-              No activities available for this book.
-            </p>
-          </Card>
-        ) : (
-          <Card className="shadow-neuro">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Activity Title</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activities.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell className="font-medium">
-                        {activity.order_index}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {activity.title}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {activity.activityType
-                            .replace(/([A-Z])/g, " $1")
-                            .trim()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {activity.duration_minutes
-                          ? `${activity.duration_minutes} min`
-                          : "N/A"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => handleAssignClick(activity)}
-                          className="bg-teal-600 hover:bg-teal-700"
-                          aria-label={`Assign ${activity.title}`}
-                        >
-                          Assign
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        {activitiesLoading ? (
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="h-12 w-12" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-1/3" />
+                      <Skeleton className="h-4 w-1/4" />
+                    </div>
+                    <Skeleton className="h-10 w-24" />
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
+        ) : (
+          <ActivityList activities={activities ?? []} onAssign={handleAssign} />
         )}
       </div>
 
-      {/* Assignment Wizard Dialog */}
-      {selectedActivity && (
-        <AssignmentWizard
-          open={wizardOpen}
-          onClose={handleWizardClose}
+      {/* Assignment Creation Dialog */}
+      {selectedActivity && book && (
+        <AssignmentCreationDialog
+          isOpen={isDialogOpen}
+          onClose={handleCloseDialog}
           activity={selectedActivity}
           book={book}
         />

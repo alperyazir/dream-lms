@@ -1,8 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Edit, Plus, TrendingUp, UserPlus, Users } from "lucide-react"
+import { Edit, Plus, TrendingUp, UserPlus } from "lucide-react"
 import { useState } from "react"
-import { TeachersService, type ClassCreateByTeacher, type ClassPublic, type ClassUpdate } from "@/client"
+import {
+  type ClassCreateByTeacher,
+  type ClassPublic,
+  type ClassUpdate,
+  type StudentPublic,
+  TeachersService,
+} from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,11 +36,12 @@ export const Route = createFileRoute("/_layout/teacher/classrooms")({
 
 function TeacherClassroomsPage() {
   const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast} = useCustomToast()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
   const [searchQuery, setSearchQuery] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isManageStudentsDialogOpen, setIsManageStudentsDialogOpen] = useState(false)
+  const [isManageStudentsDialogOpen, setIsManageStudentsDialogOpen] =
+    useState(false)
   const [selectedClass, setSelectedClass] = useState<ClassPublic | null>(null)
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
 
@@ -55,7 +62,11 @@ function TeacherClassroomsPage() {
   })
 
   // Fetch classes from API
-  const { data: classes = [], isLoading, error } = useQuery({
+  const {
+    data: classes = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["teacherClasses"],
     queryFn: () => TeachersService.listMyClasses(),
   })
@@ -67,9 +78,12 @@ function TeacherClassroomsPage() {
   })
 
   // Fetch students in selected class
-  const { data: classStudents = [] } = useQuery({
+  const { data: classStudents = [] } = useQuery<StudentPublic[]>({
     queryKey: ["classStudents", selectedClass?.id],
-    queryFn: () => selectedClass ? TeachersService.getClassStudents({ classId: selectedClass.id }) : Promise.resolve([]),
+    queryFn: () =>
+      selectedClass
+        ? TeachersService.getClassStudents({ classId: selectedClass.id })
+        : Promise.resolve([]),
     enabled: !!selectedClass && isManageStudentsDialogOpen,
   })
 
@@ -93,7 +107,7 @@ function TeacherClassroomsPage() {
       let errorMessage = "Failed to create class. Please try again."
 
       if (error.body?.detail) {
-        if (typeof error.body.detail === 'string') {
+        if (typeof error.body.detail === "string") {
           errorMessage = error.body.detail
         } else if (Array.isArray(error.body.detail)) {
           errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
@@ -115,7 +129,7 @@ function TeacherClassroomsPage() {
 
   // Update class mutation
   const updateClassMutation = useMutation({
-    mutationFn: ({ classId, data }: { classId: string, data: ClassUpdate }) =>
+    mutationFn: ({ classId, data }: { classId: string; data: ClassUpdate }) =>
       TeachersService.updateClass({ classId, requestBody: data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
@@ -126,7 +140,7 @@ function TeacherClassroomsPage() {
     onError: (error: any) => {
       let errorMessage = "Failed to update class. Please try again."
       if (error.body?.detail) {
-        if (typeof error.body.detail === 'string') {
+        if (typeof error.body.detail === "string") {
           errorMessage = error.body.detail
         } else if (Array.isArray(error.body.detail)) {
           errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
@@ -138,10 +152,18 @@ function TeacherClassroomsPage() {
 
   // Add students to class mutation
   const addStudentsMutation = useMutation({
-    mutationFn: ({ classId, studentIds }: { classId: string, studentIds: string[] }) =>
+    mutationFn: ({
+      classId,
+      studentIds,
+    }: {
+      classId: string
+      studentIds: string[]
+    }) =>
       TeachersService.addStudentsToClass({ classId, requestBody: studentIds }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["classStudents", selectedClass?.id] })
+      queryClient.invalidateQueries({
+        queryKey: ["classStudents", selectedClass?.id],
+      })
       queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
       setIsManageStudentsDialogOpen(false)
       setSelectedClass(null)
@@ -151,7 +173,7 @@ function TeacherClassroomsPage() {
     onError: (error: any) => {
       let errorMessage = "Failed to add students. Please try again."
       if (error.body?.detail) {
-        if (typeof error.body.detail === 'string') {
+        if (typeof error.body.detail === "string") {
           errorMessage = error.body.detail
         } else if (Array.isArray(error.body.detail)) {
           errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
@@ -163,14 +185,21 @@ function TeacherClassroomsPage() {
 
   // Remove student from class mutation
   const removeStudentMutation = useMutation({
-    mutationFn: ({ classId, studentId }: { classId: string, studentId: string }) =>
-      TeachersService.removeStudentFromClass({ classId, studentId }),
+    mutationFn: ({
+      classId,
+      studentId,
+    }: {
+      classId: string
+      studentId: string
+    }) => TeachersService.removeStudentFromClass({ classId, studentId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["classStudents", selectedClass?.id] })
+      queryClient.invalidateQueries({
+        queryKey: ["classStudents", selectedClass?.id],
+      })
       queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
       showSuccessToast("Student removed from class!")
     },
-    onError: (error: any) => {
+    onError: (_error: any) => {
       showErrorToast("Failed to remove student. Please try again.")
     },
   })
@@ -226,16 +255,16 @@ function TeacherClassroomsPage() {
   }
 
   const toggleStudentSelection = (studentId: string) => {
-    setSelectedStudentIds(prev =>
+    setSelectedStudentIds((prev) =>
       prev.includes(studentId)
-        ? prev.filter(id => id !== studentId)
-        : [...prev, studentId]
+        ? prev.filter((id) => id !== studentId)
+        : [...prev, studentId],
     )
   }
 
   // Get students not in class for selection
   const availableStudents = allStudents.filter(
-    student => !classStudents.some(cs => cs.id === student.id)
+    (student: any) => !classStudents.some((cs: any) => cs.id === student.id),
   )
 
   const filteredClasses = classes.filter(
@@ -321,16 +350,26 @@ function TeacherClassroomsPage() {
                 <div className="space-y-3">
                   {classItem.grade_level && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Grade Level:</span>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                      <span className="text-muted-foreground">
+                        Grade Level:
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className="bg-blue-50 text-blue-700"
+                      >
                         {classItem.grade_level}
                       </Badge>
                     </div>
                   )}
                   {classItem.academic_year && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Academic Year:</span>
-                      <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                      <span className="text-muted-foreground">
+                        Academic Year:
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className="bg-purple-50 text-purple-700"
+                      >
                         {classItem.academic_year}
                       </Badge>
                     </div>
@@ -444,9 +483,7 @@ function TeacherClassroomsPage() {
               disabled={createClassMutation.isPending}
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
-              {createClassMutation.isPending
-                ? "Creating..."
-                : "Create Class"}
+              {createClassMutation.isPending ? "Creating..." : "Create Class"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -457,9 +494,7 @@ function TeacherClassroomsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Class</DialogTitle>
-            <DialogDescription>
-              Update class information
-            </DialogDescription>
+            <DialogDescription>Update class information</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -467,7 +502,7 @@ function TeacherClassroomsPage() {
               <Input
                 id="edit-class-name"
                 placeholder="e.g., Math 101"
-                value={editClass.name}
+                value={editClass.name ?? ""}
                 onChange={(e) =>
                   setEditClass({ ...editClass, name: e.target.value })
                 }
@@ -509,7 +544,7 @@ function TeacherClassroomsPage() {
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="edit-is-active"
-                checked={editClass.is_active}
+                checked={editClass.is_active ?? false}
                 onCheckedChange={(checked) =>
                   setEditClass({ ...editClass, is_active: checked === true })
                 }
@@ -535,16 +570,17 @@ function TeacherClassroomsPage() {
               disabled={updateClassMutation.isPending}
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
-              {updateClassMutation.isPending
-                ? "Updating..."
-                : "Update Class"}
+              {updateClassMutation.isPending ? "Updating..." : "Update Class"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Manage Students Dialog */}
-      <Dialog open={isManageStudentsDialogOpen} onOpenChange={setIsManageStudentsDialogOpen}>
+      <Dialog
+        open={isManageStudentsDialogOpen}
+        onOpenChange={setIsManageStudentsDialogOpen}
+      >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Students - {selectedClass?.name}</DialogTitle>
@@ -560,10 +596,12 @@ function TeacherClassroomsPage() {
                 Enrolled Students ({classStudents.length})
               </h3>
               {classStudents.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No students enrolled yet</p>
+                <p className="text-sm text-muted-foreground">
+                  No students enrolled yet
+                </p>
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {classStudents.map((student) => (
+                  {classStudents.map((student: any) => (
                     <div
                       key={student.id}
                       className="flex items-center justify-between p-3 border rounded-lg bg-card"
@@ -609,14 +647,18 @@ function TeacherClassroomsPage() {
                         <Checkbox
                           id={`student-${student.id}`}
                           checked={selectedStudentIds.includes(student.id)}
-                          onCheckedChange={() => toggleStudentSelection(student.id)}
+                          onCheckedChange={() =>
+                            toggleStudentSelection(student.id)
+                          }
                         />
                         <Label
                           htmlFor={`student-${student.id}`}
                           className="flex-1 cursor-pointer"
                         >
                           <div>
-                            <p className="font-medium">{student.user_full_name}</p>
+                            <p className="font-medium">
+                              {student.user_full_name}
+                            </p>
                             <p className="text-sm text-muted-foreground">
                               {student.user_email}
                             </p>

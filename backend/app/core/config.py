@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
+    SERVER_HOST: str = "http://localhost:8000"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
     BACKEND_CORS_ORIGINS: Annotated[
@@ -94,6 +95,13 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
+    # Dream Central Storage API Integration
+    DREAM_CENTRAL_STORAGE_URL: str = "http://localhost:8081"
+    DREAM_CENTRAL_STORAGE_EMAIL: str = "admin@admin.com"
+    DREAM_CENTRAL_STORAGE_PASSWORD: str = "admin"
+    DREAM_CENTRAL_STORAGE_TOKEN_EXPIRY: int = 1800  # 30 minutes in seconds
+    DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET: str = "changethis"
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (
@@ -111,6 +119,10 @@ class Settings(BaseSettings):
         self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
+        )
+        self._check_default_secret(
+            "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET",
+            self.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET,
         )
 
         return self

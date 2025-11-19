@@ -1,8 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Edit, Mail, Plus, Trash2, User, Users } from "lucide-react"
+import { Edit, Plus, Trash2, Users } from "lucide-react"
 import { useEffect, useState } from "react"
-import { TeachersService, type StudentCreateAPI, type StudentPublic, type StudentUpdate } from "@/client"
+import {
+  type StudentCreateAPI,
+  type StudentPublic,
+  type StudentUpdate,
+  TeachersService,
+} from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import {
   AlertDialog,
@@ -27,13 +32,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -60,7 +58,9 @@ function TeacherStudentsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedClassroomIds, setSelectedClassroomIds] = useState<string[]>([])
-  const [selectedStudent, setSelectedStudent] = useState<StudentPublic | null>(null)
+  const [selectedStudent, setSelectedStudent] = useState<StudentPublic | null>(
+    null,
+  )
   const [studentClassrooms, setStudentClassrooms] = useState<string[]>([])
   const [newStudent, setNewStudent] = useState<StudentCreateAPI>({
     username: "",
@@ -76,10 +76,16 @@ function TeacherStudentsPage() {
     grade_level: undefined,
     parent_email: undefined,
   })
-  const [studentClassroomsMap, setStudentClassroomsMap] = useState<Record<string, string[]>>({})
+  const [studentClassroomsMap, setStudentClassroomsMap] = useState<
+    Record<string, string[]>
+  >({})
 
   // Fetch students from API
-  const { data: students = [], isLoading, error } = useQuery({
+  const {
+    data: students = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["teacherStudents"],
     queryFn: () => TeachersService.listMyStudents(),
   })
@@ -99,7 +105,9 @@ function TeacherStudentsPage() {
 
       for (const classroom of classes) {
         try {
-          const classStudents = await TeachersService.getClassStudents({ classId: classroom.id })
+          const classStudents = await TeachersService.getClassStudents({
+            classId: classroom.id,
+          })
           for (const student of classStudents) {
             if (!classroomsMap[student.id]) {
               classroomsMap[student.id] = []
@@ -107,7 +115,10 @@ function TeacherStudentsPage() {
             classroomsMap[student.id].push(classroom.name)
           }
         } catch (error) {
-          console.error(`Failed to fetch students for classroom ${classroom.name}:`, error)
+          console.error(
+            `Failed to fetch students for classroom ${classroom.name}:`,
+            error,
+          )
         }
       }
 
@@ -137,7 +148,9 @@ function TeacherStudentsPage() {
               classId: classId,
               requestBody: [studentId],
             })
-            queryClient.invalidateQueries({ queryKey: ["classStudents", classId] })
+            queryClient.invalidateQueries({
+              queryKey: ["classStudents", classId],
+            })
           }
 
           const message = `Student created and added to ${selectedClassroomIds.length} classroom(s) successfully!`
@@ -167,7 +180,8 @@ function TeacherStudentsPage() {
           })
           setSelectedClassroomIds([])
 
-          let errorMsg = "Student created but failed to add to some classrooms. You can add them later."
+          let errorMsg =
+            "Student created but failed to add to some classrooms. You can add them later."
           if (error.body?.detail) {
             errorMsg = `Student created. Error adding to classrooms: ${error.body.detail}`
           }
@@ -192,7 +206,7 @@ function TeacherStudentsPage() {
       let errorMessage = "Failed to create student. Please try again."
 
       if (error.body?.detail) {
-        if (typeof error.body.detail === 'string') {
+        if (typeof error.body.detail === "string") {
           errorMessage = error.body.detail
         } else if (Array.isArray(error.body.detail)) {
           errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
@@ -205,8 +219,13 @@ function TeacherStudentsPage() {
 
   // Update student mutation
   const updateStudentMutation = useMutation({
-    mutationFn: ({ studentId, data }: { studentId: string, data: StudentUpdate }) =>
-      TeachersService.updateStudent({ studentId, requestBody: data }),
+    mutationFn: ({
+      studentId,
+      data,
+    }: {
+      studentId: string
+      data: StudentUpdate
+    }) => TeachersService.updateStudent({ studentId, requestBody: data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teacherStudents"] })
       setIsEditDialogOpen(false)
@@ -216,7 +235,7 @@ function TeacherStudentsPage() {
     onError: (error: any) => {
       let errorMessage = "Failed to update student. Please try again."
       if (error.body?.detail) {
-        if (typeof error.body.detail === 'string') {
+        if (typeof error.body.detail === "string") {
           errorMessage = error.body.detail
         } else if (Array.isArray(error.body.detail)) {
           errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
@@ -237,7 +256,7 @@ function TeacherStudentsPage() {
       setSelectedStudent(null)
       showSuccessToast("Student deleted successfully!")
     },
-    onError: (error: any) => {
+    onError: (_error: any) => {
       showErrorToast("Failed to delete student. Please try again.")
     },
   })
@@ -255,7 +274,7 @@ function TeacherStudentsPage() {
     // Validate username format
     if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newStudent.username)) {
       showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen"
+        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen",
       )
       return
     }
@@ -299,7 +318,9 @@ function TeacherStudentsPage() {
 
   const filteredStudents = students.filter(
     (student) =>
-      student.user_full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.user_full_name
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       student.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.user_username?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
@@ -379,12 +400,17 @@ function TeacherStudentsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-muted-foreground">@{student.user_username}</span>
+                    <span className="text-muted-foreground">
+                      @{student.user_username}
+                    </span>
                   </TableCell>
                   <TableCell>{student.user_email}</TableCell>
                   <TableCell>
                     {student.grade_level ? (
-                      <Badge variant="outline" className="bg-teal-50 text-teal-700">
+                      <Badge
+                        variant="outline"
+                        className="bg-teal-50 text-teal-700"
+                      >
                         Grade {student.grade_level}
                       </Badge>
                     ) : (
@@ -392,16 +418,25 @@ function TeacherStudentsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {studentClassroomsMap[student.id] && studentClassroomsMap[student.id].length > 0 ? (
+                    {studentClassroomsMap[student.id] &&
+                    studentClassroomsMap[student.id].length > 0 ? (
                       <div className="flex flex-wrap gap-1">
-                        {studentClassroomsMap[student.id].map((classroom, index) => (
-                          <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 text-xs">
-                            {classroom}
-                          </Badge>
-                        ))}
+                        {studentClassroomsMap[student.id].map(
+                          (classroom, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="bg-blue-50 text-blue-700 text-xs"
+                            >
+                              {classroom}
+                            </Badge>
+                          ),
+                        )}
                       </div>
                     ) : (
-                      <span className="text-muted-foreground text-sm">None</span>
+                      <span className="text-muted-foreground text-sm">
+                        None
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -457,8 +492,8 @@ function TeacherStudentsPage() {
                   const generatedUsername = fullName
                     .toLowerCase()
                     .trim()
-                    .replace(/\s+/g, '-')
-                    .replace(/[^a-z0-9_-]/g, '')
+                    .replace(/\s+/g, "-")
+                    .replace(/[^a-z0-9_-]/g, "")
                     .slice(0, 50)
 
                   setNewStudent({
@@ -532,15 +567,25 @@ function TeacherStudentsPage() {
               {classes.length > 0 ? (
                 <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
                   {classes.map((classroom) => (
-                    <div key={classroom.id} className="flex items-center space-x-2">
+                    <div
+                      key={classroom.id}
+                      className="flex items-center space-x-2"
+                    >
                       <Checkbox
                         id={`create-class-${classroom.id}`}
                         checked={selectedClassroomIds.includes(classroom.id)}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedClassroomIds([...selectedClassroomIds, classroom.id])
+                            setSelectedClassroomIds([
+                              ...selectedClassroomIds,
+                              classroom.id,
+                            ])
                           } else {
-                            setSelectedClassroomIds(selectedClassroomIds.filter(id => id !== classroom.id))
+                            setSelectedClassroomIds(
+                              selectedClassroomIds.filter(
+                                (id) => id !== classroom.id,
+                              ),
+                            )
                           }
                         }}
                       />
@@ -555,10 +600,13 @@ function TeacherStudentsPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No classrooms available</p>
+                <p className="text-sm text-muted-foreground">
+                  No classrooms available
+                </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Select one or more classrooms, or leave unselected to assign later
+                Select one or more classrooms, or leave unselected to assign
+                later
               </p>
             </div>
           </div>
@@ -647,13 +695,19 @@ function TeacherStudentsPage() {
               {studentClassrooms.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {studentClassrooms.map((classroom, index) => (
-                    <Badge key={index} variant="outline" className="bg-teal-50 text-teal-700">
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="bg-teal-50 text-teal-700"
+                    >
                       {classroom}
                     </Badge>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Not enrolled in any classroom</p>
+                <p className="text-sm text-muted-foreground">
+                  Not enrolled in any classroom
+                </p>
               )}
               <p className="text-xs text-muted-foreground">
                 Manage classroom enrollment from the Classrooms page
@@ -711,13 +765,17 @@ function TeacherStudentsPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the student <strong>{selectedStudent?.user_full_name}</strong> and
-              remove them from all classrooms. This action cannot be undone.
+              This will permanently delete the student{" "}
+              <strong>{selectedStudent?.user_full_name}</strong> and remove them
+              from all classrooms. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -729,7 +787,9 @@ function TeacherStudentsPage() {
               disabled={deleteStudentMutation.isPending}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deleteStudentMutation.isPending ? "Deleting..." : "Delete Student"}
+              {deleteStudentMutation.isPending
+                ? "Deleting..."
+                : "Delete Student"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -120,6 +120,106 @@ Depending on your workflow, you could want to exclude it from Git, for example i
 
 One way to do it could be to add each environment variable to your CI/CD system, and updating the `docker-compose.yml` file to read that specific env var instead of reading the `.env` file.
 
+## Dream Central Storage Setup
+
+Dream LMS integrates with Dream Central Storage API to fetch book catalogs, activity configurations, and media assets.
+
+### Local Development Setup
+
+For local development, Dream Central Storage should be running on `localhost:8081`.
+
+**Environment Variables:**
+
+The following variables are configured in `.env`:
+
+```dotenv
+DREAM_CENTRAL_STORAGE_URL=http://localhost:8081
+DREAM_CENTRAL_STORAGE_EMAIL=admin@admin.com
+DREAM_CENTRAL_STORAGE_PASSWORD=admin
+DREAM_CENTRAL_STORAGE_TOKEN_EXPIRY=1800  # 30 minutes
+DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET=changethis
+```
+
+⚠️ **Security Warning:** These are development credentials only. Never use these in production!
+
+### JWT Authentication Flow
+
+Dream Central Storage uses JWT token-based authentication:
+
+1. **Login:** The application authenticates using email/password to obtain a JWT access token
+   ```bash
+   POST /auth/login
+   Body: { "email": "admin@admin.com", "password": "admin" }
+   ```
+
+2. **Response:** Returns a JWT token valid for 30 minutes (configurable via `DREAM_CENTRAL_STORAGE_TOKEN_EXPIRY`)
+   ```json
+   { "access_token": "eyJ...", "token_type": "bearer" }
+   ```
+
+3. **Usage:** All subsequent API calls include the token in the Authorization header:
+   ```
+   Authorization: Bearer eyJ...
+   ```
+
+4. **Token Refresh:** The application automatically re-authenticates when the token expires
+
+### Testing Dream Central Storage Connectivity
+
+You can test the connection to Dream Central Storage using curl:
+
+```bash
+curl -X POST http://localhost:8081/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@admin.com","password":"admin"}'
+```
+
+Expected response:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+You can also check connectivity via the health check endpoint:
+
+```bash
+curl http://localhost:8000/api/v1/utils/health-check/
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "checks": {
+    "database": true,
+    "dream_central_storage": true
+  },
+  "timestamp": "2025-11-14T..."
+}
+```
+
+### Production Deployment Considerations
+
+⚠️ **CRITICAL:** Production credentials MUST be different from development defaults!
+
+1. **Set Environment Variables:** Configure production values via your hosting platform's environment variable system (AWS Secrets Manager, Heroku Config Vars, etc.)
+
+2. **Update `.env` for Production:**
+   ```dotenv
+   DREAM_CENTRAL_STORAGE_URL=https://storage.yourdomain.com
+   DREAM_CENTRAL_STORAGE_EMAIL=production-admin@yourdomain.com
+   DREAM_CENTRAL_STORAGE_PASSWORD=<secure-password>
+   DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET=<secure-random-string>
+   ```
+
+3. **Never Commit Credentials:** Ensure `.env` is in `.gitignore` (already configured)
+
+4. **Use Secrets Management:** For production, use AWS Secrets Manager, HashiCorp Vault, or similar
+
+See [deployment.md](deployment.md) for full production deployment guidelines.
+
 ## Pre-commits and code linting
 
 we are using a tool called [pre-commit](https://pre-commit.com/) for code linting and formatting.

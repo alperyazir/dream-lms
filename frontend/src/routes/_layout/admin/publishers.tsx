@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, Edit, Eye, EyeOff, Mail, Plus, Search, Trash2 } from "lucide-react"
+import {
+  BookOpen,
+  Edit,
+  Eye,
+  EyeOff,
+  Mail,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react"
 import { useState } from "react"
 import {
   AdminService,
@@ -68,7 +77,9 @@ function AdminPublishers() {
   })
 
   // Track which passwords are revealed (Eye icon state)
-  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({})
+  const [revealedPasswords, setRevealedPasswords] = useState<
+    Record<string, boolean>
+  >({})
 
   // Fetch publishers from API
   const {
@@ -84,7 +95,7 @@ function AdminPublishers() {
   const createPublisherMutation = useMutation({
     mutationFn: (data: PublisherCreateAPI) =>
       AdminService.createPublisher({ requestBody: data }),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: ["publishers"] })
       setIsAddDialogOpen(false)
       setNewPublisher({
@@ -95,7 +106,9 @@ function AdminPublishers() {
         full_name: "",
       })
 
-      showSuccessToast("Publisher created successfully! Password visible in table.")
+      showSuccessToast(
+        "Publisher created successfully! Password visible in table.",
+      )
     },
     onError: (error: any) => {
       showErrorToast(
@@ -156,7 +169,7 @@ function AdminPublishers() {
     // Validate username format
     if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newPublisher.username)) {
       showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen"
+        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen",
       )
       return
     }
@@ -210,7 +223,10 @@ function AdminPublishers() {
       publisher.contact_email
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      ((publisher as any).user_username?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      ((publisher as any).user_username
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ??
+        false) ||
       publisher.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       publisher.user_full_name
         ?.toLowerCase()
@@ -354,7 +370,9 @@ function AdminPublishers() {
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">N/A</span>
+                        <span className="text-sm text-muted-foreground">
+                          N/A
+                        </span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -421,8 +439,8 @@ function AdminPublishers() {
                   const generatedUsername = fullName
                     .toLowerCase()
                     .trim()
-                    .replace(/\s+/g, '-') // Replace spaces with hyphens
-                    .replace(/[^a-z0-9_-]/g, '') // Remove non-alphanumeric except _ and -
+                    .replace(/\s+/g, "-") // Replace spaces with hyphens
+                    .replace(/[^a-z0-9_-]/g, "") // Remove non-alphanumeric except _ and -
                     .slice(0, 50) // Max 50 characters
 
                   setNewPublisher({

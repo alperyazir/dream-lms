@@ -4,13 +4,12 @@ import uuid
 from datetime import timedelta
 from typing import Any
 
-import pytest
 from fastapi.testclient import TestClient
 from openpyxl import Workbook
 from sqlmodel import Session, select
 
 from app.core.security import create_access_token
-from app.models import Publisher, School, Student, Teacher, User, UserRole
+from app.models import Publisher, School, Student, Teacher, User
 
 
 def create_excel_file(data: list[dict[str, Any]]) -> bytes:

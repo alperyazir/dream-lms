@@ -181,7 +181,7 @@ describe("scoreCircle", () => {
   })
 
   it("handles empty selections", () => {
-    const userSelections = new Set()
+    const userSelections = new Set<string>()
 
     const result = scoreCircle(userSelections, answers, "circle")
 
@@ -226,7 +226,7 @@ describe("scoreWordSearch", () => {
   })
 
   it("returns 0% score when no words found", () => {
-    const foundWords = new Set()
+    const foundWords = new Set<string>()
 
     const result = scoreWordSearch(foundWords, totalWords)
 

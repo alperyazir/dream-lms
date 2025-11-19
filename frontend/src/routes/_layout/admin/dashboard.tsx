@@ -21,7 +21,11 @@ export const Route = createFileRoute("/_layout/admin/dashboard")({
 
 function AdminDashboard() {
   // Fetch real stats from API
-  const { data: stats, isLoading: statsLoading, error } = useQuery({
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error,
+  } = useQuery({
     queryKey: ["adminStats"],
     queryFn: async () => {
       console.log("Fetching dashboard stats...")

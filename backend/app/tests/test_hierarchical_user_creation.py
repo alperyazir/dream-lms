@@ -2,12 +2,11 @@
 
 import uuid
 
-import pytest
 from sqlmodel import Session
 from starlette.testclient import TestClient
 
 from app.core.config import settings
-from app.models import Publisher, School, Student, Teacher, User, UserRole
+from app.models import Publisher, School, User, UserRole
 
 
 # IV1: Admin creates all user types
@@ -197,6 +196,7 @@ def test_publisher_cannot_create_teacher_in_other_school(
     """Publisher cannot create teacher in another publisher's school (403)"""
     # Get publisher record from fixture
     from sqlmodel import select
+
     from app.core.security import get_password_hash
     publisher_statement = select(Publisher).where(Publisher.user_id == publisher_user_with_record.id)
     publisher = session.exec(publisher_statement).first()

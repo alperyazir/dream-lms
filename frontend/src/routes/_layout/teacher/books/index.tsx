@@ -1,174 +1,257 @@
+/**
+ * Teacher Books Page - Story 3.6
+ *
+ * Displays a catalog of books accessible to the teacher with:
+ * - Grid/list view toggle
+ * - Search functionality (debounced)
+ * - Filter options (publisher, activity type)
+ * - Pagination
+ * - Loading and empty states
+ */
+
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { useMemo, useState } from "react"
+import { Grid3x3, List, Search } from "lucide-react"
+import { useEffect, useState } from "react"
 import { BookCard } from "@/components/books/BookCard"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { mockActivities, mockBooks } from "@/lib/mockData"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
+import { booksApi } from "@/services/booksApi"
+import type { BooksFilter } from "@/types/book"
 
 export const Route = createFileRoute("/_layout/teacher/books/")({
-  component: TeacherBooksPage,
+  component: () => (
+    <ErrorBoundary>
+      <TeacherBooksPage />
+    </ErrorBoundary>
+  ),
 })
 
-function TeacherBooksPage() {
-  return (
-    <ErrorBoundary>
-      <TeacherBooksContent />
-    </ErrorBoundary>
-  )
+/**
+ * Custom hook for debouncing values
+ */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+
+  return debouncedValue
 }
 
-function TeacherBooksContent() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedPublisher, setSelectedPublisher] = useState<string>("all")
-  const [selectedGrade, setSelectedGrade] = useState<string>("all")
-  const [selectedActivityType, setSelectedActivityType] =
-    useState<string>("all")
+function TeacherBooksPage() {
+  // View preference from localStorage
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
+    const saved = localStorage.getItem("books-view-preference")
+    return (saved === "list" ? "list" : "grid") as "grid" | "list"
+  })
 
-  // Extract unique publishers and grades for filter dropdowns
-  const publishers = useMemo(() => {
-    const unique = Array.from(new Set(mockBooks.map((b) => b.publisher)))
-    return unique.sort()
-  }, [])
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activityTypeFilter, setActivityTypeFilter] = useState<string>("")
+  const [skip, setSkip] = useState(0)
+  const limit = 20
 
-  const grades = useMemo(() => {
-    const unique = Array.from(new Set(mockBooks.map((b) => b.grade)))
-    return unique.sort()
-  }, [])
+  // Debounce search
+  const debouncedSearch = useDebounce(searchTerm, 300)
 
-  const activityTypes = useMemo(() => {
-    const unique = Array.from(
-      new Set(mockActivities.map((a) => a.activityType)),
-    )
-    return unique.sort()
-  }, [])
+  // Build filter object
+  const filters: BooksFilter = {
+    skip,
+    limit,
+    ...(debouncedSearch && { search: debouncedSearch }),
+    ...(activityTypeFilter && { activity_type: activityTypeFilter as any }),
+  }
 
-  // Filter books based on search and filters
-  const filteredBooks = useMemo(() => {
-    return mockBooks.filter((book) => {
-      // Search filter: case-insensitive partial match on title
-      const matchesSearch =
-        searchQuery === "" ||
-        book.title.toLowerCase().includes(searchQuery.toLowerCase())
+  // Fetch books
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["books", filters],
+    queryFn: () => booksApi.getBooks(filters),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
 
-      // Publisher filter
-      const matchesPublisher =
-        selectedPublisher === "all" || book.publisher === selectedPublisher
+  // Handle view mode change
+  const handleViewModeChange = (mode: "grid" | "list") => {
+    setViewMode(mode)
+    localStorage.setItem("books-view-preference", mode)
+  }
 
-      // Grade filter
-      const matchesGrade =
-        selectedGrade === "all" || book.grade === selectedGrade
+  // Handle pagination
+  const handleNextPage = () => {
+    if (data && skip + limit < data.total) {
+      setSkip(skip + limit)
+    }
+  }
 
-      // Activity type filter: check if book has any activities of selected type
-      const matchesActivityType =
-        selectedActivityType === "all" ||
-        mockActivities.some(
-          (activity) =>
-            activity.bookId === book.id &&
-            activity.activityType === selectedActivityType,
-        )
+  const handlePrevPage = () => {
+    if (skip > 0) {
+      setSkip(Math.max(0, skip - limit))
+    }
+  }
 
-      // AND logic: all filters must match
-      return (
-        matchesSearch && matchesPublisher && matchesGrade && matchesActivityType
-      )
-    })
-  }, [searchQuery, selectedPublisher, selectedGrade, selectedActivityType])
+  const books = data?.items ?? []
+  const total = data?.total ?? 0
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Book Catalog</h1>
         <p className="text-muted-foreground">
-          Browse and assign books to your students
+          Browse books and activities available to your school
         </p>
       </div>
 
       {/* Search and Filters */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Search */}
-        <div className="lg:col-span-2">
-          <Input
-            type="search"
-            placeholder="Search books by title..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
-            aria-label="Search books by title"
-          />
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search by title or publisher..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setSkip(0) // Reset to first page on search
+              }}
+              className="pl-10 w-full"
+            />
+          </div>
+
+          {/* Activity Type Filter */}
+          <Select
+            value={activityTypeFilter}
+            onValueChange={(value) => {
+              setActivityTypeFilter(value === "all" ? "" : value)
+              setSkip(0)
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="All Activity Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Activity Types</SelectItem>
+              <SelectItem value="dragdroppicture">Drag & Drop</SelectItem>
+              <SelectItem value="matchTheWords">Match Words</SelectItem>
+              <SelectItem value="circle">Circle</SelectItem>
+              <SelectItem value="fillSentencesWithDots">
+                Fill Sentences
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* View Toggle */}
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === "grid" ? "default" : "outline"}
+              size="icon"
+              onClick={() => handleViewModeChange("grid")}
+              aria-label="Grid view"
+            >
+              <Grid3x3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "outline"}
+              size="icon"
+              onClick={() => handleViewModeChange("list")}
+              aria-label="List view"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        {/* Publisher Filter */}
-        <div>
-          <select
-            value={selectedPublisher}
-            onChange={(e) => setSelectedPublisher(e.target.value)}
-            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Filter by publisher"
-          >
-            <option value="all">All Publishers</option>
-            {publishers.map((publisher) => (
-              <option key={publisher} value={publisher}>
-                {publisher}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Grade Filter */}
-        <div>
-          <select
-            value={selectedGrade}
-            onChange={(e) => setSelectedGrade(e.target.value)}
-            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Filter by grade"
-          >
-            <option value="all">All Grades</option>
-            {grades.map((grade) => (
-              <option key={grade} value={grade}>
-                Grade {grade}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Results count */}
+        {!isLoading && (
+          <p className="text-sm text-muted-foreground">
+            Showing {skip + 1}-{Math.min(skip + limit, total)} of {total} books
+          </p>
+        )}
       </div>
 
-      {/* Activity Type Filter - Full width row */}
-      <div className="mb-6">
-        <select
-          value={selectedActivityType}
-          onChange={(e) => setSelectedActivityType(e.target.value)}
-          className="w-full md:w-64 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Filter by activity type"
+      {/* Loading State */}
+      {isLoading && (
+        <div
+          className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}
         >
-          <option value="all">All Activity Types</option>
-          {activityTypes.map((type) => (
-            <option key={type} value={type}>
-              {type.replace(/([A-Z])/g, " $1").trim()}
-            </option>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="space-y-4">
+              <Skeleton className="w-full aspect-[3/4]" />
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
           ))}
-        </select>
-      </div>
+        </div>
+      )}
 
-      {/* Results count */}
-      <div className="mb-4 text-sm text-muted-foreground">
-        Showing {filteredBooks.length} of {mockBooks.length} books
-      </div>
-
-      {/* Books Grid */}
-      {filteredBooks.length === 0 ? (
+      {/* Error State */}
+      {error && (
         <div className="text-center py-12">
-          <p className="text-lg text-muted-foreground">
-            No books found matching your filters.
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Try adjusting your search or filter criteria.
+          <p className="text-lg text-destructive mb-2">Failed to load books</p>
+          <p className="text-sm text-muted-foreground">
+            {error instanceof Error ? error.message : "An error occurred"}
           </p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredBooks.map((book) => (
+      )}
+
+      {/* Empty State */}
+      {!isLoading && !error && books.length === 0 && (
+        <div className="text-center py-12 border-2 border-dashed rounded-lg">
+          <p className="text-lg text-muted-foreground mb-2">
+            No books assigned to your school yet.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Contact your administrator to request access to books.
+          </p>
+        </div>
+      )}
+
+      {/* Books Grid/List */}
+      {!isLoading && !error && books.length > 0 && (
+        <div
+          className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-2"}`}
+        >
+          {books.map((book) => (
             <BookCard key={book.id} book={book} />
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && !error && total > limit && (
+        <div className="mt-8 flex justify-center gap-4">
+          <Button
+            variant="outline"
+            onClick={handlePrevPage}
+            disabled={skip === 0}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleNextPage}
+            disabled={skip + limit >= total}
+          >
+            Next
+          </Button>
         </div>
       )}
     </div>

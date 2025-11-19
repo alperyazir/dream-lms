@@ -1,17 +1,18 @@
-from collections.abc import Generator
-from typing import Annotated
 import uuid
+from collections.abc import AsyncGenerator, Generator
+from typing import Annotated
 
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import Session
 
 from app.core import security
 from app.core.config import settings
-from app.core.db import engine
+from app.core.db import async_engine, engine
 from app.models import TokenPayload, User, UserRole
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -24,7 +25,14 @@ def get_db() -> Generator[Session, None, None]:
         yield session
 
 
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
+    """Async database session dependency."""
+    async with AsyncSession(async_engine, expire_on_commit=False) as session:
+        yield session
+
+
 SessionDep = Annotated[Session, Depends(get_db)]
+AsyncSessionDep = Annotated[AsyncSession, Depends(get_async_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 

@@ -1,6 +1,5 @@
 """Unit tests for database initialization (init_db function)."""
 
-import pytest
 from sqlmodel import Session, select
 
 from app.core.db import init_db

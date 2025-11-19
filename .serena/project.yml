@@ -3,10 +3,6 @@
 #  * For JavaScript, use typescript
 # Special requirements:
 #  * csharp: Requires the presence of a .sln file in the project folder.
-language: typescript
-
-# the encoding used by text files in the project
-# For a list of possible encodings, see https://docs.python.org/3.11/library/codecs.html#standard-encodings
 encoding: "utf-8"
 
 # whether to use the project's gitignore file to ignore files
@@ -69,3 +65,7 @@ excluded_tools: []
 initial_prompt: ""
 
 project_name: "dream-lms"
+languages:
+- typescript
+- python
+included_optional_tools: []

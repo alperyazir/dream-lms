@@ -4,12 +4,11 @@ Tests for admin API endpoints
 import re
 import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.models import Publisher, School, Student, Teacher, User
+from app.models import Publisher, School, User
 
 
 def test_create_publisher_as_admin(
@@ -427,5 +426,45 @@ def test_application_starts_without_errors_after_init(
     response = client.get("/api/v1/utils/health-check/")
 
     assert response.status_code == 200
-    # Health check returns True on success
-    assert response.json() is True
+    # Health check returns structured response (Story 3.0)
+    data = response.json()
+    assert "status" in data
+    assert data["status"] in ["healthy", "degraded"]
+
+
+def test_admin_can_test_dream_storage_connection(
+    client: TestClient, admin_token: str
+) -> None:
+    """Test admin endpoint for testing Dream Central Storage connection."""
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/test-dream-storage-connection",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify response structure
+    assert "status" in data
+    assert "message" in data
+    assert "url" in data
+    assert "details" in data
+
+    # Status should be "success" or "error"
+    assert data["status"] in ["success", "error"]
+
+    # URL should match configured storage URL
+    assert data["url"] == settings.DREAM_CENTRAL_STORAGE_URL
+
+
+def test_non_admin_cannot_test_dream_storage_connection(
+    client: TestClient, teacher_token: str
+) -> None:
+    """Test that non-admin users cannot access test connection endpoint."""
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/test-dream-storage-connection",
+        headers={"Authorization": f"Bearer {teacher_token}"},
+    )
+
+    # Should be forbidden (403) for non-admin users
+    assert response.status_code == 403

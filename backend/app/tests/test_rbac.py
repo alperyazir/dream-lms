@@ -1,7 +1,6 @@
 """
 Integration tests for Role-Based Access Control (RBAC)
 """
-import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
@@ -104,6 +103,7 @@ def test_token_contains_correct_role_for_each_user(
 ):
     """Test that tokens contain the correct role for each user type"""
     import jwt
+
     from app.core.security import ALGORITHM
 
     test_cases = [

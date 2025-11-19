@@ -22,6 +22,8 @@ dependencies = [
     "sentry-sdk[fastapi]>=2.20.0",
     "pyjwt<3.0.0,>=2.8.0",
     "openpyxl>=3.1.0",
+    "unidecode>=1.4.0",
+    "asyncpg>=0.30.0",
 ]
 
 [tool.uv]
@@ -33,6 +35,10 @@ dev-dependencies = [
     "pre-commit<4.0.0,>=3.6.2",
     "types-passlib<2.0.0.0,>=1.7.7.20240106",
     "coverage<8.0.0,>=7.4.3",
+    "respx>=0.21.1,<1.0.0",
+    "freezegun<2.0.0,>=1.4.0",
+    "aiosqlite>=0.21.0",
+    "greenlet>=3.1.1",
 ]
 
 [build-system]
@@ -80,3 +86,8 @@ sort = "-Cover"
 
 [tool.coverage.html]
 show_contexts = true
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (require external services)",
+]

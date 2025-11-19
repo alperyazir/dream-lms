@@ -10,8 +10,6 @@ from sqlmodel import Session
 
 from app.models import User, UserRole
 from app.services.bulk_import import (
-    BulkValidationResult,
-    ValidationResult,
     check_existing_users,
     validate_bulk_import,
     validate_email_format,

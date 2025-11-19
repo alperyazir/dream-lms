@@ -271,6 +271,20 @@ The current Github Actions workflows expect these secrets:
 * `LATEST_CHANGES`
 * `SMOKESHOW_AUTH_KEY`
 
+**Dream Central Storage Secrets** (⚠️  CRITICAL: Must be different from development defaults!):
+
+* `DREAM_CENTRAL_STORAGE_URL` - Production Dream Central Storage API URL (e.g., `https://storage.yourdomain.com`)
+* `DREAM_CENTRAL_STORAGE_EMAIL` - Production admin email for Dream Central Storage authentication
+* `DREAM_CENTRAL_STORAGE_PASSWORD` - Production admin password (generate secure random password)
+* `DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET` - Secure random string for validating webhook signatures (generate using `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
+
+**Security Notes:**
+- ⚠️  NEVER use development default values (`admin@admin.com` / `admin`) in production!
+- Environment variables override `.env` file values
+- Use AWS Secrets Manager, HashiCorp Vault, or similar for production secret management
+- Rotate credentials regularly
+- Use different credentials for staging and production environments
+
 ## GitHub Action Deployment Workflows
 
 There are GitHub Action workflows in the `.github/workflows` directory already configured for deploying to the environments (GitHub Actions runners with the labels):

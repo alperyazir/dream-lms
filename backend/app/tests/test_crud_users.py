@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlmodel import Session
 
 from app import crud
-from app.models import User, UserCreate, UserRole
+from app.models import UserCreate, UserRole
 
 
 def test_create_user_with_valid_username_succeeds(session: Session) -> None:

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query"
 import { FileText, MessageSquare, TrendingUp, Trophy } from "lucide-react"
 import {
   CartesianGrid,
@@ -12,9 +13,10 @@ import {
 } from "recharts"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { AchievementBadge } from "@/components/dashboard/AchievementBadge"
-import { AssignmentDueCard } from "@/components/dashboard/AssignmentDueCard"
+import { StudentAssignmentCard } from "@/components/assignments/AssignmentCard"
 import { FeedbackItem } from "@/components/dashboard/FeedbackItem"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getStudentAssignments } from "@/services/assignmentsApi"
 import { studentDashboardData } from "@/lib/mockData"
 
 export const Route = createFileRoute("/_layout/student/dashboard")({
@@ -26,7 +28,28 @@ export const Route = createFileRoute("/_layout/student/dashboard")({
 })
 
 function StudentDashboard() {
-  const { assignmentsDue, scoreHistory, recentFeedback, achievements, stats } =
+  // Fetch real assignments from API
+  const { data: assignments = [], isLoading: isLoadingAssignments } = useQuery({
+    queryKey: ["studentAssignments"],
+    queryFn: () => getStudentAssignments(),
+  })
+
+  // Filter and sort assignments to show only incomplete and not past due (upcoming)
+  const upcomingAssignments = assignments
+    .filter(
+      (assignment: any) =>
+        assignment.status !== "completed" && !assignment.is_past_due
+    )
+    .sort((a: any, b: any) => {
+      // Sort by due date (earliest first), assignments without due dates go to the end
+      if (!a.due_date && !b.due_date) return 0
+      if (!a.due_date) return 1
+      if (!b.due_date) return -1
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    })
+
+  // Use mock data for other sections (not implemented yet)
+  const { scoreHistory, recentFeedback, achievements, stats } =
     studentDashboardData
 
   // Calculate average score
@@ -49,27 +72,27 @@ function StudentDashboard() {
         <div className="flex items-center gap-2 mb-4">
           <FileText className="w-6 h-6 text-teal-500" />
           <h2 className="text-2xl font-bold text-foreground">
-            Assignments Due
+            Upcoming Assignments
           </h2>
         </div>
-        {assignmentsDue.length === 0 ? (
+        {isLoadingAssignments ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-muted-foreground">Loading assignments...</p>
+          </div>
+        ) : upcomingAssignments.length === 0 ? (
           <div className="text-center py-12 border border-dashed rounded-lg">
             <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <p className="text-lg text-muted-foreground">No assignments due</p>
+            <p className="text-lg text-muted-foreground">No upcoming assignments</p>
             <p className="text-sm text-muted-foreground mt-2">
               Your assignments will appear here when your teacher assigns them
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {assignmentsDue.map((assignment) => (
-              <AssignmentDueCard
-                key={assignment.id}
-                id={assignment.id}
-                name={assignment.name}
-                subject={assignment.subject}
-                dueDate={assignment.dueDate}
-                status={assignment.status}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
+            {upcomingAssignments.map((assignment: any) => (
+              <StudentAssignmentCard
+                key={assignment.assignment_id}
+                assignment={assignment}
               />
             ))}
           </div>

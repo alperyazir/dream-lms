@@ -29,9 +29,9 @@ export function DragDropPicturePlayer({
   const [hoveredZone, setHoveredZone] = useState<string | null>(null)
 
   // Keyboard navigation state
-  const [_focusedDropZoneIndex, setFocusedDropZoneIndex] = useState<number>(-1)
-  const dropZoneRefs = useRef<(HTMLDivElement | null)[]>([])
-  const wordRefs = useRef<(HTMLDivElement | null)[]>([])
+  const [, setFocusedDropZoneIndex] = useState<number>(-1)
+  const dropZoneRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const wordRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   // Get used words (already placed in drop zones)
   const usedWords = new Set(answers.values())
@@ -138,7 +138,7 @@ export function DragDropPicturePlayer({
   }
 
   // Keyboard navigation: Handle word selection with Space/Enter
-  const _handleWordKeyDown = (e: React.KeyboardEvent, word: string) => {
+  const handleWordKeyDown = (e: React.KeyboardEvent, word: string) => {
     if (showResults || usedWords.has(word)) return
 
     if (e.key === " " || e.key === "Enter") {
@@ -156,7 +156,7 @@ export function DragDropPicturePlayer({
   }
 
   // Keyboard navigation: Handle drop zone interaction with Space/Enter and arrow keys
-  const _handleDropZoneKeyDown = (
+  const handleDropZoneKeyDown = (
     e: React.KeyboardEvent,
     dropZoneId: string,
     index: number,
@@ -210,6 +210,7 @@ export function DragDropPicturePlayer({
               onDragStart={() => handleDragStart(word)}
               onDragEnd={handleDragEnd}
               onClick={() => !showResults && handleWordClick(word)}
+              onKeyDown={(e) => handleWordKeyDown(e, word)}
               className={`
                 cursor-pointer rounded-lg border-2 px-4 py-2 font-semibold shadow-neuro-sm transition-all duration-200
                 ${
@@ -265,6 +266,7 @@ export function DragDropPicturePlayer({
               onDragLeave={handleDragLeave}
               onDrop={(e) => !showResults && handleDrop(e, dropZoneId)}
               onClick={() => !showResults && handleDropZoneClick(dropZoneId)}
+              onKeyDown={(e) => handleDropZoneKeyDown(e, dropZoneId, index)}
               className={`
                 absolute flex items-center justify-center rounded-md transition-all duration-200
                 ${

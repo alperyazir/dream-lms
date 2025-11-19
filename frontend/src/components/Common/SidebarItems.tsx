@@ -13,7 +13,8 @@ import {
 } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
-import { AdminService, type UserPublic, type UserRole } from "@/client"
+import { type UserPublic, type UserRole } from "@/client"
+import { getStudentAssignments } from "@/services/assignmentsApi"
 
 interface SidebarItemsProps {
   onClose?: () => void
@@ -24,6 +25,13 @@ interface Item {
   title: string
   path: string
   comingSoon?: boolean
+}
+
+interface AdminStats {
+  total_publishers?: number
+  active_schools?: number
+  total_teachers?: number
+  total_students?: number
 }
 
 // Role-specific menu items
@@ -105,11 +113,27 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const menuItems = roleMenuItems[userRole] || roleMenuItems.student
 
   // Fetch real stats for admin users
-  const { data: adminStats } = useQuery({
-    queryKey: ["adminStats"],
-    queryFn: () => AdminService.getDashboardStats(),
-    enabled: userRole === "admin",
+  // TODO: Re-enable when AdminService.getDashboardStats is implemented
+  const adminStats = undefined as AdminStats | undefined
+  // const { data: adminStats } = useQuery({
+  //   queryKey: ["adminStats"],
+  //   queryFn: () => AdminService.getDashboardStats(),
+  //   enabled: userRole === "admin",
+  // })
+
+  // Fetch student assignments for notification badge
+  const { data: studentAssignments = [] } = useQuery({
+    queryKey: ["studentAssignments"],
+    queryFn: () => getStudentAssignments(),
+    enabled: userRole === "student",
   })
+
+  // Count incomplete student assignments (not_started + in_progress + past_due)
+  const incompleteAssignmentsCount = Array.isArray(studentAssignments)
+    ? studentAssignments.filter(
+        (assignment) => assignment.status !== "completed"
+      ).length
+    : 0
 
   // Get count for each path
   const getItemCount = (path: string): number | null => {
@@ -132,6 +156,8 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         return null // Will be implemented later
       case "/publisher/teachers":
         return null // Will be implemented later
+      case "/student/assignments":
+        return incompleteAssignmentsCount > 0 ? incompleteAssignmentsCount : null
       default:
         return null
     }
@@ -157,7 +183,13 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
           {title}
         </span>
         {itemCount !== null && !comingSoon && (
-          <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
+          <span
+            className={`text-xs px-2 py-0.5 rounded ${
+              path === "/student/assignments"
+                ? "bg-red-500 text-white font-semibold"
+                : "bg-gray-200 dark:bg-gray-700"
+            }`}
+          >
             {itemCount}
           </span>
         )}

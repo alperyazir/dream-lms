@@ -1,3 +1,4 @@
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel import Session, create_engine, select
 
 from app import crud
@@ -5,6 +6,13 @@ from app.core.config import settings
 from app.models import User, UserCreate, UserRole
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+
+# Async engine for async operations (e.g., BookService)
+async_engine: AsyncEngine = create_async_engine(
+    str(settings.SQLALCHEMY_DATABASE_URI).replace("postgresql://", "postgresql+asyncpg://"),
+    echo=False,
+    future=True,
+)
 
 
 # make sure all SQLModel models are imported (app.models) before initializing DB

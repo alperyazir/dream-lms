@@ -37,7 +37,11 @@ function PublisherSchoolsPage() {
   })
 
   // Fetch schools from API
-  const { data: schools = [], isLoading, error } = useQuery({
+  const {
+    data: schools = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["publisherSchools"],
     queryFn: () => PublishersService.listMySchools(),
   })
@@ -61,7 +65,7 @@ function PublisherSchoolsPage() {
       let errorMessage = "Failed to create school. Please try again."
 
       if (error.body?.detail) {
-        if (typeof error.body.detail === 'string') {
+        if (typeof error.body.detail === "string") {
           errorMessage = error.body.detail
         } else if (Array.isArray(error.body.detail)) {
           // Handle validation errors
@@ -207,9 +211,7 @@ function PublisherSchoolsPage() {
               disabled={createSchoolMutation.isPending}
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
-              {createSchoolMutation.isPending
-                ? "Creating..."
-                : "Create School"}
+              {createSchoolMutation.isPending ? "Creating..." : "Create School"}
             </Button>
           </DialogFooter>
         </DialogContent>

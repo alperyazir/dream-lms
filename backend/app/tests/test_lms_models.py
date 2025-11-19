@@ -6,12 +6,12 @@ from sqlmodel import Session, select
 
 from app.core.security import get_password_hash
 from app.models import (
-    User,
-    UserRole,
     Publisher,
     School,
-    Teacher,
     Student,
+    Teacher,
+    User,
+    UserRole,
 )
 
 

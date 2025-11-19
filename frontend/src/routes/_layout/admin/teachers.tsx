@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Edit, Eye, EyeOff, Mail, Plus, Search, Trash2, UserCheck } from "lucide-react"
+import {
+  Edit,
+  Eye,
+  EyeOff,
+  Mail,
+  Plus,
+  Search,
+  Trash2,
+  UserCheck,
+} from "lucide-react"
 import { useState } from "react"
 import {
   AdminService,
@@ -77,7 +86,9 @@ function AdminTeachers() {
   })
 
   // Track which passwords are revealed (Eye icon state)
-  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({})
+  const [revealedPasswords, setRevealedPasswords] = useState<
+    Record<string, boolean>
+  >({})
 
   // Fetch teachers from API
   const {
@@ -99,7 +110,7 @@ function AdminTeachers() {
   const createTeacherMutation = useMutation({
     mutationFn: (data: TeacherCreateAPI) =>
       AdminService.createTeacher({ requestBody: data }),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] })
       setIsAddDialogOpen(false)
       setNewTeacher({
@@ -110,7 +121,9 @@ function AdminTeachers() {
         subject_specialization: "",
       })
 
-      showSuccessToast("Teacher created successfully! Password visible in table.")
+      showSuccessToast(
+        "Teacher created successfully! Password visible in table.",
+      )
     },
     onError: (error: any) => {
       showErrorToast(
@@ -170,7 +183,7 @@ function AdminTeachers() {
     // Validate username format
     if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newTeacher.username)) {
       showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen"
+        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen",
       )
       return
     }
@@ -372,7 +385,9 @@ function AdminTeachers() {
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">N/A</span>
+                        <span className="text-sm text-muted-foreground">
+                          N/A
+                        </span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -521,8 +536,8 @@ function AdminTeachers() {
                   const generatedUsername = fullName
                     .toLowerCase()
                     .trim()
-                    .replace(/\s+/g, '-') // Replace spaces with hyphens
-                    .replace(/[^a-z0-9_-]/g, '') // Remove non-alphanumeric except _ and -
+                    .replace(/\s+/g, "-") // Replace spaces with hyphens
+                    .replace(/[^a-z0-9_-]/g, "") // Remove non-alphanumeric except _ and -
                     .slice(0, 50) // Max 50 characters
 
                   setNewTeacher({

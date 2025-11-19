@@ -176,7 +176,7 @@ function MessagingInbox() {
               <div className="flex-1 overflow-y-auto">
                 <ConversationList
                   conversations={filteredConversations}
-                  selectedConversationId={selectedConversationId}
+                  selectedConversationId={selectedConversationId ?? undefined}
                   onConversationClick={handleConversationClick}
                 />
               </div>

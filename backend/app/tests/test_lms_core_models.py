@@ -2,28 +2,28 @@
 Unit tests for LMS Core models (Classes, Books, Activities, Assignments)
 """
 import uuid
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime
 
 import pytest
 from sqlmodel import Session, select
 
+from app.core.security import get_password_hash
 from app.models import (
-    User,
-    UserRole,
-    Publisher,
-    School,
-    Teacher,
-    Student,
-    Class,
-    ClassStudent,
-    Book,
     Activity,
     ActivityType,
     Assignment,
-    AssignmentStudent,
     AssignmentStatus,
+    AssignmentStudent,
+    Book,
+    Class,
+    ClassStudent,
+    Publisher,
+    School,
+    Student,
+    Teacher,
+    User,
+    UserRole,
 )
-from app.core.security import get_password_hash
 
 
 def test_create_class_with_relationships(session: Session) -> None:

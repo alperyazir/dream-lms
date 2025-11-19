@@ -1,14 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
-import { AssignmentCard } from "@/components/assignments/AssignmentCard"
+import { useQuery } from "@tanstack/react-query"
+import { StudentAssignmentCard } from "@/components/assignments/AssignmentCard"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import {
-  type AssignmentFull,
-  type AssignmentStudent,
-  mockAssignmentStudents,
-  mockAssignments,
-  mockBooks,
-} from "@/lib/mockData"
+import { getStudentAssignments } from "@/services/assignmentsApi"
+import type { StudentAssignmentResponse } from "@/types/assignment"
 
 export const Route = createFileRoute("/_layout/student/assignments/")({
   component: StudentAssignmentsPage,
@@ -27,100 +23,110 @@ type TabValue = "todo" | "completed" | "past-due"
 function StudentAssignmentsContent() {
   const [activeTab, setActiveTab] = useState<TabValue>("todo")
 
-  // Mock current student ID (in real app, this would come from auth)
-  const currentStudentId = "1"
-
-  // Get student's assignments
-  const studentSubmissions = mockAssignmentStudents.filter(
-    (s) => s.studentId === currentStudentId,
-  )
+  // Fetch student's assignments from API
+  const { data: assignments = [], isLoading, error } = useQuery({
+    queryKey: ["studentAssignments"],
+    queryFn: async () => {
+      const result = await getStudentAssignments()
+      return result
+    },
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: true,
+  })
 
   // Categorize assignments by tab
   const categorizedAssignments = useMemo(() => {
-    const now = new Date()
-    const todo: Array<{
-      assignment: AssignmentFull
-      submission: AssignmentStudent
-    }> = []
-    const completed: Array<{
-      assignment: AssignmentFull
-      submission: AssignmentStudent
-    }> = []
-    const pastDue: Array<{
-      assignment: AssignmentFull
-      submission: AssignmentStudent
-    }> = []
+    const todo: StudentAssignmentResponse[] = []
+    const completed: StudentAssignmentResponse[] = []
+    const pastDue: StudentAssignmentResponse[] = []
 
-    studentSubmissions.forEach((submission) => {
-      const assignment = mockAssignments.find(
-        (a) => a.id === submission.assignmentId,
-      )
-      if (!assignment) return
+    if (!Array.isArray(assignments)) {
+      return { todo, completed, pastDue }
+    }
 
-      const dueDate = new Date(assignment.due_date)
-      const isPastDue = dueDate < now
-
-      if (submission.status === "completed") {
-        completed.push({ assignment, submission })
-      } else if (isPastDue) {
-        pastDue.push({ assignment, submission })
+    assignments.forEach((assignment) => {
+      if (assignment.status === "completed") {
+        completed.push(assignment)
+      } else if (assignment.is_past_due) {
+        pastDue.push(assignment)
       } else {
-        todo.push({ assignment, submission })
+        todo.push(assignment)
       }
     })
 
-    // Sort by due date
+    // Sort by due date (earliest first), assignments without due dates go to the end
     const sortByDueDate = (
-      a: { assignment: AssignmentFull },
-      b: { assignment: AssignmentFull },
+      a: StudentAssignmentResponse,
+      b: StudentAssignmentResponse,
     ) => {
-      return (
-        new Date(a.assignment.due_date).getTime() -
-        new Date(b.assignment.due_date).getTime()
-      )
+      // Assignments without due dates go to the end
+      if (!a.due_date && !b.due_date) return 0
+      if (!a.due_date) return 1
+      if (!b.due_date) return -1
+
+      // Sort by due date (earliest first)
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
     }
 
     todo.sort(sortByDueDate)
     pastDue.sort(sortByDueDate)
     completed.sort((a, b) => {
       // Sort completed by completion date (most recent first)
-      if (!a.submission.completed_at) return 1
-      if (!b.submission.completed_at) return -1
-      return (
-        new Date(b.submission.completed_at).getTime() -
-        new Date(a.submission.completed_at).getTime()
-      )
+      if (!a.completed_at && !b.completed_at) return 0
+      if (!a.completed_at) return 1
+      if (!b.completed_at) return -1
+      return new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
     })
 
     return { todo, completed, pastDue }
-  }, [studentSubmissions])
+  }, [assignments])
 
   const renderAssignmentGrid = (
-    items: Array<{ assignment: AssignmentFull; submission: AssignmentStudent }>,
+    items: StudentAssignmentResponse[],
+    emptyMessage: string,
   ) => {
     if (items.length === 0) {
       return (
         <div className="text-center py-12">
-          <p className="text-lg text-muted-foreground">No assignments found.</p>
+          <p className="text-lg text-muted-foreground">{emptyMessage}</p>
         </div>
       )
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {items.map(({ assignment, submission }) => {
-          const book = mockBooks.find((b) => b.id === assignment.bookId)
-          if (!book) return null
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
+        {items.map((assignment) => (
+          <StudentAssignmentCard
+            key={assignment.assignment_id}
+            assignment={assignment}
+          />
+        ))}
+      </div>
+    )
+  }
 
-          return (
-            <AssignmentCard
-              key={assignment.id}
-              assignment={assignment}
-              book={book}
-              submission={submission}
-            />
-          )
-        })}
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <p className="text-lg text-muted-foreground">Loading assignments...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    console.error("Error loading assignments:", error)
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <p className="text-lg text-red-600">Failed to load assignments. Please try again.</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            {error instanceof Error ? error.message : "Unknown error"}
+          </p>
+        </div>
       </div>
     )
   }
@@ -190,11 +196,20 @@ function StudentAssignmentsContent() {
       {/* Tab Content */}
       <div className="mt-6">
         {activeTab === "todo" &&
-          renderAssignmentGrid(categorizedAssignments.todo)}
+          renderAssignmentGrid(
+            categorizedAssignments.todo,
+            "No assignments to do right now. Great job staying on top of your work!"
+          )}
         {activeTab === "completed" &&
-          renderAssignmentGrid(categorizedAssignments.completed)}
+          renderAssignmentGrid(
+            categorizedAssignments.completed,
+            "No completed assignments yet. Start working on your assignments to see them here."
+          )}
         {activeTab === "past-due" &&
-          renderAssignmentGrid(categorizedAssignments.pastDue)}
+          renderAssignmentGrid(
+            categorizedAssignments.pastDue,
+            "No past due assignments. Keep up the good work!"
+          )}
       </div>
     </div>
   )

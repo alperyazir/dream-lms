@@ -8,6 +8,44 @@ limits, target students/classes). Students can view their assigned homework with
  core LMS assignment workflow is complete: teachers assign work, students see what's due, setting the foundation for activity completion in Epic
 4.
 
+## Story 3.0: Dream Central Storage Setup & Configuration
+
+As a **developer**,
+I want **to document and configure the Dream Central Storage integration credentials and environment**,
+so that **the application can connect to Dream Central Storage in development and production environments**.
+
+### Acceptance Criteria:
+
+1. Environment variables added to `.env` and documented in `.env.example`:
+   - `DREAM_CENTRAL_STORAGE_URL` (default: `http://localhost:8081` for dev, production URL for prod)
+   - `DREAM_CENTRAL_STORAGE_EMAIL` (default: `admin@admin.com` for dev, to be changed in production)
+   - `DREAM_CENTRAL_STORAGE_PASSWORD` (default: `admin` for dev, to be changed in production)
+   - `DREAM_CENTRAL_STORAGE_TOKEN_EXPIRY` (default: 30 minutes - JWT token lifespan)
+2. Configuration module `app/core/config.py` includes Dream Central Storage settings with validation
+3. Developer documentation (`docs/setup.md` or similar) explains:
+   - How to set up local Dream Central Storage instance for development
+   - How credentials are used (JWT authentication flow)
+   - Security note: Production credentials must be different from development defaults
+   - How to test connectivity: `curl -X POST http://localhost:8081/auth/login -H "Content-Type: application/json" -d '{"email":"admin@admin.com","password":"admin"}'`
+4. `.env.example` includes clear comments warning that default credentials are for development only
+5. CI/CD pipeline documentation includes steps for setting production environment variables
+6. Health check endpoint `GET /api/utils/health-check/` includes Dream Central Storage connectivity status
+7. Admin panel (if exists) or management command to test Dream Central Storage connection
+8. Security documentation warns against committing actual credentials to version control
+
+### Technical Notes:
+
+**Authentication Flow:**
+1. Application uses email/password to obtain JWT access token from `POST /auth/login`
+2. JWT token is cached and reused for subsequent API calls
+3. Token expiration is tracked; new token is obtained when current one expires
+4. All API requests include `Authorization: Bearer {token}` header
+
+**Production Considerations:**
+- Dream Central Storage URL will be different in production (e.g., `https://storage.dream-lms.com`)
+- Production credentials must be securely managed (e.g., AWS Secrets Manager, environment variables)
+- Token refresh logic should handle network failures gracefully
+
 ## Story 3.1: Dream Central Storage API Integration
 
 As a **developer**,  
@@ -17,18 +55,45 @@ so that **the backend can retrieve book catalogs, activity configurations, and m
 ### Acceptance Criteria:
 
 1. Backend service class `DreamCentralStorageClient` is created using httpx async client
-2. Client authenticates with Dream Central Storage using provided credentials/API keys (configuration from environment variables)
+2. Client implements JWT authentication flow:
+   - `authenticate()` method calls `POST /auth/login` with email/password from env variables
+   - Stores JWT token with expiration timestamp (30 minutes from issue time)
+   - Auto-refreshes token when expired or returns 401 Unauthorized
+   - All API calls include `Authorization: Bearer {token}` header
 3. Client implements retry logic with exponential backoff for transient failures (max 3 retries)
-4. Client includes timeout configuration (e.g., 30 seconds for API calls)
-5. Error handling differentiates between client errors (4xx), server errors (5xx), and network failures
-6. Client implements connection pooling for performance optimization
-7. Client methods include: `get_books()`, `get_book_by_id(book_id)`, `get_book_config(book_id)`, `get_asset_url(asset_path)`
-8. Response caching layer stores frequently accessed book data (e.g., 15-minute TTL using in-memory cache or Redis)
-9. API endpoint documentation from Dream Central Storage is incorporated into developer documentation
-10. Unit tests mock Dream Central Storage responses to test error handling and retry logic
-11. Integration tests verify successful communication with actual Dream Central Storage API (using test credentials)
-12. Logging captures all API requests/responses for debugging and monitoring
-13. Rate limiting is respected based on Dream Central Storage API quotas
+4. Client includes timeout configuration (30 seconds for API calls, 60 seconds for file downloads)
+5. Error handling differentiates between:
+   - 401 Unauthorized (trigger re-authentication and retry)
+   - 403 Forbidden (insufficient permissions, log and raise)
+   - 404 Not Found (resource doesn't exist, return None or raise)
+   - 5xx Server errors (retry with backoff)
+   - Network failures (retry with backoff)
+6. Client implements connection pooling for performance optimization (max 10 concurrent connections)
+7. Client methods include:
+   - `authenticate() -> TokenResponse` - Obtain JWT access token
+   - `get_books() -> List[BookRead]` - Fetch all books from `GET /books/`
+   - `get_book_by_id(book_id: int) -> BookRead` - Fetch specific book from `GET /books/{book_id}`
+   - `get_book_config(publisher: str, book_name: str) -> dict` - Fetch config.json from `GET /storage/books/{publisher}/{book_name}/config`
+   - `list_book_contents(publisher: str, book_name: str) -> List[str]` - List files from `GET /storage/books/{publisher}/{book_name}`
+   - `get_asset_url(publisher: str, book_name: str, asset_path: str) -> str` - Generate authenticated URL for `GET /storage/books/{publisher}/{book_name}/object?path={asset_path}`
+   - `download_asset(publisher: str, book_name: str, asset_path: str) -> bytes` - Download asset file
+8. Response caching layer stores book catalog and config data:
+   - Book list cache: 15-minute TTL (in-memory or Redis)
+   - Config.json cache: 30-minute TTL (config rarely changes)
+   - Cache invalidation on sync operation
+9. Token caching and refresh:
+   - JWT token cached in memory with expiration tracking
+   - Token refreshed automatically 5 minutes before expiry or on 401 response
+   - Thread-safe token refresh (prevent concurrent re-auth requests)
+10. Unit tests mock Dream Central Storage responses for all client methods
+11. Unit tests verify retry logic, token refresh, and error handling paths
+12. Integration tests verify successful communication with actual Dream Central Storage API (using test credentials)
+13. Logging captures:
+    - Authentication attempts and token refresh events
+    - All API requests with method, URL, and response status
+    - Error responses with full error details
+    - Cache hits/misses for monitoring
+14. Rate limiting detection: If 429 Too Many Requests received, respect Retry-After header
 
 ## Story 3.2: Book Catalog & Activity Data Models
 
@@ -38,21 +103,304 @@ so that **the application can store book references and parse activity configura
 
 ### Acceptance Criteria:
 
-1. Book model includes: id, dream_storage_id (external ID), title, publisher_id (foreign key), description, cover_image_url, created_at,
-updated_at
-2. BookAccess model implements publisher permissions: id, book_id (foreign key), publisher_id (foreign key), granted_at
-3. Activity model includes: id, book_id (foreign key), dream_activity_id, activity_type (enum: drag_drop, word_match, multiple_choice, 
-true_false, word_search), title, config_json (JSONB field), order_index
-4. Database migration creates these tables with appropriate indexes (book_id, publisher_id, activity_type)
-5. Backend service `BookService` syncs book data from Dream Central Storage to local database
-6. Config.json parser extracts activity definitions and populates Activity table
-7. API endpoint `GET /api/books/sync` (admin-only) triggers book catalog synchronization from Dream Central Storage
-8. Pydantic schemas for API responses: BookResponse, ActivityResponse with proper validation
-9. Unit tests verify config.json parsing for all activity types
-10. Integration tests verify book sync creates/updates database records correctly
-11. Composite index on (publisher_id, book_id) for efficient permission queries
+1. **Book model** includes:
+   - `id` (primary key, auto-increment)
+   - `dream_storage_id` (integer, external ID from Dream Central Storage)
+   - `book_name` (string, unique identifier used in Dream Central Storage paths, e.g., "BRAINS", "KEEN A")
+   - `title` (string, display name from config.json `book_title` field)
+   - `publisher` (string, publisher name from Dream Central Storage, e.g., "Universal ELT")
+   - `publisher_id` (foreign key to Publisher table - mapped from publisher string)
+   - `language` (string, e.g., "en")
+   - `category` (string, e.g., "English", "fun")
+   - `status` (enum: published, draft, archived - from Dream Central Storage)
+   - `cover_image_url` (string, local path to cached cover image, e.g., `/media/book_covers/{book_id}_cover.png`)
+   - `config_json` (JSONB, full config.json for reference)
+   - `created_at`, `updated_at` (timestamps)
+   - `synced_at` (timestamp, last sync from Dream Central Storage)
+   - Unique constraint on `(dream_storage_id)`
+   - Index on `(publisher_id, status)`
 
-## Story 3.3: Teacher Class Management
+2. **BookAccess model** implements publisher permissions:
+   - `id` (primary key)
+   - `book_id` (foreign key to Book)
+   - `publisher_id` (foreign key to Publisher)
+   - `granted_at` (timestamp)
+   - Unique constraint on `(book_id, publisher_id)`
+
+3. **Activity model** includes:
+   - `id` (primary key)
+   - `book_id` (foreign key to Book)
+   - `module_name` (string, e.g., "Module 1", "Intro" - from config.json)
+   - `page_number` (integer, page in the book)
+   - `section_index` (integer, section order within page)
+   - `activity_type` (enum: `matchTheWords`, `dragdroppicture`, `dragdroppicturegroup`, `fillSentencesWithDots`, `fillpicture`, `circle`)
+   - `title` (string, extracted from config `headerText` or generated from type)
+   - `config_json` (JSONB, full activity configuration from config.json section)
+   - `order_index` (integer, global order across all activities in book for sorting)
+   - `created_at`, `updated_at` (timestamps)
+   - Index on `(book_id, order_index)`
+   - Index on `(book_id, activity_type)`
+
+4. Database migration creates these tables with appropriate indexes
+
+5. **Backend service `BookService`** implements sync logic:
+   - `sync_all_books()` - Fetches all books from Dream Central Storage and syncs to database
+   - `sync_book(dream_storage_id: int)` - Syncs single book including config parsing
+   - Creates/updates Book records (upsert based on dream_storage_id)
+   - Maps `publisher` string to `Publisher` entity (lookup or create)
+   - Downloads and caches book cover images locally during sync:
+     - Downloads from `{DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher}/{book_name}/object?path=images/book_cover.png`
+     - Saves to `media/book_covers/{book_id}_cover.png`
+     - Updates `cover_image_url` with local path
+     - Only re-downloads if book updated or local file missing
+   - Updates `synced_at` timestamp on successful sync
+
+6. **Config.json parser** (`ConfigParser` class or module):
+   - Parses nested structure: `books → modules → pages → sections`
+   - **Activity Detection Rule**: A section is an activity if and only if it contains an `activity` field
+   - For each section with `activity` field:
+     - Determines `activity_type` from `section.activity.type`
+     - Extracts `title` from `section.activity.headerText` or generates from type (e.g., "Audio Activity" for audio type)
+     - Calculates `order_index` based on module order, page number, and section index
+     - Stores full `section.activity` object in `config_json` field
+   - Handles all known activity types: `matchTheWords`, `dragdroppicture`, `dragdroppicturegroup`, `fillSentencesWithDots`, `fillpicture`, `circle`
+   - Note: Sections with `type: "audio"` that don't have an `activity` field are not activities (just page decorations)
+   - Validates required fields for each activity type
+   - Skips sections without `activity` field (non-interactive page elements)
+
+7. API endpoint `GET /api/v1/books/sync` (admin-only):
+   - Triggers book catalog synchronization from Dream Central Storage
+   - Returns sync summary: books created/updated, activities created/updated, errors
+   - Runs asynchronously (returns immediately, sync happens in background task)
+   - Logs detailed sync progress for debugging
+
+8. **Pydantic schemas** for API responses:
+   - `BookResponse`: id, title, book_name, publisher, language, category, cover_image_url, activity_count
+   - `ActivityResponse`: id, book_id, module_name, page_number, activity_type, title, config (partial or full depending on use case)
+   - `BookSyncResponse`: success, books_synced, activities_created, errors
+
+9. Unit tests verify:
+   - Config.json parsing for all activity types (use sample configs)
+   - Publisher string mapping to Publisher entity
+   - Cover image URL construction
+   - Activity order_index calculation
+   - Upsert logic (update existing vs create new)
+
+10. Integration tests verify:
+    - Book sync creates Book and Activity records correctly
+    - Re-sync updates existing records without duplication
+    - BookAccess grants permissions to correct publishers
+    - Sync handles missing/malformed config.json gracefully
+
+11. Composite index on `(publisher_id, book_id)` for efficient permission queries
+
+### Technical Notes:
+
+**Config.json Structure Example:**
+```json
+{
+  "book_cover": "./books/BRAINS/images/book_cover.png",
+  "book_title": "BRAINS",
+  "books": [
+    {
+      "modules": [
+        {
+          "name": "Module 1",
+          "pages": [
+            {
+              "page_number": 7,
+              "sections": [
+                {
+                  "type": "fill",
+                  "activity": {
+                    "type": "matchTheWords",
+                    "headerText": "Look, read, and match.",
+                    "match_words": [...],
+                    "sentences": [...]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Activity Types Found:**
+- `matchTheWords` - Word matching exercise
+- `dragdroppicture` - Drag and drop pictures
+- `dragdroppicturegroup` - Drag and drop picture groups
+- `fillSentencesWithDots` - Fill in the blanks
+- `fillpicture` - Fill picture exercise
+- `circle` - Circle the correct answer
+
+**Note:** Sections with `type: "audio"` are page elements (for audio playback), not activities. Only sections containing an `activity` field are actual activities.
+
+**Cover Image Strategy:**
+- Book covers are downloaded from Dream Central Storage during sync and cached locally
+- Source pattern: `{DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher}/{book_name}/object?path=images/book_cover.png`
+- Local storage: `media/book_covers/{book_id}_cover.png` or similar
+- Database stores local path in `cover_image_url` field
+- During sync, if cover doesn't exist locally or book updated, download and cache
+- Frontend accesses cached cover via local media URL (no authentication required)
+
+## Story 3.3: Book Asset Proxy & Delivery
+
+As a **developer**,
+I want **a backend API endpoint that serves authenticated book assets (images, audio, etc.) from Dream Central Storage**,
+so that **the frontend can display book content without handling Dream Central Storage authentication**.
+
+### Acceptance Criteria:
+
+1. API endpoint `GET /api/v1/books/{book_id}/assets/{asset_path:path}` serves book assets:
+   - `book_id` - ID of the book in local database
+   - `asset_path` - Relative path to asset (e.g., `images/M1/p7m5.jpg`, `audio/6a.mp3`)
+   - Requires user authentication (student, teacher, or admin)
+   - Verifies user has access to the book through their publisher
+2. Endpoint proxies request to Dream Central Storage:
+   - Looks up book's `publisher` and `book_name` from database
+   - Constructs Dream Central Storage URL: `GET /storage/books/{publisher}/{book_name}/object?path={asset_path}`
+   - Uses DreamCentralStorageClient with JWT authentication
+   - Streams response back to client with appropriate Content-Type header
+3. Asset caching layer (optional for MVP, recommended for production):
+   - Cache frequently accessed assets locally (images, audio)
+   - Use asset path hash as cache key
+   - Set cache expiration (e.g., 24 hours)
+   - Serve from cache if available, otherwise fetch from Dream Central Storage
+4. Error handling:
+   - 403 Forbidden if user doesn't have access to book's publisher
+   - 404 Not Found if book doesn't exist or asset not found in Dream Central Storage
+   - 500 Internal Server Error if Dream Central Storage is unreachable
+5. Performance optimizations:
+   - Stream large files (don't load entire file into memory)
+   - Set appropriate cache headers (`Cache-Control`, `ETag`) for browser caching
+   - Support range requests for audio/video streaming (optional for MVP)
+6. Security:
+   - Validate `asset_path` to prevent path traversal attacks
+   - Only allow paths within book's directory structure
+   - Log asset access for auditing
+7. API endpoint `GET /api/v1/books/{book_id}/page-image/{page_number}` serves page images:
+   - Convenience endpoint for page images
+   - Returns image from `images/{module}/{ page_number}.png` pattern
+   - Same authentication and authorization as generic asset endpoint
+8. Unit tests verify:
+   - Authorization checks (user must have access to book's publisher)
+   - Path validation (prevent traversal attacks)
+   - Error handling for missing assets
+9. Integration tests verify:
+   - Asset streaming from Dream Central Storage
+   - Cache hit/miss behavior (if caching implemented)
+   - Browser receives correct Content-Type and cache headers
+
+### Technical Notes:
+
+**Common Asset Paths:**
+- Page images: `images/{module}/{page_number}.png` (e.g., `images/M1/7.png`)
+- Activity images: `images/{module}/p{page}m{index}.jpg` (e.g., `images/M1/p7m5.jpg`)
+- Audio files: `audio/{page}{letter}.mp3` (e.g., `audio/6a.mp3`, `audio/8b.mp3`)
+- Book cover: `images/book_cover.png` (cached locally, not served via proxy)
+
+**Frontend Usage Example:**
+```javascript
+// Instead of:
+const imageUrl = `${dreamStorageUrl}/storage/books/${publisher}/${bookName}/object?path=images/M1/7.png`
+
+// Frontend uses:
+const imageUrl = `/api/v1/books/${bookId}/assets/images/M1/7.png`
+```
+
+**Caching Strategy:**
+- Images: Cache locally for 24 hours (rarely change)
+- Audio: Cache locally for 24 hours (rarely change)
+- Config JSON: Already cached in Story 3.1 (30-minute TTL)
+
+## Story 3.4: Dream Central Storage Webhook Integration
+
+As a **developer**,
+I want **to receive webhook notifications from Dream Central Storage when books are created, updated, or deleted**,
+so that **the LMS can automatically sync book catalog changes without manual intervention**.
+
+### Acceptance Criteria:
+
+1. API endpoint `POST /api/v1/webhooks/dream-storage` receives webhook events:
+   - Accepts JSON payload with event type and book data
+   - Validates webhook signature/secret to ensure authenticity
+   - Returns 200 OK immediately (processes webhook asynchronously)
+   - Returns 401 Unauthorized if signature invalid
+2. Webhook secret configuration:
+   - Environment variable `DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET`
+   - Used to validate webhook signatures (HMAC-SHA256 or similar)
+   - Documented in `.env.example` with security warning
+3. Supported webhook event types:
+   - `book.created` - New book added to Dream Central Storage
+   - `book.updated` - Book metadata or config.json updated
+   - `book.deleted` - Book soft-deleted in Dream Central Storage
+4. Webhook event handling:
+   - `book.created`: Trigger `BookService.sync_book(dream_storage_id)`
+   - `book.updated`: Trigger `BookService.sync_book(dream_storage_id)` with force refresh
+   - `book.deleted`: Soft-delete or archive book in local database
+5. Background job processing:
+   - Webhook handler queues background task (using Celery, ARQ, or similar)
+   - Background task performs actual sync operation
+   - Prevents webhook timeout (Dream Central Storage expects quick response)
+6. Retry logic:
+   - If sync fails, retry up to 3 times with exponential backoff
+   - Log failures for manual investigation
+   - Send alert to admins if all retries fail (email or notification)
+7. Webhook event logging:
+   - Log all incoming webhook events (event type, book_id, timestamp)
+   - Log processing results (success, failure, retry count)
+   - Store in database for auditing and debugging
+8. Webhook testing endpoint (development only):
+   - `POST /api/v1/webhooks/dream-storage/test` (admin-only, dev environment only)
+   - Allows triggering test webhook events manually
+   - Not available in production
+9. Documentation:
+   - Document webhook endpoint URL format for Dream Central Storage configuration
+   - Document expected payload structure
+   - Document webhook secret setup process
+10. Unit tests verify:
+    - Webhook signature validation
+    - Event type routing to correct handlers
+    - Background job queuing
+11. Integration tests verify:
+    - End-to-end webhook processing
+    - Book sync triggered by webhook
+    - Retry logic on failures
+
+### Technical Notes:
+
+**Webhook Payload Example:**
+```json
+{
+  "event": "book.updated",
+  "timestamp": "2025-11-14T18:30:00Z",
+  "data": {
+    "id": 1,
+    "book_name": "BRAINS",
+    "publisher": "Universal ELT",
+    "version": "1.4.6"
+  },
+  "signature": "sha256=abc123..."
+}
+```
+
+**Signature Validation:**
+- Dream Central Storage signs webhook payload with shared secret
+- LMS validates signature using same secret
+- Prevents unauthorized webhook calls
+
+**Alternative: Polling Strategy** (fallback if webhooks not available):
+- Scheduled job runs every 6-12 hours
+- Fetches all books from Dream Central Storage
+- Compares version numbers or `updated_at` timestamps
+- Syncs books that changed
+- Less efficient but more reliable if webhooks fail
+
+## Story 3.5: Teacher Class Management
 
 As a **teacher**,
 I want **to create and manage classes and assign students to them**,
@@ -78,7 +426,7 @@ updated_at, is_active
 15. Unit tests verify teacher can only manage their own classes and students
 16. Integration tests cover full class CRUD workflow
 
-## Story 3.4: Book Catalog Browsing for Teachers
+## Story 3.6: Book Catalog Browsing for Teachers
 
 As a **teacher**,
 I want **to browse the catalog of books available to me and view their interactive activities**,
@@ -102,7 +450,7 @@ so that **I can discover content to assign to my students**.
 14. Responsive design: grid view on desktop, list view on mobile
 15. Integration tests verify teacher can only see books from their publisher
 
-## Story 3.5: Assignment Creation Dialog & Configuration
+## Story 3.7: Assignment Creation Dialog & Configuration
 
 As a **teacher**,
 I want **to create assignments by selecting a book activity and configuring settings through a guided dialog**,
@@ -132,7 +480,7 @@ teacher
 14. Unit tests verify assignment creation logic and validation rules
 15. Integration tests verify end-to-end assignment creation flow with various configurations
 
-## Story 3.6: Teacher Assignment Management Dashboard
+## Story 3.8: Teacher Assignment Management Dashboard
 
 As a **teacher**,
 I want **to view and manage all assignments I've created**,
@@ -158,7 +506,7 @@ date, completion rate, actions
 15. Completion rate calculated as: (completed students / total assigned students) × 100%
 16. Integration tests verify teacher can only view/edit/delete their own assignments
 
-## Story 3.7: Student Assignment View & Dashboard
+## Story 3.9: Student Assignment View & Dashboard
 
 As a **student**,
 I want **to see all homework assigned to me with due dates and status**,

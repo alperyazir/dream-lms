@@ -1,9 +1,9 @@
+import { useQuery } from "@tanstack/react-query"
 import {
   createFileRoute,
   Link as RouterLink,
   redirect,
 } from "@tanstack/react-router"
-import { useQuery } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import type { Body_login_login_access_token as AccessToken } from "@/client"
 import { OpenAPI } from "@/client"
@@ -14,7 +14,7 @@ import { InputGroup } from "@/components/ui/input-group"
 import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 import Logo from "/assets/images/fastapi-logo.svg"
-import { emailPattern, passwordRules } from "../utils"
+import { passwordRules } from "../utils"
 
 // Type for quick login users response
 interface QuickLoginUsers {
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/login")({
   },
 })
 
-function Login() {
+export function Login() {
   const { loginMutation, resetError } = useAuth()
   const {
     register,
@@ -54,12 +54,15 @@ function Login() {
   const { data: quickLoginUsers, isError } = useQuery<QuickLoginUsers>({
     queryKey: ["quick-login-users"],
     queryFn: async () => {
-      const response = await fetch(`${OpenAPI.BASE}/api/v1/dev/quick-login-users`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${OpenAPI.BASE}/api/v1/dev/quick-login-users`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      })
+      )
       if (!response.ok) {
         throw new Error("Failed to fetch quick login users")
       }
@@ -165,7 +168,6 @@ function Login() {
           )}
         </div>
       )}
-
     </form>
   )
 }

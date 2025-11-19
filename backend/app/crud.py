@@ -1,4 +1,3 @@
-import uuid
 from typing import Any
 
 from fastapi import HTTPException
@@ -8,7 +7,6 @@ from app.core.security import get_password_hash, verify_password
 from app.models import (
     Publisher,
     PublisherCreate,
-    School,
     Student,
     StudentCreate,
     Teacher,

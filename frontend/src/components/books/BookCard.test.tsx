@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
-import type { Book } from "@/lib/mockData"
+import type { Book } from "@/types/book"
 import { BookCard } from "./BookCard"
 
 // Mock TanStack Router Link component
@@ -14,14 +14,12 @@ vi.mock("@tanstack/react-router", () => ({
 
 const mockBook: Book = {
   id: "book-1",
+  dream_storage_id: "123",
   title: "Mathematics Grade 3",
-  publisher: "Dream Publisher",
-  publisherId: "pub-1",
-  coverUrl: "https://via.placeholder.com/200x300?text=Math+Book",
+  publisher_name: "Dream Publisher",
+  cover_image_url: "https://via.placeholder.com/200x300?text=Math+Book",
   description: "Elementary mathematics for grade 3 students",
-  grade: "3",
-  activityCount: 12,
-  created_at: new Date().toISOString(),
+  activity_count: 12,
 }
 
 describe("BookCard", () => {
@@ -59,7 +57,7 @@ describe("BookCard", () => {
   it("handles singular activity count correctly", () => {
     const bookWithOneActivity: Book = {
       ...mockBook,
-      activityCount: 1,
+      activity_count: 1,
     }
 
     render(<BookCard book={bookWithOneActivity} />)

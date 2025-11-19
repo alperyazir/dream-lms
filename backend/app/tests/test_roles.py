@@ -3,13 +3,12 @@ Unit tests for role validation and RBAC functionality
 """
 import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.core.config import settings
-from app.models import User, UserRole, UserCreate
 from app import crud
+from app.core.config import settings
+from app.models import User, UserCreate, UserRole
 
 
 def test_user_role_enum_values():
@@ -59,6 +58,7 @@ def test_user_model_with_different_roles(session: Session):
 def test_jwt_token_includes_role(client: TestClient, admin_user: User):
     """Test that JWT token includes role claim"""
     import jwt
+
     from app.core.config import settings
     from app.core.security import ALGORITHM
 

@@ -3,7 +3,6 @@ Integration tests for RBAC across all role-specific endpoints
 """
 import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 

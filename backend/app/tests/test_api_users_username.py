@@ -1,7 +1,6 @@
 """
 Integration tests for User API endpoints with username field
 """
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -134,6 +133,7 @@ def test_all_seeded_users_have_valid_usernames(
     """Test all seeded users have valid usernames after init_db (IV2)."""
     # Arrange - users created by fixtures
     from sqlmodel import select
+
     from app.models import User
 
     # Act

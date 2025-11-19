@@ -79,7 +79,9 @@ function AdminStudents() {
   })
 
   // Track which passwords are revealed (Eye icon state)
-  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({})
+  const [revealedPasswords, setRevealedPasswords] = useState<
+    Record<string, boolean>
+  >({})
 
   // Fetch students from API
   const {
@@ -95,7 +97,7 @@ function AdminStudents() {
   const createStudentMutation = useMutation({
     mutationFn: (data: StudentCreateAPI) =>
       AdminService.createStudent({ requestBody: data }),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: ["students"] })
       setIsAddDialogOpen(false)
       setNewStudent({
@@ -106,7 +108,9 @@ function AdminStudents() {
         parent_email: undefined,
       })
 
-      showSuccessToast("Student created successfully! Password visible in table.")
+      showSuccessToast(
+        "Student created successfully! Password visible in table.",
+      )
     },
     onError: (error: any) => {
       showErrorToast(
@@ -153,7 +157,11 @@ function AdminStudents() {
   })
 
   const handleAddStudent = () => {
-    if (!newStudent.username || !newStudent.user_email || !newStudent.full_name) {
+    if (
+      !newStudent.username ||
+      !newStudent.user_email ||
+      !newStudent.full_name
+    ) {
       showErrorToast("Please fill in all required fields")
       return
     }
@@ -161,7 +169,7 @@ function AdminStudents() {
     // Validate username format
     if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newStudent.username)) {
       showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen"
+        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen",
       )
       return
     }
@@ -347,7 +355,9 @@ function AdminStudents() {
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">N/A</span>
+                        <span className="text-sm text-muted-foreground">
+                          N/A
+                        </span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -406,8 +416,8 @@ function AdminStudents() {
                   const generatedUsername = fullName
                     .toLowerCase()
                     .trim()
-                    .replace(/\s+/g, '-') // Replace spaces with hyphens
-                    .replace(/[^a-z0-9_-]/g, '') // Remove non-alphanumeric except _ and -
+                    .replace(/\s+/g, "-") // Replace spaces with hyphens
+                    .replace(/[^a-z0-9_-]/g, "") // Remove non-alphanumeric except _ and -
                     .slice(0, 50) // Max 50 characters
 
                   setNewStudent({
@@ -456,7 +466,7 @@ function AdminStudents() {
                 onChange={(e) =>
                   setNewStudent({
                     ...newStudent,
-                    grade_level: e.target.value || undefined
+                    grade_level: e.target.value || undefined,
                   })
                 }
               />
@@ -471,7 +481,7 @@ function AdminStudents() {
                 onChange={(e) =>
                   setNewStudent({
                     ...newStudent,
-                    parent_email: e.target.value || undefined
+                    parent_email: e.target.value || undefined,
                   })
                 }
               />

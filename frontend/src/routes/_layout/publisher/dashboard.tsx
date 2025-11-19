@@ -15,7 +15,11 @@ export const Route = createFileRoute("/_layout/publisher/dashboard")({
 
 function PublisherDashboard() {
   // Fetch real stats from API
-  const { data: stats, isLoading, error } = useQuery({
+  const {
+    data: stats,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["publisherStats"],
     queryFn: () => PublishersService.getMyStats(),
     staleTime: 30000, // Cache for 30 seconds

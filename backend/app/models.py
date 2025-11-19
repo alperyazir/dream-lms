@@ -14,6 +14,7 @@ if TYPE_CHECKING:
         Assignment,
         AssignmentStudent,
         Book,
+        BookAccess,
         Class,
         ClassStudent,
         Publisher,
@@ -459,6 +460,24 @@ class ClassPublic(ClassBase):
     updated_at: datetime
 
 
+class ClassResponse(ClassPublic):
+    """Class response with computed student count"""
+    student_count: int = Field(default=0, description="Number of enrolled students")
+
+
+class StudentInClass(SQLModel):
+    """Student info for class detail response"""
+    id: uuid.UUID
+    email: str
+    full_name: str
+    grade: str | None = None
+
+
+class ClassDetailResponse(ClassResponse):
+    """Class detail response with enrolled students"""
+    enrolled_students: list[StudentInClass] = Field(default_factory=list)
+
+
 # --- ClassStudent Junction Table ---
 
 class ClassStudentBase(SQLModel):
@@ -499,14 +518,35 @@ class ClassStudentPublic(ClassStudentBase):
     enrolled_at: datetime
 
 
+class ClassStudentAdd(SQLModel):
+    """Schema for adding students to a class"""
+    student_ids: list[uuid.UUID] = Field(description="List of student UUIDs to add to the class")
+
+
 # --- Book Models ---
+
+class BookStatus(str, Enum):
+    """Book status enumeration"""
+    published = "published"
+    draft = "draft"
+    archived = "archived"
+
 
 class BookBase(SQLModel):
     """Shared Book properties"""
-    dream_storage_id: str = Field(unique=True, max_length=255)
+    dream_storage_id: str = Field(unique=True, index=True, max_length=255)
     title: str = Field(max_length=500)
+    book_name: str = Field(max_length=255)
+    publisher_name: str = Field(max_length=255)
+    language: str | None = Field(default=None, max_length=50)
+    category: str | None = Field(default=None, max_length=100)
+    status: BookStatus = Field(default=BookStatus.published)
     description: str | None = Field(default=None)
     cover_image_url: str | None = Field(default=None)
+    config_json: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    # Activity metadata from Dream Central Storage (source of truth for counts)
+    dcs_activity_count: int | None = Field(default=None)  # Total activity count from DCS
+    dcs_activity_details: dict | None = Field(default=None, sa_column=Column(JSON))  # Activity breakdown by type
 
 
 class BookCreate(BookBase):
@@ -529,11 +569,13 @@ class Book(BookBase, table=True):
     publisher_id: uuid.UUID = Field(foreign_key="publishers.id", index=True, ondelete="CASCADE")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    synced_at: datetime | None = Field(default=None)
 
     # Relationships
     publisher: Publisher = Relationship(back_populates="books", sa_relationship_kwargs={"passive_deletes": True})
     activities: list["Activity"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     assignments: list["Assignment"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    book_access: list["BookAccess"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
 class BookPublic(BookBase):
@@ -542,23 +584,48 @@ class BookPublic(BookBase):
     publisher_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    synced_at: datetime | None
+
+
+# --- BookAccess Model ---
+
+class BookAccess(SQLModel, table=True):
+    """Book access permissions for publishers"""
+    __tablename__ = "book_access"
+    __table_args__ = (
+        UniqueConstraint("book_id", "publisher_id", name="uq_book_access_book_publisher"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    book_id: uuid.UUID = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
+    publisher_id: uuid.UUID = Field(foreign_key="publishers.id", index=True, ondelete="CASCADE")
+    granted_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    book: Book = Relationship(back_populates="book_access", sa_relationship_kwargs={"passive_deletes": True})
+    publisher: Publisher = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 # --- Activity Models ---
 
 class ActivityType(str, Enum):
     """Activity type enumeration"""
+    matchTheWords = "matchTheWords"
     dragdroppicture = "dragdroppicture"
     dragdroppicturegroup = "dragdroppicturegroup"
-    matchTheWords = "matchTheWords"
+    fillSentencesWithDots = "fillSentencesWithDots"
+    fillpicture = "fillpicture"
     circle = "circle"
-    markwithx = "markwithx"
     puzzleFindWords = "puzzleFindWords"
+    markwithx = "markwithx"
 
 
 class ActivityBase(SQLModel):
     """Shared Activity properties"""
     dream_activity_id: str | None = Field(default=None, max_length=255)
+    module_name: str = Field(max_length=255)
+    page_number: int
+    section_index: int
     activity_type: ActivityType
     title: str | None = Field(default=None, max_length=500)
     config_json: dict = Field(sa_column=Column(JSON))
@@ -599,6 +666,37 @@ class ActivityPublic(ActivityBase):
     book_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+
+
+# --- Book Catalog Response Schemas (Story 3.6) ---
+
+class BookResponse(SQLModel):
+    """Book response schema for catalog listings"""
+    id: uuid.UUID
+    dream_storage_id: str
+    title: str
+    publisher_name: str
+    description: str | None = None
+    cover_image_url: str | None = None
+    activity_count: int = Field(default=0, description="Number of activities in book")
+
+
+class ActivityResponse(SQLModel):
+    """Activity response schema for book detail"""
+    id: uuid.UUID
+    book_id: uuid.UUID
+    activity_type: ActivityType
+    title: str | None = None
+    config_json: dict
+    order_index: int
+
+
+class BookListResponse(SQLModel):
+    """Paginated book list response"""
+    items: list[BookResponse]
+    total: int
+    skip: int
+    limit: int
 
 
 # --- Assignment Models ---
@@ -783,3 +881,69 @@ class BulkImportResponse(SQLModel):
     error_count: int
     errors: list[BulkImportErrorDetail]
     credentials: list[dict[str, str]] | None = None  # Only if success=True
+
+
+# ============================================================================
+# Webhook Event Models
+# ============================================================================
+
+
+class WebhookEventType(str, Enum):
+    """Webhook event type enumeration"""
+    book_created = "book.created"
+    book_updated = "book.updated"
+    book_deleted = "book.deleted"
+
+
+class WebhookEventStatus(str, Enum):
+    """Webhook event processing status"""
+    pending = "pending"
+    processing = "processing"
+    success = "success"
+    failed = "failed"
+    retrying = "retrying"
+
+
+class WebhookBookData(SQLModel):
+    """Book data from webhook payload"""
+    id: int
+    book_name: str
+    book_title: str
+    publisher: str
+    language: str
+    category: str
+    status: str
+    version: str | None = None  # Optional - not always sent by Dream Central Storage
+
+
+class WebhookPayload(SQLModel):
+    """Webhook payload schema from Dream Central Storage"""
+    event: WebhookEventType
+    timestamp: datetime
+    data: WebhookBookData
+
+
+class WebhookEventLog(SQLModel, table=True):
+    """Webhook event log database model for auditing and processing"""
+    __tablename__ = "webhook_event_logs"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    event_type: WebhookEventType = Field(index=True)
+    book_id: int | None = Field(default=None, index=True)  # dream_storage_id from payload
+    payload_json: dict = Field(sa_column=Column(JSON))  # Full webhook payload for debugging
+    status: WebhookEventStatus = Field(default=WebhookEventStatus.pending, index=True)
+    retry_count: int = Field(default=0)
+    error_message: str | None = Field(default=None)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
+    processed_at: datetime | None = Field(default=None)
+
+
+class WebhookEventLogPublic(SQLModel):
+    """Properties to return via API"""
+    id: uuid.UUID
+    event_type: WebhookEventType
+    book_id: int | None
+    status: WebhookEventStatus
+    retry_count: int
+    created_at: datetime
+    processed_at: datetime | None

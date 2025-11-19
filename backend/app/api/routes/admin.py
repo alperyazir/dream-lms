@@ -2,14 +2,14 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+import httpx
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlmodel import func, select
 
 from app import crud
 from app.api.deps import SessionDep, require_role
+from app.core.config import settings
 from app.models import (
-    Assignment,
-    Book,
     BulkImportErrorDetail,
     BulkImportResponse,
     DashboardStats,
@@ -38,6 +38,7 @@ from app.models import (
     UserRole,
 )
 from app.services.bulk_import import validate_bulk_import
+from app.services.webhook_registration import webhook_registration_service
 from app.utils import (
     generate_temp_password,
     generate_username,
@@ -193,7 +194,6 @@ def list_publishers(
 
     Returns list of publishers.
     """
-    from sqlmodel import col
     statement = select(Publisher).offset(skip).limit(limit)
     publishers = session.exec(statement).all()
 
@@ -208,7 +208,7 @@ def list_publishers(
             user_id=p.user_id,
             user_email=user.email if user else "",
             user_username=user.username if user else "",
-            user_full_name=user.full_name if user else "",
+            user_full_name=(user.full_name or "") if user else "",
             user_initial_password=user.initial_password if user else None,
             created_at=p.created_at,
             updated_at=p.updated_at
@@ -624,7 +624,7 @@ def list_teachers(
             user_id=t.user_id,
             user_email=user.email if user else "",
             user_username=user.username if user else "",
-            user_full_name=user.full_name if user else "",
+            user_full_name=(user.full_name or "") if user else "",
             user_initial_password=user.initial_password if user else None,
             school_id=t.school_id,
             created_at=t.created_at,
@@ -900,7 +900,7 @@ def list_students(
             user_id=s.user_id,
             user_email=user.email if user else "",
             user_username=user.username if user else "",
-            user_full_name=user.full_name if user else "",
+            user_full_name=(user.full_name or "") if user else "",
             user_initial_password=user.initial_password if user else None,
             created_at=s.created_at,
             updated_at=s.updated_at
@@ -1536,3 +1536,98 @@ def get_stats(
         total_students=total_students,
         active_schools=active_schools,
     )
+
+
+@router.get("/test-dream-storage-connection")
+async def test_dream_storage_connection(
+    _: User = require_role(UserRole.admin),
+) -> dict[str, Any]:
+    """
+    Test connection to Dream Central Storage API (admin only).
+
+    Attempts to authenticate with Dream Central Storage and returns
+    detailed connection status and error messages.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f"{settings.DREAM_CENTRAL_STORAGE_URL}/auth/login",
+                json={
+                    "email": settings.DREAM_CENTRAL_STORAGE_EMAIL,
+                    "password": settings.DREAM_CENTRAL_STORAGE_PASSWORD,
+                },
+            )
+
+            if response.status_code == 200:
+                return {
+                    "status": "success",
+                    "message": "Successfully connected to Dream Central Storage",
+                    "url": settings.DREAM_CENTRAL_STORAGE_URL,
+                    "details": {
+                        "status_code": 200,
+                        "authenticated": True,
+                    },
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": f"Authentication failed with status {response.status_code}",
+                    "url": settings.DREAM_CENTRAL_STORAGE_URL,
+                    "details": {
+                        "status_code": response.status_code,
+                        "response": response.text[:500],  # First 500 chars
+                    },
+                }
+
+    except httpx.TimeoutException:
+        logger.error("Dream Central Storage connection timeout")
+        return {
+            "status": "error",
+            "message": "Connection timeout - Dream Central Storage is unreachable",
+            "url": settings.DREAM_CENTRAL_STORAGE_URL,
+            "details": {
+                "error_type": "timeout",
+            },
+        }
+    except Exception as e:
+        logger.error(f"Dream Central Storage connection error: {e}")
+        return {
+            "status": "error",
+            "message": f"Connection failed: {str(e)}",
+            "url": settings.DREAM_CENTRAL_STORAGE_URL,
+            "details": {
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+            },
+        }
+
+
+@router.post("/webhooks/register", status_code=status.HTTP_200_OK)
+async def register_webhooks_manually(
+    _: User = require_role(UserRole.admin),
+    force_recreate: bool = False,
+) -> dict[str, Any]:
+    """
+    Manually register webhooks with Dream Central Storage (admin only).
+
+    This endpoint allows admins to manually register the webhook subscription
+    if the automatic registration on startup failed or needs to be updated.
+
+    - **force_recreate**: If True, delete existing subscription and create new one
+
+    Returns registration status with subscription details.
+    """
+    logger.info(
+        f"Admin webhook registration requested (force_recreate={force_recreate})"
+    )
+
+    result = await webhook_registration_service.register_webhook(
+        force_recreate=force_recreate
+    )
+
+    if result["success"]:
+        logger.info(f"✅ Admin webhook registration succeeded: {result['message']}")
+    else:
+        logger.warning(f"⚠️  Admin webhook registration failed: {result['message']}")
+
+    return result

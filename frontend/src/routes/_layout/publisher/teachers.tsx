@@ -46,7 +46,11 @@ function PublisherTeachersPage() {
   })
 
   // Fetch teachers from API
-  const { data: teachers = [], isLoading, error } = useQuery({
+  const {
+    data: teachers = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["publisherTeachers"],
     queryFn: () => PublishersService.listMyTeachers(),
   })
@@ -78,7 +82,7 @@ function PublisherTeachersPage() {
       let errorMessage = "Failed to create teacher. Please try again."
 
       if (error.body?.detail) {
-        if (typeof error.body.detail === 'string') {
+        if (typeof error.body.detail === "string") {
           errorMessage = error.body.detail
         } else if (Array.isArray(error.body.detail)) {
           // Handle validation errors
@@ -104,7 +108,7 @@ function PublisherTeachersPage() {
     // Validate username format
     if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newTeacher.username)) {
       showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen"
+        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen",
       )
       return
     }
@@ -207,8 +211,8 @@ function PublisherTeachersPage() {
                   const generatedUsername = fullName
                     .toLowerCase()
                     .trim()
-                    .replace(/\s+/g, '-')
-                    .replace(/[^a-z0-9_-]/g, '')
+                    .replace(/\s+/g, "-")
+                    .replace(/[^a-z0-9_-]/g, "")
                     .slice(0, 50)
 
                   setNewTeacher({

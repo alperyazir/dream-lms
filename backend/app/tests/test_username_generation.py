@@ -3,9 +3,9 @@
 import pytest
 from sqlmodel import Session
 
-from app.utils import generate_username
 from app import crud
 from app.models import UserCreate, UserRole
+from app.utils import generate_username
 
 
 def test_generate_username_from_full_name(session: Session) -> None:
