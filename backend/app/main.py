@@ -3,10 +3,14 @@ import sentry_sdk
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.services.webhook_registration import webhook_registration_service
 
 logger = logging.getLogger(__name__)
@@ -54,6 +58,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Add rate limiter to app state (Story 4.8 QA Fix)
+app.state.limiter = limiter
+
+
+# Rate limit exception handler
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request, exc):
+    """Handle rate limit exceeded errors with proper HTTP 429 response."""
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Please try again later."},
+    )
+
+
 # Set all CORS enabled origins
 if settings.all_cors_origins:
     app.add_middleware(
@@ -63,5 +81,8 @@ if settings.all_cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+# Add SlowAPI middleware for rate limiting (Story 4.8 QA Fix)
+app.add_middleware(SlowAPIMiddleware)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
