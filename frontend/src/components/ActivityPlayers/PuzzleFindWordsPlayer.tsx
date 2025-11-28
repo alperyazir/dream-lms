@@ -22,10 +22,17 @@ export function PuzzleFindWordsPlayer({
   assignmentId = "default",
   initialAnswers,
 }: PuzzleFindWordsPlayerProps) {
+  // Create stable seed from activity and assignment
+  const stableSeed = useMemo(() => {
+    // Create a consistent seed based on the words (sorted) and assignmentId
+    const wordsKey = [...activity.words].sort().join("-")
+    return `${assignmentId}-${wordsKey}`
+  }, [activity.words, assignmentId])
+
   // Generate grid (memoized for consistency)
   const { grid, placements, size } = useMemo(
-    () => generateWordSearch(activity.words, assignmentId),
-    [activity.words, assignmentId],
+    () => generateWordSearch(activity.words, stableSeed),
+    [stableSeed],
   )
 
   const [foundWords, setFoundWords] = useState<Set<string>>(
@@ -105,10 +112,20 @@ export function PuzzleFindWordsPlayer({
     setSelection([{ row, col }])
   }
 
-  // Handle mouse enter (extend selection)
+  // Handle mouse enter (extend or deselect)
   const handleMouseEnter = (row: number, col: number) => {
     if (!isSelecting || showResults) return
-    if (selection.length > 0 && !isInSelection(row, col)) {
+
+    const existingIndex = selection.findIndex(
+      (cell) => cell.row === row && cell.col === col
+    )
+
+    // If going back over a previously selected cell, remove it and all after it
+    if (existingIndex !== -1 && existingIndex < selection.length - 1) {
+      setSelection(selection.slice(0, existingIndex + 1))
+    }
+    // If new cell, add it to selection
+    else if (existingIndex === -1) {
       setSelection([...selection, { row, col }])
     }
   }
@@ -209,112 +226,171 @@ export function PuzzleFindWordsPlayer({
     }
   }
 
+  // Handle reset - clear all found words
+  const handleReset = () => {
+    setFoundWords(new Set())
+    onAnswersChange(new Set())
+  }
+
   return (
-    <div className="flex h-full flex-col gap-4 p-4 lg:flex-row">
-      {/* Left: Grid */}
-      <div className="flex-1">
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          {activity.headerText}
-        </h2>
+    <div className="flex min-h-[600px] items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="w-full max-w-6xl">
+        {/* Header */}
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            {activity.headerText || "Find the Words"}
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Select letters by clicking and dragging to find the hidden words
+          </p>
+        </div>
 
-        <table
-          className="border-separate border-spacing-1"
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          aria-label="Word search puzzle grid"
-        >
-          <tbody>
-            {grid.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {row.map((letter, colIndex) => {
-                  const cellColor = getCellColor(rowIndex, colIndex)
-                  const inSelection = isInSelection(rowIndex, colIndex)
+        <div className="flex flex-col lg:flex-row gap-8 items-center justify-center min-h-[500px]">
+          {/* Grid - Centered */}
+          <div className="flex flex-col items-center justify-center">
+            {!showResults && (
+              <div className="mb-4 flex justify-end w-full">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:border-gray-400 hover:bg-gray-50 hover:shadow-md dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Reset
+                </button>
+              </div>
+            )}
 
-                  const cellKey = `${rowIndex}-${colIndex}`
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
+              <table
+                className="border-separate border-spacing-1"
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                aria-label="Word search puzzle grid"
+              >
+                <tbody>
+                  {grid.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((letter, colIndex) => {
+                        const cellColor = getCellColor(rowIndex, colIndex)
+                        const inSelection = isInSelection(rowIndex, colIndex)
+
+                        const cellKey = `${rowIndex}-${colIndex}`
+
+                        return (
+                          <td
+                            key={cellKey}
+                            ref={(el) => {
+                              if (el) cellRefs.current.set(cellKey, el)
+                              else cellRefs.current.delete(cellKey)
+                            }}
+                            onClick={() => handleCellClick(rowIndex, colIndex)}
+                            onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
+                            onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                            onKeyDown={(e) =>
+                              handleCellKeyDown(e, rowIndex, colIndex)
+                            }
+                            tabIndex={!showResults ? 0 : -1}
+                            aria-label={`Cell ${letter} at row ${rowIndex + 1}, column ${colIndex + 1}`}
+                            className={`
+                              h-10 w-10 cursor-pointer text-center text-base font-bold transition-all duration-150 rounded-lg border-2
+                              md:h-12 md:w-12 md:text-lg select-none
+                              ${cellColor || (inSelection ? "bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-600" : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600")}
+                              ${inSelection ? "scale-105 shadow-lg" : "hover:scale-105 hover:shadow-md"}
+                              ${!cellColor && !inSelection ? "hover:bg-gray-100 dark:hover:bg-gray-600" : ""}
+                            `}
+                            style={{
+                              userSelect: "none",
+                            }}
+                          >
+                            {letter}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Word List - Modern Card */}
+          <div className="w-full lg:w-80">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sticky top-6">
+              <div className="mb-4">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Words to Find
+                </h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Progress
+                  </span>
+                  <span className="text-sm font-semibold text-teal-600 dark:text-teal-400">
+                    {foundWords.size} / {activity.words.length}
+                  </span>
+                </div>
+                <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-teal-500 to-teal-600 transition-all duration-500"
+                    style={{ width: `${(foundWords.size / activity.words.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                {activity.words.map((word, index) => {
+                  const found = foundWords.has(word.toUpperCase())
 
                   return (
-                    <td
-                      key={cellKey}
-                      ref={(el) => {
-                        if (el) cellRefs.current.set(cellKey, el)
-                        else cellRefs.current.delete(cellKey)
-                      }}
-                      onClick={() => handleCellClick(rowIndex, colIndex)}
-                      onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
-                      onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
-                      onKeyDown={(e) =>
-                        handleCellKeyDown(e, rowIndex, colIndex)
-                      }
-                      tabIndex={!showResults ? 0 : -1}
-                      aria-label={`Cell ${letter} at row ${rowIndex + 1}, column ${colIndex + 1}`}
+                    <div
+                      key={index}
                       className={`
-                        h-8 w-8 cursor-pointer text-center text-sm font-bold transition-all duration-100 rounded border md:h-10 md:w-10 md:text-base
-                        ${cellColor || (inSelection ? "bg-blue-100 dark:bg-blue-900" : "bg-white dark:bg-gray-800")}
-                        ${inSelection ? "border-blue-500 shadow-md" : "border-gray-300 dark:border-gray-600"}
-                        hover:shadow-md
+                        flex items-center gap-3 rounded-xl p-3 transition-all duration-300 transform
+                        ${
+                          found
+                            ? `${getWordColor(word.toUpperCase())} border-2 border-transparent shadow-md scale-105`
+                            : "border-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600"
+                        }
                       `}
-                      style={{
-                        userSelect: "none",
-                      }}
                     >
-                      {letter}
-                    </td>
+                      <div
+                        className={`
+                          flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold transition-all
+                          ${
+                            found
+                              ? "bg-green-500 text-white scale-110"
+                              : "border-2 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500"
+                          }
+                        `}
+                      >
+                        {found ? "✓" : index + 1}
+                      </div>
+                      <span
+                        className={`
+                          font-semibold text-base
+                          ${found ? "text-gray-900 line-through dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}
+                        `}
+                      >
+                        {word}
+                      </span>
+                    </div>
                   )
                 })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Right: Word List */}
-      <div className="w-full lg:w-64">
-        <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-          Words to Find
-        </h3>
-        <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          Found: {foundWords.size} / {activity.words.length}
-        </p>
-
-        <div className="space-y-2">
-          {activity.words.map((word, index) => {
-            const found = foundWords.has(word.toUpperCase())
-
-            return (
-              <div
-                key={index}
-                className={`
-                  flex items-center gap-2 rounded-lg border-2 p-3 transition-all duration-200
-                  ${
-                    found
-                      ? `${getWordColor(word.toUpperCase())} border-transparent`
-                      : "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800"
-                  }
-                `}
-              >
-                <div
-                  className={`
-                    flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold
-                    ${
-                      found
-                        ? "bg-green-500 text-white"
-                        : "border-2 border-gray-400 text-gray-400"
-                    }
-                  `}
-                >
-                  {found ? "✓" : ""}
-                </div>
-                <span
-                  className={`
-                    font-semibold
-                    ${found ? "text-gray-900 line-through dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}
-                  `}
-                >
-                  {word}
-                </span>
               </div>
-            )
-          })}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -17,14 +17,31 @@ from app.main import app
 from app.models import Publisher, School, Student, Teacher, User, UserRole
 
 
-# Test database with in-memory SQLite
+# Test database with file-based SQLite (shared between sync and async sessions)
+@pytest.fixture(name="db_path", scope="function")
+def db_path_fixture():
+    """Create a temporary database file path"""
+    import os
+    import tempfile
+
+    db_fd, db_path = tempfile.mkstemp(suffix=".db")
+    yield db_path
+
+    # Clean up
+    try:
+        os.close(db_fd)
+        os.unlink(db_path)
+    except Exception:
+        pass
+
+
 @pytest.fixture(name="session", scope="function")
-def session_fixture() -> Generator[Session, None, None]:
+def session_fixture(db_path: str) -> Generator[Session, None, None]:
     """Create a fresh database session for each test"""
     from sqlalchemy import event
 
     engine = create_engine(
-        "sqlite:///:memory:",
+        f"sqlite:///{db_path}",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
@@ -48,26 +65,44 @@ def session_fixture() -> Generator[Session, None, None]:
             raise
         finally:
             # Clean up after test
-            try:
-                for table in reversed(SQLModel.metadata.sorted_tables):
-                    session.exec(delete(table))
-                session.commit()
-            except Exception:
-                session.rollback()
+            session.close()
+            engine.dispose()
 
 
 @pytest.fixture(name="client")
-def client_fixture(session: Session) -> Generator[TestClient, Any, None]:
-    """Create a test client with database session override"""
+def client_fixture(session: Session, db_path: str) -> Generator[TestClient, Any, None]:
+    """Create a test client with database session override for both sync and async endpoints"""
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+
+    # Create async engine using the same database file
+    async_engine = create_async_engine(
+        f"sqlite+aiosqlite:///{db_path}",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
     def get_session_override():
         return session
 
-    from app.api.deps import get_db
+    async def get_async_session_override():
+        async with AsyncSession(async_engine, expire_on_commit=False) as async_session:
+            yield async_session
+
+    from app.api.deps import get_async_db, get_db
     app.dependency_overrides[get_db] = get_session_override
+    app.dependency_overrides[get_async_db] = get_async_session_override
 
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()
+
+    # Clean up async engine
+    import asyncio
+    try:
+        asyncio.run(async_engine.dispose())
+    except RuntimeError:
+        # Handle case where event loop is already running
+        pass
 
 
 @pytest.fixture(name="admin_user")

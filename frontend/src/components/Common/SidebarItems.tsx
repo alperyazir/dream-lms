@@ -18,6 +18,7 @@ import { getStudentAssignments } from "@/services/assignmentsApi"
 
 interface SidebarItemsProps {
   onClose?: () => void
+  isCollapsed?: boolean
 }
 
 interface Item {
@@ -104,7 +105,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
   ],
 }
 
-const SidebarItems = ({ onClose }: SidebarItemsProps) => {
+const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const location = useLocation()
@@ -170,33 +171,46 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
 
     const content = (
       <div
-        className={`flex gap-4 px-4 py-2 items-center text-sm transition-colors ${
+        className={`flex items-center text-sm transition-colors relative ${
+          isCollapsed ? "justify-center px-2 py-3" : "gap-4 px-4 py-2"
+        } ${
           isActive
             ? "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-r-4 border-teal-500"
             : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
         } ${comingSoon ? "opacity-60" : ""}`}
+        title={isCollapsed ? title : undefined}
       >
         <IconComponent
-          className={`self-center h-5 w-5 ${isActive ? "text-teal-600 dark:text-teal-400" : ""}`}
+          className={`self-center h-5 w-5 ${isActive ? "text-teal-600 dark:text-teal-400" : ""} ${
+            isCollapsed ? "mx-auto" : ""
+          }`}
         />
-        <span className={`ml-2 flex-1 ${isActive ? "font-semibold" : ""}`}>
-          {title}
-        </span>
-        {itemCount !== null && !comingSoon && (
-          <span
-            className={`text-xs px-2 py-0.5 rounded ${
-              path === "/student/assignments"
-                ? "bg-red-500 text-white font-semibold"
-                : "bg-gray-200 dark:bg-gray-700"
-            }`}
-          >
-            {itemCount}
-          </span>
+        {!isCollapsed && (
+          <>
+            <span className={`ml-2 flex-1 ${isActive ? "font-semibold" : ""}`}>
+              {title}
+            </span>
+            {itemCount !== null && !comingSoon && (
+              <span
+                className={`text-xs px-2 py-0.5 rounded ${
+                  path === "/student/assignments"
+                    ? "bg-red-500 text-white font-semibold"
+                    : "bg-gray-200 dark:bg-gray-700"
+                }`}
+              >
+                {itemCount}
+              </span>
+            )}
+            {comingSoon && (
+              <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
+                Soon
+              </span>
+            )}
+          </>
         )}
-        {comingSoon && (
-          <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
-            Soon
-          </span>
+        {/* Show notification dot when collapsed and has count */}
+        {isCollapsed && itemCount !== null && !comingSoon && (
+          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
         )}
       </div>
     )
@@ -231,9 +245,11 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
 
   return (
     <>
-      <p className="text-xs px-4 py-2 font-bold text-gray-500 dark:text-gray-400">
-        Menu
-      </p>
+      {!isCollapsed && (
+        <p className="text-xs px-4 py-2 font-bold text-gray-500 dark:text-gray-400">
+          Menu
+        </p>
+      )}
       <div className="flex-1">{menuItems.map(renderMenuItem)}</div>
 
       {/* Bottom Section */}

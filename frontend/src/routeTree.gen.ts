@@ -53,6 +53,7 @@ import { Route as LayoutTeacherAssignmentsAssignmentIdRouteImport } from './rout
 import { Route as LayoutTeacherAnalyticsStudentIdRouteImport } from './routes/_layout/teacher/analytics/$studentId'
 import { Route as LayoutStudentAssignmentsAssignmentIdRouteImport } from './routes/_layout/student/assignments/$assignmentId'
 import { Route as LayoutStudentAssignmentsAssignmentIdIndexRouteImport } from './routes/_layout/student/assignments/$assignmentId/index'
+import { Route as LayoutStudentAssignmentsAssignmentIdSuccessRouteImport } from './routes/_layout/student/assignments/$assignmentId/success'
 import { Route as LayoutStudentAssignmentsAssignmentIdPlayRouteImport } from './routes/_layout/student/assignments/$assignmentId/play'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -287,6 +288,12 @@ const LayoutStudentAssignmentsAssignmentIdIndexRoute =
     path: '/',
     getParentRoute: () => LayoutStudentAssignmentsAssignmentIdRoute,
   } as any)
+const LayoutStudentAssignmentsAssignmentIdSuccessRoute =
+  LayoutStudentAssignmentsAssignmentIdSuccessRouteImport.update({
+    id: '/success',
+    path: '/success',
+    getParentRoute: () => LayoutStudentAssignmentsAssignmentIdRoute,
+  } as any)
 const LayoutStudentAssignmentsAssignmentIdPlayRoute =
   LayoutStudentAssignmentsAssignmentIdPlayRouteImport.update({
     id: '/play',
@@ -338,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/teacher/books': typeof LayoutTeacherBooksIndexRoute
   '/teacher/materials': typeof LayoutTeacherMaterialsIndexRoute
   '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
+  '/student/assignments/$assignmentId/success': typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   '/student/assignments/$assignmentId/': typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -381,6 +389,7 @@ export interface FileRoutesByTo {
   '/teacher/books': typeof LayoutTeacherBooksIndexRoute
   '/teacher/materials': typeof LayoutTeacherMaterialsIndexRoute
   '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
+  '/student/assignments/$assignmentId/success': typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   '/student/assignments/$assignmentId': typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
 export interface FileRoutesById {
@@ -429,6 +438,7 @@ export interface FileRoutesById {
   '/_layout/teacher/books/': typeof LayoutTeacherBooksIndexRoute
   '/_layout/teacher/materials/': typeof LayoutTeacherMaterialsIndexRoute
   '/_layout/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
+  '/_layout/student/assignments/$assignmentId/success': typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   '/_layout/student/assignments/$assignmentId/': typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -477,6 +487,7 @@ export interface FileRouteTypes {
     | '/teacher/books'
     | '/teacher/materials'
     | '/student/assignments/$assignmentId/play'
+    | '/student/assignments/$assignmentId/success'
     | '/student/assignments/$assignmentId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -520,6 +531,7 @@ export interface FileRouteTypes {
     | '/teacher/books'
     | '/teacher/materials'
     | '/student/assignments/$assignmentId/play'
+    | '/student/assignments/$assignmentId/success'
     | '/student/assignments/$assignmentId'
   id:
     | '__root__'
@@ -567,6 +579,7 @@ export interface FileRouteTypes {
     | '/_layout/teacher/books/'
     | '/_layout/teacher/materials/'
     | '/_layout/student/assignments/$assignmentId/play'
+    | '/_layout/student/assignments/$assignmentId/success'
     | '/_layout/student/assignments/$assignmentId/'
   fileRoutesById: FileRoutesById
 }
@@ -887,6 +900,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutStudentAssignmentsAssignmentIdIndexRouteImport
       parentRoute: typeof LayoutStudentAssignmentsAssignmentIdRoute
     }
+    '/_layout/student/assignments/$assignmentId/success': {
+      id: '/_layout/student/assignments/$assignmentId/success'
+      path: '/success'
+      fullPath: '/student/assignments/$assignmentId/success'
+      preLoaderRoute: typeof LayoutStudentAssignmentsAssignmentIdSuccessRouteImport
+      parentRoute: typeof LayoutStudentAssignmentsAssignmentIdRoute
+    }
     '/_layout/student/assignments/$assignmentId/play': {
       id: '/_layout/student/assignments/$assignmentId/play'
       path: '/play'
@@ -943,6 +963,7 @@ const LayoutPublisherRouteWithChildren = LayoutPublisherRoute._addFileChildren(
 
 interface LayoutStudentAssignmentsAssignmentIdRouteChildren {
   LayoutStudentAssignmentsAssignmentIdPlayRoute: typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
+  LayoutStudentAssignmentsAssignmentIdSuccessRoute: typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   LayoutStudentAssignmentsAssignmentIdIndexRoute: typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
 
@@ -950,6 +971,8 @@ const LayoutStudentAssignmentsAssignmentIdRouteChildren: LayoutStudentAssignment
   {
     LayoutStudentAssignmentsAssignmentIdPlayRoute:
       LayoutStudentAssignmentsAssignmentIdPlayRoute,
+    LayoutStudentAssignmentsAssignmentIdSuccessRoute:
+      LayoutStudentAssignmentsAssignmentIdSuccessRoute,
     LayoutStudentAssignmentsAssignmentIdIndexRoute:
       LayoutStudentAssignmentsAssignmentIdIndexRoute,
   }

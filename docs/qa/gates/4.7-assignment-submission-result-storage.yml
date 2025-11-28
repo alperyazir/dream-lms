@@ -1,0 +1,144 @@
+schema: 1
+story: '4.7'
+story_title: 'Assignment Submission & Result Storage'
+gate: CONCERNS
+status_reason: 'Production bug (NaN) fixed. Backend tests 100% passing (9/9). Test infrastructure fixed for async endpoints (file-based SQLite, dual session override). Model/schema type consistency achieved. Frontend/integration tests acknowledged as requiring specialized test infrastructure expertise. Core functionality production-ready.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-11-25T08:21:00Z'
+
+top_issues:
+  - severity: high
+    category: test_coverage
+    title: 'Frontend Test Coverage Gap (Acknowledged)'
+    description: 'Frontend unit tests for success screen, useAssignmentSubmission hook, and API service not implemented due to complex framework setup issues (TanStack Router config, renderHook wrapper, axios mocking). Requires specialized test infrastructure expertise. Documented as known gap - doesn''t block core functionality.'
+    refs:
+      - 'docs/stories/4.7.assignment-submission-result-storage.md (Post-QA Fixes section)'
+    suggested_owner: test_infrastructure_expert
+    resolution_status: acknowledged_beyond_current_scope
+
+  - severity: medium
+    category: security
+    title: 'Score Manipulation Risk'
+    description: 'Frontend calculates score and backend trusts it. Backend only validates range (0-100). Acknowledged as acceptable for MVP, deferred to Epic 5 for server-side recalculation.'
+    refs:
+      - 'backend/app/api/routes/assignments.py:810'
+    suggested_owner: po
+
+resolved_issues:
+  - severity: critical
+    category: production_bug
+    title: 'NaN Score Display (422 Submission Errors)'
+    description: 'Submissions failing with 422 errors and "NaN%" score display when circleCount was undefined in backend activity configs. Division by undefined caused NaN in scoring calculation.'
+    resolution: 'Fixed in scoring.ts with defensive null/undefined/NaN handling. Defaults to 2 when circleCount missing. Added safety checks to prevent division by zero. Added test coverage for edge cases. All scoring tests passing (26/26).'
+    resolved_date: '2025-11-25'
+    resolved_by: 'James (Full Stack Developer)'
+    refs:
+      - 'frontend/src/lib/scoring.ts'
+      - 'frontend/src/components/ActivityPlayers/ActivityPlayer.tsx'
+      - 'frontend/src/lib/scoring.test.ts'
+
+  - severity: high
+    category: test_infrastructure
+    title: 'Backend Test Failures (Async/Sync Session Incompatibility)'
+    description: '4 backend tests failing with 404 errors. Root cause: async endpoints using AsyncSession querying separate :memory: database from sync Session used by fixtures. Test infrastructure couldn''t support async endpoint testing.'
+    resolution: 'Fixed test infrastructure in conftest.py: (1) Installed aiosqlite, (2) Changed to file-based SQLite for tests, (3) Override both get_db and get_async_db to share same database file, (4) Fixed AssignmentStudent.score type from int to float to match API schema. All 9 backend tests now passing.'
+    resolved_date: '2025-11-25'
+    resolved_by: 'James (Full Stack Developer)'
+    refs:
+      - 'backend/app/tests/conftest.py'
+      - 'backend/app/models.py:776'
+      - 'backend/app/tests/test_api/test_assignment_submission.py'
+
+waiver:
+  active: false
+
+quality_score: 75
+# Calculation: 100 - (20×1 high issue) - (10×1 medium issue) = 80 → adjusted to 75 for frontend test gaps
+# Improvement from 70: +20 for backend tests fixed (9/9 passing), -10 for acknowledging frontend tests beyond scope, -5 for test infrastructure complexity
+
+expires: '2025-12-09T00:00:00Z'
+
+evidence:
+  tests_reviewed:
+    backend_unit: 9  # Updated count (assignment submission tests)
+    backend_passing: 9  # All tests now passing
+    backend_failing: 0  # Fixed!
+    backend_pass_rate: 100.0  # Improved from 55.6%
+    frontend_unit_files_created: 0  # Framework issues acknowledged, not created
+    frontend_test_cases_defined: 0
+    frontend_tests_executing: 0
+    integration_files_created: 0  # Async/sync compatibility acknowledged as complex
+    integration_test_cases_defined: 0
+    integration_tests_executing: 0
+    scoring_tests_passing: 26  # All edge case tests including undefined/null circleCount
+  bugs_fixed:
+    production_blocking: 1  # NaN score display eliminated
+    test_infrastructure: 1  # Async/sync session compatibility fixed
+  risks_identified: 3  # Reduced from 4 after bug fix
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13]
+    ac_gaps: [11, 12, 14, 15]
+    # AC 11-12 deferred (waived), AC 13 COMPLETE (all backend tests passing), AC 14-15 acknowledged as requiring test infrastructure expertise
+
+nfr_validation:
+  security:
+    status: CONCERNS
+    notes: 'Score manipulation possible. Frontend calculates, backend trusts (validates range only). JWT auth and ownership validation correct. Acknowledged for MVP, Epic 5 will add server-side scoring.'
+  performance:
+    status: PASS
+    notes: 'Async/await, proper indexing, JSONB storage, query invalidation. No performance concerns.'
+  reliability:
+    status: PASS
+    notes: 'Transaction safety with rollback, idempotent design, error handling comprehensive, retry functionality, logging for debugging.'
+  maintainability:
+    status: PASS
+    notes: 'Clean code structure, good separation of concerns, comprehensive documentation, type hints, clear naming.'
+
+recommendations:
+  immediate:
+    - action: 'Consider adding frontend test coverage when test infrastructure expertise available'
+      priority: P2
+      refs: ['frontend/src/routes/_layout/student/assignments/$assignmentId/success.tsx']
+      owner: test_infrastructure_expert
+      estimated_effort: 4_hours
+      notes: 'Not blocking - core functionality tested via manual QA and backend tests'
+
+  future:
+    - action: 'Implement server-side score recalculation (Epic 5) to eliminate score manipulation risk'
+      priority: P2
+      refs: ['backend/app/api/routes/assignments.py']
+
+    - action: 'Implement teacher view for submitted assignments (AC #11-12, deferred)'
+      priority: P2
+      refs: ['frontend/src/routes/_layout/teacher/assignments/$assignmentId.tsx']
+
+    - action: 'Add rate limiting for submission endpoint to prevent abuse'
+      priority: P3
+      refs: ['backend/app/api/routes/assignments.py']
+
+compliance:
+  coding_standards: true
+  project_structure: true
+  testing_strategy: false  # Missing frontend tests and integration tests
+  story_requirements: false  # AC #14-15 not met
+
+strengths:
+  - 'Excellent backend implementation with comprehensive error handling'
+  - 'Transaction safety with commit/rollback pattern'
+  - 'Idempotent design handles network retries elegantly'
+  - 'Clean separation of concerns across layers'
+  - 'Good UX with confetti animation and score color coding'
+  - 'Error handling with retry preserves student work'
+  - 'Comprehensive documentation in story file'
+  - 'Production bug (NaN score) identified and fixed promptly with defensive programming'
+  - 'Robust edge case handling with null/undefined circleCount defaults'
+  - 'All backend tests passing (9/9) - 100% pass rate'
+  - 'Test infrastructure now supports async endpoint testing'
+  - 'Model/schema type consistency achieved (score as float)'
+
+weaknesses:
+  - 'Frontend unit tests not implemented (framework complexity beyond current scope)'
+  - 'Integration tests not implemented (acknowledged as requiring specialized expertise)'
+  - 'Score manipulation not mitigated (acknowledged for MVP, deferred to Epic 5)'
+  - 'Teacher view incomplete (AC #11-12 deferred)'
+  - 'Test infrastructure complexity required significant debugging'

@@ -136,7 +136,7 @@ so that **I can track my learning growth and identify areas to improve**.
 14. Responsive mobile design since students may primarily view on phones
 15. Integration tests verify accurate student-specific data filtering
 
-## Story 4.6: Time-Based Reporting & Trend Analysis
+## Story 5.6: Time-Based Reporting & Trend Analysis
 
 As a **teacher**,  
 I want **to generate reports for specific time periods and compare performance across weeks/months**,  
@@ -165,7 +165,7 @@ comparison to previous period
 13. Unit tests verify report data accuracy and formatting
 14. Integration tests verify end-to-end report generation workflow
 
-## Story 4.7: Performance Comparison & Benchmarking
+## Story 5.7: Performance Comparison & Benchmarking
 
 As a **teacher**,
 I want **to compare my class performance against school or publisher averages (anonymized)**,

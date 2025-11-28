@@ -3,6 +3,7 @@ import { UsersService } from "@/client"
 import Navbar from "@/components/Common/Navbar"
 import Sidebar from "@/components/Common/Sidebar"
 import { isLoggedIn } from "@/hooks/useAuth"
+import { NavigationProvider } from "@/contexts/NavigationContext"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -24,16 +25,29 @@ export const Route = createFileRoute("/_layout")({
   },
 })
 
-function Layout() {
+function LayoutContent() {
   return (
     <div className="flex flex-col h-screen">
+      {/* Navbar */}
       <Navbar />
+
       <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar - collapsible */}
         <Sidebar />
+
+        {/* Main content area */}
         <div className="flex-1 flex flex-col p-4 overflow-y-auto relative">
           <Outlet />
         </div>
       </div>
     </div>
+  )
+}
+
+function Layout() {
+  return (
+    <NavigationProvider>
+      <LayoutContent />
+    </NavigationProvider>
   )
 }

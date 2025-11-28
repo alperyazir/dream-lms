@@ -1,0 +1,143 @@
+"""
+Config.json Parser Module for Dream Central Storage Book Configurations.
+
+This module parses nested book configuration structures and extracts activity data.
+"""
+
+import logging
+from typing import Any
+
+from pydantic import BaseModel
+
+from app.models import ActivityType
+
+logger = logging.getLogger(__name__)
+
+
+class ConfigParseError(Exception):
+    """Exception raised when config.json parsing fails."""
+
+    pass
+
+
+class ActivityData(BaseModel):
+    """Parsed activity data from config.json."""
+
+    module_name: str
+    page_number: int
+    section_index: int
+    activity_type: str
+    title: str | None
+    config_json: dict
+    order_index: int
+
+
+def validate_activity_type(activity_type: str) -> bool:
+    """
+    Validate if activity type is known.
+
+    Args:
+        activity_type: Activity type string to validate
+
+    Returns:
+        True if valid, False if unknown
+    """
+    try:
+        ActivityType(activity_type)
+        return True
+    except ValueError:
+        return False
+
+
+def parse_book_config(config_dict: dict) -> list[ActivityData]:
+    """
+    Parse book config.json and extract activities.
+
+    Activity Detection Rule: A section is an activity if and only if it contains an "activity" field.
+    Sections without "activity" field (e.g., audio decorations) are skipped.
+
+    Args:
+        config_dict: Parsed config.json dictionary
+
+    Returns:
+        List of ActivityData objects with parsed activity information
+
+    Raises:
+        ConfigParseError: If config structure is malformed
+    """
+    activities: list[ActivityData] = []
+
+    try:
+        # Get books array from config
+        books = config_dict.get("books", [])
+        if not books:
+            logger.warning("No books found in config.json")
+            return activities
+
+        # Process first book (books array typically has one element)
+        book = books[0]
+        modules = book.get("modules", [])
+
+        for module_idx, module in enumerate(modules):
+            module_name = module.get("name", f"Module {module_idx + 1}")
+            pages = module.get("pages", [])
+
+            for page in pages:
+                page_number = page.get("page_number", 0)
+                sections = page.get("sections", [])
+
+                for section_idx, section in enumerate(sections):
+                    # CRITICAL: Check if section has "activity" field
+                    if "activity" not in section:
+                        # Skip sections without activity field (e.g., page decorations)
+                        continue
+
+                    activity = section["activity"]
+
+                    # Extract activity type
+                    activity_type = activity.get("type")
+                    if not activity_type:
+                        logger.warning(
+                            f"Activity in {module_name}, page {page_number}, section {section_idx} has no type"
+                        )
+                        continue
+
+                    # Validate activity type (log warning but don't fail)
+                    if not validate_activity_type(activity_type):
+                        logger.warning(f"Unknown activity type: {activity_type}")
+
+                    # Extract title from headerText or generate default
+                    title = activity.get("headerText")
+                    if not title:
+                        # Generate default title from type
+                        title = activity_type.replace("_", " ").replace("The", "the").title()
+                        logger.debug(f"Generated title '{title}' for activity type {activity_type}")
+
+                    # Calculate order index: (module_idx * 1000) + (page_num * 10) + section_idx
+                    order_index = (module_idx * 1000) + (page_number * 10) + section_idx
+
+                    # Create ActivityData
+                    activity_data = ActivityData(
+                        module_name=module_name,
+                        page_number=page_number,
+                        section_index=section_idx,
+                        activity_type=activity_type,
+                        title=title,
+                        config_json=activity,  # Store full activity object
+                        order_index=order_index,
+                    )
+
+                    activities.append(activity_data)
+
+                    logger.debug(
+                        f"Parsed activity: {activity_type} in {module_name}, "
+                        f"page {page_number}, section {section_idx}, order_index {order_index}"
+                    )
+
+    except KeyError as e:
+        raise ConfigParseError(f"Missing required field in config.json: {e}") from e
+    except Exception as e:
+        raise ConfigParseError(f"Failed to parse config.json: {e}") from e
+
+    logger.info(f"Parsed {len(activities)} activities from config.json")
+    return activities

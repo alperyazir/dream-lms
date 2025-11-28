@@ -773,7 +773,7 @@ class AssignmentStatus(str, Enum):
 class AssignmentStudentBase(SQLModel):
     """Shared AssignmentStudent properties"""
     status: AssignmentStatus = Field(default=AssignmentStatus.not_started)
-    score: int | None = Field(default=None, ge=0, le=100)
+    score: float | None = Field(default=None, ge=0, le=100)
     answers_json: dict | None = Field(default=None, sa_column=Column(JSON))
     progress_json: dict | None = Field(default=None, sa_column=Column(JSON))
     started_at: datetime | None = Field(default=None)

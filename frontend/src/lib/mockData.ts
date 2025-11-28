@@ -143,6 +143,21 @@ export interface DragDropPictureActivity {
   answer: DragDropAnswer[] // Correct placements
 }
 
+export interface DragDropGroupAnswer {
+  no: number
+  coords: Coordinates
+  group: string[] // Multiple correct answers for this drop zone (category)
+}
+
+export interface DragDropPictureGroupActivity {
+  id: string
+  bookId: string
+  type: "dragdroppicturegroup"
+  section_path: string // Background image URL
+  words: string[] // Draggable word bank
+  answer: DragDropGroupAnswer[] // Drop zones with multiple correct answers
+}
+
 export interface MatchWord {
   word: string
 }
@@ -170,7 +185,7 @@ export interface CircleActivity {
   id: string
   bookId: string
   type: "circle" | "markwithx"
-  circleCount: number // Max selections
+  circleCount?: number // Max selections per group (-1 = multi-select, 0 or undefined = 2/true-false, >0 = specific count)
   section_path: string // Background image
   answer: CircleAnswer[]
 }
@@ -185,6 +200,7 @@ export interface PuzzleFindWordsActivity {
 
 export type ActivityConfig =
   | DragDropPictureActivity
+  | DragDropPictureGroupActivity
   | MatchTheWordsActivity
   | CircleActivity
   | PuzzleFindWordsActivity

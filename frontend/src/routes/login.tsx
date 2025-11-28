@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { InputGroup } from "@/components/ui/input-group"
 import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
-import Logo from "/assets/images/fastapi-logo.svg"
+import Logo from "/assets/images/dreamedtech_with_name.svg"
 import { passwordRules } from "../utils"
 
 // Type for quick login users response
@@ -102,7 +102,7 @@ export function Login() {
     >
       <img
         src={Logo}
-        alt="FastAPI logo"
+        alt="DreamEdTech logo"
         className="h-auto max-w-xs self-center mb-4"
       />
       <Field

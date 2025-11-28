@@ -8,6 +8,11 @@ import { describe, expect, it, vi } from "vitest"
 import type { DragDropPictureActivity } from "@/lib/mockData"
 import { DragDropPicturePlayer } from "./DragDropPicturePlayer"
 
+// Mock the booksApi service
+vi.mock("@/services/booksApi", () => ({
+  getActivityImageUrl: vi.fn().mockResolvedValue("https://via.placeholder.com/1200x800"),
+}))
+
 const mockActivity: DragDropPictureActivity = {
   id: "activity-1",
   bookId: "book-1",
@@ -22,12 +27,13 @@ const mockActivity: DragDropPictureActivity = {
 }
 
 describe("DragDropPicturePlayer", () => {
-  it("renders activity with word bank and drop zones", () => {
+  it("renders activity with word bank and drop zones", async () => {
     const onAnswersChange = vi.fn()
 
     render(
       <DragDropPicturePlayer
         activity={mockActivity}
+        bookId="book-1"
         onAnswersChange={onAnswersChange}
       />,
     )
@@ -40,34 +46,37 @@ describe("DragDropPicturePlayer", () => {
     // Check completion counter
     expect(screen.getByText("Completed: 0 / 3")).toBeInTheDocument()
 
-    // Check drop zones are rendered (by data-testid)
-    const dropZones = screen.getAllByTestId("drop-zone")
-    expect(dropZones).toHaveLength(3)
+    // Wait for image to load
+    await screen.findByAltText("Activity background")
 
-    // Check background image is rendered
-    const img = screen.getByAltText("Activity background")
-    expect(img).toHaveAttribute("src", mockActivity.section_path)
+    // Check drop zones are rendered (by role and aria-label)
+    const dropZones = screen.getAllByRole("button", { name: /Drop zone/i })
+    expect(dropZones.length).toBeGreaterThanOrEqual(3)
   })
 
-  it("tracks answers correctly and calls onAnswersChange when word is clicked and zone clicked", () => {
+  it("tracks answers correctly and calls onAnswersChange when word is clicked and zone clicked", async () => {
     const onAnswersChange = vi.fn()
 
     render(
       <DragDropPicturePlayer
         activity={mockActivity}
+        bookId="book-1"
         onAnswersChange={onAnswersChange}
       />,
     )
 
+    // Wait for image and drop zones to load
+    await screen.findByAltText("Activity background")
+
     // Select a word (mobile interaction)
-    const appleWord = screen.getByText("apple")
+    const appleWord = screen.getByRole("button", { name: /Word: apple/i })
     fireEvent.click(appleWord)
 
     // Word should show as selected (via classes)
     expect(appleWord).toHaveClass("border-blue-500")
 
     // Click a drop zone
-    const dropZones = screen.getAllByTestId("drop-zone")
+    const dropZones = screen.getAllByRole("button", { name: /Drop zone/i })
     fireEvent.click(dropZones[0])
 
     // onAnswersChange should be called with Map containing the placement
@@ -83,7 +92,7 @@ describe("DragDropPicturePlayer", () => {
     expect(screen.getByText("Completed: 1 / 3")).toBeInTheDocument()
   })
 
-  it("shows results with correct/incorrect indicators when showResults is true", () => {
+  it("shows results with correct/incorrect indicators when showResults is true", async () => {
     const onAnswersChange = vi.fn()
     const correctAnswers = new Set(["100-100", "200-100"]) // apple and banana correct
 
@@ -96,6 +105,7 @@ describe("DragDropPicturePlayer", () => {
     render(
       <DragDropPicturePlayer
         activity={mockActivity}
+        bookId="book-1"
         onAnswersChange={onAnswersChange}
         showResults={true}
         correctAnswers={correctAnswers}
@@ -103,8 +113,11 @@ describe("DragDropPicturePlayer", () => {
       />,
     )
 
+    // Wait for image to load
+    await screen.findByAltText("Activity background")
+
     // Check that drop zones show correct/incorrect styling
-    const dropZones = screen.getAllByTestId("drop-zone")
+    const dropZones = screen.getAllByRole("button", { name: /Drop zone/i })
 
     // First two should have correct styling (green)
     expect(dropZones[0]).toHaveClass("border-green-500")

@@ -3,6 +3,7 @@ import { FiBell, FiMail } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
 import { ColorModeButton } from "@/components/ui/color-mode"
 import { mockConversations } from "@/lib/mockData"
+import Logo from "/assets/images/dreamedtech_single.svg"
 
 import UserMenu from "./UserMenu"
 
@@ -17,7 +18,8 @@ function Navbar() {
     <>
       {/* Desktop Navbar */}
       <div className="hidden md:flex justify-between sticky top-0 items-center bg-muted w-full p-4 z-10">
-        <Link to="/" className="flex items-center">
+        <Link to="/" className="flex items-center gap-3">
+          <img src={Logo} alt="DreamEdTech" className="h-10 w-10" />
           <h1 className="text-2xl font-bold text-foreground">Dream LMS</h1>
         </Link>
         <div className="flex gap-2 items-center">
@@ -59,7 +61,8 @@ function Navbar() {
 
       {/* Mobile Navbar */}
       <div className="flex md:hidden justify-between sticky top-0 items-center bg-muted w-full p-3 z-10">
-        <Link to="/" className="flex items-center">
+        <Link to="/" className="flex items-center gap-2">
+          <img src={Logo} alt="DreamEdTech" className="h-8 w-8" />
           <h1 className="text-xl font-bold text-foreground">Dream LMS</h1>
         </Link>
         <div className="flex gap-1 items-center">

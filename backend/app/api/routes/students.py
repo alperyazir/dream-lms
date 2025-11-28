@@ -1,0 +1,113 @@
+"""Student API endpoints - Story 3.9."""
+
+import logging
+import uuid
+
+from fastapi import HTTPException, Query, status
+from fastapi.routing import APIRouter
+from sqlmodel import select
+
+from app.api.deps import SessionDep, require_role
+from app.models import (
+    Activity,
+    Assignment,
+    AssignmentStudent,
+    Book,
+    Student,
+    User,
+    UserRole,
+)
+from app.schemas.assignment import StudentAssignmentResponse
+
+router = APIRouter(prefix="/students", tags=["students"])
+logger = logging.getLogger(__name__)
+
+
+@router.get(
+    "/me/assignments",
+    response_model=list[StudentAssignmentResponse],
+    summary="Get student's assignments",
+)
+def get_student_assignments(
+    *,
+    session: SessionDep,
+    current_user: User = require_role(UserRole.student),
+    status_filter: str | None = Query(None, alias="status"),
+) -> list[StudentAssignmentResponse]:
+    """
+    Get all assignments for authenticated student.
+
+    Query parameters:
+        status: Filter by assignment status (not_started, in_progress, completed)
+
+    Returns:
+        List of assignments with enriched data (book, activity, progress)
+    """
+    # Get Student record from authenticated user
+    result = session.execute(
+        select(Student).where(Student.user_id == current_user.id)
+    )
+    student = result.scalar_one_or_none()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found"
+        )
+
+    # Build query: AssignmentStudent → Assignment → Book → Activity
+    query = (
+        select(AssignmentStudent, Assignment, Book, Activity)
+        .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+        .join(Book, Assignment.book_id == Book.id)
+        .join(Activity, Assignment.activity_id == Activity.id)
+        .where(AssignmentStudent.student_id == student.id)
+    )
+
+    # Apply optional status filter
+    if status_filter:
+        # Validate status filter
+        valid_statuses = ["not_started", "in_progress", "completed"]
+        if status_filter not in valid_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status filter. Must be one of: {valid_statuses}"
+            )
+        query = query.where(AssignmentStudent.status == status_filter)
+
+    # Execute query
+    result = session.execute(query)
+    rows = result.all()
+
+    # Map results to StudentAssignmentResponse
+    assignments = []
+    for assignment_student, assignment, book, activity in rows:
+        response = StudentAssignmentResponse(
+            # Assignment fields
+            assignment_id=assignment.id,
+            assignment_name=assignment.name,
+            instructions=assignment.instructions,
+            due_date=assignment.due_date,
+            time_limit_minutes=assignment.time_limit_minutes,
+            created_at=assignment.created_at,
+
+            # Book fields
+            book_id=book.id,
+            book_title=book.title,
+            book_cover_url=book.cover_image_url,
+
+            # Activity fields
+            activity_id=activity.id,
+            activity_title=activity.title,
+            activity_type=activity.activity_type,
+
+            # Student-specific fields
+            status=assignment_student.status,
+            score=assignment_student.score,
+            started_at=assignment_student.started_at,
+            completed_at=assignment_student.completed_at,
+            time_spent_minutes=assignment_student.time_spent_minutes or 0,
+        )
+        assignments.append(response)
+
+    return assignments
