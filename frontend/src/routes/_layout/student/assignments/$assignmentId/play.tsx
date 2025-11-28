@@ -19,6 +19,7 @@ function ActivityPlayerPage() {
   const navigate = useNavigate()
 
   // Fetch activity data using start endpoint
+  // Story 4.8: Always refetch to get latest saved progress
   const {
     data: activity,
     isLoading,
@@ -27,6 +28,8 @@ function ActivityPlayerPage() {
     queryKey: ["activities", assignmentId, "play"],
     queryFn: (): Promise<ActivityStartResponse> => startAssignment(assignmentId),
     retry: false,
+    staleTime: 0, // Always refetch to get latest progress_json
+    cacheTime: 0, // Don't cache - we want fresh data every time
   })
 
   const handleExit = () => {
@@ -90,6 +93,12 @@ function ActivityPlayerPage() {
     activityConfig = typeof activity.config_json === 'string'
       ? JSON.parse(activity.config_json)
       : activity.config_json
+
+    // Story 4.2: Log config for testing
+    console.log('=== ACTIVITY CONFIG ===')
+    console.log('Activity Type:', activity.activity_type)
+    console.log('Config:', JSON.stringify(activityConfig, null, 2))
+    console.log('=======================')
   } catch (error) {
     console.error("Failed to parse activity config:", error)
     return (
@@ -114,10 +123,15 @@ function ActivityPlayerPage() {
     <ActivityPlayer
       activityConfig={activityConfig}
       assignmentId={assignmentId}
+      bookId={activity.book_id}
+      bookName={activity.book_name}
+      publisherName={activity.publisher_name}
       bookTitle={activity.book_title}
       activityType={activity.activity_type as any}
       timeLimit={activity.time_limit_minutes ?? undefined}
       onExit={handleExit}
+      initialProgress={activity.progress_json}
+      initialTimeSpent={activity.time_spent_minutes}
     />
   )
 }
