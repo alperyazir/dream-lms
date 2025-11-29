@@ -1,5 +1,5 @@
-import { useNavigation } from "@/contexts/NavigationContext"
 import { Button } from "@/components/ui/button"
+import { useNavigation } from "@/contexts/NavigationContext"
 import SidebarItems from "./SidebarItems"
 
 const Sidebar = () => {
@@ -18,7 +18,9 @@ const Sidebar = () => {
           size="sm"
           onClick={toggleSidebar}
           className="w-full justify-center hover:bg-gray-100 dark:hover:bg-gray-800"
-          aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={
+            isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+          }
           title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isSidebarCollapsed ? (

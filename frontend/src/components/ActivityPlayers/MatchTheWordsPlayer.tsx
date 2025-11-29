@@ -42,7 +42,10 @@ export function MatchTheWordsPlayer({
   const [lines, setLines] = useState<LineData[]>([])
   const [dragLine, setDragLine] = useState<LineData | null>(null)
   const [hoveredDropIndex, setHoveredDropIndex] = useState<number | null>(null)
-  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null)
+  const [dragPosition, setDragPosition] = useState<{
+    x: number
+    y: number
+  } | null>(null)
 
   // Image loading state
   const [imageUrls, setImageUrls] = useState<Map<number, string>>(new Map())
@@ -55,7 +58,8 @@ export function MatchTheWordsPlayer({
   const invisibleDragImage = useRef<HTMLImageElement | null>(null)
   useEffect(() => {
     const img = new Image()
-    img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+    img.src =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
     invisibleDragImage.current = img
   }, [])
 
@@ -63,7 +67,7 @@ export function MatchTheWordsPlayer({
   const matchedSentences = new Set(
     Array.from(matches.entries()).map(([key]) => {
       const [, sentenceIndexStr] = key.split("-")
-      return parseInt(sentenceIndexStr)
+      return parseInt(sentenceIndexStr, 10)
     }),
   )
 
@@ -97,12 +101,16 @@ export function MatchTheWordsPlayer({
         URL.revokeObjectURL(url)
       })
     }
-  }, [bookId, activity.sentences])
+  }, [
+    bookId,
+    activity.sentences, // Cleanup blob URLs
+    imageUrls.forEach,
+  ])
 
   // Update lines when matches change - use layout effect to prevent visual jumps
   useLayoutEffect(() => {
     updateLinesFromMatches()
-  }, [matches, showResults, correctAnswers, imageUrls])
+  }, [updateLinesFromMatches])
 
   const updateLinesFromMatches = () => {
     const newLines: LineData[] = []
@@ -110,10 +118,10 @@ export function MatchTheWordsPlayer({
     matches.forEach((word, matchKey) => {
       // matchKey format: "wordIndex-sentenceIndex"
       const [wordIndexStr, sentenceIndexStr] = matchKey.split("-")
-      const wordIndex = parseInt(wordIndexStr)
-      const sentenceIndex = parseInt(sentenceIndexStr)
+      const wordIndex = parseInt(wordIndexStr, 10)
+      const sentenceIndex = parseInt(sentenceIndexStr, 10)
 
-      if (isNaN(wordIndex) || isNaN(sentenceIndex)) return
+      if (Number.isNaN(wordIndex) || Number.isNaN(sentenceIndex)) return
 
       const dragCircle = dragCircleRefs.current[wordIndex]
       const dropCircle = dropCircleRefs.current[sentenceIndex]
@@ -198,7 +206,12 @@ export function MatchTheWordsPlayer({
 
         // Only set position if coordinates are valid and within container bounds
         // Add padding of 40px to prevent ghost circle from appearing at edges
-        if (x > 40 && y > 40 && x < containerRect.width - 40 && y < containerRect.height - 40) {
+        if (
+          x > 40 &&
+          y > 40 &&
+          x < containerRect.width - 40 &&
+          y < containerRect.height - 40
+        ) {
           setDragPosition({ x, y })
         }
       }
@@ -277,7 +290,9 @@ export function MatchTheWordsPlayer({
   }
 
   // Get match for a sentence index
-  const getMatchForSentence = (sentenceIndex: number): {
+  const getMatchForSentence = (
+    sentenceIndex: number,
+  ): {
     matchKey: string
     word: string
   } | null => {
@@ -293,7 +308,7 @@ export function MatchTheWordsPlayer({
   const isMatchCorrect = (matchKey: string, word: string): boolean => {
     if (!showResults) return false
     const [, sentenceIndexStr] = matchKey.split("-")
-    const sentenceIndex = parseInt(sentenceIndexStr)
+    const sentenceIndex = parseInt(sentenceIndexStr, 10)
     const sentence = activity.sentences[sentenceIndex]
     return word === sentence.word
   }
@@ -303,7 +318,10 @@ export function MatchTheWordsPlayer({
   const totalCount = activity.sentences.length
 
   // Ensure we have same number of items on both sides for alignment
-  const maxItems = Math.max(activity.match_words.length, activity.sentences.length)
+  const maxItems = Math.max(
+    activity.match_words.length,
+    activity.sentences.length,
+  )
 
   // Handle reset - clear all matches
   const handleReset = () => {
@@ -394,30 +412,36 @@ export function MatchTheWordsPlayer({
         </svg>
 
         {/* Ghost circle during drag */}
-        {dragPosition && draggedIndex !== null && dragPosition.x > 32 && dragPosition.y > 32 && (
-          <div
-            className="pointer-events-none absolute flex h-16 w-16 items-center justify-center rounded-full bg-gray-500 transition-none dark:bg-gray-500"
-            style={{
-              left: `${dragPosition.x - 32}px`,
-              top: `${dragPosition.y - 32}px`,
-              zIndex: 10,
-              willChange: 'transform',
-            }}
-          >
-            <svg
-              className="h-10 w-10 text-white"
-              fill="currentColor"
-              viewBox="0 0 24 24"
+        {dragPosition &&
+          draggedIndex !== null &&
+          dragPosition.x > 32 &&
+          dragPosition.y > 32 && (
+            <div
+              className="pointer-events-none absolute flex h-16 w-16 items-center justify-center rounded-full bg-gray-500 transition-none dark:bg-gray-500"
+              style={{
+                left: `${dragPosition.x - 32}px`,
+                top: `${dragPosition.y - 32}px`,
+                zIndex: 10,
+                willChange: "transform",
+              }}
             >
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-        )}
+              <svg
+                className="h-10 w-10 text-white"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          )}
 
         {/* Content */}
         <div className="flex h-full w-full" style={{ zIndex: 2 }}>
           {/* Left Column: Words with draggable circles */}
-          <div className="flex w-2/5 flex-col justify-center gap-2 pr-2" style={{ minHeight: 0 }}>
+          <div
+            className="flex w-2/5 flex-col justify-center gap-2 pr-2"
+            style={{ minHeight: 0 }}
+          >
             {activity.match_words.map((item, index) => {
               const matched = isWordMatched(index)
               const isDragging = draggedIndex === index
@@ -438,7 +462,9 @@ export function MatchTheWordsPlayer({
                       dragCircleRefs.current[index] = el
                     }}
                     draggable={!matched && !showResults}
-                    onDragStart={(e) => !matched && handleDragStart(e, item.word, index)}
+                    onDragStart={(e) =>
+                      !matched && handleDragStart(e, item.word, index)
+                    }
                     onDrag={handleDrag}
                     onDragEnd={handleDragEnd}
                     className={`relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full ${
@@ -469,7 +495,10 @@ export function MatchTheWordsPlayer({
           <div className="w-1/5" />
 
           {/* Right Column: Images/Sentences with drop circles */}
-          <div className="flex w-2/5 flex-col justify-center gap-2 pl-2" style={{ minHeight: 0 }}>
+          <div
+            className="flex w-2/5 flex-col justify-center gap-2 pl-2"
+            style={{ minHeight: 0 }}
+          >
             {activity.sentences.map((item, index) => {
               const match = getMatchForSentence(index)
               const isHovered = hoveredDropIndex === index

@@ -5,7 +5,7 @@
  * Tests progress restoration logic for all activity types
  */
 
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
 import { restoreProgressFromJson } from "./ActivityPlayer"
 
 describe("restoreProgressFromJson", () => {
@@ -25,7 +25,7 @@ describe("restoreProgressFromJson", () => {
           ["10-20", "apple"],
           ["30-40", "banana"],
           ["50-60", "cherry"],
-        ])
+        ]),
       )
     })
 
@@ -43,14 +43,17 @@ describe("restoreProgressFromJson", () => {
         "30-40": "fruit",
       }
 
-      const result = restoreProgressFromJson(savedProgress, "dragdroppicturegroup")
+      const result = restoreProgressFromJson(
+        savedProgress,
+        "dragdroppicturegroup",
+      )
 
       expect(result).toBeInstanceOf(Map)
       expect(result).toEqual(
         new Map([
           ["10-20", "animal"],
           ["30-40", "fruit"],
-        ])
+        ]),
       )
     })
   })
@@ -69,7 +72,7 @@ describe("restoreProgressFromJson", () => {
         new Map([
           ["The cat is sleeping", "sleeping"],
           ["Birds can fly", "fly"],
-        ])
+        ]),
       )
     })
   })
@@ -90,7 +93,7 @@ describe("restoreProgressFromJson", () => {
           [0, 1],
           [1, 0],
           [2, 3],
-        ])
+        ]),
       )
     })
 
@@ -100,7 +103,10 @@ describe("restoreProgressFromJson", () => {
         "15": 20,
       }
 
-      const result = restoreProgressFromJson(savedProgress, "circle") as Map<number, number>
+      const result = restoreProgressFromJson(savedProgress, "circle") as Map<
+        number,
+        number
+      >
 
       expect(result.get(5)).toBe(10)
       expect(result.get(15)).toBe(20)
@@ -123,7 +129,7 @@ describe("restoreProgressFromJson", () => {
         new Map([
           [0, 2],
           [1, 1],
-        ])
+        ]),
       )
     })
   })
@@ -200,10 +206,10 @@ describe("restoreProgressFromJson", () => {
         e: "5",
       }
 
-      const result = restoreProgressFromJson(savedProgress, "matchTheWords") as Map<
-        string,
-        string
-      >
+      const result = restoreProgressFromJson(
+        savedProgress,
+        "matchTheWords",
+      ) as Map<string, string>
 
       expect(result.size).toBe(5)
       expect(result.get("a")).toBe("1")
@@ -217,7 +223,7 @@ describe("restoreProgressFromJson", () => {
 
       const result = restoreProgressFromJson(
         savedProgress,
-        "puzzleFindWords"
+        "puzzleFindWords",
       ) as Set<string>
 
       expect(result.size).toBe(5)
@@ -229,13 +235,13 @@ describe("restoreProgressFromJson", () => {
       const savedProgress = {
         "special-key-123": "value1",
         "key with spaces": "value2",
-        "key_with_underscore": "value3",
+        key_with_underscore: "value3",
       }
 
-      const result = restoreProgressFromJson(savedProgress, "dragdroppicture") as Map<
-        string,
-        string
-      >
+      const result = restoreProgressFromJson(
+        savedProgress,
+        "dragdroppicture",
+      ) as Map<string, string>
 
       expect(result.get("special-key-123")).toBe("value1")
       expect(result.get("key with spaces")).toBe("value2")
@@ -249,7 +255,7 @@ describe("restoreProgressFromJson", () => {
 
       const result = restoreProgressFromJson(
         savedProgress,
-        "puzzleFindWords"
+        "puzzleFindWords",
       ) as Set<string>
 
       expect(result.has("hello world")).toBe(true)

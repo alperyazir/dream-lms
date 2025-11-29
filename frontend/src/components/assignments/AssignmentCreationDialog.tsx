@@ -12,11 +12,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { format } from "date-fns"
 import { useEffect, useState } from "react"
-import { StepConfigureSettings } from "./StepConfigureSettings"
-import { StepReviewActivity } from "./StepReviewActivity"
-import { StepReviewCreate } from "./StepReviewCreate"
-import { StepSelectBookActivity } from "./StepSelectBookActivity"
-import { StepSelectRecipients } from "./StepSelectRecipients"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +36,11 @@ import type {
   AssignmentFormData,
 } from "@/types/assignment"
 import type { Activity, Book } from "@/types/book"
+import { StepConfigureSettings } from "./StepConfigureSettings"
+import { StepReviewActivity } from "./StepReviewActivity"
+import { StepReviewCreate } from "./StepReviewCreate"
+import { StepSelectBookActivity } from "./StepSelectBookActivity"
+import { StepSelectRecipients } from "./StepSelectRecipients"
 
 interface AssignmentCreationDialogProps {
   isOpen: boolean
@@ -68,13 +68,15 @@ export function AssignmentCreationDialog({
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   // State for selected book and activity
-  const [selectedBook, setSelectedBook] = useState<Book | null>(initialBook || null)
+  const [selectedBook, setSelectedBook] = useState<Book | null>(
+    initialBook || null,
+  )
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
-    initialActivity || null
+    initialActivity || null,
   )
 
   const [currentStep, setCurrentStep] = useState(
-    initialBook && initialActivity ? 1 : 0 // Skip book selection if pre-selected
+    initialBook && initialActivity ? 1 : 0, // Skip book selection if pre-selected
   )
   const [validationError, setValidationError] = useState<string | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -136,7 +138,10 @@ export function AssignmentCreationDialog({
       onClose()
 
       // Navigate to assignment detail page
-      navigate({ to: "/teacher/assignments/$assignmentId", params: { assignmentId: data.id } })
+      navigate({
+        to: "/teacher/assignments/$assignmentId",
+        params: { assignmentId: data.id },
+      })
     },
     onError: (error: any) => {
       console.error("Failed to create assignment:", error)
@@ -184,7 +189,10 @@ export function AssignmentCreationDialog({
         showErrorToast("Please enter an assignment name")
         return
       }
-      if (formData.time_limit_minutes !== null && formData.time_limit_minutes < 1) {
+      if (
+        formData.time_limit_minutes !== null &&
+        formData.time_limit_minutes < 1
+      ) {
         showErrorToast("Time limit must be at least 1 minute")
         return
       }
@@ -272,7 +280,8 @@ export function AssignmentCreationDialog({
       instructions: formData.instructions || null,
       due_date: formData.due_date ? formData.due_date.toISOString() : null,
       time_limit_minutes: formData.time_limit_minutes,
-      student_ids: formData.student_ids.length > 0 ? formData.student_ids : undefined,
+      student_ids:
+        formData.student_ids.length > 0 ? formData.student_ids : undefined,
       class_ids: formData.class_ids.length > 0 ? formData.class_ids : undefined,
     }
 
@@ -282,140 +291,146 @@ export function AssignmentCreationDialog({
 
   return (
     <>
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create Assignment</DialogTitle>
-        </DialogHeader>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Assignment</DialogTitle>
+          </DialogHeader>
 
-        {/* Step Indicator */}
-        <div className="flex items-center justify-between mb-6">
-          {STEPS.map((step, index) => (
-            <div key={step.number} className="flex items-center flex-1">
-              <div className="flex flex-col items-center flex-1">
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                    currentStep >= step.number
-                      ? "bg-teal-600 text-white dark:bg-teal-500"
-                      : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
-                >
-                  {step.number + 1}
+          {/* Step Indicator */}
+          <div className="flex items-center justify-between mb-6">
+            {STEPS.map((step, index) => (
+              <div key={step.number} className="flex items-center flex-1">
+                <div className="flex flex-col items-center flex-1">
+                  <div
+                    className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                      currentStep >= step.number
+                        ? "bg-teal-600 text-white dark:bg-teal-500"
+                        : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    {step.number + 1}
+                  </div>
+                  <span
+                    className={`text-xs mt-1 text-center ${
+                      currentStep >= step.number
+                        ? "text-teal-600 font-medium dark:text-teal-400"
+                        : "text-gray-600 dark:text-gray-400"
+                    }`}
+                  >
+                    {step.label}
+                  </span>
                 </div>
-                <span
-                  className={`text-xs mt-1 text-center ${
-                    currentStep >= step.number
-                      ? "text-teal-600 font-medium dark:text-teal-400"
-                      : "text-gray-600 dark:text-gray-400"
-                  }`}
-                >
-                  {step.label}
-                </span>
+                {index < STEPS.length - 1 && (
+                  <div
+                    className={`h-0.5 flex-1 ${
+                      currentStep > step.number ? "bg-teal-600" : "bg-gray-200"
+                    }`}
+                  />
+                )}
               </div>
-              {index < STEPS.length - 1 && (
-                <div
-                  className={`h-0.5 flex-1 ${
-                    currentStep > step.number ? "bg-teal-600" : "bg-gray-200"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* Step Content */}
-        <div className="min-h-[300px]">
-          {currentStep === 0 && (
-            <StepSelectBookActivity
-              selectedBook={selectedBook}
-              selectedActivity={selectedActivity}
-              onSelectBook={setSelectedBook}
-              onSelectActivity={setSelectedActivity}
-            />
-          )}
+          {/* Step Content */}
+          <div className="min-h-[300px]">
+            {currentStep === 0 && (
+              <StepSelectBookActivity
+                selectedBook={selectedBook}
+                selectedActivity={selectedActivity}
+                onSelectBook={setSelectedBook}
+                onSelectActivity={setSelectedActivity}
+              />
+            )}
 
-          {currentStep === 1 && selectedActivity && selectedBook && (
-            <StepReviewActivity activity={selectedActivity} book={selectedBook} />
-          )}
+            {currentStep === 1 && selectedActivity && selectedBook && (
+              <StepReviewActivity
+                activity={selectedActivity}
+                book={selectedBook}
+              />
+            )}
 
-          {currentStep === 2 && (
-            <StepSelectRecipients
-              formData={formData}
-              onFormDataChange={handleFormDataChange}
-            />
-          )}
+            {currentStep === 2 && (
+              <StepSelectRecipients
+                formData={formData}
+                onFormDataChange={handleFormDataChange}
+              />
+            )}
 
-          {currentStep === 3 && (
-            <StepConfigureSettings
-              formData={formData}
-              onFormDataChange={handleFormDataChange}
-            />
-          )}
+            {currentStep === 3 && (
+              <StepConfigureSettings
+                formData={formData}
+                onFormDataChange={handleFormDataChange}
+              />
+            )}
 
-          {currentStep === 4 && selectedActivity && selectedBook && (
-            <StepReviewCreate
-              activity={selectedActivity}
-              book={selectedBook}
-              formData={formData}
-            />
-          )}
-        </div>
-
-        {/* Navigation Buttons */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t">
-          <Button variant="outline" onClick={handleCancelClick}>
-            Cancel
-          </Button>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentStep === 0}
-            >
-              Back
-            </Button>
-
-            {currentStep < STEPS.length - 1 ? (
-              <Button
-                onClick={handleNext}
-                className="bg-teal-600 hover:bg-teal-700"
-              >
-                Next
-              </Button>
-            ) : (
-              <Button
-                onClick={handleCreateAssignment}
-                disabled={createAssignmentMutation.isPending}
-                className="bg-teal-600 hover:bg-teal-700"
-              >
-                {createAssignmentMutation.isPending
-                  ? "Creating..."
-                  : "Create Assignment"}
-              </Button>
+            {currentStep === 4 && selectedActivity && selectedBook && (
+              <StepReviewCreate
+                activity={selectedActivity}
+                book={selectedBook}
+                formData={formData}
+              />
             )}
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
 
-    {/* Cancel Confirmation Dialog */}
-    <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Cancel Assignment Creation?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to cancel? All unsaved changes will be lost.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Continue Editing</AlertDialogCancel>
-          <AlertDialogAction onClick={handleCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Discard Changes
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  </>
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between mt-6 pt-4 border-t">
+            <Button variant="outline" onClick={handleCancelClick}>
+              Cancel
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStep === 0}
+              >
+                Back
+              </Button>
+
+              {currentStep < STEPS.length - 1 ? (
+                <Button
+                  onClick={handleNext}
+                  className="bg-teal-600 hover:bg-teal-700"
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleCreateAssignment}
+                  disabled={createAssignmentMutation.isPending}
+                  className="bg-teal-600 hover:bg-teal-700"
+                >
+                  {createAssignmentMutation.isPending
+                    ? "Creating..."
+                    : "Create Assignment"}
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Assignment Creation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel? All unsaved changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continue Editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancel}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

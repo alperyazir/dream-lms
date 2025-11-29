@@ -6,8 +6,8 @@
  */
 
 import { AlertCircle, Clock } from "lucide-react"
-import { Badge } from "../ui/badge"
 import { useActivityTimer } from "../../hooks/useActivityTimer"
+import { Badge } from "../ui/badge"
 
 interface ActivityTimerProps {
   timeLimitMinutes: number
@@ -43,7 +43,10 @@ export function ActivityTimer({
   }
 
   return (
-    <Badge variant="outline" className={`text-sm font-mono ${getColorClasses()}`}>
+    <Badge
+      variant="outline"
+      className={`text-sm font-mono ${getColorClasses()}`}
+    >
       <div className="flex items-center gap-1.5">
         {warningLevel !== "none" ? (
           <AlertCircle className="h-4 w-4" />

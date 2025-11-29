@@ -3,14 +3,19 @@
  * Story 4.7: Assignment Submission & Result Storage - QA Fixes
  */
 
-import { renderHook, waitFor } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach } from "vitest"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from "@tanstack/react-router"
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router"
+import { renderHook, waitFor } from "@testing-library/react"
 import type { ReactNode } from "react"
-import { useAssignmentSubmission } from "./useAssignmentSubmission"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as assignmentsApi from "@/services/assignmentsApi"
 import type { AssignmentSubmissionResponse } from "@/types/assignment"
+import { useAssignmentSubmission } from "./useAssignmentSubmission"
 
 // Mock the API module
 vi.mock("@/services/assignmentsApi", () => ({
@@ -288,7 +293,9 @@ describe("useAssignmentSubmission", () => {
       },
     )
 
-    vi.mocked(assignmentsApi.submitAssignment).mockReturnValue(submissionPromise)
+    vi.mocked(assignmentsApi.submitAssignment).mockReturnValue(
+      submissionPromise,
+    )
 
     const { result } = renderHook(
       () =>

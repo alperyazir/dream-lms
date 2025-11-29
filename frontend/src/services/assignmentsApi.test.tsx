@@ -5,13 +5,13 @@
  * Tests for submitAssignment function
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
 import axios from "axios"
-import { submitAssignment } from "./assignmentsApi"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type {
-  AssignmentSubmitRequest,
   AssignmentSubmissionResponse,
+  AssignmentSubmitRequest,
 } from "../types/assignment"
+import { submitAssignment } from "./assignmentsApi"
 
 // Mock axios
 vi.mock("axios")
@@ -209,9 +209,9 @@ describe("submitAssignment", () => {
       time_spent_minutes: 6,
     }
 
-    await expect(submitAssignment(mockAssignmentId, submitData)).rejects.toThrow(
-      "Network Error",
-    )
+    await expect(
+      submitAssignment(mockAssignmentId, submitData),
+    ).rejects.toThrow("Network Error")
   })
 
   it("throws error on server error (500)", async () => {
@@ -282,8 +282,22 @@ describe("submitAssignment", () => {
       type: "puzzlefindwords",
       foundWords: ["cat", "dog", "bird"],
       selections: [
-        { word: "cat", positions: [[0, 0], [0, 1], [0, 2]] },
-        { word: "dog", positions: [[1, 0], [1, 1], [1, 2]] },
+        {
+          word: "cat",
+          positions: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+          ],
+        },
+        {
+          word: "dog",
+          positions: [
+            [1, 0],
+            [1, 1],
+            [1, 2],
+          ],
+        },
       ],
     }
 

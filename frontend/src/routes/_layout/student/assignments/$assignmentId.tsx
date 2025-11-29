@@ -5,7 +5,9 @@
 
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 
-export const Route = createFileRoute("/_layout/student/assignments/$assignmentId")({
+export const Route = createFileRoute(
+  "/_layout/student/assignments/$assignmentId",
+)({
   component: AssignmentLayout,
 })
 

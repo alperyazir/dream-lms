@@ -6,7 +6,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlmodel import select
 
 from app import crud
-from app.api.deps import SessionDep, require_role
+from app.api.deps import AsyncSessionDep, SessionDep, require_role
 from app.models import (
     BulkImportErrorDetail,
     BulkImportResponse,
@@ -25,6 +25,15 @@ from app.models import (
     UserCreationResponse,
     UserPublic,
     UserRole,
+)
+from app.schemas.analytics import (
+    InsightDetail,
+    TeacherInsightsResponse,
+)
+from app.services.analytics_service import (
+    dismiss_insight,
+    get_insight_detail,
+    get_teacher_insights,
 )
 from app.services.bulk_import import validate_bulk_import
 from app.utils import (
@@ -903,3 +912,135 @@ def get_class_students(
         result.append(student_data)
 
     return result
+
+
+# ============================================================================
+# Teacher Insights Endpoints (Story 5.4)
+# ============================================================================
+
+
+@router.get(
+    "/me/insights",
+    response_model=TeacherInsightsResponse,
+    summary="Get teacher insights",
+    description="Get AI-generated insights and patterns detected across teacher's assignments. Teacher only.",
+)
+async def get_my_insights(
+    *,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Get all detected insights for the current teacher.
+
+    Insights include:
+    - Low performing assignments (avg score < 65%)
+    - Common misconceptions (>60% answered incorrectly)
+    - Struggling students (>3 past due, low scores)
+    - Activity type struggles (consistently low scores)
+    - Time management issues (rushing with low scores)
+
+    Returns list of insight cards sorted by severity.
+    """
+    # Get Teacher record for current user
+    teacher_result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = teacher_result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    insights_response = await get_teacher_insights(teacher.id, session)
+    return insights_response
+
+
+@router.get(
+    "/me/insights/{insight_id}",
+    response_model=InsightDetail,
+    summary="Get insight details",
+    description="Get detailed information about a specific insight. Teacher only.",
+)
+async def get_insight_details(
+    *,
+    session: AsyncSessionDep,
+    insight_id: str,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Get detailed breakdown for a specific insight.
+
+    Returns:
+    - Full insight card
+    - List of affected students
+    - Related assignments
+    - Related questions (for misconception insights)
+    """
+    # Get Teacher record for current user
+    teacher_result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = teacher_result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    detail = await get_insight_detail(teacher.id, insight_id, session)
+
+    if not detail:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Insight not found"
+        )
+
+    return detail
+
+
+@router.post(
+    "/me/insights/{insight_id}/dismiss",
+    status_code=status.HTTP_200_OK,
+    summary="Dismiss insight",
+    description="Dismiss an insight so it won't appear again. Teacher only.",
+)
+async def dismiss_insight_endpoint(
+    *,
+    session: AsyncSessionDep,
+    insight_id: str,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Dismiss an insight.
+
+    Dismissed insights won't appear in future insight lists.
+    This action cannot be undone.
+
+    Returns success message.
+    """
+    # Get Teacher record for current user
+    teacher_result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = teacher_result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    success = await dismiss_insight(teacher.id, insight_id, session)
+
+    if not success:
+        # Already dismissed or insight doesn't exist
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Insight not found or already dismissed"
+        )
+
+    return {"message": "Insight dismissed successfully"}

@@ -1,4 +1,4 @@
-"""Assignment API endpoints - Story 3.7."""
+"""Assignment API endpoints - Stories 3.7, 5.3."""
 
 import logging
 import uuid
@@ -25,6 +25,10 @@ from app.models import (
     User,
     UserRole,
 )
+from app.schemas.analytics import (
+    AssignmentDetailedResultsResponse,
+    StudentAnswersResponse,
+)
 from app.schemas.assignment import (
     ActivityStartResponse,
     AssignmentCreate,
@@ -35,6 +39,10 @@ from app.schemas.assignment import (
     AssignmentSubmissionResponse,
     AssignmentSubmitRequest,
     AssignmentUpdate,
+)
+from app.services.analytics_service import (
+    get_assignment_detailed_results,
+    get_student_assignment_answers,
 )
 
 router = APIRouter(prefix="/assignments", tags=["assignments"])
@@ -948,3 +956,158 @@ async def submit_assignment(
         completed_at=assignment_student.completed_at,
         assignment_id=assignment_id,
     )
+
+
+# --- Assignment Analytics Endpoints (Story 5.3) ---
+
+
+async def _verify_assignment_ownership(
+    session: AsyncSessionDep, assignment_id: uuid.UUID, teacher_id: uuid.UUID
+) -> Assignment:
+    """
+    Verify teacher owns the assignment.
+
+    Args:
+        session: Database session
+        assignment_id: Assignment ID to verify
+        teacher_id: Teacher ID to check ownership against
+
+    Returns:
+        Assignment if ownership verified
+
+    Raises:
+        HTTPException(404): Assignment not found or teacher doesn't own it
+    """
+    result = await session.execute(
+        select(Assignment).where(Assignment.id == assignment_id)
+    )
+    assignment = result.scalar_one_or_none()
+
+    if not assignment or assignment.teacher_id != teacher_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    return assignment
+
+
+@router.get(
+    "/{assignment_id}/detailed-results",
+    response_model=AssignmentDetailedResultsResponse,
+    summary="Get detailed assignment results",
+    description="Get detailed results for an assignment including completion stats, scores, and question-level analysis",
+)
+async def get_detailed_results(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher),
+) -> AssignmentDetailedResultsResponse:
+    """
+    Get detailed results for a specific assignment.
+
+    **Includes:**
+    - Completion overview (completed, in_progress, not_started, past_due counts)
+    - Score statistics (average, median, highest, lowest)
+    - Student results list (name, status, score, time spent, completion date)
+    - Question-level analysis based on activity type
+
+    **Authorization:**
+    Teachers can only view results for their own assignments.
+
+    **Returns:**
+    AssignmentDetailedResultsResponse with comprehensive analytics.
+
+    **Status Codes:**
+    - 200: Results retrieved successfully
+    - 404: Assignment not found or teacher doesn't own it
+    """
+    # Get Teacher record
+    result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user",
+        )
+
+    try:
+        detailed_results = await get_assignment_detailed_results(
+            assignment_id=assignment_id,
+            teacher_id=teacher.id,
+            session=session,
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    logger.info(
+        f"Detailed results retrieved for assignment {assignment_id} by teacher {teacher.id}"
+    )
+
+    return detailed_results
+
+
+@router.get(
+    "/{assignment_id}/students/{student_id}/answers",
+    response_model=StudentAnswersResponse,
+    summary="Get student's answers for assignment",
+    description="Get a specific student's full answers for an assignment",
+)
+async def get_student_answers(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    student_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher),
+) -> StudentAnswersResponse:
+    """
+    Get a specific student's full answers for an assignment.
+
+    **Authorization:**
+    Teachers can only view answers for students in their own assignments.
+
+    **Returns:**
+    StudentAnswersResponse with student info and full answers_json.
+
+    **Status Codes:**
+    - 200: Answers retrieved successfully
+    - 404: Assignment or student submission not found
+    """
+    # Get Teacher record
+    result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user",
+        )
+
+    try:
+        student_answers = await get_student_assignment_answers(
+            assignment_id=assignment_id,
+            student_id=student_id,
+            teacher_id=teacher.id,
+            session=session,
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment or student submission not found",
+        )
+
+    logger.info(
+        f"Student answers retrieved for assignment {assignment_id}, "
+        f"student {student_id} by teacher {teacher.id}"
+    )
+
+    return student_answers

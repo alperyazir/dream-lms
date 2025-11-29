@@ -10,7 +10,9 @@ import { DragDropPicturePlayer } from "./DragDropPicturePlayer"
 
 // Mock the booksApi service
 vi.mock("@/services/booksApi", () => ({
-  getActivityImageUrl: vi.fn().mockResolvedValue("https://via.placeholder.com/1200x800"),
+  getActivityImageUrl: vi
+    .fn()
+    .mockResolvedValue("https://via.placeholder.com/1200x800"),
 }))
 
 const mockActivity: DragDropPictureActivity = {

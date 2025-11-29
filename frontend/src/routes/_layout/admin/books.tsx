@@ -54,7 +54,7 @@ function AdminBooks() {
   // Fetch books on mount
   useEffect(() => {
     fetchBooks()
-  }, [])
+  }, [fetchBooks])
 
   const handleSync = async () => {
     try {
@@ -62,7 +62,13 @@ function AdminBooks() {
 
       // Get token
       const token = OpenAPI.TOKEN
-      const tokenValue = typeof token === "function" ? await token({ method: "POST", url: `${OpenAPI.BASE}/api/v1/books/sync` }) : token
+      const tokenValue =
+        typeof token === "function"
+          ? await token({
+              method: "POST",
+              url: `${OpenAPI.BASE}/api/v1/books/sync`,
+            })
+          : token
 
       // Call sync endpoint
       await axios.post(

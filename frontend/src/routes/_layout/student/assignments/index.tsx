@@ -1,6 +1,6 @@
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
 import { StudentAssignmentCard } from "@/components/assignments/AssignmentCard"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { getStudentAssignments } from "@/services/assignmentsApi"
@@ -24,7 +24,11 @@ function StudentAssignmentsContent() {
   const [activeTab, setActiveTab] = useState<TabValue>("todo")
 
   // Fetch student's assignments from API
-  const { data: assignments = [], isLoading, error } = useQuery({
+  const {
+    data: assignments = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["studentAssignments"],
     queryFn: async () => {
       const result = await getStudentAssignments()
@@ -75,7 +79,9 @@ function StudentAssignmentsContent() {
       if (!a.completed_at && !b.completed_at) return 0
       if (!a.completed_at) return 1
       if (!b.completed_at) return -1
-      return new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+      return (
+        new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+      )
     })
 
     return { todo, completed, pastDue }
@@ -110,7 +116,9 @@ function StudentAssignmentsContent() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
-          <p className="text-lg text-muted-foreground">Loading assignments...</p>
+          <p className="text-lg text-muted-foreground">
+            Loading assignments...
+          </p>
         </div>
       </div>
     )
@@ -122,7 +130,9 @@ function StudentAssignmentsContent() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
-          <p className="text-lg text-red-600">Failed to load assignments. Please try again.</p>
+          <p className="text-lg text-red-600">
+            Failed to load assignments. Please try again.
+          </p>
           <p className="text-sm text-muted-foreground mt-2">
             {error instanceof Error ? error.message : "Unknown error"}
           </p>
@@ -198,17 +208,17 @@ function StudentAssignmentsContent() {
         {activeTab === "todo" &&
           renderAssignmentGrid(
             categorizedAssignments.todo,
-            "No assignments to do right now. Great job staying on top of your work!"
+            "No assignments to do right now. Great job staying on top of your work!",
           )}
         {activeTab === "completed" &&
           renderAssignmentGrid(
             categorizedAssignments.completed,
-            "No completed assignments yet. Start working on your assignments to see them here."
+            "No completed assignments yet. Start working on your assignments to see them here.",
           )}
         {activeTab === "past-due" &&
           renderAssignmentGrid(
             categorizedAssignments.pastDue,
-            "No past due assignments. Keep up the good work!"
+            "No past due assignments. Keep up the good work!",
           )}
       </div>
     </div>

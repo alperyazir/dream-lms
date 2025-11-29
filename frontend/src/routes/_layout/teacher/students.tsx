@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { Edit, Plus, Trash2, Users } from "lucide-react"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { BarChart3, Edit, Plus, Trash2, Users } from "lucide-react"
 import { useEffect, useState } from "react"
 import {
   type StudentCreateAPI,
@@ -446,6 +446,19 @@ function TeacherStudentsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Link
+                        to="/teacher/analytics/$studentId"
+                        params={{ studentId: student.id }}
+                      >
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                        >
+                          <BarChart3 className="w-3 h-3 mr-1" />
+                          Analytics
+                        </Button>
+                      </Link>
                       <Button
                         size="sm"
                         variant="outline"

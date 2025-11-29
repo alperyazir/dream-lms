@@ -9,16 +9,31 @@
  * - Action buttons (Start Assignment, View Feedback)
  */
 
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import {
+  Activity as ActivityIcon,
+  AlertCircle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+} from "lucide-react"
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { getStudentAssignments } from "@/services/assignmentsApi"
-import { Clock, Calendar, Activity as ActivityIcon, CheckCircle2, AlertCircle } from "lucide-react"
 
-export const Route = createFileRoute("/_layout/student/assignments/$assignmentId/")({
+export const Route = createFileRoute(
+  "/_layout/student/assignments/$assignmentId/",
+)({
   component: AssignmentDetailPage,
 })
 
@@ -35,7 +50,11 @@ function AssignmentDetailContent() {
   const navigate = useNavigate()
 
   // Fetch all student assignments and find the specific one
-  const { data: assignments = [], isLoading, error } = useQuery({
+  const {
+    data: assignments = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["studentAssignments"],
     queryFn: () => getStudentAssignments(),
   })
@@ -46,7 +65,9 @@ function AssignmentDetailContent() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
-          <p className="text-lg text-muted-foreground">Loading assignment details...</p>
+          <p className="text-lg text-muted-foreground">
+            Loading assignment details...
+          </p>
         </div>
       </div>
     )
@@ -59,7 +80,8 @@ function AssignmentDetailContent() {
           <CardHeader>
             <CardTitle className="text-red-600">Assignment Not Found</CardTitle>
             <CardDescription>
-              The assignment you're looking for doesn't exist or you don't have access to it.
+              The assignment you're looking for doesn't exist or you don't have
+              access to it.
             </CardDescription>
           </CardHeader>
           <CardFooter>
@@ -100,7 +122,9 @@ function AssignmentDetailContent() {
         </Button>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{assignment.assignment_name}</h1>
+            <h1 className="text-3xl font-bold mb-2">
+              {assignment.assignment_name}
+            </h1>
             <p className="text-muted-foreground">{assignment.book_title}</p>
           </div>
           <Badge className={statusColors[assignment.status]}>
@@ -137,22 +161,30 @@ function AssignmentDetailContent() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Activity</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Activity
+                </p>
                 <p className="text-lg">{assignment.activity_title}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Type</p>
-                <p className="text-lg capitalize">{assignment.activity_type.replace(/([A-Z])/g, ' $1').trim()}</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Type
+                </p>
+                <p className="text-lg capitalize">
+                  {assignment.activity_type.replace(/([A-Z])/g, " $1").trim()}
+                </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Book</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Book
+                </p>
                 <p className="text-lg">{assignment.book_title}</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Progress Information (if started or completed) */}
-          {(assignment.status !== "not_started") && (
+          {assignment.status !== "not_started" && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -162,24 +194,36 @@ function AssignmentDetailContent() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Status
+                  </p>
                   <p className="text-lg">{statusLabels[assignment.status]}</p>
                 </div>
                 {assignment.score !== null && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Score</p>
-                    <p className="text-2xl font-bold text-green-600">{assignment.score}%</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Score
+                    </p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {assignment.score}%
+                    </p>
                   </div>
                 )}
                 {assignment.time_spent_minutes > 0 && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Time Spent</p>
-                    <p className="text-lg">{assignment.time_spent_minutes} minutes</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Time Spent
+                    </p>
+                    <p className="text-lg">
+                      {assignment.time_spent_minutes} minutes
+                    </p>
                   </div>
                 )}
                 {assignment.started_at && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Started At</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Started At
+                    </p>
                     <p className="text-lg">
                       {new Date(assignment.started_at).toLocaleDateString()} at{" "}
                       {new Date(assignment.started_at).toLocaleTimeString([], {
@@ -191,13 +235,19 @@ function AssignmentDetailContent() {
                 )}
                 {assignment.completed_at && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Completed At</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Completed At
+                    </p>
                     <p className="text-lg">
-                      {new Date(assignment.completed_at).toLocaleDateString()} at{" "}
-                      {new Date(assignment.completed_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {new Date(assignment.completed_at).toLocaleDateString()}{" "}
+                      at{" "}
+                      {new Date(assignment.completed_at).toLocaleTimeString(
+                        [],
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
                     </p>
                   </div>
                 )}
@@ -210,7 +260,13 @@ function AssignmentDetailContent() {
         <div className="space-y-6">
           {/* Due Date Card */}
           {assignment.due_date && (
-            <Card className={assignment.is_past_due && assignment.status !== "completed" ? "border-red-500" : ""}>
+            <Card
+              className={
+                assignment.is_past_due && assignment.status !== "completed"
+                  ? "border-red-500"
+                  : ""
+              }
+            >
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Calendar className="h-4 w-4" />
@@ -227,18 +283,21 @@ function AssignmentDetailContent() {
                     minute: "2-digit",
                   })}
                 </p>
-                {assignment.days_until_due !== null && assignment.status !== "completed" && (
-                  <p className={`text-sm mt-2 ${assignment.is_past_due ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
-                    {assignment.is_past_due ? (
-                      <span className="flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        Past Due
-                      </span>
-                    ) : (
-                      `${assignment.days_until_due} day${assignment.days_until_due === 1 ? "" : "s"} remaining`
-                    )}
-                  </p>
-                )}
+                {assignment.days_until_due !== null &&
+                  assignment.status !== "completed" && (
+                    <p
+                      className={`text-sm mt-2 ${assignment.is_past_due ? "text-red-600 font-semibold" : "text-muted-foreground"}`}
+                    >
+                      {assignment.is_past_due ? (
+                        <span className="flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          Past Due
+                        </span>
+                      ) : (
+                        `${assignment.days_until_due} day${assignment.days_until_due === 1 ? "" : "s"} remaining`
+                      )}
+                    </p>
+                  )}
               </CardContent>
             </Card>
           )}
@@ -270,10 +329,12 @@ function AssignmentDetailContent() {
                 <Button
                   className="w-full bg-teal-600 hover:bg-teal-700"
                   size="lg"
-                  onClick={() => navigate({
-                    to: "/student/assignments/$assignmentId/play",
-                    params: { assignmentId },
-                  })}
+                  onClick={() =>
+                    navigate({
+                      to: "/student/assignments/$assignmentId/play",
+                      params: { assignmentId },
+                    })
+                  }
                 >
                   Start Assignment
                 </Button>
@@ -282,10 +343,12 @@ function AssignmentDetailContent() {
                 <Button
                   className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
                   size="lg"
-                  onClick={() => navigate({
-                    to: "/student/assignments/$assignmentId/play",
-                    params: { assignmentId },
-                  })}
+                  onClick={() =>
+                    navigate({
+                      to: "/student/assignments/$assignmentId/play",
+                      params: { assignmentId },
+                    })
+                  }
                 >
                   Resume Assignment
                 </Button>

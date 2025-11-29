@@ -9,8 +9,8 @@
  * - Error handling
  */
 
-import { renderHook, act } from "@testing-library/react"
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import { act, renderHook } from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { useAutoSaveWithData } from "./useAutoSave"
 
 describe("useAutoSaveWithData", () => {
@@ -33,7 +33,7 @@ describe("useAutoSaveWithData", () => {
         onSave,
         interval: 30000,
         enabled: true,
-      })
+      }),
     )
 
     // Should not call immediately
@@ -67,7 +67,7 @@ describe("useAutoSaveWithData", () => {
         onSave,
         interval: 30000,
         enabled: true,
-      })
+      }),
     )
 
     expect(onSave).not.toHaveBeenCalled()
@@ -91,7 +91,7 @@ describe("useAutoSaveWithData", () => {
         onSave,
         interval: 30000,
         enabled: true,
-      })
+      }),
     )
 
     // Unmount immediately
@@ -116,7 +116,7 @@ describe("useAutoSaveWithData", () => {
         onSave,
         interval: 30000,
         enabled: false, // Disabled
-      })
+      }),
     )
 
     // Advance time by 30 seconds
@@ -129,7 +129,9 @@ describe("useAutoSaveWithData", () => {
   })
 
   it("handles save errors gracefully", async () => {
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {})
     const onSave = vi.fn().mockRejectedValue(new Error("Network error"))
     const answers = { question1: "answer1" }
     const timeSpent = 5
@@ -139,7 +141,7 @@ describe("useAutoSaveWithData", () => {
         onSave,
         interval: 30000,
         enabled: true,
-      })
+      }),
     )
 
     // Trigger manual save
@@ -150,7 +152,7 @@ describe("useAutoSaveWithData", () => {
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       "Auto-save failed:",
-      expect.any(Error)
+      expect.any(Error),
     )
 
     // Should not be saving anymore
@@ -169,7 +171,7 @@ describe("useAutoSaveWithData", () => {
         onSave,
         interval: 30000,
         enabled: true,
-      })
+      }),
     )
 
     expect(result.current.lastSavedAt).toBeNull()
@@ -188,7 +190,7 @@ describe("useAutoSaveWithData", () => {
       () =>
         new Promise<void>((resolve) => {
           resolveSave = resolve
-        })
+        }),
     )
     const answers = { question1: "answer1" }
     const timeSpent = 5
@@ -198,7 +200,7 @@ describe("useAutoSaveWithData", () => {
         onSave,
         interval: 30000,
         enabled: true,
-      })
+      }),
     )
 
     expect(result.current.isSaving).toBe(false)
@@ -232,7 +234,7 @@ describe("useAutoSaveWithData", () => {
       () =>
         new Promise<void>((resolve) => {
           resolveSave = resolve
-        })
+        }),
     )
     const answers = { question1: "answer1" }
     const timeSpent = 5
@@ -242,7 +244,7 @@ describe("useAutoSaveWithData", () => {
         onSave,
         interval: 30000,
         enabled: true,
-      })
+      }),
     )
 
     // Trigger first save
@@ -286,7 +288,7 @@ describe("useAutoSaveWithData", () => {
         }),
       {
         initialProps: { answers, timeSpent },
-      }
+      },
     )
 
     // First save
@@ -308,7 +310,7 @@ describe("useAutoSaveWithData", () => {
 
     expect(onSave).toHaveBeenCalledWith(
       { question1: "answer1", question2: "answer2" },
-      10
+      10,
     )
   })
 
@@ -322,7 +324,7 @@ describe("useAutoSaveWithData", () => {
         onSave,
         interval: 10000, // 10 seconds instead of 30
         enabled: true,
-      })
+      }),
     )
 
     // Should not call after 5 seconds

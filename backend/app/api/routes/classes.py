@@ -28,6 +28,10 @@ from app.models import (
     User,
     UserRole,
 )
+from app.schemas.analytics import ClassAnalyticsResponse, ClassPeriodType
+from app.schemas.benchmarks import BenchmarkPeriod, ClassBenchmarkResponse
+from app.services.analytics_service import get_class_analytics
+from app.services.benchmark_service import get_class_benchmarks
 
 logger = logging.getLogger(__name__)
 
@@ -513,3 +517,100 @@ async def remove_student_from_class(
     # Delete enrollment
     await session.delete(enrollment)
     await session.commit()
+
+
+@router.get(
+    "/{class_id}/analytics",
+    response_model=ClassAnalyticsResponse,
+    summary="Get class analytics",
+    description="Returns aggregated performance analytics for a class."
+)
+async def get_class_analytics_endpoint(
+    *,
+    session: AsyncSessionDep,
+    class_id: uuid.UUID,
+    period: ClassPeriodType = "monthly",
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    Get comprehensive analytics for a class.
+
+    - **class_id**: UUID of the class
+    - **period**: Time period filter (weekly, monthly, semester, ytd)
+
+    Returns aggregated metrics including:
+    - Class summary (avg score, completion rate, totals)
+    - Score distribution histogram
+    - Top performing students leaderboard
+    - Struggling students alerts
+    - Per-assignment performance metrics
+    - Performance by activity type
+    - Trend analysis vs previous period
+    """
+    # Get Teacher record
+    teacher = await _get_teacher_from_user(session, current_user)
+
+    # Verify ownership and get class
+    class_obj = await _verify_class_ownership(session, class_id, teacher.id)
+
+    # Get class analytics
+    analytics = await get_class_analytics(class_id, period, session)
+
+    return analytics
+
+
+@router.get(
+    "/{class_id}/benchmarks",
+    response_model=ClassBenchmarkResponse,
+    summary="Get class benchmarks",
+    description="Returns performance benchmarks comparing class against school/publisher averages."
+)
+async def get_class_benchmarks_endpoint(
+    *,
+    session: AsyncSessionDep,
+    class_id: uuid.UUID,
+    period: BenchmarkPeriod = "monthly",
+    current_user: User = require_role(UserRole.teacher)
+) -> ClassBenchmarkResponse:
+    """
+    Get benchmark comparison data for a class.
+
+    [Source: Story 5.7 AC: 7, 8]
+
+    - **class_id**: UUID of the class
+    - **period**: Time period filter (weekly, monthly, semester, all)
+
+    Returns benchmark comparison including:
+    - Class metrics (avg score, completion rate)
+    - School benchmark (if >= 5 classes and enabled)
+    - Publisher benchmark (if >= 5 classes and enabled)
+    - Activity type benchmarks
+    - Comparison over time (trend chart data)
+    - Encouraging/constructive message based on performance
+
+    Note: Benchmarks require minimum 5 classes for privacy.
+    Returns 403 if benchmarking is disabled by school/publisher.
+    """
+    # Get Teacher record
+    teacher = await _get_teacher_from_user(session, current_user)
+
+    # Verify ownership and get class
+    await _verify_class_ownership(session, class_id, teacher.id)
+
+    try:
+        # Get class benchmarks
+        benchmarks = await get_class_benchmarks(class_id, period, session)
+
+        # Check if benchmarking is disabled
+        if not benchmarks.benchmarking_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=benchmarks.disabled_reason or "Benchmarking is disabled"
+            )
+
+        return benchmarks
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )

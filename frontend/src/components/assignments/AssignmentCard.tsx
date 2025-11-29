@@ -1,8 +1,8 @@
+import { useNavigate } from "@tanstack/react-router"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { useCountdown } from "@/hooks/useCountdown"
-import { useNavigate } from "@tanstack/react-router"
 import type { AssignmentFull, AssignmentStudent, Book } from "@/lib/mockData"
 import type { StudentAssignmentResponse } from "@/types/assignment"
 
@@ -182,19 +182,23 @@ export function StudentAssignmentCard({
               {assignment.book_title}
             </p>
           </div>
-          <Badge className={`${statusColors[assignment.status]} flex-shrink-0 ml-2`}>
+          <Badge
+            className={`${statusColors[assignment.status]} flex-shrink-0 ml-2`}
+          >
             {statusLabels[assignment.status]}
           </Badge>
         </div>
 
         <div className="space-y-2 flex-1">
           {/* Due Date / Countdown */}
-          {assignment.status !== "completed" && assignment.due_date && !assignment.is_past_due && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Due in:</span>
-              <span className="font-semibold text-teal-600">{timeLeft}</span>
-            </div>
-          )}
+          {assignment.status !== "completed" &&
+            assignment.due_date &&
+            !assignment.is_past_due && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Due in:</span>
+                <span className="font-semibold text-teal-600">{timeLeft}</span>
+              </div>
+            )}
 
           {assignment.status !== "completed" && assignment.is_past_due && (
             <div className="flex items-center gap-2 text-sm">
@@ -206,7 +210,9 @@ export function StudentAssignmentCard({
           {assignment.status === "completed" && assignment.score !== null && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Score:</span>
-              <span className="font-semibold text-green-600">{assignment.score}%</span>
+              <span className="font-semibold text-green-600">
+                {assignment.score}%
+              </span>
             </div>
           )}
 

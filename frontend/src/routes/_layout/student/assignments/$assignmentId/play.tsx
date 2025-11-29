@@ -1,11 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { Loader2, AlertCircle } from "lucide-react"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { AlertCircle, Loader2 } from "lucide-react"
 import { ActivityPlayer } from "@/components/ActivityPlayers/ActivityPlayer"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { startAssignment } from "@/services/assignmentsApi"
 import type { ActivityConfig } from "@/lib/mockData"
+import { startAssignment } from "@/services/assignmentsApi"
 import type { ActivityStartResponse } from "@/types/assignment"
 
 export const Route = createFileRoute(
@@ -26,14 +26,18 @@ function ActivityPlayerPage() {
     error,
   } = useQuery({
     queryKey: ["activities", assignmentId, "play"],
-    queryFn: (): Promise<ActivityStartResponse> => startAssignment(assignmentId),
+    queryFn: (): Promise<ActivityStartResponse> =>
+      startAssignment(assignmentId),
     retry: false,
     staleTime: 0, // Always refetch to get latest progress_json
     cacheTime: 0, // Don't cache - we want fresh data every time
   })
 
   const handleExit = () => {
-    navigate({ to: "/student/assignments/$assignmentId", params: { assignmentId } })
+    navigate({
+      to: "/student/assignments/$assignmentId",
+      params: { assignmentId },
+    })
   }
 
   // Loading state
@@ -90,15 +94,16 @@ function ActivityPlayerPage() {
   // Parse config_json
   let activityConfig: ActivityConfig
   try {
-    activityConfig = typeof activity.config_json === 'string'
-      ? JSON.parse(activity.config_json)
-      : activity.config_json
+    activityConfig =
+      typeof activity.config_json === "string"
+        ? JSON.parse(activity.config_json)
+        : activity.config_json
 
     // Story 4.2: Log config for testing
-    console.log('=== ACTIVITY CONFIG ===')
-    console.log('Activity Type:', activity.activity_type)
-    console.log('Config:', JSON.stringify(activityConfig, null, 2))
-    console.log('=======================')
+    console.log("=== ACTIVITY CONFIG ===")
+    console.log("Activity Type:", activity.activity_type)
+    console.log("Config:", JSON.stringify(activityConfig, null, 2))
+    console.log("=======================")
   } catch (error) {
     console.error("Failed to parse activity config:", error)
     return (

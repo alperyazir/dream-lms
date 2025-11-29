@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
 import axios from "axios"
 import { Calendar, ClipboardList, Search, User } from "lucide-react"
 import { useState } from "react"
@@ -39,7 +39,20 @@ apiClient.interceptors.request.use(async (config) => {
   }
   const token = OpenAPI.TOKEN
   if (token) {
-    const tokenValue = typeof token === "function" ? await token({ method: (config.method || "GET") as "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD", url: config.url || "" }) : token
+    const tokenValue =
+      typeof token === "function"
+        ? await token({
+            method: (config.method || "GET") as
+              | "GET"
+              | "POST"
+              | "PUT"
+              | "DELETE"
+              | "PATCH"
+              | "OPTIONS"
+              | "HEAD",
+            url: config.url || "",
+          })
+        : token
     if (tokenValue) {
       config.headers.Authorization = `Bearer ${tokenValue}`
     }
@@ -51,7 +64,11 @@ function AdminAssignments() {
   const [searchQuery, setSearchQuery] = useState("")
 
   // Fetch all assignments from API (admin endpoint)
-  const { data: assignments = [], isLoading, error } = useQuery({
+  const {
+    data: assignments = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["adminAssignments"],
     queryFn: async () => {
       const response = await apiClient.get("/api/v1/assignments/admin/all")
@@ -63,7 +80,9 @@ function AdminAssignments() {
     (assignment: any) =>
       assignment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       assignment.book_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assignment.teacher_name?.toLowerCase().includes(searchQuery.toLowerCase()),
+      assignment.teacher_name
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()),
   )
 
   if (error) {
@@ -138,9 +157,13 @@ function AdminAssignments() {
               </TableHeader>
               <TableBody>
                 {filteredAssignments.map((assignment: any) => {
-                  const completionRate = assignment.total_students > 0
-                    ? Math.round((assignment.completed / assignment.total_students) * 100)
-                    : 0
+                  const completionRate =
+                    assignment.total_students > 0
+                      ? Math.round(
+                          (assignment.completed / assignment.total_students) *
+                            100,
+                        )
+                      : 0
 
                   return (
                     <TableRow key={assignment.id}>
@@ -179,19 +202,25 @@ function AdminAssignments() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {assignment.due_date
-                          ? new Date(assignment.due_date).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })
+                          ? new Date(assignment.due_date).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
+                            )
                           : "No due date"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(assignment.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {new Date(assignment.created_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}
                       </TableCell>
                     </TableRow>
                   )

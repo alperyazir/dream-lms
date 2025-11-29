@@ -63,7 +63,10 @@ export function DragDropPicturePlayer({
     const containerAspect = container.clientWidth / container.clientHeight
 
     // Calculate painted (rendered) dimensions with object-contain
-    let paintedWidth: number, paintedHeight: number, xOffset: number, yOffset: number
+    let paintedWidth: number,
+      paintedHeight: number,
+      xOffset: number,
+      yOffset: number
 
     if (imageAspect > containerAspect) {
       // Image is wider - constrained by width, letterboxing top/bottom
@@ -119,7 +122,7 @@ export function DragDropPicturePlayer({
         URL.revokeObjectURL(imageUrl)
       }
     }
-  }, [bookId, activity.section_path])
+  }, [bookId, activity.section_path, imageUrl])
 
   useEffect(() => {
     const img = imageRef.current
@@ -127,21 +130,26 @@ export function DragDropPicturePlayer({
       if (img.complete) {
         updateImageScale()
       } else {
-        img.addEventListener('load', updateImageScale)
+        img.addEventListener("load", updateImageScale)
       }
     }
 
-    window.addEventListener('resize', updateImageScale)
+    window.addEventListener("resize", updateImageScale)
     return () => {
-      window.removeEventListener('resize', updateImageScale)
+      window.removeEventListener("resize", updateImageScale)
       if (img) {
-        img.removeEventListener('load', updateImageScale)
+        img.removeEventListener("load", updateImageScale)
       }
     }
-  }, [imageUrl])
+  }, [updateImageScale])
 
   // Get scaled coordinates (Story 4.2)
-  const getScaledCoords = (coords: { x: number; y: number; w: number; h: number }) => {
+  const getScaledCoords = (coords: {
+    x: number
+    y: number
+    w: number
+    h: number
+  }) => {
     return {
       left: imageOffset.x + coords.x * imageScale.x,
       top: imageOffset.y + coords.y * imageScale.y,
@@ -369,7 +377,9 @@ export function DragDropPicturePlayer({
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
               <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading image...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">
+                Loading image...
+              </p>
             </div>
           </div>
         )}
@@ -396,27 +406,31 @@ export function DragDropPicturePlayer({
 
             {/* Drop Zones Overlay - positioned over image */}
             {activity.answer.map((answer, index) => {
-          const dropZoneId = getDropZoneId(answer.coords)
-          const placedWord = answers.get(dropZoneId)
-          const isHovered = hoveredZone === dropZoneId
-          const correct = isCorrect(dropZoneId)
-          const scaledCoords = getScaledCoords(answer.coords)
+              const dropZoneId = getDropZoneId(answer.coords)
+              const placedWord = answers.get(dropZoneId)
+              const isHovered = hoveredZone === dropZoneId
+              const correct = isCorrect(dropZoneId)
+              const scaledCoords = getScaledCoords(answer.coords)
 
-          return (
-            <button
-              type="button"
-              key={dropZoneId}
-              ref={(el) => {
-                if (el) {
-                  dropZoneRefs.current[index] = el
-                }
-              }}
-              onDragOver={(e) => !showResults && handleDragOver(e, dropZoneId)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => !showResults && handleDrop(e, dropZoneId)}
-              onClick={() => !showResults && handleDropZoneClick(dropZoneId)}
-              onKeyDown={(e) => handleDropZoneKeyDown(e, dropZoneId, index)}
-              className={`
+              return (
+                <button
+                  type="button"
+                  key={dropZoneId}
+                  ref={(el) => {
+                    if (el) {
+                      dropZoneRefs.current[index] = el
+                    }
+                  }}
+                  onDragOver={(e) =>
+                    !showResults && handleDragOver(e, dropZoneId)
+                  }
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => !showResults && handleDrop(e, dropZoneId)}
+                  onClick={() =>
+                    !showResults && handleDropZoneClick(dropZoneId)
+                  }
+                  onKeyDown={(e) => handleDropZoneKeyDown(e, dropZoneId, index)}
+                  className={`
                 absolute flex items-center justify-center rounded-md transition-all duration-200 p-1
                 ${
                   placedWord
@@ -430,29 +444,29 @@ export function DragDropPicturePlayer({
                       : "border-2 border-dashed border-gray-400 bg-white/50 hover:border-gray-500 dark:border-gray-500 dark:bg-gray-800/50"
                 }
               `}
-              style={scaledCoords}
-              tabIndex={!showResults ? 0 : -1}
-              aria-label={`Drop zone ${index + 1}${placedWord ? `: ${placedWord}` : ""}`}
-              disabled={showResults}
-            >
-              <span className="text-center text-base font-bold leading-tight">
-                {placedWord || ""}
-              </span>
+                  style={scaledCoords}
+                  tabIndex={!showResults ? 0 : -1}
+                  aria-label={`Drop zone ${index + 1}${placedWord ? `: ${placedWord}` : ""}`}
+                  disabled={showResults}
+                >
+                  <span className="text-center text-base font-bold leading-tight">
+                    {placedWord || ""}
+                  </span>
 
-              {/* Results indicator */}
-              {showResults && placedWord && (
-                <div
-                  className={`
+                  {/* Results indicator */}
+                  {showResults && placedWord && (
+                    <div
+                      className={`
                     absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold shadow-lg
                     ${correct ? "bg-green-500 text-white" : "bg-red-500 text-white"}
                   `}
-                >
-                  {correct ? "✓" : "✗"}
-                </div>
-              )}
-            </button>
-          )
-        })}
+                    >
+                      {correct ? "✓" : "✗"}
+                    </div>
+                  )}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>

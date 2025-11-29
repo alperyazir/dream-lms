@@ -5,7 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
 from pydantic import EmailStr, field_validator, model_validator
-from sqlalchemy import JSON, Column, UniqueConstraint
+from sqlalchemy import JSON, Column, Enum as SAEnum, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
@@ -163,6 +163,7 @@ class PublisherBase(SQLModel):
     """Shared Publisher properties"""
     name: str = Field(max_length=255)
     contact_email: str | None = Field(default=None, max_length=255)
+    benchmarking_enabled: bool = Field(default=True, description="Enable performance benchmarking for publisher's content")
 
 
 class PublisherCreate(PublisherBase):
@@ -176,6 +177,7 @@ class PublisherUpdate(SQLModel):
     contact_email: str | None = Field(default=None, max_length=255)
     user_email: str | None = Field(default=None, max_length=255)
     user_full_name: str | None = Field(default=None, max_length=255)
+    benchmarking_enabled: bool | None = Field(default=None)
 
 
 class Publisher(PublisherBase, table=True):
@@ -221,6 +223,7 @@ class SchoolBase(SQLModel):
     name: str = Field(max_length=255)
     address: str | None = Field(default=None)
     contact_info: str | None = Field(default=None)
+    benchmarking_enabled: bool = Field(default=True, description="Enable performance benchmarking for this school")
 
 
 class SchoolCreate(SchoolBase):
@@ -239,6 +242,7 @@ class SchoolUpdate(SQLModel):
     address: str | None = Field(default=None)
     contact_info: str | None = Field(default=None)
     publisher_id: uuid.UUID | None = Field(default=None)
+    benchmarking_enabled: bool | None = Field(default=None)
 
 
 class School(SchoolBase, table=True):
@@ -947,3 +951,109 @@ class WebhookEventLogPublic(SQLModel):
     retry_count: int
     created_at: datetime
     processed_at: datetime | None
+
+
+# ============================================================================
+# Teacher Insights Models (Story 5.4)
+# ============================================================================
+
+
+class DismissedInsight(SQLModel, table=True):
+    """Stores insights dismissed by teachers to filter from future views"""
+    __tablename__ = "dismissed_insights"
+    __table_args__ = (
+        UniqueConstraint("teacher_id", "insight_key", name="uq_dismissed_insight_teacher_key"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    insight_key: str = Field(max_length=255)  # e.g., "low_perf_assignment_{uuid}"
+    dismissed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationship
+    teacher: Teacher = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+
+
+# --- Report Models (Story 5.6) ---
+
+
+class ReportJobStatusEnum(str, Enum):
+    """Status of a report generation job."""
+
+    pending = "pending"
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
+
+
+class ReportTypeEnum(str, Enum):
+    """Type of report."""
+
+    student = "student"
+    class_ = "class"
+    assignment = "assignment"
+
+
+class ReportFormatEnum(str, Enum):
+    """Output format for reports."""
+
+    pdf = "pdf"
+    excel = "excel"
+
+
+class ReportJob(SQLModel, table=True):
+    """Tracks report generation jobs for async processing and history."""
+
+    __tablename__ = "report_jobs"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    status: ReportJobStatusEnum = Field(
+        default=ReportJobStatusEnum.pending,
+        sa_column=Column(
+            SAEnum(
+                "pending", "processing", "completed", "failed",
+                name="reportjobstatusenum",
+                create_constraint=False,
+                native_enum=True,
+            ),
+            nullable=False,
+        ),
+    )
+    report_type: ReportTypeEnum = Field(
+        sa_column=Column(
+            SAEnum(
+                "student", "class", "assignment",
+                name="reporttypeenum",
+                create_constraint=False,
+                native_enum=True,
+            ),
+            nullable=False,
+        ),
+    )
+    template_type: str | None = Field(default=None, max_length=100)
+    config_json: dict = Field(default={}, sa_column=Column(JSON))
+    file_path: str | None = Field(default=None, max_length=500)
+    progress_percentage: int = Field(default=0, ge=0, le=100)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    completed_at: datetime | None = None
+    expires_at: datetime | None = None
+    error_message: str | None = None
+
+    # Relationship
+    teacher: Teacher = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+
+
+class SavedReportConfig(SQLModel, table=True):
+    """Saved report configurations for recurring reports."""
+
+    __tablename__ = "saved_report_configs"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    name: str = Field(max_length=255)
+    config_json: dict = Field(default={}, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationship
+    teacher: Teacher = Relationship(sa_relationship_kwargs={"passive_deletes": True})

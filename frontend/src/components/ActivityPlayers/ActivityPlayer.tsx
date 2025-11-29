@@ -6,10 +6,9 @@
 
 import { useEffect, useState } from "react"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { useToast } from "@/hooks/use-toast"
 import { useAssignmentSubmission } from "@/hooks/useAssignmentSubmission"
 import { useAutoSaveWithData } from "@/hooks/useAutoSave"
-import { saveProgress } from "@/services/assignmentsApi"
-import { useToast } from "@/hooks/use-toast"
 import type {
   ActivityConfig,
   CircleActivity,
@@ -25,12 +24,13 @@ import {
   scoreMatch,
   scoreWordSearch,
 } from "@/lib/scoring"
+import { saveProgress } from "@/services/assignmentsApi"
 import { ActivityFooter } from "./ActivityFooter"
 import { ActivityHeader } from "./ActivityHeader"
 import { ActivityResults, type ScoreResult } from "./ActivityResults"
 import { CirclePlayer } from "./CirclePlayer"
-import { DragDropPicturePlayer } from "./DragDropPicturePlayer"
 import { DragDropPictureGroupPlayer } from "./DragDropPictureGroupPlayer"
+import { DragDropPicturePlayer } from "./DragDropPicturePlayer"
 import { MatchTheWordsPlayer } from "./MatchTheWordsPlayer"
 import { PuzzleFindWordsPlayer } from "./PuzzleFindWordsPlayer"
 
@@ -55,7 +55,11 @@ interface ActivityPlayerProps {
 }
 
 // Type for activity answers - different players use different data structures
-type ActivityAnswers = Map<string, string> | Set<string> | Map<number, number> | null
+type ActivityAnswers =
+  | Map<string, string>
+  | Set<string>
+  | Map<number, number>
+  | null
 
 /**
  * Helper function to restore progress from JSON to appropriate data structure
@@ -64,7 +68,7 @@ type ActivityAnswers = Map<string, string> | Set<string> | Map<number, number> |
  */
 export function restoreProgressFromJson(
   initialProgress: Record<string, any> | null | undefined,
-  activityType: string
+  activityType: string,
 ): ActivityAnswers {
   if (!initialProgress) return null
 
@@ -76,16 +80,15 @@ export function restoreProgressFromJson(
     ) {
       // Convert object back to Map<string, string>
       return new Map(Object.entries(initialProgress))
-    } else if (
-      activityType === "circle" ||
-      activityType === "markwithx"
-    ) {
+    }
+    if (activityType === "circle" || activityType === "markwithx") {
       // Convert object back to Map<number, number> for question grouping
-      const entries = Object.entries(initialProgress).map(([k, v]) =>
-        [parseInt(k), v as number] as [number, number]
+      const entries = Object.entries(initialProgress).map(
+        ([k, v]) => [parseInt(k, 10), v as number] as [number, number],
       )
       return new Map(entries)
-    } else if (activityType === "puzzleFindWords") {
+    }
+    if (activityType === "puzzleFindWords") {
       // Convert array back to Set
       const wordsArray = (initialProgress as any).words || []
       return new Set(wordsArray)
@@ -112,11 +115,13 @@ export function ActivityPlayer({
 }: ActivityPlayerProps) {
   // Story 4.8: Initialize answers from saved progress (must happen before first render)
   const [answers, setAnswers] = useState<ActivityAnswers>(() =>
-    restoreProgressFromJson(initialProgress, activityConfig.type)
+    restoreProgressFromJson(initialProgress, activityConfig.type),
   )
   const [showResults, setShowResults] = useState(false)
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null)
-  const [correctAnswers, setCorrectAnswers] = useState<Set<string> | Map<number, number>>(new Set())
+  const [correctAnswers, setCorrectAnswers] = useState<
+    Set<string> | Map<number, number>
+  >(new Set())
   const [startTime] = useState<number>(Date.now())
   const { toast } = useToast()
 
@@ -127,12 +132,15 @@ export function ActivityPlayer({
   }
 
   // Convert answers to JSON format for API
-  const convertAnswersToJson = (answers: ActivityAnswers): Record<string, any> => {
+  const convertAnswersToJson = (
+    answers: ActivityAnswers,
+  ): Record<string, any> => {
     if (!answers) return {}
 
     if (answers instanceof Map) {
       return Object.fromEntries(answers)
-    } else if (answers instanceof Set) {
+    }
+    if (answers instanceof Set) {
       return { words: Array.from(answers) }
     }
     return { answers }
@@ -154,18 +162,24 @@ export function ActivityPlayer({
           console.error("Auto-save failed:", error)
           toast({
             title: "Auto-save failed",
-            description: "Your progress could not be saved. Please try manual save.",
+            description:
+              "Your progress could not be saved. Please try manual save.",
             variant: "destructive",
           })
         }
       },
       interval: 30000, // 30 seconds
       enabled: !showResults, // Only auto-save when not showing results
-    }
+    },
   )
 
   // Assignment submission hook
-  const { submit, isSubmitting, error: submissionError, reset: resetSubmissionError } = useAssignmentSubmission({
+  const {
+    submit,
+    isSubmitting,
+    error: submissionError,
+    reset: resetSubmissionError,
+  } = useAssignmentSubmission({
     assignmentId,
     onSuccess: () => {
       // Progress is cleared by backend after submission
@@ -181,7 +195,7 @@ export function ActivityPlayer({
         description: "Resuming from where you left off",
       })
     }
-  }, []) // Empty deps - only run once on mount
+  }, [answers, initialProgress, toast]) // Empty deps - only run once on mount
 
   // Save before page unload (Story 4.8)
   useEffect(() => {
@@ -193,24 +207,29 @@ export function ActivityPlayer({
       const timeSpent = getTimeSpent()
 
       // Use navigator.sendBeacon for reliable save on unload
-      const blob = new Blob([JSON.stringify({
-        partial_answers_json: answersJson,
-        time_spent_minutes: timeSpent,
-      })], { type: 'application/json' })
+      const blob = new Blob(
+        [
+          JSON.stringify({
+            partial_answers_json: answersJson,
+            time_spent_minutes: timeSpent,
+          }),
+        ],
+        { type: "application/json" },
+      )
 
       navigator.sendBeacon(
-        `${import.meta.env.VITE_API_URL || ''}/api/v1/assignments/${assignmentId}/save-progress`,
-        blob
+        `${import.meta.env.VITE_API_URL || ""}/api/v1/assignments/${assignmentId}/save-progress`,
+        blob,
       )
 
       // Show confirmation dialog
       e.preventDefault()
-      e.returnValue = ''
+      e.returnValue = ""
     }
 
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [answers, showResults, assignmentId])
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [answers, showResults, assignmentId, convertAnswersToJson, getTimeSpent])
 
   const handleSubmit = async () => {
     if (!answers) return
@@ -275,7 +294,12 @@ export function ActivityPlayer({
       const userSelections = answers as Map<number, number>
       // Default to 2 if circleCount is undefined (handles backend configs without circleCount)
       const circleCount = config.circleCount ?? 2
-      score = scoreCircle(userSelections, config.answer, config.type, circleCount)
+      score = scoreCircle(
+        userSelections,
+        config.answer,
+        config.type,
+        circleCount,
+      )
 
       // Build correct answers map for results view (questionIndex -> correctAnswerIndex)
       const correctMap = new Map<number, number>()
@@ -291,13 +315,26 @@ export function ActivityPlayer({
         })
       } else {
         // For question grouping mode
-        const questionCount = Math.ceil(config.answer.length / effectiveCircleCount)
-        for (let questionIndex = 0; questionIndex < questionCount; questionIndex++) {
+        const questionCount = Math.ceil(
+          config.answer.length / effectiveCircleCount,
+        )
+        for (
+          let questionIndex = 0;
+          questionIndex < questionCount;
+          questionIndex++
+        ) {
           // Find correct answer in this question group
           const groupStart = questionIndex * effectiveCircleCount
-          const groupEnd = Math.min(groupStart + effectiveCircleCount, config.answer.length)
+          const groupEnd = Math.min(
+            groupStart + effectiveCircleCount,
+            config.answer.length,
+          )
 
-          for (let answerIndex = groupStart; answerIndex < groupEnd; answerIndex++) {
+          for (
+            let answerIndex = groupStart;
+            answerIndex < groupEnd;
+            answerIndex++
+          ) {
             if (config.answer[answerIndex].isCorrect) {
               correctMap.set(questionIndex, answerIndex)
               break
@@ -523,7 +560,8 @@ export function ActivityPlayer({
                   Submission Failed
                 </p>
                 <p className="text-xs text-red-700 dark:text-red-300">
-                  {submissionError.message || "Unable to submit your assignment. Please try again."}
+                  {submissionError.message ||
+                    "Unable to submit your assignment. Please try again."}
                 </p>
               </div>
             </div>

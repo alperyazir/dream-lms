@@ -3,18 +3,37 @@
  * Story 4.7: Assignment Submission & Result Storage - QA Fixes
  */
 
-import { render, screen, waitFor } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
-import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router"
+import { render, screen, waitFor } from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Import the component function directly
 import { Route as SuccessRoute } from "./success"
 
 // Mock react-confetti
 vi.mock("react-confetti", () => ({
-  default: ({ width, height, recycle }: { width: number; height: number; recycle: boolean }) => (
-    <div data-testid="confetti" data-width={width} data-height={height} data-recycle={recycle}>
+  default: ({
+    width,
+    height,
+    recycle,
+  }: {
+    width: number
+    height: number
+    recycle: boolean
+  }) => (
+    <div
+      data-testid="confetti"
+      data-width={width}
+      data-height={height}
+      data-recycle={recycle}
+    >
       Confetti
     </div>
   ),

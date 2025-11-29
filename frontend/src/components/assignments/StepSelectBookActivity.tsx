@@ -107,7 +107,9 @@ export function StepSelectBookActivity({
                         </Badge>
                         <Badge variant="outline" className="text-xs">
                           {book.activity_count}{" "}
-                          {book.activity_count === 1 ? "activity" : "activities"}
+                          {book.activity_count === 1
+                            ? "activity"
+                            : "activities"}
                         </Badge>
                       </div>
                     </CardContent>
@@ -126,7 +128,9 @@ export function StepSelectBookActivity({
                     <p className="text-sm text-teal-700 dark:text-teal-300 mb-1">
                       Selected Book:
                     </p>
-                    <h4 className="font-semibold text-foreground">{selectedBook.title}</h4>
+                    <h4 className="font-semibold text-foreground">
+                      {selectedBook.title}
+                    </h4>
                     <Badge
                       variant="secondary"
                       className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-100 text-xs mt-2"
@@ -159,7 +163,8 @@ export function StepSelectBookActivity({
             ) : (
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
                 {activities.map((activity, index) => {
-                  const typeConfig = ACTIVITY_TYPE_CONFIG[activity.activity_type]
+                  const typeConfig =
+                    ACTIVITY_TYPE_CONFIG[activity.activity_type]
                   const isSelected = selectedActivity?.id === activity.id
 
                   return (
@@ -191,7 +196,9 @@ export function StepSelectBookActivity({
                             </div>
                           </div>
                           {isSelected && (
-                            <Badge className="bg-purple-600 dark:bg-purple-500 text-white">Selected</Badge>
+                            <Badge className="bg-purple-600 dark:bg-purple-500 text-white">
+                              Selected
+                            </Badge>
                           )}
                         </div>
                       </CardContent>

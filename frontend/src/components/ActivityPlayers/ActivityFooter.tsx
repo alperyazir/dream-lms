@@ -4,8 +4,8 @@
  * Story 4.8 - Activity Progress Persistence (Save & Resume)
  */
 
-import { Button } from "@/components/ui/button"
 import { formatDistanceToNow } from "date-fns"
+import { Button } from "@/components/ui/button"
 
 interface ActivityFooterProps {
   onExit: () => void

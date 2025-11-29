@@ -32,7 +32,7 @@ export function PuzzleFindWordsPlayer({
   // Generate grid (memoized for consistency)
   const { grid, placements, size } = useMemo(
     () => generateWordSearch(activity.words, stableSeed),
-    [stableSeed],
+    [stableSeed, activity.words],
   )
 
   const [foundWords, setFoundWords] = useState<Set<string>>(
@@ -117,7 +117,7 @@ export function PuzzleFindWordsPlayer({
     if (!isSelecting || showResults) return
 
     const existingIndex = selection.findIndex(
-      (cell) => cell.row === row && cell.col === col
+      (cell) => cell.row === row && cell.col === col,
     )
 
     // If going back over a previously selected cell, remove it and all after it
@@ -297,8 +297,12 @@ export function PuzzleFindWordsPlayer({
                               else cellRefs.current.delete(cellKey)
                             }}
                             onClick={() => handleCellClick(rowIndex, colIndex)}
-                            onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
-                            onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                            onMouseDown={() =>
+                              handleMouseDown(rowIndex, colIndex)
+                            }
+                            onMouseEnter={() =>
+                              handleMouseEnter(rowIndex, colIndex)
+                            }
                             onKeyDown={(e) =>
                               handleCellKeyDown(e, rowIndex, colIndex)
                             }
@@ -344,7 +348,9 @@ export function PuzzleFindWordsPlayer({
                 <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-teal-500 to-teal-600 transition-all duration-500"
-                    style={{ width: `${(foundWords.size / activity.words.length) * 100}%` }}
+                    style={{
+                      width: `${(foundWords.size / activity.words.length) * 100}%`,
+                    }}
                   />
                 </div>
               </div>

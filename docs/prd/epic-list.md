@@ -78,3 +78,16 @@ Transform authentication from open self-registration with email-only login to se
 **Deliverable:** Production-ready authentication with hierarchical user management and no mock data
 
 ---
+
+## Epic 8: Multi-Activity Assignments & Page-Based Selection
+
+**Estimated Effort:** 2-3 weeks | **Status:** 📋 PLANNING
+
+Enable teachers to assign multiple activities from a book as a single assignment, with an intuitive page-based selection UI. Students can navigate between activities within an assignment, save progress, and submit when all activities are complete.
+
+**What Currently Exists:** Single-activity assignments (1:1 Assignment→Activity relationship), flat activity list selection
+**What We Build:** Multi-activity assignments + page-based visual selection UI + student activity navigation + per-activity analytics
+
+**Deliverable:** Teachers assign multiple activities at once by selecting book pages, students complete all activities with shared timer and combined scoring
+
+---

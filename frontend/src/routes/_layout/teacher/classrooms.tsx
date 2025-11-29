@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { Edit, Plus, TrendingUp, UserPlus } from "lucide-react"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { BarChart3, Edit, Plus, TrendingUp, UserPlus } from "lucide-react"
 import { useState } from "react"
 import {
   type ClassCreateByTeacher,
@@ -391,6 +391,20 @@ function TeacherClassroomsPage() {
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 mt-4 pt-4 border-t">
+                  <Link
+                    to="/teacher/classrooms/$classId"
+                    params={{ classId: classItem.id }}
+                    className="flex-1"
+                  >
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <BarChart3 className="w-3 h-3 mr-1" />
+                      View
+                    </Button>
+                  </Link>
                   <Button
                     size="sm"
                     variant="outline"

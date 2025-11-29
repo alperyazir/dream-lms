@@ -8,8 +8,8 @@ import { format } from "date-fns"
 import { BookOpen, Calendar, Clock, FileText, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ACTIVITY_TYPE_CONFIG, type Activity, type Book } from "@/types/book"
 import type { AssignmentFormData } from "@/types/assignment"
+import { ACTIVITY_TYPE_CONFIG, type Activity, type Book } from "@/types/book"
 
 interface StepReviewCreateProps {
   activity: Activity
@@ -152,8 +152,8 @@ export function StepReviewCreate({
       {/* Help Text */}
       <div className="bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-teal-800 rounded-lg p-4">
         <p className="text-sm text-center text-teal-900 dark:text-teal-100">
-          Click "Create Assignment" to finalize and distribute this assignment to
-          all selected recipients.
+          Click "Create Assignment" to finalize and distribute this assignment
+          to all selected recipients.
         </p>
       </div>
     </div>

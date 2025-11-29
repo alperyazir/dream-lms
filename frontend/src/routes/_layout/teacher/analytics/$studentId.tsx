@@ -1,13 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeft, Award, Clock, Target } from "lucide-react"
-import { useMemo } from "react"
+import {
+  ArrowLeft,
+  Award,
+  Clock,
+  History,
+  Mail,
+  Target,
+  TrendingUp,
+} from "lucide-react"
+import { useMemo, useState } from "react"
+import { ActivityBreakdownChart } from "@/components/charts/ActivityBreakdownChart"
 import { ActivityHistoryTable } from "@/components/charts/ActivityHistoryTable"
-import { StrengthsWeaknessesCard } from "@/components/charts/StrengthsWeaknessesCard"
 import { StudentProgressChart } from "@/components/charts/StudentProgressChart"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { mockAnalyticsData, mockStudentAnalytics } from "@/lib/mockData"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useStudentAnalytics } from "@/hooks/useStudentAnalytics"
+import type { PeriodType } from "@/types/analytics"
 
 export const Route = createFileRoute("/_layout/teacher/analytics/$studentId")({
   component: StudentAnalyticsDetail,
@@ -15,58 +31,74 @@ export const Route = createFileRoute("/_layout/teacher/analytics/$studentId")({
 
 function StudentAnalyticsDetail() {
   const { studentId } = Route.useParams()
+  const [period, setPeriod] = useState<PeriodType>("30d")
 
-  // Find student analytics data
-  const studentData = useMemo(
-    () => mockStudentAnalytics.find((s) => s.student_id === studentId),
-    [studentId],
-  )
+  // Fetch analytics data from API
+  const { analytics, isLoading, error } = useStudentAnalytics({
+    studentId,
+    period,
+  })
 
-  // Get student activity history
-  const studentActivities = useMemo(
-    () =>
-      mockAnalyticsData
-        .filter((point) => point.student_id === studentId)
-        .sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-        ),
-    [studentId],
-  )
+  // Transform data for charts
+  const chartData = useMemo(() => {
+    if (!analytics) return null
 
-  // Prepare activity history table data
-  const activityHistory = useMemo(
-    () =>
-      studentActivities.map((activity) => ({
-        date: activity.date,
-        activity_name: `Assignment ${activity.assignment_id}`,
-        activity_type: activity.activity_type,
-        score: activity.score,
-        time_spent_minutes: activity.time_spent_minutes,
-        status: "completed" as const,
-        assignment_id: activity.assignment_id,
-      })),
-    [studentActivities],
-  )
+    // Transform performance trend for StudentProgressChart
+    const scores = analytics.performance_trend.map((point) => point.score)
+    const dates = analytics.performance_trend.map((point) => point.date)
 
-  // Calculate stats
-  const totalTimeSpent = useMemo(
-    () =>
-      studentActivities.reduce(
-        (sum, activity) => sum + activity.time_spent_minutes,
-        0,
-      ),
-    [studentActivities],
-  )
+    // Transform activity breakdown for ActivityBreakdownChart
+    const activityBreakdown = analytics.activity_breakdown.map((item) => ({
+      name: item.activity_type,
+      count: item.count,
+      avgScore: item.avg_score,
+    }))
 
-  if (!studentData) {
+    // Transform recent activity for ActivityHistoryTable
+    const activityHistory = analytics.recent_activity.map((item) => ({
+      date: item.completed_at,
+      activity_name: item.assignment_name,
+      activity_type: "assignment", // Default type
+      score: item.score,
+      time_spent_minutes: item.time_spent_minutes,
+      status: "completed" as const,
+      assignment_id: item.assignment_id,
+    }))
+
+    return {
+      scores,
+      dates,
+      activityBreakdown,
+      activityHistory,
+    }
+  }, [analytics])
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6 px-4">
+        <div className="text-center py-12">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-teal-600 border-r-transparent" />
+          <p className="text-gray-600 dark:text-gray-400 mt-4">
+            Loading analytics...
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error || !analytics) {
     return (
       <div className="container mx-auto py-6 px-4">
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Student Not Found
+            Error Loading Analytics
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            The requested student analytics data could not be found.
+            {error instanceof Error
+              ? error.message
+              : "Failed to load student analytics data."}
           </p>
           <Link to="/teacher/analytics">
             <Button className="bg-teal-600 hover:bg-teal-700 text-white">
@@ -80,7 +112,7 @@ function StudentAnalyticsDetail() {
   }
 
   // Get initials for avatar
-  const initials = studentData.student_name
+  const initials = analytics.student.name
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -88,18 +120,30 @@ function StudentAnalyticsDetail() {
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
-      {/* Back Button */}
-      <Link to="/teacher/analytics">
-        <Button variant="ghost" className="mb-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Analytics
-        </Button>
-      </Link>
+      {/* Back Button & Actions */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <Link to="/teacher/analytics">
+          <Button variant="ghost">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Analytics
+          </Button>
+        </Link>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2">
+            <Mail className="h-4 w-4" />
+            Send Message
+          </Button>
+          <Button variant="outline" className="gap-2">
+            <History className="h-4 w-4" />
+            View Full History
+          </Button>
+        </div>
+      </div>
 
-      {/* Student Header */}
+      {/* Student Header with Summary */}
       <Card className="shadow-lg">
         <CardContent className="pt-6">
-          <div className="flex items-start gap-6">
+          <div className="flex items-start gap-6 flex-col md:flex-row">
             {/* Avatar */}
             <Avatar className="h-20 w-20">
               <AvatarFallback className="bg-teal-600 text-white text-2xl">
@@ -110,15 +154,12 @@ function StudentAnalyticsDetail() {
             {/* Student Info */}
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {studentData.student_name}
+                {analytics.student.name}
               </h1>
               <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-1">
                   <span className="font-medium">Student ID:</span>{" "}
-                  {studentData.student_id}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-medium">Class:</span> Math 101
+                  {analytics.student.id}
                 </div>
               </div>
             </div>
@@ -126,95 +167,237 @@ function StudentAnalyticsDetail() {
         </CardContent>
       </Card>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Summary Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Average Score */}
-        <Card className="shadow-lg">
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300">
-              <Award className="h-5 w-5 text-teal-600" />
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Award className="h-4 w-4 text-teal-600" />
               Average Score
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-teal-600 dark:text-teal-400">
-              {studentData.avg_score}%
+            <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+              {analytics.summary.avg_score}%
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Across all assignments
             </p>
           </CardContent>
         </Card>
 
         {/* Completed Assignments */}
-        <Card className="shadow-lg">
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300">
-              <Target className="h-5 w-5 text-teal-600" />
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Target className="h-4 w-4 text-teal-600" />
               Completed
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-teal-600 dark:text-teal-400">
-              {studentData.completed_count}
+            <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+              {analytics.summary.total_completed}
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Assignments completed
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {Math.round(analytics.summary.completion_rate * 100)}% completion
+              rate
             </p>
           </CardContent>
         </Card>
 
-        {/* Total Time Spent */}
-        <Card className="shadow-lg">
+        {/* Current Streak */}
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300">
-              <Clock className="h-5 w-5 text-teal-600" />
-              Time Spent
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <TrendingUp className="h-4 w-4 text-teal-600" />
+              Current Streak
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-teal-600 dark:text-teal-400">
-              {Math.round(totalTimeSpent / 60)}h
+            <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+              {analytics.summary.current_streak}
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {totalTimeSpent} minutes total
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Consecutive days
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Time This Week */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Clock className="h-4 w-4 text-teal-600" />
+              Time This Week
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+              {Math.round(analytics.time_analytics.total_time_this_week / 60)}h
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {analytics.time_analytics.total_time_this_week} minutes
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Progress Chart */}
+      {/* Time Period Selector */}
+      <div className="flex items-center gap-4">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Time Period:
+        </span>
+        <Select
+          value={period}
+          onValueChange={(value) => setPeriod(value as PeriodType)}
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7d">Last 7 days</SelectItem>
+            <SelectItem value="30d">Last 30 days</SelectItem>
+            <SelectItem value="3m">Last 3 months</SelectItem>
+            <SelectItem value="all">All time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Performance Trend */}
+        <Card className="shadow-lg md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Performance Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {chartData && chartData.scores.length > 0 ? (
+              <StudentProgressChart
+                scores={chartData.scores}
+                dates={chartData.dates}
+              />
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                No performance data available for the selected period
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Activity Type Breakdown */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg">Activity Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {chartData && chartData.activityBreakdown.length > 0 ? (
+              <ActivityBreakdownChart data={chartData.activityBreakdown} />
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                No activity data available
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Assignment Status Summary */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg">Assignment Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Not Started
+                </span>
+                <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {analytics.status_summary.not_started}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  In Progress
+                </span>
+                <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                  {analytics.status_summary.in_progress}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Completed
+                </span>
+                <span className="text-lg font-semibold text-green-600 dark:text-green-400">
+                  {analytics.status_summary.completed}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Past Due
+                </span>
+                <span className="text-lg font-semibold text-red-600 dark:text-red-400">
+                  {analytics.status_summary.past_due}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Time Analytics */}
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-lg">Progress Over Time</CardTitle>
+          <CardTitle className="text-lg">Time Analytics</CardTitle>
         </CardHeader>
         <CardContent>
-          <StudentProgressChart
-            scores={studentData.recent_scores}
-            dates={studentActivities.map((a) => a.date).slice(-10)}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                Average Time Per Assignment
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {analytics.time_analytics.avg_time_per_assignment} min
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                Total Time This Week
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {analytics.time_analytics.total_time_this_week} min
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                Total Time This Month
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {analytics.time_analytics.total_time_this_month} min
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Strengths & Weaknesses */}
-      <StrengthsWeaknessesCard
-        strengths={studentData.strengths}
-        weaknesses={studentData.weaknesses}
-      />
-
-      {/* Activity History */}
+      {/* Recent Activity */}
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-lg">Activity History</CardTitle>
+          <CardTitle className="text-lg">Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
-          <ActivityHistoryTable
-            entries={activityHistory}
-            onRowClick={(assignmentId) => {
-              // Navigate to assignment detail page
-              console.log("Navigate to assignment:", assignmentId)
-            }}
-          />
+          {chartData && chartData.activityHistory.length > 0 ? (
+            <ActivityHistoryTable
+              entries={chartData.activityHistory}
+              onRowClick={(assignmentId) => {
+                console.log("Navigate to assignment:", assignmentId)
+              }}
+            />
+          ) : (
+            <p className="text-center text-gray-500 py-8">
+              No recent activity available
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

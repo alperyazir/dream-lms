@@ -11,7 +11,9 @@ import { DragDropPictureGroupPlayer } from "./DragDropPictureGroupPlayer"
 
 // Mock the booksApi service
 vi.mock("@/services/booksApi", () => ({
-  getActivityImageUrl: vi.fn().mockResolvedValue("https://via.placeholder.com/1200x800"),
+  getActivityImageUrl: vi
+    .fn()
+    .mockResolvedValue("https://via.placeholder.com/1200x800"),
 }))
 
 const mockActivity: DragDropPictureGroupActivity = {
@@ -22,11 +24,23 @@ const mockActivity: DragDropPictureGroupActivity = {
   words: ["apple", "banana", "cat", "dog", "car", "bus"],
   answer: [
     // Fruits category
-    { no: 1, coords: { x: 100, y: 100, w: 120, h: 60 }, group: ["apple", "banana", "orange"] },
+    {
+      no: 1,
+      coords: { x: 100, y: 100, w: 120, h: 60 },
+      group: ["apple", "banana", "orange"],
+    },
     // Animals category
-    { no: 2, coords: { x: 300, y: 100, w: 120, h: 60 }, group: ["cat", "dog", "bird"] },
+    {
+      no: 2,
+      coords: { x: 300, y: 100, w: 120, h: 60 },
+      group: ["cat", "dog", "bird"],
+    },
     // Vehicles category
-    { no: 3, coords: { x: 500, y: 100, w: 120, h: 60 }, group: ["car", "bus", "train"] },
+    {
+      no: 3,
+      coords: { x: 500, y: 100, w: 120, h: 60 },
+      group: ["car", "bus", "train"],
+    },
   ],
 }
 
@@ -59,7 +73,9 @@ describe("DragDropPictureGroupPlayer", () => {
     expect(screen.getByText("Completed: 0 / 3")).toBeInTheDocument()
 
     // Check header text mentions categories
-    expect(screen.getByText("Word Bank - Drag to Categories")).toBeInTheDocument()
+    expect(
+      screen.getByText("Word Bank - Drag to Categories"),
+    ).toBeInTheDocument()
   })
 
   it("tracks answers correctly when placing words in category zones", async () => {
@@ -212,7 +228,8 @@ describe("DragDropPictureGroupPlayer", () => {
 
     // onAnswersChange should be called with empty Map
     await waitFor(() => {
-      const lastCall = onAnswersChange.mock.calls[onAnswersChange.mock.calls.length - 1][0]
+      const lastCall =
+        onAnswersChange.mock.calls[onAnswersChange.mock.calls.length - 1][0]
       expect(lastCall).toBeInstanceOf(Map)
       expect(lastCall.size).toBe(0)
     })
@@ -242,12 +259,15 @@ describe("DragDropPictureGroupPlayer", () => {
     })
 
     // Reset button should not be visible in results mode
-    expect(screen.queryByRole("button", { name: /Reset/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /Reset/i }),
+    ).not.toBeInTheDocument()
 
     // Word buttons should be disabled or not draggable
     const words = screen.getAllByRole("button", { name: /Word:/i })
-    words.forEach(word => {
-      if (!word.textContent?.includes("apple")) { // apple is used, others are available
+    words.forEach((word) => {
+      if (!word.textContent?.includes("apple")) {
+        // apple is used, others are available
         expect(word).toHaveAttribute("tabIndex", "-1")
       }
     })

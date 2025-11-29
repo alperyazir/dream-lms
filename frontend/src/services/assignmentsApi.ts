@@ -9,6 +9,10 @@
 import axios from "axios"
 import { OpenAPI } from "../client"
 import type {
+  AssignmentDetailedResultsResponse,
+  StudentAnswersResponse,
+} from "../types/analytics"
+import type {
   ActivityStartResponse,
   AssignmentCreateRequest,
   AssignmentListItem,
@@ -40,7 +44,20 @@ apiClient.interceptors.request.use(async (config) => {
   const token = OpenAPI.TOKEN
   if (token) {
     // Handle both sync and async token functions
-    const tokenValue = typeof token === "function" ? await token({ method: (config.method || "GET") as "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD", url: config.url || "" }) : token
+    const tokenValue =
+      typeof token === "function"
+        ? await token({
+            method: (config.method || "GET") as
+              | "GET"
+              | "POST"
+              | "PUT"
+              | "DELETE"
+              | "PATCH"
+              | "OPTIONS"
+              | "HEAD",
+            url: config.url || "",
+          })
+        : token
     if (tokenValue) {
       config.headers.Authorization = `Bearer ${tokenValue}`
     }
@@ -143,7 +160,10 @@ export async function saveProgress(
   data: AssignmentSaveProgressRequest,
 ): Promise<AssignmentSaveProgressResponse> {
   const url = `/api/v1/assignments/${assignmentId}/save-progress`
-  const response = await apiClient.post<AssignmentSaveProgressResponse>(url, data)
+  const response = await apiClient.post<AssignmentSaveProgressResponse>(
+    url,
+    data,
+  )
   return response.data
 }
 
@@ -163,7 +183,40 @@ export async function submitAssignment(
     ...data,
     completed_at: data.completed_at || new Date().toISOString(),
   }
-  const response = await apiClient.post<AssignmentSubmissionResponse>(url, payload)
+  const response = await apiClient.post<AssignmentSubmissionResponse>(
+    url,
+    payload,
+  )
+  return response.data
+}
+
+/**
+ * Get detailed results for an assignment (Story 5.3)
+ *
+ * @param assignmentId - ID of assignment to get results for
+ * @returns Promise with detailed assignment results
+ */
+export async function getAssignmentDetailedResults(
+  assignmentId: string,
+): Promise<AssignmentDetailedResultsResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/detailed-results`
+  const response = await apiClient.get<AssignmentDetailedResultsResponse>(url)
+  return response.data
+}
+
+/**
+ * Get individual student's answers for an assignment (Story 5.3)
+ *
+ * @param assignmentId - ID of assignment
+ * @param studentId - ID of student
+ * @returns Promise with student's full answers
+ */
+export async function getStudentAnswers(
+  assignmentId: string,
+  studentId: string,
+): Promise<StudentAnswersResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/students/${studentId}/answers`
+  const response = await apiClient.get<StudentAnswersResponse>(url)
   return response.data
 }
 
@@ -179,6 +232,8 @@ export const assignmentsApi = {
   startAssignment,
   saveProgress,
   submitAssignment,
+  getAssignmentDetailedResults,
+  getStudentAnswers,
 }
 
 export default assignmentsApi

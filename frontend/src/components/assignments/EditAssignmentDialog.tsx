@@ -27,16 +27,27 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { updateAssignment } from "@/services/assignmentsApi"
-import type { AssignmentListItem, AssignmentUpdateRequest } from "@/types/assignment"
+import type {
+  AssignmentListItem,
+  AssignmentUpdateRequest,
+} from "@/types/assignment"
 
 /**
  * Validation schema for assignment update
  */
 const updateSchema = z.object({
-  name: z.string().min(1, "Name is required").max(500, "Name must be 500 characters or less"),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(500, "Name must be 500 characters or less"),
   instructions: z.string().optional(),
   due_date: z.string().optional(),
-  time_limit_minutes: z.number().int().positive("Time limit must be positive").nullable().optional(),
+  time_limit_minutes: z
+    .number()
+    .int()
+    .positive("Time limit must be positive")
+    .nullable()
+    .optional(),
 })
 
 type UpdateFormData = z.infer<typeof updateSchema>
@@ -96,9 +107,7 @@ export function EditAssignmentDialog({
     const updateData: AssignmentUpdateRequest = {
       name: data.name,
       instructions: data.instructions || null,
-      due_date: data.due_date
-        ? new Date(data.due_date).toISOString()
-        : null,
+      due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
       time_limit_minutes: data.time_limit_minutes || null,
     }
 
@@ -116,7 +125,8 @@ export function EditAssignmentDialog({
         <DialogHeader>
           <DialogTitle>Edit Assignment</DialogTitle>
           <DialogDescription>
-            Update the assignment details. Activity and recipients cannot be changed after creation.
+            Update the assignment details. Activity and recipients cannot be
+            changed after creation.
           </DialogDescription>
         </DialogHeader>
 
@@ -146,7 +156,9 @@ export function EditAssignmentDialog({
               rows={4}
             />
             {errors.instructions && (
-              <p className="text-sm text-red-500">{errors.instructions.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.instructions.message}
+              </p>
             )}
           </div>
 
@@ -166,7 +178,9 @@ export function EditAssignmentDialog({
 
           {/* Time Limit */}
           <div className="space-y-2">
-            <Label htmlFor="time_limit_minutes">Time Limit (minutes, optional)</Label>
+            <Label htmlFor="time_limit_minutes">
+              Time Limit (minutes, optional)
+            </Label>
             <Input
               id="time_limit_minutes"
               type="number"
@@ -194,17 +208,23 @@ export function EditAssignmentDialog({
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Activity</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Activity
+                </Label>
                 <p className="text-sm">{assignment.activity_title}</p>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Activity Type</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Activity Type
+                </Label>
                 <p className="text-sm capitalize">{assignment.activity_type}</p>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Students Assigned</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Students Assigned
+                </Label>
                 <p className="text-sm">{assignment.total_students} students</p>
               </div>
             </div>

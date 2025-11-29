@@ -60,7 +60,7 @@ function PublisherLibraryPage() {
 
   useEffect(() => {
     fetchBooks()
-  }, [])
+  }, [fetchBooks])
 
   const handleAddBook = () => {
     showSuccessToast("Add Book feature coming soon!")

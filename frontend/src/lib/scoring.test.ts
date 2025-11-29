@@ -4,7 +4,12 @@
  */
 
 import { describe, expect, it } from "vitest"
-import type { CircleAnswer, DragDropAnswer, DragDropGroupAnswer, MatchSentence } from "./mockData"
+import type {
+  CircleAnswer,
+  DragDropAnswer,
+  DragDropGroupAnswer,
+  MatchSentence,
+} from "./mockData"
 import {
   scoreCircle,
   scoreDragDrop,
@@ -77,18 +82,30 @@ describe("scoreDragDrop", () => {
 describe("scoreDragDropGroup", () => {
   const correctAnswers: DragDropGroupAnswer[] = [
     // Fruits category
-    { no: 1, coords: { x: 100, y: 100, w: 120, h: 60 }, group: ["apple", "banana", "orange"] },
+    {
+      no: 1,
+      coords: { x: 100, y: 100, w: 120, h: 60 },
+      group: ["apple", "banana", "orange"],
+    },
     // Animals category
-    { no: 2, coords: { x: 300, y: 100, w: 120, h: 60 }, group: ["cat", "dog", "bird"] },
+    {
+      no: 2,
+      coords: { x: 300, y: 100, w: 120, h: 60 },
+      group: ["cat", "dog", "bird"],
+    },
     // Vehicles category
-    { no: 3, coords: { x: 500, y: 100, w: 120, h: 60 }, group: ["car", "bus", "train"] },
+    {
+      no: 3,
+      coords: { x: 500, y: 100, w: 120, h: 60 },
+      group: ["car", "bus", "train"],
+    },
   ]
 
   it("returns 100% score when all answers correct with any valid group member", () => {
     const userAnswers = new Map([
-      ["100-100", "apple"],  // fruits category - correct
-      ["300-100", "dog"],    // animals category - correct
-      ["500-100", "bus"],    // vehicles category - correct
+      ["100-100", "apple"], // fruits category - correct
+      ["300-100", "dog"], // animals category - correct
+      ["500-100", "bus"], // vehicles category - correct
     ])
 
     const result = scoreDragDropGroup(userAnswers, correctAnswers)
@@ -103,8 +120,8 @@ describe("scoreDragDropGroup", () => {
     // Test with different valid words for each category
     const userAnswers = new Map([
       ["100-100", "banana"], // fruits - also valid (not just apple)
-      ["300-100", "bird"],   // animals - also valid (not just cat)
-      ["500-100", "train"],  // vehicles - also valid (not just car)
+      ["300-100", "bird"], // animals - also valid (not just cat)
+      ["500-100", "train"], // vehicles - also valid (not just car)
     ])
 
     const result = scoreDragDropGroup(userAnswers, correctAnswers)
@@ -116,9 +133,9 @@ describe("scoreDragDropGroup", () => {
 
   it("marks answer incorrect when word is from wrong category", () => {
     const userAnswers = new Map([
-      ["100-100", "cat"],    // animal in fruits zone - WRONG
-      ["300-100", "dog"],    // animal in animals zone - correct
-      ["500-100", "bus"],    // vehicle in vehicles zone - correct
+      ["100-100", "cat"], // animal in fruits zone - WRONG
+      ["300-100", "dog"], // animal in animals zone - correct
+      ["500-100", "bus"], // vehicle in vehicles zone - correct
     ])
 
     const result = scoreDragDropGroup(userAnswers, correctAnswers)
@@ -130,9 +147,9 @@ describe("scoreDragDropGroup", () => {
 
   it("returns 0% score when all answers are from wrong categories", () => {
     const userAnswers = new Map([
-      ["100-100", "cat"],    // animal in fruits zone - wrong
-      ["300-100", "apple"],  // fruit in animals zone - wrong
-      ["500-100", "dog"],    // animal in vehicles zone - wrong
+      ["100-100", "cat"], // animal in fruits zone - wrong
+      ["300-100", "apple"], // fruit in animals zone - wrong
+      ["500-100", "dog"], // animal in vehicles zone - wrong
     ])
 
     const result = scoreDragDropGroup(userAnswers, correctAnswers)
@@ -146,7 +163,7 @@ describe("scoreDragDropGroup", () => {
     const userAnswers = new Map([
       ["100-100", "orange"], // fruits - correct
       // 300-100 not answered
-      ["500-100", "car"],    // vehicles - correct
+      ["500-100", "car"], // vehicles - correct
     ])
 
     const result = scoreDragDropGroup(userAnswers, correctAnswers)
@@ -169,8 +186,8 @@ describe("scoreDragDropGroup", () => {
   it("handles words not in any group as incorrect", () => {
     const userAnswers = new Map([
       ["100-100", "randomword"], // not in any group - wrong
-      ["300-100", "cat"],        // correct
-      ["500-100", "bus"],        // correct
+      ["300-100", "cat"], // correct
+      ["500-100", "bus"], // correct
     ])
 
     const result = scoreDragDropGroup(userAnswers, correctAnswers)
@@ -233,12 +250,12 @@ describe("scoreCircle", () => {
   const answersGrouped: CircleAnswer[] = [
     { coords: { x: 100, y: 100, w: 50, h: 50 }, isCorrect: false }, // Q1 opt1
     { coords: { x: 200, y: 100, w: 50, h: 50 }, isCorrect: false }, // Q1 opt2
-    { coords: { x: 300, y: 100, w: 50, h: 50 }, isCorrect: true },  // Q1 opt3 ✓
-    { coords: { x: 100, y: 200, w: 50, h: 50 }, isCorrect: true },  // Q2 opt1 ✓
+    { coords: { x: 300, y: 100, w: 50, h: 50 }, isCorrect: true }, // Q1 opt3 ✓
+    { coords: { x: 100, y: 200, w: 50, h: 50 }, isCorrect: true }, // Q2 opt1 ✓
     { coords: { x: 200, y: 200, w: 50, h: 50 }, isCorrect: false }, // Q2 opt2
     { coords: { x: 300, y: 200, w: 50, h: 50 }, isCorrect: false }, // Q2 opt3
     { coords: { x: 100, y: 300, w: 50, h: 50 }, isCorrect: false }, // Q3 opt1
-    { coords: { x: 200, y: 300, w: 50, h: 50 }, isCorrect: true },  // Q3 opt2 ✓
+    { coords: { x: 200, y: 300, w: 50, h: 50 }, isCorrect: true }, // Q3 opt2 ✓
     { coords: { x: 300, y: 300, w: 50, h: 50 }, isCorrect: false }, // Q3 opt3
   ]
 
@@ -280,10 +297,10 @@ describe("scoreCircle", () => {
 
     it("handles circleCount=0 (defaults to 2 for true/false)", () => {
       const trueFalseAnswers: CircleAnswer[] = [
-        { coords: { x: 100, y: 100, w: 50, h: 50 }, isCorrect: true },  // Q1 True ✓
+        { coords: { x: 100, y: 100, w: 50, h: 50 }, isCorrect: true }, // Q1 True ✓
         { coords: { x: 200, y: 100, w: 50, h: 50 }, isCorrect: false }, // Q1 False
         { coords: { x: 100, y: 200, w: 50, h: 50 }, isCorrect: false }, // Q2 True
-        { coords: { x: 200, y: 200, w: 50, h: 50 }, isCorrect: true },  // Q2 False ✓
+        { coords: { x: 200, y: 200, w: 50, h: 50 }, isCorrect: true }, // Q2 False ✓
       ]
 
       const userSelections = new Map<number, number>([
@@ -301,10 +318,10 @@ describe("scoreCircle", () => {
 
     it("handles undefined circleCount (defaults to 2)", () => {
       const trueFalseAnswers: CircleAnswer[] = [
-        { coords: { x: 100, y: 100, w: 50, h: 50 }, isCorrect: true },  // Q1 True ✓
+        { coords: { x: 100, y: 100, w: 50, h: 50 }, isCorrect: true }, // Q1 True ✓
         { coords: { x: 200, y: 100, w: 50, h: 50 }, isCorrect: false }, // Q1 False
         { coords: { x: 100, y: 200, w: 50, h: 50 }, isCorrect: false }, // Q2 True
-        { coords: { x: 200, y: 200, w: 50, h: 50 }, isCorrect: true },  // Q2 False ✓
+        { coords: { x: 200, y: 200, w: 50, h: 50 }, isCorrect: true }, // Q2 False ✓
       ]
 
       const userSelections = new Map<number, number>([
@@ -313,7 +330,12 @@ describe("scoreCircle", () => {
       ])
 
       // @ts-expect-error - Testing undefined circleCount edge case
-      const result = scoreCircle(userSelections, trueFalseAnswers, "circle", undefined)
+      const result = scoreCircle(
+        userSelections,
+        trueFalseAnswers,
+        "circle",
+        undefined,
+      )
 
       expect(result.score).toBe(100)
       expect(result.correct).toBe(2)
@@ -330,7 +352,12 @@ describe("scoreCircle", () => {
       const userSelections = new Map<number, number>([[0, 0]])
 
       // @ts-expect-error - Testing null circleCount edge case
-      const result = scoreCircle(userSelections, trueFalseAnswers, "circle", null)
+      const result = scoreCircle(
+        userSelections,
+        trueFalseAnswers,
+        "circle",
+        null,
+      )
 
       expect(result.score).toBe(100)
       expect(result.correct).toBe(1)
@@ -362,7 +389,12 @@ describe("scoreCircle", () => {
         [1, 1], // Selected answer 1 (correct)
       ])
 
-      const result = scoreCircle(userSelections, multiSelectAnswers, "circle", -1)
+      const result = scoreCircle(
+        userSelections,
+        multiSelectAnswers,
+        "circle",
+        -1,
+      )
 
       expect(result.score).toBe(100)
       expect(result.correct).toBe(2)
@@ -378,7 +410,12 @@ describe("scoreCircle", () => {
         [2, 2], // incorrect - penalty
       ])
 
-      const result = scoreCircle(userSelections, multiSelectAnswers, "circle", -1)
+      const result = scoreCircle(
+        userSelections,
+        multiSelectAnswers,
+        "circle",
+        -1,
+      )
 
       // (2 correct - 1 incorrect) / 2 totalCorrect = 1/2 = 50%
       expect(result.score).toBe(50)

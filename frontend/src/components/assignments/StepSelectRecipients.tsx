@@ -5,7 +5,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query"
-import { Search, Users, User as UserIcon } from "lucide-react"
+import { Search, User as UserIcon, Users } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -205,12 +205,16 @@ export function StepSelectRecipients({
                         onClick={(e) => e.stopPropagation()}
                       />
                       <div className="flex-1">
-                        <p className="font-medium text-foreground">{classItem.name}</p>
+                        <p className="font-medium text-foreground">
+                          {classItem.name}
+                        </p>
                         <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
                           {classItem.grade_level && (
                             <span>Grade {classItem.grade_level}</span>
                           )}
-                          {classItem.subject && <span>• {classItem.subject}</span>}
+                          {classItem.subject && (
+                            <span>• {classItem.subject}</span>
+                          )}
                           {classItem.academic_year && (
                             <span>• {classItem.academic_year}</span>
                           )}
@@ -243,7 +247,9 @@ export function StepSelectRecipients({
               <CardContent className="pt-6 text-center text-muted-foreground">
                 <UserIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
                 <p>No students yet.</p>
-                <p className="text-sm">Create students first to assign to them.</p>
+                <p className="text-sm">
+                  Create students first to assign to them.
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -301,11 +307,15 @@ export function StepSelectRecipients({
                       <CardContent className="flex items-center space-x-3 py-3">
                         <Checkbox
                           checked={formData.student_ids.includes(student.id)}
-                          onCheckedChange={() => handleStudentToggle(student.id)}
+                          onCheckedChange={() =>
+                            handleStudentToggle(student.id)
+                          }
                           onClick={(e) => e.stopPropagation()}
                         />
                         <div className="flex-1">
-                          <p className="font-medium text-foreground">{student.user_full_name}</p>
+                          <p className="font-medium text-foreground">
+                            {student.user_full_name}
+                          </p>
                           <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
                             <span>{student.user_email}</span>
                             {student.grade_level && (

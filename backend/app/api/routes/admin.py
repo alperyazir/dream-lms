@@ -7,7 +7,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlmodel import func, select
 
 from app import crud
-from app.api.deps import SessionDep, require_role
+from app.api.deps import AsyncSessionDep, SessionDep, require_role
 from app.core.config import settings
 from app.models import (
     BulkImportErrorDetail,
@@ -39,6 +39,12 @@ from app.models import (
 )
 from app.services.bulk_import import validate_bulk_import
 from app.services.webhook_registration import webhook_registration_service
+from app.services.benchmark_service import get_admin_benchmark_overview
+from app.schemas.benchmarks import (
+    AdminBenchmarkOverview,
+    BenchmarkSettingsResponse,
+    BenchmarkSettingsUpdate,
+)
 from app.utils import (
     generate_temp_password,
     generate_username,
@@ -1631,3 +1637,127 @@ async def register_webhooks_manually(
         logger.warning(f"⚠️  Admin webhook registration failed: {result['message']}")
 
     return result
+
+
+# --- Benchmark Overview Endpoint (Story 5.7) ---
+
+
+@router.get(
+    "/benchmarks/overview",
+    response_model=AdminBenchmarkOverview,
+    summary="Get system-wide benchmark overview",
+    description="Returns aggregated benchmark statistics across all schools (admin only)."
+)
+async def get_benchmark_overview_endpoint(
+    *,
+    session: AsyncSessionDep,
+    _: User = require_role(UserRole.admin)
+) -> AdminBenchmarkOverview:
+    """
+    Get system-wide benchmark overview for admin dashboard.
+
+    [Source: Story 5.7 AC: 12]
+
+    Returns:
+    - Total schools and schools with benchmarking enabled
+    - Schools above/at/below average performance
+    - System-wide average score
+    - Activity type statistics across all schools
+    - Per-school benchmark summaries
+    """
+    overview = await get_admin_benchmark_overview(session)
+    return overview
+
+
+@router.patch(
+    "/schools/{school_id}/settings",
+    response_model=BenchmarkSettingsResponse,
+    summary="Update school benchmark settings",
+    description="Toggle benchmarking for a specific school (admin only)."
+)
+def update_school_benchmark_settings(
+    *,
+    session: SessionDep,
+    school_id: uuid.UUID,
+    settings_in: BenchmarkSettingsUpdate,
+    _: User = require_role(UserRole.admin)
+) -> BenchmarkSettingsResponse:
+    """
+    Update benchmark settings for a school.
+
+    [Source: Story 5.7 AC: 9]
+
+    - **school_id**: UUID of the school
+    - **benchmarking_enabled**: Enable or disable benchmarking for this school
+
+    When disabled, teachers in this school cannot see benchmark comparisons.
+    """
+    from datetime import UTC, datetime
+
+    school = session.get(School, school_id)
+    if not school:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="School not found"
+        )
+
+    school.benchmarking_enabled = settings_in.benchmarking_enabled
+    school.updated_at = datetime.now(UTC)
+
+    session.add(school)
+    session.commit()
+    session.refresh(school)
+
+    return BenchmarkSettingsResponse(
+        entity_type="school",
+        entity_id=str(school.id),
+        benchmarking_enabled=school.benchmarking_enabled,
+        updated_at=school.updated_at,
+    )
+
+
+@router.patch(
+    "/publishers/{publisher_id}/settings",
+    response_model=BenchmarkSettingsResponse,
+    summary="Update publisher benchmark settings",
+    description="Toggle benchmarking for a specific publisher (admin only)."
+)
+def update_publisher_benchmark_settings(
+    *,
+    session: SessionDep,
+    publisher_id: uuid.UUID,
+    settings_in: BenchmarkSettingsUpdate,
+    _: User = require_role(UserRole.admin)
+) -> BenchmarkSettingsResponse:
+    """
+    Update benchmark settings for a publisher.
+
+    [Source: Story 5.7 AC: 9]
+
+    - **publisher_id**: UUID of the publisher
+    - **benchmarking_enabled**: Enable or disable benchmarking for this publisher's content
+
+    When disabled, publisher benchmarks are not shown to any teachers using their content.
+    """
+    from datetime import UTC, datetime
+
+    publisher = session.get(Publisher, publisher_id)
+    if not publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher not found"
+        )
+
+    publisher.benchmarking_enabled = settings_in.benchmarking_enabled
+    publisher.updated_at = datetime.now(UTC)
+
+    session.add(publisher)
+    session.commit()
+    session.refresh(publisher)
+
+    return BenchmarkSettingsResponse(
+        entity_type="publisher",
+        entity_id=str(publisher.id),
+        benchmarking_enabled=publisher.benchmarking_enabled,
+        updated_at=publisher.updated_at,
+    )

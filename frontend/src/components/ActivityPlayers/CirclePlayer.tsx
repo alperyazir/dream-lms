@@ -4,7 +4,7 @@
  * Handles both "circle" and "markwithx" activity types
  */
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { CircleActivity } from "@/lib/mockData"
 import { getActivityImageUrl } from "@/services/booksApi"
 
@@ -48,15 +48,22 @@ export function CirclePlayer({
   } | null>(null)
 
   // Lock container height after first load to prevent reflow
-  const [lockedContainerHeight, setLockedContainerHeight] = useState<number | null>(null)
+  const [lockedContainerHeight, setLockedContainerHeight] = useState<
+    number | null
+  >(null)
 
   // Store scaled coordinates in a ref to prevent recalculation
-  const scaledCoordsCache = useRef<Map<number, {
-    left: number
-    top: number
-    width: number
-    height: number
-  }>>(new Map())
+  const scaledCoordsCache = useRef<
+    Map<
+      number,
+      {
+        left: number
+        top: number
+        width: number
+        height: number
+      }
+    >
+  >(new Map())
 
   const icon = activity.type === "markwithx" ? "✗" : "✓"
 
@@ -86,7 +93,10 @@ export function CirclePlayer({
     const containerAspect = container.clientWidth / container.clientHeight
 
     // Calculate painted (rendered) dimensions with object-contain
-    let paintedWidth: number, paintedHeight: number, xOffset: number, yOffset: number
+    let paintedWidth: number,
+      paintedHeight: number,
+      xOffset: number,
+      yOffset: number
 
     if (imageAspect > containerAspect) {
       // Image is wider - constrained by width, letterboxing top/bottom
@@ -114,7 +124,7 @@ export function CirclePlayer({
       }
       const containerHeight = container.clientHeight
 
-      console.log('CirclePlayer - Locking dimensions:', {
+      console.log("CirclePlayer - Locking dimensions:", {
         imageDims,
         containerHeight,
       })
@@ -130,11 +140,11 @@ export function CirclePlayer({
     const roundedYOffset = Math.round(yOffset * 10000) / 10000
 
     // Only update state if values have actually changed to prevent unnecessary re-renders
-    setImageScale(prev => {
+    setImageScale((prev) => {
       if (prev.x === roundedXScale && prev.y === roundedYScale) return prev
       return { x: roundedXScale, y: roundedYScale }
     })
-    setImageOffset(prev => {
+    setImageOffset((prev) => {
       if (prev.x === roundedXOffset && prev.y === roundedYOffset) return prev
       return { x: roundedXOffset, y: roundedYOffset }
     })
@@ -143,10 +153,14 @@ export function CirclePlayer({
     scaledCoordsCache.current.clear()
     activity.answer.forEach((answer, answerIndex) => {
       const coords = {
-        left: Math.round((roundedXOffset + answer.coords.x * roundedXScale) * 100) / 100,
-        top: Math.round((roundedYOffset + answer.coords.y * roundedYScale) * 100) / 100,
-        width: Math.round((answer.coords.w * roundedXScale) * 100) / 100,
-        height: Math.round((answer.coords.h * roundedYScale) * 100) / 100,
+        left:
+          Math.round((roundedXOffset + answer.coords.x * roundedXScale) * 100) /
+          100,
+        top:
+          Math.round((roundedYOffset + answer.coords.y * roundedYScale) * 100) /
+          100,
+        width: Math.round(answer.coords.w * roundedXScale * 100) / 100,
+        height: Math.round(answer.coords.h * roundedYScale * 100) / 100,
       }
       scaledCoordsCache.current.set(answerIndex, coords)
     })
@@ -195,7 +209,7 @@ export function CirclePlayer({
         URL.revokeObjectURL(imageUrl)
       }
     }
-  }, [bookId, activity.section_path])
+  }, [bookId, activity.section_path, imageUrl])
 
   useEffect(() => {
     const img = imageRef.current
@@ -203,18 +217,18 @@ export function CirclePlayer({
       if (img.complete) {
         updateImageScale()
       } else {
-        img.addEventListener('load', updateImageScale)
+        img.addEventListener("load", updateImageScale)
       }
     }
 
-    window.addEventListener('resize', updateImageScale)
+    window.addEventListener("resize", updateImageScale)
     return () => {
-      window.removeEventListener('resize', updateImageScale)
+      window.removeEventListener("resize", updateImageScale)
       if (img) {
-        img.removeEventListener('load', updateImageScale)
+        img.removeEventListener("load", updateImageScale)
       }
     }
-  }, [imageUrl, updateImageScale])
+  }, [updateImageScale])
 
   // Handle area click - implements QML's handleAnswer logic
   const handleAreaClick = (answerIndex: number) => {
@@ -222,7 +236,7 @@ export function CirclePlayer({
 
     const newSelections = new Map(selections)
 
-    console.log('CirclePlayer - Click:', {
+    console.log("CirclePlayer - Click:", {
       answerIndex,
       effectiveCircleCount,
       isMultiSelectMode,
@@ -231,7 +245,9 @@ export function CirclePlayer({
 
     // Multi-select mode: toggle selections without grouping
     if (isMultiSelectMode) {
-      const wasSelected = Array.from(newSelections.values()).includes(answerIndex)
+      const wasSelected = Array.from(newSelections.values()).includes(
+        answerIndex,
+      )
       if (wasSelected) {
         // Find and remove this selection
         for (const [qIdx, aIdx] of newSelections.entries()) {
@@ -249,7 +265,7 @@ export function CirclePlayer({
       // QML grouping logic: Calculate which question group this answer belongs to
       const questionIndex = Math.floor(answerIndex / effectiveCircleCount)
 
-      console.log('CirclePlayer - Question grouping:', {
+      console.log("CirclePlayer - Question grouping:", {
         answerIndex,
         questionIndex,
         wasSelected: newSelections.get(questionIndex) === answerIndex,
@@ -258,15 +274,23 @@ export function CirclePlayer({
       // Check if clicking the same answer (deselect behavior)
       if (newSelections.get(questionIndex) === answerIndex) {
         newSelections.delete(questionIndex)
-        console.log('CirclePlayer - Deselected question', questionIndex)
+        console.log("CirclePlayer - Deselected question", questionIndex)
       } else {
         // Clear current group selection and set new one
         newSelections.set(questionIndex, answerIndex)
-        console.log('CirclePlayer - Selected answer', answerIndex, 'for question', questionIndex)
+        console.log(
+          "CirclePlayer - Selected answer",
+          answerIndex,
+          "for question",
+          questionIndex,
+        )
       }
     }
 
-    console.log('CirclePlayer - New selections:', Array.from(newSelections.entries()))
+    console.log(
+      "CirclePlayer - New selections:",
+      Array.from(newSelections.entries()),
+    )
     setSelections(newSelections)
     onAnswersChange(newSelections)
   }
@@ -290,22 +314,25 @@ export function CirclePlayer({
   }
 
   // Get scaled coordinates - use cached values to prevent recalculation
-  const getScaledCoords = useCallback((answerIndex: number) => {
-    // Try to get from cache first
-    const cached = scaledCoordsCache.current.get(answerIndex)
-    if (cached) {
-      return cached
-    }
+  const getScaledCoords = useCallback(
+    (answerIndex: number) => {
+      // Try to get from cache first
+      const cached = scaledCoordsCache.current.get(answerIndex)
+      if (cached) {
+        return cached
+      }
 
-    // Fallback: calculate on the fly (shouldn't happen if image is loaded)
-    const answer = activity.answer[answerIndex]
-    return {
-      left: imageOffset.x + answer.coords.x * imageScale.x,
-      top: imageOffset.y + answer.coords.y * imageScale.y,
-      width: answer.coords.w * imageScale.x,
-      height: answer.coords.h * imageScale.y,
-    }
-  }, [activity.answer, imageScale, imageOffset])
+      // Fallback: calculate on the fly (shouldn't happen if image is loaded)
+      const answer = activity.answer[answerIndex]
+      return {
+        left: imageOffset.x + answer.coords.x * imageScale.x,
+        top: imageOffset.y + answer.coords.y * imageScale.y,
+        width: answer.coords.w * imageScale.x,
+        height: answer.coords.h * imageScale.y,
+      }
+    },
+    [activity.answer, imageScale, imageOffset],
+  )
 
   // Handle reset - clear all selections
   const handleReset = () => {
@@ -358,10 +385,14 @@ export function CirclePlayer({
         ref={containerRef}
         className="relative flex flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
         style={{
-          willChange: 'auto',
-          height: lockedContainerHeight ? `${lockedContainerHeight}px` : 'auto',
-          minHeight: lockedContainerHeight ? `${lockedContainerHeight}px` : 'auto',
-          maxHeight: lockedContainerHeight ? `${lockedContainerHeight}px` : 'auto',
+          willChange: "auto",
+          height: lockedContainerHeight ? `${lockedContainerHeight}px` : "auto",
+          minHeight: lockedContainerHeight
+            ? `${lockedContainerHeight}px`
+            : "auto",
+          maxHeight: lockedContainerHeight
+            ? `${lockedContainerHeight}px`
+            : "auto",
         }}
       >
         {/* Loading state */}
@@ -369,7 +400,9 @@ export function CirclePlayer({
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
               <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading image...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">
+                Loading image...
+              </p>
             </div>
           </div>
         )}
@@ -391,33 +424,42 @@ export function CirclePlayer({
             alt="Activity background"
             className="mx-auto object-contain"
             style={{
-              display: 'block',
-              width: lockedImageDimensions ? `${lockedImageDimensions.width}px` : 'auto',
-              height: lockedImageDimensions ? `${lockedImageDimensions.height}px` : 'auto',
-              maxWidth: lockedImageDimensions ? 'none' : '100%',
-              maxHeight: lockedImageDimensions ? 'none' : '100%',
+              display: "block",
+              width: lockedImageDimensions
+                ? `${lockedImageDimensions.width}px`
+                : "auto",
+              height: lockedImageDimensions
+                ? `${lockedImageDimensions.height}px`
+                : "auto",
+              maxWidth: lockedImageDimensions ? "none" : "100%",
+              maxHeight: lockedImageDimensions ? "none" : "100%",
               flexShrink: 0,
             }}
           />
         )}
 
         {/* Selectable Areas Overlay - only show when image is loaded */}
-        {imageUrl && activity.answer.map((_answer, answerIndex) => {
-          const selected = isSelected(answerIndex)
-          const correct = isCorrect(answerIndex)
-          const scaledCoords = getScaledCoords(answerIndex)
-          const questionIndex = getQuestionIndex(answerIndex)
+        {imageUrl &&
+          activity.answer.map((_answer, answerIndex) => {
+            const selected = isSelected(answerIndex)
+            const correct = isCorrect(answerIndex)
+            const scaledCoords = getScaledCoords(answerIndex)
+            const questionIndex = getQuestionIndex(answerIndex)
 
-          // Visual grouping: Add subtle border between question groups
-          const isFirstInGroup = !isMultiSelectMode && (answerIndex % effectiveCircleCount === 0)
-          const groupClass = isFirstInGroup && answerIndex > 0 ? "border-t-4 border-t-gray-300 dark:border-t-gray-600" : ""
+            // Visual grouping: Add subtle border between question groups
+            const isFirstInGroup =
+              !isMultiSelectMode && answerIndex % effectiveCircleCount === 0
+            const groupClass =
+              isFirstInGroup && answerIndex > 0
+                ? "border-t-4 border-t-gray-300 dark:border-t-gray-600"
+                : ""
 
-          return (
-            <button
-              type="button"
-              key={answerIndex}
-              onClick={() => handleAreaClick(answerIndex)}
-              className={`
+            return (
+              <button
+                type="button"
+                key={answerIndex}
+                onClick={() => handleAreaClick(answerIndex)}
+                className={`
                 absolute flex items-center justify-center rounded-md border-2 transition-colors duration-200 box-border
                 ${groupClass}
                 ${
@@ -436,20 +478,20 @@ export function CirclePlayer({
                       : "cursor-pointer border-gray-400 border-dashed bg-white/20 hover:border-gray-500 hover:bg-white/40 dark:border-gray-500 dark:hover:bg-gray-700/30"
                 }
               `}
-              style={{
-                ...scaledCoords,
-                position: 'absolute',
-                pointerEvents: showResults ? 'none' : 'auto',
-              }}
-              aria-pressed={selected}
-              tabIndex={!showResults ? 0 : -1}
-              aria-label={`Question ${questionIndex + 1}, Option ${(answerIndex % effectiveCircleCount) + 1}${selected ? ` (selected with ${icon})` : ""}`}
-              disabled={showResults}
-            >
-              {/* Selection indicator */}
-              {selected && (
-                <div
-                  className={`
+                style={{
+                  ...scaledCoords,
+                  position: "absolute",
+                  pointerEvents: showResults ? "none" : "auto",
+                }}
+                aria-pressed={selected}
+                tabIndex={!showResults ? 0 : -1}
+                aria-label={`Question ${questionIndex + 1}, Option ${(answerIndex % effectiveCircleCount) + 1}${selected ? ` (selected with ${icon})` : ""}`}
+                disabled={showResults}
+              >
+                {/* Selection indicator */}
+                {selected && (
+                  <div
+                    className={`
                     flex h-8 w-8 items-center justify-center rounded-full text-xl font-bold shadow-lg shrink-0
                     ${
                       activity.type === "markwithx"
@@ -457,16 +499,16 @@ export function CirclePlayer({
                         : "bg-blue-500 text-white"
                     }
                   `}
-                  style={{ minWidth: '2rem', minHeight: '2rem' }}
-                >
-                  {icon}
-                </div>
-              )}
+                    style={{ minWidth: "2rem", minHeight: "2rem" }}
+                  >
+                    {icon}
+                  </div>
+                )}
 
-              {/* Results indicator */}
-              {showResults && (
-                <div
-                  className={`
+                {/* Results indicator */}
+                {showResults && (
+                  <div
+                    className={`
                     flex h-8 w-8 items-center justify-center rounded-full text-xl font-bold shadow-lg shrink-0
                     ${
                       selected
@@ -478,14 +520,14 @@ export function CirclePlayer({
                           : ""
                     }
                   `}
-                  style={{ minWidth: '2rem', minHeight: '2rem' }}
-                >
-                  {selected ? (correct ? "✓" : "✗") : correct ? "!" : ""}
-                </div>
-              )}
-            </button>
-          )
-        })}
+                    style={{ minWidth: "2rem", minHeight: "2rem" }}
+                  >
+                    {selected ? (correct ? "✓" : "✗") : correct ? "!" : ""}
+                  </div>
+                )}
+              </button>
+            )
+          })}
       </div>
 
       {/* Results Legend */}

@@ -6,7 +6,6 @@
  */
 
 import { useState } from "react"
-import { Button } from "../ui/button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog"
+import { Button } from "../ui/button"
 
 interface ActivityPlayerFooterProps {
   onSubmit: () => void

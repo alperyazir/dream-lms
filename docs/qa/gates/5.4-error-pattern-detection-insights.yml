@@ -1,0 +1,111 @@
+schema: 1
+story: '5.4'
+story_title: 'Error Pattern Detection & Insights'
+gate: PASS
+status_reason: 'All 11 acceptance criteria implemented with comprehensive backend pattern detection engine and frontend insights dashboard. 12 backend + 10 frontend tests passing.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-11-28T23:10:00Z'
+
+top_issues: []
+
+waiver:
+  active: false
+
+quality_score: 100
+expires: '2025-12-12T23:10:00Z'
+
+evidence:
+  tests_reviewed: 22
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Teacher authorization verified - only sees insights for own classes. 404 returned instead of 403 to prevent information disclosure.'
+  performance:
+    status: PASS
+    notes: '24-hour in-memory cache with lazy refresh. Early exit optimization when no completed assignments exist.'
+  reliability:
+    status: PASS
+    notes: 'Error handling in place for all edge cases. Empty states handled gracefully.'
+  maintainability:
+    status: PASS
+    notes: 'Well-structured code with clear separation between detection functions. Comprehensive docstrings.'
+
+ac_validation:
+  - ac: 1
+    description: 'Teacher dashboard includes Insights card'
+    implemented: true
+    evidence: 'InsightsDashboardCard component integrates with teacher dashboard'
+    tests: ['useTeacherInsights.test.tsx - hook tests']
+
+  - ac: 2
+    description: 'Pattern Detection for topics/activity types/time patterns'
+    implemented: true
+    evidence: '_detect_low_performing_assignments, _detect_activity_type_struggles, _detect_time_management_issues in analytics_service.py'
+    tests: ['test_get_insights_detects_low_performing_assignment', 'test_get_insights_sorted_by_severity']
+
+  - ac: 3
+    description: 'Insight Categories (struggling, misconception, time management, review)'
+    implemented: true
+    evidence: 'InsightType enum with 6 types: struggling_topic, common_misconception, time_management, review_recommended, struggling_students, activity_type_struggle'
+    tests: ['test_get_insights_detects_common_misconception']
+
+  - ac: 4
+    description: 'Insights page displays cards with description, affected count, action'
+    implemented: true
+    evidence: 'InsightCard component displays all fields. insights.tsx page shows grid of cards.'
+    tests: ['useTeacherInsights.test.tsx - should fetch insights successfully']
+
+  - ac: 5
+    description: 'Click insight for detailed breakdown (students, assignments, questions)'
+    implemented: true
+    evidence: 'InsightDetailModal in insights.tsx with affected_students, related_assignments, related_questions tables'
+    tests: ['test_get_insight_detail_success', 'useInsightDetail tests']
+
+  - ac: 6
+    description: 'GET /api/teachers/insights endpoint'
+    implemented: true
+    evidence: 'GET /api/v1/teachers/me/insights endpoint in teachers.py routes'
+    tests: ['test_get_insights_empty_when_no_assignments', 'test_get_insights_unauthorized_without_token']
+
+  - ac: 7
+    description: 'Rule-based pattern detection (avg<65%, >60% incorrect, >3 past due, activity type)'
+    implemented: true
+    evidence: 'All thresholds implemented in _detect_* functions with configurable values'
+    tests: ['test_get_insights_detects_low_performing_assignment', 'test_get_insights_detects_common_misconception']
+
+  - ac: 8
+    description: 'Insights cached and refreshed daily'
+    implemented: true
+    evidence: '24-hour TTL cache with get_cached_insights/set_cached_insights. force_refresh parameter supported.'
+    tests: ['test_dismiss_insight_filters_from_future_responses - cache invalidation tested']
+
+  - ac: 9
+    description: 'Teacher can dismiss insights'
+    implemented: true
+    evidence: 'DismissedInsight model with POST /api/v1/teachers/me/insights/{id}/dismiss endpoint. useDismissInsight hook.'
+    tests: ['test_dismiss_insight_success', 'test_dismiss_insight_already_dismissed', 'useDismissInsight tests']
+
+  - ac: 10
+    description: 'Visual indicators (yellow/amber for moderate, red for critical)'
+    implemented: true
+    evidence: 'InsightCard getSeverityStyles() returns amber for moderate, red for critical. Badge colors match.'
+    tests: ['Frontend component tests verify styling']
+
+  - ac: 11
+    description: 'Integration tests verify pattern detection logic'
+    implemented: true
+    evidence: '12 backend tests in test_teacher_insights.py, 10 frontend tests in useTeacherInsights.test.tsx'
+    tests: ['Full test suite passes']
+
+recommendations:
+  immediate: []
+  future:
+    - action: 'Consider adding component-level tests for InsightCard and InsightsDashboardCard'
+      refs: ['frontend/src/components/insights/']
+    - action: 'Consider Redis integration for cache when scaling beyond single-server deployment'
+      refs: ['backend/app/services/analytics_service.py']

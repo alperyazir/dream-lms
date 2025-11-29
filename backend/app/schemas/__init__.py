@@ -13,6 +13,34 @@ from app.schemas.book import (
     BookResponse,
     BookSyncResponse,
 )
+from app.schemas.reports import (
+    ReportFormat,
+    ReportGenerateRequest,
+    ReportHistoryItem,
+    ReportHistoryResponse,
+    ReportJobResponse,
+    ReportJobStatus,
+    ReportPeriod,
+    ReportStatusResponse,
+    ReportTemplateType,
+    ReportType,
+    SavedReportTemplate,
+    SavedReportTemplateCreate,
+)
+from app.schemas.benchmarks import (
+    ActivityTypeBenchmark,
+    AdminBenchmarkOverview,
+    BenchmarkData,
+    BenchmarkMessage,
+    BenchmarkSettings,
+    BenchmarkSettingsResponse,
+    BenchmarkSettingsUpdate,
+    BenchmarkTrendPoint,
+    ClassBenchmarkResponse,
+    ClassMetrics,
+    SchoolBenchmarkSummary,
+    ActivityTypeStat,
+)
 
 __all__ = [
     # Assignment schemas
@@ -26,4 +54,30 @@ __all__ = [
     "BookListResponse",
     "BookResponse",
     "BookSyncResponse",
+    # Report schemas
+    "ReportFormat",
+    "ReportGenerateRequest",
+    "ReportHistoryItem",
+    "ReportHistoryResponse",
+    "ReportJobResponse",
+    "ReportJobStatus",
+    "ReportPeriod",
+    "ReportStatusResponse",
+    "ReportTemplateType",
+    "ReportType",
+    "SavedReportTemplate",
+    "SavedReportTemplateCreate",
+    # Benchmark schemas
+    "ActivityTypeBenchmark",
+    "AdminBenchmarkOverview",
+    "BenchmarkData",
+    "BenchmarkMessage",
+    "BenchmarkSettings",
+    "BenchmarkSettingsResponse",
+    "BenchmarkSettingsUpdate",
+    "BenchmarkTrendPoint",
+    "ClassBenchmarkResponse",
+    "ClassMetrics",
+    "SchoolBenchmarkSummary",
+    "ActivityTypeStat",
 ]

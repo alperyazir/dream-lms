@@ -31,7 +31,20 @@ apiClient.interceptors.request.use(async (config) => {
   const token = OpenAPI.TOKEN
   if (token) {
     // Handle both sync and async token functions
-    const tokenValue = typeof token === "function" ? await token({ method: (config.method || "GET") as "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD", url: config.url || "" }) : token
+    const tokenValue =
+      typeof token === "function"
+        ? await token({
+            method: (config.method || "GET") as
+              | "GET"
+              | "POST"
+              | "PUT"
+              | "DELETE"
+              | "PATCH"
+              | "OPTIONS"
+              | "HEAD",
+            url: config.url || "",
+          })
+        : token
     if (tokenValue) {
       config.headers.Authorization = `Bearer ${tokenValue}`
     }
@@ -139,7 +152,10 @@ export async function getActivityImageUrl(
   sectionPath: string | null,
 ): Promise<string | null> {
   if (!sectionPath || !bookId) {
-    console.warn("Missing required parameters for image URL:", { bookId, sectionPath })
+    console.warn("Missing required parameters for image URL:", {
+      bookId,
+      sectionPath,
+    })
     return null
   }
 

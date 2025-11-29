@@ -10,10 +10,11 @@ import {
   FiSettings,
   FiTrendingUp,
   FiUsers,
+  FiZap,
 } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
-import { type UserPublic, type UserRole } from "@/client"
+import type { UserPublic, UserRole } from "@/client"
 import { getStudentAssignments } from "@/services/assignmentsApi"
 
 interface SidebarItemsProps {
@@ -45,6 +46,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiBook, title: "Books", path: "/admin/books" },
     { icon: FiUsers, title: "Students", path: "/admin/students" },
     { icon: FiClipboard, title: "Assignments", path: "/admin/assignments" },
+    { icon: FiBarChart2, title: "Benchmarks", path: "/admin/benchmarks" },
   ],
   publisher: [
     { icon: FiHome, title: "Dashboard", path: "/publisher/dashboard" },
@@ -83,6 +85,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       path: "/teacher/students",
     },
     { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments" },
+    { icon: FiZap, title: "Insights", path: "/teacher/insights" },
     {
       icon: FiBarChart2,
       title: "Reports",
@@ -97,6 +100,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       path: "/student/calendar",
     },
     { icon: FiClipboard, title: "Assignments", path: "/student/assignments" },
+    { icon: FiTrendingUp, title: "My Progress", path: "/student/progress" },
     {
       icon: FiBarChart2,
       title: "Reports",
@@ -132,7 +136,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   // Count incomplete student assignments (not_started + in_progress + past_due)
   const incompleteAssignmentsCount = Array.isArray(studentAssignments)
     ? studentAssignments.filter(
-        (assignment) => assignment.status !== "completed"
+        (assignment) => assignment.status !== "completed",
       ).length
     : 0
 
@@ -158,7 +162,9 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
       case "/publisher/teachers":
         return null // Will be implemented later
       case "/student/assignments":
-        return incompleteAssignmentsCount > 0 ? incompleteAssignmentsCount : null
+        return incompleteAssignmentsCount > 0
+          ? incompleteAssignmentsCount
+          : null
       default:
         return null
     }

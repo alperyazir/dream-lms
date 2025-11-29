@@ -127,7 +127,13 @@ export function scoreCircle(
   // Handle special modes and undefined/null circleCount
   const isMultiSelectMode = circleCount === -1
   // Default to 2 if circleCount is 0, undefined, null, or NaN (but not -1)
-  const effectiveCircleCount = (circleCount === 0 || circleCount === undefined || circleCount === null || Number.isNaN(circleCount)) ? 2 : circleCount
+  const effectiveCircleCount =
+    circleCount === 0 ||
+    circleCount === undefined ||
+    circleCount === null ||
+    Number.isNaN(circleCount)
+      ? 2
+      : circleCount
 
   let correct = 0
   let incorrect = 0
@@ -135,7 +141,9 @@ export function scoreCircle(
   if (isMultiSelectMode) {
     // Multi-select mode: Count correct and incorrect selections (old behavior)
     answers.forEach((answer, answerIndex) => {
-      const wasSelected = Array.from(userSelections.values()).includes(answerIndex)
+      const wasSelected = Array.from(userSelections.values()).includes(
+        answerIndex,
+      )
       if (wasSelected && answer.isCorrect) {
         correct++
       } else if (wasSelected && !answer.isCorrect) {
@@ -182,7 +190,7 @@ export function scoreCircle(
 
     if (selectedAnswerIndex !== undefined) {
       const selectedAnswer = answers[selectedAnswerIndex]
-      if (selectedAnswer && selectedAnswer.isCorrect) {
+      if (selectedAnswer?.isCorrect) {
         correct++
       } else {
         incorrect++

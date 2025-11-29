@@ -14,7 +14,10 @@ interface StepReviewActivityProps {
   book: Book
 }
 
-export function StepReviewActivity({ activity, book }: StepReviewActivityProps) {
+export function StepReviewActivity({
+  activity,
+  book,
+}: StepReviewActivityProps) {
   const activityConfig = ACTIVITY_TYPE_CONFIG[activity.activity_type]
 
   // Extract description from config_json if available
@@ -40,7 +43,9 @@ export function StepReviewActivity({ activity, book }: StepReviewActivityProps) 
 
           {/* Activity Type Badge */}
           <div className="mb-4">
-            <Badge variant={activityConfig.badgeVariant}>{activityConfig.label}</Badge>
+            <Badge variant={activityConfig.badgeVariant}>
+              {activityConfig.label}
+            </Badge>
           </div>
 
           {/* Description */}
@@ -54,7 +59,9 @@ export function StepReviewActivity({ activity, book }: StepReviewActivityProps) 
           {/* Activity Metadata */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="font-semibold text-muted-foreground">Publisher:</span>{" "}
+              <span className="font-semibold text-muted-foreground">
+                Publisher:
+              </span>{" "}
               <span className="text-foreground">{book.publisher_name}</span>
             </div>
             <div>
@@ -67,7 +74,8 @@ export function StepReviewActivity({ activity, book }: StepReviewActivityProps) 
 
       {/* Help Text */}
       <p className="text-sm text-muted-foreground text-center">
-        Review the activity details above, then click "Next" to select recipients.
+        Review the activity details above, then click "Next" to select
+        recipients.
       </p>
     </div>
   )

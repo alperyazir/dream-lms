@@ -5,8 +5,8 @@
  * Displays success message with confetti animation after assignment submission
  */
 
-import { useEffect, useState } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
 import Confetti from "react-confetti"
 import { useWindowSize } from "@/hooks/useWindowSize"
 
@@ -36,7 +36,10 @@ function AssignmentSuccessScreen() {
   // Score color and message based on performance
   const getScoreStyle = (score: number) => {
     if (score >= 90)
-      return { color: "text-green-600 dark:text-green-400", message: "Excellent!" }
+      return {
+        color: "text-green-600 dark:text-green-400",
+        message: "Excellent!",
+      }
     if (score >= 70)
       return { color: "text-blue-600 dark:text-blue-400", message: "Good Job!" }
     if (score >= 50)
@@ -51,7 +54,9 @@ function AssignmentSuccessScreen() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      {showConfetti && <Confetti width={width} height={height} recycle={false} />}
+      {showConfetti && (
+        <Confetti width={width} height={height} recycle={false} />
+      )}
 
       <div className="mx-4 max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl dark:bg-gray-800">
         {/* Success Icon */}
@@ -78,7 +83,9 @@ function AssignmentSuccessScreen() {
 
         {/* Score Display */}
         <div className="my-6">
-          <p className="mb-2 text-lg text-gray-600 dark:text-gray-300">Your Score:</p>
+          <p className="mb-2 text-lg text-gray-600 dark:text-gray-300">
+            Your Score:
+          </p>
           <p className={`text-6xl font-bold ${scoreStyle.color}`}>{score}%</p>
           <p className={`mt-2 text-xl font-semibold ${scoreStyle.color}`}>
             {scoreStyle.message}

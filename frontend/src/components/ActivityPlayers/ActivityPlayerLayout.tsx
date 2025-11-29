@@ -5,10 +5,10 @@
  * Main layout wrapper for activity player with header, content, and footer
  */
 
-import { Card } from "../ui/card"
-import { ActivityPlayerHeader } from "./ActivityPlayerHeader"
-import { ActivityPlayerFooter } from "./ActivityPlayerFooter"
 import type { ActivityStartResponse } from "../../types/assignment"
+import { Card } from "../ui/card"
+import { ActivityPlayerFooter } from "./ActivityPlayerFooter"
+import { ActivityPlayerHeader } from "./ActivityPlayerHeader"
 
 interface ActivityPlayerLayoutProps {
   activity: ActivityStartResponse
@@ -28,10 +28,7 @@ export function ActivityPlayerLayout({
   return (
     <div className="flex h-screen min-w-[768px] flex-col">
       {/* Header */}
-      <ActivityPlayerHeader
-        activity={activity}
-        onTimeExpired={onTimeExpired}
-      />
+      <ActivityPlayerHeader activity={activity} onTimeExpired={onTimeExpired} />
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto bg-muted/20 p-6">

@@ -35,7 +35,7 @@ export const Route = createFileRoute("/login")({
   },
 })
 
-export function Login() {
+function Login() {
   const { loginMutation, resetError } = useAuth()
   const {
     register,

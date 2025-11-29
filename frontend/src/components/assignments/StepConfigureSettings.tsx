@@ -77,7 +77,8 @@ export function StepConfigureSettings({
           {/* Instructions */}
           <div className="space-y-2">
             <Label htmlFor="instructions" className="text-sm font-medium">
-              Instructions <span className="text-muted-foreground">(Optional)</span>
+              Instructions{" "}
+              <span className="text-muted-foreground">(Optional)</span>
             </Label>
             <Textarea
               id="instructions"
@@ -88,7 +89,8 @@ export function StepConfigureSettings({
               className="w-full resize-none"
             />
             <p className="text-xs text-muted-foreground">
-              Provide additional context or instructions for completing this assignment
+              Provide additional context or instructions for completing this
+              assignment
             </p>
           </div>
 
@@ -115,7 +117,8 @@ export function StepConfigureSettings({
           <div className="space-y-2">
             <Label htmlFor="time-limit" className="text-sm font-medium">
               <Clock className="w-4 h-4 inline mr-1" />
-              Time Limit <span className="text-muted-foreground">(Optional)</span>
+              Time Limit{" "}
+              <span className="text-muted-foreground">(Optional)</span>
             </Label>
             <div className="flex items-center gap-2">
               <Input
@@ -130,7 +133,8 @@ export function StepConfigureSettings({
               <span className="text-sm text-muted-foreground">minutes</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Restrict how long students have to complete the assignment once started
+              Restrict how long students have to complete the assignment once
+              started
             </p>
           </div>
         </CardContent>

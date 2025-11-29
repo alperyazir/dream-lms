@@ -10,6 +10,7 @@ from app.api.routes import (
     login,
     private,
     publishers,
+    reports,
     students,
     teachers,
     users,
@@ -30,6 +31,7 @@ api_router.include_router(classes.router)
 api_router.include_router(books.router, prefix="/books", tags=["books"])
 api_router.include_router(book_assets.router)
 api_router.include_router(assignments.router)
+api_router.include_router(reports.router)
 api_router.include_router(webhooks.router)
 
 

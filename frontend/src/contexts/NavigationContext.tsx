@@ -2,7 +2,7 @@
  * Navigation Context - Manages sidebar collapse state
  */
 
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, type ReactNode, useContext, useState } from "react"
 
 interface NavigationContextType {
   isSidebarCollapsed: boolean
@@ -11,7 +11,9 @@ interface NavigationContextType {
   expandSidebar: () => void
 }
 
-const NavigationContext = createContext<NavigationContextType | undefined>(undefined)
+const NavigationContext = createContext<NavigationContextType | undefined>(
+  undefined,
+)
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -22,7 +24,12 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
   return (
     <NavigationContext.Provider
-      value={{ isSidebarCollapsed, toggleSidebar, collapseSidebar, expandSidebar }}
+      value={{
+        isSidebarCollapsed,
+        toggleSidebar,
+        collapseSidebar,
+        expandSidebar,
+      }}
     >
       {children}
     </NavigationContext.Provider>
