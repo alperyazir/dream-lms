@@ -14,8 +14,11 @@ from app.core.rate_limit import limiter
 from app.models import (
     Activity,
     Assignment,
+    AssignmentActivity,
     AssignmentStatus,
     AssignmentStudent,
+    AssignmentStudentActivity,
+    AssignmentStudentActivityStatus,
     Book,
     BookAccess,
     Class,
@@ -30,7 +33,14 @@ from app.schemas.analytics import (
     StudentAnswersResponse,
 )
 from app.schemas.assignment import (
+    ActivityAnalyticsItem,
+    ActivityInfo,
+    ActivityProgressInfo,
+    ActivityProgressSaveRequest,
+    ActivityProgressSaveResponse,
+    ActivityScoreItem,
     ActivityStartResponse,
+    ActivityWithConfig,
     AssignmentCreate,
     AssignmentListItem,
     AssignmentResponse,
@@ -39,6 +49,13 @@ from app.schemas.assignment import (
     AssignmentSubmissionResponse,
     AssignmentSubmitRequest,
     AssignmentUpdate,
+    MultiActivityAnalyticsResponse,
+    MultiActivityStartResponse,
+    MultiActivitySubmitRequest,
+    MultiActivitySubmitResponse,
+    PerActivityScore,
+    StudentActivityScore,
+    StudentAssignmentResultResponse,
 )
 from app.services.analytics_service import (
     get_assignment_detailed_results,
@@ -86,6 +103,56 @@ async def _verify_activity_access(
         )
 
     return activity
+
+
+async def _verify_activities_access(
+    session: AsyncSessionDep, activity_ids: list[uuid.UUID], teacher: Teacher
+) -> list[Activity]:
+    """
+    Verify teacher has access to all activities through BookAccess.
+
+    Args:
+        session: Database session
+        activity_ids: List of Activity IDs to verify access for
+        teacher: Teacher object (with school relationship loaded)
+
+    Returns:
+        List of Activity objects if all access verified (in same order as input)
+
+    Raises:
+        HTTPException(404): Any activity not found or no access
+    """
+    if not activity_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one activity must be provided",
+        )
+
+    # Query all activities at once
+    result = await session.execute(
+        select(Activity)
+        .join(Book, Activity.book_id == Book.id)
+        .join(BookAccess, Book.id == BookAccess.book_id)
+        .where(
+            Activity.id.in_(activity_ids),
+            BookAccess.publisher_id == teacher.school.publisher_id,
+        )
+    )
+    activities = result.scalars().all()
+
+    # Verify all requested activities were found
+    found_ids = {activity.id for activity in activities}
+    missing_ids = set(activity_ids) - found_ids
+
+    if missing_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="One or more activities not found or no access",
+        )
+
+    # Return activities in original order
+    activity_map = {a.id: a for a in activities}
+    return [activity_map[aid] for aid in activity_ids]
 
 
 async def _get_target_students(
@@ -347,27 +414,30 @@ async def list_all_assignments_admin(
     response_model=AssignmentResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create new assignment",
-    description="Creates a new assignment and assigns it to specified students/classes",
+    description="Creates a new assignment and assigns it to specified students/classes. Supports single or multi-activity assignments.",
 )
 async def create_assignment(
     *,
     session: AsyncSessionDep,
     assignment_in: AssignmentCreate,
     current_user: User = require_role(UserRole.teacher),
-) -> Assignment:
+) -> AssignmentResponse:
     """
     Create a new assignment.
 
     **Workflow:**
-    1. Validate teacher has access to activity through BookAccess
+    1. Validate teacher has access to all activities through BookAccess
     2. Validate all selected students/classes belong to teacher
     3. Validate due_date is in future (if provided)
     4. Create Assignment record
-    5. Create AssignmentStudent records for all target students
+    5. Create AssignmentActivity records for each activity
+    6. Create AssignmentStudent records for all target students
+    7. Create AssignmentStudentActivity records for each student × activity
 
     **Request Body:**
-    - **activity_id**: UUID of activity to assign
-    - **book_id**: UUID of book containing activity
+    - **activity_id**: UUID of single activity (legacy, backward compatible)
+    - **activity_ids**: List of activity UUIDs for multi-activity assignment
+    - **book_id**: UUID of book containing activities
     - **name**: Assignment name (max 500 chars)
     - **instructions**: Optional special instructions
     - **due_date**: Optional deadline (must be in future)
@@ -376,7 +446,7 @@ async def create_assignment(
     - **class_ids**: List of class UUIDs (required if no student_ids)
 
     **Returns:**
-    Assignment object with student_count
+    Assignment object with student_count and activities list
     """
     # Get Teacher record for current user
     result = await session.execute(
@@ -393,8 +463,11 @@ async def create_assignment(
     # Load school relationship for publisher_id access
     await session.refresh(teacher, ["school"])
 
-    # Validate teacher has access to activity (raises 404 if not)
-    await _verify_activity_access(session, assignment_in.activity_id, teacher)
+    # Get activity IDs (handles both single and multi-activity)
+    activity_ids = assignment_in.get_activity_ids()
+
+    # Validate teacher has access to all activities
+    activities = await _verify_activities_access(session, activity_ids, teacher)
 
     # Validate due_date is in future (Pydantic also validates, but double-check)
     _validate_due_date(assignment_in.due_date)
@@ -415,9 +488,12 @@ async def create_assignment(
 
     # Create Assignment record
     now = datetime.now(UTC)
+    # Keep activity_id for backward compatibility (set to first activity if multi)
+    first_activity_id = activity_ids[0] if activity_ids else None
+
     assignment = Assignment(
         teacher_id=teacher.id,
-        activity_id=assignment_in.activity_id,
+        activity_id=first_activity_id,  # Backward compatible - first activity
         book_id=assignment_in.book_id,
         name=assignment_in.name,
         instructions=assignment_in.instructions,
@@ -427,9 +503,18 @@ async def create_assignment(
         updated_at=now,
     )
     session.add(assignment)
-    await session.flush()  # Get assignment.id for AssignmentStudent records
+    await session.flush()  # Get assignment.id for related records
 
-    # Create AssignmentStudent records
+    # Create AssignmentActivity records for each activity (junction table)
+    for order_index, activity in enumerate(activities):
+        assignment_activity = AssignmentActivity(
+            assignment_id=assignment.id,
+            activity_id=activity.id,
+            order_index=order_index,
+        )
+        session.add(assignment_activity)
+
+    # Create AssignmentStudent and AssignmentStudentActivity records
     for student in students:
         assignment_student = AssignmentStudent(
             assignment_id=assignment.id,
@@ -444,18 +529,56 @@ async def create_assignment(
             last_saved_at=None,
         )
         session.add(assignment_student)
+        await session.flush()  # Get assignment_student.id
+
+        # Create per-activity progress records
+        for activity in activities:
+            activity_progress = AssignmentStudentActivity(
+                assignment_student_id=assignment_student.id,
+                activity_id=activity.id,
+                status=AssignmentStudentActivityStatus.not_started,
+                score=None,
+                max_score=100.0,  # Default max score
+                response_data=None,
+                started_at=None,
+                completed_at=None,
+            )
+            session.add(activity_progress)
 
     # Commit transaction
     await session.commit()
     await session.refresh(assignment)
 
-    # Compute student_count for response
-    assignment_response = AssignmentResponse.model_validate(assignment)
-    assignment_response.student_count = len(students)
+    # Build response with activities info
+    activities_info = [
+        ActivityInfo(
+            id=activity.id,
+            title=activity.title,
+            activity_type=activity.activity_type.value,
+            order_index=idx,
+        )
+        for idx, activity in enumerate(activities)
+    ]
+
+    assignment_response = AssignmentResponse(
+        id=assignment.id,
+        teacher_id=assignment.teacher_id,
+        book_id=assignment.book_id,
+        name=assignment.name,
+        instructions=assignment.instructions,
+        due_date=assignment.due_date,
+        time_limit_minutes=assignment.time_limit_minutes,
+        created_at=assignment.created_at,
+        updated_at=assignment.updated_at,
+        student_count=len(students),
+        activity_id=first_activity_id,
+        activities=activities_info,
+        activity_count=len(activities),
+    )
 
     logger.info(
         f"Assignment created: id={assignment.id}, teacher_id={teacher.id}, "
-        f"activity_id={assignment.activity_id}, students={len(students)}"
+        f"activities={len(activities)}, students={len(students)}"
     )
 
     return assignment_response
@@ -724,6 +847,564 @@ async def start_assignment(
     )
 
     return response
+
+
+@router.get(
+    "/{assignment_id}/start-multi",
+    response_model=MultiActivityStartResponse,
+    summary="Start multi-activity assignment",
+    description="Start a multi-activity assignment - returns all activities with configs and progress",
+)
+async def start_multi_activity_assignment(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    current_user: User = require_role(UserRole.student),
+) -> MultiActivityStartResponse:
+    """
+    Start a multi-activity assignment for the current student.
+
+    **Workflow:**
+    1. Verify assignment exists and is assigned to student
+    2. Check assignment is not already completed (409 if completed)
+    3. Get all activities linked to this assignment via AssignmentActivity
+    4. Initialize AssignmentStudentActivity records for each activity if not exist
+    5. If status is 'not_started', update to 'in_progress' and set started_at
+    6. Return all activities with their configs and per-activity progress
+
+    **Authorization:**
+    Only students can start assignments assigned to them.
+
+    **Returns:**
+    MultiActivityStartResponse with all activities, configs, and progress.
+
+    **Status Codes:**
+    - 200: Assignment started or resumed successfully
+    - 404: Assignment not found or not assigned to student
+    - 409: Assignment already completed
+    """
+    # Get Student record for current user
+    result = await session.execute(
+        select(Student).where(Student.user_id == current_user.id)
+    )
+    student = result.scalar_one_or_none()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found for this user",
+        )
+
+    # Get AssignmentStudent with Assignment and Book
+    result = await session.execute(
+        select(AssignmentStudent, Assignment, Book)
+        .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+        .join(Book, Assignment.book_id == Book.id)
+        .where(
+            AssignmentStudent.assignment_id == assignment_id,
+            AssignmentStudent.student_id == student.id,
+        )
+    )
+    assignment_data = result.one_or_none()
+
+    if not assignment_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    assignment_student, assignment, book = assignment_data
+
+    # Check if assignment is already completed
+    if assignment_student.status == AssignmentStatus.completed:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Assignment already completed",
+        )
+
+    # Get all activities linked to this assignment via AssignmentActivity junction table
+    result = await session.execute(
+        select(AssignmentActivity, Activity)
+        .join(Activity, AssignmentActivity.activity_id == Activity.id)
+        .where(AssignmentActivity.assignment_id == assignment_id)
+        .order_by(AssignmentActivity.order_index)
+    )
+    assignment_activities = result.all()
+
+    if not assignment_activities:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No activities found for this assignment",
+        )
+
+    # Build activities list with configs
+    activities: list[ActivityWithConfig] = []
+    activity_ids: list[uuid.UUID] = []
+
+    for aa, activity in assignment_activities:
+        activities.append(
+            ActivityWithConfig(
+                id=activity.id,
+                title=activity.title,
+                activity_type=activity.activity_type.value,
+                config_json=activity.config_json or {},
+                order_index=aa.order_index,
+            )
+        )
+        activity_ids.append(activity.id)
+
+    # Get existing AssignmentStudentActivity records
+    result = await session.execute(
+        select(AssignmentStudentActivity).where(
+            AssignmentStudentActivity.assignment_student_id == assignment_student.id,
+            AssignmentStudentActivity.activity_id.in_(activity_ids),
+        )
+    )
+    existing_progress = {ap.activity_id: ap for ap in result.scalars().all()}
+
+    # Initialize missing AssignmentStudentActivity records
+    activity_progress: list[ActivityProgressInfo] = []
+    for activity in activities:
+        if activity.id in existing_progress:
+            ap = existing_progress[activity.id]
+            activity_progress.append(
+                ActivityProgressInfo(
+                    id=ap.id,
+                    activity_id=ap.activity_id,
+                    status=ap.status.value,
+                    score=ap.score,
+                    max_score=ap.max_score,
+                    response_data=ap.response_data,
+                    started_at=ap.started_at,
+                    completed_at=ap.completed_at,
+                )
+            )
+        else:
+            # Create new AssignmentStudentActivity record
+            new_progress = AssignmentStudentActivity(
+                assignment_student_id=assignment_student.id,
+                activity_id=activity.id,
+                status=AssignmentStudentActivityStatus.not_started,
+                max_score=100.0,
+            )
+            session.add(new_progress)
+            await session.flush()  # Get the ID
+
+            activity_progress.append(
+                ActivityProgressInfo(
+                    id=new_progress.id,
+                    activity_id=new_progress.activity_id,
+                    status=new_progress.status.value,
+                    score=None,
+                    max_score=new_progress.max_score,
+                    response_data=None,
+                    started_at=None,
+                    completed_at=None,
+                )
+            )
+
+    # Update assignment status if not_started
+    if assignment_student.status == AssignmentStatus.not_started:
+        assignment_student.status = AssignmentStatus.in_progress
+        assignment_student.started_at = datetime.now(UTC)
+
+    await session.commit()
+    await session.refresh(assignment_student)
+
+    # Build response
+    response = MultiActivityStartResponse(
+        assignment_id=assignment.id,
+        assignment_name=assignment.name,
+        instructions=assignment.instructions,
+        due_date=assignment.due_date,
+        time_limit_minutes=assignment.time_limit_minutes,
+        book_id=book.id,
+        book_title=book.title,
+        book_name=book.book_name,
+        publisher_name=book.publisher_name,
+        book_cover_url=book.cover_image_url,
+        activities=activities,
+        activity_progress=activity_progress,
+        total_activities=len(activities),
+        current_status=assignment_student.status.value,
+        time_spent_minutes=assignment_student.time_spent_minutes,
+        started_at=assignment_student.started_at,
+    )
+
+    logger.info(
+        f"Multi-activity assignment started: id={assignment.id}, "
+        f"student_id={student.id}, activities={len(activities)}"
+    )
+
+    return response
+
+
+@router.patch(
+    "/{assignment_id}/students/me/activities/{activity_id}",
+    response_model=ActivityProgressSaveResponse,
+    summary="Save per-activity progress",
+    description="Save progress for a specific activity in a multi-activity assignment (Rate limited: 120 req/hour)",
+)
+@limiter.limit("120/hour")
+async def save_activity_progress(
+    request: Request,
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    progress: ActivityProgressSaveRequest,
+    current_user: User = require_role(UserRole.student),
+) -> ActivityProgressSaveResponse:
+    """
+    Save progress for a specific activity within a multi-activity assignment.
+
+    **Workflow:**
+    1. Verify student is assigned to this assignment
+    2. Verify activity belongs to this assignment
+    3. Update AssignmentStudentActivity record with progress
+    4. Set started_at on first save if null
+    5. Calculate score if status is 'completed'
+
+    **Authorization:**
+    Only students can save progress for their assigned assignments.
+
+    **Request Body:**
+    - **response_data**: Activity-specific answer data
+    - **time_spent_seconds**: Time spent on this activity
+    - **status**: 'in_progress' or 'completed'
+    - **score**: Required if status is 'completed'
+    - **max_score**: Maximum possible score (default 100)
+
+    **Returns:**
+    ActivityProgressSaveResponse with save timestamp.
+
+    **Status Codes:**
+    - 200: Progress saved successfully
+    - 404: Assignment/activity not found or not assigned
+    - 400: Invalid status or assignment already completed
+    - 429: Rate limit exceeded
+    """
+    # Get Student record for current user
+    result = await session.execute(
+        select(Student).where(Student.user_id == current_user.id)
+    )
+    student = result.scalar_one_or_none()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found for this user",
+        )
+
+    # Get AssignmentStudent record
+    result = await session.execute(
+        select(AssignmentStudent).where(
+            AssignmentStudent.assignment_id == assignment_id,
+            AssignmentStudent.student_id == student.id,
+        )
+    )
+    assignment_student = result.scalar_one_or_none()
+
+    if not assignment_student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found or not assigned to you",
+        )
+
+    # Check assignment is not already completed
+    if assignment_student.status == AssignmentStatus.completed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot save progress for completed assignment",
+        )
+
+    # Verify activity belongs to this assignment
+    result = await session.execute(
+        select(AssignmentActivity).where(
+            AssignmentActivity.assignment_id == assignment_id,
+            AssignmentActivity.activity_id == activity_id,
+        )
+    )
+    assignment_activity = result.scalar_one_or_none()
+
+    if not assignment_activity:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Activity not found in this assignment",
+        )
+
+    # Get or create AssignmentStudentActivity record
+    result = await session.execute(
+        select(AssignmentStudentActivity).where(
+            AssignmentStudentActivity.assignment_student_id == assignment_student.id,
+            AssignmentStudentActivity.activity_id == activity_id,
+        )
+    )
+    activity_progress = result.scalar_one_or_none()
+
+    if not activity_progress:
+        # Create new record
+        activity_progress = AssignmentStudentActivity(
+            assignment_student_id=assignment_student.id,
+            activity_id=activity_id,
+            status=AssignmentStudentActivityStatus.not_started,
+            max_score=progress.max_score,
+        )
+        session.add(activity_progress)
+
+    # Check activity is not already completed (idempotent behavior)
+    if activity_progress.status == AssignmentStudentActivityStatus.completed:
+        # Already completed - return existing data
+        return ActivityProgressSaveResponse(
+            message="Activity already completed",
+            activity_id=activity_id,
+            status=activity_progress.status.value,
+            score=activity_progress.score,
+            last_saved_at=activity_progress.completed_at or datetime.now(UTC),
+        )
+
+    # Update progress fields
+    activity_progress.response_data = progress.response_data
+    activity_progress.max_score = progress.max_score
+
+    # Set started_at on first save
+    if activity_progress.started_at is None:
+        activity_progress.started_at = datetime.now(UTC)
+
+    # Update status
+    if progress.status == "completed":
+        activity_progress.status = AssignmentStudentActivityStatus.completed
+        activity_progress.score = progress.score
+        activity_progress.completed_at = datetime.now(UTC)
+    else:
+        activity_progress.status = AssignmentStudentActivityStatus.in_progress
+
+    # Also ensure assignment is in_progress
+    if assignment_student.status == AssignmentStatus.not_started:
+        assignment_student.status = AssignmentStatus.in_progress
+        assignment_student.started_at = datetime.now(UTC)
+
+    try:
+        await session.commit()
+        await session.refresh(activity_progress)
+        logger.info(
+            f"Activity progress saved: assignment={assignment_id}, "
+            f"activity={activity_id}, student={student.id}, status={progress.status}"
+        )
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Failed to save activity progress: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save progress",
+        )
+
+    return ActivityProgressSaveResponse(
+        message="Progress saved successfully",
+        activity_id=activity_id,
+        status=activity_progress.status.value,
+        score=activity_progress.score,
+        last_saved_at=activity_progress.completed_at or activity_progress.started_at or datetime.now(UTC),
+    )
+
+
+@router.post(
+    "/{assignment_id}/students/me/submit-multi",
+    response_model=MultiActivitySubmitResponse,
+    summary="Submit multi-activity assignment",
+    description="Submit a multi-activity assignment after completing all activities",
+)
+async def submit_multi_activity_assignment(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    submission: MultiActivitySubmitRequest,
+    current_user: User = require_role(UserRole.student),
+) -> MultiActivitySubmitResponse:
+    """
+    Submit a multi-activity assignment.
+
+    **Workflow:**
+    1. Verify student is assigned to this assignment
+    2. Check assignment is in 'in_progress' status
+    3. Validate all activities are completed (unless force_submit=true)
+    4. Calculate combined score from all activity scores
+    5. Update AssignmentStudent with completion data
+    6. Return combined score and per-activity breakdown
+
+    **Force Submit:**
+    Use force_submit=true for timer expiry - submits with current progress.
+
+    **Authorization:**
+    Only students can submit their assigned assignments.
+
+    **Request Body:**
+    - **force_submit**: Force submit even if not all activities completed
+    - **total_time_spent_minutes**: Total time spent on assignment
+
+    **Returns:**
+    MultiActivitySubmitResponse with combined score and breakdown.
+
+    **Status Codes:**
+    - 200: Assignment submitted successfully
+    - 404: Assignment not found or not assigned
+    - 400: Not all activities completed (and force_submit=false)
+    - 409: Assignment already completed
+    """
+    # Get Student record for current user
+    result = await session.execute(
+        select(Student).where(Student.user_id == current_user.id)
+    )
+    student = result.scalar_one_or_none()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found for this user",
+        )
+
+    # Get AssignmentStudent with eager load of activity_progress
+    result = await session.execute(
+        select(AssignmentStudent)
+        .options(selectinload(AssignmentStudent.activity_progress))
+        .where(
+            AssignmentStudent.assignment_id == assignment_id,
+            AssignmentStudent.student_id == student.id,
+        )
+    )
+    assignment_student = result.scalar_one_or_none()
+
+    if not assignment_student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found or not assigned to you",
+        )
+
+    # Idempotent behavior: if already completed, return existing result
+    if assignment_student.status == AssignmentStatus.completed:
+        # Build per-activity scores from existing progress
+        per_activity_scores = []
+        for ap in assignment_student.activity_progress:
+            # Need to get activity title
+            result = await session.execute(
+                select(Activity).where(Activity.id == ap.activity_id)
+            )
+            activity = result.scalar_one_or_none()
+            per_activity_scores.append(
+                PerActivityScore(
+                    activity_id=ap.activity_id,
+                    activity_title=activity.title if activity else None,
+                    score=ap.score,
+                    max_score=ap.max_score,
+                    status=ap.status.value,
+                )
+            )
+
+        return MultiActivitySubmitResponse(
+            success=True,
+            message="Assignment already submitted",
+            assignment_id=assignment_id,
+            combined_score=assignment_student.score or 0,
+            per_activity_scores=per_activity_scores,
+            completed_at=assignment_student.completed_at or datetime.now(UTC),
+            total_activities=len(assignment_student.activity_progress),
+            completed_activities=sum(
+                1 for ap in assignment_student.activity_progress
+                if ap.status == AssignmentStudentActivityStatus.completed
+            ),
+        )
+
+    # Check assignment is in progress
+    if assignment_student.status == AssignmentStatus.not_started:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Assignment not started yet",
+        )
+
+    # Check if all activities are completed
+    incomplete_activities = [
+        ap for ap in assignment_student.activity_progress
+        if ap.status != AssignmentStudentActivityStatus.completed
+    ]
+
+    if incomplete_activities and not submission.force_submit:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Not all activities completed. {len(incomplete_activities)} activities remaining.",
+        )
+
+    # Calculate combined score using the model's method
+    combined_score = assignment_student.calculate_combined_score()
+    if combined_score is None:
+        combined_score = 0.0
+
+    # Update assignment status
+    assignment_student.status = AssignmentStatus.completed
+    assignment_student.score = combined_score
+    assignment_student.completed_at = datetime.now(UTC)
+    assignment_student.time_spent_minutes = submission.total_time_spent_minutes
+
+    # Consolidate all activity answers into answers_json for analytics/insights
+    # This enables the insights service to analyze multi-activity assignments
+    consolidated_answers = {}
+    for ap in assignment_student.activity_progress:
+        if ap.response_data:
+            # Store answers keyed by activity_id
+            consolidated_answers[str(ap.activity_id)] = {
+                "answers": ap.response_data,
+                "score": ap.score,
+                "status": ap.status.value,
+            }
+    assignment_student.answers_json = consolidated_answers
+
+    # Build per-activity scores response
+    per_activity_scores = []
+    for ap in assignment_student.activity_progress:
+        result = await session.execute(
+            select(Activity).where(Activity.id == ap.activity_id)
+        )
+        activity = result.scalar_one_or_none()
+        per_activity_scores.append(
+            PerActivityScore(
+                activity_id=ap.activity_id,
+                activity_title=activity.title if activity else None,
+                score=ap.score,
+                max_score=ap.max_score,
+                status=ap.status.value,
+            )
+        )
+
+    try:
+        await session.commit()
+        await session.refresh(assignment_student)
+        logger.info(
+            f"Multi-activity assignment submitted: id={assignment_id}, "
+            f"student={student.id}, score={combined_score}, "
+            f"force_submit={submission.force_submit}"
+        )
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Failed to submit multi-activity assignment: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to submit assignment",
+        )
+
+    completed_count = sum(
+        1 for ap in assignment_student.activity_progress
+        if ap.status == AssignmentStudentActivityStatus.completed
+    )
+
+    return MultiActivitySubmitResponse(
+        success=True,
+        message="Assignment submitted successfully",
+        assignment_id=assignment_id,
+        combined_score=combined_score,
+        per_activity_scores=per_activity_scores,
+        completed_at=assignment_student.completed_at,
+        total_activities=len(assignment_student.activity_progress),
+        completed_activities=completed_count,
+    )
 
 
 @router.post(
@@ -1111,3 +1792,304 @@ async def get_student_answers(
     )
 
     return student_answers
+
+
+# --- Multi-Activity Assignment Analytics Endpoints (Story 8.4) ---
+
+
+@router.get(
+    "/{assignment_id}/analytics",
+    response_model=MultiActivityAnalyticsResponse,
+    summary="Get multi-activity assignment analytics",
+    description="Get per-activity analytics for a multi-activity assignment (teacher view)",
+)
+async def get_multi_activity_analytics(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    expand_activity_id: uuid.UUID | None = None,
+    current_user: User = require_role(UserRole.teacher),
+) -> MultiActivityAnalyticsResponse:
+    """
+    Get per-activity analytics for a multi-activity assignment.
+
+    **Includes:**
+    - Per-activity class average scores
+    - Per-activity completion rates
+    - Optional: Per-student breakdown when expand_activity_id is provided
+
+    **Query Parameters:**
+    - **expand_activity_id**: Optional UUID to get per-student scores for a specific activity
+
+    **Authorization:**
+    Teachers can only view analytics for their own assignments.
+
+    **Returns:**
+    MultiActivityAnalyticsResponse with per-activity analytics.
+
+    **Status Codes:**
+    - 200: Analytics retrieved successfully
+    - 404: Assignment not found or teacher doesn't own it
+    """
+    # Get Teacher record
+    result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user",
+        )
+
+    # Verify assignment ownership and get assignment data
+    assignment = await _verify_assignment_ownership(session, assignment_id, teacher.id)
+
+    # Get all activities for this assignment with their analytics
+    result = await session.execute(
+        select(AssignmentActivity, Activity)
+        .join(Activity, AssignmentActivity.activity_id == Activity.id)
+        .where(AssignmentActivity.assignment_id == assignment_id)
+        .order_by(AssignmentActivity.order_index)
+    )
+    assignment_activities = result.all()
+
+    if not assignment_activities:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No activities found for this assignment",
+        )
+
+    # Get total students count
+    result = await session.execute(
+        select(AssignmentStudent).where(
+            AssignmentStudent.assignment_id == assignment_id
+        )
+    )
+    all_assignment_students = result.scalars().all()
+    total_students = len(all_assignment_students)
+
+    # Count submitted (completed) students
+    submitted_count = sum(
+        1 for astu in all_assignment_students
+        if astu.status == AssignmentStatus.completed
+    )
+
+    # Build per-activity analytics
+    activities_analytics: list[ActivityAnalyticsItem] = []
+
+    for aa, activity in assignment_activities:
+        # Get all student progress for this activity
+        result = await session.execute(
+            select(AssignmentStudentActivity)
+            .join(AssignmentStudent, AssignmentStudentActivity.assignment_student_id == AssignmentStudent.id)
+            .where(
+                AssignmentStudent.assignment_id == assignment_id,
+                AssignmentStudentActivity.activity_id == activity.id,
+            )
+        )
+        activity_progress_records = result.scalars().all()
+
+        # Calculate completion stats
+        completed_records = [
+            ap for ap in activity_progress_records
+            if ap.status == AssignmentStudentActivityStatus.completed
+        ]
+        completed_count = len(completed_records)
+        total_assigned_count = len(activity_progress_records) if activity_progress_records else total_students
+
+        # Calculate completion rate
+        completion_rate = completed_count / total_assigned_count if total_assigned_count > 0 else 0.0
+
+        # Calculate class average (only from completed activities with scores)
+        scores = [ap.score for ap in completed_records if ap.score is not None]
+        class_average_score = sum(scores) / len(scores) if scores else None
+
+        activities_analytics.append(
+            ActivityAnalyticsItem(
+                activity_id=activity.id,
+                activity_title=activity.title,
+                page_number=activity.page_number,
+                activity_type=activity.activity_type.value,
+                class_average_score=round(class_average_score, 1) if class_average_score is not None else None,
+                completion_rate=round(completion_rate, 2),
+                completed_count=completed_count,
+                total_assigned_count=total_assigned_count,
+            )
+        )
+
+    # Handle expand_activity_id - get per-student scores for specific activity
+    expanded_students: list[StudentActivityScore] | None = None
+
+    if expand_activity_id:
+        # Verify activity belongs to this assignment
+        result = await session.execute(
+            select(AssignmentActivity).where(
+                AssignmentActivity.assignment_id == assignment_id,
+                AssignmentActivity.activity_id == expand_activity_id,
+            )
+        )
+        if not result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Activity not found in this assignment",
+            )
+
+        # Get all student scores for this activity
+        result = await session.execute(
+            select(AssignmentStudentActivity, AssignmentStudent, Student, User)
+            .join(AssignmentStudent, AssignmentStudentActivity.assignment_student_id == AssignmentStudent.id)
+            .join(Student, AssignmentStudent.student_id == Student.id)
+            .join(User, Student.user_id == User.id)
+            .where(
+                AssignmentStudent.assignment_id == assignment_id,
+                AssignmentStudentActivity.activity_id == expand_activity_id,
+            )
+            .order_by(User.full_name)
+        )
+        student_records = result.all()
+
+        expanded_students = []
+        for ap, astu, student, user in student_records:
+            # Calculate time spent in seconds (using completed_at - started_at if available)
+            time_spent_seconds = 0
+            if ap.started_at and ap.completed_at:
+                time_spent_seconds = int((ap.completed_at - ap.started_at).total_seconds())
+
+            expanded_students.append(
+                StudentActivityScore(
+                    student_id=student.id,
+                    student_name=user.full_name or user.email,
+                    status=ap.status.value,
+                    score=ap.score,
+                    max_score=ap.max_score,
+                    time_spent_seconds=time_spent_seconds,
+                    completed_at=ap.completed_at,
+                )
+            )
+
+    logger.info(
+        f"Multi-activity analytics retrieved for assignment {assignment_id} "
+        f"by teacher {teacher.id}, activities={len(activities_analytics)}"
+    )
+
+    return MultiActivityAnalyticsResponse(
+        assignment_id=assignment_id,
+        assignment_name=assignment.name,
+        total_students=total_students,
+        submitted_count=submitted_count,
+        activities=activities_analytics,
+        expanded_students=expanded_students,
+    )
+
+
+@router.get(
+    "/{assignment_id}/students/me/result",
+    response_model=StudentAssignmentResultResponse,
+    summary="Get student's assignment result",
+    description="Get the student's score breakdown for a completed multi-activity assignment",
+)
+async def get_student_assignment_result(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    current_user: User = require_role(UserRole.student),
+) -> StudentAssignmentResultResponse:
+    """
+    Get the student's score breakdown for a completed assignment.
+
+    **Includes:**
+    - Total combined score
+    - Per-activity score breakdown
+    - Completion status per activity
+
+    **Authorization:**
+    Students can only view their own assignment results.
+
+    **Returns:**
+    StudentAssignmentResultResponse with score breakdown.
+
+    **Status Codes:**
+    - 200: Result retrieved successfully
+    - 404: Assignment not found or not assigned to student
+    """
+    # Get Student record for current user
+    result = await session.execute(
+        select(Student).where(Student.user_id == current_user.id)
+    )
+    student = result.scalar_one_or_none()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found for this user",
+        )
+
+    # Get AssignmentStudent with Assignment
+    result = await session.execute(
+        select(AssignmentStudent, Assignment)
+        .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+        .where(
+            AssignmentStudent.assignment_id == assignment_id,
+            AssignmentStudent.student_id == student.id,
+        )
+    )
+    assignment_data = result.one_or_none()
+
+    if not assignment_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found or not assigned to you",
+        )
+
+    assignment_student, assignment = assignment_data
+
+    # Get per-activity progress with activity details
+    result = await session.execute(
+        select(AssignmentStudentActivity, Activity)
+        .join(Activity, AssignmentStudentActivity.activity_id == Activity.id)
+        .join(AssignmentActivity, (
+            (AssignmentActivity.assignment_id == assignment_id) &
+            (AssignmentActivity.activity_id == Activity.id)
+        ))
+        .where(
+            AssignmentStudentActivity.assignment_student_id == assignment_student.id,
+        )
+        .order_by(AssignmentActivity.order_index)
+    )
+    activity_records = result.all()
+
+    # Build per-activity score items
+    activity_scores: list[ActivityScoreItem] = []
+    completed_count = 0
+
+    for ap, activity in activity_records:
+        if ap.status == AssignmentStudentActivityStatus.completed:
+            completed_count += 1
+
+        activity_scores.append(
+            ActivityScoreItem(
+                activity_id=activity.id,
+                activity_title=activity.title,
+                activity_type=activity.activity_type.value,
+                score=ap.score,
+                max_score=ap.max_score,
+                status=ap.status.value,
+            )
+        )
+
+    logger.info(
+        f"Student result retrieved for assignment {assignment_id} "
+        f"by student {student.id}, activities={len(activity_scores)}"
+    )
+
+    return StudentAssignmentResultResponse(
+        assignment_id=assignment_id,
+        assignment_name=assignment.name,
+        total_score=assignment_student.score,
+        completed_at=assignment_student.completed_at,
+        activity_scores=activity_scores,
+        total_activities=len(activity_scores),
+        completed_activities=completed_count,
+    )

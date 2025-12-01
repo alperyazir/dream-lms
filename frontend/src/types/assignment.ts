@@ -2,6 +2,7 @@
  * Assignment type definitions for Dream LMS.
  * Story 3.7: Assignment Creation Dialog & Configuration
  * Story 3.8: Teacher Assignment Management Dashboard
+ * Story 8.1: Multi-Activity Assignment Data Model
  */
 
 /**
@@ -11,6 +12,7 @@ export type AssignmentStatus = "not_started" | "in_progress" | "completed"
 
 /**
  * Form data for assignment creation wizard
+ * Story 8.2: Added activity_ids for multi-activity selection
  */
 export interface AssignmentFormData {
   name: string
@@ -19,13 +21,15 @@ export interface AssignmentFormData {
   time_limit_minutes: number | null
   student_ids: string[]
   class_ids: string[]
+  activity_ids: string[] // Story 8.2: Multi-activity selection
 }
 
 /**
  * Assignment creation request payload
+ * Story 8.1: Supports both single-activity (backward compatible) and multi-activity assignments.
+ * Provide either activity_id (single) OR activity_ids (multi), not both.
  */
 export interface AssignmentCreateRequest {
-  activity_id: string
   book_id: string
   name: string
   instructions?: string | null
@@ -33,6 +37,10 @@ export interface AssignmentCreateRequest {
   time_limit_minutes?: number | null
   student_ids?: string[]
   class_ids?: string[]
+  // Backward compatible: single activity (legacy)
+  activity_id?: string
+  // Multi-activity: list of activities with order
+  activity_ids?: string[]
 }
 
 /**
@@ -47,12 +55,23 @@ export interface AssignmentUpdateRequest {
 }
 
 /**
+ * Minimal activity info for assignment response
+ * Story 8.1: Multi-Activity Assignment Data Model
+ */
+export interface ActivityInfo {
+  id: string
+  title: string | null
+  activity_type: string
+  order_index: number
+}
+
+/**
  * Assignment response from API
+ * Story 8.1: Added activities list and activity_count for multi-activity support
  */
 export interface AssignmentResponse {
   id: string
   teacher_id: string
-  activity_id: string
   book_id: string
   name: string
   instructions: string | null
@@ -61,6 +80,11 @@ export interface AssignmentResponse {
   created_at: string
   updated_at: string
   student_count: number
+  // Backward compatible: keep activity_id for single-activity assignments
+  activity_id: string | null
+  // Multi-activity support
+  activities: ActivityInfo[]
+  activity_count: number
 }
 
 /**
@@ -72,6 +96,31 @@ export interface AssignmentStudentResponse {
   student_id: string
   status: AssignmentStatus
   score: number | null
+  started_at: string | null
+  completed_at: string | null
+}
+
+/**
+ * Per-activity progress status for multi-activity assignments
+ * Story 8.1: Multi-Activity Assignment Data Model
+ */
+export type AssignmentStudentActivityStatus =
+  | "not_started"
+  | "in_progress"
+  | "completed"
+
+/**
+ * Per-activity progress tracking for multi-activity assignments
+ * Story 8.1: Multi-Activity Assignment Data Model
+ */
+export interface AssignmentStudentActivityResponse {
+  id: string
+  assignment_student_id: string
+  activity_id: string
+  status: AssignmentStudentActivityStatus
+  score: number | null
+  max_score: number
+  response_data: Record<string, any> | null
   started_at: string | null
   completed_at: string | null
 }
@@ -130,6 +179,9 @@ export interface StudentAssignmentResponse {
   started_at: string | null
   completed_at: string | null
   time_spent_minutes: number
+
+  // Multi-activity support (Story 8.3)
+  activity_count: number
 
   // Computed fields
   is_past_due: boolean
@@ -209,4 +261,215 @@ export interface AssignmentSubmissionResponse {
   score: number
   completed_at: string // ISO 8601 datetime string
   assignment_id: string
+}
+
+// =============================================================================
+// Multi-Activity Player Types (Story 8.3)
+// =============================================================================
+
+/**
+ * Activity with full config for multi-activity player
+ * Story 8.3: Student Multi-Activity Assignment Player
+ */
+export interface ActivityWithConfig {
+  id: string
+  title: string | null
+  activity_type: string
+  config_json: Record<string, any>
+  order_index: number
+}
+
+/**
+ * Per-activity progress info for multi-activity assignments
+ * Story 8.3: Student Multi-Activity Assignment Player
+ */
+export interface ActivityProgressInfo {
+  id: string
+  activity_id: string
+  status: AssignmentStudentActivityStatus
+  score: number | null
+  max_score: number
+  response_data: Record<string, any> | null
+  started_at: string | null
+  completed_at: string | null
+}
+
+/**
+ * Multi-activity assignment start response
+ * Story 8.3: Student Multi-Activity Assignment Player
+ */
+export interface MultiActivityStartResponse {
+  // Assignment info
+  assignment_id: string
+  assignment_name: string
+  instructions: string | null
+  due_date: string | null
+  time_limit_minutes: number | null
+
+  // Book info
+  book_id: string
+  book_title: string
+  book_name: string
+  publisher_name: string
+  book_cover_url: string | null
+
+  // Multi-activity data
+  activities: ActivityWithConfig[]
+  activity_progress: ActivityProgressInfo[]
+  total_activities: number
+
+  // Assignment-level progress
+  current_status: AssignmentStatus
+  time_spent_minutes: number
+  started_at: string | null
+
+  // Computed fields
+  completed_activities_count: number
+  all_activities_completed: boolean
+}
+
+/**
+ * Per-activity progress save request
+ * Story 8.3: Student Multi-Activity Assignment Player
+ */
+export interface ActivityProgressSaveRequest {
+  response_data: Record<string, any>
+  time_spent_seconds?: number
+  status: "in_progress" | "completed"
+  score?: number | null
+  max_score?: number
+}
+
+/**
+ * Per-activity progress save response
+ * Story 8.3: Student Multi-Activity Assignment Player
+ */
+export interface ActivityProgressSaveResponse {
+  message: string
+  activity_id: string
+  status: string
+  score: number | null
+  last_saved_at: string
+}
+
+/**
+ * Multi-activity assignment submit request
+ * Story 8.3: Student Multi-Activity Assignment Player
+ */
+export interface MultiActivitySubmitRequest {
+  force_submit?: boolean // For timer expiry
+  total_time_spent_minutes?: number
+}
+
+/**
+ * Per-activity score info for submission response
+ * Story 8.3: Student Multi-Activity Assignment Player
+ */
+export interface PerActivityScore {
+  activity_id: string
+  activity_title: string | null
+  score: number | null
+  max_score: number
+  status: string
+}
+
+/**
+ * Multi-activity assignment submit response
+ * Story 8.3: Student Multi-Activity Assignment Player
+ */
+export interface MultiActivitySubmitResponse {
+  success: boolean
+  message: string
+  assignment_id: string
+  combined_score: number
+  per_activity_scores: PerActivityScore[]
+  completed_at: string
+  total_activities: number
+  completed_activities: number
+}
+
+/**
+ * Activity state for UI tracking
+ * Story 8.3: Student Multi-Activity Assignment Player
+ */
+export interface ActivityState {
+  activityId: string
+  status: AssignmentStudentActivityStatus
+  isDirty: boolean // Has unsaved changes
+  responseData: Record<string, any> | null
+  score: number | null
+  timeSpentSeconds: number
+}
+
+// =============================================================================
+// Multi-Activity Analytics Types (Story 8.4)
+// =============================================================================
+
+/**
+ * Per-student score for a specific activity (used in expanded analytics view)
+ * Story 8.4: Multi-Activity Assignment Analytics
+ */
+export interface StudentActivityScore {
+  student_id: string
+  student_name: string
+  status: AssignmentStudentActivityStatus
+  score: number | null
+  max_score: number
+  time_spent_seconds: number
+  completed_at: string | null
+}
+
+/**
+ * Analytics data for a single activity within a multi-activity assignment
+ * Story 8.4: Multi-Activity Assignment Analytics
+ */
+export interface ActivityAnalyticsItem {
+  activity_id: string
+  activity_title: string | null
+  page_number: number
+  activity_type: string
+  class_average_score: number | null // null if no completions
+  completion_rate: number // 0.0 to 1.0
+  completed_count: number
+  total_assigned_count: number
+}
+
+/**
+ * Multi-activity assignment analytics response (teacher view)
+ * Story 8.4: Multi-Activity Assignment Analytics
+ */
+export interface MultiActivityAnalyticsResponse {
+  assignment_id: string
+  assignment_name: string
+  total_students: number
+  submitted_count: number
+  activities: ActivityAnalyticsItem[]
+  expanded_students: StudentActivityScore[] | null // Populated when expand_activity_id provided
+}
+
+/**
+ * Per-activity score item for student result view
+ * Story 8.4: Multi-Activity Assignment Analytics
+ */
+export interface ActivityScoreItem {
+  activity_id: string
+  activity_title: string | null
+  activity_type: string
+  score: number | null
+  max_score: number
+  status: AssignmentStudentActivityStatus
+}
+
+/**
+ * Student assignment result response (student view)
+ * Story 8.4: Multi-Activity Assignment Analytics
+ */
+export interface StudentAssignmentResultResponse {
+  assignment_id: string
+  assignment_name: string
+  total_score: number | null
+  completed_at: string | null
+  activity_scores: ActivityScoreItem[]
+  total_activities: number
+  completed_activities: number
 }

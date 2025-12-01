@@ -4,7 +4,7 @@
  * Story 4.8 - Activity Progress Persistence (Save & Resume)
  */
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { useToast } from "@/hooks/use-toast"
 import { useAssignmentSubmission } from "@/hooks/useAssignmentSubmission"
@@ -52,6 +52,13 @@ interface ActivityPlayerProps {
   onExit: () => void
   initialProgress?: Record<string, any> | null // Story 4.8: Saved progress from backend
   initialTimeSpent?: number // Story 4.8: Previously spent time in minutes
+  // Story 8.3: When embedded in MultiActivityPlayer
+  // - true: hide both header and footer (fully embedded)
+  // - "header-only": show activity header, hide footer
+  // - false/undefined: show both header and footer (standalone)
+  embedded?: boolean | "header-only"
+  // Callback when activity is completed (for multi-activity progress tracking)
+  onActivityComplete?: (score: number, answersJson: Record<string, any>) => void
 }
 
 // Type for activity answers - different players use different data structures
@@ -65,6 +72,11 @@ type ActivityAnswers =
  * Helper function to restore progress from JSON to appropriate data structure
  * Story 4.8: Convert saved progress back to Map/Set based on activity type
  * Exported for testing
+ *
+ * Note: Progress can be stored in two formats:
+ * 1. Direct: { "key1": "value1", ... }
+ * 2. Wrapped: { answers: { "key1": "value1", ... } }
+ * We handle both cases by extracting .answers if present
  */
 export function restoreProgressFromJson(
   initialProgress: Record<string, any> | null | undefined,
@@ -73,24 +85,35 @@ export function restoreProgressFromJson(
   if (!initialProgress) return null
 
   try {
+    // Extract answers if wrapped in { answers: ... } format
+    const rawAnswers = initialProgress.answers || initialProgress
+
+    // Skip if rawAnswers is empty or not an object
+    if (!rawAnswers || typeof rawAnswers !== "object") return null
+    if (Object.keys(rawAnswers).length === 0) return null
+
+    console.log("[restoreProgress] Activity type:", activityType, "Raw answers:", rawAnswers)
+
     if (
       activityType === "dragdroppicture" ||
       activityType === "dragdroppicturegroup" ||
       activityType === "matchTheWords"
     ) {
       // Convert object back to Map<string, string>
-      return new Map(Object.entries(initialProgress))
+      const map = new Map(Object.entries(rawAnswers))
+      console.log("[restoreProgress] Restored Map with", map.size, "entries")
+      return map
     }
     if (activityType === "circle" || activityType === "markwithx") {
       // Convert object back to Map<number, number> for question grouping
-      const entries = Object.entries(initialProgress).map(
+      const entries = Object.entries(rawAnswers).map(
         ([k, v]) => [parseInt(k, 10), v as number] as [number, number],
       )
       return new Map(entries)
     }
     if (activityType === "puzzleFindWords") {
-      // Convert array back to Set
-      const wordsArray = (initialProgress as any).words || []
+      // Convert array back to Set - could be rawAnswers directly or .words property
+      const wordsArray = Array.isArray(rawAnswers) ? rawAnswers : (rawAnswers.words || [])
       return new Set(wordsArray)
     }
   } catch (error) {
@@ -112,6 +135,8 @@ export function ActivityPlayer({
   onExit,
   initialProgress,
   initialTimeSpent = 0,
+  embedded = false,
+  onActivityComplete,
 }: ActivityPlayerProps) {
   // Story 4.8: Initialize answers from saved progress (must happen before first render)
   const [answers, setAnswers] = useState<ActivityAnswers>(() =>
@@ -187,15 +212,96 @@ export function ActivityPlayer({
     },
   })
 
-  // Show toast notification when progress is restored (Story 4.8)
+  // Note: Removed "Progress restored" toast to reduce popup notifications
+  // Progress restoration is handled silently
+
+  // Track last reported answer hash to prevent infinite loops
+  const lastReportedAnswerHashRef = useRef<string>("")
+
+  // Store callback in ref to avoid dependency issues
+  const onActivityCompleteRef = useRef(onActivityComplete)
   useEffect(() => {
-    if (initialProgress && answers) {
-      toast({
-        title: "Progress restored",
-        description: "Resuming from where you left off",
-      })
+    onActivityCompleteRef.current = onActivityComplete
+  }, [onActivityComplete])
+
+  // Story 8.3: Auto-calculate and report score when embedded and answers change
+  // This ensures scores are saved when navigating between activities
+  useEffect(() => {
+    // Only run when embedded with callback and we have answers
+    if (!embedded || !onActivityCompleteRef.current || !answers) return
+
+    // Check if we have enough answers to score
+    const hasAnswers =
+      (answers instanceof Map && answers.size > 0) ||
+      (answers instanceof Set && answers.size > 0)
+
+    if (!hasAnswers) return
+
+    // Create a hash of current answers to detect actual changes
+    let answersHash: string
+    if (answers instanceof Map) {
+      answersHash = JSON.stringify(Array.from(answers.entries()).sort())
+    } else if (answers instanceof Set) {
+      answersHash = JSON.stringify(Array.from(answers).sort())
+    } else {
+      answersHash = JSON.stringify(answers)
     }
-  }, [answers, initialProgress, toast]) // Empty deps - only run once on mount
+
+    // Skip if answers haven't actually changed (prevents infinite loop)
+    if (answersHash === lastReportedAnswerHashRef.current) {
+      return
+    }
+    lastReportedAnswerHashRef.current = answersHash
+
+    // Normalize activity type for comparison (handle backend variations)
+    const normalizedType = activityType.toLowerCase()
+
+    // Calculate score based on activity type
+    let calculatedScore: number | null = null
+    let answersJson: Record<string, any> = {}
+
+    try {
+      if (normalizedType === "dragdroppicture") {
+        const config = activityConfig as DragDropPictureActivity
+        const userAnswers = answers as Map<string, string>
+        const scoreResult = scoreDragDrop(userAnswers, config.answer)
+        calculatedScore = scoreResult.score
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "dragdroppicturegroup") {
+        const config = activityConfig as DragDropPictureGroupActivity
+        const userAnswers = answers as Map<string, string>
+        const scoreResult = scoreDragDropGroup(userAnswers, config.answer)
+        calculatedScore = scoreResult.score
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "matchthewords") {
+        const config = activityConfig as MatchTheWordsActivity
+        const userMatches = answers as Map<string, string>
+        const scoreResult = scoreMatch(userMatches, config.sentences)
+        calculatedScore = scoreResult.score
+        answersJson = { answers: Object.fromEntries(userMatches) }
+      } else if (normalizedType === "circle" || normalizedType === "markwithx") {
+        const config = activityConfig as CircleActivity
+        const userSelections = answers as Map<number, number>
+        const circleCount = config.circleCount ?? 2
+        const scoreResult = scoreCircle(userSelections, config.answer, config.type, circleCount)
+        calculatedScore = scoreResult.score
+        answersJson = { answers: Object.fromEntries(userSelections) }
+      } else if (normalizedType === "puzzlefindwords") {
+        const config = activityConfig as PuzzleFindWordsActivity
+        const foundWords = answers as Set<string>
+        const scoreResult = scoreWordSearch(foundWords, config.wordList)
+        calculatedScore = scoreResult.score
+        answersJson = { answers: Array.from(foundWords) }
+      }
+
+      // Report score to parent using ref (avoids infinite loop)
+      if (calculatedScore !== null && onActivityCompleteRef.current) {
+        onActivityCompleteRef.current(calculatedScore, answersJson)
+      }
+    } catch (error) {
+      console.error("Error calculating score:", error)
+    }
+  }, [embedded, answers, activityConfig, activityType]) // Removed onActivityComplete from deps
 
   // Save before page unload (Story 4.8)
   useEffect(() => {
@@ -347,12 +453,20 @@ export function ActivityPlayer({
       setScoreResult(score)
       setShowResults(true)
 
+      // Story 8.3: Notify parent (MultiActivityPlayer) of completion with score
+      if (onActivityComplete) {
+        onActivityComplete(score.score, answersJson)
+      }
+
       // Submit to backend (Story 4.8: Use getTimeSpent for initial + new time)
-      submit({
-        answers_json: answersJson,
-        score: score.score,
-        time_spent_minutes: getTimeSpent(),
-      })
+      // Only submit directly if not embedded (parent handles submission for embedded)
+      if (!embedded) {
+        submit({
+          answers_json: answersJson,
+          score: score.score,
+          time_spent_minutes: getTimeSpent(),
+        })
+      }
       return // Early return since we already set correctAnswers
     } else if (activityConfig.type === "puzzleFindWords") {
       const config = activityConfig as PuzzleFindWordsActivity
@@ -379,12 +493,20 @@ export function ActivityPlayer({
     setScoreResult(score)
     setShowResults(true)
 
+    // Story 8.3: Notify parent (MultiActivityPlayer) of completion with score
+    if (onActivityComplete) {
+      onActivityComplete(score.score, answersJson)
+    }
+
     // Submit to backend (Story 4.8: Use getTimeSpent for initial + new time)
-    submit({
-      answers_json: answersJson,
-      score: score.score,
-      time_spent_minutes: getTimeSpent(),
-    })
+    // Only submit directly if not embedded (parent handles submission for embedded)
+    if (!embedded) {
+      submit({
+        answers_json: answersJson,
+        score: score.score,
+        time_spent_minutes: getTimeSpent(),
+      })
+    }
   }
 
   // Handler for when player components update their answers
@@ -512,6 +634,57 @@ export function ActivityPlayer({
     }
   }
 
+  // When fully embedded (embedded=true), render only the player content with full height
+  if (embedded === true) {
+    return (
+      <div className="flex h-full flex-col bg-gray-50 dark:bg-gray-900">
+        {/* Main Content - Activity Only - Full Height */}
+        <div className="flex h-full min-h-0 flex-1">
+          <div className="h-full w-full">
+            {!showResults && renderPlayer()}
+            {showResults && scoreResult && (
+              <ActivityResults
+                scoreResult={scoreResult}
+                onReviewAnswers={() => setShowResults(false)}
+                onExit={onExit}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // When embedded="header-only", show activity header but hide footer
+  if (embedded === "header-only") {
+    return (
+      <div className="flex h-full flex-col bg-gray-50 dark:bg-gray-900">
+        {/* Activity Header */}
+        <ActivityHeader
+          bookTitle={bookTitle}
+          activityType={activityType}
+          timeLimit={undefined} // Timer handled by MultiActivityPlayer
+          onTimeExpired={handleTimeExpired}
+        />
+
+        {/* Main Content - Full remaining height */}
+        <div className="flex min-h-0 flex-1">
+          <div className="h-full w-full">
+            {!showResults && renderPlayer()}
+            {showResults && scoreResult && (
+              <ActivityResults
+                scoreResult={scoreResult}
+                onReviewAnswers={() => setShowResults(false)}
+                onExit={onExit}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Standalone mode - full header/footer
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
       {/* Activity Header */}

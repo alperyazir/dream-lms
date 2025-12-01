@@ -248,7 +248,7 @@ export function StudentAssignmentCard({
             onClick={(e) => {
               e.stopPropagation()
               navigate({
-                to: "/student/assignments/$assignmentId/play",
+                to: "/student/assignments/$assignmentId/play-multi",
                 params: { assignmentId: assignment.assignment_id },
               })
             }}
@@ -264,7 +264,7 @@ export function StudentAssignmentCard({
             onClick={(e) => {
               e.stopPropagation()
               navigate({
-                to: "/student/assignments/$assignmentId/play",
+                to: "/student/assignments/$assignmentId/play-multi",
                 params: { assignmentId: assignment.assignment_id },
               })
             }}

@@ -4,7 +4,7 @@
  * Follows QML ActivityMatchTheWords.qml pattern
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import type { MatchTheWordsActivity } from "@/lib/mockData"
 import { getActivityImageUrl } from "@/services/booksApi"
 
@@ -94,25 +94,19 @@ export function MatchTheWordsPlayer({
     }
 
     loadImages()
+  }, [bookId, activity.sentences])
 
+  // Cleanup blob URLs on unmount (separate effect to avoid issues)
+  useEffect(() => {
     return () => {
-      // Cleanup blob URLs
       imageUrls.forEach((url) => {
         URL.revokeObjectURL(url)
       })
     }
-  }, [
-    bookId,
-    activity.sentences, // Cleanup blob URLs
-    imageUrls.forEach,
-  ])
+  }, [imageUrls])
 
-  // Update lines when matches change - use layout effect to prevent visual jumps
-  useLayoutEffect(() => {
-    updateLinesFromMatches()
-  }, [updateLinesFromMatches])
-
-  const updateLinesFromMatches = () => {
+  // Function to update lines when matches change
+  const updateLinesFromMatches = useCallback(() => {
     const newLines: LineData[] = []
 
     matches.forEach((word, matchKey) => {
@@ -152,7 +146,12 @@ export function MatchTheWordsPlayer({
     })
 
     setLines(newLines)
-  }
+  }, [matches, showResults, activity.sentences])
+
+  // Update lines when matches change - use layout effect to prevent visual jumps
+  useLayoutEffect(() => {
+    updateLinesFromMatches()
+  }, [updateLinesFromMatches])
 
   // Update drag line position
   const updateDragLinePosition = (clientX: number, clientY: number) => {
@@ -335,20 +334,25 @@ export function MatchTheWordsPlayer({
 
   return (
     <div className="flex h-full flex-col p-2">
-      {/* Header */}
-      <div className="mb-3">
-        <div className="mb-1 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            {activity.headerText}
-          </h2>
+      {/* Header - compact */}
+      <div className="mb-2 shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">
+              {activity.headerText}
+            </h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Drag to match • {completionCount} / {totalCount}
+            </p>
+          </div>
           {!showResults && (
             <button
               type="button"
               onClick={handleReset}
-              className="flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               <svg
-                className="h-4 w-4"
+                className="h-3 w-3"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -364,18 +368,12 @@ export function MatchTheWordsPlayer({
             </button>
           )}
         </div>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          Drag the play icons to match words with images
-        </p>
-        <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-          Matched: {completionCount} / {totalCount}
-        </div>
       </div>
 
-      {/* Three-column layout with canvas overlay */}
+      {/* Three-column layout with canvas overlay - fills remaining space */}
       <div
         ref={containerRef}
-        className="relative flex flex-1 items-stretch overflow-hidden rounded-lg"
+        className="relative flex min-h-0 flex-1 items-stretch overflow-hidden rounded-lg"
       >
         {/* SVG Canvas for lines */}
         <svg
@@ -411,22 +409,22 @@ export function MatchTheWordsPlayer({
           )}
         </svg>
 
-        {/* Ghost circle during drag */}
+        {/* Ghost circle during drag - responsive size matching drag circles */}
         {dragPosition &&
           draggedIndex !== null &&
-          dragPosition.x > 32 &&
-          dragPosition.y > 32 && (
+          dragPosition.x > 24 &&
+          dragPosition.y > 24 && (
             <div
-              className="pointer-events-none absolute flex h-16 w-16 items-center justify-center rounded-full bg-gray-500 transition-none dark:bg-gray-500"
+              className="pointer-events-none absolute flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 transition-none dark:bg-gray-500 sm:h-12 sm:w-12"
               style={{
-                left: `${dragPosition.x - 32}px`,
-                top: `${dragPosition.y - 32}px`,
+                left: `${dragPosition.x - 20}px`,
+                top: `${dragPosition.y - 20}px`,
                 zIndex: 10,
                 willChange: "transform",
               }}
             >
               <svg
-                className="h-10 w-10 text-white"
+                className="h-6 w-6 text-white sm:h-8 sm:w-8"
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -439,7 +437,7 @@ export function MatchTheWordsPlayer({
         <div className="flex h-full w-full" style={{ zIndex: 2 }}>
           {/* Left Column: Words with draggable circles */}
           <div
-            className="flex w-2/5 flex-col justify-center gap-2 pr-2"
+            className="flex w-2/5 flex-col justify-around py-2 pr-2"
             style={{ minHeight: 0 }}
           >
             {activity.match_words.map((item, index) => {
@@ -449,14 +447,13 @@ export function MatchTheWordsPlayer({
               return (
                 <div
                   key={index}
-                  className="flex min-h-[100px] items-center justify-end gap-3"
-                  style={{ height: `${100 / maxItems}%` }}
+                  className="flex items-center justify-end gap-2"
                 >
-                  <p className="text-right text-lg font-medium text-gray-900 dark:text-gray-100">
+                  <p className="text-right text-sm font-medium text-gray-900 dark:text-gray-100 sm:text-base">
                     {item.word}
                   </p>
 
-                  {/* Drag circle with play icon */}
+                  {/* Drag circle with play icon - responsive size */}
                   <div
                     ref={(el) => {
                       dragCircleRefs.current[index] = el
@@ -467,7 +464,7 @@ export function MatchTheWordsPlayer({
                     }
                     onDrag={handleDrag}
                     onDragEnd={handleDragEnd}
-                    className={`relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full ${
+                    className={`relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full sm:h-12 sm:w-12 ${
                       matched
                         ? "bg-gray-400 dark:bg-gray-600"
                         : isDragging
@@ -478,7 +475,7 @@ export function MatchTheWordsPlayer({
                     {/* Play icon */}
                     {!matched && (
                       <svg
-                        className="h-10 w-10 text-white"
+                        className="h-6 w-6 text-white sm:h-8 sm:w-8"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
@@ -496,7 +493,7 @@ export function MatchTheWordsPlayer({
 
           {/* Right Column: Images/Sentences with drop circles */}
           <div
-            className="flex w-2/5 flex-col justify-center gap-2 pl-2"
+            className="flex w-2/5 flex-col justify-around py-2 pl-2"
             style={{ minHeight: 0 }}
           >
             {activity.sentences.map((item, index) => {
@@ -509,13 +506,12 @@ export function MatchTheWordsPlayer({
               return (
                 <div
                   key={index}
-                  className="flex min-h-[100px] items-center gap-3"
-                  style={{ height: `${100 / maxItems}%` }}
+                  className="flex items-center gap-2"
                   onDragOver={(e) => !match && handleDragOver(e, index)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, index)}
                 >
-                  {/* Drop circle */}
+                  {/* Drop circle - responsive size */}
                   <div
                     ref={(el) => {
                       dropCircleRefs.current[index] = el
@@ -523,7 +519,7 @@ export function MatchTheWordsPlayer({
                     className="relative flex-shrink-0"
                   >
                     <div
-                      className={`flex h-16 w-16 items-center justify-center rounded-full transition-all ${
+                      className={`flex h-10 w-10 items-center justify-center rounded-full transition-all sm:h-12 sm:w-12 ${
                         isHovered && !match
                           ? "scale-110 bg-teal-300 opacity-50 dark:bg-teal-600"
                           : match
@@ -540,7 +536,7 @@ export function MatchTheWordsPlayer({
                     {match && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <svg
-                          className="h-10 w-10 text-white"
+                          className="h-6 w-6 text-white sm:h-8 sm:w-8"
                           fill="currentColor"
                           viewBox="0 0 24 24"
                         >
@@ -552,7 +548,7 @@ export function MatchTheWordsPlayer({
                     {/* Show result indicator */}
                     {showResults && match && (
                       <div
-                        className={`absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold text-white ${
+                        className={`absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-white sm:h-6 sm:w-6 ${
                           isCorrect ? "bg-green-600" : "bg-red-600"
                         }`}
                       >
@@ -565,7 +561,7 @@ export function MatchTheWordsPlayer({
                       <button
                         type="button"
                         onClick={() => handleRemoveMatch(match.matchKey)}
-                        className="absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-gray-700 text-sm text-white hover:bg-red-500"
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-700 text-xs text-white hover:bg-red-500 sm:h-6 sm:w-6"
                         aria-label="Remove match"
                       >
                         ✕
@@ -573,23 +569,23 @@ export function MatchTheWordsPlayer({
                     )}
                   </div>
 
-                  {/* Image or Text */}
-                  <div className="flex flex-1 items-center gap-3">
+                  {/* Image or Text - responsive image sizing */}
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
                     {item.image_path && imageUrls.has(index) ? (
                       <img
                         src={imageUrls.get(index)}
                         alt={`Match option ${index + 1}`}
-                        className="h-24 w-24 flex-shrink-0 rounded-lg border-2 border-gray-300 object-cover dark:border-gray-600"
+                        className="h-16 w-16 flex-shrink-0 rounded-lg border-2 border-gray-300 object-cover dark:border-gray-600 sm:h-20 sm:w-20"
                       />
                     ) : item.image_path ? (
-                      <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-lg border-2 border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
+                      <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg border-2 border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800 sm:h-20 sm:w-20">
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
                       </div>
                     ) : null}
 
                     {/* Show sentence text if it exists */}
                     {item.sentence && (
-                      <p className="text-left text-base text-gray-900 dark:text-gray-100">
+                      <p className="truncate text-left text-sm text-gray-900 dark:text-gray-100 sm:text-base">
                         {item.sentence}
                       </p>
                     )}

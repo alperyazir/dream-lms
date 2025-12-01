@@ -3,7 +3,7 @@
  * Story 4.2 - Added image coordinate scaling and authenticated image loading
  */
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { DragDropAnswer, DragDropPictureActivity } from "@/lib/mockData"
 import { getActivityImageUrl } from "@/services/booksApi"
 
@@ -53,7 +53,8 @@ export function DragDropPicturePlayer({
   }
 
   // Update image scale when image loads or window resizes (Story 4.2)
-  const updateImageScale = () => {
+  // Memoized with useCallback to prevent infinite re-render loop
+  const updateImageScale = useCallback(() => {
     const img = imageRef.current
     const container = containerRef.current
     if (!img || !container) return
@@ -88,7 +89,7 @@ export function DragDropPicturePlayer({
 
     setImageScale({ x: xScale, y: yScale })
     setImageOffset({ x: xOffset, y: yOffset })
-  }
+  }, []) // No dependencies - uses refs which don't change
 
   // Fetch authenticated image (Story 4.2)
   useEffect(() => {
@@ -117,12 +118,17 @@ export function DragDropPicturePlayer({
 
     return () => {
       isMounted = false
-      // Cleanup blob URL when component unmounts
+    }
+  }, [bookId, activity.section_path])
+
+  // Cleanup blob URL on unmount (separate effect to avoid infinite loop)
+  useEffect(() => {
+    return () => {
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl)
       }
     }
-  }, [bookId, activity.section_path, imageUrl])
+  }, [imageUrl])
 
   useEffect(() => {
     const img = imageRef.current
@@ -295,21 +301,26 @@ export function DragDropPicturePlayer({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col p-4">
-      {/* Word Bank - Fixed min-height to prevent layout shifts */}
-      <div className="mb-4 shrink-0">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Word Bank
-          </h3>
+    <div className="flex h-full min-h-0 flex-col p-2">
+      {/* Word Bank - Compact header */}
+      <div className="mb-2 shrink-0">
+        <div className="mb-1 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Word Bank
+            </h3>
+            <span className="text-xs text-gray-500">
+              {completionCount} / {totalCount}
+            </span>
+          </div>
           {!showResults && (
             <button
               type="button"
               onClick={handleReset}
-              className="flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               <svg
-                className="h-4 w-4"
+                className="h-3 w-3"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -325,7 +336,7 @@ export function DragDropPicturePlayer({
             </button>
           )}
         </div>
-        <div className="flex min-h-[60px] flex-wrap justify-center gap-2">
+        <div className="flex min-h-[48px] flex-wrap justify-center gap-1.5">
           {activity.words.map((word, index) => (
             <button
               type="button"
@@ -341,15 +352,15 @@ export function DragDropPicturePlayer({
               onClick={() => !showResults && handleWordClick(word)}
               onKeyDown={(e) => handleWordKeyDown(e, word)}
               className={`
-                cursor-pointer rounded-lg border-2 px-4 py-2 font-semibold shadow-neuro-sm transition-all duration-200
+                cursor-pointer rounded-md border-2 px-3 py-1.5 text-sm font-semibold shadow-sm transition-all duration-200
                 ${
                   usedWords.has(word)
                     ? "pointer-events-none border-gray-300 bg-gray-100 opacity-30 dark:border-gray-600 dark:bg-gray-800"
                     : selectedWord === word
-                      ? "border-blue-500 bg-blue-50 shadow-neuro dark:border-blue-400 dark:bg-blue-900/30"
+                      ? "border-blue-500 bg-blue-50 shadow-md dark:border-blue-400 dark:bg-blue-900/30"
                       : draggedWord === word
-                        ? "scale-105 border-teal-500 bg-teal-50 shadow-neuro dark:border-teal-400 dark:bg-teal-900/30"
-                        : "border-gray-300 bg-white hover:scale-105 hover:border-teal-400 hover:shadow-neuro dark:border-gray-600 dark:bg-gray-800 dark:hover:border-teal-500"
+                        ? "scale-105 border-teal-500 bg-teal-50 shadow-md dark:border-teal-400 dark:bg-teal-900/30"
+                        : "border-gray-300 bg-white hover:scale-105 hover:border-teal-400 hover:shadow-md dark:border-gray-600 dark:bg-gray-800 dark:hover:border-teal-500"
                 }
               `}
               tabIndex={!usedWords.has(word) && !showResults ? 0 : -1}
@@ -360,17 +371,12 @@ export function DragDropPicturePlayer({
             </button>
           ))}
         </div>
-
-        {/* Completion Counter */}
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Completed: {completionCount} / {totalCount}
-        </div>
       </div>
 
-      {/* Background Image with Drop Zones */}
+      {/* Background Image with Drop Zones - fills remaining height */}
       <div
         ref={containerRef}
-        className="relative flex flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+        className="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
       >
         {/* Loading state */}
         {!imageUrl && !imageError && (

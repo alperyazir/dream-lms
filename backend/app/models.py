@@ -12,7 +12,9 @@ if TYPE_CHECKING:
     from app.models import (
         Activity,
         Assignment,
+        AssignmentActivity,
         AssignmentStudent,
+        AssignmentStudentActivity,
         Book,
         BookAccess,
         Class,
@@ -662,6 +664,9 @@ class Activity(ActivityBase, table=True):
     # Relationships
     book: Book = Relationship(back_populates="activities", sa_relationship_kwargs={"passive_deletes": True})
     assignments: list["Assignment"] = Relationship(back_populates="activity", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    # New relationships for multi-activity support
+    assignment_activities: list["AssignmentActivity"] = Relationship(back_populates="activity", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    student_activity_progress: list["AssignmentStudentActivity"] = Relationship(back_populates="activity", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
 class ActivityPublic(ActivityBase):
@@ -716,8 +721,19 @@ class AssignmentBase(SQLModel):
 class AssignmentCreate(AssignmentBase):
     """Properties to receive via API on Assignment creation"""
     teacher_id: uuid.UUID
-    activity_id: uuid.UUID
     book_id: uuid.UUID
+    # Backward compatible: either activity_id OR activity_ids must be provided
+    activity_id: uuid.UUID | None = None
+    activity_ids: list[uuid.UUID] | None = None
+
+    @model_validator(mode='after')
+    def validate_activity_ids(self) -> 'AssignmentCreate':
+        """Validate that either activity_id OR activity_ids is provided"""
+        if self.activity_id is None and (self.activity_ids is None or len(self.activity_ids) == 0):
+            raise ValueError("Either activity_id or activity_ids must be provided")
+        if self.activity_id is not None and self.activity_ids is not None and len(self.activity_ids) > 0:
+            raise ValueError("Cannot provide both activity_id and activity_ids")
+        return self
 
 
 class AssignmentUpdate(SQLModel):
@@ -736,16 +752,30 @@ class Assignment(AssignmentBase, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
-    activity_id: uuid.UUID = Field(foreign_key="activities.id", index=True, ondelete="CASCADE")
+    # Keep activity_id for backward compatibility during migration
+    activity_id: uuid.UUID | None = Field(default=None, foreign_key="activities.id", index=True, ondelete="CASCADE")
     book_id: uuid.UUID = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
     teacher: Teacher = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
-    activity: Activity = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
+    activity: Optional["Activity"] = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
     book: Book = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
     assignment_students: list["AssignmentStudent"] = Relationship(back_populates="assignment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    # New relationship for multi-activity support
+    assignment_activities: list["AssignmentActivity"] = Relationship(back_populates="assignment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+    @property
+    def activities(self) -> list["Activity"]:
+        """Returns ordered list of activities via junction table"""
+        sorted_aa = sorted(self.assignment_activities, key=lambda aa: aa.order_index)
+        return [aa.activity for aa in sorted_aa]
+
+    @property
+    def is_multi_activity(self) -> bool:
+        """Check if assignment has multiple activities"""
+        return len(self.assignment_activities) > 1
 
     @model_validator(mode='after')
     def validate_time_limit(self) -> 'Assignment':
@@ -759,10 +789,55 @@ class AssignmentPublic(AssignmentBase):
     """Properties to return via API"""
     id: uuid.UUID
     teacher_id: uuid.UUID
-    activity_id: uuid.UUID
     book_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    # Backward compatible: keep activity_id for single-activity assignments
+    activity_id: uuid.UUID | None = None
+    # New field for multi-activity assignments
+    activities: list["ActivityPublic"] = []
+    activity_count: int = 0
+
+
+# ============================================================================
+# AssignmentActivity - Junction table for multi-activity assignments
+# ============================================================================
+
+
+class AssignmentActivityBase(SQLModel):
+    """Shared AssignmentActivity properties"""
+    order_index: int = Field(default=0, ge=0)
+
+
+class AssignmentActivityCreate(AssignmentActivityBase):
+    """Properties to receive via API on AssignmentActivity creation"""
+    assignment_id: uuid.UUID
+    activity_id: uuid.UUID
+
+
+class AssignmentActivity(AssignmentActivityBase, table=True):
+    """Junction table linking assignments to activities with ordering"""
+    __tablename__ = "assignment_activities"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    assignment_id: uuid.UUID = Field(foreign_key="assignments.id", index=True, ondelete="CASCADE")
+    activity_id: uuid.UUID = Field(foreign_key="activities.id", index=True, ondelete="CASCADE")
+
+    # SQLAlchemy-level unique constraint
+    __table_args__ = (
+        UniqueConstraint('assignment_id', 'activity_id', name='uq_assignment_activity'),
+    )
+
+    # Relationships
+    assignment: "Assignment" = Relationship(back_populates="assignment_activities", sa_relationship_kwargs={"passive_deletes": True})
+    activity: "Activity" = Relationship(back_populates="assignment_activities", sa_relationship_kwargs={"passive_deletes": True})
+
+
+class AssignmentActivityPublic(AssignmentActivityBase):
+    """Properties to return via API"""
+    id: uuid.UUID
+    assignment_id: uuid.UUID
+    activity_id: uuid.UUID
 
 
 # --- AssignmentStudent Junction Table ---
@@ -822,6 +897,41 @@ class AssignmentStudent(AssignmentStudentBase, table=True):
     # Relationships
     assignment: Assignment = Relationship(back_populates="assignment_students", sa_relationship_kwargs={"passive_deletes": True})
     student: Student = Relationship(back_populates="assignment_submissions", sa_relationship_kwargs={"passive_deletes": True})
+    # New relationship for per-activity progress
+    activity_progress: list["AssignmentStudentActivity"] = Relationship(back_populates="assignment_student", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+    def calculate_combined_score(self) -> float | None:
+        """Calculate combined score from child activity progress as percentage (0-100)"""
+        if not self.activity_progress:
+            return None
+        
+        completed_activities = [ap for ap in self.activity_progress if ap.score is not None]
+        if not completed_activities:
+            return None
+        
+        total_score = sum(ap.score for ap in completed_activities)
+        total_max_score = sum(ap.max_score for ap in completed_activities)
+        
+        if total_max_score == 0:
+            return None
+        
+        return (total_score / total_max_score) * 100
+
+    def calculate_total_max_score(self) -> float:
+        """Calculate total max score from all child activities"""
+        if not self.activity_progress:
+            return 0.0
+        return sum(ap.max_score for ap in self.activity_progress)
+
+    @property
+    def all_activities_completed(self) -> bool:
+        """Check if all activities in the assignment are completed"""
+        if not self.activity_progress:
+            return False
+        return all(
+            ap.status == AssignmentStudentActivityStatus.completed 
+            for ap in self.activity_progress
+        )
 
     @model_validator(mode='after')
     def validate_score(self) -> 'AssignmentStudent':
@@ -836,6 +946,72 @@ class AssignmentStudentPublic(AssignmentStudentBase):
     id: uuid.UUID
     assignment_id: uuid.UUID
     student_id: uuid.UUID
+    # New field for per-activity progress
+    activity_progress: list["AssignmentStudentActivityPublic"] = []
+
+
+
+# ============================================================================
+# AssignmentStudentActivity - Per-activity progress tracking
+# ============================================================================
+
+
+class AssignmentStudentActivityStatus(str, Enum):
+    """Per-activity completion status"""
+    not_started = "not_started"
+    in_progress = "in_progress"
+    completed = "completed"
+
+
+class AssignmentStudentActivityBase(SQLModel):
+    """Shared AssignmentStudentActivity properties"""
+    status: AssignmentStudentActivityStatus = Field(default=AssignmentStudentActivityStatus.not_started)
+    score: float | None = Field(default=None, ge=0)
+    max_score: float = Field(default=100.0, ge=0)
+    response_data: dict | None = Field(default=None, sa_column=Column(JSON))
+    started_at: datetime | None = Field(default=None)
+    completed_at: datetime | None = Field(default=None)
+
+
+class AssignmentStudentActivityCreate(AssignmentStudentActivityBase):
+    """Properties to receive via API on AssignmentStudentActivity creation"""
+    assignment_student_id: uuid.UUID
+    activity_id: uuid.UUID
+
+
+class AssignmentStudentActivityUpdate(SQLModel):
+    """Properties to receive via API on AssignmentStudentActivity update"""
+    status: AssignmentStudentActivityStatus | None = None
+    score: float | None = None
+    max_score: float | None = None
+    response_data: dict | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+class AssignmentStudentActivity(AssignmentStudentActivityBase, table=True):
+    """Per-activity progress tracking for assignment students"""
+    __tablename__ = "assignment_student_activities"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    assignment_student_id: uuid.UUID = Field(foreign_key="assignment_students.id", index=True, ondelete="CASCADE")
+    activity_id: uuid.UUID = Field(foreign_key="activities.id", index=True, ondelete="CASCADE")
+
+    # SQLAlchemy-level unique constraint
+    __table_args__ = (
+        UniqueConstraint('assignment_student_id', 'activity_id', name='uq_assignment_student_activity'),
+    )
+
+    # Relationships
+    assignment_student: "AssignmentStudent" = Relationship(back_populates="activity_progress", sa_relationship_kwargs={"passive_deletes": True})
+    activity: "Activity" = Relationship(back_populates="student_activity_progress", sa_relationship_kwargs={"passive_deletes": True})
+
+
+class AssignmentStudentActivityPublic(AssignmentStudentActivityBase):
+    """Properties to return via API"""
+    id: uuid.UUID
+    assignment_student_id: uuid.UUID
+    activity_id: uuid.UUID
 
 
 # ============================================================================

@@ -16,9 +16,12 @@ from app.models import AssignmentStatus
 
 
 class AssignmentCreate(BaseModel):
-    """Schema for creating a new assignment."""
+    """Schema for creating a new assignment.
 
-    activity_id: uuid.UUID
+    Supports both single-activity (backward compatible) and multi-activity assignments.
+    Provide either activity_id (single) OR activity_ids (multi), not both.
+    """
+
     book_id: uuid.UUID
     name: str
     instructions: str | None = None
@@ -26,6 +29,10 @@ class AssignmentCreate(BaseModel):
     time_limit_minutes: int | None = None
     student_ids: list[uuid.UUID] | None = None
     class_ids: list[uuid.UUID] | None = None
+    # Backward compatible: single activity (legacy)
+    activity_id: uuid.UUID | None = None
+    # Multi-activity: list of activities with order
+    activity_ids: list[uuid.UUID] | None = None
 
     @field_validator("name")
     @classmethod
@@ -63,6 +70,27 @@ class AssignmentCreate(BaseModel):
             raise ValueError("At least one student or class must be selected")
 
         return self
+
+    @model_validator(mode="after")
+    def validate_activity_ids(self) -> "AssignmentCreate":
+        """Validate that either activity_id OR activity_ids is provided, not both."""
+        has_single = self.activity_id is not None
+        has_multi = self.activity_ids is not None and len(self.activity_ids) > 0
+
+        if not has_single and not has_multi:
+            raise ValueError("Either activity_id or activity_ids must be provided")
+        if has_single and has_multi:
+            raise ValueError("Cannot provide both activity_id and activity_ids")
+
+        return self
+
+    def get_activity_ids(self) -> list[uuid.UUID]:
+        """Get list of activity IDs (handles both single and multi formats)."""
+        if self.activity_ids:
+            return self.activity_ids
+        if self.activity_id:
+            return [self.activity_id]
+        return []
 
 
 class AssignmentUpdate(BaseModel):
@@ -115,6 +143,17 @@ class AssignmentStudentResponse(BaseModel):
     completed_at: datetime | None
 
 
+class ActivityInfo(BaseModel):
+    """Minimal activity info for assignment response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str | None
+    activity_type: str
+    order_index: int = 0
+
+
 class AssignmentResponse(BaseModel):
     """Assignment response schema for API."""
 
@@ -122,7 +161,6 @@ class AssignmentResponse(BaseModel):
 
     id: uuid.UUID
     teacher_id: uuid.UUID
-    activity_id: uuid.UUID
     book_id: uuid.UUID
     name: str
     instructions: str | None
@@ -131,6 +169,11 @@ class AssignmentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     student_count: int = 0
+    # Backward compatible: keep activity_id for single-activity assignments
+    activity_id: uuid.UUID | None = None
+    # Multi-activity support
+    activities: list[ActivityInfo] = []
+    activity_count: int = 0
 
 
 class AssignmentListItem(BaseModel):
@@ -191,6 +234,9 @@ class StudentAssignmentResponse(BaseModel):
     started_at: datetime | None
     completed_at: datetime | None
     time_spent_minutes: int
+
+    # Multi-activity support (Story 8.3)
+    activity_count: int = 1  # Number of activities in this assignment
 
     @field_validator("status")
     @classmethod
@@ -359,3 +405,248 @@ class AssignmentSaveProgressResponse(BaseModel):
     message: str
     last_saved_at: datetime
     time_spent_minutes: int
+
+
+# =============================================================================
+# Multi-Activity Assignment Schemas (Story 8.3)
+# =============================================================================
+
+
+class ActivityWithConfig(BaseModel):
+    """Activity info with full config for multi-activity player."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str | None
+    activity_type: str
+    config_json: dict
+    order_index: int = 0
+
+
+class ActivityProgressInfo(BaseModel):
+    """Per-activity progress info for multi-activity assignments."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    activity_id: uuid.UUID
+    status: str  # not_started, in_progress, completed
+    score: float | None
+    max_score: float
+    response_data: dict | None
+    started_at: datetime | None
+    completed_at: datetime | None
+
+
+class MultiActivityStartResponse(BaseModel):
+    """Response schema for starting a multi-activity assignment."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    # Assignment info
+    assignment_id: uuid.UUID
+    assignment_name: str
+    instructions: str | None
+    due_date: datetime | None
+    time_limit_minutes: int | None
+
+    # Book info
+    book_id: uuid.UUID
+    book_title: str
+    book_name: str
+    publisher_name: str
+    book_cover_url: str | None
+
+    # Multi-activity data
+    activities: list[ActivityWithConfig]
+    activity_progress: list[ActivityProgressInfo]
+    total_activities: int
+
+    # Assignment-level progress
+    current_status: str
+    time_spent_minutes: int
+    started_at: datetime | None
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def completed_activities_count(self) -> int:
+        """Count of completed activities."""
+        return sum(1 for ap in self.activity_progress if ap.status == "completed")
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def all_activities_completed(self) -> bool:
+        """Check if all activities are completed."""
+        return self.completed_activities_count == self.total_activities
+
+
+class ActivityProgressSaveRequest(BaseModel):
+    """Request schema for saving per-activity progress."""
+
+    response_data: dict
+    time_spent_seconds: int = 0
+    status: str = "in_progress"  # in_progress or completed
+    score: float | None = None  # Required if status is completed
+    max_score: float = 100.0
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        """Validate status is one of the allowed values."""
+        allowed_statuses = ["in_progress", "completed"]
+        if v not in allowed_statuses:
+            raise ValueError(f"Status must be one of {allowed_statuses}")
+        return v
+
+    @field_validator("response_data")
+    @classmethod
+    def validate_payload_size(cls, v: dict) -> dict:
+        """Validate response_data payload size to prevent DoS attacks."""
+        MAX_PAYLOAD_SIZE_BYTES = 100 * 1024  # 100KB
+
+        try:
+            payload_json = json.dumps(v, ensure_ascii=False)
+            payload_size_bytes = len(payload_json.encode("utf-8"))
+
+            if payload_size_bytes > MAX_PAYLOAD_SIZE_BYTES:
+                raise ValueError(
+                    f"Response data size ({payload_size_bytes} bytes) exceeds "
+                    f"maximum allowed size ({MAX_PAYLOAD_SIZE_BYTES} bytes / 100KB)."
+                )
+        except (TypeError, ValueError) as e:
+            if "exceeds maximum" in str(e):
+                raise
+            raise ValueError("Invalid JSON data in response_data") from e
+
+        return v
+
+    @model_validator(mode="after")
+    def validate_score_on_complete(self) -> "ActivityProgressSaveRequest":
+        """Validate score is provided when status is completed."""
+        if self.status == "completed" and self.score is None:
+            raise ValueError("Score is required when status is 'completed'")
+        return self
+
+
+class ActivityProgressSaveResponse(BaseModel):
+    """Response schema for saving per-activity progress."""
+
+    message: str
+    activity_id: uuid.UUID
+    status: str
+    score: float | None
+    last_saved_at: datetime
+
+
+class MultiActivitySubmitRequest(BaseModel):
+    """Request schema for submitting a multi-activity assignment."""
+
+    force_submit: bool = False  # Force submit even if not all activities completed (for timeout)
+    total_time_spent_minutes: int = 0
+
+
+class PerActivityScore(BaseModel):
+    """Per-activity score info for submission response."""
+
+    activity_id: uuid.UUID
+    activity_title: str | None
+    score: float | None
+    max_score: float
+    status: str
+
+
+class MultiActivitySubmitResponse(BaseModel):
+    """Response schema for multi-activity assignment submission."""
+
+    success: bool
+    message: str
+    assignment_id: uuid.UUID
+    combined_score: float
+    per_activity_scores: list[PerActivityScore]
+    completed_at: datetime
+    total_activities: int
+    completed_activities: int
+
+
+# =============================================================================
+# Multi-Activity Analytics Schemas (Story 8.4)
+# =============================================================================
+
+
+class StudentActivityScore(BaseModel):
+    """Per-student score for a specific activity (used in expanded analytics view)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    student_id: uuid.UUID
+    student_name: str
+    status: str  # not_started, in_progress, completed
+    score: float | None
+    max_score: float
+    time_spent_seconds: int
+    completed_at: datetime | None
+
+
+class ActivityAnalyticsItem(BaseModel):
+    """Analytics data for a single activity within a multi-activity assignment."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    activity_id: uuid.UUID
+    activity_title: str | None
+    page_number: int
+    activity_type: str
+    class_average_score: float | None  # None if no completions
+    completion_rate: float  # 0.0 to 1.0
+    completed_count: int
+    total_assigned_count: int
+
+
+class PerActivityBreakdown(BaseModel):
+    """Expanded view showing all student scores for a specific activity."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    activity_id: uuid.UUID
+    students: list[StudentActivityScore]
+
+
+class MultiActivityAnalyticsResponse(BaseModel):
+    """Response schema for multi-activity assignment analytics (teacher view)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    assignment_id: uuid.UUID
+    assignment_name: str
+    total_students: int
+    submitted_count: int  # Students who submitted (completed status)
+    activities: list[ActivityAnalyticsItem]
+    expanded_students: list[StudentActivityScore] | None = None  # Populated when expand_activity_id provided
+
+
+class ActivityScoreItem(BaseModel):
+    """Per-activity score item for student result view."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    activity_id: uuid.UUID
+    activity_title: str | None
+    activity_type: str
+    score: float | None
+    max_score: float
+    status: str
+
+
+class StudentAssignmentResultResponse(BaseModel):
+    """Response schema for student viewing their completed assignment results."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    assignment_id: uuid.UUID
+    assignment_name: str
+    total_score: float | None
+    completed_at: datetime | None
+    activity_scores: list[ActivityScoreItem]
+    total_activities: int
+    completed_activities: int

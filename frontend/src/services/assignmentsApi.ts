@@ -13,6 +13,8 @@ import type {
   StudentAnswersResponse,
 } from "../types/analytics"
 import type {
+  ActivityProgressSaveRequest,
+  ActivityProgressSaveResponse,
   ActivityStartResponse,
   AssignmentCreateRequest,
   AssignmentListItem,
@@ -22,7 +24,12 @@ import type {
   AssignmentSubmissionResponse,
   AssignmentSubmitRequest,
   AssignmentUpdateRequest,
+  MultiActivityAnalyticsResponse,
+  MultiActivityStartResponse,
+  MultiActivitySubmitRequest,
+  MultiActivitySubmitResponse,
   StudentAssignmentResponse,
+  StudentAssignmentResultResponse,
 } from "../types/assignment"
 
 /**
@@ -220,6 +227,100 @@ export async function getStudentAnswers(
   return response.data
 }
 
+// =============================================================================
+// Multi-Activity Assignment APIs (Story 8.3)
+// =============================================================================
+
+/**
+ * Start a multi-activity assignment for the current student (Story 8.3)
+ *
+ * @param assignmentId - ID of assignment to start
+ * @returns Promise with all activities, configs, and per-activity progress
+ */
+export async function startMultiActivityAssignment(
+  assignmentId: string,
+): Promise<MultiActivityStartResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/start-multi`
+  const response = await apiClient.get<MultiActivityStartResponse>(url)
+  return response.data
+}
+
+/**
+ * Save progress for a specific activity within a multi-activity assignment (Story 8.3)
+ *
+ * @param assignmentId - ID of assignment
+ * @param activityId - ID of activity to save progress for
+ * @param data - Activity progress data (response_data, status, score)
+ * @returns Promise with save progress response
+ */
+export async function saveActivityProgress(
+  assignmentId: string,
+  activityId: string,
+  data: ActivityProgressSaveRequest,
+): Promise<ActivityProgressSaveResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/students/me/activities/${activityId}`
+  const response = await apiClient.patch<ActivityProgressSaveResponse>(url, data)
+  return response.data
+}
+
+/**
+ * Submit a multi-activity assignment (Story 8.3)
+ *
+ * @param assignmentId - ID of assignment to submit
+ * @param data - Submit request (optional force_submit for timer expiry)
+ * @returns Promise with combined score and per-activity scores
+ */
+export async function submitMultiActivityAssignment(
+  assignmentId: string,
+  data?: MultiActivitySubmitRequest,
+): Promise<MultiActivitySubmitResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/students/me/submit-multi`
+  const response = await apiClient.post<MultiActivitySubmitResponse>(
+    url,
+    data || {},
+  )
+  return response.data
+}
+
+// =============================================================================
+// Multi-Activity Analytics APIs (Story 8.4)
+// =============================================================================
+
+/**
+ * Get analytics for a multi-activity assignment (teacher view)
+ * Story 8.4: Multi-Activity Assignment Analytics
+ *
+ * @param assignmentId - ID of assignment to get analytics for
+ * @param expandActivityId - Optional activity ID to expand with per-student scores
+ * @returns Promise with analytics data including per-activity metrics
+ */
+export async function getAssignmentAnalytics(
+  assignmentId: string,
+  expandActivityId?: string,
+): Promise<MultiActivityAnalyticsResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/analytics`
+  const params = expandActivityId ? { expand_activity_id: expandActivityId } : {}
+  const response = await apiClient.get<MultiActivityAnalyticsResponse>(url, {
+    params,
+  })
+  return response.data
+}
+
+/**
+ * Get student's own result for a multi-activity assignment (student view)
+ * Story 8.4: Multi-Activity Assignment Analytics
+ *
+ * @param assignmentId - ID of assignment to get result for
+ * @returns Promise with student's score breakdown by activity
+ */
+export async function getStudentAssignmentResult(
+  assignmentId: string,
+): Promise<StudentAssignmentResultResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/students/me/result`
+  const response = await apiClient.get<StudentAssignmentResultResponse>(url)
+  return response.data
+}
+
 /**
  * Export as object for easier imports
  */
@@ -234,6 +335,13 @@ export const assignmentsApi = {
   submitAssignment,
   getAssignmentDetailedResults,
   getStudentAnswers,
+  // Multi-activity APIs (Story 8.3)
+  startMultiActivityAssignment,
+  saveActivityProgress,
+  submitMultiActivityAssignment,
+  // Multi-activity analytics APIs (Story 8.4)
+  getAssignmentAnalytics,
+  getStudentAssignmentResult,
 }
 
 export default assignmentsApi

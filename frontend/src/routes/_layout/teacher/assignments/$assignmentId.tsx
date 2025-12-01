@@ -8,6 +8,7 @@ import {
   Download,
   Eye,
   Hourglass,
+  PieChart,
   Users,
   XCircle,
 } from "lucide-react"
@@ -23,6 +24,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import { MultiActivityAnalyticsTable } from "@/components/analytics/MultiActivityAnalyticsTable"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -44,6 +46,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAssignmentAnalytics } from "@/hooks/useAssignmentAnalytics"
 import { useAssignmentResults, useStudentAnswers } from "@/hooks/useAssignmentResults"
 import type {
   ActivityTypeAnalysis,
@@ -756,6 +759,10 @@ function AssignmentDetailContent() {
     assignmentId,
   })
 
+  // Fetch multi-activity analytics to check if this is a multi-activity assignment
+  const { data: analytics } = useAssignmentAnalytics(assignmentId)
+  const isMultiActivity = analytics && analytics.activities.length > 1
+
   // Export results to Excel
   const handleExportExcel = useCallback(() => {
     if (!results) return
@@ -916,7 +923,7 @@ function AssignmentDetailContent() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className={`grid w-full ${isMultiActivity ? "grid-cols-3" : "grid-cols-2"} max-w-md`}>
           <TabsTrigger value="results" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Results
@@ -925,6 +932,12 @@ function AssignmentDetailContent() {
             <Users className="h-4 w-4" />
             Students
           </TabsTrigger>
+          {isMultiActivity && (
+            <TabsTrigger value="activities" className="flex items-center gap-2">
+              <PieChart className="h-4 w-4" />
+              Activities
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Results Tab */}
@@ -946,6 +959,23 @@ function AssignmentDetailContent() {
             assignmentId={assignmentId}
           />
         </TabsContent>
+
+        {/* Activities Tab - Multi-Activity Assignments Only */}
+        {isMultiActivity && (
+          <TabsContent value="activities" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChart className="h-5 w-5" />
+                  Activity-Level Analytics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MultiActivityAnalyticsTable assignmentId={assignmentId} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

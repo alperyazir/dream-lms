@@ -204,12 +204,17 @@ export function CirclePlayer({
 
     return () => {
       isMounted = false
-      // Cleanup blob URL when component unmounts
+    }
+  }, [bookId, activity.section_path])
+
+  // Cleanup blob URL on unmount (separate effect to avoid infinite loop)
+  useEffect(() => {
+    return () => {
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl)
       }
     }
-  }, [bookId, activity.section_path, imageUrl])
+  }, [imageUrl])
 
   useEffect(() => {
     const img = imageRef.current
@@ -341,23 +346,30 @@ export function CirclePlayer({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col p-4">
-      {/* Instructions */}
-      <div className="mb-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            {activity.type === "markwithx"
-              ? "Mark the incorrect items"
-              : "Select the correct items"}
-          </h2>
+    <div className="flex h-full min-h-0 flex-col p-2">
+      {/* Instructions - compact */}
+      <div className="mb-2 shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">
+              {activity.type === "markwithx"
+                ? "Mark the incorrect items"
+                : "Select the correct items"}
+            </h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              {isMultiSelectMode
+                ? `Answered: ${selections.size}`
+                : `${selections.size} / ${questionCount}`}
+            </p>
+          </div>
           {!showResults && (
             <button
               type="button"
               onClick={handleReset}
-              className="flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               <svg
-                className="h-4 w-4"
+                className="h-3 w-3"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -373,17 +385,12 @@ export function CirclePlayer({
             </button>
           )}
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {isMultiSelectMode
-            ? `Questions answered: ${selections.size}`
-            : `Questions answered: ${selections.size} / ${questionCount}`}
-        </div>
       </div>
 
-      {/* Background Image with Selectable Areas */}
+      {/* Background Image with Selectable Areas - fills remaining height */}
       <div
         ref={containerRef}
-        className="relative flex flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+        className="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
         style={{
           willChange: "auto",
           height: lockedContainerHeight ? `${lockedContainerHeight}px` : "auto",
@@ -530,36 +537,22 @@ export function CirclePlayer({
           })}
       </div>
 
-      {/* Results Legend */}
+      {/* Results Legend - compact */}
       {showResults && (
-        <div className="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-          <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Legend:
-          </h3>
-          <div className="space-y-1 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white">
-                ✓
-              </div>
-              <span className="text-gray-600 dark:text-gray-400">
-                Correctly selected
-              </span>
+        <div className="mt-2 shrink-0 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <span className="font-medium text-gray-700 dark:text-gray-300">Legend:</span>
+            <div className="flex items-center gap-1">
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-green-500 text-[10px] text-white">✓</div>
+              <span className="text-gray-600 dark:text-gray-400">Correct</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white">
-                ✗
-              </div>
-              <span className="text-gray-600 dark:text-gray-400">
-                Incorrectly selected
-              </span>
+            <div className="flex items-center gap-1">
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">✗</div>
+              <span className="text-gray-600 dark:text-gray-400">Incorrect</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-white">
-                !
-              </div>
-              <span className="text-gray-600 dark:text-gray-400">
-                Missed (should have been selected)
-              </span>
+            <div className="flex items-center gap-1">
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] text-white">!</div>
+              <span className="text-gray-600 dark:text-gray-400">Missed</span>
             </div>
           </div>
         </div>

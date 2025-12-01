@@ -36,9 +36,6 @@ function BookDetailPage() {
 
 function BookDetailContent() {
   const { bookId } = Route.useParams()
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
-    null,
-  )
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   // Fetch book details (using list endpoint to find the book)
@@ -60,14 +57,13 @@ function BookDetailContent() {
     enabled: !!book, // Only fetch if book exists
   })
 
-  const handleAssign = (activity: Activity) => {
-    setSelectedActivity(activity)
+  // Story 8.2: Multi-activity selection - opens dialog with book pre-selected
+  const handleAssign = (_activity: Activity) => {
     setIsDialogOpen(true)
   }
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false)
-    setSelectedActivity(null)
   }
 
   // Loading state
@@ -218,12 +214,11 @@ function BookDetailContent() {
         )}
       </div>
 
-      {/* Assignment Creation Dialog */}
-      {selectedActivity && book && (
+      {/* Assignment Creation Dialog - Story 8.2: Multi-activity selection */}
+      {book && (
         <AssignmentCreationDialog
           isOpen={isDialogOpen}
           onClose={handleCloseDialog}
-          activity={selectedActivity}
           book={book}
         />
       )}

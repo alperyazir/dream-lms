@@ -58,6 +58,7 @@ import { Route as LayoutTeacherAnalyticsStudentIdRouteImport } from './routes/_l
 import { Route as LayoutStudentAssignmentsAssignmentIdRouteImport } from './routes/_layout/student/assignments/$assignmentId'
 import { Route as LayoutStudentAssignmentsAssignmentIdIndexRouteImport } from './routes/_layout/student/assignments/$assignmentId/index'
 import { Route as LayoutStudentAssignmentsAssignmentIdSuccessRouteImport } from './routes/_layout/student/assignments/$assignmentId/success'
+import { Route as LayoutStudentAssignmentsAssignmentIdPlayMultiRouteImport } from './routes/_layout/student/assignments/$assignmentId/play-multi'
 import { Route as LayoutStudentAssignmentsAssignmentIdPlayRouteImport } from './routes/_layout/student/assignments/$assignmentId/play'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -319,6 +320,12 @@ const LayoutStudentAssignmentsAssignmentIdSuccessRoute =
     path: '/success',
     getParentRoute: () => LayoutStudentAssignmentsAssignmentIdRoute,
   } as any)
+const LayoutStudentAssignmentsAssignmentIdPlayMultiRoute =
+  LayoutStudentAssignmentsAssignmentIdPlayMultiRouteImport.update({
+    id: '/play-multi',
+    path: '/play-multi',
+    getParentRoute: () => LayoutStudentAssignmentsAssignmentIdRoute,
+  } as any)
 const LayoutStudentAssignmentsAssignmentIdPlayRoute =
   LayoutStudentAssignmentsAssignmentIdPlayRouteImport.update({
     id: '/play',
@@ -374,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/teacher/books': typeof LayoutTeacherBooksIndexRoute
   '/teacher/materials': typeof LayoutTeacherMaterialsIndexRoute
   '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
+  '/student/assignments/$assignmentId/play-multi': typeof LayoutStudentAssignmentsAssignmentIdPlayMultiRoute
   '/student/assignments/$assignmentId/success': typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   '/student/assignments/$assignmentId/': typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
@@ -422,6 +430,7 @@ export interface FileRoutesByTo {
   '/teacher/books': typeof LayoutTeacherBooksIndexRoute
   '/teacher/materials': typeof LayoutTeacherMaterialsIndexRoute
   '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
+  '/student/assignments/$assignmentId/play-multi': typeof LayoutStudentAssignmentsAssignmentIdPlayMultiRoute
   '/student/assignments/$assignmentId/success': typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   '/student/assignments/$assignmentId': typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
@@ -475,6 +484,7 @@ export interface FileRoutesById {
   '/_layout/teacher/books/': typeof LayoutTeacherBooksIndexRoute
   '/_layout/teacher/materials/': typeof LayoutTeacherMaterialsIndexRoute
   '/_layout/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
+  '/_layout/student/assignments/$assignmentId/play-multi': typeof LayoutStudentAssignmentsAssignmentIdPlayMultiRoute
   '/_layout/student/assignments/$assignmentId/success': typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   '/_layout/student/assignments/$assignmentId/': typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
@@ -528,6 +538,7 @@ export interface FileRouteTypes {
     | '/teacher/books'
     | '/teacher/materials'
     | '/student/assignments/$assignmentId/play'
+    | '/student/assignments/$assignmentId/play-multi'
     | '/student/assignments/$assignmentId/success'
     | '/student/assignments/$assignmentId/'
   fileRoutesByTo: FileRoutesByTo
@@ -576,6 +587,7 @@ export interface FileRouteTypes {
     | '/teacher/books'
     | '/teacher/materials'
     | '/student/assignments/$assignmentId/play'
+    | '/student/assignments/$assignmentId/play-multi'
     | '/student/assignments/$assignmentId/success'
     | '/student/assignments/$assignmentId'
   id:
@@ -628,6 +640,7 @@ export interface FileRouteTypes {
     | '/_layout/teacher/books/'
     | '/_layout/teacher/materials/'
     | '/_layout/student/assignments/$assignmentId/play'
+    | '/_layout/student/assignments/$assignmentId/play-multi'
     | '/_layout/student/assignments/$assignmentId/success'
     | '/_layout/student/assignments/$assignmentId/'
   fileRoutesById: FileRoutesById
@@ -984,6 +997,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutStudentAssignmentsAssignmentIdSuccessRouteImport
       parentRoute: typeof LayoutStudentAssignmentsAssignmentIdRoute
     }
+    '/_layout/student/assignments/$assignmentId/play-multi': {
+      id: '/_layout/student/assignments/$assignmentId/play-multi'
+      path: '/play-multi'
+      fullPath: '/student/assignments/$assignmentId/play-multi'
+      preLoaderRoute: typeof LayoutStudentAssignmentsAssignmentIdPlayMultiRouteImport
+      parentRoute: typeof LayoutStudentAssignmentsAssignmentIdRoute
+    }
     '/_layout/student/assignments/$assignmentId/play': {
       id: '/_layout/student/assignments/$assignmentId/play'
       path: '/play'
@@ -1042,6 +1062,7 @@ const LayoutPublisherRouteWithChildren = LayoutPublisherRoute._addFileChildren(
 
 interface LayoutStudentAssignmentsAssignmentIdRouteChildren {
   LayoutStudentAssignmentsAssignmentIdPlayRoute: typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
+  LayoutStudentAssignmentsAssignmentIdPlayMultiRoute: typeof LayoutStudentAssignmentsAssignmentIdPlayMultiRoute
   LayoutStudentAssignmentsAssignmentIdSuccessRoute: typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   LayoutStudentAssignmentsAssignmentIdIndexRoute: typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
@@ -1050,6 +1071,8 @@ const LayoutStudentAssignmentsAssignmentIdRouteChildren: LayoutStudentAssignment
   {
     LayoutStudentAssignmentsAssignmentIdPlayRoute:
       LayoutStudentAssignmentsAssignmentIdPlayRoute,
+    LayoutStudentAssignmentsAssignmentIdPlayMultiRoute:
+      LayoutStudentAssignmentsAssignmentIdPlayMultiRoute,
     LayoutStudentAssignmentsAssignmentIdSuccessRoute:
       LayoutStudentAssignmentsAssignmentIdSuccessRoute,
     LayoutStudentAssignmentsAssignmentIdIndexRoute:

@@ -17,6 +17,26 @@ export type ActivityType =
   | "fillpicture"
 
 /**
+ * Activity types that have implemented players and can be assigned
+ * Excludes: fillSentencesWithDots, fillpicture (not yet implemented)
+ */
+export const SUPPORTED_ACTIVITY_TYPES: ReadonlySet<ActivityType> = new Set([
+  "dragdroppicture",
+  "dragdroppicturegroup",
+  "matchTheWords",
+  "circle",
+  "markwithx",
+  "puzzleFindWords",
+])
+
+/**
+ * Check if an activity type is supported for assignment
+ */
+export function isActivityTypeSupported(type: ActivityType): boolean {
+  return SUPPORTED_ACTIVITY_TYPES.has(type)
+}
+
+/**
  * Book data from API
  */
 export interface Book {
@@ -113,4 +133,106 @@ export const ACTIVITY_TYPE_CONFIG: Record<
     color: "teal",
     badgeVariant: "secondary",
   },
+}
+
+// --- Story 8.2: Page-Based Activity Selection ---
+
+/**
+ * Information about a single page in a book module
+ */
+export interface PageInfo {
+  page_number: number
+  activity_count: number
+  thumbnail_url: string
+}
+
+/**
+ * A module with its pages containing activities
+ */
+export interface ModulePages {
+  name: string
+  pages: PageInfo[]
+}
+
+/**
+ * Response from GET /api/v1/books/{book_id}/pages
+ */
+export interface BookPagesResponse {
+  book_id: string
+  modules: ModulePages[]
+  total_pages: number
+  total_activities: number
+}
+
+/**
+ * Activity response for page-based selection (simplified)
+ */
+export interface PageActivity {
+  id: string
+  title: string | null
+  activity_type: ActivityType
+  section_index: number
+  order_index: number
+}
+
+// --- Story 8.2 Enhanced: Page Viewer with Activity Markers ---
+
+/**
+ * Coordinates for an activity marker on a page
+ */
+export interface ActivityCoords {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/**
+ * Activity marker with position and metadata for page viewer
+ */
+export interface ActivityMarker {
+  id: string
+  title: string | null
+  activity_type: ActivityType
+  section_index: number
+  coords: ActivityCoords | null
+}
+
+/**
+ * Detailed page information including image and activity markers
+ */
+export interface PageDetail {
+  page_number: number
+  image_url: string
+  module_name: string
+  activities: ActivityMarker[]
+}
+
+/**
+ * Module metadata for navigation shortcuts
+ */
+export interface ModuleInfo {
+  name: string
+  first_page_index: number  // Index in the flat pages array
+  page_count: number
+}
+
+/**
+ * Module with detailed page information for page viewer
+ * @deprecated Use ModuleInfo + flat pages list instead
+ */
+export interface ModulePagesDetail {
+  name: string
+  pages: PageDetail[]
+}
+
+/**
+ * Enhanced book pages response with activity coordinates for page viewer
+ */
+export interface BookPagesDetailResponse {
+  book_id: string
+  modules: ModuleInfo[]    // Module shortcuts for navigation
+  pages: PageDetail[]      // Flat list of ALL pages in order
+  total_pages: number
+  total_activities: number
 }

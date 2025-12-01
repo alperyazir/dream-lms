@@ -8,9 +8,12 @@ from fastapi.routing import APIRouter
 from sqlmodel import select
 
 from app.api.deps import AsyncSessionDep, SessionDep, require_role
+from sqlmodel import func
+
 from app.models import (
     Activity,
     Assignment,
+    AssignmentActivity,
     AssignmentStudent,
     Book,
     Class,
@@ -65,12 +68,32 @@ def get_student_assignments(
             detail="Student record not found"
         )
 
-    # Build query: AssignmentStudent → Assignment → Book → Activity
+    # Subquery to count activities per assignment from AssignmentActivity junction table
+    activity_count_subq = (
+        select(
+            AssignmentActivity.assignment_id,
+            func.count(AssignmentActivity.activity_id).label("activity_count")
+        )
+        .group_by(AssignmentActivity.assignment_id)
+        .subquery()
+    )
+
+    # Build query: AssignmentStudent → Assignment → Book → Activity + activity count
     query = (
-        select(AssignmentStudent, Assignment, Book, Activity)
+        select(
+            AssignmentStudent,
+            Assignment,
+            Book,
+            Activity,
+            func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
+        )
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
         .join(Book, Assignment.book_id == Book.id)
         .join(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(
+            activity_count_subq,
+            activity_count_subq.c.assignment_id == Assignment.id
+        )
         .where(AssignmentStudent.student_id == student.id)
     )
 
@@ -91,7 +114,13 @@ def get_student_assignments(
 
     # Map results to StudentAssignmentResponse
     assignments = []
-    for assignment_student, assignment, book, activity in rows:
+    for row in rows:
+        assignment_student = row[0]
+        assignment = row[1]
+        book = row[2]
+        activity = row[3]
+        activity_count = row[4]
+
         response = StudentAssignmentResponse(
             # Assignment fields
             assignment_id=assignment.id,
@@ -106,7 +135,7 @@ def get_student_assignments(
             book_title=book.title,
             book_cover_url=book.cover_image_url,
 
-            # Activity fields
+            # Activity fields (first activity for display purposes)
             activity_id=activity.id,
             activity_title=activity.title,
             activity_type=activity.activity_type,
@@ -117,6 +146,9 @@ def get_student_assignments(
             started_at=assignment_student.started_at,
             completed_at=assignment_student.completed_at,
             time_spent_minutes=assignment_student.time_spent_minutes or 0,
+
+            # Multi-activity support (Story 8.3)
+            activity_count=activity_count,
         )
         assignments.append(response)
 

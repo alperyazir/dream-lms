@@ -1,7 +1,6 @@
 """Pydantic schemas for Book API responses."""
 
 import uuid
-from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
@@ -63,3 +62,98 @@ class BookSyncResponse(BaseModel):
     activities_created: int
     errors: list[str]
     message: str = "Book sync completed"
+
+
+# --- Story 8.2: Page-Based Activity Selection ---
+
+
+class PageInfo(BaseModel):
+    """Information about a single page in a book module."""
+
+    page_number: int
+    activity_count: int
+    thumbnail_url: str
+
+
+class ModulePages(BaseModel):
+    """A module with its pages containing activities."""
+
+    name: str
+    pages: list[PageInfo]
+
+
+class BookPagesResponse(BaseModel):
+    """Response for book pages endpoint."""
+
+    book_id: uuid.UUID
+    modules: list[ModulePages]
+    total_pages: int
+    total_activities: int
+
+
+class PageActivityResponse(BaseModel):
+    """Activity response for page-based selection."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str | None
+    activity_type: str
+    section_index: int
+    order_index: int
+
+
+# --- Story 8.2 Enhanced: Page Viewer with Activity Markers ---
+
+
+class ActivityCoords(BaseModel):
+    """Coordinates for an activity marker on a page."""
+
+    x: int
+    y: int
+    w: int
+    h: int
+
+
+class ActivityMarker(BaseModel):
+    """Activity marker with position and metadata for page viewer."""
+
+    id: uuid.UUID
+    title: str | None
+    activity_type: str
+    section_index: int
+    coords: ActivityCoords | None
+
+
+class PageDetail(BaseModel):
+    """Detailed page information including image and activity markers."""
+
+    page_number: int
+    image_url: str
+    module_name: str
+    activities: list[ActivityMarker]
+
+
+class ModuleInfo(BaseModel):
+    """Module metadata for navigation shortcuts."""
+
+    name: str
+    first_page_index: int  # Index in the flat pages array
+    page_count: int
+
+
+class ModulePagesDetail(BaseModel):
+    """Module with detailed page information for page viewer."""
+
+    name: str
+    pages: list[PageDetail]
+
+
+class BookPagesDetailResponse(BaseModel):
+    """Enhanced book pages response with activity coordinates for page viewer."""
+
+    book_id: uuid.UUID
+    modules: list[ModuleInfo]  # Module shortcuts for navigation
+    pages: list[PageDetail]  # Flat list of ALL pages in order
+    total_pages: int
+    total_activities: int

@@ -103,9 +103,8 @@ function AssignmentSuccessScreen() {
             type="button"
             onClick={() =>
               navigate({
-                to: "/student/assignments/$assignmentId/play",
+                to: "/student/assignments/$assignmentId",
                 params: { assignmentId },
-                search: { results: true },
               })
             }
             className="rounded-lg bg-teal-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"

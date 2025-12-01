@@ -1,12 +1,14 @@
 /**
  * Assignment Detail Page
  * Story 3.9: Student Assignment View & Dashboard
+ * Story 8.3: Multi-Activity Assignment Support
  *
  * Displays detailed information about a specific assignment including:
  * - Assignment name, instructions, due date
  * - Book and activity information
  * - Student's progress (status, score, time spent)
  * - Action buttons (Start Assignment, View Feedback)
+ * - Activity list for multi-activity assignments
  */
 
 import { useQuery } from "@tanstack/react-query"
@@ -17,7 +19,9 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  ListTodo,
 } from "lucide-react"
+import { StudentScoreBreakdown } from "@/components/analytics/StudentScoreBreakdown"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,7 +33,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { getStudentAssignments } from "@/services/assignmentsApi"
+import { Progress } from "@/components/ui/progress"
+import { getStudentAssignments, startMultiActivityAssignment } from "@/services/assignmentsApi"
 
 export const Route = createFileRoute(
   "/_layout/student/assignments/$assignmentId/",
@@ -60,6 +65,32 @@ function AssignmentDetailContent() {
   })
 
   const assignment = assignments.find((a) => a.assignment_id === assignmentId)
+
+  // Get activity count from assignment data
+  const activityCount = assignment?.activity_count || 1
+  const isMultiActivity = activityCount > 1
+
+  // Optionally fetch multi-activity details for UI display (progress per activity)
+  // Only fetch if this IS a multi-activity assignment and not completed
+  const { data: multiActivityData } = useQuery({
+    queryKey: ["assignments", assignmentId, "multi-activity-details"],
+    queryFn: () => startMultiActivityAssignment(assignmentId),
+    enabled: isMultiActivity && assignment?.status !== "completed",
+    retry: false,
+    staleTime: 30000, // Cache for 30 seconds
+  })
+
+  // Get completed activities count from multi-activity data if available
+  const completedActivities = multiActivityData?.completed_activities_count || 0
+
+  // Debug: Log routing decision - now always routes to play-multi
+  console.log("Assignment routing:", {
+    assignmentId,
+    activityCount,
+    isMultiActivity,
+    status: assignment?.status,
+    willRouteTo: "/play-multi", // Always use unified player
+  })
 
   if (isLoading) {
     return (
@@ -155,25 +186,105 @@ function AssignmentDetailContent() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ActivityIcon className="h-5 w-5" />
-                Activity Details
+                {isMultiActivity ? (
+                  <>
+                    <ListTodo className="h-5 w-5" />
+                    Activities ({activityCount})
+                  </>
+                ) : (
+                  <>
+                    <ActivityIcon className="h-5 w-5" />
+                    Activity Details
+                  </>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Activity
-                </p>
-                <p className="text-lg">{assignment.activity_title}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Type
-                </p>
-                <p className="text-lg capitalize">
-                  {assignment.activity_type.replace(/([A-Z])/g, " $1").trim()}
-                </p>
-              </div>
+              {/* Multi-activity progress summary */}
+              {isMultiActivity && multiActivityData && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Progress
+                    </span>
+                    <span className="text-sm font-medium">
+                      {completedActivities} of {activityCount} completed
+                    </span>
+                  </div>
+                  <Progress
+                    value={(completedActivities / activityCount) * 100}
+                    className="h-2"
+                  />
+                </div>
+              )}
+
+              {/* Activity list for multi-activity */}
+              {isMultiActivity && multiActivityData?.activities && (
+                <div className="space-y-2">
+                  {multiActivityData.activities.map((activity, index) => {
+                    const progress = multiActivityData.activity_progress.find(
+                      (p) => p.activity_id === activity.id
+                    )
+                    const status = progress?.status || "not_started"
+
+                    return (
+                      <div
+                        key={activity.id}
+                        className="flex items-center justify-between rounded-lg border p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          {/* Status icon */}
+                          <div className="flex-shrink-0">
+                            {status === "completed" ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : status === "in_progress" ? (
+                              <div className="h-4 w-4 rounded-full border-2 border-yellow-500 bg-yellow-100" />
+                            ) : (
+                              <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                            )}
+                          </div>
+                          {/* Activity info */}
+                          <div>
+                            <p className="font-medium">
+                              {index + 1}. {activity.title || `Activity ${index + 1}`}
+                            </p>
+                            <p className="text-sm text-muted-foreground capitalize">
+                              {activity.activity_type.replace(/([A-Z])/g, " $1").trim()}
+                            </p>
+                          </div>
+                        </div>
+                        {/* Score if completed */}
+                        {progress?.score !== null && progress?.score !== undefined && (
+                          <span className="text-sm font-medium text-green-600">
+                            {Math.round(progress.score)}%
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Single activity details */}
+              {!isMultiActivity && (
+                <>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Activity
+                    </p>
+                    <p className="text-lg">{assignment.activity_title}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Type
+                    </p>
+                    <p className="text-lg capitalize">
+                      {assignment.activity_type.replace(/([A-Z])/g, " $1").trim()}
+                    </p>
+                  </div>
+                </>
+              )}
+
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Book
@@ -254,6 +365,11 @@ function AssignmentDetailContent() {
               </CardContent>
             </Card>
           )}
+
+          {/* Score Breakdown for completed multi-activity assignments (Story 8.4) */}
+          {assignment.status === "completed" && isMultiActivity && (
+            <StudentScoreBreakdown assignmentId={assignmentId} />
+          )}
         </div>
 
         {/* Right Column - Metadata */}
@@ -331,12 +447,13 @@ function AssignmentDetailContent() {
                   size="lg"
                   onClick={() =>
                     navigate({
-                      to: "/student/assignments/$assignmentId/play",
+                      to: "/student/assignments/$assignmentId/play-multi",
                       params: { assignmentId },
                     })
                   }
                 >
                   Start Assignment
+                  {isMultiActivity && ` (${activityCount} activities)`}
                 </Button>
               )}
               {assignment.status === "in_progress" && (
@@ -345,12 +462,14 @@ function AssignmentDetailContent() {
                   size="lg"
                   onClick={() =>
                     navigate({
-                      to: "/student/assignments/$assignmentId/play",
+                      to: "/student/assignments/$assignmentId/play-multi",
                       params: { assignmentId },
                     })
                   }
                 >
-                  Resume Assignment
+                  {isMultiActivity
+                    ? `Continue (${completedActivities}/${activityCount} done)`
+                    : "Resume Assignment"}
                 </Button>
               )}
               {assignment.status === "completed" && (

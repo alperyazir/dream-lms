@@ -4,7 +4,7 @@
  * Based on QML ActivityDragDropPictureGroup.qml and DraggableWords.qml logic
  */
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type {
   DragDropGroupAnswer,
   DragDropPictureGroupActivity,
@@ -57,7 +57,8 @@ export function DragDropPictureGroupPlayer({
   }
 
   // Update image scale when image loads or window resizes
-  const updateImageScale = () => {
+  // Memoized with useCallback to prevent infinite re-render loop
+  const updateImageScale = useCallback(() => {
     const img = imageRef.current
     const container = containerRef.current
     if (!img || !container) return
@@ -92,7 +93,7 @@ export function DragDropPictureGroupPlayer({
 
     setImageScale({ x: xScale, y: yScale })
     setImageOffset({ x: xOffset, y: yOffset })
-  }
+  }, []) // No dependencies - uses refs
 
   // Fetch authenticated image
   useEffect(() => {
@@ -121,12 +122,17 @@ export function DragDropPictureGroupPlayer({
 
     return () => {
       isMounted = false
-      // Cleanup blob URL when component unmounts
+    }
+  }, [bookId, activity.section_path])
+
+  // Cleanup blob URL on unmount (separate effect to avoid infinite loop)
+  useEffect(() => {
+    return () => {
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl)
       }
     }
-  }, [bookId, activity.section_path, imageUrl])
+  }, [imageUrl])
 
   useEffect(() => {
     const img = imageRef.current

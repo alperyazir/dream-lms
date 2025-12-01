@@ -28,9 +28,15 @@ export function scoreDragDrop(
 ): ScoreResult {
   let correct = 0
 
+  // Debug logging
+  console.log("[scoreDragDrop] User answers:", Object.fromEntries(userAnswers))
+  console.log("[scoreDragDrop] Correct answers:", correctAnswers)
+
   correctAnswers.forEach((answer) => {
     const dropZoneId = `${answer.coords.x}-${answer.coords.y}`
     const userAnswer = userAnswers.get(dropZoneId)
+
+    console.log(`[scoreDragDrop] Zone ${dropZoneId}: user="${userAnswer}" vs correct="${answer.text}" => ${userAnswer === answer.text ? "✓" : "✗"}`)
 
     if (userAnswer === answer.text) {
       correct++
@@ -38,6 +44,7 @@ export function scoreDragDrop(
   })
 
   const percentage = Math.round((correct / correctAnswers.length) * 100)
+  console.log(`[scoreDragDrop] Result: ${correct}/${correctAnswers.length} = ${percentage}%`)
 
   return {
     score: percentage,
@@ -86,6 +93,10 @@ export function scoreDragDropGroup(
 /**
  * Score matching activity
  * Formula: (correct / total) × 100
+ *
+ * Note: MatchTheWordsPlayer stores matches as "wordIndex-sentenceIndex" keys
+ * with the word text as the value. We need to check if the matched word
+ * equals the expected word for each sentence.
  */
 export function scoreMatch(
   userMatches: Map<string, string>,
@@ -93,14 +104,34 @@ export function scoreMatch(
 ): ScoreResult {
   let correct = 0
 
-  sentences.forEach((sentence) => {
-    const userAnswer = userMatches.get(sentence.sentence)
-    if (userAnswer === sentence.word) {
+  // Debug logging
+  console.log("[scoreMatch] User matches:", Object.fromEntries(userMatches))
+  console.log("[scoreMatch] Sentences:", sentences)
+
+  // Build a map of sentenceIndex -> matched word from userMatches
+  // Keys are "wordIndex-sentenceIndex", values are the word text
+  const sentenceToWord = new Map<number, string>()
+  userMatches.forEach((word, key) => {
+    const parts = key.split("-")
+    if (parts.length === 2) {
+      const sentenceIndex = parseInt(parts[1], 10)
+      if (!isNaN(sentenceIndex)) {
+        sentenceToWord.set(sentenceIndex, word)
+      }
+    }
+  })
+
+  sentences.forEach((sentence, sentenceIndex) => {
+    const userAnswer = sentenceToWord.get(sentenceIndex)
+    const isCorrect = userAnswer === sentence.word
+    console.log(`[scoreMatch] Sentence ${sentenceIndex} "${sentence.sentence}": user="${userAnswer}" vs correct="${sentence.word}" => ${isCorrect ? "✓" : "✗"}`)
+    if (isCorrect) {
       correct++
     }
   })
 
   const percentage = Math.round((correct / sentences.length) * 100)
+  console.log(`[scoreMatch] Result: ${correct}/${sentences.length} = ${percentage}%`)
 
   return {
     score: percentage,

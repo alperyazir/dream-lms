@@ -13,7 +13,10 @@ import type {
   Activity,
   Book,
   BookListResponse,
+  BookPagesDetailResponse,
+  BookPagesResponse,
   BooksFilter,
+  PageActivity,
 } from "../types/book"
 
 /**
@@ -203,6 +206,122 @@ export async function getActivityImageUrl(
   }
 }
 
+// --- Story 8.2: Page-Based Activity Selection ---
+
+/**
+ * Get book pages grouped by module
+ *
+ * Story 8.2: Page-Based Activity Selection
+ *
+ * @param bookId - UUID of the book
+ * @returns Promise with book pages grouped by module
+ */
+export async function getBookPages(bookId: string): Promise<BookPagesResponse> {
+  const url = `/api/v1/books/${bookId}/pages`
+  const response = await apiClient.get<BookPagesResponse>(url)
+  return response.data
+}
+
+/**
+ * Get activities for a specific page
+ *
+ * Story 8.2: Page-Based Activity Selection
+ *
+ * @param bookId - UUID of the book
+ * @param pageNumber - Page number to get activities for
+ * @param moduleName - Optional module name filter
+ * @returns Promise with array of activities on the page
+ */
+export async function getPageActivities(
+  bookId: string,
+  pageNumber: number,
+  moduleName?: string,
+): Promise<PageActivity[]> {
+  const params = new URLSearchParams()
+  if (moduleName) {
+    params.append("module_name", moduleName)
+  }
+
+  const queryString = params.toString()
+  const url = `/api/v1/books/${bookId}/pages/${pageNumber}/activities${queryString ? `?${queryString}` : ""}`
+
+  const response = await apiClient.get<PageActivity[]>(url)
+  return response.data
+}
+
+/**
+ * Get authenticated page thumbnail URL
+ *
+ * Story 8.2: Page-Based Activity Selection
+ *
+ * @param bookId - UUID of the book
+ * @param thumbnailUrl - The thumbnail_url from PageInfo (e.g., "/api/v1/books/{id}/assets/images/M1/p7.png")
+ * @returns Promise with blob URL string, or null if fetch fails
+ */
+export async function getPageThumbnailUrl(
+  thumbnailUrl: string,
+): Promise<string | null> {
+  if (!thumbnailUrl) return null
+
+  try {
+    // Fetch image with authentication
+    const response = await apiClient.get(thumbnailUrl, {
+      responseType: "blob",
+    })
+
+    // Create blob URL
+    const blobUrl = URL.createObjectURL(response.data)
+    return blobUrl
+  } catch (error) {
+    console.error("Failed to fetch page thumbnail:", error)
+    return null
+  }
+}
+
+// --- Story 8.2 Enhanced: Page Viewer with Activity Markers ---
+
+/**
+ * Get detailed book pages with activity coordinates
+ *
+ * Story 8.2 Enhanced: Page Viewer with Activity Markers
+ *
+ * @param bookId - UUID of the book
+ * @returns Promise with detailed book pages including activity coordinates
+ */
+export async function getBookPagesDetail(
+  bookId: string,
+): Promise<BookPagesDetailResponse> {
+  const url = `/api/v1/books/${bookId}/pages/detail`
+  const response = await apiClient.get<BookPagesDetailResponse>(url)
+  return response.data
+}
+
+/**
+ * Get authenticated page image URL (full size for page viewer)
+ *
+ * Story 8.2 Enhanced: Page Viewer
+ *
+ * @param imageUrl - The image_url from PageDetail
+ * @returns Promise with blob URL string, or null if fetch fails
+ */
+export async function getPageImageUrl(
+  imageUrl: string,
+): Promise<string | null> {
+  if (!imageUrl) return null
+
+  try {
+    const response = await apiClient.get(imageUrl, {
+      responseType: "blob",
+    })
+
+    const blobUrl = URL.createObjectURL(response.data)
+    return blobUrl
+  } catch (error) {
+    console.error("Failed to fetch page image:", error)
+    return null
+  }
+}
+
 /**
  * Export as object for easier imports
  */
@@ -212,6 +331,11 @@ export const booksApi = {
   getBookById,
   getAuthenticatedCoverUrl,
   getActivityImageUrl,
+  getBookPages,
+  getPageActivities,
+  getPageThumbnailUrl,
+  getBookPagesDetail,
+  getPageImageUrl,
 }
 
 export default booksApi
