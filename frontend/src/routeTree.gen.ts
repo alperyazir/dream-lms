@@ -18,6 +18,7 @@ import { Route as LayoutTeacherRouteImport } from './routes/_layout.teacher'
 import { Route as LayoutStudentRouteImport } from './routes/_layout.student'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutPublisherRouteImport } from './routes/_layout.publisher'
+import { Route as LayoutNotificationsRouteImport } from './routes/_layout/notifications'
 import { Route as LayoutAdminRouteImport } from './routes/_layout.admin'
 import { Route as LayoutMessagingIndexRouteImport } from './routes/_layout/messaging/index'
 import { Route as LayoutTeacherStudentsRouteImport } from './routes/_layout/teacher/students'
@@ -103,6 +104,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
 const LayoutPublisherRoute = LayoutPublisherRouteImport.update({
   id: '/publisher',
   path: '/publisher',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutNotificationsRoute = LayoutNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
@@ -338,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof LayoutAdminRouteWithChildren
+  '/notifications': typeof LayoutNotificationsRoute
   '/publisher': typeof LayoutPublisherRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/student': typeof LayoutStudentRouteWithChildren
@@ -390,6 +397,7 @@ export interface FileRoutesByTo {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof LayoutAdminRouteWithChildren
+  '/notifications': typeof LayoutNotificationsRoute
   '/publisher': typeof LayoutPublisherRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/student': typeof LayoutStudentRouteWithChildren
@@ -441,6 +449,7 @@ export interface FileRoutesById {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_layout/admin': typeof LayoutAdminRouteWithChildren
+  '/_layout/notifications': typeof LayoutNotificationsRoute
   '/_layout/publisher': typeof LayoutPublisherRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/student': typeof LayoutStudentRouteWithChildren
@@ -495,6 +504,7 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/admin'
+    | '/notifications'
     | '/publisher'
     | '/settings'
     | '/student'
@@ -547,6 +557,7 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/admin'
+    | '/notifications'
     | '/publisher'
     | '/settings'
     | '/student'
@@ -597,6 +608,7 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/_layout/admin'
+    | '/_layout/notifications'
     | '/_layout/publisher'
     | '/_layout/settings'
     | '/_layout/student'
@@ -715,6 +727,13 @@ declare module '@tanstack/react-router' {
       path: '/publisher'
       fullPath: '/publisher'
       preLoaderRoute: typeof LayoutPublisherRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/notifications': {
+      id: '/_layout/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof LayoutNotificationsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/admin': {
@@ -1176,6 +1195,7 @@ const LayoutTeacherRouteWithChildren = LayoutTeacherRoute._addFileChildren(
 
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRouteWithChildren
+  LayoutNotificationsRoute: typeof LayoutNotificationsRoute
   LayoutPublisherRoute: typeof LayoutPublisherRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutStudentRoute: typeof LayoutStudentRouteWithChildren
@@ -1187,6 +1207,7 @@ interface LayoutRouteChildren {
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRouteWithChildren,
+  LayoutNotificationsRoute: LayoutNotificationsRoute,
   LayoutPublisherRoute: LayoutPublisherRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutStudentRoute: LayoutStudentRouteWithChildren,

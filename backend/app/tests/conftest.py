@@ -2,11 +2,13 @@
 Test fixtures for pytest
 """
 import uuid
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 from typing import Any
 
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlmodel import Session, create_engine, delete
 from sqlmodel.pool import StaticPool
 
@@ -33,6 +35,44 @@ def db_path_fixture():
         os.unlink(db_path)
     except Exception:
         pass
+
+
+@pytest_asyncio.fixture(name="async_session", scope="function")
+async def async_session_fixture(db_path: str) -> AsyncGenerator[AsyncSession, None]:
+    """Create a fresh async database session for each test"""
+    from sqlalchemy import event
+    from sqlmodel import SQLModel
+
+    # Create sync engine first to create tables
+    sync_engine = create_engine(
+        f"sqlite:///{db_path}",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    # Enable foreign key constraints for SQLite
+    @event.listens_for(sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    SQLModel.metadata.create_all(sync_engine)
+    sync_engine.dispose()
+
+    # Create async engine
+    async_engine = create_async_engine(
+        f"sqlite+aiosqlite:///{db_path}",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    async with AsyncSession(async_engine, expire_on_commit=False) as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+            await async_engine.dispose()
 
 
 @pytest.fixture(name="session", scope="function")

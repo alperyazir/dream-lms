@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeft, User } from "lucide-react"
-import { useMemo, useState } from "react"
+import { ArrowLeft, Loader2, User } from "lucide-react"
 import { MessageForm } from "@/components/messaging/MessageForm"
 import { MessageThread } from "@/components/messaging/MessageThread"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { type Message, mockConversations } from "@/lib/mockData"
+import { useMessageThread, useSendMessage } from "@/hooks/useMessages"
+import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/messaging/$conversationId")({
   component: ConversationView,
@@ -13,66 +13,52 @@ export const Route = createFileRoute("/_layout/messaging/$conversationId")({
 
 function ConversationView() {
   const { conversationId } = Route.useParams()
+  const { user } = useAuth()
 
-  // Find conversation
-  const conversation = useMemo(
-    () => mockConversations.find((c) => c.id === conversationId),
-    [conversationId],
-  )
+  // Use real API hooks
+  const {
+    messages,
+    participant,
+    isLoading,
+    refetch,
+  } = useMessageThread(conversationId)
 
-  // Local messages state (includes both mock and new messages)
-  const [messages, setMessages] = useState<Message[]>(
-    conversation?.messages || [],
-  )
+  const sendMessage = useSendMessage()
 
   // Handle sending new message
   const handleSendMessage = async (messageBody: string) => {
-    if (!conversation) return
+    if (!conversationId) return
 
-    // Create new message
-    const newMessage: Message = {
-      id: `msg_${Date.now()}`,
-      from_id: "teacher1",
-      from_name: "Dr. Sarah Johnson",
-      to_id: conversation.participant_id,
-      to_name: conversation.participant_name,
-      subject: "", // No subject for replies
-      body: messageBody,
-      timestamp: new Date().toISOString(),
-      read: true,
-    }
-
-    // Add to local state
-    setMessages((prev) => [...prev, newMessage])
-
-    // Store to localStorage (persist mock data updates)
     try {
-      const existingConversations = JSON.parse(
-        localStorage.getItem("mockConversations") || "[]",
-      )
-
-      const conversationIndex = existingConversations.findIndex(
-        (c: any) => c.id === conversationId,
-      )
-
-      if (conversationIndex >= 0) {
-        existingConversations[conversationIndex].messages.push(newMessage)
-        existingConversations[conversationIndex].last_message_preview =
-          messageBody.substring(0, 100)
-        existingConversations[conversationIndex].last_message_timestamp =
-          newMessage.timestamp
-
-        localStorage.setItem(
-          "mockConversations",
-          JSON.stringify(existingConversations),
-        )
-      }
+      await sendMessage.sendMessageAsync({
+        recipient_id: conversationId,
+        body: messageBody,
+      })
+      refetch()
     } catch (error) {
-      console.error("Error saving message to localStorage:", error)
+      console.error("Error sending message:", error)
     }
   }
 
-  if (!conversation) {
+  // Get initials from name
+  const getInitials = (name: string): string => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+      </div>
+    )
+  }
+
+  if (!participant) {
     return (
       <div className="container mx-auto py-6 px-4">
         <div className="text-center py-12">
@@ -120,16 +106,16 @@ function ConversationView() {
             {/* Participant Info */}
             <Avatar className="h-12 w-12">
               <AvatarFallback className="bg-teal-600 text-white">
-                {conversation.participant_avatar}
+                {getInitials(participant.name)}
               </AvatarFallback>
             </Avatar>
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {conversation.participant_name}
+                {participant.name}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 <User className="h-3 w-3 inline mr-1" />
-                Parent
+                {participant.role.charAt(0).toUpperCase() + participant.role.slice(1)}
               </p>
             </div>
           </div>
@@ -140,8 +126,7 @@ function ConversationView() {
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 min-h-0">
         <MessageThread
           messages={messages}
-          currentUserId="teacher1"
-          currentUserName="Dr. Sarah Johnson"
+          currentUserId={user?.id ?? ""}
         />
       </div>
 

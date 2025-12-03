@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { ArrowLeft, Inbox, Plus, Search, User } from "lucide-react"
-import { useMemo, useState } from "react"
+import { ArrowLeft, Inbox, Loader2, Plus, Search, User } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { z } from "zod"
 import { ConversationList } from "@/components/messaging/ConversationList"
 import { MessageForm } from "@/components/messaging/MessageForm"
 import { MessageThread } from "@/components/messaging/MessageThread"
@@ -10,115 +11,100 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { type Message, mockConversations } from "@/lib/mockData"
+import { useMessagingPage, useSendMessage } from "@/hooks/useMessages"
+import useAuth from "@/hooks/useAuth"
+import { ComposeMessageModal } from "@/components/messaging/ComposeMessageModal"
+
+// Search params schema for the messaging page
+const messagingSearchSchema = z.object({
+  user: z.string().optional(),
+})
 
 export const Route = createFileRoute("/_layout/messaging/")({
   component: MessagingInbox,
+  validateSearch: messagingSearchSchema,
 })
 
 function MessagingInbox() {
+  const { user } = useAuth()
+  const { user: userParam } = Route.useSearch()
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    string | null
-  >(null)
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null)
+  const [isComposeOpen, setIsComposeOpen] = useState(false)
   const debouncedSearch = useDebouncedValue(searchTerm, 300)
 
-  // Calculate total unread count
-  const totalUnread = useMemo(
-    () => mockConversations.reduce((sum, conv) => sum + conv.unread_count, 0),
-    [],
-  )
+  // Set selected partner from URL param on mount
+  useEffect(() => {
+    if (userParam) {
+      setSelectedPartnerId(userParam)
+    }
+  }, [userParam])
+
+  // Use the messaging page hook
+  const {
+    conversations,
+    totalUnread,
+    conversationsLoading,
+    messages,
+    participant,
+    threadLoading,
+    refetch,
+  } = useMessagingPage(selectedPartnerId)
+
+  const sendMessage = useSendMessage()
 
   // Filter conversations based on search term
   const filteredConversations = useMemo(() => {
-    if (!debouncedSearch) return mockConversations
+    if (!debouncedSearch) return conversations
 
     const searchLower = debouncedSearch.toLowerCase()
-    return mockConversations.filter(
+    return conversations.filter(
       (conv) =>
         conv.participant_name.toLowerCase().includes(searchLower) ||
-        conv.last_message_preview.toLowerCase().includes(searchLower) ||
-        conv.messages.some(
-          (msg) =>
-            msg.subject.toLowerCase().includes(searchLower) ||
-            msg.body.toLowerCase().includes(searchLower),
-        ),
+        conv.last_message_preview.toLowerCase().includes(searchLower),
     )
-  }, [debouncedSearch])
-
-  // Get selected conversation
-  const selectedConversation = useMemo(
-    () =>
-      selectedConversationId
-        ? mockConversations.find((c) => c.id === selectedConversationId)
-        : null,
-    [selectedConversationId],
-  )
-
-  // Local messages state for selected conversation
-  const [messages, setMessages] = useState<Message[]>([])
-
-  // Update messages when conversation changes
-  useMemo(() => {
-    if (selectedConversation) {
-      setMessages(selectedConversation.messages)
-    }
-  }, [selectedConversation])
+  }, [conversations, debouncedSearch])
 
   // Handle conversation selection
-  const handleConversationClick = (conversationId: string) => {
-    setSelectedConversationId(conversationId)
+  const handleConversationClick = (participantId: string) => {
+    setSelectedPartnerId(participantId)
   }
 
   // Handle sending new message
   const handleSendMessage = async (messageBody: string) => {
-    if (!selectedConversation) return
+    if (!selectedPartnerId) return
 
-    const newMessage: Message = {
-      id: `msg_${Date.now()}`,
-      from_id: "teacher1",
-      from_name: "Dr. Sarah Johnson",
-      to_id: selectedConversation.participant_id,
-      to_name: selectedConversation.participant_name,
-      subject: "",
-      body: messageBody,
-      timestamp: new Date().toISOString(),
-      read: true,
-    }
-
-    setMessages((prev) => [...prev, newMessage])
-
-    // Store to localStorage
     try {
-      const existingConversations = JSON.parse(
-        localStorage.getItem("mockConversations") || "[]",
-      )
-
-      const conversationIndex = existingConversations.findIndex(
-        (c: any) => c.id === selectedConversationId,
-      )
-
-      if (conversationIndex >= 0) {
-        existingConversations[conversationIndex].messages.push(newMessage)
-        existingConversations[conversationIndex].last_message_preview =
-          messageBody.substring(0, 100)
-        existingConversations[conversationIndex].last_message_timestamp =
-          newMessage.timestamp
-
-        localStorage.setItem(
-          "mockConversations",
-          JSON.stringify(existingConversations),
-        )
-      }
+      await sendMessage.sendMessageAsync({
+        recipient_id: selectedPartnerId,
+        body: messageBody,
+      })
+      refetch()
     } catch (error) {
-      console.error("Error saving message to localStorage:", error)
+      console.error("Error sending message:", error)
     }
   }
 
   // Handle compose new message
   const handleComposeNew = () => {
-    // TODO: Open compose dialog
-    console.log("Compose new message")
+    setIsComposeOpen(true)
+  }
+
+  // Handle compose success
+  const handleComposeSuccess = (recipientId: string) => {
+    setIsComposeOpen(false)
+    setSelectedPartnerId(recipientId)
+    refetch()
+  }
+
+  // Get initials from name
+  const getInitials = (name: string): string => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   return (
@@ -138,7 +124,7 @@ function MessagingInbox() {
               )}
             </div>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Communicate with parents and administrators
+              Direct messaging with teachers and students
             </p>
           </div>
           <Button
@@ -174,11 +160,17 @@ function MessagingInbox() {
 
               {/* Conversation List */}
               <div className="flex-1 overflow-y-auto">
-                <ConversationList
-                  conversations={filteredConversations}
-                  selectedConversationId={selectedConversationId ?? undefined}
-                  onConversationClick={handleConversationClick}
-                />
+                {conversationsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+                  </div>
+                ) : (
+                  <ConversationList
+                    conversations={filteredConversations}
+                    selectedParticipantId={selectedPartnerId ?? undefined}
+                    onConversationClick={handleConversationClick}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -186,7 +178,7 @@ function MessagingInbox() {
 
         {/* Conversation View or Empty State */}
         <div className="lg:col-span-2 flex flex-col overflow-hidden">
-          {selectedConversation ? (
+          {selectedPartnerId && participant ? (
             <Card className="shadow-lg flex-1 flex flex-col overflow-hidden">
               <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
                 {/* Conversation Header */}
@@ -196,7 +188,7 @@ function MessagingInbox() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setSelectedConversationId(null)}
+                      onClick={() => setSelectedPartnerId(null)}
                       className="lg:hidden"
                     >
                       <ArrowLeft className="h-4 w-4" />
@@ -205,16 +197,16 @@ function MessagingInbox() {
                     {/* Participant Info */}
                     <Avatar className="h-12 w-12">
                       <AvatarFallback className="bg-teal-600 text-white">
-                        {selectedConversation.participant_avatar}
+                        {getInitials(participant.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                        {selectedConversation.participant_name}
+                        {participant.name}
                       </h2>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         <User className="h-3 w-3 inline mr-1" />
-                        Parent
+                        {participant.role.charAt(0).toUpperCase() + participant.role.slice(1)}
                       </p>
                     </div>
                   </div>
@@ -222,17 +214,24 @@ function MessagingInbox() {
 
                 {/* Message Thread - Scrollable */}
                 <div className="flex-1 overflow-y-auto px-4">
-                  <MessageThread
-                    messages={messages}
-                    currentUserId="teacher1"
-                    currentUserName="Dr. Sarah Johnson"
-                  />
+                  {threadLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+                    </div>
+                  ) : (
+                    <MessageThread
+                      messages={messages}
+                      currentUserId={user?.id ?? ""}
+                    />
+                  )}
                 </div>
 
                 {/* Message Form */}
                 <div className="flex-none border-t border-gray-200 dark:border-gray-700">
                   <div className="px-4">
-                    <MessageForm onSendMessage={handleSendMessage} />
+                    <MessageForm
+                      onSendMessage={handleSendMessage}
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -262,6 +261,13 @@ function MessagingInbox() {
           )}
         </div>
       </div>
+
+      {/* Compose Message Modal */}
+      <ComposeMessageModal
+        isOpen={isComposeOpen}
+        onClose={() => setIsComposeOpen(false)}
+        onSuccess={handleComposeSuccess}
+      />
     </div>
   )
 }

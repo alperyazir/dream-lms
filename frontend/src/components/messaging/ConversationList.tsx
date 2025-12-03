@@ -1,13 +1,13 @@
 import React from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import type { Conversation } from "@/lib/mockData"
+import type { Conversation } from "@/types/message"
 import { cn } from "@/lib/utils"
 
 export interface ConversationListProps {
   conversations: Conversation[]
-  selectedConversationId?: string
-  onConversationClick: (conversationId: string) => void
+  selectedParticipantId?: string
+  onConversationClick: (participantId: string) => void
 }
 
 /**
@@ -17,7 +17,7 @@ export interface ConversationListProps {
 export const ConversationList = React.memo(
   ({
     conversations,
-    selectedConversationId,
+    selectedParticipantId,
     onConversationClick,
   }: ConversationListProps) => {
     // Format timestamp for display
@@ -42,6 +42,16 @@ export const ConversationList = React.memo(
       })
     }
 
+    // Get initials from participant name
+    const getInitials = (name: string): string => {
+      return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    }
+
     return (
       <div className="px-2 py-1">
         {conversations.length === 0 ? (
@@ -52,13 +62,13 @@ export const ConversationList = React.memo(
           conversations.map((conversation) => (
             <button
               type="button"
-              key={conversation.id}
-              onClick={() => onConversationClick(conversation.id)}
+              key={conversation.participant_id}
+              onClick={() => onConversationClick(conversation.participant_id)}
               className={cn(
                 "w-full p-4 flex items-start gap-3 rounded-lg transition-colors text-left mb-1",
                 "hover:bg-gray-100 dark:hover:bg-gray-800",
                 "focus:outline-none focus:ring-2 focus:ring-teal-500",
-                selectedConversationId === conversation.id
+                selectedParticipantId === conversation.participant_id
                   ? "bg-teal-50 dark:bg-teal-900/20 border-l-4 border-teal-600"
                   : "border-l-4 border-transparent",
               )}
@@ -66,7 +76,7 @@ export const ConversationList = React.memo(
               {/* Avatar */}
               <Avatar className="h-12 w-12 flex-shrink-0">
                 <AvatarFallback className="bg-teal-600 text-white">
-                  {conversation.participant_avatar}
+                  {getInitials(conversation.participant_name)}
                 </AvatarFallback>
               </Avatar>
 

@@ -7,10 +7,14 @@ from app.api.routes import (
     books,
     classes,
     dev,
+    feedback,
     login,
+    messages,
+    notifications,
     private,
     publishers,
     reports,
+    scheduled_tasks,
     students,
     teachers,
     users,
@@ -33,6 +37,10 @@ api_router.include_router(book_assets.router)
 api_router.include_router(assignments.router)
 api_router.include_router(reports.router)
 api_router.include_router(webhooks.router)
+api_router.include_router(notifications.router)
+api_router.include_router(messages.router)
+api_router.include_router(scheduled_tasks.router)
+api_router.include_router(feedback.router)
 
 
 if settings.ENVIRONMENT == "local":

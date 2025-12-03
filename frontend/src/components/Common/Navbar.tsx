@@ -1,18 +1,16 @@
 import { Link } from "@tanstack/react-router"
-import { FiBell, FiMail } from "react-icons/fi"
+import { FiMail } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
 import { ColorModeButton } from "@/components/ui/color-mode"
-import { mockConversations } from "@/lib/mockData"
+import { NotificationBell } from "@/components/notifications"
+import { useMessagesUnreadCount } from "@/hooks/useMessages"
 import Logo from "/assets/images/dreamedtech_single.svg"
 
 import UserMenu from "./UserMenu"
 
 function Navbar() {
-  // Calculate total unread messages
-  const totalUnreadMessages = mockConversations.reduce(
-    (total, conv) => total + conv.unread_count,
-    0,
-  )
+  // Fetch unread messages count from API
+  const { count: totalUnreadMessages } = useMessagesUnreadCount()
 
   return (
     <>
@@ -24,15 +22,7 @@ function Navbar() {
         </Link>
         <div className="flex gap-2 items-center">
           {/* Notification Bell */}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Notifications"
-            className="relative"
-          >
-            <FiBell fontSize="20" />
-            {/* You can add a badge here for unread notifications */}
-          </Button>
+          <NotificationBell />
 
           {/* Messages Icon with Unread Count */}
           <Link to="/messaging">
@@ -67,14 +57,7 @@ function Navbar() {
         </Link>
         <div className="flex gap-1 items-center">
           {/* Notification Bell */}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Notifications"
-            className="relative h-9 w-9"
-          >
-            <FiBell fontSize="18" />
-          </Button>
+          <NotificationBell size="sm" />
 
           {/* Messages Icon with Unread Count */}
           <Link to="/messaging">

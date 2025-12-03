@@ -1,13 +1,12 @@
 import React, { useRef } from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import type { Message } from "@/lib/mockData"
+import type { Message } from "@/types/message"
 import { cn } from "@/lib/utils"
 
 export interface MessageThreadProps {
   messages: Message[]
   currentUserId: string
-  currentUserName: string
 }
 
 /**
@@ -19,8 +18,8 @@ export const MessageThread = React.memo(
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     // Format timestamp for display
-    const formatTimestamp = (timestamp: string): string => {
-      const date = new Date(timestamp)
+    const formatTimestamp = (sentAt: string): string => {
+      const date = new Date(sentAt)
       const now = new Date()
       const isToday = date.toDateString() === now.toDateString()
 
@@ -41,6 +40,16 @@ export const MessageThread = React.memo(
       })
     }
 
+    // Get initials from name
+    const getInitials = (name: string): string => {
+      return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    }
+
     return (
       <div className="p-6 space-y-6">
         {messages.length === 0 ? (
@@ -50,12 +59,8 @@ export const MessageThread = React.memo(
         ) : (
           <>
             {messages.map((message) => {
-              const isCurrentUser = message.from_id === currentUserId
-              const senderInitials = message.from_name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()
+              const isCurrentUser = message.sender_id === currentUserId
+              const senderInitials = getInitials(message.sender_name)
 
               return (
                 <div
@@ -93,12 +98,12 @@ export const MessageThread = React.memo(
                       )}
                     >
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {message.from_name}
+                        {message.sender_name}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatTimestamp(message.timestamp)}
+                        {formatTimestamp(message.sent_at)}
                       </span>
-                      {!message.read && !isCurrentUser && (
+                      {!message.is_read && !isCurrentUser && (
                         <Badge className="bg-blue-600 text-white text-xs px-2 py-0.5">
                           New
                         </Badge>
