@@ -206,6 +206,7 @@ class StudentResultItem(BaseModel):
     score: int | None
     time_spent_minutes: int
     completed_at: datetime | None
+    has_feedback: bool = False
 
 
 class AnswerDistributionItem(BaseModel):

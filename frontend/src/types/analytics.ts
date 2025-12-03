@@ -218,6 +218,7 @@ export interface StudentResultItem {
   score: number | null
   time_spent_minutes: number
   completed_at: string | null // ISO 8601 datetime string
+  has_feedback: boolean
 }
 
 /**

@@ -102,6 +102,9 @@ class Settings(BaseSettings):
     DREAM_CENTRAL_STORAGE_TOKEN_EXPIRY: int = 1800  # 30 minutes in seconds
     DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET: str = "changethis"
 
+    # Scheduled task API key for external schedulers (cron, Lambda, etc.)
+    SCHEDULER_API_KEY: str | None = None
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

@@ -23,6 +23,7 @@ from app.models import (
     BookAccess,
     Class,
     ClassStudent,
+    NotificationType,
     Student,
     Teacher,
     User,
@@ -57,6 +58,13 @@ from app.schemas.assignment import (
     StudentActivityScore,
     StudentAssignmentResultResponse,
 )
+from app.schemas.feedback import (
+    FeedbackCreate,
+    FeedbackPublic,
+    FeedbackStudentView,
+    FeedbackUpdate,
+)
+from app.services import feedback_service, notification_service
 from app.services.analytics_service import (
     get_assignment_detailed_results,
     get_student_assignment_answers,
@@ -548,6 +556,21 @@ async def create_assignment(
     # Commit transaction
     await session.commit()
     await session.refresh(assignment)
+
+    # Create notifications for all assigned students
+    for student in students:
+        # Get the user_id for the student
+        student_user_id = student.user_id
+        if student_user_id:
+            await notification_service.create_notification(
+                db=session,
+                user_id=student_user_id,
+                notification_type=NotificationType.assignment_created,
+                title=f"New Assignment: {assignment.name}",
+                message=f"You have been assigned '{assignment.name}'. "
+                + (f"Due: {assignment.due_date.strftime('%b %d, %Y')}" if assignment.due_date else "No due date"),
+                link=f"/student/assignments/{assignment.id}",
+            )
 
     # Build response with activities info
     activities_info = [
@@ -1630,6 +1653,38 @@ async def submit_assignment(
             detail="Failed to save submission",
         )
 
+    # Send notification to teacher about student completion (AC: 6, 7)
+    try:
+        # Get assignment with teacher relationship
+        assignment_result = await session.execute(
+            select(Assignment).where(Assignment.id == assignment_id)
+        )
+        assignment = assignment_result.scalar_one_or_none()
+
+        if assignment:
+            # Get teacher's user_id
+            teacher_result = await session.execute(
+                select(Teacher).where(Teacher.id == assignment.teacher_id)
+            )
+            teacher = teacher_result.scalar_one_or_none()
+
+            # Get student's name from user relationship
+            await session.refresh(student, ["user"])
+            student_name = student.user.full_name if student.user else "A student"
+
+            if teacher and teacher.user_id:
+                await notification_service.create_notification(
+                    db=session,
+                    user_id=teacher.user_id,
+                    notification_type=NotificationType.student_completed,
+                    title=f"Student completed: {student_name} finished {assignment.name}",
+                    message=f"Score: {submission.score}%",
+                    link=f"/teacher/assignments/{assignment_id}",
+                )
+    except Exception as e:
+        # Log but don't fail the submission if notification fails
+        logger.warning(f"Failed to send completion notification: {str(e)}")
+
     return AssignmentSubmissionResponse(
         success=True,
         message="Assignment submitted successfully",
@@ -2093,3 +2148,344 @@ async def get_student_assignment_result(
         total_activities=len(activity_scores),
         completed_activities=completed_count,
     )
+
+
+# =============================================================================
+# Feedback Endpoints (Story 6.4)
+# =============================================================================
+
+
+@router.post(
+    "/{assignment_id}/students/{student_id}/feedback",
+    response_model=FeedbackPublic,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_or_update_feedback(
+    assignment_id: uuid.UUID,
+    student_id: uuid.UUID,
+    feedback_data: FeedbackCreate,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher),
+) -> FeedbackPublic:
+    """
+    Create or update feedback for a student's assignment.
+
+    Teachers can provide written feedback on completed student assignments.
+    If feedback already exists, it will be updated.
+
+    Args:
+        assignment_id: UUID of the assignment
+        student_id: UUID of the student (students.id, not user_id)
+        feedback_data: Feedback content and draft status
+        session: Database session
+        current_user: Authenticated teacher
+
+    Returns:
+        Created or updated feedback
+
+    Raises:
+        HTTPException(403): Not the assignment owner
+        HTTPException(404): Assignment or student assignment not found
+    """
+    # Get teacher record
+    teacher_query = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher_result = await session.execute(teacher_query)
+    teacher = teacher_result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can provide feedback",
+        )
+
+    # Verify teacher owns the assignment
+    assignment_query = select(Assignment).where(
+        Assignment.id == assignment_id,
+        Assignment.teacher_id == teacher.id,
+    )
+    assignment_result = await session.execute(assignment_query)
+    assignment = assignment_result.scalar_one_or_none()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found or you don't own this assignment",
+        )
+
+    # Get assignment student record
+    as_query = select(AssignmentStudent).where(
+        AssignmentStudent.assignment_id == assignment_id,
+        AssignmentStudent.student_id == student_id,
+    )
+    as_result = await session.execute(as_query)
+    assignment_student = as_result.scalar_one_or_none()
+
+    if not assignment_student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student assignment not found",
+        )
+
+    # Check if feedback already exists
+    existing_feedback = await feedback_service.get_feedback_by_assignment_student(
+        session, assignment_student.id
+    )
+
+    if existing_feedback:
+        # Update existing feedback
+        updated_feedback = await feedback_service.update_feedback(
+            db=session,
+            feedback_id=existing_feedback.id,
+            teacher_id=teacher.id,
+            feedback_text=feedback_data.feedback_text,
+            is_draft=feedback_data.is_draft,
+            badges=feedback_data.badges,
+            emoji_reaction=feedback_data.emoji_reaction,
+        )
+        if not updated_feedback:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update feedback",
+            )
+        feedback = updated_feedback
+    else:
+        # Create new feedback
+        feedback = await feedback_service.create_feedback(
+            db=session,
+            assignment_student_id=assignment_student.id,
+            teacher_id=teacher.id,
+            feedback_text=feedback_data.feedback_text,
+            is_draft=feedback_data.is_draft,
+            badges=feedback_data.badges,
+            emoji_reaction=feedback_data.emoji_reaction,
+        )
+
+    # Build and return public response
+    feedback_public = await feedback_service.get_feedback_public(session, feedback)
+
+    if not feedback_public:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to build feedback response",
+        )
+
+    logger.info(
+        f"Feedback {'updated' if existing_feedback else 'created'} "
+        f"for assignment {assignment_id}, student {student_id} "
+        f"by teacher {teacher.id}, is_draft={feedback_data.is_draft}"
+    )
+
+    return feedback_public
+
+
+@router.get(
+    "/{assignment_id}/students/{student_id}/feedback",
+    response_model=FeedbackPublic | FeedbackStudentView | None,
+)
+async def get_feedback(
+    assignment_id: uuid.UUID,
+    student_id: uuid.UUID,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher, UserRole.student),
+) -> FeedbackPublic | FeedbackStudentView | None:
+    """
+    Get feedback for a student's assignment.
+
+    Teachers see all feedback (including drafts).
+    Students only see published feedback.
+
+    Args:
+        assignment_id: UUID of the assignment
+        student_id: UUID of the student (students.id, not user_id)
+        session: Database session
+        current_user: Authenticated teacher or student
+
+    Returns:
+        Feedback (full for teachers, limited for students) or None if not found
+
+    Raises:
+        HTTPException(403): Student trying to view another student's feedback
+        HTTPException(404): Assignment not found
+    """
+    # Verify assignment exists
+    assignment_query = select(Assignment).where(Assignment.id == assignment_id)
+    assignment_result = await session.execute(assignment_query)
+    assignment = assignment_result.scalar_one_or_none()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    if current_user.role == UserRole.teacher:
+        # Teachers can view any feedback for assignments they own
+        teacher_query = select(Teacher).where(Teacher.user_id == current_user.id)
+        teacher_result = await session.execute(teacher_query)
+        teacher = teacher_result.scalar_one_or_none()
+
+        if not teacher or assignment.teacher_id != teacher.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view feedback for your own assignments",
+            )
+
+        # Get assignment student record
+        as_query = select(AssignmentStudent).where(
+            AssignmentStudent.assignment_id == assignment_id,
+            AssignmentStudent.student_id == student_id,
+        )
+        as_result = await session.execute(as_query)
+        assignment_student = as_result.scalar_one_or_none()
+
+        if not assignment_student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Assignment or student not found",
+            )
+
+        feedback = await feedback_service.get_feedback_by_assignment_student(
+            session, assignment_student.id
+        )
+
+        if not feedback:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Feedback not found",
+            )
+
+        return await feedback_service.get_feedback_public(session, feedback)
+
+    else:  # Student
+        # Students can only view their own feedback
+        student_query = select(Student).where(Student.user_id == current_user.id)
+        student_result = await session.execute(student_query)
+        student = student_result.scalar_one_or_none()
+
+        if not student or student.id != student_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view your own feedback",
+            )
+
+        # Get published feedback only
+        result = await feedback_service.get_feedback_for_student_view(
+            session, assignment_id, student_id
+        )
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Feedback not found",
+            )
+
+        return result
+
+
+@router.get(
+    "/{assignment_id}/my-feedback",
+    response_model=FeedbackStudentView | None,
+)
+async def get_my_feedback(
+    assignment_id: uuid.UUID,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.student),
+) -> FeedbackStudentView | None:
+    """
+    Get the current student's feedback for an assignment.
+
+    This is a convenience endpoint for students to get their own feedback
+    without needing to know their student_id.
+
+    Returns:
+        FeedbackStudentView: Published feedback if available
+        None: If no published feedback exists
+
+    Raises:
+        HTTPException 404: If assignment not found or student not enrolled
+    """
+    # Get the student record for the current user
+    student_query = select(Student).where(Student.user_id == current_user.id)
+    student_result = await session.execute(student_query)
+    student = student_result.scalar_one_or_none()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found",
+        )
+
+    # Get published feedback only
+    result = await feedback_service.get_feedback_for_student_view(
+        session, assignment_id, student.id
+    )
+
+    return result
+
+
+@router.put(
+    "/feedback/{feedback_id}",
+    response_model=FeedbackPublic,
+)
+async def update_feedback(
+    feedback_id: uuid.UUID,
+    feedback_data: FeedbackUpdate,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher),
+) -> FeedbackPublic:
+    """
+    Update existing feedback.
+
+    Args:
+        feedback_id: UUID of the feedback to update
+        feedback_data: Updated feedback content
+        session: Database session
+        current_user: Authenticated teacher
+
+    Returns:
+        Updated feedback
+
+    Raises:
+        HTTPException(403): Not the feedback owner
+        HTTPException(404): Feedback not found
+    """
+    # Get teacher record
+    teacher_query = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher_result = await session.execute(teacher_query)
+    teacher = teacher_result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can update feedback",
+        )
+
+    # Update feedback
+    updated_feedback = await feedback_service.update_feedback(
+        db=session,
+        feedback_id=feedback_id,
+        teacher_id=teacher.id,
+        feedback_text=feedback_data.feedback_text,
+        is_draft=feedback_data.is_draft,
+        badges=feedback_data.badges,
+        emoji_reaction=feedback_data.emoji_reaction,
+    )
+
+    if not updated_feedback:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Feedback not found or you don't own this feedback",
+        )
+
+    # Build and return public response
+    feedback_public = await feedback_service.get_feedback_public(session, updated_feedback)
+
+    if not feedback_public:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to build feedback response",
+        )
+
+    logger.info(f"Feedback {feedback_id} updated by teacher {teacher.id}")
+
+    return feedback_public

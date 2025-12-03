@@ -1,4 +1,4 @@
-"""Student API endpoints - Story 3.9, 5.1, 5.5."""
+"""Student API endpoints - Story 3.9, 5.1, 5.5, 6.5."""
 
 import logging
 import uuid
@@ -30,7 +30,9 @@ from app.schemas.analytics import (
     StudentProgressResponse,
 )
 from app.schemas.assignment import StudentAssignmentResponse
+from app.schemas.feedback import StudentBadgeCountsResponse
 from app.services import analytics_service
+from app.services import feedback_service
 
 router = APIRouter(prefix="/students", tags=["students"])
 logger = logging.getLogger(__name__)
@@ -295,3 +297,128 @@ async def get_student_analytics(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
+
+
+@router.get(
+    "/me/badges",
+    response_model=StudentBadgeCountsResponse,
+    summary="Get my badge counts (Story 6.5)",
+)
+async def get_my_badges(
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.student),
+) -> StudentBadgeCountsResponse:
+    """
+    Get badge counts for the current student.
+
+    Returns:
+        Badge counts grouped by type, total, and this month counts
+
+    Raises:
+        HTTPException(404): Student record not found
+    """
+    # Get student record for current user
+    student_result = await session.execute(
+        select(Student).where(Student.user_id == current_user.id)
+    )
+    student = student_result.scalar_one_or_none()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found"
+        )
+
+    return await feedback_service.get_student_badge_counts(
+        session=session,
+        student_id=student.id,
+    )
+
+
+@router.get(
+    "/{student_id}/badges",
+    response_model=StudentBadgeCountsResponse,
+    summary="Get student's badge counts (Story 6.5)",
+)
+async def get_student_badges(
+    student_id: uuid.UUID,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher, UserRole.student),
+) -> StudentBadgeCountsResponse:
+    """
+    Get badge counts for a student across all their feedback.
+
+    Students can view their own badges. Teachers can view badges for
+    students in their classes.
+
+    Args:
+        student_id: UUID of the student (students.id)
+        session: Database session
+        current_user: Authenticated user (teacher or student)
+
+    Returns:
+        Badge counts grouped by type, total, and this month counts
+
+    Raises:
+        HTTPException(403): Not authorized to view this student's badges
+        HTTPException(404): Student not found
+    """
+    # Verify access
+    if current_user.role == UserRole.student:
+        # Student can only view their own badges
+        student_result = await session.execute(
+            select(Student).where(Student.user_id == current_user.id)
+        )
+        student = student_result.scalar_one_or_none()
+        if not student or student.id != student_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view your own badges"
+            )
+    else:
+        # Teacher must have student in their class
+        teacher_result = await session.execute(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        )
+        teacher = teacher_result.scalar_one_or_none()
+
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Teacher record not found"
+            )
+
+        access_check = await session.execute(
+            select(ClassStudent.id)
+            .join(Class, ClassStudent.class_id == Class.id)
+            .where(
+                Class.teacher_id == teacher.id,
+                ClassStudent.student_id == student_id,
+            )
+            .limit(1)
+        )
+        has_access = access_check.scalar_one_or_none() is not None
+
+        if not has_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this student's badges"
+            )
+
+    # Verify student exists
+    student_check = await session.execute(
+        select(Student).where(Student.id == student_id)
+    )
+    if not student_check.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+
+    # Get badge counts
+    badge_data = await feedback_service.get_student_badge_counts(
+        db=session,
+        student_id=student_id,
+    )
+
+    return StudentBadgeCountsResponse(**badge_data)

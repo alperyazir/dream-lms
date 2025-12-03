@@ -2,6 +2,8 @@
  * Assignment Detail Page
  * Story 3.9: Student Assignment View & Dashboard
  * Story 8.3: Multi-Activity Assignment Support
+ * Story 6.4: Teacher Feedback on Assignments
+ * Story 6.5: Feedback Enhancements (Badges & Emoji Reactions)
  *
  * Displays detailed information about a specific assignment including:
  * - Assignment name, instructions, due date
@@ -9,6 +11,7 @@
  * - Student's progress (status, score, time spent)
  * - Action buttons (Start Assignment, View Feedback)
  * - Activity list for multi-activity assignments
+ * - Teacher feedback (if available and published)
  */
 
 import { useQuery } from "@tanstack/react-query"
@@ -20,9 +23,12 @@ import {
   CheckCircle2,
   Clock,
   ListTodo,
+  MessageSquare,
+  Reply,
 } from "lucide-react"
 import { StudentScoreBreakdown } from "@/components/analytics/StudentScoreBreakdown"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { BadgeDisplay } from "@/components/feedback/BadgeDisplay"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -35,6 +41,8 @@ import {
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { getStudentAssignments, startMultiActivityAssignment } from "@/services/assignmentsApi"
+import { useMyFeedback } from "@/hooks/useFeedback"
+import { EMOJI_DISPLAY, isFeedbackStudentView } from "@/types/feedback"
 
 export const Route = createFileRoute(
   "/_layout/student/assignments/$assignmentId/",
@@ -65,6 +73,13 @@ function AssignmentDetailContent() {
   })
 
   const assignment = assignments.find((a) => a.assignment_id === assignmentId)
+
+  // Fetch feedback for completed assignments (Story 6.4)
+  const {
+    feedback,
+    isLoading: isFeedbackLoading,
+    hasFeedback,
+  } = useMyFeedback(assignment?.status === "completed" ? assignmentId : null)
 
   // Get activity count from assignment data
   const activityCount = assignment?.activity_count || 1
@@ -370,6 +385,87 @@ function AssignmentDetailContent() {
           {assignment.status === "completed" && isMultiActivity && (
             <StudentScoreBreakdown assignmentId={assignmentId} />
           )}
+
+          {/* Teacher Feedback Card (Story 6.4) */}
+          {assignment.status === "completed" && (
+            <Card id="feedback-section">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Teacher Feedback
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isFeedbackLoading ? (
+                  <div className="py-4 text-center text-muted-foreground">
+                    Loading feedback...
+                  </div>
+                ) : hasFeedback && feedback && isFeedbackStudentView(feedback) ? (
+                  <div className="space-y-4">
+                    {/* Badges display (Story 6.5, AC: 8) */}
+                    {feedback.badges && feedback.badges.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          Badges Awarded
+                        </p>
+                        <BadgeDisplay badges={feedback.badges} size="md" showLabels />
+                      </div>
+                    )}
+
+                    {/* Feedback text with emoji reaction (Story 6.5, AC: 7) */}
+                    <div className="rounded-lg bg-muted/50 p-4">
+                      <div className="flex items-start gap-3">
+                        {/* Emoji reaction displayed prominently */}
+                        {feedback.emoji_reactions && feedback.emoji_reactions.length > 0 && (
+                          <span className="text-3xl flex-shrink-0">
+                            {EMOJI_DISPLAY[feedback.emoji_reactions[0]] || feedback.emoji_reactions[0]}
+                          </span>
+                        )}
+                        <p className="whitespace-pre-wrap text-muted-foreground flex-1">
+                          {feedback.feedback_text}
+                        </p>
+                      </div>
+                    </div>
+
+                    {feedback.teacher_name && (
+                      <p className="text-sm text-muted-foreground">
+                        — {feedback.teacher_name}
+                      </p>
+                    )}
+                    {feedback.updated_at && (
+                      <p className="text-xs text-muted-foreground">
+                        Posted on{" "}
+                        {new Date(feedback.updated_at).toLocaleDateString()} at{" "}
+                        {new Date(feedback.updated_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    )}
+                    {/* Reply to Teacher button (AC: 13) */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() =>
+                        navigate({
+                          to: "/messaging",
+                          search: { user: feedback.teacher_user_id },
+                        })
+                      }
+                    >
+                      <Reply className="mr-2 h-4 w-4" />
+                      Reply to Teacher
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="py-4 text-center text-muted-foreground">
+                    No feedback yet. Your teacher may provide feedback after reviewing your work.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Right Column - Metadata */}
@@ -474,13 +570,18 @@ function AssignmentDetailContent() {
               )}
               {assignment.status === "completed" && (
                 <Button
-                  variant="outline"
+                  variant={hasFeedback ? "default" : "outline"}
                   className="w-full"
                   size="lg"
-                  disabled
-                  title="Feedback feature coming in future story"
+                  onClick={() => {
+                    document.getElementById("feedback-section")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    })
+                  }}
                 >
-                  View Feedback
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  {hasFeedback ? "View Feedback" : "No Feedback Yet"}
                 </Button>
               )}
             </CardContent>

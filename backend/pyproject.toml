@@ -26,6 +26,7 @@ dependencies = [
     "unidecode>=1.4.0",
     "asyncpg>=0.30.0",
     "slowapi>=0.1.9",
+    "bleach>=6.0.0",
 ]
 
 [tool.uv]

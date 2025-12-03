@@ -56,6 +56,7 @@ const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
       score: 95,
       time_spent_minutes: 12,
       completed_at: "2025-02-10T10:30:00Z",
+      has_feedback: true,
     },
     {
       student_id: "s2",
@@ -64,6 +65,7 @@ const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
       score: 80,
       time_spent_minutes: 18,
       completed_at: "2025-02-11T14:20:00Z",
+      has_feedback: false,
     },
     {
       student_id: "s3",
@@ -72,6 +74,7 @@ const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
       score: null,
       time_spent_minutes: 5,
       completed_at: null,
+      has_feedback: false,
     },
   ],
   question_analysis: {

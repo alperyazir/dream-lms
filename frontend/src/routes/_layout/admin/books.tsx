@@ -54,7 +54,8 @@ function AdminBooks() {
   // Fetch books on mount
   useEffect(() => {
     fetchBooks()
-  }, [fetchBooks])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSync = async () => {
     try {

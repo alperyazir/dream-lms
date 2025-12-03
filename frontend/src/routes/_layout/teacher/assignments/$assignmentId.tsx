@@ -8,6 +8,7 @@ import {
   Download,
   Eye,
   Hourglass,
+  MessageSquare,
   PieChart,
   Users,
   XCircle,
@@ -26,6 +27,7 @@ import {
 } from "recharts"
 import { MultiActivityAnalyticsTable } from "@/components/analytics/MultiActivityAnalyticsTable"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { FeedbackModal } from "@/components/feedback"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -442,14 +444,21 @@ function ActivityTypeAnalysisSection({
 function StudentResultsTable({
   students,
   assignmentId,
+  assignmentName,
 }: {
   students: StudentResultItem[]
   assignmentId: string
+  assignmentName: string
 }) {
   const [statusFilter, setStatusFilter] = useState<StudentStatus>("all")
   const [sortBy, setSortBy] = useState<SortBy>("name")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+  const [feedbackStudent, setFeedbackStudent] = useState<{
+    id: string
+    name: string
+    score: number | null
+  } | null>(null)
 
   const filteredAndSortedStudents = useMemo(() => {
     let filtered = students.filter((student) => {
@@ -626,22 +635,43 @@ function StudentResultsTable({
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-teal-600"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            console.log("[ViewDetails] Button clicked for student:", student.student_id)
-                            setSelectedStudentId(student.student_id)
-                          }}
-                          disabled={student.status === "not_started"}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Details
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-teal-600"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              console.log("[ViewDetails] Button clicked for student:", student.student_id)
+                              setSelectedStudentId(student.student_id)
+                            }}
+                            disabled={student.status === "not_started"}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={student.has_feedback ? "secondary" : "outline"}
+                            size="sm"
+                            className={student.has_feedback ? "text-green-600" : ""}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setFeedbackStudent({
+                                id: student.student_id,
+                                name: student.name,
+                                score: student.score,
+                              })
+                            }}
+                            disabled={student.status === "not_started"}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            {student.has_feedback ? "Edit Feedback" : "Feedback"}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -657,6 +687,17 @@ function StudentResultsTable({
         assignmentId={assignmentId}
         studentId={selectedStudentId}
         onClose={() => setSelectedStudentId(null)}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={!!feedbackStudent}
+        onClose={() => setFeedbackStudent(null)}
+        assignmentId={assignmentId}
+        studentId={feedbackStudent?.id || ""}
+        studentName={feedbackStudent?.name || ""}
+        assignmentName={assignmentName}
+        score={feedbackStudent?.score}
       />
     </>
   )
@@ -957,6 +998,7 @@ function AssignmentDetailContent() {
           <StudentResultsTable
             students={results.student_results}
             assignmentId={assignmentId}
+            assignmentName={results.assignment_name}
           />
         </TabsContent>
 

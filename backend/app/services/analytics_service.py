@@ -15,6 +15,7 @@ from app.models import (
     Class,
     ClassStudent,
     DismissedInsight,
+    Feedback,
     Student,
     User,
 )
@@ -794,6 +795,14 @@ async def get_assignment_detailed_results(
             lowest_score=min(scores),
         )
 
+    # Get feedback status for all assignment students
+    assignment_student_ids = [asgn_student.id for asgn_student, _, _ in submissions]
+    feedback_query = select(Feedback.assignment_student_id).where(
+        Feedback.assignment_student_id.in_(assignment_student_ids)
+    )
+    feedback_result = await session.execute(feedback_query)
+    feedback_assignment_student_ids = {row[0] for row in feedback_result.all()}
+
     # Build student results list
     student_results = [
         StudentResultItem(
@@ -803,6 +812,7 @@ async def get_assignment_detailed_results(
             score=asgn_student.score,
             time_spent_minutes=asgn_student.time_spent_minutes or 0,
             completed_at=asgn_student.completed_at,
+            has_feedback=asgn_student.id in feedback_assignment_student_ids,
         )
         for asgn_student, student, user in submissions
     ]

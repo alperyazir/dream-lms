@@ -45,22 +45,23 @@ function PublisherLibraryPage() {
   // Debounce search term
   const debouncedSearch = useDebounce(searchTerm, 300)
 
-  const fetchBooks = async () => {
-    try {
-      setLoading(true)
-      const response = await booksApi.getBooks({ limit: 100 })
-      setBooks(response.items)
-    } catch (error) {
-      console.error("Failed to fetch books:", error)
-      showErrorToast("Failed to load books")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true)
+        const response = await booksApi.getBooks({ limit: 100 })
+        setBooks(response.items)
+      } catch (error) {
+        console.error("Failed to fetch books:", error)
+        showErrorToast("Failed to load books")
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchBooks()
-  }, [fetchBooks])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleAddBook = () => {
     showSuccessToast("Add Book feature coming soon!")

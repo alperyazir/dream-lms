@@ -21,6 +21,7 @@ import { StudentAssignmentCard } from "@/components/assignments/AssignmentCard"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { AchievementBadge } from "@/components/dashboard/AchievementBadge"
 import { FeedbackItem } from "@/components/dashboard/FeedbackItem"
+import { StudentBadgeSummary } from "@/components/feedback/StudentBadgeSummary"
 import { ProgressStatsCard } from "@/components/progress"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -269,6 +270,11 @@ function StudentDashboard() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Teacher Badges (Story 6.5) */}
+      <div>
+        <StudentBadgeSummary showMonthly />
       </div>
 
       {/* Achievements */}
