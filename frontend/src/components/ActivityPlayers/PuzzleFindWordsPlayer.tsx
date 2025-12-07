@@ -13,6 +13,8 @@ interface PuzzleFindWordsPlayerProps {
   showResults?: boolean
   assignmentId?: string
   initialAnswers?: Set<string>
+  // Story 9.7: Show correct answers in preview mode
+  showCorrectAnswers?: boolean
 }
 
 export function PuzzleFindWordsPlayer({
@@ -21,6 +23,7 @@ export function PuzzleFindWordsPlayer({
   showResults = false,
   assignmentId = "default",
   initialAnswers,
+  showCorrectAnswers = false,
 }: PuzzleFindWordsPlayerProps) {
   // Create stable seed from activity and assignment
   const stableSeed = useMemo(() => {
@@ -64,6 +67,12 @@ export function PuzzleFindWordsPlayer({
 
   // Get color for a found word
   const getWordColor = (word: string): string => {
+    // Story 9.7: When showing correct answers, use a consistent index based on all words
+    if (showCorrectAnswers) {
+      const allWords = Array.from(new Set([...activity.words.map(w => w.toUpperCase())]))
+      const index = allWords.indexOf(word)
+      return index >= 0 ? wordColors[index % wordColors.length] : wordColors[0]
+    }
     const index = Array.from(foundWords).indexOf(word)
     return wordColors[index % wordColors.length]
   }
@@ -71,7 +80,8 @@ export function PuzzleFindWordsPlayer({
   // Check if cell is part of a found word
   const getCellColor = (row: number, col: number): string | null => {
     for (const placement of placements) {
-      if (foundWords.has(placement.word)) {
+      // Story 9.7: Show all words when showCorrectAnswers is true
+      if (foundWords.has(placement.word) || showCorrectAnswers) {
         const inWord = placement.cells.some(
           (cell) => cell.row === row && cell.col === col,
         )
@@ -90,7 +100,7 @@ export function PuzzleFindWordsPlayer({
 
   // Handle cell click (desktop)
   const handleCellClick = (row: number, col: number) => {
-    if (showResults) return
+    if (showResults || showCorrectAnswers) return
 
     if (selection.length === 0) {
       // Start selection
@@ -107,14 +117,14 @@ export function PuzzleFindWordsPlayer({
 
   // Handle mouse down (start selection)
   const handleMouseDown = (row: number, col: number) => {
-    if (showResults) return
+    if (showResults || showCorrectAnswers) return
     setIsSelecting(true)
     setSelection([{ row, col }])
   }
 
   // Handle mouse enter (extend or deselect)
   const handleMouseEnter = (row: number, col: number) => {
-    if (!isSelecting || showResults) return
+    if (!isSelecting || showResults || showCorrectAnswers) return
 
     const existingIndex = selection.findIndex(
       (cell) => cell.row === row && cell.col === col,

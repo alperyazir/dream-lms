@@ -302,7 +302,10 @@ describe("ClassDetailPage", () => {
                 </thead>
                 <tbody>
                   {analytics.assignment_performance.map((assignment) => (
-                    <tr key={assignment.assignment_id} data-testid="assignment-row">
+                    <tr
+                      key={assignment.assignment_id}
+                      data-testid="assignment-row"
+                    >
                       <td>{assignment.name}</td>
                       <td data-testid="assignment-score">
                         {assignment.avg_score.toFixed(0)}%
@@ -349,10 +352,7 @@ describe("ClassDetailPage", () => {
                   {analytics.summary.avg_score.toFixed(1)}%
                 </span>
                 {scoreTrend && (
-                  <span
-                    data-testid="score-trend"
-                    data-trend={scoreTrend.trend}
-                  >
+                  <span data-testid="score-trend" data-trend={scoreTrend.trend}>
                     {scoreTrend.change_percent > 0 ? "+" : ""}
                     {scoreTrend.change_percent.toFixed(1)}%
                   </span>
@@ -420,7 +420,10 @@ describe("ClassDetailPage", () => {
                   </thead>
                   <tbody>
                     {analytics.leaderboard.slice(0, 5).map((student) => (
-                      <tr key={student.student_id} data-testid="leaderboard-row">
+                      <tr
+                        key={student.student_id}
+                        data-testid="leaderboard-row"
+                      >
                         <td data-testid="rank">#{student.rank}</td>
                         <td data-testid="student-name">{student.name}</td>
                         <td data-testid="student-score">
@@ -480,7 +483,9 @@ describe("ClassDetailPage", () => {
 
   describe("Loading State", () => {
     it("displays loading spinner while fetching data", () => {
-      render(<TestableClassAnalyticsDashboard isLoading={true} analytics={null} />)
+      render(
+        <TestableClassAnalyticsDashboard isLoading={true} analytics={null} />,
+      )
 
       expect(screen.getByTestId("loading-spinner")).toBeInTheDocument()
       expect(screen.getByText("Loading class details...")).toBeInTheDocument()
@@ -489,7 +494,9 @@ describe("ClassDetailPage", () => {
 
   describe("Error State", () => {
     it("displays error message when API fails", () => {
-      const testError = new Error("Network error - failed to fetch class analytics")
+      const testError = new Error(
+        "Network error - failed to fetch class analytics",
+      )
 
       render(
         <TestableClassAnalyticsDashboard
@@ -660,9 +667,15 @@ describe("ClassDetailPage", () => {
       render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
 
       expect(screen.getByTestId("avg-score-value")).toHaveTextContent("78.5%")
-      expect(screen.getByTestId("completion-rate-value")).toHaveTextContent("85%")
-      expect(screen.getByTestId("total-assignments-value")).toHaveTextContent("10")
-      expect(screen.getByTestId("active-students-value")).toHaveTextContent("22")
+      expect(screen.getByTestId("completion-rate-value")).toHaveTextContent(
+        "85%",
+      )
+      expect(screen.getByTestId("total-assignments-value")).toHaveTextContent(
+        "10",
+      )
+      expect(screen.getByTestId("active-students-value")).toHaveTextContent(
+        "22",
+      )
     })
 
     it("displays score trend indicator", () => {
@@ -685,7 +698,10 @@ describe("ClassDetailPage", () => {
   describe("Analytics Tab - Period Selector", () => {
     it("renders period selector with default value", () => {
       render(
-        <TestableClassAnalyticsDashboard activeTab="analytics" period="monthly" />,
+        <TestableClassAnalyticsDashboard
+          activeTab="analytics"
+          period="monthly"
+        />,
       )
 
       const select = screen.getByTestId("period-select")
@@ -767,7 +783,9 @@ describe("ClassDetailPage", () => {
     it("renders struggling students table", () => {
       render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
 
-      expect(screen.getByTestId("struggling-students-table")).toBeInTheDocument()
+      expect(
+        screen.getByTestId("struggling-students-table"),
+      ).toBeInTheDocument()
       const rows = screen.getAllByTestId("struggling-student-row")
       expect(rows).toHaveLength(2)
     })
@@ -816,7 +834,9 @@ describe("ClassDetailPage", () => {
     it("renders score distribution section", () => {
       render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
 
-      expect(screen.getByTestId("score-distribution-section")).toBeInTheDocument()
+      expect(
+        screen.getByTestId("score-distribution-section"),
+      ).toBeInTheDocument()
       expect(screen.getByTestId("score-distribution-chart")).toBeInTheDocument()
     })
 
@@ -830,10 +850,12 @@ describe("ClassDetailPage", () => {
     it("displays empty state for score distribution when no data", () => {
       const emptyAnalytics = {
         ...mockClassAnalyticsData,
-        score_distribution: mockClassAnalyticsData.score_distribution.map((d) => ({
-          ...d,
-          count: 0,
-        })),
+        score_distribution: mockClassAnalyticsData.score_distribution.map(
+          (d) => ({
+            ...d,
+            count: 0,
+          }),
+        ),
       }
       render(
         <TestableClassAnalyticsDashboard
@@ -879,12 +901,19 @@ describe("ClassDetailPage", () => {
       }
 
       render(
-        <TestableClassAnalyticsDashboard activeTab="analytics" analytics={zeroData} />,
+        <TestableClassAnalyticsDashboard
+          activeTab="analytics"
+          analytics={zeroData}
+        />,
       )
 
       expect(screen.getByTestId("avg-score-value")).toHaveTextContent("0.0%")
-      expect(screen.getByTestId("completion-rate-value")).toHaveTextContent("0%")
-      expect(screen.getByTestId("total-assignments-value")).toHaveTextContent("0")
+      expect(screen.getByTestId("completion-rate-value")).toHaveTextContent(
+        "0%",
+      )
+      expect(screen.getByTestId("total-assignments-value")).toHaveTextContent(
+        "0",
+      )
       expect(screen.getByTestId("active-students-value")).toHaveTextContent("0")
     })
 

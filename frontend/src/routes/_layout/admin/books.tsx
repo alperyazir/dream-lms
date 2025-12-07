@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import axios from "axios"
-import { BookOpen, Plus, RefreshCw, Search } from "lucide-react"
+import { BookOpen, RefreshCw, Search } from "lucide-react"
 import { useEffect, useState } from "react"
 import { OpenAPI } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
@@ -55,7 +55,7 @@ function AdminBooks() {
   useEffect(() => {
     fetchBooks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [fetchBooks])
 
   const handleSync = async () => {
     try {
@@ -104,13 +104,6 @@ function AdminBooks() {
     }
   }
 
-  const handleAddBook = () => {
-    toast({
-      title: "Add Book",
-      description: "Book creation feature coming soon!",
-    })
-  }
-
   const filteredBooks = books.filter(
     (book) =>
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -138,13 +131,6 @@ function AdminBooks() {
               className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`}
             />
             {syncing ? "Syncing..." : "Sync Books"}
-          </Button>
-          <Button
-            onClick={handleAddBook}
-            className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Book
           </Button>
         </div>
       </div>

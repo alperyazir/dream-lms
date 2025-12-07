@@ -1,0 +1,65 @@
+# Quality Gate: 9.8 - Teacher UI Enhancements
+schema: 1
+story: "9.8"
+story_title: "Teacher UI Enhancements"
+gate: CONCERNS
+status_reason: "Core functionality implemented well but zoom feature was removed per user request, and no unit tests exist for new UI components (ZoomControls, BookListView, EditActivitiesDialog)."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-07T00:30:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "No unit tests for ZoomControls.tsx, BookListView.tsx, or EditActivitiesDialog.tsx components"
+    suggested_action: "Add component tests using Vitest + React Testing Library to validate sorting, view toggle, and activity editing functionality"
+    suggested_owner: dev
+  - id: "AC-001"
+    severity: low
+    finding: "AC 14-20 (zoom functionality) appears to have been intentionally removed per user feedback during implementation, but story wasn't updated"
+    suggested_action: "Update story acceptance criteria to reflect that zoom was descoped, or re-implement if still required"
+    suggested_owner: sm
+  - id: "TS-001"
+    severity: low
+    finding: "Pre-existing TypeScript build errors (not from this story) - play.tsx has 13 errors"
+    suggested_action: "Fix TypeScript errors in play.tsx in a separate story/task"
+    suggested_owner: dev
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 1, low: 2 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Test coverage for new UI components"
+
+quality_score: 80
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 21, 22, 23, 24, 25, 26, 27]
+    ac_gaps: [14, 15, 16, 17, 18, 19, 20]
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Backend validates teacher ownership before update, activity book validation in place"
+  performance:
+    status: PASS
+    notes: "Authenticated image loading with blob URL cleanup, proper lazy loading"
+  reliability:
+    status: PASS
+    notes: "Error states handled, fallback UI for missing images"
+  maintainability:
+    status: PASS
+    notes: "Good component separation, clear documentation comments, follows project patterns"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Add unit tests for ZoomControls, BookListView, and EditActivitiesDialog"
+      refs: ["frontend/src/components/assignments/ZoomControls.tsx", "frontend/src/components/books/BookListView.tsx", "frontend/src/components/assignments/EditActivitiesDialog.tsx"]
+    - action: "Clarify zoom AC requirements (14-20) - either update story to remove or re-implement"
+      refs: ["docs/stories/9.8.teacher-ui-enhancements.md"]

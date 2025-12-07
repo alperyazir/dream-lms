@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminUpdatePublisherResponse, AdminDeletePublisherData, AdminDeletePublisherResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, DevGetQuickLoginUsersResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersListMySchoolsResponse, PublishersCreateSchoolData, PublishersCreateSchoolResponse, PublishersListMyTeachersResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, PublishersGetMyStatsResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminUpdatePublisherResponse, AdminDeletePublisherData, AdminDeletePublisherResponse, AdminUploadPublisherLogoData, AdminUploadPublisherLogoResponse, AdminDeletePublisherLogoData, AdminDeletePublisherLogoResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkDeleteStudentsData, AdminBulkDeleteStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, AdminAdminUpdateUserData, AdminAdminUpdateUserResponse, AdminResetUserPasswordData, AdminResetUserPasswordResponse, AdminTestDreamStorageConnectionResponse, AdminRegisterWebhooksManuallyData, AdminRegisterWebhooksManuallyResponse, AdminGetBenchmarkOverviewEndpointResponse, AdminUpdateSchoolBenchmarkSettingsData, AdminUpdateSchoolBenchmarkSettingsResponse, AdminUpdatePublisherBenchmarkSettingsData, AdminUpdatePublisherBenchmarkSettingsResponse, AssignmentsListAssignmentsResponse, AssignmentsCreateAssignmentData, AssignmentsCreateAssignmentResponse, AssignmentsListAllAssignmentsAdminResponse, AssignmentsGetCalendarAssignmentsData, AssignmentsGetCalendarAssignmentsResponse, AssignmentsCreateBulkAssignmentsData, AssignmentsCreateBulkAssignmentsResponse, AssignmentsUpdateAssignmentData, AssignmentsUpdateAssignmentResponse, AssignmentsDeleteAssignmentData, AssignmentsDeleteAssignmentResponse, AssignmentsStartAssignmentData, AssignmentsStartAssignmentResponse, AssignmentsStartMultiActivityAssignmentData, AssignmentsStartMultiActivityAssignmentResponse, AssignmentsSaveActivityProgressData, AssignmentsSaveActivityProgressResponse, AssignmentsSubmitMultiActivityAssignmentData, AssignmentsSubmitMultiActivityAssignmentResponse, AssignmentsSaveProgressData, AssignmentsSaveProgressResponse, AssignmentsSubmitAssignmentData, AssignmentsSubmitAssignmentResponse, AssignmentsGetDetailedResultsData, AssignmentsGetDetailedResultsResponse, AssignmentsGetStudentAnswersData, AssignmentsGetStudentAnswersResponse, AssignmentsGetMultiActivityAnalyticsData, AssignmentsGetMultiActivityAnalyticsResponse, AssignmentsGetStudentAssignmentResultData, AssignmentsGetStudentAssignmentResultResponse, AssignmentsCreateOrUpdateFeedbackData, AssignmentsCreateOrUpdateFeedbackResponse, AssignmentsGetFeedbackData, AssignmentsGetFeedbackResponse, AssignmentsGetMyFeedbackData, AssignmentsGetMyFeedbackResponse, AssignmentsUpdateFeedbackData, AssignmentsUpdateFeedbackResponse, AssignmentsPreviewAssignmentData, AssignmentsPreviewAssignmentResponse, AssignmentsPreviewActivityData, AssignmentsPreviewActivityResponse, AvatarsGetPredefinedAvatarsResponse, AvatarsRemoveAvatarResponse, AvatarsSelectPredefinedAvatarData, AvatarsSelectPredefinedAvatarResponse, BookAssetsServeBookAssetData, BookAssetsServeBookAssetResponse, BookAssetsServePageImageData, BookAssetsServePageImageResponse, BookAssignmentsCreateBookAssignmentData, BookAssignmentsCreateBookAssignmentResponse, BookAssignmentsListBookAssignmentsData, BookAssignmentsListBookAssignmentsResponse, BookAssignmentsCreateBulkBookAssignmentsData, BookAssignmentsCreateBulkBookAssignmentsResponse, BookAssignmentsDeleteBookAssignmentData, BookAssignmentsDeleteBookAssignmentResponse, BookAssignmentsGetBookAssignmentsData, BookAssignmentsGetBookAssignmentsResponse, BooksTriggerBookSyncResponse, BooksListBooksData, BooksListBooksResponse, BooksGetBookActivitiesData, BooksGetBookActivitiesResponse, BooksGetBookPagesData, BooksGetBookPagesResponse, BooksGetPageActivitiesData, BooksGetPageActivitiesResponse, BooksGetBookPagesDetailData, BooksGetBookPagesDetailResponse, BooksGetBookStructureData, BooksGetBookStructureResponse, ClassesCreateClassData, ClassesCreateClassResponse, ClassesListClassesData, ClassesListClassesResponse, ClassesGetClassDetailData, ClassesGetClassDetailResponse, ClassesUpdateClassData, ClassesUpdateClassResponse, ClassesArchiveClassData, ClassesArchiveClassResponse, ClassesAddStudentsToClassData, ClassesAddStudentsToClassResponse, ClassesRemoveStudentFromClassData, ClassesRemoveStudentFromClassResponse, ClassesGetClassAnalyticsEndpointData, ClassesGetClassAnalyticsEndpointResponse, ClassesGetClassBenchmarksEndpointData, ClassesGetClassBenchmarksEndpointResponse, DevGetQuickLoginUsersResponse, FeedbackGetFeedbackOptionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MessagesSendMessageData, MessagesSendMessageResponse, MessagesGetConversationsData, MessagesGetConversationsResponse, MessagesGetMessageThreadData, MessagesGetMessageThreadResponse, MessagesMarkMessageAsReadData, MessagesMarkMessageAsReadResponse, MessagesGetAllowedRecipientsResponse, MessagesGetUnreadMessagesCountResponse, NotificationsGetNotificationsData, NotificationsGetNotificationsResponse, NotificationsGetUnreadCountResponse, NotificationsMarkNotificationAsReadData, NotificationsMarkNotificationAsReadResponse, NotificationsMarkAllNotificationsAsReadResponse, NotificationsGetNotificationPreferencesResponse, NotificationsUpdateNotificationPreferencesData, NotificationsUpdateNotificationPreferencesResponse, NotificationsUpdateSinglePreferenceData, NotificationsUpdateSinglePreferenceResponse, NotificationsGetMuteStatusResponse, NotificationsSetGlobalMuteData, NotificationsSetGlobalMuteResponse, NotificationsCancelGlobalMuteResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersGetMyProfileResponse, PublishersListMySchoolsResponse, PublishersCreateSchoolData, PublishersCreateSchoolResponse, PublishersListMyTeachersResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, PublishersGetMyStatsResponse, ReportsGenerateReportData, ReportsGenerateReportResponse, ReportsCheckReportStatusData, ReportsCheckReportStatusResponse, ReportsDownloadReportData, ReportsDownloadReportResponse, ReportsListReportHistoryResponse, ReportsListReportTemplatesResponse, ReportsCreateReportTemplateData, ReportsCreateReportTemplateResponse, ReportsRemoveReportTemplateData, ReportsRemoveReportTemplateResponse, ScheduledTasksRunDeadlineRemindersData, ScheduledTasksRunDeadlineRemindersResponse, ScheduledTasksRunApproachingDeadlinesOnlyData, ScheduledTasksRunApproachingDeadlinesOnlyResponse, ScheduledTasksRunPastDueOnlyData, ScheduledTasksRunPastDueOnlyResponse, ScheduledTasksRunPublishScheduledAssignmentsData, ScheduledTasksRunPublishScheduledAssignmentsResponse, StudentsGetStudentAssignmentsData, StudentsGetStudentAssignmentsResponse, StudentsGetStudentProgressData, StudentsGetStudentProgressResponse, StudentsGetStudentAnalyticsData, StudentsGetStudentAnalyticsResponse, StudentsGetMyBadgesResponse, StudentsGetStudentBadgesData, StudentsGetStudentBadgesResponse, StudentsGetStudentCalendarAssignmentsData, StudentsGetStudentCalendarAssignmentsResponse, StudentsGetImportTemplateResponse, StudentsValidateImportFileData, StudentsValidateImportFileResponse, StudentsExecuteImportData, StudentsExecuteImportResponse, StudentsDownloadCredentialsData, StudentsDownloadCredentialsResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersBulkDeleteStudentsData, TeachersBulkDeleteStudentsResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, TeachersGetMyInsightsResponse, TeachersGetInsightDetailsData, TeachersGetInsightDetailsResponse, TeachersDismissInsightEndpointData, TeachersDismissInsightEndpointResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksReceiveDreamStorageWebhookResponse, WebhooksTestDreamStorageWebhookData, WebhooksTestDreamStorageWebhookResponse } from './types.gen';
 
 export class AdminService {
     /**
@@ -130,6 +130,51 @@ export class AdminService {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/v1/admin/publishers/{publisher_id}',
+            path: {
+                publisher_id: data.publisherId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Upload publisher logo
+     * Upload a logo image for a publisher (max 2MB, PNG/JPEG). Admin only.
+     * @param data The data for the request.
+     * @param data.publisherId
+     * @param data.formData
+     * @returns LogoUploadResponse Successful Response
+     * @throws ApiError
+     */
+    public static uploadPublisherLogo(data: AdminUploadPublisherLogoData): CancelablePromise<AdminUploadPublisherLogoResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/publishers/{publisher_id}/logo',
+            path: {
+                publisher_id: data.publisherId
+            },
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete publisher logo
+     * Delete a publisher's logo. Admin only.
+     * @param data The data for the request.
+     * @param data.publisherId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deletePublisherLogo(data: AdminDeletePublisherLogoData): CancelablePromise<AdminDeletePublisherLogoResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/admin/publishers/{publisher_id}/logo',
             path: {
                 publisher_id: data.publisherId
             },
@@ -363,6 +408,26 @@ export class AdminService {
     }
     
     /**
+     * Bulk delete students
+     * Delete multiple students by IDs. Admin only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BulkDeleteResponse Successful Response
+     * @throws ApiError
+     */
+    public static bulkDeleteStudents(data: AdminBulkDeleteStudentsData): CancelablePromise<AdminBulkDeleteStudentsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/students/bulk-delete',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Bulk import publishers from Excel
      * Upload Excel file to create multiple publisher accounts. Admin only.
      * @param data The data for the request.
@@ -435,6 +500,1288 @@ export class AdminService {
             url: '/api/v1/admin/stats'
         });
     }
+    
+    /**
+     * Edit user
+     * Update a user's profile information. Admin only.
+     * @param data The data for the request.
+     * @param data.userId
+     * @param data.requestBody
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static adminUpdateUser(data: AdminAdminUpdateUserData): CancelablePromise<AdminAdminUpdateUserResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/admin/users/{user_id}',
+            path: {
+                user_id: data.userId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Reset user password
+     * Reset a user's password to a new auto-generated password. Admin only.
+     * @param data The data for the request.
+     * @param data.userId
+     * @returns PasswordResetResponse Successful Response
+     * @throws ApiError
+     */
+    public static resetUserPassword(data: AdminResetUserPasswordData): CancelablePromise<AdminResetUserPasswordResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/users/{user_id}/reset-password',
+            path: {
+                user_id: data.userId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Test Dream Storage Connection
+     * Test connection to Dream Central Storage API (admin only).
+     *
+     * Attempts to authenticate with Dream Central Storage and returns
+     * detailed connection status and error messages.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static testDreamStorageConnection(): CancelablePromise<AdminTestDreamStorageConnectionResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/test-dream-storage-connection'
+        });
+    }
+    
+    /**
+     * Register Webhooks Manually
+     * Manually register webhooks with Dream Central Storage (admin only).
+     *
+     * This endpoint allows admins to manually register the webhook subscription
+     * if the automatic registration on startup failed or needs to be updated.
+     *
+     * - **force_recreate**: If True, delete existing subscription and create new one
+     *
+     * Returns registration status with subscription details.
+     * @param data The data for the request.
+     * @param data.forceRecreate
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static registerWebhooksManually(data: AdminRegisterWebhooksManuallyData = {}): CancelablePromise<AdminRegisterWebhooksManuallyResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/webhooks/register',
+            query: {
+                force_recreate: data.forceRecreate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get system-wide benchmark overview
+     * Returns aggregated benchmark statistics across all schools (admin only).
+     * @returns AdminBenchmarkOverview Successful Response
+     * @throws ApiError
+     */
+    public static getBenchmarkOverviewEndpoint(): CancelablePromise<AdminGetBenchmarkOverviewEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/benchmarks/overview'
+        });
+    }
+    
+    /**
+     * Update school benchmark settings
+     * Toggle benchmarking for a specific school (admin only).
+     * @param data The data for the request.
+     * @param data.schoolId
+     * @param data.requestBody
+     * @returns BenchmarkSettingsResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateSchoolBenchmarkSettings(data: AdminUpdateSchoolBenchmarkSettingsData): CancelablePromise<AdminUpdateSchoolBenchmarkSettingsResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/admin/schools/{school_id}/settings',
+            path: {
+                school_id: data.schoolId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update publisher benchmark settings
+     * Toggle benchmarking for a specific publisher (admin only).
+     * @param data The data for the request.
+     * @param data.publisherId
+     * @param data.requestBody
+     * @returns BenchmarkSettingsResponse Successful Response
+     * @throws ApiError
+     */
+    public static updatePublisherBenchmarkSettings(data: AdminUpdatePublisherBenchmarkSettingsData): CancelablePromise<AdminUpdatePublisherBenchmarkSettingsResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/admin/publishers/{publisher_id}/settings',
+            path: {
+                publisher_id: data.publisherId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class AssignmentsService {
+    /**
+     * List teacher's assignments
+     * Get all assignments created by the current teacher with enriched data
+     * @returns AssignmentListItem Successful Response
+     * @throws ApiError
+     */
+    public static listAssignments(): CancelablePromise<AssignmentsListAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/'
+        });
+    }
+    
+    /**
+     * Create new assignment
+     * Creates a new assignment and assigns it to specified students/classes. Supports single or multi-activity assignments.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns AssignmentResponse Successful Response
+     * @throws ApiError
+     */
+    public static createAssignment(data: AssignmentsCreateAssignmentData): CancelablePromise<AssignmentsCreateAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assignments/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List all assignments (Admin only)
+     * Get all assignments in the system with enriched data - admin access only
+     * @returns AssignmentListItem Successful Response
+     * @throws ApiError
+     */
+    public static listAllAssignmentsAdmin(): CancelablePromise<AssignmentsListAllAssignmentsAdminResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/admin/all'
+        });
+    }
+    
+    /**
+     * Get assignments for calendar view
+     * Get assignments within a date range for calendar display. Teachers see all their assignments, including scheduled ones.
+     * @param data The data for the request.
+     * @param data.startDate Start date for range (inclusive)
+     * @param data.endDate End date for range (inclusive)
+     * @param data.classId Filter by class ID
+     * @param data.status Filter by status
+     * @param data.bookId Filter by book ID
+     * @returns CalendarAssignmentsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getCalendarAssignments(data: AssignmentsGetCalendarAssignmentsData): CancelablePromise<AssignmentsGetCalendarAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/calendar',
+            query: {
+                start_date: data.startDate,
+                end_date: data.endDate,
+                class_id: data.classId,
+                status: data.status,
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create bulk assignments (Time Planning mode)
+     * Creates multiple assignments from date groups. Each date group becomes a separate assignment with its own scheduled publish date.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BulkAssignmentCreateResponse Successful Response
+     * @throws ApiError
+     */
+    public static createBulkAssignments(data: AssignmentsCreateBulkAssignmentsData): CancelablePromise<AssignmentsCreateBulkAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assignments/bulk',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update assignment
+     * Update editable fields of an assignment (teacher can only update their own assignments)
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.requestBody
+     * @returns AssignmentResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateAssignment(data: AssignmentsUpdateAssignmentData): CancelablePromise<AssignmentsUpdateAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/assignments/{assignment_id}',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete assignment
+     * Delete an assignment (teacher can only delete their own assignments)
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteAssignment(data: AssignmentsDeleteAssignmentData): CancelablePromise<AssignmentsDeleteAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/assignments/{assignment_id}',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Start assignment
+     * Start an assignment - marks as in_progress and returns full activity configuration
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns ActivityStartResponse Successful Response
+     * @throws ApiError
+     */
+    public static startAssignment(data: AssignmentsStartAssignmentData): CancelablePromise<AssignmentsStartAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/start',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Start multi-activity assignment
+     * Start a multi-activity assignment - returns all activities with configs and progress
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns MultiActivityStartResponse Successful Response
+     * @throws ApiError
+     */
+    public static startMultiActivityAssignment(data: AssignmentsStartMultiActivityAssignmentData): CancelablePromise<AssignmentsStartMultiActivityAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/start-multi',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Save per-activity progress
+     * Save progress for a specific activity in a multi-activity assignment (Rate limited: 120 req/hour)
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.activityId
+     * @param data.requestBody
+     * @returns ActivityProgressSaveResponse Successful Response
+     * @throws ApiError
+     */
+    public static saveActivityProgress(data: AssignmentsSaveActivityProgressData): CancelablePromise<AssignmentsSaveActivityProgressResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/assignments/{assignment_id}/students/me/activities/{activity_id}',
+            path: {
+                assignment_id: data.assignmentId,
+                activity_id: data.activityId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Submit multi-activity assignment
+     * Submit a multi-activity assignment after completing all activities
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.requestBody
+     * @returns MultiActivitySubmitResponse Successful Response
+     * @throws ApiError
+     */
+    public static submitMultiActivityAssignment(data: AssignmentsSubmitMultiActivityAssignmentData): CancelablePromise<AssignmentsSubmitMultiActivityAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assignments/{assignment_id}/students/me/submit-multi',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Save assignment progress
+     * Auto-save or manually save partial assignment progress (Rate limited: 120 req/hour)
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.requestBody
+     * @returns AssignmentSaveProgressResponse Successful Response
+     * @throws ApiError
+     */
+    public static saveProgress(data: AssignmentsSaveProgressData): CancelablePromise<AssignmentsSaveProgressResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assignments/{assignment_id}/save-progress',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Submit completed assignment
+     * Submit a completed assignment with answers and score
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.requestBody
+     * @returns AssignmentSubmissionResponse Successful Response
+     * @throws ApiError
+     */
+    public static submitAssignment(data: AssignmentsSubmitAssignmentData): CancelablePromise<AssignmentsSubmitAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assignments/{assignment_id}/submit',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get detailed assignment results
+     * Get detailed results for an assignment including completion stats, scores, and question-level analysis
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns AssignmentDetailedResultsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getDetailedResults(data: AssignmentsGetDetailedResultsData): CancelablePromise<AssignmentsGetDetailedResultsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/detailed-results',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get student's answers for assignment
+     * Get a specific student's full answers for an assignment
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.studentId
+     * @returns StudentAnswersResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStudentAnswers(data: AssignmentsGetStudentAnswersData): CancelablePromise<AssignmentsGetStudentAnswersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/students/{student_id}/answers',
+            path: {
+                assignment_id: data.assignmentId,
+                student_id: data.studentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get multi-activity assignment analytics
+     * Get per-activity analytics for a multi-activity assignment (teacher view)
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.expandActivityId
+     * @returns MultiActivityAnalyticsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMultiActivityAnalytics(data: AssignmentsGetMultiActivityAnalyticsData): CancelablePromise<AssignmentsGetMultiActivityAnalyticsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/analytics',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            query: {
+                expand_activity_id: data.expandActivityId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get student's assignment result
+     * Get the student's score breakdown for a completed multi-activity assignment
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns StudentAssignmentResultResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStudentAssignmentResult(data: AssignmentsGetStudentAssignmentResultData): CancelablePromise<AssignmentsGetStudentAssignmentResultResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/students/me/result',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Or Update Feedback
+     * Create or update feedback for a student's assignment.
+     *
+     * Teachers can provide written feedback on completed student assignments.
+     * If feedback already exists, it will be updated.
+     *
+     * Args:
+     * assignment_id: UUID of the assignment
+     * student_id: UUID of the student (students.id, not user_id)
+     * feedback_data: Feedback content and draft status
+     * session: Database session
+     * current_user: Authenticated teacher
+     *
+     * Returns:
+     * Created or updated feedback
+     *
+     * Raises:
+     * HTTPException(403): Not the assignment owner
+     * HTTPException(404): Assignment or student assignment not found
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.studentId
+     * @param data.requestBody
+     * @returns FeedbackPublic Successful Response
+     * @throws ApiError
+     */
+    public static createOrUpdateFeedback(data: AssignmentsCreateOrUpdateFeedbackData): CancelablePromise<AssignmentsCreateOrUpdateFeedbackResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assignments/{assignment_id}/students/{student_id}/feedback',
+            path: {
+                assignment_id: data.assignmentId,
+                student_id: data.studentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Feedback
+     * Get feedback for a student's assignment.
+     *
+     * Teachers see all feedback (including drafts).
+     * Students only see published feedback.
+     *
+     * Args:
+     * assignment_id: UUID of the assignment
+     * student_id: UUID of the student (students.id, not user_id)
+     * session: Database session
+     * current_user: Authenticated teacher or student
+     *
+     * Returns:
+     * Feedback (full for teachers, limited for students) or None if not found
+     *
+     * Raises:
+     * HTTPException(403): Student trying to view another student's feedback
+     * HTTPException(404): Assignment not found
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.studentId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getFeedback(data: AssignmentsGetFeedbackData): CancelablePromise<AssignmentsGetFeedbackResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/students/{student_id}/feedback',
+            path: {
+                assignment_id: data.assignmentId,
+                student_id: data.studentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get My Feedback
+     * Get the current student's feedback for an assignment.
+     *
+     * This is a convenience endpoint for students to get their own feedback
+     * without needing to know their student_id.
+     *
+     * Returns:
+     * FeedbackStudentView: Published feedback if available
+     * None: If no published feedback exists
+     *
+     * Raises:
+     * HTTPException 404: If assignment not found or student not enrolled
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getMyFeedback(data: AssignmentsGetMyFeedbackData): CancelablePromise<AssignmentsGetMyFeedbackResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/my-feedback',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Feedback
+     * Update existing feedback.
+     *
+     * Args:
+     * feedback_id: UUID of the feedback to update
+     * feedback_data: Updated feedback content
+     * session: Database session
+     * current_user: Authenticated teacher
+     *
+     * Returns:
+     * Updated feedback
+     *
+     * Raises:
+     * HTTPException(403): Not the feedback owner
+     * HTTPException(404): Feedback not found
+     * @param data The data for the request.
+     * @param data.feedbackId
+     * @param data.requestBody
+     * @returns FeedbackPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateFeedback(data: AssignmentsUpdateFeedbackData): CancelablePromise<AssignmentsUpdateFeedbackResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/assignments/feedback/{feedback_id}',
+            path: {
+                feedback_id: data.feedbackId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Preview assignment (teacher test mode)
+     * Get assignment data for teacher preview/test mode. No student data created.
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns AssignmentPreviewResponse Successful Response
+     * @throws ApiError
+     */
+    public static previewAssignment(data: AssignmentsPreviewAssignmentData): CancelablePromise<AssignmentsPreviewAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/preview',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Preview single activity
+     * Get single activity data for teacher/publisher preview. No submission recorded.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @returns ActivityPreviewResponse Successful Response
+     * @throws ApiError
+     */
+    public static previewActivity(data: AssignmentsPreviewActivityData): CancelablePromise<AssignmentsPreviewActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/activities/{activity_id}/preview',
+            path: {
+                activity_id: data.activityId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class AvatarsService {
+    /**
+     * Get Predefined Avatars
+     * Get list of all predefined avatar options.
+     * @returns PredefinedAvatarsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPredefinedAvatars(): CancelablePromise<AvatarsGetPredefinedAvatarsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/avatars/predefined'
+        });
+    }
+    
+    /**
+     * Remove Avatar
+     * Remove the current user's avatar (reset to default).
+     * @returns AvatarUpdateResponse Successful Response
+     * @throws ApiError
+     */
+    public static removeAvatar(): CancelablePromise<AvatarsRemoveAvatarResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/avatars/me'
+        });
+    }
+    
+    /**
+     * Select Predefined Avatar
+     * Select a predefined avatar for the current user.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static selectPredefinedAvatar(data: AvatarsSelectPredefinedAvatarData): CancelablePromise<AvatarsSelectPredefinedAvatarResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/avatars/me',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class BookAssetsService {
+    /**
+     * Serve book asset
+     * Proxy authenticated access to book assets from Dream Central Storage
+     * @param data The data for the request.
+     * @param data.bookId Book ID
+     * @param data.assetPath Relative path to asset (e.g., 'images/M1/p7m5.jpg', 'audio/6a.mp3')
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static serveBookAsset(data: BookAssetsServeBookAssetData): CancelablePromise<BookAssetsServeBookAssetResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/assets/{asset_path}',
+            path: {
+                book_id: data.bookId,
+                asset_path: data.assetPath
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Serve page image
+     * Convenience endpoint for serving page images
+     * @param data The data for the request.
+     * @param data.bookId Book ID
+     * @param data.pageNumber Page number
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static servePageImage(data: BookAssetsServePageImageData): CancelablePromise<BookAssetsServePageImageResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/page-image/{page_number}',
+            path: {
+                book_id: data.bookId,
+                page_number: data.pageNumber
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class BookAssignmentsService {
+    /**
+     * Create book assignment
+     * Assign a book to a school or teacher. Publisher only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BookAssignmentPublic Successful Response
+     * @throws ApiError
+     */
+    public static createBookAssignment(data: BookAssignmentsCreateBookAssignmentData): CancelablePromise<BookAssignmentsCreateBookAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/book-assignments',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List book assignments
+     * List all book assignments for the publisher's books. Publisher only.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @param data.schoolId
+     * @param data.skip
+     * @param data.limit
+     * @returns BookAssignmentListResponse Successful Response
+     * @throws ApiError
+     */
+    public static listBookAssignments(data: BookAssignmentsListBookAssignmentsData = {}): CancelablePromise<BookAssignmentsListBookAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/book-assignments',
+            query: {
+                book_id: data.bookId,
+                school_id: data.schoolId,
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create bulk book assignments
+     * Assign a book to multiple teachers or entire school. Publisher only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BookAssignmentPublic Successful Response
+     * @throws ApiError
+     */
+    public static createBulkBookAssignments(data: BookAssignmentsCreateBulkBookAssignmentsData): CancelablePromise<BookAssignmentsCreateBulkBookAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/book-assignments/bulk',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete book assignment
+     * Remove a book assignment. Publisher only.
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteBookAssignment(data: BookAssignmentsDeleteBookAssignmentData): CancelablePromise<BookAssignmentsDeleteBookAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/book-assignments/{assignment_id}',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get assignments for a book
+     * Get all assignments for a specific book. Publisher only.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns BookAssignmentResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBookAssignments(data: BookAssignmentsGetBookAssignmentsData): CancelablePromise<BookAssignmentsGetBookAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/book-assignments/book/{book_id}',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class BooksService {
+    /**
+     * Sync books from Dream Central Storage
+     * Triggers synchronization of book catalog from Dream Central Storage (admin only)
+     * @returns BookSyncResponse Successful Response
+     * @throws ApiError
+     */
+    public static triggerBookSync(): CancelablePromise<BooksTriggerBookSyncResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/books/sync'
+        });
+    }
+    
+    /**
+     * List accessible books
+     * Returns books accessible to the authenticated user (admin sees all, publisher/teacher see their publisher's books).
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.search
+     * @param data.activityType
+     * @returns BookListResponse Successful Response
+     * @throws ApiError
+     */
+    public static listBooks(data: BooksListBooksData = {}): CancelablePromise<BooksListBooksResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                search: data.search,
+                activity_type: data.activityType
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get book activities
+     * Returns all activities for a specific book (admin sees all, publisher/teacher must have access).
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns ActivityResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBookActivities(data: BooksGetBookActivitiesData): CancelablePromise<BooksGetBookActivitiesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/activities',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get book pages with activities
+     * Returns pages grouped by module with activity counts and thumbnail URLs.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns BookPagesResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBookPages(data: BooksGetBookPagesData): CancelablePromise<BooksGetBookPagesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/pages',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get activities on a specific page
+     * Returns activities for a specific page, ordered by section_index.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @param data.pageNumber
+     * @param data.moduleName
+     * @returns PageActivityResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPageActivities(data: BooksGetPageActivitiesData): CancelablePromise<BooksGetPageActivitiesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/pages/{page_number}/activities',
+            path: {
+                book_id: data.bookId,
+                page_number: data.pageNumber
+            },
+            query: {
+                module_name: data.moduleName
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get detailed book pages with activity markers
+     * Returns pages grouped by module with full-size images and activity coordinates for the page viewer.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns BookPagesDetailResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBookPagesDetail(data: BooksGetBookPagesDetailData): CancelablePromise<BooksGetBookPagesDetailResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/pages/detail',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get book structure with modules and pages for activity selection
+     * Returns book structure with modules and pages including activity IDs for bulk selection in assignment creation.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns BookStructureResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBookStructure(data: BooksGetBookStructureData): CancelablePromise<BooksGetBookStructureResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/structure',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class ClassesService {
+    /**
+     * Create new class
+     * Creates a new class owned by the authenticated teacher.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns ClassResponse Successful Response
+     * @throws ApiError
+     */
+    public static createClass(data: ClassesCreateClassData): CancelablePromise<ClassesCreateClassResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/classes',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List teacher's classes
+     * Returns all active classes owned by the authenticated teacher.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns ClassResponse Successful Response
+     * @throws ApiError
+     */
+    public static listClasses(data: ClassesListClassesData = {}): CancelablePromise<ClassesListClassesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/classes',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get class details
+     * Returns detailed class information including enrolled students.
+     * @param data The data for the request.
+     * @param data.classId
+     * @returns ClassDetailResponse Successful Response
+     * @throws ApiError
+     */
+    public static getClassDetail(data: ClassesGetClassDetailData): CancelablePromise<ClassesGetClassDetailResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/classes/{class_id}',
+            path: {
+                class_id: data.classId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update class
+     * Updates class details (name, grade, subject, academic year).
+     * @param data The data for the request.
+     * @param data.classId
+     * @param data.requestBody
+     * @returns ClassResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateClass(data: ClassesUpdateClassData): CancelablePromise<ClassesUpdateClassResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/classes/{class_id}',
+            path: {
+                class_id: data.classId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Archive class
+     * Archives a class (soft delete). Marks as inactive.
+     * @param data The data for the request.
+     * @param data.classId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static archiveClass(data: ClassesArchiveClassData): CancelablePromise<ClassesArchiveClassResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/classes/{class_id}',
+            path: {
+                class_id: data.classId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Add students to class
+     * Enrolls multiple students in a class. Students must belong to the teacher.
+     * @param data The data for the request.
+     * @param data.classId
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static addStudentsToClass(data: ClassesAddStudentsToClassData): CancelablePromise<ClassesAddStudentsToClassResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/classes/{class_id}/students',
+            path: {
+                class_id: data.classId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Remove student from class
+     * Removes a student from a class enrollment.
+     * @param data The data for the request.
+     * @param data.classId
+     * @param data.studentId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static removeStudentFromClass(data: ClassesRemoveStudentFromClassData): CancelablePromise<ClassesRemoveStudentFromClassResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/classes/{class_id}/students/{student_id}',
+            path: {
+                class_id: data.classId,
+                student_id: data.studentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get class analytics
+     * Returns aggregated performance analytics for a class.
+     * @param data The data for the request.
+     * @param data.classId
+     * @param data.period
+     * @returns ClassAnalyticsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getClassAnalyticsEndpoint(data: ClassesGetClassAnalyticsEndpointData): CancelablePromise<ClassesGetClassAnalyticsEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/classes/{class_id}/analytics',
+            path: {
+                class_id: data.classId
+            },
+            query: {
+                period: data.period
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get class benchmarks
+     * Returns performance benchmarks comparing class against school/publisher averages.
+     * @param data The data for the request.
+     * @param data.classId
+     * @param data.period
+     * @returns ClassBenchmarkResponse Successful Response
+     * @throws ApiError
+     */
+    public static getClassBenchmarksEndpoint(data: ClassesGetClassBenchmarksEndpointData): CancelablePromise<ClassesGetClassBenchmarksEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/classes/{class_id}/benchmarks',
+            path: {
+                class_id: data.classId
+            },
+            query: {
+                period: data.period
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
 }
 
 export class DevService {
@@ -447,13 +1794,33 @@ export class DevService {
      *
      * Returns:
      * Dictionary with role names as keys and lists of user dicts (username, email, password) as values
-     * @returns string Successful Response
+     * @returns unknown Successful Response
      * @throws ApiError
      */
     public static getQuickLoginUsers(): CancelablePromise<DevGetQuickLoginUsersResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/dev/quick-login-users'
+        });
+    }
+}
+
+export class FeedbackService {
+    /**
+     * Get Feedback Options
+     * Get available badges and emoji reactions for feedback.
+     *
+     * Returns predefined badges and emoji reactions that teachers can use
+     * when providing feedback on student assignments.
+     *
+     * This endpoint is public (no authentication required).
+     * @returns FeedbackOptionsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getFeedbackOptions(): CancelablePromise<FeedbackGetFeedbackOptionsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/feedback/options'
         });
     }
 }
@@ -555,6 +1922,343 @@ export class LoginService {
     }
 }
 
+export class MessagesService {
+    /**
+     * Send Message
+     * Send a new direct message to a recipient.
+     *
+     * Communication paths:
+     * - Teachers <-> Students (in their classes/assignments)
+     * - Teachers <-> Admins
+     * - Teachers <-> Publishers
+     * - Publishers <-> Admins
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns MessagePublic Successful Response
+     * @throws ApiError
+     */
+    public static sendMessage(data: MessagesSendMessageData): CancelablePromise<MessagesSendMessageResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/messages',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Conversations
+     * Get list of conversations for the current user.
+     *
+     * Returns conversations grouped by participant with last message preview
+     * and unread count.
+     * @param data The data for the request.
+     * @param data.limit Number of conversations to return
+     * @param data.offset Number of conversations to skip
+     * @returns ConversationListResponse Successful Response
+     * @throws ApiError
+     */
+    public static getConversations(data: MessagesGetConversationsData = {}): CancelablePromise<MessagesGetConversationsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/messages/conversations',
+            query: {
+                limit: data.limit,
+                offset: data.offset
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Message Thread
+     * Get all messages in a conversation thread with a specific user.
+     *
+     * Messages are returned in chronological order (oldest first).
+     * Unread messages received by the current user are automatically marked as read.
+     * @param data The data for the request.
+     * @param data.partnerId
+     * @returns MessageThreadResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMessageThread(data: MessagesGetMessageThreadData): CancelablePromise<MessagesGetMessageThreadResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/messages/thread/{partner_id}',
+            path: {
+                partner_id: data.partnerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Mark Message As Read
+     * Mark a specific message as read.
+     *
+     * Only the recipient of the message can mark it as read.
+     * @param data The data for the request.
+     * @param data.messageId
+     * @returns MessageReadResponse Successful Response
+     * @throws ApiError
+     */
+    public static markMessageAsRead(data: MessagesMarkMessageAsReadData): CancelablePromise<MessagesMarkMessageAsReadResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/messages/{message_id}/read',
+            path: {
+                message_id: data.messageId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Allowed Recipients
+     * Get list of users that the current user is allowed to message.
+     *
+     * - Admins: All teachers, all publishers
+     * - Publishers: All admins, all teachers
+     * - Teachers: Students in their classes, all admins, all publishers
+     * - Students: Teachers who have assigned them work
+     * @returns RecipientListResponse Successful Response
+     * @throws ApiError
+     */
+    public static getAllowedRecipients(): CancelablePromise<MessagesGetAllowedRecipientsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/messages/recipients'
+        });
+    }
+    
+    /**
+     * Get Unread Messages Count
+     * Get count of unread messages for the current user.
+     *
+     * Useful for displaying badge count on navigation.
+     * @returns UnreadMessagesCountResponse Successful Response
+     * @throws ApiError
+     */
+    public static getUnreadMessagesCount(): CancelablePromise<MessagesGetUnreadMessagesCountResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/messages/unread-count'
+        });
+    }
+}
+
+export class NotificationsService {
+    /**
+     * Get Notifications
+     * Get notifications for the current authenticated user.
+     *
+     * Supports filtering by read status and notification type.
+     * Returns paginated results with total count.
+     * @param data The data for the request.
+     * @param data.unreadOnly Filter to only unread notifications
+     * @param data.type Filter by notification type
+     * @param data.limit Number of notifications to return
+     * @param data.offset Number of notifications to skip
+     * @returns NotificationListResponse Successful Response
+     * @throws ApiError
+     */
+    public static getNotifications(data: NotificationsGetNotificationsData = {}): CancelablePromise<NotificationsGetNotificationsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/notifications',
+            query: {
+                unread_only: data.unreadOnly,
+                type: data.type,
+                limit: data.limit,
+                offset: data.offset
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Unread Count
+     * Get count of unread notifications for the current user.
+     *
+     * Useful for displaying badge count on notification bell.
+     * @returns UnreadCountResponse Successful Response
+     * @throws ApiError
+     */
+    public static getUnreadCount(): CancelablePromise<NotificationsGetUnreadCountResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/notifications/unread-count'
+        });
+    }
+    
+    /**
+     * Mark Notification As Read
+     * Mark a specific notification as read.
+     *
+     * The notification must belong to the current user.
+     * Returns 404 if notification not found or doesn't belong to user.
+     * @param data The data for the request.
+     * @param data.notificationId
+     * @returns NotificationResponse Successful Response
+     * @throws ApiError
+     */
+    public static markNotificationAsRead(data: NotificationsMarkNotificationAsReadData): CancelablePromise<NotificationsMarkNotificationAsReadResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/notifications/{notification_id}/read',
+            path: {
+                notification_id: data.notificationId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Mark All Notifications As Read
+     * Mark all notifications as read for the current user.
+     *
+     * Returns the count of notifications that were marked as read.
+     * @returns MarkAllReadResponse Successful Response
+     * @throws ApiError
+     */
+    public static markAllNotificationsAsRead(): CancelablePromise<NotificationsMarkAllNotificationsAsReadResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/notifications/mark-all-read'
+        });
+    }
+    
+    /**
+     * Get Notification Preferences
+     * Get all notification preferences for the current user.
+     *
+     * Returns preferences filtered by user role, with labels and descriptions.
+     * Also includes global mute status if active.
+     * @returns NotificationPreferencesListResponse Successful Response
+     * @throws ApiError
+     */
+    public static getNotificationPreferences(): CancelablePromise<NotificationsGetNotificationPreferencesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/notifications/preferences'
+        });
+    }
+    
+    /**
+     * Update Notification Preferences
+     * Bulk update notification preferences.
+     *
+     * Accepts a dictionary mapping notification type names to enabled status.
+     * Only updates preferences applicable to the user's role.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns NotificationPreferencesBulkUpdateResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateNotificationPreferences(data: NotificationsUpdateNotificationPreferencesData): CancelablePromise<NotificationsUpdateNotificationPreferencesResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/notifications/preferences',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Single Preference
+     * Update a single notification preference.
+     *
+     * The notification type must be applicable to the user's role.
+     * @param data The data for the request.
+     * @param data.notificationType
+     * @param data.requestBody
+     * @returns NotificationPreferenceResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateSinglePreference(data: NotificationsUpdateSinglePreferenceData): CancelablePromise<NotificationsUpdateSinglePreferenceResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/notifications/preferences/{notification_type}',
+            path: {
+                notification_type: data.notificationType
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Mute Status
+     * Get current global mute status.
+     *
+     * Returns is_muted=False if no mute is active or if mute has expired.
+     * @returns GlobalMuteStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMuteStatus(): CancelablePromise<NotificationsGetMuteStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/notifications/mute'
+        });
+    }
+    
+    /**
+     * Set Global Mute
+     * Set global notification mute for a specified number of hours.
+     *
+     * Maximum mute duration is 24 hours.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns GlobalMuteResponse Successful Response
+     * @throws ApiError
+     */
+    public static setGlobalMute(data: NotificationsSetGlobalMuteData): CancelablePromise<NotificationsSetGlobalMuteResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/notifications/mute',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Cancel Global Mute
+     * Cancel global notification mute.
+     *
+     * Returns 204 No Content on success (even if no mute was active).
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static cancelGlobalMute(): CancelablePromise<NotificationsCancelGlobalMuteResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/notifications/mute'
+        });
+    }
+}
+
 export class PrivateService {
     /**
      * Create User
@@ -578,6 +2282,19 @@ export class PrivateService {
 }
 
 export class PublishersService {
+    /**
+     * Get my publisher profile
+     * Retrieve the authenticated publisher's profile including organization details and logo. Publisher only.
+     * @returns PublisherPublic Successful Response
+     * @throws ApiError
+     */
+    public static getMyProfile(): CancelablePromise<PublishersGetMyProfileResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/publishers/me/profile'
+        });
+    }
+    
     /**
      * List my schools
      * Retrieve schools assigned to authenticated publisher. Publisher only.
@@ -658,10 +2375,496 @@ export class PublishersService {
     }
 }
 
+export class ReportsService {
+    /**
+     * Generate a new report
+     * Initiate report generation. Returns job ID for status polling.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns ReportJobResponse Successful Response
+     * @throws ApiError
+     */
+    public static generateReport(data: ReportsGenerateReportData): CancelablePromise<ReportsGenerateReportResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/reports/generate',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Check report generation status
+     * Get the current status of a report generation job.
+     * @param data The data for the request.
+     * @param data.jobId
+     * @returns ReportStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static checkReportStatus(data: ReportsCheckReportStatusData): CancelablePromise<ReportsCheckReportStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/reports/{job_id}/status',
+            path: {
+                job_id: data.jobId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Download generated report
+     * Download the generated report file.
+     * @param data The data for the request.
+     * @param data.jobId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static downloadReport(data: ReportsDownloadReportData): CancelablePromise<ReportsDownloadReportResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/reports/{job_id}/download',
+            path: {
+                job_id: data.jobId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get report history
+     * List previously generated reports (last 7 days).
+     * @returns ReportHistoryResponse Successful Response
+     * @throws ApiError
+     */
+    public static listReportHistory(): CancelablePromise<ReportsListReportHistoryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/reports/history'
+        });
+    }
+    
+    /**
+     * List saved templates
+     * Get all saved report templates for the current teacher.
+     * @returns SavedReportTemplate Successful Response
+     * @throws ApiError
+     */
+    public static listReportTemplates(): CancelablePromise<ReportsListReportTemplatesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/reports/templates'
+        });
+    }
+    
+    /**
+     * Save report template
+     * Save a report configuration as a reusable template.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns SavedReportTemplate Successful Response
+     * @throws ApiError
+     */
+    public static createReportTemplate(data: ReportsCreateReportTemplateData): CancelablePromise<ReportsCreateReportTemplateResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/reports/templates',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete report template
+     * Delete a saved report template.
+     * @param data The data for the request.
+     * @param data.templateId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static removeReportTemplate(data: ReportsRemoveReportTemplateData): CancelablePromise<ReportsRemoveReportTemplateResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/reports/templates/{template_id}',
+            path: {
+                template_id: data.templateId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class ScheduledTasksService {
+    /**
+     * Run deadline reminder checks
+     * Checks for approaching deadlines and past-due assignments, sending notifications as needed. Should be called daily by external scheduler (e.g., at 8 AM).
+     * @param data The data for the request.
+     * @param data.xSchedulerKey
+     * @returns DeadlineCheckResponse Successful Response
+     * @throws ApiError
+     */
+    public static runDeadlineReminders(data: ScheduledTasksRunDeadlineRemindersData = {}): CancelablePromise<ScheduledTasksRunDeadlineRemindersResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/tasks/deadline-reminders',
+            headers: {
+                'x-scheduler-key': data.xSchedulerKey
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Run approaching deadline check only
+     * Checks for assignments due within 24 hours and sends reminders.
+     * @param data The data for the request.
+     * @param data.xSchedulerKey
+     * @returns DeadlineCheckResponse Successful Response
+     * @throws ApiError
+     */
+    public static runApproachingDeadlinesOnly(data: ScheduledTasksRunApproachingDeadlinesOnlyData = {}): CancelablePromise<ScheduledTasksRunApproachingDeadlinesOnlyResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/tasks/approaching-deadlines',
+            headers: {
+                'x-scheduler-key': data.xSchedulerKey
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Run past-due check only
+     * Checks for assignments that became overdue 24-48 hours ago and sends notifications.
+     * @param data The data for the request.
+     * @param data.xSchedulerKey
+     * @returns DeadlineCheckResponse Successful Response
+     * @throws ApiError
+     */
+    public static runPastDueOnly(data: ScheduledTasksRunPastDueOnlyData = {}): CancelablePromise<ScheduledTasksRunPastDueOnlyResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/tasks/past-due',
+            headers: {
+                'x-scheduler-key': data.xSchedulerKey
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Publish scheduled assignments
+     * Publishes assignments whose scheduled_publish_date has passed. Should be called periodically (e.g., every hour or once daily) by external scheduler.
+     * @param data The data for the request.
+     * @param data.xSchedulerKey
+     * @returns PublishAssignmentsResponse Successful Response
+     * @throws ApiError
+     */
+    public static runPublishScheduledAssignments(data: ScheduledTasksRunPublishScheduledAssignmentsData = {}): CancelablePromise<ScheduledTasksRunPublishScheduledAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/tasks/publish-assignments',
+            headers: {
+                'x-scheduler-key': data.xSchedulerKey
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class StudentsService {
+    /**
+     * Get student's assignments
+     * Get all assignments for authenticated student.
+     *
+     * Query parameters:
+     * status: Filter by assignment status (not_started, in_progress, completed)
+     *
+     * Returns:
+     * List of assignments with enriched data (book, activity, progress)
+     * @param data The data for the request.
+     * @param data.status
+     * @returns StudentAssignmentResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStudentAssignments(data: StudentsGetStudentAssignmentsData = {}): CancelablePromise<StudentsGetStudentAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/students/me/assignments',
+            query: {
+                status: data.status
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get student's own progress data
+     * Get comprehensive progress data for the authenticated student.
+     *
+     * This endpoint is student-facing and provides encouraging, achievement-focused
+     * analytics designed for student motivation.
+     *
+     * Query parameters:
+     * period: Time period for data filtering
+     * - 'this_week': Current week (Monday to today)
+     * - 'this_month': Current month (default)
+     * - 'all_time': All completed work
+     *
+     * Returns:
+     * Complete progress data including:
+     * - Summary stats (avg score, streak, improvement trend)
+     * - Score trend over time (for chart display)
+     * - Activity type breakdown with user-friendly labels
+     * - Recent assignments (last 5)
+     * - Achievements/badges earned
+     * - Study time statistics
+     * - Personalized improvement tips
+     * @param data The data for the request.
+     * @param data.period Time period for progress data
+     * @returns StudentProgressResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStudentProgress(data: StudentsGetStudentProgressData = {}): CancelablePromise<StudentsGetStudentProgressResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/students/me/progress',
+            query: {
+                period: data.period
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get student performance analytics
+     * Get comprehensive performance analytics for a student.
+     *
+     * **Authorization:** Teacher must have access to student via their classes.
+     *
+     * Query parameters:
+     * period: Time period for data filtering
+     * - '7d': Last 7 days
+     * - '30d': Last 30 days (default)
+     * - '3m': Last 3 months
+     * - 'all': All time
+     *
+     * Returns:
+     * Complete analytics including:
+     * - Summary metrics (avg score, completion rate, streak)
+     * - Recent activity (last 10 assignments)
+     * - Performance trend over time
+     * - Activity type breakdown
+     * - Assignment status summary
+     * - Time analytics
+     * @param data The data for the request.
+     * @param data.studentId
+     * @param data.period Time period for analytics
+     * @returns StudentAnalyticsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStudentAnalytics(data: StudentsGetStudentAnalyticsData): CancelablePromise<StudentsGetStudentAnalyticsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/students/{student_id}/analytics',
+            path: {
+                student_id: data.studentId
+            },
+            query: {
+                period: data.period
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get my badge counts (Story 6.5)
+     * Get badge counts for the current student.
+     *
+     * Returns:
+     * Badge counts grouped by type, total, and this month counts
+     *
+     * Raises:
+     * HTTPException(404): Student record not found
+     * @returns StudentBadgeCountsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMyBadges(): CancelablePromise<StudentsGetMyBadgesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/students/me/badges'
+        });
+    }
+    
+    /**
+     * Get student's badge counts (Story 6.5)
+     * Get badge counts for a student across all their feedback.
+     *
+     * Students can view their own badges. Teachers can view badges for
+     * students in their classes.
+     *
+     * Args:
+     * student_id: UUID of the student (students.id)
+     * session: Database session
+     * current_user: Authenticated user (teacher or student)
+     *
+     * Returns:
+     * Badge counts grouped by type, total, and this month counts
+     *
+     * Raises:
+     * HTTPException(403): Not authorized to view this student's badges
+     * HTTPException(404): Student not found
+     * @param data The data for the request.
+     * @param data.studentId
+     * @returns StudentBadgeCountsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStudentBadges(data: StudentsGetStudentBadgesData): CancelablePromise<StudentsGetStudentBadgesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/students/{student_id}/badges',
+            path: {
+                student_id: data.studentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get student's assignments for calendar view
+     * Get assignments within a date range for calendar display. Only shows published assignments.
+     * @param data The data for the request.
+     * @param data.startDate Start date for range (inclusive)
+     * @param data.endDate End date for range (inclusive)
+     * @returns StudentCalendarAssignmentsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStudentCalendarAssignments(data: StudentsGetStudentCalendarAssignmentsData): CancelablePromise<StudentsGetStudentCalendarAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/students/me/calendar',
+            query: {
+                start_date: data.startDate,
+                end_date: data.endDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Download student import template (Story 9.9)
+     * Download Excel template for bulk student import with headers and instructions.
+     * @returns unknown Excel template file
+     * @throws ApiError
+     */
+    public static getImportTemplate(): CancelablePromise<StudentsGetImportTemplateResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/students/import-template'
+        });
+    }
+    
+    /**
+     * Validate student import file (Story 9.9)
+     * Upload and validate Excel file for student import. Returns validation results for each row.
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns ImportValidationResponse Successful Response
+     * @throws ApiError
+     */
+    public static validateImportFile(data: StudentsValidateImportFileData): CancelablePromise<StudentsValidateImportFileResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/students/import/validate',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Execute student import (Story 9.9)
+     * Import students from validated Excel file. Returns created credentials.
+     * @param data The data for the request.
+     * @param data.formData
+     * @param data.schoolId School ID (required for Admin)
+     * @param data.teacherId Teacher ID (optional for Admin, to assign classrooms)
+     * @returns ImportExecutionResponse Successful Response
+     * @throws ApiError
+     */
+    public static executeImport(data: StudentsExecuteImportData): CancelablePromise<StudentsExecuteImportResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/students/import',
+            query: {
+                school_id: data.schoolId,
+                teacher_id: data.teacherId
+            },
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Download credentials file (Story 9.9)
+     * Generate Excel file with student credentials for download.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Excel credentials file
+     * @throws ApiError
+     */
+    public static downloadCredentials(data: StudentsDownloadCredentialsData): CancelablePromise<StudentsDownloadCredentialsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/students/import/credentials',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class TeachersService {
     /**
      * List my students
-     * Retrieve all students (teachers can see all students to enroll them in classes). Teacher only.
+     * Retrieve students created by the current teacher or enrolled in their classes. Teacher only.
      * @returns StudentPublic Successful Response
      * @throws ApiError
      */
@@ -751,6 +2954,26 @@ export class TeachersService {
             path: {
                 student_id: data.studentId
             },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Bulk delete students
+     * Delete multiple students by IDs. Teacher only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BulkDeleteResponse Successful Response
+     * @throws ApiError
+     */
+    public static bulkDeleteStudents(data: TeachersBulkDeleteStudentsData): CancelablePromise<TeachersBulkDeleteStudentsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/me/students/bulk-delete',
+            body: data.requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
             }
@@ -896,6 +3119,61 @@ export class TeachersService {
             path: {
                 class_id: data.classId,
                 student_id: data.studentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get teacher insights
+     * Get AI-generated insights and patterns detected across teacher's assignments. Teacher only.
+     * @returns TeacherInsightsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMyInsights(): CancelablePromise<TeachersGetMyInsightsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/me/insights'
+        });
+    }
+    
+    /**
+     * Get insight details
+     * Get detailed information about a specific insight. Teacher only.
+     * @param data The data for the request.
+     * @param data.insightId
+     * @returns InsightDetail Successful Response
+     * @throws ApiError
+     */
+    public static getInsightDetails(data: TeachersGetInsightDetailsData): CancelablePromise<TeachersGetInsightDetailsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/me/insights/{insight_id}',
+            path: {
+                insight_id: data.insightId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Dismiss insight
+     * Dismiss an insight so it won't appear again. Teacher only.
+     * @param data The data for the request.
+     * @param data.insightId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static dismissInsightEndpoint(data: TeachersDismissInsightEndpointData): CancelablePromise<TeachersDismissInsightEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/me/insights/{insight_id}/dismiss',
+            path: {
+                insight_id: data.insightId
             },
             errors: {
                 422: 'Validation Error'
@@ -1105,13 +3383,53 @@ export class UtilsService {
     
     /**
      * Health Check
-     * @returns boolean Successful Response
+     * Health check endpoint including external service status.
+     *
+     * Checks:
+     * - Database connectivity
+     * - Dream Central Storage connectivity
+     * @returns unknown Successful Response
      * @throws ApiError
      */
     public static healthCheck(): CancelablePromise<UtilsHealthCheckResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/utils/health-check/'
+        });
+    }
+}
+
+export class WebhooksService {
+    /**
+     * Receive webhook from Dream Central Storage
+     * Handles webhook events for book catalog changes
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static receiveDreamStorageWebhook(): CancelablePromise<WebhooksReceiveDreamStorageWebhookResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/webhooks/dream-storage'
+        });
+    }
+    
+    /**
+     * Test webhook endpoint (dev/admin only)
+     * Manually trigger a webhook event for testing (non-production only)
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static testDreamStorageWebhook(data: WebhooksTestDreamStorageWebhookData): CancelablePromise<WebhooksTestDreamStorageWebhookResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/webhooks/dream-storage/test',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
 }

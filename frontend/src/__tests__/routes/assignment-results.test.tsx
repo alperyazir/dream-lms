@@ -214,7 +214,9 @@ describe("AssignmentDetailPage - Results Tab", () => {
             Back to Assignments
           </button>
           <div className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-2">Error Loading Assignment</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              Error Loading Assignment
+            </h2>
             <p className="text-muted-foreground" data-testid="error-message">
               {error instanceof Error
                 ? error.message
@@ -342,7 +344,9 @@ describe("AssignmentDetailPage - Results Tab", () => {
                       {results.question_analysis.most_missed.map((q, idx) => (
                         <div key={q.question_id} data-testid="missed-question">
                           <span data-testid="missed-rank">#{idx + 1}</span>
-                          <span data-testid="missed-text">{q.question_text}</span>
+                          <span data-testid="missed-text">
+                            {q.question_text}
+                          </span>
                           <span data-testid="missed-percentage">
                             {q.correct_percentage.toFixed(0)}%
                           </span>
@@ -406,7 +410,9 @@ describe("AssignmentDetailPage - Results Tab", () => {
                               <td data-testid="find-rate">
                                 {word.find_rate.toFixed(0)}%
                               </td>
-                              <td data-testid="found-count">{word.found_count}</td>
+                              <td data-testid="found-count">
+                                {word.found_count}
+                              </td>
                               <td data-testid="total-attempts">
                                 {word.total_attempts}
                               </td>
@@ -443,8 +449,8 @@ describe("AssignmentDetailPage - Results Tab", () => {
               </select>
             </div>
             <p data-testid="student-count">
-              Showing {filteredStudents.length} of {results.student_results.length}{" "}
-              students
+              Showing {filteredStudents.length} of{" "}
+              {results.student_results.length} students
             </p>
 
             {filteredStudents.length === 0 ? (
@@ -555,7 +561,9 @@ describe("AssignmentDetailPage - Results Tab", () => {
 
   describe("Loading State", () => {
     it("displays loading spinner while fetching data", () => {
-      render(<TestableAssignmentResultsDashboard isLoading={true} results={null} />)
+      render(
+        <TestableAssignmentResultsDashboard isLoading={true} results={null} />,
+      )
 
       expect(screen.getByTestId("loading-spinner")).toBeInTheDocument()
       expect(
@@ -750,12 +758,12 @@ describe("AssignmentDetailPage - Results Tab", () => {
       render(<TestableAssignmentResultsDashboard activeTab="results" />)
 
       const missedQuestion = screen.getByTestId("missed-question")
-      expect(within(missedQuestion).getByTestId("missed-rank")).toHaveTextContent(
-        "#1",
-      )
-      expect(within(missedQuestion).getByTestId("missed-text")).toHaveTextContent(
-        "Match the banana",
-      )
+      expect(
+        within(missedQuestion).getByTestId("missed-rank"),
+      ).toHaveTextContent("#1")
+      expect(
+        within(missedQuestion).getByTestId("missed-text"),
+      ).toHaveTextContent("Match the banana")
       expect(
         within(missedQuestion).getByTestId("missed-percentage"),
       ).toHaveTextContent("65%")
@@ -764,7 +772,9 @@ describe("AssignmentDetailPage - Results Tab", () => {
     it("displays common wrong answer when available", () => {
       render(<TestableAssignmentResultsDashboard activeTab="results" />)
 
-      expect(screen.getByTestId("common-wrong-answer")).toHaveTextContent("wrong")
+      expect(screen.getByTestId("common-wrong-answer")).toHaveTextContent(
+        "wrong",
+      )
     })
   })
 
@@ -815,7 +825,9 @@ describe("AssignmentDetailPage - Results Tab", () => {
       expect(within(rows[1]).getByTestId("student-score")).toHaveTextContent(
         "80%",
       )
-      expect(within(rows[2]).getByTestId("student-score")).toHaveTextContent("—")
+      expect(within(rows[2]).getByTestId("student-score")).toHaveTextContent(
+        "—",
+      )
     })
 
     it("displays student status correctly", () => {
@@ -1066,12 +1078,17 @@ describe("AssignmentDetailPage - Results Tab", () => {
       }
 
       render(
-        <TestableAssignmentResultsDashboard activeTab="results" results={zeroData} />,
+        <TestableAssignmentResultsDashboard
+          activeTab="results"
+          results={zeroData}
+        />,
       )
 
       expect(screen.getByTestId("completed-count")).toHaveTextContent("0")
       expect(screen.getByTestId("avg-score")).toHaveTextContent("0.0%")
-      expect(screen.getByTestId("completion-badge")).toHaveTextContent("0% Complete")
+      expect(screen.getByTestId("completion-badge")).toHaveTextContent(
+        "0% Complete",
+      )
     })
 
     it("handles missing due date", () => {
@@ -1139,7 +1156,9 @@ describe("AssignmentDetailPage - Results Tab", () => {
       expect(screen.getByTestId("word-matching-errors")).toBeInTheDocument()
       const row = screen.getByTestId("word-error-row")
       expect(within(row).getByTestId("error-word")).toHaveTextContent("apple")
-      expect(within(row).getByTestId("correct-match")).toHaveTextContent("manzana")
+      expect(within(row).getByTestId("correct-match")).toHaveTextContent(
+        "manzana",
+      )
       expect(within(row).getByTestId("incorrect-match")).toHaveTextContent(
         "naranja",
       )
@@ -1183,7 +1202,9 @@ describe("AssignmentDetailPage - Results Tab", () => {
       expect(screen.getByTestId("word-search-analysis")).toBeInTheDocument()
       const rows = screen.getAllByTestId("word-search-row")
       expect(rows).toHaveLength(2)
-      expect(within(rows[0]).getByTestId("search-word")).toHaveTextContent("CAT")
+      expect(within(rows[0]).getByTestId("search-word")).toHaveTextContent(
+        "CAT",
+      )
       expect(within(rows[0]).getByTestId("find-rate")).toHaveTextContent("90%")
     })
   })

@@ -5,30 +5,30 @@
  * Full page view of all detected patterns and issues across student work.
  */
 
-import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   AlertCircle,
   AlertTriangle,
+  BookOpen,
+  HelpCircle,
   Lightbulb,
   RefreshCw,
   Users,
-  BookOpen,
-  HelpCircle,
 } from "lucide-react"
+import { useState } from "react"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { InsightCard } from "@/components/insights/InsightCard"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -37,11 +37,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { InsightCard } from "@/components/insights/InsightCard"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  useTeacherInsights,
-  useInsightDetail,
   useDismissInsight,
+  useInsightDetail,
+  useTeacherInsights,
 } from "@/hooks/useTeacherInsights"
 import type { InsightCard as InsightCardType } from "@/types/analytics"
 
@@ -55,10 +55,10 @@ export const Route = createFileRoute("/_layout/teacher/insights")({
 
 function TeacherInsightsPage() {
   const [selectedInsightId, setSelectedInsightId] = useState<string | null>(
-    null
+    null,
   )
   const [activeTab, setActiveTab] = useState<"all" | "critical" | "moderate">(
-    "all"
+    "all",
   )
 
   const { insights, lastRefreshed, isLoading, refreshInsights } =
@@ -78,12 +78,8 @@ function TeacherInsightsPage() {
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   })
 
-  const criticalCount = insights.filter(
-    (i) => i.severity === "critical"
-  ).length
-  const moderateCount = insights.filter(
-    (i) => i.severity === "moderate"
-  ).length
+  const criticalCount = insights.filter((i) => i.severity === "critical").length
+  const moderateCount = insights.filter((i) => i.severity === "moderate").length
 
   const handleRefresh = async () => {
     try {
@@ -158,12 +154,8 @@ function TeacherInsightsPage() {
       >
         <TabsList>
           <TabsTrigger value="all">All ({insights.length})</TabsTrigger>
-          <TabsTrigger value="critical">
-            Critical ({criticalCount})
-          </TabsTrigger>
-          <TabsTrigger value="moderate">
-            Moderate ({moderateCount})
-          </TabsTrigger>
+          <TabsTrigger value="critical">Critical ({criticalCount})</TabsTrigger>
+          <TabsTrigger value="moderate">Moderate ({moderateCount})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
@@ -241,9 +233,7 @@ function EmptyState({ tab }: { tab: string }) {
       <CardContent className="py-12 text-center">
         <Lightbulb className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-30" />
         <h3 className="text-lg font-semibold mb-2">
-          {tab === "all"
-            ? "No insights detected"
-            : `No ${tab} issues found`}
+          {tab === "all" ? "No insights detected" : `No ${tab} issues found`}
         </h3>
         <p className="text-muted-foreground">
           {tab === "all"
@@ -374,7 +364,9 @@ function InsightDetailModal({
                       {detail.related_assignments.map((assignment) => (
                         <TableRow key={assignment.assignment_id}>
                           <TableCell>{assignment.name}</TableCell>
-                          <TableCell>{assignment.avg_score.toFixed(1)}%</TableCell>
+                          <TableCell>
+                            {assignment.avg_score.toFixed(1)}%
+                          </TableCell>
                           <TableCell>
                             {assignment.completion_rate.toFixed(0)}%
                           </TableCell>
@@ -386,40 +378,41 @@ function InsightDetailModal({
               )}
 
               {/* Related Questions (for misconceptions) */}
-              {detail.related_questions && detail.related_questions.length > 0 && (
-                <div>
-                  <h4 className="font-semibold flex items-center gap-2 mb-3">
-                    <HelpCircle className="w-4 h-4" />
-                    Common Mistakes ({detail.related_questions.length})
-                  </h4>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Question</TableHead>
-                        <TableHead>Correct Answer</TableHead>
-                        <TableHead>Common Wrong Answer</TableHead>
-                        <TableHead>Count</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {detail.related_questions.map((question) => (
-                        <TableRow key={question.question_id}>
-                          <TableCell className="max-w-xs truncate">
-                            {question.question_text}
-                          </TableCell>
-                          <TableCell className="text-green-600">
-                            {question.correct_answer}
-                          </TableCell>
-                          <TableCell className="text-red-600">
-                            {question.common_wrong_answer}
-                          </TableCell>
-                          <TableCell>{question.wrong_count}</TableCell>
+              {detail.related_questions &&
+                detail.related_questions.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold flex items-center gap-2 mb-3">
+                      <HelpCircle className="w-4 h-4" />
+                      Common Mistakes ({detail.related_questions.length})
+                    </h4>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Question</TableHead>
+                          <TableHead>Correct Answer</TableHead>
+                          <TableHead>Common Wrong Answer</TableHead>
+                          <TableHead>Count</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+                      </TableHeader>
+                      <TableBody>
+                        {detail.related_questions.map((question) => (
+                          <TableRow key={question.question_id}>
+                            <TableCell className="max-w-xs truncate">
+                              {question.question_text}
+                            </TableCell>
+                            <TableCell className="text-green-600">
+                              {question.correct_answer}
+                            </TableCell>
+                            <TableCell className="text-red-600">
+                              {question.common_wrong_answer}
+                            </TableCell>
+                            <TableCell>{question.wrong_count}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
 
               {/* Actions */}
               <div className="flex justify-end gap-2 pt-4 border-t">

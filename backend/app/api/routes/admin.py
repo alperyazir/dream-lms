@@ -4,15 +4,18 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from sqlmodel import func, select
+from sqlmodel import func, select, SQLModel
 
 from app import crud
 from app.api.deps import AsyncSessionDep, SessionDep, require_role
 from app.core.config import settings
+from app.core.security import get_password_hash
 from app.models import (
     BulkImportErrorDetail,
     BulkImportResponse,
     DashboardStats,
+    NotificationType,
+    PasswordResetResponse,
     Publisher,
     PublisherCreate,
     PublisherCreateAPI,
@@ -36,10 +39,12 @@ from app.models import (
     UserCreationResponse,
     UserPublic,
     UserRole,
+    UserUpdate,
 )
 from app.services.bulk_import import validate_bulk_import
 from app.services.webhook_registration import webhook_registration_service
 from app.services.benchmark_service import get_admin_benchmark_overview
+from app.services import notification_service
 from app.schemas.benchmarks import (
     AdminBenchmarkOverview,
     BenchmarkSettingsResponse,
@@ -101,10 +106,17 @@ def create_publisher(
     # Generate secure temporary password
     initial_password = generate_temp_password()
 
+    # Check if there's an existing publisher with the same name to copy logo
+    existing_publisher = session.exec(
+        select(Publisher).where(Publisher.name == publisher_in.name)
+    ).first()
+    logo_url = existing_publisher.logo_url if existing_publisher else None
+
     # Create Publisher record data
     publisher_create = PublisherCreate(
         name=publisher_in.name,
         contact_email=publisher_in.contact_email,
+        logo_url=logo_url,  # Copy logo from existing publisher with same name
         user_id=uuid.uuid4()  # Placeholder, will be replaced in crud
     )
 
@@ -123,6 +135,7 @@ def create_publisher(
         id=publisher.id,
         name=publisher.name,
         contact_email=publisher.contact_email,
+        logo_url=publisher.logo_url,
         user_id=publisher.user_id,
         user_email=user.email,
         user_username=user.username,
@@ -211,6 +224,7 @@ def list_publishers(
             id=p.id,
             name=p.name,
             contact_email=p.contact_email,
+            logo_url=p.logo_url,
             user_id=p.user_id,
             user_email=user.email if user else "",
             user_username=user.username if user else "",
@@ -271,12 +285,14 @@ def update_publisher(
     publisher_fields = {}
 
     for field, value in update_data.items():
-        if field in ['user_email', 'user_full_name']:
+        if field in ['user_email', 'user_full_name', 'user_username']:
             # Map to user model field names
             if field == 'user_email':
                 user_fields['email'] = value
             elif field == 'user_full_name':
                 user_fields['full_name'] = value
+            elif field == 'user_username':
+                user_fields['username'] = value
         else:
             publisher_fields[field] = value
 
@@ -287,6 +303,17 @@ def update_publisher(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User with this email already exists"
+            )
+
+    # Check if new username already exists for another user [Story 9.2 AC: 14]
+    if 'username' in user_fields and user_fields['username'] != user.username:
+        existing_user = session.exec(
+            select(User).where(User.username == user_fields['username'])
+        ).first()
+        if existing_user and existing_user.id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already exists"
             )
 
     # Update user fields
@@ -318,8 +345,136 @@ def update_publisher(
         user_full_name=user.full_name or "",
         user_initial_password=user.initial_password,
         created_at=publisher.created_at,
-        updated_at=publisher.updated_at
+        updated_at=publisher.updated_at,
+        logo_url=publisher.logo_url,
     )
+
+
+class LogoUploadResponse(SQLModel):
+    """Response for logo upload"""
+    logo_url: str
+    message: str = "Logo uploaded successfully"
+
+
+# Create static logos directory if it doesn't exist
+import os
+LOGOS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "logos")
+os.makedirs(LOGOS_DIR, exist_ok=True)
+
+ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/jpg"}
+MAX_LOGO_SIZE = 2 * 1024 * 1024  # 2MB
+
+
+@router.post(
+    "/publishers/{publisher_id}/logo",
+    response_model=LogoUploadResponse,
+    summary="Upload publisher logo",
+    description="Upload a logo image for a publisher (max 2MB, PNG/JPEG). Admin only.",
+)
+async def upload_publisher_logo(
+    *,
+    session: SessionDep,
+    publisher_id: uuid.UUID,
+    file: UploadFile = File(...),
+    current_user: User = require_role(UserRole.admin)
+) -> LogoUploadResponse:
+    """
+    Upload a logo for a publisher.
+
+    [Source: Story 9.2 AC: 15, 16, 17]
+
+    - **publisher_id**: ID of the publisher
+    - **file**: Logo image file (PNG or JPEG, max 2MB)
+
+    Returns the URL of the uploaded logo.
+    """
+    # Get the publisher
+    publisher = session.get(Publisher, publisher_id)
+    if not publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher not found"
+        )
+
+    # Validate content type [AC: 17]
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid file type. Allowed types: PNG, JPEG. Got: {file.content_type}"
+        )
+
+    # Read file content
+    content = await file.read()
+
+    # Validate file size [AC: 17]
+    if len(content) > MAX_LOGO_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Maximum size is 2MB. Got: {len(content) / (1024 * 1024):.2f}MB"
+        )
+
+    # Generate unique filename
+    file_extension = ".png" if file.content_type == "image/png" else ".jpg"
+    filename = f"{publisher_id}{file_extension}"
+    filepath = os.path.join(LOGOS_DIR, filename)
+
+    # Save file
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    # Update publisher with logo URL
+    logo_url = f"/static/logos/{filename}"
+    publisher.logo_url = logo_url
+    from datetime import UTC, datetime
+    publisher.updated_at = datetime.now(UTC)
+
+    session.add(publisher)
+    session.commit()
+    session.refresh(publisher)
+
+    logger.info(
+        f"Logo uploaded for publisher {publisher.name} (ID: {publisher.id}) by admin {current_user.email}"
+    )
+
+    return LogoUploadResponse(
+        logo_url=logo_url,
+        message="Logo uploaded successfully"
+    )
+
+
+@router.delete(
+    "/publishers/{publisher_id}/logo",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete publisher logo",
+    description="Delete a publisher's logo. Admin only.",
+)
+def delete_publisher_logo(
+    *,
+    session: SessionDep,
+    publisher_id: uuid.UUID,
+    current_user: User = require_role(UserRole.admin)
+) -> None:
+    """Delete a publisher's logo."""
+    publisher = session.get(Publisher, publisher_id)
+    if not publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher not found"
+        )
+
+    if publisher.logo_url:
+        # Try to delete the file
+        filename = publisher.logo_url.split("/")[-1]
+        filepath = os.path.join(LOGOS_DIR, filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+    publisher.logo_url = None
+    from datetime import UTC, datetime
+    publisher.updated_at = datetime.now(UTC)
+
+    session.add(publisher)
+    session.commit()
 
 
 @router.delete(
@@ -688,12 +843,14 @@ def update_teacher(
     teacher_fields = {}
 
     for field, value in update_data.items():
-        if field in ['user_email', 'user_full_name']:
+        if field in ['user_email', 'user_full_name', 'user_username']:
             # Map to user model field names
             if field == 'user_email':
                 user_fields['email'] = value
             elif field == 'user_full_name':
                 user_fields['full_name'] = value
+            elif field == 'user_username':
+                user_fields['username'] = value
         else:
             teacher_fields[field] = value
 
@@ -704,6 +861,17 @@ def update_teacher(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User with this email already exists"
+            )
+
+    # Check if new username already exists for another user [Story 9.2 AC: 14]
+    if 'username' in user_fields and user_fields['username'] != user.username:
+        existing_user = session.exec(
+            select(User).where(User.username == user_fields['username'])
+        ).first()
+        if existing_user and existing_user.id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already exists"
             )
 
     # If school_id is being updated, validate it exists
@@ -899,6 +1067,15 @@ def list_students(
     result = []
     for s in students:
         user = session.get(User, s.user_id)
+        
+        # Get teacher name if student is bound to a teacher
+        teacher_name = None
+        if s.created_by_teacher_id:
+            created_by_teacher = session.get(Teacher, s.created_by_teacher_id)
+            if created_by_teacher:
+                teacher_user = session.get(User, created_by_teacher.user_id)
+                teacher_name = teacher_user.full_name if teacher_user else None
+        
         student_data = StudentPublic(
             grade_level=s.grade_level,
             parent_email=s.parent_email,
@@ -908,6 +1085,8 @@ def list_students(
             user_username=user.username if user else "",
             user_full_name=(user.full_name or "") if user else "",
             user_initial_password=user.initial_password if user else None,
+            created_by_teacher_id=s.created_by_teacher_id,
+            created_by_teacher_name=teacher_name,
             created_at=s.created_at,
             updated_at=s.updated_at
         )
@@ -963,12 +1142,14 @@ def update_student(
     student_fields = {}
 
     for field, value in update_data.items():
-        if field in ['user_email', 'user_full_name']:
+        if field in ['user_email', 'user_full_name', 'user_username']:
             # Map to user model field names
             if field == 'user_email':
                 user_fields['email'] = value
             elif field == 'user_full_name':
                 user_fields['full_name'] = value
+            elif field == 'user_username':
+                user_fields['username'] = value
         else:
             student_fields[field] = value
 
@@ -979,6 +1160,17 @@ def update_student(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User with this email already exists"
+            )
+
+    # Check if new username already exists for another user [Story 9.2 AC: 14]
+    if 'username' in user_fields and user_fields['username'] != user.username:
+        existing_user = session.exec(
+            select(User).where(User.username == user_fields['username'])
+        ).first()
+        if existing_user and existing_user.id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already exists"
             )
 
     # Update user fields
@@ -1052,6 +1244,70 @@ def delete_student(
     # Delete the user (will cascade to student via database ondelete CASCADE)
     session.delete(user)
     session.commit()
+
+
+class BulkDeleteRequest(SQLModel):
+    """Request body for bulk delete operations."""
+    ids: list[uuid.UUID]
+
+
+class BulkDeleteResponse(SQLModel):
+    """Response for bulk delete operations."""
+    deleted_count: int
+    failed_count: int
+    errors: list[str] = []
+
+
+@router.post(
+    "/students/bulk-delete",
+    response_model=BulkDeleteResponse,
+    summary="Bulk delete students",
+    description="Delete multiple students by IDs. Admin only.",
+)
+def bulk_delete_students(
+    *,
+    session: SessionDep,
+    request: BulkDeleteRequest,
+    current_user: User = require_role(UserRole.admin)
+) -> BulkDeleteResponse:
+    """
+    Delete multiple students by their IDs.
+
+    - **ids**: List of student IDs to delete
+
+    Returns count of successfully deleted and failed deletions.
+    """
+    deleted_count = 0
+    failed_count = 0
+    errors: list[str] = []
+
+    for student_id in request.ids:
+        try:
+            student = session.get(Student, student_id)
+            if not student:
+                failed_count += 1
+                errors.append(f"Student {student_id} not found")
+                continue
+
+            user = session.get(User, student.user_id)
+            if not user:
+                failed_count += 1
+                errors.append(f"User for student {student_id} not found")
+                continue
+
+            session.delete(user)
+            deleted_count += 1
+        except Exception as e:
+            failed_count += 1
+            errors.append(f"Failed to delete student {student_id}: {str(e)}")
+
+    session.commit()
+
+    return BulkDeleteResponse(
+        deleted_count=deleted_count,
+        failed_count=failed_count,
+        errors=errors
+    )
 
 
 @router.post(
@@ -1541,6 +1797,154 @@ def get_stats(
         total_teachers=total_teachers,
         total_students=total_students,
         active_schools=active_schools,
+    )
+
+
+# ============================================================================
+# User Management
+# ============================================================================
+
+
+@router.patch(
+    "/users/{user_id}",
+    response_model=UserPublic,
+    summary="Edit user",
+    description="Update a user's profile information. Admin only.",
+)
+def admin_update_user(
+    *,
+    session: SessionDep,
+    user_id: uuid.UUID,
+    user_in: UserUpdate,
+    current_user: User = require_role(UserRole.admin)
+) -> UserPublic:
+    """
+    Update a user's information.
+
+    [Source: Story 9.2 AC: 10, 11, 13]
+
+    - **user_id**: ID of the user to update
+    - **full_name**: Optional new full name
+    - **email**: Optional new email (validated for format and uniqueness)
+    - **username**: Optional new username (validated for format and uniqueness)
+
+    Returns the updated user data.
+    """
+    # Get the user
+    db_user = session.get(User, user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Validate email uniqueness if changing
+    if user_in.email and user_in.email != db_user.email:
+        existing_user = crud.get_user_by_email(session=session, email=user_in.email)
+        if existing_user and existing_user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with this email already exists"
+            )
+
+    # Validate username uniqueness if changing
+    if user_in.username and user_in.username != db_user.username:
+        existing_user = session.exec(
+            select(User).where(User.username == user_in.username)
+        ).first()
+        if existing_user and existing_user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with this username already exists"
+            )
+
+    # Update user fields
+    db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
+
+    logger.info(
+        f"User {db_user.email} (ID: {db_user.id}) updated by admin {current_user.email}"
+    )
+
+    return UserPublic.model_validate(db_user)
+
+
+# ============================================================================
+# Password Reset
+# ============================================================================
+
+
+@router.post(
+    "/users/{user_id}/reset-password",
+    response_model=PasswordResetResponse,
+    summary="Reset user password",
+    description="Reset a user's password to a new auto-generated password. Admin only.",
+)
+async def reset_user_password(
+    *,
+    session: AsyncSessionDep,
+    user_id: uuid.UUID,
+    current_user: User = require_role(UserRole.admin)
+) -> PasswordResetResponse:
+    """
+    Reset a user's password.
+
+    [Source: Story 9.2 AC: 1, 2, 3, 4, 5, 6]
+
+    - **user_id**: ID of the user whose password to reset
+
+    Generates a secure random password (12+ chars with mixed case, numbers, symbols).
+    Returns the new password for one-time display to the admin.
+    The password is stored hashed and cannot be retrieved later.
+    Creates a notification for the user that their password was reset.
+    """
+    # Get the user
+    result = await session.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Cannot reset admin password via this endpoint (must use different mechanism)
+    if user.role == UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot reset admin password via this endpoint"
+        )
+
+    # Generate new secure password
+    new_password = generate_temp_password(length=12)
+
+    # Hash and update password
+    user.hashed_password = get_password_hash(new_password)
+    # Update initial_password so quick login still works in dev mode
+    user.initial_password = new_password
+
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+    # Log the password reset action
+    logger.info(
+        f"Password reset for user {user.email} (ID: {user.id}) by admin {current_user.email}"
+    )
+
+    # Create notification for user [AC: 6]
+    await notification_service.create_notification(
+        db=session,
+        user_id=user.id,
+        notification_type=NotificationType.password_reset,
+        title="Password Reset",
+        message="Your password was reset by an administrator. Please change your password after logging in.",
+        link="/settings",
+    )
+
+    return PasswordResetResponse(
+        user_id=user.id,
+        email=user.email,
+        new_password=new_password,
+        message="Password reset successfully. Please share this password securely with the user."
     )
 
 

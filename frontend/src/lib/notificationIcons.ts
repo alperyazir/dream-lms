@@ -7,13 +7,13 @@
 
 import type { LucideIcon } from "lucide-react"
 import {
-  Bell,
-  FileText,
-  Clock,
-  MessageSquare,
-  Mail,
-  CheckCircle,
   AlertTriangle,
+  Bell,
+  CheckCircle,
+  Clock,
+  FileText,
+  Mail,
+  MessageSquare,
   Share2,
 } from "lucide-react"
 import type { NotificationType } from "@/types/notification"
@@ -30,7 +30,10 @@ export interface NotificationIconConfig {
 /**
  * Mapping of notification types to icon configurations
  */
-export const NOTIFICATION_ICON_MAP: Record<NotificationType, NotificationIconConfig> = {
+export const NOTIFICATION_ICON_MAP: Record<
+  NotificationType,
+  NotificationIconConfig
+> = {
   assignment_created: {
     icon: FileText,
     color: "text-blue-600",
@@ -80,9 +83,11 @@ export const NOTIFICATION_ICON_MAP: Record<NotificationType, NotificationIconCon
  * @returns The icon configuration with icon component and colors
  */
 export function getNotificationIconConfig(
-  type: NotificationType
+  type: NotificationType,
 ): NotificationIconConfig {
-  return NOTIFICATION_ICON_MAP[type] ?? NOTIFICATION_ICON_MAP.system_announcement
+  return (
+    NOTIFICATION_ICON_MAP[type] ?? NOTIFICATION_ICON_MAP.system_announcement
+  )
 }
 
 /**

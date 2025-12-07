@@ -5,10 +5,10 @@
  * Displays recent completed assignments with scores
  */
 
+import { BookOpen, CheckCircle, Clock, Star } from "lucide-react"
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Clock, BookOpen, CheckCircle, Star } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ProgressRecentAssignment } from "@/types/analytics"
 
 export interface RecentAssignmentsProps {
@@ -93,11 +93,16 @@ export const RecentAssignments = React.memo(
 
                 {/* Score */}
                 <div className="flex-shrink-0 text-right">
-                  <p className={`text-xl font-bold ${getScoreColor(assignment.score)}`}>
+                  <p
+                    className={`text-xl font-bold ${getScoreColor(assignment.score)}`}
+                  >
                     {assignment.score}%
                   </p>
                   {assignment.score === 100 && (
-                    <Badge variant="default" className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs">
+                    <Badge
+                      variant="default"
+                      className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs"
+                    >
                       Perfect!
                     </Badge>
                   )}

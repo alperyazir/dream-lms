@@ -4,7 +4,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, Query, Request, status
 from fastapi.routing import APIRouter
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
@@ -15,6 +15,7 @@ from app.models import (
     Activity,
     Assignment,
     AssignmentActivity,
+    AssignmentPublishStatus,
     AssignmentStatus,
     AssignmentStudent,
     AssignmentStudentActivity,
@@ -36,6 +37,7 @@ from app.schemas.analytics import (
 from app.schemas.assignment import (
     ActivityAnalyticsItem,
     ActivityInfo,
+    ActivityPreviewResponse,
     ActivityProgressInfo,
     ActivityProgressSaveRequest,
     ActivityProgressSaveResponse,
@@ -44,12 +46,17 @@ from app.schemas.assignment import (
     ActivityWithConfig,
     AssignmentCreate,
     AssignmentListItem,
+    AssignmentPreviewResponse,
     AssignmentResponse,
     AssignmentSaveProgressRequest,
     AssignmentSaveProgressResponse,
     AssignmentSubmissionResponse,
     AssignmentSubmitRequest,
     AssignmentUpdate,
+    BulkAssignmentCreatedItem,
+    BulkAssignmentCreateResponse,
+    CalendarAssignmentItem,
+    CalendarAssignmentsResponse,
     MultiActivityAnalyticsResponse,
     MultiActivityStartResponse,
     MultiActivitySubmitRequest,
@@ -64,7 +71,7 @@ from app.schemas.feedback import (
     FeedbackStudentView,
     FeedbackUpdate,
 )
-from app.services import feedback_service, notification_service
+from app.services import book_assignment_service, feedback_service, notification_service
 from app.services.analytics_service import (
     get_assignment_detailed_results,
     get_student_assignment_answers,
@@ -117,7 +124,7 @@ async def _verify_activities_access(
     session: AsyncSessionDep, activity_ids: list[uuid.UUID], teacher: Teacher
 ) -> list[Activity]:
     """
-    Verify teacher has access to all activities through BookAccess.
+    Verify teacher has access to all activities through BookAssignment (Story 9.4).
 
     Args:
         session: Database session
@@ -128,7 +135,8 @@ async def _verify_activities_access(
         List of Activity objects if all access verified (in same order as input)
 
     Raises:
-        HTTPException(404): Any activity not found or no access
+        HTTPException(404): Any activity not found
+        HTTPException(403): Teacher doesn't have access to the book
     """
     if not activity_ids:
         raise HTTPException(
@@ -136,15 +144,9 @@ async def _verify_activities_access(
             detail="At least one activity must be provided",
         )
 
-    # Query all activities at once
+    # Query all activities
     result = await session.execute(
-        select(Activity)
-        .join(Book, Activity.book_id == Book.id)
-        .join(BookAccess, Book.id == BookAccess.book_id)
-        .where(
-            Activity.id.in_(activity_ids),
-            BookAccess.publisher_id == teacher.school.publisher_id,
-        )
+        select(Activity).where(Activity.id.in_(activity_ids))
     )
     activities = result.scalars().all()
 
@@ -155,8 +157,22 @@ async def _verify_activities_access(
     if missing_ids:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="One or more activities not found or no access",
+            detail="One or more activities not found",
         )
+
+    # Get unique book IDs from activities and verify teacher has access to each
+    book_ids = {activity.book_id for activity in activities}
+    for book_id in book_ids:
+        has_access = await book_assignment_service.check_teacher_book_access(
+            db=session,
+            teacher_id=teacher.id,
+            book_id=book_id,
+        )
+        if not has_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to one or more of the selected books",
+            )
 
     # Return activities in original order
     activity_map = {a.id: a for a in activities}
@@ -417,6 +433,187 @@ async def list_all_assignments_admin(
     return assignment_list
 
 
+@router.get(
+    "/calendar",
+    response_model=CalendarAssignmentsResponse,
+    summary="Get assignments for calendar view",
+    description="Get assignments within a date range for calendar display. Teachers see all their assignments, including scheduled ones.",
+)
+async def get_calendar_assignments(
+    *,
+    session: AsyncSessionDep,
+    start_date: datetime = Query(..., description="Start date for range (inclusive)"),
+    end_date: datetime = Query(..., description="End date for range (inclusive)"),
+    class_id: uuid.UUID | None = Query(None, description="Filter by class ID"),
+    status_filter: AssignmentPublishStatus | None = Query(None, alias="status", description="Filter by status"),
+    book_id: uuid.UUID | None = Query(None, description="Filter by book ID"),
+    current_user: User = require_role(UserRole.teacher),
+) -> CalendarAssignmentsResponse:
+    """
+    Get assignments for calendar view.
+
+    **Query Parameters:**
+    - start_date: Start of date range (required)
+    - end_date: End of date range (required)
+    - class_id: Optional filter by class
+    - status: Optional filter by assignment status (draft, scheduled, published, archived)
+    - book_id: Optional filter by book
+
+    **Returns:**
+    Assignments grouped by date within the specified range.
+    Teachers see all their assignments regardless of status.
+    """
+    from collections import defaultdict
+
+    from sqlalchemy import func as sql_func
+
+    # Get Teacher record for current user
+    result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user",
+        )
+
+    # Subquery to count activities per assignment
+    activity_count_subq = (
+        select(
+            AssignmentActivity.assignment_id,
+            sql_func.count(AssignmentActivity.activity_id).label("activity_count")
+        )
+        .group_by(AssignmentActivity.assignment_id)
+        .subquery()
+    )
+
+    # Base query for teacher's assignments within date range
+    # Show assignments based on due_date, scheduled_publish_date, OR created_at falling in range
+    # This ensures all assignments appear on the calendar even without explicit dates
+    query = (
+        select(
+            Assignment,
+            Book,
+            sql_func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
+        )
+        .join(Book, Assignment.book_id == Book.id)
+        .outerjoin(
+            activity_count_subq,
+            activity_count_subq.c.assignment_id == Assignment.id
+        )
+        .where(Assignment.teacher_id == teacher.id)
+        .where(
+            # Include if due_date, scheduled_publish_date, OR created_at falls in range
+            (
+                (Assignment.due_date >= start_date) & (Assignment.due_date <= end_date)
+            ) | (
+                (Assignment.scheduled_publish_date >= start_date) & (Assignment.scheduled_publish_date <= end_date)
+            ) | (
+                (Assignment.created_at >= start_date) & (Assignment.created_at <= end_date)
+            )
+        )
+    )
+
+    # Apply optional filters
+    if status_filter:
+        query = query.where(Assignment.status == status_filter)
+
+    if book_id:
+        query = query.where(Assignment.book_id == book_id)
+
+    # Execute query
+    result = await session.execute(query)
+    rows = result.all()
+
+    # Get class names for each assignment
+    assignment_class_map: dict[uuid.UUID, list[str]] = defaultdict(list)
+    if rows:
+        assignment_ids = [row[0].id for row in rows]
+
+        # Query class names via AssignmentStudent → Student → ClassStudent → Class
+        class_query = await session.execute(
+            select(
+                AssignmentStudent.assignment_id,
+                Class.name
+            )
+            .join(Student, AssignmentStudent.student_id == Student.id)
+            .join(ClassStudent, ClassStudent.student_id == Student.id)
+            .join(Class, ClassStudent.class_id == Class.id)
+            .where(AssignmentStudent.assignment_id.in_(assignment_ids))
+            .distinct()
+        )
+        for assignment_id, class_name in class_query.all():
+            if class_name not in assignment_class_map[assignment_id]:
+                assignment_class_map[assignment_id].append(class_name)
+
+    # Filter by class if specified
+    if class_id:
+        # Get student IDs in this class
+        class_student_result = await session.execute(
+            select(ClassStudent.student_id).where(ClassStudent.class_id == class_id)
+        )
+        class_student_ids = [row[0] for row in class_student_result.all()]
+
+        # Filter assignments that have students from this class
+        filtered_assignment_ids = set()
+        for assignment_id in assignment_class_map.keys():
+            assignment_students_result = await session.execute(
+                select(AssignmentStudent.student_id)
+                .where(AssignmentStudent.assignment_id == assignment_id)
+                .where(AssignmentStudent.student_id.in_(class_student_ids))
+            )
+            if assignment_students_result.first():
+                filtered_assignment_ids.add(assignment_id)
+
+        rows = [row for row in rows if row[0].id in filtered_assignment_ids]
+
+    # Group assignments by date (priority: due_date > scheduled_publish_date > created_at)
+    assignments_by_date: dict[str, list[CalendarAssignmentItem]] = defaultdict(list)
+
+    for row in rows:
+        assignment = row[0]
+        book = row[1]
+        activity_count = row[2]
+
+        # Use due_date as primary, scheduled_publish_date as secondary, created_at as fallback
+        calendar_date = assignment.due_date or assignment.scheduled_publish_date or assignment.created_at
+        date_key = calendar_date.strftime("%Y-%m-%d")
+
+        calendar_item = CalendarAssignmentItem(
+            id=assignment.id,
+            name=assignment.name,
+            due_date=assignment.due_date,
+            scheduled_publish_date=assignment.scheduled_publish_date,
+            status=assignment.status,
+            activity_count=activity_count,
+            class_names=assignment_class_map.get(assignment.id, []),
+            book_id=book.id,
+            book_title=book.title,
+        )
+        assignments_by_date[date_key].append(calendar_item)
+
+    # Sort assignments within each day
+    for date_key in assignments_by_date:
+        assignments_by_date[date_key].sort(key=lambda a: a.due_date or a.scheduled_publish_date or datetime.min.replace(tzinfo=UTC))
+
+    total_assignments = sum(len(items) for items in assignments_by_date.values())
+
+    logger.info(
+        f"Calendar query: teacher_id={teacher.id}, "
+        f"range={start_date.date()}-{end_date.date()}, "
+        f"assignments={total_assignments}"
+    )
+
+    return CalendarAssignmentsResponse(
+        start_date=start_date.strftime("%Y-%m-%d"),
+        end_date=end_date.strftime("%Y-%m-%d"),
+        total_assignments=total_assignments,
+        assignments_by_date=dict(assignments_by_date),
+    )
+
+
 @router.post(
     "/",
     response_model=AssignmentResponse,
@@ -499,6 +696,15 @@ async def create_assignment(
     # Keep activity_id for backward compatibility (set to first activity if multi)
     first_activity_id = activity_ids[0] if activity_ids else None
 
+    # Determine assignment status based on scheduled_publish_date
+    if (
+        assignment_in.scheduled_publish_date is not None
+        and assignment_in.scheduled_publish_date > now
+    ):
+        assignment_status = AssignmentPublishStatus.scheduled
+    else:
+        assignment_status = AssignmentPublishStatus.published
+
     assignment = Assignment(
         teacher_id=teacher.id,
         activity_id=first_activity_id,  # Backward compatible - first activity
@@ -507,6 +713,8 @@ async def create_assignment(
         instructions=assignment_in.instructions,
         due_date=assignment_in.due_date,
         time_limit_minutes=assignment_in.time_limit_minutes,
+        scheduled_publish_date=assignment_in.scheduled_publish_date,
+        status=assignment_status,
         created_at=now,
         updated_at=now,
     )
@@ -557,20 +765,21 @@ async def create_assignment(
     await session.commit()
     await session.refresh(assignment)
 
-    # Create notifications for all assigned students
-    for student in students:
-        # Get the user_id for the student
-        student_user_id = student.user_id
-        if student_user_id:
-            await notification_service.create_notification(
-                db=session,
-                user_id=student_user_id,
-                notification_type=NotificationType.assignment_created,
-                title=f"New Assignment: {assignment.name}",
-                message=f"You have been assigned '{assignment.name}'. "
-                + (f"Due: {assignment.due_date.strftime('%b %d, %Y')}" if assignment.due_date else "No due date"),
-                link=f"/student/assignments/{assignment.id}",
-            )
+    # Create notifications for all assigned students (only for published assignments)
+    if assignment_status == AssignmentPublishStatus.published:
+        for student in students:
+            # Get the user_id for the student
+            student_user_id = student.user_id
+            if student_user_id:
+                await notification_service.create_notification(
+                    db=session,
+                    user_id=student_user_id,
+                    notification_type=NotificationType.assignment_created,
+                    title=f"New Assignment: {assignment.name}",
+                    message=f"You have been assigned '{assignment.name}'. "
+                    + (f"Due: {assignment.due_date.strftime('%b %d, %Y')}" if assignment.due_date else "No due date"),
+                    link=f"/student/assignments/{assignment.id}",
+                )
 
     # Build response with activities info
     activities_info = [
@@ -591,6 +800,8 @@ async def create_assignment(
         instructions=assignment.instructions,
         due_date=assignment.due_date,
         time_limit_minutes=assignment.time_limit_minutes,
+        scheduled_publish_date=assignment.scheduled_publish_date,
+        status=assignment.status,
         created_at=assignment.created_at,
         updated_at=assignment.updated_at,
         student_count=len(students),
@@ -605,6 +816,214 @@ async def create_assignment(
     )
 
     return assignment_response
+
+
+@router.post(
+    "/bulk",
+    response_model=BulkAssignmentCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create bulk assignments (Time Planning mode)",
+    description="Creates multiple assignments from date groups. Each date group becomes a separate assignment with its own scheduled publish date.",
+)
+async def create_bulk_assignments(
+    *,
+    session: AsyncSessionDep,
+    assignment_in: AssignmentCreate,
+    current_user: User = require_role(UserRole.teacher),
+) -> BulkAssignmentCreateResponse:
+    """
+    Create multiple assignments using Time Planning mode.
+
+    **Time Planning Mode:**
+    Each date group in the request creates a separate assignment with:
+    - scheduled_publish_date: When the assignment becomes visible to students
+    - due_date: Optional deadline for that specific group
+    - time_limit_minutes: Optional time limit for that group
+    - activity_ids: Activities included in that assignment
+
+    **Workflow:**
+    1. Validate teacher has access to all activities in all groups
+    2. Validate all selected students/classes belong to teacher
+    3. For each date group:
+       - Create Assignment with scheduled_publish_date from group.date
+       - Set status to 'scheduled' if date is in future, 'published' if now/past
+       - Create AssignmentActivity records for each activity
+       - Create AssignmentStudent records for all target students
+       - Create AssignmentStudentActivity records for each student × activity
+
+    **Request Body:**
+    - **date_groups**: List of date groups (required for Time Planning)
+    - **book_id**: UUID of book containing activities
+    - **name**: Base assignment name (date will be appended)
+    - **instructions**: Optional special instructions
+    - **student_ids**: List of student UUIDs (required if no class_ids)
+    - **class_ids**: List of class UUIDs (required if no student_ids)
+
+    **Returns:**
+    BulkAssignmentCreateResponse with list of created assignments
+    """
+    # Validate date_groups is provided
+    if not assignment_in.date_groups or len(assignment_in.date_groups) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="date_groups is required for bulk assignment creation",
+        )
+
+    # Get Teacher record for current user
+    result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user",
+        )
+
+    # Load school relationship for publisher_id access
+    await session.refresh(teacher, ["school"])
+
+    # Collect all activity IDs from all date groups
+    all_activity_ids: set[uuid.UUID] = set()
+    for group in assignment_in.date_groups:
+        all_activity_ids.update(group.activity_ids)
+
+    # Validate teacher has access to all activities
+    all_activities = await _verify_activities_access(
+        session, list(all_activity_ids), teacher
+    )
+    activity_map = {a.id: a for a in all_activities}
+
+    # Get target students (validates ownership)
+    students = await _get_target_students(
+        session,
+        assignment_in.student_ids,
+        assignment_in.class_ids,
+        teacher.id,
+    )
+
+    if not students:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid students selected for assignment",
+        )
+
+    now = datetime.now(UTC)
+    created_assignments: list[BulkAssignmentCreatedItem] = []
+
+    # Create one assignment per date group
+    for group in assignment_in.date_groups:
+        # Determine assignment status based on scheduled_publish_date
+        if group.scheduled_publish_date > now:
+            assignment_status = AssignmentPublishStatus.scheduled
+        else:
+            assignment_status = AssignmentPublishStatus.published
+
+        # Get activities for this group in order
+        group_activities = [activity_map[aid] for aid in group.activity_ids]
+        first_activity_id = group.activity_ids[0] if group.activity_ids else None
+
+        # Format name with date
+        date_str = group.scheduled_publish_date.strftime("%b %d")
+        assignment_name = f"{assignment_in.name} - {date_str}"
+
+        # Create Assignment record
+        assignment = Assignment(
+            teacher_id=teacher.id,
+            activity_id=first_activity_id,  # Backward compatible - first activity
+            book_id=assignment_in.book_id,
+            name=assignment_name,
+            instructions=assignment_in.instructions,
+            due_date=group.due_date,
+            time_limit_minutes=group.time_limit_minutes,
+            scheduled_publish_date=group.scheduled_publish_date,
+            status=assignment_status,
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(assignment)
+        await session.flush()  # Get assignment.id
+
+        # Create AssignmentActivity records for each activity
+        for order_index, activity in enumerate(group_activities):
+            assignment_activity = AssignmentActivity(
+                assignment_id=assignment.id,
+                activity_id=activity.id,
+                order_index=order_index,
+            )
+            session.add(assignment_activity)
+
+        # Create AssignmentStudent and AssignmentStudentActivity records
+        for student in students:
+            assignment_student = AssignmentStudent(
+                assignment_id=assignment.id,
+                student_id=student.id,
+                status=AssignmentStatus.not_started,
+                score=None,
+                answers_json=None,
+                progress_json=None,
+                started_at=None,
+                completed_at=None,
+                time_spent_minutes=0,
+                last_saved_at=None,
+            )
+            session.add(assignment_student)
+            await session.flush()
+
+            # Create per-activity progress records
+            for activity in group_activities:
+                activity_progress = AssignmentStudentActivity(
+                    assignment_student_id=assignment_student.id,
+                    activity_id=activity.id,
+                    status=AssignmentStudentActivityStatus.not_started,
+                    score=None,
+                    max_score=100.0,
+                    response_data=None,
+                    started_at=None,
+                    completed_at=None,
+                )
+                session.add(activity_progress)
+
+        # Send notifications for published assignments
+        if assignment_status == AssignmentPublishStatus.published:
+            for student in students:
+                if student.user_id:
+                    await notification_service.create_notification(
+                        db=session,
+                        user_id=student.user_id,
+                        notification_type=NotificationType.assignment_created,
+                        title=f"New Assignment: {assignment_name}",
+                        message=f"You have been assigned '{assignment_name}'. "
+                        + (f"Due: {group.due_date.strftime('%b %d, %Y')}" if group.due_date else "No due date"),
+                        link=f"/student/assignments/{assignment.id}",
+                    )
+
+        created_assignments.append(
+            BulkAssignmentCreatedItem(
+                id=assignment.id,
+                name=assignment_name,
+                scheduled_publish_date=group.scheduled_publish_date,
+                due_date=group.due_date,
+                status=assignment_status,
+                activity_count=len(group_activities),
+            )
+        )
+
+    # Commit all assignments
+    await session.commit()
+
+    logger.info(
+        f"Bulk assignments created: teacher_id={teacher.id}, "
+        f"count={len(created_assignments)}, students={len(students)}"
+    )
+
+    return BulkAssignmentCreateResponse(
+        success=True,
+        message=f"Successfully created {len(created_assignments)} assignments",
+        total_created=len(created_assignments),
+        assignments=created_assignments,
+    )
 
 
 @router.patch(
@@ -628,12 +1047,19 @@ async def update_assignment(
     - instructions
     - due_date (must be in future if provided)
     - time_limit_minutes (must be > 0 if provided)
+    - scheduled_publish_date
+    - status
+    - activity_ids (Story 9.8: modify activities - add/remove/reorder)
+
+    **Activity modification rules (Story 9.8):**
+    - All new activities must be from the same book as the assignment
+    - At least one activity required
+    - Shows warning if removing activities that have student progress (handled in frontend)
 
     **Immutable fields (cannot change after creation):**
     - teacher_id
-    - activity_id
     - book_id
-    - student assignments
+    - student assignments (recipients)
 
     **Authorization:**
     Teachers can only update their own assignments.
@@ -641,9 +1067,11 @@ async def update_assignment(
     **Returns:**
     Updated assignment with student_count.
     """
-    # Get Teacher record for current user
+    # Get Teacher record for current user with school for book access check
     result = await session.execute(
-        select(Teacher).where(Teacher.user_id == current_user.id)
+        select(Teacher)
+        .options(selectinload(Teacher.school))
+        .where(Teacher.user_id == current_user.id)
     )
     teacher = result.scalar_one_or_none()
 
@@ -672,15 +1100,77 @@ async def update_assignment(
     # Update only provided fields (partial update)
     update_data = assignment_in.model_dump(exclude_unset=True)
 
+    # Story 9.8: Handle activity_ids separately
+    new_activity_ids = update_data.pop("activity_ids", None)
+
     for field, value in update_data.items():
         setattr(assignment, field, value)
+
+    # Story 9.8: Update activities if provided
+    if new_activity_ids is not None:
+        # Verify all activities are from the same book
+        result = await session.execute(
+            select(Activity).where(Activity.id.in_(new_activity_ids))
+        )
+        new_activities = result.scalars().all()
+
+        if len(new_activities) != len(new_activity_ids):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="One or more activities not found",
+            )
+
+        # Verify all activities belong to the same book as the assignment
+        for activity in new_activities:
+            if activity.book_id != assignment.book_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="All activities must be from the same book as the assignment",
+                )
+
+        # Remove existing assignment activities
+        result = await session.execute(
+            select(AssignmentActivity).where(
+                AssignmentActivity.assignment_id == assignment.id
+            )
+        )
+        old_assignment_activities = result.scalars().all()
+        for aa in old_assignment_activities:
+            await session.delete(aa)
+
+        # Create new assignment activities with order
+        activity_map = {a.id: a for a in new_activities}
+        for order_idx, activity_id in enumerate(new_activity_ids):
+            activity = activity_map[activity_id]
+            assignment_activity = AssignmentActivity(
+                assignment_id=assignment.id,
+                activity_id=activity_id,
+                order_index=order_idx,
+            )
+            session.add(assignment_activity)
+
+        # Update legacy activity_id field to first activity for backward compatibility
+        assignment.activity_id = new_activity_ids[0]
+
+        logger.info(
+            f"Assignment activities updated: assignment_id={assignment.id}, "
+            f"activity_count={len(new_activity_ids)}"
+        )
 
     # Update timestamp
     assignment.updated_at = datetime.now(UTC)
 
     # Commit transaction
     await session.commit()
-    await session.refresh(assignment)
+
+    # Re-fetch assignment with assignment_activities and nested activity eagerly loaded
+    # to avoid lazy load errors when accessing the activities property
+    result = await session.execute(
+        select(Assignment)
+        .options(selectinload(Assignment.assignment_activities).selectinload(AssignmentActivity.activity))
+        .where(Assignment.id == assignment.id)
+    )
+    assignment = result.scalar_one()
 
     # Count assigned students for response
     result = await session.execute(
@@ -829,6 +1319,13 @@ async def start_assignment(
 
     assignment_student, assignment, book, activity = assignment_data
 
+    # Check if assignment is published (students can't access scheduled assignments)
+    if assignment.status != AssignmentPublishStatus.published:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
     # Check if assignment is already completed
     if assignment_student.status == AssignmentStatus.completed:
         raise HTTPException(
@@ -937,6 +1434,13 @@ async def start_multi_activity_assignment(
         )
 
     assignment_student, assignment, book = assignment_data
+
+    # Check if assignment is published (students can't access scheduled assignments)
+    if assignment.status != AssignmentPublishStatus.published:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
 
     # Check if assignment is already completed
     if assignment_student.status == AssignmentStatus.completed:
@@ -2489,3 +2993,249 @@ async def update_feedback(
     logger.info(f"Feedback {feedback_id} updated by teacher {teacher.id}")
 
     return feedback_public
+
+
+# =============================================================================
+# Preview/Test Mode Endpoints (Story 9.7)
+# =============================================================================
+
+
+@router.get(
+    "/{assignment_id}/preview",
+    response_model=AssignmentPreviewResponse,
+    summary="Preview assignment (teacher test mode)",
+    description="Get assignment data for teacher preview/test mode. No student data created.",
+)
+async def preview_assignment(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher, UserRole.publisher, UserRole.admin),
+) -> AssignmentPreviewResponse:
+    """
+    Get assignment data for teacher preview/test mode.
+
+    **Purpose:**
+    Allows teachers to preview and test an assignment before or after publishing.
+    This is a read-only operation that doesn't create any student records.
+
+    **Workflow:**
+    1. Verify assignment exists
+    2. Verify teacher owns the assignment OR is admin/publisher with book access
+    3. Get all activities linked to this assignment
+    4. Return assignment data in preview format
+
+    **Authorization:**
+    - Teachers: Can preview their own assignments
+    - Publishers: Can preview assignments for books they published
+    - Admins: Can preview any assignment
+
+    **Returns:**
+    AssignmentPreviewResponse with all activities and configs for preview mode.
+
+    **Status Codes:**
+    - 200: Preview data returned successfully
+    - 403: Not authorized to preview this assignment
+    - 404: Assignment not found
+    """
+    # Get assignment with book
+    result = await session.execute(
+        select(Assignment, Book)
+        .join(Book, Assignment.book_id == Book.id)
+        .where(Assignment.id == assignment_id)
+    )
+    assignment_data = result.one_or_none()
+
+    if not assignment_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    assignment, book = assignment_data
+
+    # Authorization check based on role
+    if current_user.role == UserRole.teacher:
+        # Teacher must own the assignment
+        result = await session.execute(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        )
+        teacher = result.scalar_one_or_none()
+
+        if not teacher or assignment.teacher_id != teacher.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only preview your own assignments",
+            )
+    elif current_user.role == UserRole.publisher:
+        # Publisher must have published the book
+        if book.publisher_id != current_user.publisher_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only preview assignments for your books",
+            )
+    # Admin can preview any assignment - no additional check needed
+
+    # Get all activities linked to this assignment via AssignmentActivity junction table
+    result = await session.execute(
+        select(AssignmentActivity, Activity)
+        .join(Activity, AssignmentActivity.activity_id == Activity.id)
+        .where(AssignmentActivity.assignment_id == assignment_id)
+        .order_by(AssignmentActivity.order_index)
+    )
+    assignment_activities = result.all()
+
+    if not assignment_activities:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No activities found for this assignment",
+        )
+
+    # Build activities list with configs
+    activities: list[ActivityWithConfig] = []
+    for aa, activity in assignment_activities:
+        activities.append(
+            ActivityWithConfig(
+                id=activity.id,
+                title=activity.title,
+                activity_type=activity.activity_type.value,
+                config_json=activity.config_json or {},
+                order_index=aa.order_index,
+            )
+        )
+
+    # Build response
+    response = AssignmentPreviewResponse(
+        assignment_id=assignment.id,
+        assignment_name=assignment.name,
+        instructions=assignment.instructions,
+        due_date=assignment.due_date,
+        time_limit_minutes=assignment.time_limit_minutes,
+        status=assignment.status,
+        book_id=book.id,
+        book_title=book.title,
+        book_name=book.book_name,
+        publisher_name=book.publisher_name,
+        book_cover_url=book.cover_image_url,
+        activities=activities,
+        total_activities=len(activities),
+        is_preview=True,
+    )
+
+    logger.info(
+        f"Assignment preview requested: id={assignment.id}, "
+        f"user_id={current_user.id}, activities={len(activities)}"
+    )
+
+    return response
+
+
+@router.get(
+    "/activities/{activity_id}/preview",
+    response_model=ActivityPreviewResponse,
+    summary="Preview single activity",
+    description="Get single activity data for teacher/publisher preview. No submission recorded.",
+)
+async def preview_activity(
+    *,
+    session: AsyncSessionDep,
+    activity_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher, UserRole.publisher, UserRole.admin),
+) -> ActivityPreviewResponse:
+    """
+    Get single activity data for preview.
+
+    **Purpose:**
+    Allows teachers and publishers to preview a single activity before adding it
+    to an assignment. This is useful during assignment creation or when browsing
+    book contents.
+
+    **Workflow:**
+    1. Verify activity exists
+    2. Verify user has access to the book containing this activity
+    3. Return activity data in preview format
+
+    **Authorization:**
+    - Teachers: Can preview activities from books they have access to
+    - Publishers: Can preview activities from their own books
+    - Admins: Can preview any activity
+
+    **Returns:**
+    ActivityPreviewResponse with activity config for preview mode.
+
+    **Status Codes:**
+    - 200: Activity preview data returned successfully
+    - 403: Not authorized to preview this activity
+    - 404: Activity not found
+    """
+    # Get activity with book
+    result = await session.execute(
+        select(Activity, Book)
+        .join(Book, Activity.book_id == Book.id)
+        .where(Activity.id == activity_id)
+    )
+    activity_data = result.one_or_none()
+
+    if not activity_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Activity not found",
+        )
+
+    activity, book = activity_data
+
+    # Authorization check based on role
+    if current_user.role == UserRole.teacher:
+        # Teacher must have book access through their school
+        result = await session.execute(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        )
+        teacher = result.scalar_one_or_none()
+
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Teacher record not found",
+            )
+
+        # Check book access
+        result = await session.execute(
+            select(BookAccess).where(
+                BookAccess.book_id == book.id,
+                BookAccess.school_id == teacher.school_id,
+            )
+        )
+        book_access = result.scalar_one_or_none()
+
+        if not book_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this book",
+            )
+    elif current_user.role == UserRole.publisher:
+        # Publisher must have published the book
+        if book.publisher_id != current_user.publisher_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only preview activities from your own books",
+            )
+    # Admin can preview any activity - no additional check needed
+
+    # Build response
+    response = ActivityPreviewResponse(
+        activity_id=activity.id,
+        activity_title=activity.title,
+        activity_type=activity.activity_type.value,
+        config_json=activity.config_json or {},
+        book_id=book.id,
+        book_name=book.book_name,
+        publisher_name=book.publisher_name,
+        is_preview=True,
+    )
+
+    logger.info(
+        f"Activity preview requested: id={activity.id}, "
+        f"user_id={current_user.id}, type={activity.activity_type.value}"
+    )
+
+    return response

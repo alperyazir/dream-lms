@@ -23,7 +23,10 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { useNotificationSettings } from "@/hooks/useNotifications"
-import type { NotificationPreference, NotificationType } from "@/types/notification"
+import type {
+  NotificationPreference,
+  NotificationType,
+} from "@/types/notification"
 
 /**
  * Preference toggle row component
@@ -48,7 +51,9 @@ function PreferenceToggle({
         >
           {preference.label}
         </Label>
-        <p className="text-sm text-muted-foreground">{preference.description}</p>
+        <p className="text-sm text-muted-foreground">
+          {preference.description}
+        </p>
       </div>
       <Switch
         id={`pref-${preference.notification_type}`}
@@ -168,9 +173,21 @@ function GlobalMuteSection({
  */
 function EmailNotificationsSection() {
   const emailPreferences = [
-    { id: "email-assignments", label: "Assignment Updates", description: "Email when assignments are created or due" },
-    { id: "email-feedback", label: "Feedback Notifications", description: "Email when you receive feedback" },
-    { id: "email-messages", label: "Direct Messages", description: "Email when you receive new messages" },
+    {
+      id: "email-assignments",
+      label: "Assignment Updates",
+      description: "Email when assignments are created or due",
+    },
+    {
+      id: "email-feedback",
+      label: "Feedback Notifications",
+      description: "Email when you receive feedback",
+    },
+    {
+      id: "email-messages",
+      label: "Direct Messages",
+      description: "Email when you receive new messages",
+    },
   ]
 
   return (
@@ -197,7 +214,9 @@ function EmailNotificationsSection() {
               >
                 {pref.label}
               </Label>
-              <p className="text-sm text-muted-foreground">{pref.description}</p>
+              <p className="text-sm text-muted-foreground">
+                {pref.description}
+              </p>
             </div>
             <Switch id={pref.id} checked={false} disabled />
           </div>

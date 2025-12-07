@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from app.api.deps import AsyncSessionDep, require_role
 from app.core.config import settings
 from app.models import User, UserRole
+from app.services.assignment_scheduler import publish_scheduled_assignments
 from app.services.deadline_reminder_service import (
     check_approaching_deadlines,
     check_past_due_assignments,
@@ -212,4 +213,67 @@ async def run_past_due_only(
         past_due_students_notified=result.students_notified,
         past_due_assignments_processed=result.assignments_processed,
         message=f"Sent {result.notifications_sent} past-due notifications",
+    )
+
+
+class PublishAssignmentsResponse(BaseModel):
+    """Response model for publish scheduled assignments task."""
+
+    success: bool
+    assignments_published: int
+    notifications_sent: int
+    students_notified: int
+    message: str
+
+
+@router.post(
+    "/publish-assignments",
+    response_model=PublishAssignmentsResponse,
+    summary="Publish scheduled assignments",
+    description="Publishes assignments whose scheduled_publish_date has passed. "
+    "Should be called periodically (e.g., every hour or once daily) by external scheduler.",
+)
+async def run_publish_scheduled_assignments(
+    *,
+    session: AsyncSessionDep,
+    x_scheduler_key: Annotated[str | None, Header()] = None,
+    current_user: User = require_role(UserRole.admin),
+) -> PublishAssignmentsResponse:
+    """
+    Publish scheduled assignments.
+
+    This endpoint queries all assignments with:
+    - status = 'scheduled'
+    - scheduled_publish_date <= now
+
+    For each matching assignment:
+    1. Updates status to 'published'
+    2. Sends notifications to all assigned students
+
+    **Authorization:**
+    Requires either:
+    - Valid X-Scheduler-Key header (configured via SCHEDULER_API_KEY env var)
+    - Authenticated admin user
+
+    **Returns:**
+    Summary of published assignments and notifications sent
+    """
+    logger.info("Starting scheduled assignment publishing")
+
+    try:
+        result = await publish_scheduled_assignments(session)
+    except Exception as e:
+        logger.error(f"Error publishing scheduled assignments: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to publish scheduled assignments: {str(e)}",
+        )
+
+    return PublishAssignmentsResponse(
+        success=True,
+        assignments_published=result.assignments_published,
+        notifications_sent=result.notifications_sent,
+        students_notified=result.students_notified,
+        message=f"Published {result.assignments_published} assignments, "
+        f"sent {result.notifications_sent} notifications",
     )

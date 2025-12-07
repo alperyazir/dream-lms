@@ -5,9 +5,9 @@
  * Displays study time statistics
  */
 
+import { Calendar, Clock, Timer } from "lucide-react"
 import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Clock, Calendar, Timer } from "lucide-react"
 import type { StudyTimeStats } from "@/types/analytics"
 
 export interface StudyTimeCardProps {

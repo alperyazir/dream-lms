@@ -5,9 +5,20 @@
  * Displays earned achievements/badges
  */
 
+import {
+  Award,
+  Crown,
+  Flame,
+  Medal,
+  Rocket,
+  Sparkles,
+  Star,
+  Target,
+  TrendingUp,
+  Trophy,
+} from "lucide-react"
 import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Award, Flame, Star, Trophy, Target, Medal, Rocket, Crown, Sparkles, TrendingUp } from "lucide-react"
 import type { Achievement } from "@/types/analytics"
 
 export interface AchievementBadgesProps {

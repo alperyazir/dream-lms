@@ -27,17 +27,21 @@ ROLE_NOTIFICATION_TYPES: dict[UserRole, list[NotificationType]] = {
         NotificationType.message_received,
         NotificationType.material_shared,
         NotificationType.past_due,
+        NotificationType.password_reset,
     ],
     UserRole.teacher: [
         NotificationType.student_completed,
         NotificationType.message_received,
         NotificationType.system_announcement,
+        NotificationType.password_reset,
     ],
     UserRole.admin: [
         NotificationType.system_announcement,
+        NotificationType.password_reset,
     ],
     UserRole.publisher: [
         NotificationType.system_announcement,
+        NotificationType.password_reset,
     ],
 }
 
@@ -595,6 +599,7 @@ NOTIFICATION_TYPE_ICONS = {
     NotificationType.past_due: "AlertTriangle",
     NotificationType.material_shared: "Share2",
     NotificationType.system_announcement: "Bell",
+    NotificationType.password_reset: "Key",
 }
 
 

@@ -7,7 +7,10 @@
 
 import axios from "axios"
 import { OpenAPI } from "../client"
-import type { ClassAnalyticsResponse, ClassPeriodType } from "../types/analytics"
+import type {
+  ClassAnalyticsResponse,
+  ClassPeriodType,
+} from "../types/analytics"
 
 /**
  * Create axios instance with OpenAPI config

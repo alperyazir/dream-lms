@@ -5,8 +5,8 @@
  * Displays a bell icon with unread count badge and notification dropdown.
  */
 
-import { useState } from "react"
 import { Bell } from "lucide-react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
@@ -14,8 +14,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { useUnreadCount } from "@/hooks/useNotifications"
-import { NotificationDropdown } from "./NotificationDropdown"
 import { cn } from "@/lib/utils"
+import { NotificationDropdown } from "./NotificationDropdown"
 
 export interface NotificationBellProps {
   className?: string
@@ -66,7 +66,7 @@ export function NotificationBell({
             <span
               className={cn(
                 "absolute flex items-center justify-center rounded-full bg-red-600 font-semibold text-white",
-                badgeClasses
+                badgeClasses,
               )}
             >
               {formatCount(unreadCount)}
@@ -74,11 +74,7 @@ export function NotificationBell({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        className="w-auto p-0"
-        sideOffset={8}
-      >
+      <PopoverContent align="end" className="w-auto p-0" sideOffset={8}>
         <NotificationDropdown onClose={() => setIsOpen(false)} />
       </PopoverContent>
     </Popover>

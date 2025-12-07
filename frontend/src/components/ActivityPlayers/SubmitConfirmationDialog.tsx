@@ -146,15 +146,21 @@ export function SubmitConfirmationDialog({
                   <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-900/30">
                     <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-200">
                       {incompleteActivities.map((item) => (
-                        <li key={item.index} className="flex items-center gap-2">
-                          <span className="font-medium">Activity {item.index}:</span>
+                        <li
+                          key={item.index}
+                          className="flex items-center gap-2"
+                        >
+                          <span className="font-medium">
+                            Activity {item.index}:
+                          </span>
                           <span>{item.title}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    You can still submit, but unfilled answers will be marked as incorrect.
+                    You can still submit, but unfilled answers will be marked as
+                    incorrect.
                   </p>
                 </>
               )}

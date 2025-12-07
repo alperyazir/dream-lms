@@ -5,10 +5,10 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { renderHook, waitFor } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
-import { useStudentProgress } from "./useStudentProgress"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as studentsApi from "@/services/studentsApi"
 import type { StudentProgressResponse } from "@/types/analytics"
+import { useStudentProgress } from "./useStudentProgress"
 
 // Mock the studentsApi
 vi.mock("@/services/studentsApi", () => ({
@@ -68,10 +68,7 @@ const mockProgress: StudentProgressResponse = {
     this_month_minutes: 480,
     avg_per_assignment: 12.5,
   },
-  improvement_tips: [
-    "Keep up the great work!",
-    "You're on a 3-day streak!",
-  ],
+  improvement_tips: ["Keep up the great work!", "You're on a 3-day streak!"],
 }
 
 describe("useStudentProgress", () => {

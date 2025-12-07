@@ -1,0 +1,70 @@
+schema: 1
+story: '9.7'
+story_title: 'Teacher Assignment Preview & Test Mode'
+gate: PASS
+status_reason: 'All 21 acceptance criteria verified and passing. Comprehensive implementation with backend API, frontend components, and proper test coverage. User-requested changes (rename Test to Preview, remove emoji) successfully implemented.'
+reviewer: 'Quinn (QA Agent)'
+updated: '2025-12-06T12:00:00Z'
+
+top_issues: []
+
+waiver:
+  active: false
+
+quality_score: 95
+expires: '2025-12-20T12:00:00Z'
+
+evidence:
+  tests_reviewed: 9
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+    ac_gaps: []
+    ac_waived: []
+    ac_not_applicable: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Role-based authorization enforced. Teachers can only preview their own assignments. Book access validated for activity preview. Students cannot access preview endpoints.'
+  performance:
+    status: PASS
+    notes: 'Preview uses local state only - no backend persistence. sessionStorage for cross-tab data passing is lightweight.'
+  reliability:
+    status: PASS
+    notes: 'Graceful error handling for missing preview data. Results summary handles null states properly.'
+  maintainability:
+    status: PASS
+    notes: 'Clean separation with dedicated preview components and hooks. previewMode prop cleanly integrated into existing MultiActivityPlayer.'
+
+recommendations:
+  immediate: []
+  future:
+    - action: 'Consider adding preview button to book browser view for quick activity testing'
+      refs: ['frontend/src/components/books/BookCard.tsx']
+    - action: 'Add keyboard shortcut (e.g., Ctrl+P) for quick preview access during assignment creation'
+      refs: ['frontend/src/components/assignments/AssignmentCreationDialog.tsx']
+
+files_created:
+  frontend:
+    - src/components/preview/ActivityPreviewModal.tsx
+    - src/components/preview/TestModePlayer.tsx
+    - src/components/preview/TestModeResultsSummary.tsx
+    - src/hooks/usePreviewMode.ts
+    - src/routes/_layout/teacher/assignments/preview.tsx
+  backend:
+    - app/tests/test_api/test_assignment_preview.py
+
+files_modified:
+  frontend:
+    - src/components/ActivityPlayers/MultiActivityPlayer.tsx
+    - src/components/assignments/AssignmentCreationDialog.tsx
+    - src/components/assignments/ActivitySelectionTabs.tsx
+    - src/components/assignments/StepSelectActivities.tsx
+    - src/routes/_layout/teacher/assignments/$assignmentId.tsx
+    - src/services/assignmentsApi.ts
+    - src/types/assignment.ts
+    - src/routeTree.gen.ts
+  backend:
+    - app/api/routes/assignments.py
+    - app/schemas/assignment.py

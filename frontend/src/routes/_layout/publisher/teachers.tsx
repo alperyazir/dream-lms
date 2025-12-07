@@ -1,11 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { GraduationCap, Mail, Plus, User } from "lucide-react"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import {
+  Book,
+  Check,
+  GraduationCap,
+  Mail,
+  MessageSquare,
+  Plus,
+  User,
+} from "lucide-react"
 import { useState } from "react"
 import { PublishersService, type TeacherCreateAPI } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -16,6 +25,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Select,
   SelectContent,
@@ -24,6 +34,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import useCustomToast from "@/hooks/useCustomToast"
+import { createBulkBookAssignments } from "@/services/bookAssignmentsApi"
+import { booksApi } from "@/services/booksApi"
+import { generateUsername } from "@/utils/usernameGenerator"
 
 export const Route = createFileRoute("/_layout/publisher/teachers")({
   component: () => (
@@ -35,6 +48,7 @@ export const Route = createFileRoute("/_layout/publisher/teachers")({
 
 function PublisherTeachersPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [newTeacher, setNewTeacher] = useState<TeacherCreateAPI>({
@@ -44,6 +58,7 @@ function PublisherTeachersPage() {
     school_id: "",
     subject_specialization: "",
   })
+  const [selectedBookIds, setSelectedBookIds] = useState<string[]>([])
 
   // Fetch teachers from API
   const {
@@ -61,13 +76,44 @@ function PublisherTeachersPage() {
     queryFn: () => PublishersService.listMySchools(),
   })
 
+  // Fetch books for assignment selection
+  const { data: booksData } = useQuery({
+    queryKey: ["publisherBooks"],
+    queryFn: () => booksApi.getBooks({ limit: 100 }),
+    staleTime: 5 * 60 * 1000,
+  })
+  const books = booksData?.items ?? []
+
   // Create teacher mutation
   const createTeacherMutation = useMutation({
-    mutationFn: (data: TeacherCreateAPI) =>
-      PublishersService.createTeacher({ requestBody: data }),
+    mutationFn: async (data: TeacherCreateAPI) => {
+      // Create the teacher first
+      const response = await PublishersService.createTeacher({
+        requestBody: data,
+      })
+
+      // If books were selected, assign them to the new teacher
+      // The role_record contains the teacher record with the ID
+      const teacherId = (response.role_record as { id: string }).id
+      if (selectedBookIds.length > 0 && teacherId) {
+        await Promise.all(
+          selectedBookIds.map((bookId) =>
+            createBulkBookAssignments({
+              book_id: bookId,
+              school_id: data.school_id,
+              assign_to_all_teachers: false,
+              teacher_ids: [teacherId],
+            }),
+          ),
+        )
+      }
+
+      return response
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["publisherTeachers"] })
       queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
+      queryClient.invalidateQueries({ queryKey: ["bookAssignments"] })
       setIsAddDialogOpen(false)
       setNewTeacher({
         username: "",
@@ -76,7 +122,13 @@ function PublisherTeachersPage() {
         school_id: "",
         subject_specialization: "",
       })
-      showSuccessToast("Teacher created successfully!")
+      const bookCount = selectedBookIds.length
+      setSelectedBookIds([])
+      showSuccessToast(
+        bookCount > 0
+          ? `Teacher created with ${bookCount} book${bookCount > 1 ? "s" : ""} assigned!`
+          : "Teacher created successfully!",
+      )
     },
     onError: (error: any) => {
       let errorMessage = "Failed to create teacher. Please try again."
@@ -106,9 +158,9 @@ function PublisherTeachersPage() {
     }
 
     // Validate username format
-    if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newTeacher.username)) {
+    if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(newTeacher.username)) {
       showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen",
+        "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
       )
       return
     }
@@ -185,6 +237,23 @@ function PublisherTeachersPage() {
                   </div>
                   <User className="w-8 h-8 text-teal-500" />
                 </div>
+                {/* Message Button */}
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-teal-600 hover:text-teal-700 hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-900/20"
+                    onClick={() =>
+                      navigate({
+                        to: "/messaging",
+                        search: { user: teacher.user_id } as { user?: string },
+                      })
+                    }
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Message
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -192,11 +261,21 @@ function PublisherTeachersPage() {
       )}
 
       {/* Add Teacher Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog
+        open={isAddDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddDialogOpen(open)
+          if (!open) {
+            setSelectedBookIds([])
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Teacher</DialogTitle>
-            <DialogDescription>Create a new teacher account</DialogDescription>
+            <DialogDescription>
+              Create a new teacher account and optionally assign books
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -207,13 +286,8 @@ function PublisherTeachersPage() {
                 value={newTeacher.full_name}
                 onChange={(e) => {
                   const fullName = e.target.value
-                  // Auto-generate username from full name
-                  const generatedUsername = fullName
-                    .toLowerCase()
-                    .trim()
-                    .replace(/\s+/g, "-")
-                    .replace(/[^a-z0-9_-]/g, "")
-                    .slice(0, 50)
+                  // Auto-generate username with Turkish character support
+                  const generatedUsername = generateUsername(fullName)
 
                   setNewTeacher({
                     ...newTeacher,
@@ -286,6 +360,64 @@ function PublisherTeachersPage() {
                 }
               />
             </div>
+
+            {/* Book Assignment Section */}
+            {books.length > 0 && (
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Book className="h-4 w-4" />
+                    Assign Books (Optional)
+                  </Label>
+                  {selectedBookIds.length > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {selectedBookIds.length} selected
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This teacher will have access to selected books
+                </p>
+                <ScrollArea className="h-[150px] border rounded-md">
+                  <div className="p-2 space-y-1">
+                    {books.map((book) => (
+                      <label
+                        key={book.id}
+                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                          selectedBookIds.includes(book.id)
+                            ? "bg-teal-50 dark:bg-teal-900/20"
+                            : "hover:bg-muted"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedBookIds.includes(book.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedBookIds([...selectedBookIds, book.id])
+                            } else {
+                              setSelectedBookIds(
+                                selectedBookIds.filter((id) => id !== book.id),
+                              )
+                            }
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">
+                            {book.title}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {book.activity_count} activities
+                          </div>
+                        </div>
+                        {selectedBookIds.includes(book.id) && (
+                          <Check className="h-4 w-4 text-teal-600" />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button

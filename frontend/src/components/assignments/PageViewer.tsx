@@ -49,7 +49,10 @@ export function PageViewer({
     if (!data?.modules || pages.length === 0) return ""
     for (const module of data.modules) {
       const endIndex = module.first_page_index + module.page_count
-      if (currentPageIndex >= module.first_page_index && currentPageIndex < endIndex) {
+      if (
+        currentPageIndex >= module.first_page_index &&
+        currentPageIndex < endIndex
+      ) {
         return module.name
       }
     }
@@ -85,7 +88,7 @@ export function PageViewer({
     (e: React.FormEvent) => {
       e.preventDefault()
       const pageNum = parseInt(pageInput, 10)
-      if (isNaN(pageNum)) return
+      if (Number.isNaN(pageNum)) return
 
       const index = pages.findIndex((p) => p.page_number === pageNum)
       if (index >= 0) {
@@ -97,19 +100,18 @@ export function PageViewer({
       }
       setPageInput("")
     },
-    [pageInput, pages, viewMode]
+    [pageInput, pages, viewMode],
   )
 
   // Get pages to display based on view mode
   const visiblePages = useMemo(() => {
     if (viewMode === "single") {
       return pages[currentPageIndex] ? [pages[currentPageIndex]] : []
-    } else {
-      const result: PageDetail[] = []
-      if (pages[currentPageIndex]) result.push(pages[currentPageIndex])
-      if (pages[currentPageIndex + 1]) result.push(pages[currentPageIndex + 1])
-      return result
     }
+    const result: PageDetail[] = []
+    if (pages[currentPageIndex]) result.push(pages[currentPageIndex])
+    if (pages[currentPageIndex + 1]) result.push(pages[currentPageIndex + 1])
+    return result
   }, [pages, currentPageIndex, viewMode])
 
   // Check if can navigate
@@ -139,9 +141,9 @@ export function PageViewer({
   return (
     <div className="flex h-full gap-2 overflow-hidden">
       {/* Left Sidebar - Module List */}
-      <div className="w-28 shrink-0 flex flex-col bg-muted/30 rounded-lg overflow-hidden">
-        {/* Module List - Scrollable */}
-        <div className="flex-1 overflow-y-auto py-1">
+      <div className="w-28 shrink-0 flex flex-col bg-muted/30 rounded-lg min-h-0 max-h-full">
+        {/* Module List - Scrollable (takes remaining space after bottom controls) */}
+        <div className="flex-1 overflow-y-auto py-1 min-h-0 max-h-[calc(100%-70px)]">
           {data.modules.map((module) => (
             <button
               key={module.name}
@@ -159,12 +161,12 @@ export function PageViewer({
         </div>
 
         {/* View Mode & Page Info - Bottom */}
-        <div className="shrink-0 border-t border-border/50 p-2 space-y-2">
+        <div className="shrink-0 border-t border-border/50 p-1.5 space-y-1.5">
           {/* View Mode Toggle */}
           <div className="flex rounded-md overflow-hidden border border-border/50">
             <button
               onClick={() => setViewMode("single")}
-              className={`flex-1 py-1 text-[10px] font-medium transition-colors ${
+              className={`flex-1 py-0.5 text-[9px] font-medium transition-colors ${
                 viewMode === "single"
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-muted-foreground hover:text-foreground"
@@ -174,7 +176,7 @@ export function PageViewer({
             </button>
             <button
               onClick={() => setViewMode("double")}
-              className={`flex-1 py-1 text-[10px] font-medium transition-colors ${
+              className={`flex-1 py-0.5 text-[9px] font-medium transition-colors ${
                 viewMode === "double"
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-muted-foreground hover:text-foreground"
@@ -185,15 +187,18 @@ export function PageViewer({
           </div>
 
           {/* Page Input */}
-          <form onSubmit={handlePageInputSubmit} className="flex items-center gap-1">
+          <form
+            onSubmit={handlePageInputSubmit}
+            className="flex items-center gap-1"
+          >
             <Input
               type="text"
               value={pageInput}
               onChange={(e) => setPageInput(e.target.value)}
               placeholder={visiblePages[0]?.page_number?.toString() || "1"}
-              className="h-6 text-[10px] text-center px-1"
+              className="h-5 text-[9px] text-center px-1"
             />
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+            <span className="text-[9px] text-muted-foreground whitespace-nowrap">
               / {pages.length > 0 ? pages[pages.length - 1]?.page_number : 0}
             </span>
           </form>
@@ -217,17 +222,19 @@ export function PageViewer({
         </button>
 
         {/* Pages Container */}
-        <div className="flex-1 flex gap-2 justify-center items-center h-full min-w-0 px-1">
-          {visiblePages.map((page) => (
-            <PageWithMarkers
-              key={page.page_number}
-              page={page}
-              selectedActivityIds={selectedActivityIds}
-              onActivityToggle={onActivityToggle}
-              viewMode={viewMode}
-              visiblePageCount={visiblePages.length}
-            />
-          ))}
+        <div className="flex-1 h-full min-w-0 min-h-0 px-1 py-1 overflow-hidden flex items-center justify-center">
+          <div className="flex gap-3 h-full max-h-full justify-center items-center" style={{ maxHeight: '100%' }}>
+            {visiblePages.map((page) => (
+              <PageWithMarkers
+                key={page.page_number}
+                page={page}
+                selectedActivityIds={selectedActivityIds}
+                onActivityToggle={onActivityToggle}
+                viewMode={viewMode}
+                visiblePageCount={visiblePages.length}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Right Navigation Arrow */}
@@ -285,7 +292,10 @@ function PageWithMarkers({
           const img = new Image()
           img.onload = () => {
             if (isMounted) {
-              setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight })
+              setImageDimensions({
+                width: img.naturalWidth,
+                height: img.naturalHeight,
+              })
               setImageUrl(url)
               setIsLoading(false)
             }
@@ -308,9 +318,6 @@ function PageWithMarkers({
 
     return () => {
       isMounted = false
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl)
-      }
     }
   }, [page.image_url])
 
@@ -365,11 +372,13 @@ function PageWithMarkers({
 
   return (
     <div
-      className={`relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 ${
-        useSingleSizing ? "h-full aspect-[3/4]" : "h-full aspect-[3/4] max-w-[48%]"
+      className={`relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex flex-col ${
+        useSingleSizing
+          ? "h-full max-h-full aspect-[3/4]"
+          : "h-full max-h-full aspect-[3/4] max-w-[48%]"
       }`}
     >
-      <div ref={containerRef} className="relative h-full w-full">
+      <div ref={containerRef} className="relative flex-1 min-h-0">
         {isLoading ? (
           <Skeleton className="absolute inset-0" />
         ) : imageUrl ? (
@@ -397,8 +406,8 @@ function PageWithMarkers({
       </div>
 
       {/* Page Number Label */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5 text-center">
-        <span className="text-white text-xs font-medium">
+      <div className="shrink-0 bg-black/60 py-1 text-center">
+        <span className="text-white text-[10px] font-medium">
           Page {page.page_number}
         </span>
       </div>
@@ -411,7 +420,12 @@ function PageWithMarkers({
 interface ActivityMarkersOverlayProps {
   activities: ActivityMarker[]
   imageDimensions: { width: number; height: number }
-  renderedDimensions: { width: number; height: number; offsetX: number; offsetY: number }
+  renderedDimensions: {
+    width: number
+    height: number
+    offsetX: number
+    offsetY: number
+  }
   selectedActivityIds: Set<string>
   onActivityToggle: (activityId: string, activity: ActivityMarker) => void
 }
@@ -425,7 +439,7 @@ function ActivityMarkersOverlay({
 }: ActivityMarkersOverlayProps) {
   // Filter to only show supported activity types
   const supportedActivities = activities.filter((a) =>
-    SUPPORTED_ACTIVITY_TYPES.has(a.activity_type)
+    SUPPORTED_ACTIVITY_TYPES.has(a.activity_type),
   )
 
   return (
@@ -454,9 +468,7 @@ function ActivityMarkersOverlay({
             key={activity.id}
             onClick={() => onActivityToggle(activity.id, activity)}
             className={`absolute pointer-events-auto transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 group ${
-              isSelected
-                ? "scale-110 z-10"
-                : "hover:scale-125 hover:z-10"
+              isSelected ? "scale-110 z-10" : "hover:scale-125 hover:z-10"
             }`}
             style={{
               left: `${left}px`,
@@ -492,11 +504,25 @@ function ActivityMarkersOverlay({
                 }`}
               >
                 {isSelected ? (
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 ) : (
-                  <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-2.5 h-2.5 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 )}

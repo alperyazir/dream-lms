@@ -40,8 +40,11 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { getStudentAssignments, startMultiActivityAssignment } from "@/services/assignmentsApi"
 import { useMyFeedback } from "@/hooks/useFeedback"
+import {
+  getStudentAssignments,
+  startMultiActivityAssignment,
+} from "@/services/assignmentsApi"
 import { EMOJI_DISPLAY, isFeedbackStudentView } from "@/types/feedback"
 
 export const Route = createFileRoute(
@@ -238,7 +241,7 @@ function AssignmentDetailContent() {
                 <div className="space-y-2">
                   {multiActivityData.activities.map((activity, index) => {
                     const progress = multiActivityData.activity_progress.find(
-                      (p) => p.activity_id === activity.id
+                      (p) => p.activity_id === activity.id,
                     )
                     const status = progress?.status || "not_started"
 
@@ -261,19 +264,23 @@ function AssignmentDetailContent() {
                           {/* Activity info */}
                           <div>
                             <p className="font-medium">
-                              {index + 1}. {activity.title || `Activity ${index + 1}`}
+                              {index + 1}.{" "}
+                              {activity.title || `Activity ${index + 1}`}
                             </p>
                             <p className="text-sm text-muted-foreground capitalize">
-                              {activity.activity_type.replace(/([A-Z])/g, " $1").trim()}
+                              {activity.activity_type
+                                .replace(/([A-Z])/g, " $1")
+                                .trim()}
                             </p>
                           </div>
                         </div>
                         {/* Score if completed */}
-                        {progress?.score !== null && progress?.score !== undefined && (
-                          <span className="text-sm font-medium text-green-600">
-                            {Math.round(progress.score)}%
-                          </span>
-                        )}
+                        {progress?.score !== null &&
+                          progress?.score !== undefined && (
+                            <span className="text-sm font-medium text-green-600">
+                              {Math.round(progress.score)}%
+                            </span>
+                          )}
                       </div>
                     )
                   })}
@@ -294,7 +301,9 @@ function AssignmentDetailContent() {
                       Type
                     </p>
                     <p className="text-lg capitalize">
-                      {assignment.activity_type.replace(/([A-Z])/g, " $1").trim()}
+                      {assignment.activity_type
+                        .replace(/([A-Z])/g, " $1")
+                        .trim()}
                     </p>
                   </div>
                 </>
@@ -400,7 +409,9 @@ function AssignmentDetailContent() {
                   <div className="py-4 text-center text-muted-foreground">
                     Loading feedback...
                   </div>
-                ) : hasFeedback && feedback && isFeedbackStudentView(feedback) ? (
+                ) : hasFeedback &&
+                  feedback &&
+                  isFeedbackStudentView(feedback) ? (
                   <div className="space-y-4">
                     {/* Badges display (Story 6.5, AC: 8) */}
                     {feedback.badges && feedback.badges.length > 0 && (
@@ -408,7 +419,11 @@ function AssignmentDetailContent() {
                         <p className="text-sm font-medium text-muted-foreground">
                           Badges Awarded
                         </p>
-                        <BadgeDisplay badges={feedback.badges} size="md" showLabels />
+                        <BadgeDisplay
+                          badges={feedback.badges}
+                          size="md"
+                          showLabels
+                        />
                       </div>
                     )}
 
@@ -416,11 +431,13 @@ function AssignmentDetailContent() {
                     <div className="rounded-lg bg-muted/50 p-4">
                       <div className="flex items-start gap-3">
                         {/* Emoji reaction displayed prominently */}
-                        {feedback.emoji_reactions && feedback.emoji_reactions.length > 0 && (
-                          <span className="text-3xl flex-shrink-0">
-                            {EMOJI_DISPLAY[feedback.emoji_reactions[0]] || feedback.emoji_reactions[0]}
-                          </span>
-                        )}
+                        {feedback.emoji_reactions &&
+                          feedback.emoji_reactions.length > 0 && (
+                            <span className="text-3xl flex-shrink-0">
+                              {EMOJI_DISPLAY[feedback.emoji_reactions[0]] ||
+                                feedback.emoji_reactions[0]}
+                            </span>
+                          )}
                         <p className="whitespace-pre-wrap text-muted-foreground flex-1">
                           {feedback.feedback_text}
                         </p>
@@ -460,7 +477,8 @@ function AssignmentDetailContent() {
                   </div>
                 ) : (
                   <p className="py-4 text-center text-muted-foreground">
-                    No feedback yet. Your teacher may provide feedback after reviewing your work.
+                    No feedback yet. Your teacher may provide feedback after
+                    reviewing your work.
                   </p>
                 )}
               </CardContent>
@@ -574,10 +592,12 @@ function AssignmentDetailContent() {
                   className="w-full"
                   size="lg"
                   onClick={() => {
-                    document.getElementById("feedback-section")?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "center",
-                    })
+                    document
+                      .getElementById("feedback-section")
+                      ?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      })
                   }}
                 >
                   <MessageSquare className="mr-2 h-4 w-4" />

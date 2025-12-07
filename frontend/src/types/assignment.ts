@@ -11,8 +11,21 @@
 export type AssignmentStatus = "not_started" | "in_progress" | "completed"
 
 /**
+ * Date group for time planning mode
+ * Groups activities by their scheduled due date
+ */
+export interface DateActivityGroup {
+  date: Date
+  activityIds: string[]
+  dueDate?: Date | null // Optional specific due date for this group
+  timeLimit?: number | null // Optional time limit in minutes for this group
+}
+
+/**
  * Form data for assignment creation wizard
  * Story 8.2: Added activity_ids for multi-activity selection
+ * Story 9.6: Added scheduled_publish_date for scheduled publishing
+ * Story 9.x: Added time_planning_enabled and date_groups for time planning
  */
 export interface AssignmentFormData {
   name: string
@@ -22,11 +35,27 @@ export interface AssignmentFormData {
   student_ids: string[]
   class_ids: string[]
   activity_ids: string[] // Story 8.2: Multi-activity selection
+  scheduled_publish_date: Date | null // Story 9.6: Scheduled publishing
+  // Time Planning mode
+  time_planning_enabled: boolean
+  date_groups: DateActivityGroup[]
+}
+
+/**
+ * Date group for bulk assignment creation (Time Planning mode)
+ */
+export interface DateGroupCreateRequest {
+  scheduled_publish_date: string // ISO 8601 datetime string - when to publish
+  due_date?: string | null // ISO 8601 datetime string - when due
+  time_limit_minutes?: number | null
+  activity_ids: string[]
 }
 
 /**
  * Assignment creation request payload
  * Story 8.1: Supports both single-activity (backward compatible) and multi-activity assignments.
+ * Story 9.6: Added scheduled_publish_date for scheduled publishing.
+ * Story 9.x: Added date_groups for Time Planning mode (creates multiple assignments)
  * Provide either activity_id (single) OR activity_ids (multi), not both.
  */
 export interface AssignmentCreateRequest {
@@ -41,17 +70,26 @@ export interface AssignmentCreateRequest {
   activity_id?: string
   // Multi-activity: list of activities with order
   activity_ids?: string[]
+  // Story 9.6: Scheduled publishing
+  scheduled_publish_date?: string | null // ISO 8601 datetime string
+  // Story 9.x: Time Planning mode - creates multiple assignments
+  date_groups?: DateGroupCreateRequest[]
 }
 
 /**
  * Assignment update request payload (partial update)
  * Story 3.8: Only editable fields can be updated
+ * Story 9.6: Added status for publish now functionality
+ * Story 9.8: Added activity_ids for editing activities
  */
 export interface AssignmentUpdateRequest {
   name?: string
   instructions?: string | null
   due_date?: string | null // ISO 8601 datetime string
   time_limit_minutes?: number | null
+  scheduled_publish_date?: string | null // ISO 8601 datetime string
+  status?: AssignmentPublishStatus // For publish now functionality
+  activity_ids?: string[] // Story 9.8: Update activities (add/remove/reorder)
 }
 
 /**
@@ -126,6 +164,11 @@ export interface AssignmentStudentActivityResponse {
 }
 
 /**
+ * Assignment publishing status (Story 9.6)
+ */
+export type AssignmentPublishStatus = "draft" | "scheduled" | "published" | "archived"
+
+/**
  * Assignment list item with enriched data for display
  */
 export interface AssignmentListItem {
@@ -148,6 +191,10 @@ export interface AssignmentListItem {
   not_started: number
   in_progress: number
   completed: number
+
+  // Scheduling fields (Story 9.6)
+  scheduled_publish_date: string | null // ISO 8601 datetime string
+  status: AssignmentPublishStatus
 }
 
 /**
@@ -472,4 +519,140 @@ export interface StudentAssignmentResultResponse {
   activity_scores: ActivityScoreItem[]
   total_activities: number
   completed_activities: number
+}
+
+// =============================================================================
+// Calendar Types (Story 9.6)
+// =============================================================================
+
+/**
+ * Calendar assignment item for calendar view
+ * Story 9.6: Calendar-Based Assignment Scheduling
+ */
+export interface CalendarAssignmentItem {
+  id: string
+  name: string
+  due_date: string | null
+  scheduled_publish_date: string | null
+  status: AssignmentPublishStatus
+  activity_count: number
+  class_names: string[]
+  book_id: string
+  book_title: string
+}
+
+/**
+ * Calendar assignments response grouped by date
+ * Story 9.6: Calendar-Based Assignment Scheduling
+ */
+export interface CalendarAssignmentsResponse {
+  start_date: string
+  end_date: string
+  total_assignments: number
+  assignments_by_date: Record<string, CalendarAssignmentItem[]>
+}
+
+// =============================================================================
+// Bulk Assignment Types (Time Planning Mode)
+// =============================================================================
+
+/**
+ * Individual assignment created in bulk operation
+ * Story 9.x: Time Planning Mode
+ */
+export interface BulkAssignmentCreatedItem {
+  id: string
+  name: string
+  scheduled_publish_date: string | null
+  due_date: string | null
+  status: AssignmentPublishStatus
+  activity_count: number
+}
+
+/**
+ * Response from bulk assignment creation (Time Planning mode)
+ * Story 9.x: Time Planning Mode
+ */
+export interface BulkAssignmentCreateResponse {
+  success: boolean
+  message: string
+  total_created: number
+  assignments: BulkAssignmentCreatedItem[]
+}
+
+// =============================================================================
+// Student Calendar Types
+// =============================================================================
+
+/**
+ * Assignment item for student calendar view
+ */
+export interface StudentCalendarAssignmentItem {
+  id: string
+  name: string
+  due_date: string | null
+  book_id: string
+  book_title: string
+  book_cover_url: string | null
+  activity_count: number
+  status: AssignmentStatus
+}
+
+/**
+ * Response for student calendar assignments endpoint
+ */
+export interface StudentCalendarAssignmentsResponse {
+  start_date: string
+  end_date: string
+  total_assignments: number
+  assignments_by_date: Record<string, StudentCalendarAssignmentItem[]>
+}
+
+// =============================================================================
+// Preview/Test Mode Types (Story 9.7)
+// =============================================================================
+
+/**
+ * Response for assignment preview (teacher test mode)
+ * Similar to MultiActivityStartResponse but without student-specific data
+ */
+export interface AssignmentPreviewResponse {
+  assignment_id: string
+  assignment_name: string
+  instructions: string | null
+  due_date: string | null
+  time_limit_minutes: number | null
+  status: AssignmentPublishStatus
+
+  // Book info
+  book_id: string
+  book_title: string
+  book_name: string
+  publisher_name: string
+  book_cover_url: string | null
+
+  // Multi-activity data
+  activities: ActivityWithConfig[]
+  total_activities: number
+
+  // Preview mode indicator
+  is_preview: boolean
+}
+
+/**
+ * Response for single activity preview
+ */
+export interface ActivityPreviewResponse {
+  activity_id: string
+  activity_title: string | null
+  activity_type: string
+  config_json: Record<string, unknown>
+
+  // Book info (for image URL construction)
+  book_id: string
+  book_name: string
+  publisher_name: string
+
+  // Preview mode indicator
+  is_preview: boolean
 }

@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from fastapi import HTTPException
@@ -236,18 +237,19 @@ def create_teacher(
 
 
 def create_student(
-    *, session: Session, email: str, username: str, password: str, full_name: str, student_create: StudentCreate
+    *, session: Session, email: str | None, username: str, password: str, full_name: str, student_create: StudentCreate, created_by_teacher_id: uuid.UUID | None = None
 ) -> tuple[User, Student]:
     """
     Create a new student user and associated student record atomically.
 
     Args:
         session: Database session
-        email: User email address
+        email: User email address (optional)
         username: User username
         password: User password (will be hashed)
         full_name: User full name
         student_create: Student-specific data (grade_level, parent_email)
+        created_by_teacher_id: Optional ID of teacher who created this student
 
     Returns:
         Tuple of (User, Student) records
@@ -255,10 +257,11 @@ def create_student(
     Raises:
         Exception: If transaction fails (rolls back automatically)
     """
-    # Check email uniqueness
-    existing_user_email = get_user_by_email(session=session, email=email)
-    if existing_user_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    # Check email uniqueness (only if email is provided)
+    if email:
+        existing_user_email = get_user_by_email(session=session, email=email)
+        if existing_user_email:
+            raise HTTPException(status_code=400, detail="Email already registered")
 
     # Check username uniqueness
     existing_user_username = get_user_by_username(session=session, username=username)
@@ -287,6 +290,8 @@ def create_student(
     # Create Student record
     student_data = student_create.model_dump()
     student_data["user_id"] = db_user.id
+    if created_by_teacher_id:
+        student_data["created_by_teacher_id"] = created_by_teacher_id
     db_student = Student.model_validate(student_data)
     session.add(db_student)
 

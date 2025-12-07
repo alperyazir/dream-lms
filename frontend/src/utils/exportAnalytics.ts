@@ -27,7 +27,10 @@ export function exportMultiActivityAnalytics(
     ["Assignment Name", analytics.assignment_name],
     ["Total Students", analytics.total_students],
     ["Submitted", analytics.submitted_count],
-    ["Submission Rate", `${Math.round((analytics.submitted_count / analytics.total_students) * 100)}%`],
+    [
+      "Submission Rate",
+      `${Math.round((analytics.submitted_count / analytics.total_students) * 100)}%`,
+    ],
     ["Total Activities", analytics.activities.length],
   ]
   const summarySheet = XLSX.utils.aoa_to_sheet(summaryData)
@@ -54,12 +57,15 @@ export function exportMultiActivityAnalytics(
       ? `${Math.round(activity.class_average_score)}%`
       : "N/A",
   ])
-  const activitySheet = XLSX.utils.aoa_to_sheet([activityHeaders, ...activityRows])
+  const activitySheet = XLSX.utils.aoa_to_sheet([
+    activityHeaders,
+    ...activityRows,
+  ])
   // Set column widths
   activitySheet["!cols"] = [
     { wch: 30 }, // Activity Title
     { wch: 20 }, // Type
-    { wch: 8 },  // Page #
+    { wch: 8 }, // Page #
     { wch: 12 }, // Completed
     { wch: 15 }, // Total Assigned
     { wch: 15 }, // Completion Rate
@@ -91,11 +97,14 @@ export function exportMultiActivityAnalytics(
         ? new Date(student.completed_at).toLocaleString()
         : "N/A",
     ])
-    const studentSheet = XLSX.utils.aoa_to_sheet([studentHeaders, ...studentRows])
+    const studentSheet = XLSX.utils.aoa_to_sheet([
+      studentHeaders,
+      ...studentRows,
+    ])
     studentSheet["!cols"] = [
       { wch: 25 }, // Student Name
       { wch: 12 }, // Status
-      { wch: 8 },  // Score
+      { wch: 8 }, // Score
       { wch: 10 }, // Max Score
       { wch: 12 }, // Percentage
       { wch: 12 }, // Time Spent
@@ -129,7 +138,10 @@ function formatActivityType(type: string): string {
     coloring: "Coloring",
     drawing: "Drawing",
   }
-  return typeMap[type] || type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  return (
+    typeMap[type] ||
+    type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  )
 }
 
 /**

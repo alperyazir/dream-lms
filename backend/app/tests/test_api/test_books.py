@@ -24,6 +24,7 @@ from app.models import (
     ActivityType,
     Book,
     BookAccess,
+    BookAssignment,
     BookStatus,
     Publisher,
     School,
@@ -111,18 +112,16 @@ class TestListBooksAuthorization:
         session.add_all([teacher_book, other_book])
         session.commit()
 
-        # Grant access via BookAccess
-        teacher_access = BookAccess(
+        # Grant access via BookAssignment (Story 9.4)
+        # Assign teacher_book to teacher's school
+        teacher_assignment = BookAssignment(
             id=uuid.uuid4(),
             book_id=teacher_book.id,
-            publisher_id=teacher_publisher.id,
+            school_id=school.id,
+            assigned_by=teacher_user_with_record.id,
         )
-        other_access = BookAccess(
-            id=uuid.uuid4(),
-            book_id=other_book.id,
-            publisher_id=other_publisher.id,
-        )
-        session.add_all([teacher_access, other_access])
+        # other_book is NOT assigned to teacher, so should not be visible
+        session.add(teacher_assignment)
         session.commit()
 
         # Request books as teacher
@@ -159,7 +158,7 @@ class TestListBooksFunctionality:
         school = session.exec(select(School).where(School.id == teacher.school_id)).first()
         publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
 
-        # Create 5 books
+        # Create 5 books with BookAssignment
         for i in range(5):
             book = Book(
                 id=uuid.uuid4(),
@@ -172,13 +171,14 @@ class TestListBooksFunctionality:
             session.add(book)
             session.commit()
 
-            # Grant access
-            access = BookAccess(
+            # Grant access via BookAssignment (Story 9.4)
+            assignment = BookAssignment(
                 id=uuid.uuid4(),
                 book_id=book.id,
-                publisher_id=publisher.id,
+                school_id=school.id,
+                assigned_by=teacher_user_with_record.id,
             )
-            session.add(access)
+            session.add(assignment)
 
         session.commit()
 
@@ -234,14 +234,15 @@ class TestListBooksFunctionality:
         session.add_all([book1, book2])
         session.commit()
 
-        # Grant access
+        # Grant access via BookAssignment (Story 9.4)
         for book in [book1, book2]:
-            access = BookAccess(
+            assignment = BookAssignment(
                 id=uuid.uuid4(),
                 book_id=book.id,
-                publisher_id=publisher.id,
+                school_id=school.id,
+                assigned_by=teacher_user_with_record.id,
             )
-            session.add(access)
+            session.add(assignment)
         session.commit()
 
         # Search for "math"
@@ -403,14 +404,8 @@ class TestGetBookActivities:
         session.add(other_book)
         session.commit()
 
-        # Grant access to other publisher only
-        other_access = BookAccess(
-            id=uuid.uuid4(),
-            book_id=other_book.id,
-            publisher_id=other_publisher.id,
-        )
-        session.add(other_access)
-        session.commit()
+        # other_book is NOT assigned to the teacher's school, so should not be accessible
+        # (No BookAssignment record is created for this book)
 
         # Request activities (should get 404)
         response = client.get(
@@ -452,13 +447,14 @@ class TestGetBookActivities:
         session.add(book)
         session.commit()
 
-        # Grant access
-        access = BookAccess(
+        # Grant access via BookAssignment (Story 9.4)
+        assignment = BookAssignment(
             id=uuid.uuid4(),
             book_id=book.id,
-            publisher_id=publisher.id,
+            school_id=school.id,
+            assigned_by=teacher_user_with_record.id,
         )
-        session.add(access)
+        session.add(assignment)
         session.commit()
 
         # Create activities with different order_index
@@ -537,6 +533,205 @@ class TestGetBookActivities:
         fake_book_id = uuid.uuid4()
         response = client.get(
             f"{settings.API_V1_STR}/books/{fake_book_id}/activities",
+            headers={"Authorization": f"Bearer {teacher_token}"},
+        )
+
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+
+class TestGetBookStructure:
+    """Test GET /api/v1/books/{book_id}/structure endpoint (Story 9.5)."""
+
+    def test_get_structure_requires_authentication(self, client: TestClient):
+        """Test that unauthenticated requests are rejected."""
+        book_id = uuid.uuid4()
+        response = client.get(f"{settings.API_V1_STR}/books/{book_id}/structure")
+        assert response.status_code == 401
+
+    def test_get_structure_returns_module_and_page_data(
+        self,
+        client: TestClient,
+        session: Session,
+        teacher_user_with_record: User,
+    ):
+        """Test that structure endpoint returns modules, pages, and activity IDs."""
+        # Get teacher token
+        response = client.post(
+            f"{settings.API_V1_STR}/login/access-token",
+            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+        )
+        teacher_token = response.json()["access_token"]
+
+        # Get teacher's publisher
+        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
+        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
+        publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+
+        # Create book with config_json
+        book = Book(
+            id=uuid.uuid4(),
+            dream_storage_id="book-structure-test",
+            title="Structure Test Book",
+            book_name="Structure Test",
+            publisher_name=publisher.name,
+            publisher_id=publisher.id,
+            config_json={},
+        )
+        session.add(book)
+        session.commit()
+
+        # Grant access via BookAssignment
+        assignment = BookAssignment(
+            id=uuid.uuid4(),
+            book_id=book.id,
+            school_id=school.id,
+            assigned_by=teacher_user_with_record.id,
+        )
+        session.add(assignment)
+        session.commit()
+
+        # Create activities in different modules and pages
+        activity1 = Activity(
+            id=uuid.uuid4(),
+            book_id=book.id,
+            module_name="Module 1",
+            page_number=1,
+            section_index=0,
+            activity_type=ActivityType.matchTheWords,
+            title="Activity 1",
+            config_json={},
+            order_index=0,
+        )
+        activity2 = Activity(
+            id=uuid.uuid4(),
+            book_id=book.id,
+            module_name="Module 1",
+            page_number=1,
+            section_index=1,
+            activity_type=ActivityType.circle,
+            title="Activity 2",
+            config_json={},
+            order_index=1,
+        )
+        activity3 = Activity(
+            id=uuid.uuid4(),
+            book_id=book.id,
+            module_name="Module 1",
+            page_number=2,
+            section_index=0,
+            activity_type=ActivityType.fillpicture,
+            title="Activity 3",
+            config_json={},
+            order_index=2,
+        )
+        activity4 = Activity(
+            id=uuid.uuid4(),
+            book_id=book.id,
+            module_name="Module 2",
+            page_number=5,
+            section_index=0,
+            activity_type=ActivityType.puzzleFindWords,
+            title="Activity 4",
+            config_json={},
+            order_index=3,
+        )
+        session.add_all([activity1, activity2, activity3, activity4])
+        session.commit()
+
+        # Get book structure
+        response = client.get(
+            f"{settings.API_V1_STR}/books/{book.id}/structure",
+            headers={"Authorization": f"Bearer {teacher_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify structure
+        assert data["book_id"] == str(book.id)
+        assert data["total_pages"] == 3  # Pages 1, 2, 5
+        assert data["total_activities"] == 4
+
+        # Verify modules
+        assert len(data["modules"]) == 2
+        module_names = {m["name"] for m in data["modules"]}
+        assert "Module 1" in module_names
+        assert "Module 2" in module_names
+
+        # Find Module 1
+        module1 = next(m for m in data["modules"] if m["name"] == "Module 1")
+        assert module1["page_start"] == 1
+        assert module1["page_end"] == 2
+        assert module1["activity_count"] == 3
+        assert len(module1["activity_ids"]) == 3
+
+        # Verify pages in Module 1
+        assert len(module1["pages"]) == 2
+        page1 = next(p for p in module1["pages"] if p["page_number"] == 1)
+        assert page1["activity_count"] == 2
+        assert len(page1["activity_ids"]) == 2
+
+        page2 = next(p for p in module1["pages"] if p["page_number"] == 2)
+        assert page2["activity_count"] == 1
+        assert len(page2["activity_ids"]) == 1
+
+        # Find Module 2
+        module2 = next(m for m in data["modules"] if m["name"] == "Module 2")
+        assert module2["page_start"] == 5
+        assert module2["page_end"] == 5
+        assert module2["activity_count"] == 1
+        assert len(module2["activity_ids"]) == 1
+
+    def test_get_structure_returns_404_for_inaccessible_book(
+        self,
+        client: TestClient,
+        session: Session,
+        teacher_user_with_record: User,
+    ):
+        """Test that teachers cannot access structure of books they don't have access to."""
+        # Get teacher token
+        response = client.post(
+            f"{settings.API_V1_STR}/login/access-token",
+            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+        )
+        teacher_token = response.json()["access_token"]
+
+        # Create another publisher and book
+        other_pub_user = User(
+            id=uuid.uuid4(),
+            email="otherpub3@example.com",
+            username="otherpub3",
+            hashed_password="hashed",
+            role=UserRole.publisher,
+        )
+        session.add(other_pub_user)
+        session.commit()
+
+        other_publisher = Publisher(
+            id=uuid.uuid4(),
+            user_id=other_pub_user.id,
+            name="Other Publisher 3",
+        )
+        session.add(other_publisher)
+        session.commit()
+
+        other_book = Book(
+            id=uuid.uuid4(),
+            dream_storage_id="other-book-structure",
+            title="Other Book Structure",
+            book_name="Other Structure",
+            publisher_name=other_publisher.name,
+            publisher_id=other_publisher.id,
+        )
+        session.add(other_book)
+        session.commit()
+
+        # No BookAssignment created - teacher should not have access
+
+        # Request structure (should get 404)
+        response = client.get(
+            f"{settings.API_V1_STR}/books/{other_book.id}/structure",
             headers={"Authorization": f"Bearer {teacher_token}"},
         )
 

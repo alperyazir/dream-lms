@@ -14,6 +14,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Grid3x3, List, Search } from "lucide-react"
 import { useEffect, useState } from "react"
 import { BookCard } from "@/components/books/BookCard"
+import { BookListView } from "@/components/books/BookListView"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -224,15 +225,17 @@ function TeacherBooksPage() {
         </div>
       )}
 
-      {/* Books Grid/List */}
+      {/* Books Grid/List - Story 9.8: Conditional rendering based on view mode */}
       {!isLoading && !error && books.length > 0 && (
-        <div
-          className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-2"}`}
-        >
-          {books.map((book) => (
-            <BookCard key={book.id} book={book} />
-          ))}
-        </div>
+        viewMode === "grid" ? (
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
+            {books.map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </div>
+        ) : (
+          <BookListView books={books} />
+        )
       )}
 
       {/* Pagination */}

@@ -5,8 +5,8 @@
 
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { ActivityBenchmarkTable } from "./ActivityBenchmarkTable"
 import type { ActivityTypeBenchmark } from "@/types/benchmarks"
+import { ActivityBenchmarkTable } from "./ActivityBenchmarkTable"
 
 // Mock activity benchmarks
 const mockActivityBenchmarks: ActivityTypeBenchmark[] = [
@@ -35,7 +35,9 @@ const mockActivityBenchmarks: ActivityTypeBenchmark[] = [
 
 describe("ActivityBenchmarkTable", () => {
   it("renders table headers correctly", () => {
-    render(<ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />)
+    render(
+      <ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />,
+    )
 
     expect(screen.getByText("Activity Type")).toBeInTheDocument()
     expect(screen.getByText("Your Class")).toBeInTheDocument()
@@ -44,7 +46,9 @@ describe("ActivityBenchmarkTable", () => {
   })
 
   it("renders activity labels correctly", () => {
-    render(<ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />)
+    render(
+      <ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />,
+    )
 
     expect(screen.getByText("Drag & Drop Picture")).toBeInTheDocument()
     expect(screen.getByText("Match The Words")).toBeInTheDocument()
@@ -52,7 +56,9 @@ describe("ActivityBenchmarkTable", () => {
   })
 
   it("renders class averages correctly", () => {
-    render(<ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />)
+    render(
+      <ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />,
+    )
 
     expect(screen.getByText("85%")).toBeInTheDocument()
     expect(screen.getByText("70%")).toBeInTheDocument()
@@ -60,20 +66,26 @@ describe("ActivityBenchmarkTable", () => {
   })
 
   it("renders positive differences with + sign", () => {
-    render(<ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />)
+    render(
+      <ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />,
+    )
 
     expect(screen.getByText("+10%")).toBeInTheDocument()
     expect(screen.getByText("+2%")).toBeInTheDocument()
   })
 
   it("renders negative differences without + sign", () => {
-    render(<ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />)
+    render(
+      <ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />,
+    )
 
     expect(screen.getByText("-8%")).toBeInTheDocument()
   })
 
   it("sorts by absolute difference (largest gaps first)", () => {
-    render(<ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />)
+    render(
+      <ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />,
+    )
 
     const rows = screen.getAllByRole("row")
     // First row is header, so data rows start at index 1
@@ -103,13 +115,17 @@ describe("ActivityBenchmarkTable", () => {
   })
 
   it("renders title correctly", () => {
-    render(<ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />)
+    render(
+      <ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />,
+    )
 
     expect(screen.getByText("Performance by Activity Type")).toBeInTheDocument()
   })
 
   it("renders legend correctly", () => {
-    render(<ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />)
+    render(
+      <ActivityBenchmarkTable activityBenchmarks={mockActivityBenchmarks} />,
+    )
 
     expect(screen.getByText("Above benchmark (>5%)")).toBeInTheDocument()
     expect(screen.getByText("Below benchmark (<-5%)")).toBeInTheDocument()

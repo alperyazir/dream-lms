@@ -28,14 +28,17 @@ from app.schemas.book import (
     ActivityMarker,
     BookPagesDetailResponse,
     BookPagesResponse,
+    BookStructureResponse,
     BookSyncResponse,
     ModuleInfo,
-    ModulePagesDetail,
     ModulePages,
+    ModuleWithActivities,
     PageActivityResponse,
     PageDetail,
     PageInfo,
+    PageWithActivities,
 )
+from app.services import book_assignment_service
 from app.services.book_service import sync_all_books
 
 router = APIRouter()
@@ -212,14 +215,14 @@ async def list_books(
             detail="Limit parameter must be between 1 and 100"
         )
 
-    # Determine publisher_id based on user role
-    publisher_id = None
+    # Determine publisher_ids based on user role
+    publisher_ids = None
 
     if current_user.role == UserRole.admin:
         # Admin sees all books (no publisher filter)
-        publisher_id = None
+        publisher_ids = None
     elif current_user.role == UserRole.publisher:
-        # Publisher sees their own books
+        # Publisher sees books from their organization (all publishers with same name)
         from app.models import Publisher
         result = await session.execute(
             select(Publisher).where(Publisher.user_id == current_user.id)
@@ -230,16 +233,27 @@ async def list_books(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Publisher record not found for this user"
             )
-        publisher_id = publisher.id
+        # Get all publishers in the same organization
+        same_org_result = await session.execute(
+            select(Publisher).where(Publisher.name == publisher.name)
+        )
+        same_org_publishers = same_org_result.scalars().all()
+        publisher_ids = [p.id for p in same_org_publishers]
     elif current_user.role == UserRole.teacher:
-        # Teacher sees books from their school's publisher
+        # Teacher sees only books assigned to them or their school (Story 9.4)
         teacher = await _get_teacher_from_user(session, current_user)
-        if not teacher.school or not teacher.school.publisher_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Teacher's school has no publisher assigned"
+        accessible_book_ids = await book_assignment_service.get_accessible_book_ids(
+            db=session,
+            teacher_id=teacher.id,
+        )
+        # If no books assigned, return empty list
+        if not accessible_book_ids:
+            return BookListResponse(
+                items=[],
+                total=0,
+                skip=skip,
+                limit=limit
             )
-        publisher_id = teacher.school.publisher_id
 
     # Build query: Books (using DCS activity count)
     query = select(Book)
@@ -247,10 +261,14 @@ async def list_books(
     # Filter out archived books (books deleted from DCS)
     query = query.where(Book.status != BookStatus.archived)
 
-    # Apply publisher filter if not admin
-    if publisher_id is not None:
+    # Apply access filter based on role
+    if current_user.role == UserRole.teacher:
+        # Teacher: filter by assigned book IDs
+        query = query.where(Book.id.in_(accessible_book_ids))
+    elif publisher_ids is not None:
+        # Publisher: filter by BookAccess
         query = query.join(BookAccess, Book.id == BookAccess.book_id).where(
-            BookAccess.publisher_id == publisher_id
+            BookAccess.publisher_id.in_(publisher_ids)
         )
 
     # Apply search filter
@@ -355,14 +373,18 @@ async def get_book_activities(
             )
         await _verify_book_access(session, book_id, publisher.id)
     elif current_user.role == UserRole.teacher:
-        # Teacher must have access through their school's publisher
+        # Teacher must have access through book assignment (Story 9.4)
         teacher = await _get_teacher_from_user(session, current_user)
-        if not teacher.school or not teacher.school.publisher_id:
+        has_access = await book_assignment_service.check_teacher_book_access(
+            db=session,
+            teacher_id=teacher.id,
+            book_id=book_id,
+        )
+        if not has_access:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Teacher's school has no publisher assigned"
+                detail="Book not found"
             )
-        await _verify_book_access(session, book_id, teacher.school.publisher_id)
 
     # Get activities for book
     result = await session.execute(
@@ -393,7 +415,8 @@ async def _get_publisher_id_for_user(session: AsyncSession, user: User) -> uuid.
     """
     Get the publisher_id for access control based on user role.
 
-    Returns None for admin (has access to all), or the publisher_id for publisher/teacher.
+    Returns None for admin (has access to all), or the publisher_id for publisher.
+    For teachers, returns None as they use BookAssignment for access checks.
     """
     if user.role == UserRole.admin:
         return None
@@ -409,15 +432,48 @@ async def _get_publisher_id_for_user(session: AsyncSession, user: User) -> uuid.
                 detail="Publisher record not found for this user"
             )
         return publisher.id
-    elif user.role == UserRole.teacher:
-        teacher = await _get_teacher_from_user(session, user)
-        if not teacher.school or not teacher.school.publisher_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Teacher's school has no publisher assigned"
-            )
-        return teacher.school.publisher_id
+    # For teachers, return None - they use BookAssignment for access (Story 9.4)
     return None
+
+
+async def _verify_teacher_book_access(session: AsyncSession, user: User, book_id: uuid.UUID) -> Book:
+    """
+    Verify that a teacher has access to a book via BookAssignment.
+
+    Args:
+        session: Database session
+        user: Current authenticated user (must be teacher)
+        book_id: UUID of the book
+
+    Returns:
+        Book object if access verified
+
+    Raises:
+        HTTPException: 404 if book not found or teacher doesn't have access
+    """
+    teacher = await _get_teacher_from_user(session, user)
+    has_access = await book_assignment_service.check_teacher_book_access(
+        db=session,
+        teacher_id=teacher.id,
+        book_id=book_id,
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
+
+    # Get the book object
+    result = await session.execute(
+        select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
+    )
+    book = result.scalar_one_or_none()
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
+    return book
 
 
 def _extract_page_image_paths(config_json: dict) -> dict[tuple[str, int], str]:
@@ -559,12 +615,15 @@ async def get_book_pages(
     Access control:
     - Admin: Can see all book pages
     - Publisher: Must have access through BookAccess
-    - Teacher: Must have access through their school's publisher
+    - Teacher: Must have access through BookAssignment (Story 9.4)
     """
-    # Verify access and get book
-    publisher_id = await _get_publisher_id_for_user(session, current_user)
-
-    if publisher_id is not None:
+    # Verify access and get book based on role
+    if current_user.role == UserRole.teacher:
+        # Teacher access via BookAssignment (Story 9.4)
+        book = await _verify_teacher_book_access(session, current_user, book_id)
+    elif current_user.role == UserRole.publisher:
+        # Publisher access via BookAccess
+        publisher_id = await _get_publisher_id_for_user(session, current_user)
         book = await _verify_book_access(session, book_id, publisher_id)
     else:
         # Admin - verify book exists and is not archived
@@ -779,12 +838,15 @@ async def get_book_pages_detail(
     Access control:
     - Admin: Can see all book pages
     - Publisher: Must have access through BookAccess
-    - Teacher: Must have access through their school's publisher
+    - Teacher: Must have access through BookAssignment (Story 9.4)
     """
-    # Verify access and get book
-    publisher_id = await _get_publisher_id_for_user(session, current_user)
-
-    if publisher_id is not None:
+    # Verify access and get book based on role
+    if current_user.role == UserRole.teacher:
+        # Teacher access via BookAssignment (Story 9.4)
+        book = await _verify_teacher_book_access(session, current_user, book_id)
+    elif current_user.role == UserRole.publisher:
+        # Publisher access via BookAccess
+        publisher_id = await _get_publisher_id_for_user(session, current_user)
         book = await _verify_book_access(session, book_id, publisher_id)
     else:
         # Admin - verify book exists and is not archived
@@ -856,5 +918,150 @@ async def get_book_pages_detail(
         modules=module_infos,
         pages=pages_list,
         total_pages=len(pages_list),
+        total_activities=total_activities
+    )
+
+
+# --- Story 9.5: Activity Selection Tabs ---
+
+# Activity types that have implemented players (matches frontend SUPPORTED_ACTIVITY_TYPES)
+SUPPORTED_ACTIVITY_TYPES = {
+    "dragdroppicture",
+    "dragdroppicturegroup",
+    "matchTheWords",
+    "circle",
+    "markwithx",
+    "puzzleFindWords",
+}
+
+
+@router.get(
+    "/{book_id}/structure",
+    response_model=BookStructureResponse,
+    summary="Get book structure with modules and pages for activity selection",
+    description="Returns book structure with modules and pages including activity IDs for bulk selection in assignment creation."
+)
+async def get_book_structure(
+    *,
+    session: AsyncSessionDep,
+    book_id: uuid.UUID,
+    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
+) -> BookStructureResponse:
+    """
+    Get book structure with modules and pages for activity selection tabs.
+
+    Returns:
+    - Modules with page ranges, activity counts, and activity IDs
+    - Pages with activity counts and activity IDs
+    - Used for "By Page" and "By Module" selection modes in assignment creation
+    - Only includes supported activity types (excludes fillSentencesWithDots, fillpicture)
+
+    Access control:
+    - Admin: Can see all book structures
+    - Publisher: Must have access through BookAccess
+    - Teacher: Must have access through BookAssignment (Story 9.4)
+    """
+    # Verify access and get book based on role
+    if current_user.role == UserRole.teacher:
+        book = await _verify_teacher_book_access(session, current_user, book_id)
+    elif current_user.role == UserRole.publisher:
+        publisher_id = await _get_publisher_id_for_user(session, current_user)
+        book = await _verify_book_access(session, book_id, publisher_id)
+    else:
+        # Admin - verify book exists and is not archived
+        result = await session.execute(
+            select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
+        )
+        book = result.scalar_one_or_none()
+        if not book:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Book not found"
+            )
+
+    # Extract page image paths from config.json for thumbnails
+    page_image_paths = _extract_page_image_paths(book.config_json or {})
+
+    # Get all activities for this book (only supported activity types)
+    result = await session.execute(
+        select(Activity)
+        .where(
+            Activity.book_id == book_id,
+            Activity.activity_type.in_(SUPPORTED_ACTIVITY_TYPES)
+        )
+        .order_by(Activity.module_name, Activity.page_number, Activity.section_index)
+    )
+    activities = result.scalars().all()
+
+    # Build activity lookup by (module_name, page_number)
+    # Structure: {(module_name, page_number): [activity_ids]}
+    activities_by_page: dict[tuple[str, int], list[uuid.UUID]] = {}
+    for activity in activities:
+        key = (activity.module_name, activity.page_number)
+        if key not in activities_by_page:
+            activities_by_page[key] = []
+        activities_by_page[key].append(activity.id)
+
+    # Build module structure from activities
+    # Group activities by module
+    module_data: dict[str, dict] = {}
+    for activity in activities:
+        module_name = activity.module_name
+        if module_name not in module_data:
+            module_data[module_name] = {
+                "name": module_name,
+                "pages": {},
+                "activity_ids": [],
+                "page_numbers": []
+            }
+        module_data[module_name]["activity_ids"].append(activity.id)
+        if activity.page_number not in module_data[module_name]["pages"]:
+            module_data[module_name]["pages"][activity.page_number] = []
+            module_data[module_name]["page_numbers"].append(activity.page_number)
+        module_data[module_name]["pages"][activity.page_number].append(activity.id)
+
+    # Build response
+    modules: list[ModuleWithActivities] = []
+    total_pages = 0
+    total_activities = 0
+
+    for module_name, data in module_data.items():
+        page_numbers = sorted(data["page_numbers"])
+        pages: list[PageWithActivities] = []
+
+        for page_num in page_numbers:
+            activity_ids = data["pages"][page_num]
+            # Get thumbnail URL
+            asset_path = page_image_paths.get((module_name, page_num))
+            if not asset_path:
+                asset_path = page_image_paths.get(("", page_num))
+            if asset_path:
+                thumbnail_url = f"/api/v1/books/{book_id}/assets/{asset_path}"
+            else:
+                module_folder = _module_name_to_folder(module_name)
+                thumbnail_url = f"/api/v1/books/{book_id}/assets/images/HB/modules/{module_folder}/pages/{page_num:02d}.png"
+
+            pages.append(PageWithActivities(
+                page_number=page_num,
+                thumbnail_url=thumbnail_url,
+                activity_count=len(activity_ids),
+                activity_ids=activity_ids
+            ))
+            total_pages += 1
+            total_activities += len(activity_ids)
+
+        modules.append(ModuleWithActivities(
+            name=module_name,
+            page_start=min(page_numbers) if page_numbers else 0,
+            page_end=max(page_numbers) if page_numbers else 0,
+            activity_count=len(data["activity_ids"]),
+            activity_ids=data["activity_ids"],
+            pages=pages
+        ))
+
+    return BookStructureResponse(
+        book_id=book_id,
+        modules=modules,
+        total_pages=total_pages,
         total_activities=total_activities
     )

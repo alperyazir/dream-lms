@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { Eye, EyeOff, LogOut } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import type {
   ActivityConfig,
@@ -41,7 +42,8 @@ function getActivityHeaderText(
 
   // Check if config has headerText (MatchTheWords, PuzzleFindWords)
   if ("headerText" in config && config.headerText) {
-    return (config as MatchTheWordsActivity | PuzzleFindWordsActivity).headerText
+    return (config as MatchTheWordsActivity | PuzzleFindWordsActivity)
+      .headerText
   }
 
   // Use activity title if available
@@ -66,6 +68,26 @@ export interface MultiActivityPlayerProps {
   initialTimeSpent?: number // minutes already spent
   onExit: () => void
   onSubmitSuccess?: (response: MultiActivitySubmitResponse) => void
+  /** Story 9.7: Preview/test mode - skip backend saves, keep local state */
+  previewMode?: boolean
+  /** Story 9.7: Callback for preview mode completion */
+  onPreviewComplete?: (results: PreviewResults) => void
+}
+
+/**
+ * Story 9.7: Preview results returned on test mode completion
+ */
+export interface PreviewResults {
+  totalScore: number
+  activitiesCompleted: number
+  totalActivities: number
+  perActivityScores: Array<{
+    activityId: string
+    activityTitle: string | null
+    score: number | null
+    status: string
+  }>
+  timeSpentMinutes: number
 }
 
 /**
@@ -73,7 +95,13 @@ export interface MultiActivityPlayerProps {
  */
 function normalizeActivityType(
   type: string,
-): "dragdroppicture" | "dragdroppicturegroup" | "matchTheWords" | "circle" | "markwithx" | "puzzleFindWords" {
+):
+  | "dragdroppicture"
+  | "dragdroppicturegroup"
+  | "matchTheWords"
+  | "circle"
+  | "markwithx"
+  | "puzzleFindWords" {
   const typeMap: Record<string, string> = {
     dragdroppicture: "dragdroppicture",
     dragdroppicturegroup: "dragdroppicturegroup",
@@ -85,7 +113,9 @@ function normalizeActivityType(
     puzzlefindwords: "puzzleFindWords",
     puzzleFindWords: "puzzleFindWords",
   }
-  return (typeMap[type.toLowerCase()] || type) as ReturnType<typeof normalizeActivityType>
+  return (typeMap[type.toLowerCase()] || type) as ReturnType<
+    typeof normalizeActivityType
+  >
 }
 
 export function MultiActivityPlayer({
@@ -101,6 +131,8 @@ export function MultiActivityPlayer({
   initialTimeSpent = 0,
   onExit,
   onSubmitSuccess,
+  previewMode = false,
+  onPreviewComplete,
 }: MultiActivityPlayerProps) {
   const { toast } = useToast()
 
@@ -114,13 +146,18 @@ export function MultiActivityPlayer({
   })
 
   // Track per-activity state locally
-  const [activityStates, setActivityStates] = useState<Map<string, ActivityState>>(() => {
+  const [activityStates, setActivityStates] = useState<
+    Map<string, ActivityState>
+  >(() => {
     const states = new Map<string, ActivityState>()
     for (const activity of activities) {
-      const progress = activityProgress.find((p) => p.activity_id === activity.id)
+      const progress = activityProgress.find(
+        (p) => p.activity_id === activity.id,
+      )
       states.set(activity.id, {
         activityId: activity.id,
-        status: (progress?.status || "not_started") as AssignmentStudentActivityStatus,
+        status: (progress?.status ||
+          "not_started") as AssignmentStudentActivityStatus,
         isDirty: false,
         responseData: progress?.response_data || null,
         score: progress?.score ?? null,
@@ -137,11 +174,23 @@ export function MultiActivityPlayer({
   // Saving state
   const [isSaving, setIsSaving] = useState(false)
 
-  // Time tracking
-  const [startTime] = useState(Date.now())
+  // Story 9.7: Show answers toggle for preview mode
+  const [showAnswers, setShowAnswers] = useState(false)
+
+  // Time tracking - track elapsed seconds for accurate saving
+  const [elapsedSeconds, setElapsedSeconds] = useState(
+    Math.floor(initialTimeSpent * 60),
+  )
+
+  // Convert to minutes for API calls
   const getElapsedMinutes = useCallback(() => {
-    return initialTimeSpent + Math.floor((Date.now() - startTime) / 1000 / 60)
-  }, [initialTimeSpent, startTime])
+    return Math.floor(elapsedSeconds / 60)
+  }, [elapsedSeconds])
+
+  // Callback for timer to update elapsed time
+  const handleElapsedChange = useCallback((seconds: number) => {
+    setElapsedSeconds(seconds)
+  }, [])
 
   // Current activity data
   const currentActivity = activities[currentIndex]
@@ -159,6 +208,7 @@ export function MultiActivityPlayer({
   const allCompleted = completedCount === activities.length
 
   // Save current activity progress to backend
+  // Story 9.7: Skip backend save in preview mode - just update local state
   const saveCurrentActivityProgress = useCallback(
     async (forNavigation = false) => {
       if (!currentActivity || !currentState) return
@@ -166,12 +216,26 @@ export function MultiActivityPlayer({
       // Only save if there's something to save
       if (!currentState.isDirty && !forNavigation) return
 
+      // Story 9.7: In preview mode, just mark as not dirty without backend call
+      if (previewMode) {
+        setActivityStates((prev) => {
+          const newStates = new Map(prev)
+          const state = newStates.get(currentActivity.id)
+          if (state) {
+            newStates.set(currentActivity.id, { ...state, isDirty: false })
+          }
+          return newStates
+        })
+        return
+      }
+
       setIsSaving(true)
       try {
         await saveActivityProgress(assignmentId, currentActivity.id, {
           response_data: currentState.responseData || {},
           time_spent_seconds: currentState.timeSpentSeconds,
-          status: currentState.status === "completed" ? "completed" : "in_progress",
+          status:
+            currentState.status === "completed" ? "completed" : "in_progress",
           score: currentState.score,
           max_score: 100,
         })
@@ -198,7 +262,7 @@ export function MultiActivityPlayer({
         setIsSaving(false)
       }
     },
-    [assignmentId, currentActivity, currentState, toast],
+    [assignmentId, currentActivity, currentState, previewMode, toast],
   )
 
   // Navigate to a different activity
@@ -284,6 +348,7 @@ export function MultiActivityPlayer({
   }, [assignmentId, getElapsedMinutes, onSubmitSuccess, toast])
 
   // Confirm and submit assignment
+  // Story 9.7: In preview mode, calculate local results without backend call
   const handleConfirmSubmit = useCallback(async () => {
     setShowSubmitDialog(false)
     setIsSubmitting(true)
@@ -291,7 +356,9 @@ export function MultiActivityPlayer({
     // Debug: log all activity states before submit
     console.log("[Submit] Activity states before save:")
     activityStates.forEach((state, id) => {
-      console.log(`  Activity ${id}: status=${state.status}, score=${state.score}, isDirty=${state.isDirty}`)
+      console.log(
+        `  Activity ${id}: status=${state.status}, score=${state.score}, isDirty=${state.isDirty}`,
+      )
       console.log(`    responseData:`, state.responseData)
     })
 
@@ -299,6 +366,45 @@ export function MultiActivityPlayer({
       // Save current activity first (force save with true to ensure last activity is saved)
       console.log("[Submit] Saving current activity:", currentActivity?.id)
       await saveCurrentActivityProgress(true)
+
+      // Story 9.7: In preview mode, calculate local results
+      if (previewMode) {
+        // Calculate preview results from local state
+        const perActivityScores: PreviewResults["perActivityScores"] = []
+        let totalScore = 0
+        let scoredCount = 0
+
+        for (const activity of activities) {
+          const state = activityStates.get(activity.id)
+          perActivityScores.push({
+            activityId: activity.id,
+            activityTitle: activity.title,
+            score: state?.score ?? null,
+            status: state?.status || "not_started",
+          })
+          if (state?.score !== null && state?.score !== undefined) {
+            totalScore += state.score
+            scoredCount++
+          }
+        }
+
+        const previewResults: PreviewResults = {
+          totalScore: scoredCount > 0 ? totalScore / scoredCount : 0,
+          activitiesCompleted: completedCount,
+          totalActivities: activities.length,
+          perActivityScores,
+          timeSpentMinutes: getElapsedMinutes(),
+        }
+
+        toast({
+          title: "Test Complete!",
+          description: `Your score: ${Math.round(previewResults.totalScore)}% (not saved)`,
+        })
+
+        onPreviewComplete?.(previewResults)
+        setIsSubmitting(false)
+        return
+      }
 
       // Submit the assignment (force_submit=true if not all activities completed)
       const response = await submitMultiActivityAssignment(assignmentId, {
@@ -322,10 +428,26 @@ export function MultiActivityPlayer({
     } finally {
       setIsSubmitting(false)
     }
-  }, [activityStates, allCompleted, assignmentId, currentActivity, getElapsedMinutes, onSubmitSuccess, saveCurrentActivityProgress, toast])
+  }, [
+    activities,
+    activityStates,
+    allCompleted,
+    assignmentId,
+    completedCount,
+    currentActivity,
+    getElapsedMinutes,
+    onPreviewComplete,
+    onSubmitSuccess,
+    previewMode,
+    saveCurrentActivityProgress,
+    toast,
+  ])
 
   // Auto-save on interval (30 seconds)
+  // Story 9.7: Skip auto-save in preview mode
   useEffect(() => {
+    if (previewMode) return // No auto-save in preview mode
+
     const intervalId = setInterval(() => {
       if (currentState?.isDirty) {
         saveCurrentActivityProgress(false).catch(() => {
@@ -335,10 +457,13 @@ export function MultiActivityPlayer({
     }, 30000)
 
     return () => clearInterval(intervalId)
-  }, [currentState?.isDirty, saveCurrentActivityProgress])
+  }, [currentState?.isDirty, previewMode, saveCurrentActivityProgress])
 
   // Save on page unload
+  // Story 9.7: Skip save on unload in preview mode
   useEffect(() => {
+    if (previewMode) return // No save on unload in preview mode
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (currentState?.isDirty) {
         // Use sendBeacon for reliable save on unload
@@ -364,7 +489,7 @@ export function MultiActivityPlayer({
 
     window.addEventListener("beforeunload", handleBeforeUnload)
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
-  }, [assignmentId, currentActivity?.id, currentState])
+  }, [assignmentId, currentActivity?.id, currentState, previewMode])
 
   if (!currentActivity) {
     return (
@@ -385,14 +510,25 @@ export function MultiActivityPlayer({
     : ""
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Story 9.7: Preview mode banner */}
+      {previewMode && (
+        <div className="shrink-0 bg-amber-100 dark:bg-amber-900 border-b border-amber-200 dark:border-amber-800">
+          <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center">
+            <span className="font-medium text-amber-800 dark:text-amber-100">
+              Preview Mode - Your results will not be saved
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Compact header with stepper, timer, and question */}
       <header className="shrink-0 border-b bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="mx-auto max-w-7xl px-3 py-2">
           {/* Top row: stepper and timer */}
           <div className="flex items-center justify-between">
             {/* Activity stepper (mini-map) */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <ActivityNavigationBar
                 activities={activities}
                 currentIndex={currentIndex}
@@ -402,21 +538,20 @@ export function MultiActivityPlayer({
               />
             </div>
 
-            {/* Timer (if timed) */}
-            {timeLimit && (
-              <div className="ml-4">
-                <SharedAssignmentTimer
-                  totalTimeLimit={timeLimit}
-                  elapsedMinutes={getElapsedMinutes()}
-                  onTimeExpired={handleTimeExpired}
-                />
-              </div>
-            )}
+            {/* Timer - shows remaining time if timed, elapsed time otherwise */}
+            <div className="ml-4 shrink-0">
+              <SharedAssignmentTimer
+                totalTimeLimit={timeLimit}
+                elapsedMinutes={initialTimeSpent}
+                onTimeExpired={timeLimit ? handleTimeExpired : undefined}
+                onElapsedChange={!timeLimit ? handleElapsedChange : undefined}
+              />
+            </div>
           </div>
 
           {/* Question header for current activity */}
-          <div className="mt-2 text-center">
-            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">
+          <div className="mt-1 text-center">
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
               {currentActivityHeader}
             </h2>
           </div>
@@ -427,7 +562,7 @@ export function MultiActivityPlayer({
       <main className="min-h-0 flex-1 overflow-hidden">
         <div className="h-full">
           <ActivityPlayer
-            key={currentActivity.id} // Re-mount on activity change
+            key={`${currentActivity.id}-${showAnswers}`} // Re-mount on activity change or show answers toggle
             activityConfig={currentActivity.config_json as ActivityConfig}
             assignmentId={assignmentId}
             bookId={bookId}
@@ -442,59 +577,123 @@ export function MultiActivityPlayer({
             initialTimeSpent={0} // Time tracked at assignment level
             embedded={true} // Fully embedded - hide header and footer
             onActivityComplete={handleActivityComplete} // Story 8.3: Notify parent when activity completed with score
+            showCorrectAnswers={previewMode && showAnswers} // Story 9.7: Show correct answers in preview mode
           />
         </div>
       </main>
 
       {/* Compact footer with navigation and submit */}
-      <footer className="shrink-0 border-t bg-white px-4 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <footer className="shrink-0 border-t bg-white px-3 py-1.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          {/* Left side: Save & Exit */}
-          <button
-            type="button"
-            onClick={handleSaveAndExit}
-            disabled={isSaving || isSubmitting}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-          >
-            {isSaving ? "Saving..." : "Save & Exit"}
-          </button>
+          {/* Left side: Save & Exit (or Show Answers toggle in preview mode) */}
+          {previewMode ? (
+            <button
+              type="button"
+              onClick={() => setShowAnswers(!showAnswers)}
+              className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                showAnswers
+                  ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
+                  : "border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              }`}
+            >
+              {showAnswers ? (
+                <>
+                  <EyeOff className="h-3 w-3" />
+                  Hide Answers
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3 w-3" />
+                  Show Answers
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSaveAndExit}
+              disabled={isSaving || isSubmitting}
+              className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              {isSaving ? "Saving..." : "Save & Exit"}
+            </button>
+          )}
 
           {/* Center: Activity navigation - compact */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => handleNavigate(currentIndex - 1)}
               disabled={currentIndex === 0 || isSaving || isSubmitting}
-              className="flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              className="flex items-center gap-0.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="h-3 w-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
               Prev
             </button>
 
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {currentIndex + 1} / {activities.length}
+            </span>
+
             <button
               type="button"
               onClick={() => handleNavigate(currentIndex + 1)}
-              disabled={currentIndex === activities.length - 1 || isSaving || isSubmitting}
-              className="flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              disabled={
+                currentIndex === activities.length - 1 ||
+                isSaving ||
+                isSubmitting
+              }
+              className="flex items-center gap-0.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             >
               Next
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="h-3 w-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>
 
-          {/* Right side: Submit */}
-          <button
-            type="button"
-            onClick={handleSubmitClick}
-            disabled={isSubmitting}
-            className="rounded-lg bg-teal-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
-          >
-            {isSubmitting ? "Submitting..." : "Submit"}
-          </button>
+          {/* Right side: Submit (or Exit Preview in preview mode) */}
+          {previewMode ? (
+            <button
+              type="button"
+              onClick={onExit}
+              className="flex items-center gap-1.5 rounded-md bg-gray-600 px-3 py-1 text-xs font-semibold text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600"
+            >
+              <LogOut className="h-3 w-3" />
+              Exit Preview
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmitClick}
+              disabled={isSubmitting}
+              className="rounded-md bg-teal-600 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
+            >
+              {isSubmitting ? "Submitting..." : "Submit"}
+            </button>
+          )}
         </div>
       </footer>
 

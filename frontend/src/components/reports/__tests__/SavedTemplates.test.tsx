@@ -3,10 +3,13 @@
  * Story 5.6: Time-Based Reporting & Trend Analysis
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach } from "vitest"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type {
+  ReportGenerateRequest,
+  SavedReportTemplate,
+} from "@/types/reports"
 import { SavedTemplates } from "../SavedTemplates"
-import type { SavedReportTemplate, ReportGenerateRequest } from "@/types/reports"
 
 const mockTemplates: SavedReportTemplate[] = [
   {
@@ -57,7 +60,7 @@ describe("SavedTemplates", () => {
         onUseTemplate={mockOnUseTemplate}
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
-      />
+      />,
     )
 
     expect(screen.getByText("Saved Templates")).toBeInTheDocument()
@@ -71,12 +74,12 @@ describe("SavedTemplates", () => {
         onUseTemplate={mockOnUseTemplate}
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
-      />
+      />,
     )
 
     expect(screen.getByText("No saved templates")).toBeInTheDocument()
     expect(
-      screen.getByText("Configure a report and save it for quick reuse")
+      screen.getByText("Configure a report and save it for quick reuse"),
     ).toBeInTheDocument()
   })
 
@@ -88,7 +91,7 @@ describe("SavedTemplates", () => {
         onUseTemplate={mockOnUseTemplate}
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
-      />
+      />,
     )
 
     expect(screen.getByText("Weekly Class Report")).toBeInTheDocument()
@@ -104,7 +107,7 @@ describe("SavedTemplates", () => {
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
         currentConfig={mockCurrentConfig}
-      />
+      />,
     )
 
     expect(screen.getByText("Save Current")).toBeInTheDocument()
@@ -119,7 +122,7 @@ describe("SavedTemplates", () => {
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
         currentConfig={null}
-      />
+      />,
     )
 
     expect(screen.queryByText("Save Current")).not.toBeInTheDocument()
@@ -133,7 +136,7 @@ describe("SavedTemplates", () => {
         onUseTemplate={mockOnUseTemplate}
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
-      />
+      />,
     )
 
     // Find play buttons (first button in each template row)
@@ -151,7 +154,7 @@ describe("SavedTemplates", () => {
         onUseTemplate={mockOnUseTemplate}
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
-      />
+      />,
     )
 
     // Click delete button (second button in each template row)
@@ -159,9 +162,7 @@ describe("SavedTemplates", () => {
     fireEvent.click(buttons[1]) // First delete button
 
     expect(screen.getByText("Delete Template?")).toBeInTheDocument()
-    expect(
-      screen.getByText(/This will permanently delete/)
-    ).toBeInTheDocument()
+    expect(screen.getByText(/This will permanently delete/)).toBeInTheDocument()
   })
 
   it("calls onDeleteTemplate when delete is confirmed", () => {
@@ -172,7 +173,7 @@ describe("SavedTemplates", () => {
         onUseTemplate={mockOnUseTemplate}
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
-      />
+      />,
     )
 
     // Click delete button
@@ -195,7 +196,7 @@ describe("SavedTemplates", () => {
         onUseTemplate={mockOnUseTemplate}
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
-      />
+      />,
     )
 
     // Find delete buttons
@@ -212,7 +213,7 @@ describe("SavedTemplates", () => {
         onUseTemplate={mockOnUseTemplate}
         onSaveTemplate={mockOnSaveTemplate}
         onDeleteTemplate={mockOnDeleteTemplate}
-      />
+      />,
     )
 
     // Check that template metadata is displayed using actual label values

@@ -5,6 +5,7 @@
  * Displays performance breakdown by activity type with user-friendly labels
  */
 
+import { PieChart } from "lucide-react"
 import React from "react"
 import {
   Bar,
@@ -16,7 +17,6 @@ import {
   YAxis,
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PieChart } from "lucide-react"
 import type { ActivityTypeScore } from "@/types/analytics"
 
 export interface ActivityBreakdownProps {
@@ -64,14 +64,22 @@ export const ActivityBreakdown = React.memo(
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="w-full h-64" role="img" aria-label="Activity breakdown chart">
+          <div
+            className="w-full h-64"
+            role="img"
+            aria-label="Activity breakdown chart"
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={sortedData}
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
-                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
+                <XAxis
+                  type="number"
+                  domain={[0, 100]}
+                  tick={{ fontSize: 11 }}
+                />
                 <YAxis
                   type="category"
                   dataKey="label"
@@ -106,9 +114,7 @@ export const ActivityBreakdown = React.memo(
           <div className="mt-4 space-y-2">
             {sortedData.length > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Best activity:
-                </span>
+                <span className="text-muted-foreground">Best activity:</span>
                 <span className="font-medium text-green-500">
                   {sortedData[0].label} ({Math.round(sortedData[0].avg_score)}%)
                 </span>
@@ -116,9 +122,7 @@ export const ActivityBreakdown = React.memo(
             )}
             {sortedData.length > 1 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Needs practice:
-                </span>
+                <span className="text-muted-foreground">Needs practice:</span>
                 <span className="font-medium text-amber-500">
                   {sortedData[sortedData.length - 1].label} (
                   {Math.round(sortedData[sortedData.length - 1].avg_score)}%)

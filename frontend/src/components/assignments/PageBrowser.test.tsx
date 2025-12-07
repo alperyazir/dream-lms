@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen, waitFor } from "@testing-library/react"
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import type { BookPagesResponse, PageInfo } from "@/types/book"
-import { PageBrowser, getPageKey } from "./PageBrowser"
+import { getPageKey, PageBrowser } from "./PageBrowser"
 
 // Mock IntersectionObserver for Node.js test environment
 class MockIntersectionObserver {
@@ -33,14 +33,15 @@ class MockIntersectionObserver {
             time: Date.now(),
           },
         ],
-        this
+        this,
       )
     }, 0)
   }
 }
 
 beforeAll(() => {
-  window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver
+  window.IntersectionObserver =
+    MockIntersectionObserver as unknown as typeof IntersectionObserver
 })
 
 // Mock the booksApi
@@ -65,9 +66,7 @@ const mockBookPagesResponse: BookPagesResponse = {
     },
     {
       name: "Module 2",
-      pages: [
-        { page_number: 5, activity_count: 1, thumbnail_url: "/thumb/5" },
-      ],
+      pages: [{ page_number: 5, activity_count: 1, thumbnail_url: "/thumb/5" }],
     },
   ],
   total_pages: 3,
@@ -89,7 +88,7 @@ function createTestQueryClient() {
 function renderWithClient(ui: React.ReactElement) {
   const queryClient = createTestQueryClient()
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
   )
 }
 
@@ -107,7 +106,7 @@ describe("PageBrowser", () => {
 
   it("shows loading skeletons while fetching", () => {
     vi.mocked(booksApi.getBookPages).mockImplementation(
-      () => new Promise(() => {}) // Never resolves
+      () => new Promise(() => {}), // Never resolves
     )
 
     const { container } = renderWithClient(<PageBrowser {...defaultProps} />)
@@ -159,7 +158,7 @@ describe("PageBrowser", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/no pages with activities found/i)
+        screen.getByText(/no pages with activities found/i),
       ).toBeInTheDocument()
     })
   })

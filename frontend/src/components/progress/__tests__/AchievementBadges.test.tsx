@@ -5,8 +5,8 @@
 
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { AchievementBadges } from "../AchievementBadges"
 import type { Achievement } from "@/types/analytics"
+import { AchievementBadges } from "../AchievementBadges"
 
 const mockAchievements: Achievement[] = [
   {

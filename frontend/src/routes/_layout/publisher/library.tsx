@@ -1,12 +1,16 @@
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, Plus, RefreshCw, Search } from "lucide-react"
+import { BookOpen, RefreshCw, Search } from "lucide-react"
 import { useEffect, useState } from "react"
-import { BookCard } from "@/components/books/BookCard"
+import { OpenAPI } from "@/client"
+import { BookDetailsDialog } from "@/components/books/BookDetailsDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import useCustomToast from "@/hooks/useCustomToast"
-import { booksApi } from "@/services/booksApi"
+import { booksApi, getAuthenticatedCoverUrl } from "@/services/booksApi"
+import { getMyProfile } from "@/services/publishersApi"
 import type { Book } from "@/types/book"
 
 export const Route = createFileRoute("/_layout/publisher/library")({
@@ -36,36 +40,157 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue
 }
 
-function PublisherLibraryPage() {
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [books, setBooks] = useState<Book[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
+/**
+ * Publisher Book Card - Story 9.4
+ * Custom book card for publishers with Details button
+ */
+interface PublisherBookCardProps {
+  book: Book
+  onDetailsClick: () => void
+}
 
-  // Debounce search term
-  const debouncedSearch = useDebounce(searchTerm, 300)
+function PublisherBookCard({ book, onDetailsClick }: PublisherBookCardProps) {
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [isLoadingCover, setIsLoadingCover] = useState(true)
+  const [imageError, setImageError] = useState(false)
 
+  // Fetch authenticated cover URL
   useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        setLoading(true)
-        const response = await booksApi.getBooks({ limit: 100 })
-        setBooks(response.items)
-      } catch (error) {
-        console.error("Failed to fetch books:", error)
-        showErrorToast("Failed to load books")
-      } finally {
-        setLoading(false)
+    let isMounted = true
+    let blobUrl: string | null = null
+
+    setImageError(false)
+
+    async function fetchCover() {
+      if (!book.cover_image_url) {
+        setIsLoadingCover(false)
+        return
+      }
+
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      if (isMounted) {
+        blobUrl = url
+        setCoverUrl(url)
+        setIsLoadingCover(false)
       }
     }
 
-    fetchBooks()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    fetchCover()
 
-  const handleAddBook = () => {
-    showSuccessToast("Add Book feature coming soon!")
+    return () => {
+      isMounted = false
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl)
+      }
+    }
+  }, [book.cover_image_url])
+
+  return (
+    <Card className="h-full flex flex-col shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+      <CardContent className="p-4 flex-1">
+        {/* Cover Image - 3:4 aspect ratio */}
+        <div className="relative w-full aspect-[3/4] bg-muted rounded-md overflow-hidden mb-4">
+          {isLoadingCover ? (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+              <BookOpen className="w-16 h-16 text-gray-400 animate-pulse" />
+            </div>
+          ) : coverUrl && !imageError ? (
+            <img
+              src={coverUrl}
+              alt={`${book.title} cover`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-teal-100 to-teal-200">
+              <BookOpen className="w-16 h-16 text-teal-600" />
+            </div>
+          )}
+        </div>
+
+        {/* Title - truncate at 2 lines */}
+        <h3 className="text-lg font-semibold mb-2 line-clamp-2 min-h-[3.5rem]">
+          {book.title}
+        </h3>
+
+        {/* Publisher Badge */}
+        <div className="mb-2">
+          <Badge variant="secondary" className="bg-teal-100 text-teal-800">
+            {book.publisher_name}
+          </Badge>
+        </div>
+
+        {/* Description - truncate at 3 lines */}
+        {book.description && (
+          <p className="text-sm text-muted-foreground line-clamp-3 mb-3 min-h-[4.5rem]">
+            {book.description}
+          </p>
+        )}
+
+        {/* Activity Count Badge */}
+        <Badge variant="outline" className="mb-2">
+          {book.activity_count}{" "}
+          {book.activity_count === 1 ? "activity" : "activities"}
+        </Badge>
+      </CardContent>
+      <CardFooter className="p-4 pt-0">
+        <Button
+          className="w-full bg-teal-600 hover:bg-teal-700"
+          onClick={onDetailsClick}
+        >
+          Details
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
+function PublisherLibraryPage() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null)
+
+  // Handle opening the details dialog
+  const handleDetailsClick = (book: Book) => {
+    setSelectedBook(book)
+    setDetailsDialogOpen(true)
   }
+
+  // Handle closing the details dialog
+  const handleDetailsDialogClose = () => {
+    setDetailsDialogOpen(false)
+    setSelectedBook(null)
+  }
+
+  // Fetch publisher profile for logo display
+  const { data: profile } = useQuery({
+    queryKey: ["publisherProfile"],
+    queryFn: () => getMyProfile(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  })
+
+  // Fetch books using useQuery
+  const { data: booksData, isLoading: loading } = useQuery({
+    queryKey: ["publisherBooks"],
+    queryFn: () => booksApi.getBooks({ limit: 100 }),
+    staleTime: 30000, // Cache for 30 seconds
+  })
+
+  const books = booksData?.items ?? []
+
+  // Get publisher initials for fallback
+  const getPublisherInitials = (name: string): string => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  // Debounce search term
+  const debouncedSearch = useDebounce(searchTerm, 300)
 
   // Filter books based on search
   const filteredBooks = books.filter((book) => {
@@ -80,21 +205,30 @@ function PublisherLibraryPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      {/* Header with Logo */}
+      <div className="mb-8 flex items-center gap-6">
+        {/* Publisher Logo */}
+        {profile && (
+          <div className="flex-shrink-0">
+            {profile.logo_url ? (
+              <img
+                src={`${OpenAPI.BASE}${profile.logo_url}`}
+                alt={`${profile.name} logo`}
+                className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-lg"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                {getPublisherInitials(profile.name)}
+              </div>
+            )}
+          </div>
+        )}
         <div>
           <h1 className="text-3xl font-bold mb-2">My Library</h1>
           <p className="text-muted-foreground">
-            Manage your published books and learning materials
+            View your published books and learning materials
           </p>
         </div>
-        <Button
-          onClick={handleAddBook}
-          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Book
-        </Button>
       </div>
 
       {/* Search Bar */}
@@ -142,9 +276,22 @@ function PublisherLibraryPage() {
         /* Books Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredBooks.map((book) => (
-            <BookCard key={book.id} book={book} />
+            <PublisherBookCard
+              key={book.id}
+              book={book}
+              onDetailsClick={() => handleDetailsClick(book)}
+            />
           ))}
         </div>
+      )}
+
+      {/* Book Details Dialog - Story 9.4 */}
+      {selectedBook && (
+        <BookDetailsDialog
+          isOpen={detailsDialogOpen}
+          onClose={handleDetailsDialogClose}
+          book={selectedBook}
+        />
       )}
     </div>
   )

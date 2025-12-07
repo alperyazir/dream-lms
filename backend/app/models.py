@@ -18,6 +18,7 @@ if TYPE_CHECKING:
         AssignmentStudentActivity,
         Book,
         BookAccess,
+        BookAssignment,
         Class,
         ClassStudent,
         DirectMessage,
@@ -38,9 +39,15 @@ class UserRole(str, Enum):
     student = "student"
 
 
+class AvatarType(str, Enum):
+    """Avatar type enumeration"""
+    custom = "custom"  # User uploaded custom image
+    predefined = "predefined"  # User selected from predefined avatars
+
+
 def validate_username_format(username: str | None) -> str | None:
     """
-    Validate username contains only alphanumeric characters, underscores, and hyphens.
+    Validate username contains only alphanumeric characters, underscores, hyphens, and dots.
 
     Args:
         username: The username to validate (can be None for optional fields)
@@ -53,14 +60,14 @@ def validate_username_format(username: str | None) -> str | None:
     """
     if username is None:
         return username
-    if not re.match(r'^[a-zA-Z0-9_-]+$', username):
-        raise ValueError('Username must contain only letters, numbers, underscores, and hyphens')
+    if not re.match(r'^[a-zA-Z0-9_.\-]+$', username):
+        raise ValueError('Username must contain only letters, numbers, underscores, hyphens, and dots')
     return username
 
 
 # Shared properties
 class UserBase(SQLModel):
-    email: EmailStr = Field(unique=True, index=True, max_length=255)
+    email: EmailStr | None = Field(default=None, unique=True, index=True, max_length=255)
     username: str = Field(
         unique=True,
         index=True,
@@ -120,6 +127,10 @@ class User(UserBase, table=True):
     hashed_password: str
     initial_password: str | None = Field(default=None, max_length=255)  # Stored for admin reference
 
+    # Avatar fields
+    avatar_url: str | None = Field(default=None, max_length=500)  # URL to avatar image
+    avatar_type: AvatarType | None = Field(default=None, sa_column=Column(SAEnum(AvatarType)))  # Type of avatar
+
     # Relationships to role-specific tables (one-to-one, optional)
     publisher: Optional["Publisher"] = Relationship(back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     teacher: Optional["Teacher"] = Relationship(back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
@@ -130,6 +141,8 @@ class User(UserBase, table=True):
 class UserPublic(UserBase):
     id: uuid.UUID
     initial_password: str | None = None  # Only visible to admins
+    avatar_url: str | None = None
+    avatar_type: AvatarType | None = None
 
 
 class UsersPublic(SQLModel):
@@ -169,6 +182,7 @@ class PublisherBase(SQLModel):
     """Shared Publisher properties"""
     name: str = Field(max_length=255)
     contact_email: str | None = Field(default=None, max_length=255)
+    logo_url: str | None = Field(default=None, max_length=500, description="URL to publisher logo image")
     benchmarking_enabled: bool = Field(default=True, description="Enable performance benchmarking for publisher's content")
 
 
@@ -182,6 +196,7 @@ class PublisherUpdate(SQLModel):
     name: str | None = Field(default=None, max_length=255)
     contact_email: str | None = Field(default=None, max_length=255)
     user_email: str | None = Field(default=None, max_length=255)
+    user_username: str | None = Field(default=None, min_length=3, max_length=50)
     user_full_name: str | None = Field(default=None, max_length=255)
     benchmarking_enabled: bool | None = Field(default=None)
 
@@ -292,6 +307,7 @@ class TeacherUpdate(SQLModel):
     school_id: uuid.UUID | None = Field(default=None)
     subject_specialization: str | None = Field(default=None, max_length=255)
     user_email: str | None = Field(default=None, max_length=255)
+    user_username: str | None = Field(default=None, min_length=3, max_length=50)
     user_full_name: str | None = Field(default=None, max_length=255)
 
 
@@ -362,11 +378,13 @@ class Student(StudentBase, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", unique=True, index=True, ondelete="CASCADE")
+    created_by_teacher_id: uuid.UUID | None = Field(default=None, foreign_key="teachers.id", index=True, ondelete="SET NULL")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
     user: User = Relationship(back_populates="student", sa_relationship_kwargs={"passive_deletes": True})
+    created_by_teacher: Optional["Teacher"] = Relationship(sa_relationship_kwargs={"passive_deletes": True, "foreign_keys": "[Student.created_by_teacher_id]"})
     class_enrollments: list["ClassStudent"] = Relationship(back_populates="student", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     assignment_submissions: list["AssignmentStudent"] = Relationship(back_populates="student", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
@@ -375,10 +393,12 @@ class StudentPublic(StudentBase):
     """Properties to return via API"""
     id: uuid.UUID
     user_id: uuid.UUID
-    user_email: str
+    user_email: str | None = None
     user_username: str
     user_full_name: str
     user_initial_password: str | None = None
+    created_by_teacher_id: uuid.UUID | None = None
+    created_by_teacher_name: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -386,7 +406,7 @@ class StudentPublic(StudentBase):
 class StudentCreateAPI(SQLModel):
     """Properties for API endpoint student creation (includes user creation)"""
     username: str = Field(min_length=3, max_length=50)
-    user_email: EmailStr = Field(max_length=255)
+    user_email: EmailStr | None = Field(default=None, max_length=255)
     full_name: str = Field(max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
     parent_email: EmailStr | None = Field(default=None, max_length=255)
@@ -398,6 +418,14 @@ class UserCreationResponse(SQLModel):
     user: UserPublic
     initial_password: str
     role_record: PublisherPublic | TeacherPublic | StudentPublic
+
+
+class PasswordResetResponse(SQLModel):
+    """Response schema for password reset endpoint"""
+    user_id: uuid.UUID
+    email: str
+    new_password: str
+    message: str = "Password reset successfully"
 
 
 # Dashboard statistics
@@ -616,6 +644,96 @@ class BookAccess(SQLModel, table=True):
     publisher: Publisher = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
+# --- BookAssignment Model (Story 9.4) ---
+
+class BookAssignmentBase(SQLModel):
+    """Shared BookAssignment properties"""
+    pass
+
+
+class BookAssignmentCreate(SQLModel):
+    """Properties to receive via API on BookAssignment creation"""
+    book_id: uuid.UUID
+    school_id: uuid.UUID | None = None
+    teacher_id: uuid.UUID | None = None
+
+    @model_validator(mode='after')
+    def validate_target(self) -> 'BookAssignmentCreate':
+        """Validate that at least one of school_id or teacher_id is set"""
+        if self.school_id is None and self.teacher_id is None:
+            raise ValueError("At least one of school_id or teacher_id must be provided")
+        return self
+
+
+class BulkBookAssignmentCreate(SQLModel):
+    """Properties for bulk book assignment creation"""
+    book_id: uuid.UUID
+    school_id: uuid.UUID
+    teacher_ids: list[uuid.UUID] | None = None  # If None/empty, assigns to entire school
+    assign_to_all_teachers: bool = False  # If True, assigns to school level (all teachers)
+
+
+class BookAssignment(SQLModel, table=True):
+    """Book assignment model - controls which schools/teachers have access to books"""
+    __tablename__ = "book_assignments"
+    __table_args__ = (
+        # Prevent duplicate assignments
+        UniqueConstraint("book_id", "school_id", "teacher_id", name="uq_book_assignment"),
+        # Ensure at least one of school_id or teacher_id is set
+        CheckConstraint(
+            "school_id IS NOT NULL OR teacher_id IS NOT NULL",
+            name="ck_book_assignment_target"
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    book_id: uuid.UUID = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
+    school_id: uuid.UUID | None = Field(default=None, foreign_key="schools.id", index=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID | None = Field(default=None, foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    assigned_by: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
+    assigned_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    book: Book = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+    school: Optional["School"] = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+    teacher: Optional["Teacher"] = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+    assigner: User = Relationship(sa_relationship_kwargs={"passive_deletes": True, "foreign_keys": "[BookAssignment.assigned_by]"})
+
+
+class BookAssignmentPublic(SQLModel):
+    """Properties to return via API"""
+    id: uuid.UUID
+    book_id: uuid.UUID
+    school_id: uuid.UUID | None
+    teacher_id: uuid.UUID | None
+    assigned_by: uuid.UUID
+    assigned_at: datetime
+
+
+class BookAssignmentResponse(SQLModel):
+    """Full book assignment response with related entity info"""
+    id: uuid.UUID
+    book_id: uuid.UUID
+    book_title: str
+    book_cover_url: str | None = None
+    school_id: uuid.UUID | None
+    school_name: str | None = None
+    teacher_id: uuid.UUID | None
+    teacher_name: str | None = None
+    teacher_email: str | None = None
+    assigned_by: uuid.UUID
+    assigned_by_name: str | None = None
+    assigned_at: datetime
+
+
+class BookAssignmentListResponse(SQLModel):
+    """Paginated list of book assignments"""
+    items: list[BookAssignmentResponse]
+    total: int
+    skip: int
+    limit: int
+
+
 # --- Activity Models ---
 
 class ActivityType(str, Enum):
@@ -714,12 +832,23 @@ class BookListResponse(SQLModel):
 
 # --- Assignment Models ---
 
+
+class AssignmentPublishStatus(str, Enum):
+    """Assignment publishing status"""
+    draft = "draft"
+    scheduled = "scheduled"
+    published = "published"
+    archived = "archived"
+
+
 class AssignmentBase(SQLModel):
     """Shared Assignment properties"""
     name: str = Field(max_length=500)
     instructions: str | None = Field(default=None)
     due_date: datetime | None = Field(default=None)
     time_limit_minutes: int | None = Field(default=None, gt=0)
+    scheduled_publish_date: datetime | None = Field(default=None)
+    status: AssignmentPublishStatus = Field(default=AssignmentPublishStatus.published)
 
 
 class AssignmentCreate(AssignmentBase):
@@ -1256,6 +1385,7 @@ class NotificationType(str, Enum):
     past_due = "past_due"
     material_shared = "material_shared"
     system_announcement = "system_announcement"
+    password_reset = "password_reset"
 
 
 class Notification(SQLModel, table=True):

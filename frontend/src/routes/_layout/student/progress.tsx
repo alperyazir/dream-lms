@@ -7,17 +7,17 @@
 
 import { createFileRoute } from "@tanstack/react-router"
 import { BarChart3 } from "lucide-react"
+import { useState } from "react"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import {
-  ProgressStatsCard,
-  ProgressScoreChart,
-  ActivityBreakdown,
-  RecentAssignments,
   AchievementBadges,
-  StudyTimeCard,
+  ActivityBreakdown,
   ImprovementTips,
+  ProgressScoreChart,
+  ProgressStatsCard,
+  RecentAssignments,
+  StudyTimeCard,
 } from "@/components/progress"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -25,9 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useStudentProgress } from "@/hooks/useStudentProgress"
 import type { StudentProgressPeriod } from "@/types/analytics"
-import { useState } from "react"
 
 export const Route = createFileRoute("/_layout/student/progress")({
   component: () => (

@@ -7,7 +7,10 @@
 
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
-import type { ActivityProgressInfo, ActivityWithConfig } from "@/types/assignment"
+import type {
+  ActivityProgressInfo,
+  ActivityWithConfig,
+} from "@/types/assignment"
 
 // Mock the child components
 vi.mock("./ActivityPlayer", () => ({
@@ -224,12 +227,13 @@ describe("MultiActivityPlayer", () => {
   })
 
   it("enables Submit button when all activities are completed", () => {
-    const allCompletedProgress: ActivityProgressInfo[] = mockActivityProgress.map((p) => ({
-      ...p,
-      status: "completed" as const,
-      score: 85,
-      completed_at: "2024-01-01T10:10:00Z",
-    }))
+    const allCompletedProgress: ActivityProgressInfo[] =
+      mockActivityProgress.map((p) => ({
+        ...p,
+        status: "completed" as const,
+        score: 85,
+        completed_at: "2024-01-01T10:10:00Z",
+      }))
 
     render(
       <MultiActivityPlayer

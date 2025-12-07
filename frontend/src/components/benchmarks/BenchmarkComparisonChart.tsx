@@ -5,20 +5,20 @@
  * Displays comparison chart showing class performance vs. benchmarks over time
  */
 
-import React, { useState } from "react"
 import { TrendingUp } from "lucide-react"
+import React, { useState } from "react"
 import {
-  LineChart,
+  CartesianGrid,
+  Legend,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
 } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { BenchmarkTrendPoint } from "@/types/benchmarks"
 
 export interface BenchmarkComparisonChartProps {

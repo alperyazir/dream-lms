@@ -5,7 +5,6 @@
  * Displays per-activity analytics with expandable rows for per-student details.
  */
 
-import { useState } from "react"
 import {
   ChevronDown,
   ChevronRight,
@@ -13,6 +12,7 @@ import {
   Loader2,
   Users,
 } from "lucide-react"
+import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -50,7 +50,10 @@ function formatActivityType(type: string): string {
     coloring: "Coloring",
     drawing: "Drawing",
   }
-  return typeMap[type] || type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  return (
+    typeMap[type] ||
+    type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  )
 }
 
 /**
@@ -67,7 +70,9 @@ function formatScore(score: number | null, maxScore?: number): string {
 /**
  * Get status badge variant
  */
-function getStatusBadgeVariant(status: string): "default" | "secondary" | "outline" {
+function getStatusBadgeVariant(
+  status: string,
+): "default" | "secondary" | "outline" {
   switch (status) {
     case "completed":
       return "default"
@@ -104,7 +109,10 @@ function StudentScoresRow({
   if (!students || students.length === 0) {
     return (
       <TableRow className="bg-muted/30">
-        <TableCell colSpan={6} className="py-4 text-center text-muted-foreground">
+        <TableCell
+          colSpan={6}
+          className="py-4 text-center text-muted-foreground"
+        >
           No student submissions yet
         </TableCell>
       </TableRow>
@@ -125,7 +133,10 @@ function StudentScoresRow({
         </TableCell>
       </TableRow>
       {students.map((student) => (
-        <TableRow key={student.student_id} className="bg-muted/30 hover:bg-muted/40">
+        <TableRow
+          key={student.student_id}
+          className="bg-muted/30 hover:bg-muted/40"
+        >
           <TableCell />
           <TableCell colSpan={5}>
             <div className="grid grid-cols-4 gap-4 text-sm py-1">
@@ -144,7 +155,8 @@ function StudentScoresRow({
                 )}
               </span>
               <span className="text-muted-foreground">
-                {Math.floor(student.time_spent_seconds / 60)}m {student.time_spent_seconds % 60}s
+                {Math.floor(student.time_spent_seconds / 60)}m{" "}
+                {student.time_spent_seconds % 60}s
               </span>
             </div>
           </TableCell>
@@ -188,12 +200,15 @@ function ActivityRow({
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-muted-foreground" />
             <span className="font-medium">
-              {activity.activity_title || `Activity on Page ${activity.page_number}`}
+              {activity.activity_title ||
+                `Activity on Page ${activity.page_number}`}
             </span>
           </div>
         </TableCell>
         <TableCell>
-          <Badge variant="outline">{formatActivityType(activity.activity_type)}</Badge>
+          <Badge variant="outline">
+            {formatActivityType(activity.activity_type)}
+          </Badge>
         </TableCell>
         <TableCell className="text-center">{activity.page_number}</TableCell>
         <TableCell>
@@ -214,7 +229,10 @@ function ActivityRow({
         </TableCell>
       </TableRow>
       {isExpanded && (
-        <StudentScoresRow students={expandedStudents} isLoading={isLoadingStudents} />
+        <StudentScoresRow
+          students={expandedStudents}
+          isLoading={isLoadingStudents}
+        />
       )}
     </>
   )
@@ -240,17 +258,24 @@ function TableSkeleton() {
 export function MultiActivityAnalyticsTable({
   assignmentId,
 }: MultiActivityAnalyticsTableProps) {
-  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null)
+  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(
+    null,
+  )
 
   // Fetch base analytics
-  const { data: analytics, isLoading, error } = useAssignmentAnalytics(assignmentId)
+  const {
+    data: analytics,
+    isLoading,
+    error,
+  } = useAssignmentAnalytics(assignmentId)
 
   // Fetch expanded student data when an activity is expanded
-  const { data: expandedData, isLoading: isLoadingExpanded } = useAssignmentAnalytics(
-    assignmentId,
-    expandedActivityId || undefined,
-    Boolean(expandedActivityId),
-  )
+  const { data: expandedData, isLoading: isLoadingExpanded } =
+    useAssignmentAnalytics(
+      assignmentId,
+      expandedActivityId || undefined,
+      Boolean(expandedActivityId),
+    )
 
   const handleToggleExpand = (activityId: string) => {
     setExpandedActivityId((prev) => (prev === activityId ? null : activityId))
@@ -285,7 +310,8 @@ export function MultiActivityAnalyticsTable({
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
             <span>
-              {analytics.submitted_count} of {analytics.total_students} students submitted
+              {analytics.submitted_count} of {analytics.total_students} students
+              submitted
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

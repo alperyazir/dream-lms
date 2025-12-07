@@ -4,9 +4,9 @@
  */
 
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it, vi, beforeAll } from "vitest"
-import { ProgressScoreChart } from "../ProgressScoreChart"
+import { beforeAll, describe, expect, it } from "vitest"
 import type { ScoreTrendPoint } from "@/types/analytics"
+import { ProgressScoreChart } from "../ProgressScoreChart"
 
 // Mock ResizeObserver for Recharts
 beforeAll(() => {

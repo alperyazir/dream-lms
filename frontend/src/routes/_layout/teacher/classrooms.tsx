@@ -396,11 +396,7 @@ function TeacherClassroomsPage() {
                     params={{ classId: classItem.id }}
                     className="flex-1"
                   >
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                    >
+                    <Button size="sm" variant="outline" className="w-full">
                       <BarChart3 className="w-3 h-3 mr-1" />
                       View
                     </Button>

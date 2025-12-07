@@ -6,13 +6,13 @@
  */
 
 import { Link, useNavigate } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Separator } from "@/components/ui/separator"
 import { Bell, CheckCheck } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useNotificationPanel } from "@/hooks/useNotifications"
-import { NotificationItem } from "./NotificationItem"
 import type { Notification } from "@/types/notification"
+import { NotificationItem } from "./NotificationItem"
 
 export interface NotificationDropdownProps {
   onClose?: () => void

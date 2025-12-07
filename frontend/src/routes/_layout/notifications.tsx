@@ -5,11 +5,12 @@
  * Full page view of all notifications with filtering capabilities.
  */
 
-import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
-import { CheckCheck, Filter, Bell } from "lucide-react"
+import { Bell, CheckCheck, Filter } from "lucide-react"
+import { useState } from "react"
+import { NotificationItem } from "@/components/notifications"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -18,9 +19,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent } from "@/components/ui/card"
-import { NotificationItem } from "@/components/notifications"
-import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from "@/hooks/useNotifications"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  useMarkAllAsRead,
+  useMarkAsRead,
+  useNotifications,
+  useUnreadCount,
+} from "@/hooks/useNotifications"
 import type { Notification, NotificationType } from "@/types/notification"
 
 export const Route = createFileRoute("/_layout/notifications")({
@@ -30,7 +35,10 @@ export const Route = createFileRoute("/_layout/notifications")({
 /**
  * Notification type options for filtering
  */
-const NOTIFICATION_TYPE_OPTIONS: { value: NotificationType | "all"; label: string }[] = [
+const NOTIFICATION_TYPE_OPTIONS: {
+  value: NotificationType | "all"
+  label: string
+}[] = [
   { value: "all", label: "All Types" },
   { value: "assignment_created", label: "New Assignments" },
   { value: "deadline_approaching", label: "Deadlines" },
@@ -97,10 +105,8 @@ function NotificationsPage() {
     offset: page * pageSize,
   }
 
-  const { notifications, total, hasMore, isLoading, isFetching } = useNotifications(
-    queryParams,
-    { refetchInterval: false }
-  )
+  const { notifications, total, hasMore, isLoading, isFetching } =
+    useNotifications(queryParams, { refetchInterval: false })
   const { count: unreadCount } = useUnreadCount({ refetchInterval: false })
   const { markAsRead } = useMarkAsRead()
   const { markAllAsRead, isMarking: isMarkingAllRead } = useMarkAllAsRead()

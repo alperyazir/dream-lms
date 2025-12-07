@@ -23,7 +23,11 @@ export const analyticsQueryKeys = {
   assignment: (assignmentId: string) =>
     [...analyticsQueryKeys.all, "assignment", assignmentId] as const,
   assignmentExpanded: (assignmentId: string, activityId: string) =>
-    [...analyticsQueryKeys.assignment(assignmentId), "expanded", activityId] as const,
+    [
+      ...analyticsQueryKeys.assignment(assignmentId),
+      "expanded",
+      activityId,
+    ] as const,
   studentResult: (assignmentId: string) =>
     [...analyticsQueryKeys.all, "studentResult", assignmentId] as const,
 }

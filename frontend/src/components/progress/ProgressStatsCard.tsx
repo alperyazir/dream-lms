@@ -5,17 +5,17 @@
  * Displays summary statistics for student progress
  */
 
-import React from "react"
 import {
-  Target,
-  Flame,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   CheckCircle2,
+  Flame,
+  Minus,
+  Target,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react"
+import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { StudentProgressStats, ImprovementTrend } from "@/types/analytics"
+import type { ImprovementTrend, StudentProgressStats } from "@/types/analytics"
 
 export interface ProgressStatsCardProps {
   stats: StudentProgressStats
@@ -37,7 +37,6 @@ const getTrendInfo = (trend: ImprovementTrend) => {
         bgColor: "bg-red-50 dark:bg-red-900/20",
         label: "Needs Attention",
       }
-    case "stable":
     default:
       return {
         icon: Minus,
@@ -99,9 +98,7 @@ export const ProgressStatsCard = React.memo(
             </div>
 
             {/* Improvement Trend */}
-            <div
-              className={`text-center p-4 rounded-lg ${trendInfo.bgColor}`}
-            >
+            <div className={`text-center p-4 rounded-lg ${trendInfo.bgColor}`}>
               <div className="flex justify-center mb-2">
                 <TrendIcon className={`w-6 h-6 ${trendInfo.color}`} />
               </div>

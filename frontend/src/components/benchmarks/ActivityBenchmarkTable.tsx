@@ -5,8 +5,8 @@
  * Displays table comparing class performance vs benchmarks by activity type
  */
 
+import { ArrowDownRight, ArrowUpRight, Layers, Minus } from "lucide-react"
 import React, { useMemo } from "react"
-import { ArrowUpRight, ArrowDownRight, Minus, Layers } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -35,7 +35,8 @@ function getDifferenceColors(difference: number): {
       textColor: "text-green-600 dark:text-green-400",
       bgColor: "bg-green-50 dark:bg-green-900/20",
     }
-  } else if (difference < -5) {
+  }
+  if (difference < -5) {
     return {
       textColor: "text-red-600 dark:text-red-400",
       bgColor: "bg-red-50 dark:bg-red-900/20",
@@ -53,7 +54,8 @@ function getDifferenceColors(difference: number): {
 function DifferenceIcon({ difference }: { difference: number }) {
   if (difference > 5) {
     return <ArrowUpRight className="w-4 h-4" />
-  } else if (difference < -5) {
+  }
+  if (difference < -5) {
     return <ArrowDownRight className="w-4 h-4" />
   }
   return <Minus className="w-4 h-4" />

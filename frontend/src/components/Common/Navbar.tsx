@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router"
 import { FiMail } from "react-icons/fi"
+import { NotificationBell } from "@/components/notifications"
 import { Button } from "@/components/ui/button"
 import { ColorModeButton } from "@/components/ui/color-mode"
-import { NotificationBell } from "@/components/notifications"
 import { useMessagesUnreadCount } from "@/hooks/useMessages"
 import Logo from "/assets/images/dreamedtech_single.svg"
 

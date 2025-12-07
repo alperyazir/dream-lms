@@ -5,10 +5,10 @@
  * Displays when benchmarking is disabled at school/publisher level
  */
 
+import { Info, ShieldOff } from "lucide-react"
 import React from "react"
-import { ShieldOff, Info } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Card, CardContent } from "@/components/ui/card"
 
 export interface BenchmarkDisabledMessageProps {
   message?: string | null
@@ -19,10 +19,7 @@ const DEFAULT_MESSAGE =
   "Benchmarking has been disabled for your school. Contact your administrator for more information."
 
 export const BenchmarkDisabledMessage = React.memo(
-  ({
-    message,
-    variant = "card",
-  }: BenchmarkDisabledMessageProps) => {
+  ({ message, variant = "card" }: BenchmarkDisabledMessageProps) => {
     const displayMessage = message ?? DEFAULT_MESSAGE
 
     if (variant === "alert") {
@@ -57,7 +54,9 @@ export const BenchmarkDisabledMessage = React.memo(
             </h3>
 
             {/* Description */}
-            <p className="text-sm text-muted-foreground max-w-md">{displayMessage}</p>
+            <p className="text-sm text-muted-foreground max-w-md">
+              {displayMessage}
+            </p>
 
             {/* Privacy note */}
             <div className="mt-4 flex items-start gap-2 text-xs text-muted-foreground bg-white/50 dark:bg-black/20 px-4 py-2 rounded-lg max-w-md">

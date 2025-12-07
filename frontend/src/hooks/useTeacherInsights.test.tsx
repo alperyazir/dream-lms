@@ -3,20 +3,20 @@
  * Story 5.4: Error Pattern Detection & Insights
  */
 
-import { renderHook, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { renderHook, waitFor } from "@testing-library/react"
 import type { ReactNode } from "react"
-import {
-  useTeacherInsights,
-  useInsightDetail,
-  useDismissInsight,
-} from "./useTeacherInsights"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import type {
   InsightCard,
   InsightDetail,
   TeacherInsightsResponse,
 } from "@/types/analytics"
+import {
+  useDismissInsight,
+  useInsightDetail,
+  useTeacherInsights,
+} from "./useTeacherInsights"
 
 // Mock the API functions
 vi.mock("@/services/teachersApi", () => ({
@@ -26,9 +26,9 @@ vi.mock("@/services/teachersApi", () => ({
 }))
 
 import {
-  getMyInsights,
-  getInsightDetail,
   dismissInsight,
+  getInsightDetail,
+  getMyInsights,
 } from "@/services/teachersApi"
 
 const mockInsight: InsightCard = {

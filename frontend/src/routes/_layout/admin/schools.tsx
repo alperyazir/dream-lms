@@ -419,12 +419,21 @@ function AdminSchools() {
             </Button>
             <Button
               onClick={handleAddSchool}
-              disabled={createSchoolMutation.isPending}
+              disabled={
+                createSchoolMutation.isPending ||
+                !newSchool.name ||
+                !newSchool.publisher_id
+              }
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
               {createSchoolMutation.isPending ? "Creating..." : "Create School"}
             </Button>
           </DialogFooter>
+          {!newSchool.publisher_id && newSchool.name && (
+            <p className="text-sm text-red-500 -mt-2">
+              Please select a publisher to continue
+            </p>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -500,7 +509,11 @@ function AdminSchools() {
             </Button>
             <Button
               onClick={handleUpdateSchool}
-              disabled={updateSchoolMutation.isPending}
+              disabled={
+                updateSchoolMutation.isPending ||
+                !editSchool.name ||
+                !editSchool.publisher_id
+              }
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
               {updateSchoolMutation.isPending ? "Updating..." : "Update School"}

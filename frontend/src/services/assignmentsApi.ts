@@ -13,23 +13,29 @@ import type {
   StudentAnswersResponse,
 } from "../types/analytics"
 import type {
+  ActivityPreviewResponse,
   ActivityProgressSaveRequest,
   ActivityProgressSaveResponse,
   ActivityStartResponse,
   AssignmentCreateRequest,
   AssignmentListItem,
+  AssignmentPreviewResponse,
+  AssignmentPublishStatus,
   AssignmentResponse,
   AssignmentSaveProgressRequest,
   AssignmentSaveProgressResponse,
   AssignmentSubmissionResponse,
   AssignmentSubmitRequest,
   AssignmentUpdateRequest,
+  BulkAssignmentCreateResponse,
+  CalendarAssignmentsResponse,
   MultiActivityAnalyticsResponse,
   MultiActivityStartResponse,
   MultiActivitySubmitRequest,
   MultiActivitySubmitResponse,
   StudentAssignmentResponse,
   StudentAssignmentResultResponse,
+  StudentCalendarAssignmentsResponse,
 } from "../types/assignment"
 
 /**
@@ -259,7 +265,10 @@ export async function saveActivityProgress(
   data: ActivityProgressSaveRequest,
 ): Promise<ActivityProgressSaveResponse> {
   const url = `/api/v1/assignments/${assignmentId}/students/me/activities/${activityId}`
-  const response = await apiClient.patch<ActivityProgressSaveResponse>(url, data)
+  const response = await apiClient.patch<ActivityProgressSaveResponse>(
+    url,
+    data,
+  )
   return response.data
 }
 
@@ -299,7 +308,9 @@ export async function getAssignmentAnalytics(
   expandActivityId?: string,
 ): Promise<MultiActivityAnalyticsResponse> {
   const url = `/api/v1/assignments/${assignmentId}/analytics`
-  const params = expandActivityId ? { expand_activity_id: expandActivityId } : {}
+  const params = expandActivityId
+    ? { expand_activity_id: expandActivityId }
+    : {}
   const response = await apiClient.get<MultiActivityAnalyticsResponse>(url, {
     params,
   })
@@ -321,9 +332,149 @@ export async function getStudentAssignmentResult(
   return response.data
 }
 
+// =============================================================================
+// Bulk Assignment APIs (Time Planning Mode)
+// =============================================================================
+
+/**
+ * Create multiple assignments using Time Planning mode
+ * Story 9.x: Time Planning Mode
+ *
+ * Each date group creates a separate assignment with its own:
+ * - scheduled_publish_date: When the assignment becomes visible
+ * - due_date: Optional deadline for that group
+ * - time_limit_minutes: Optional time limit for that group
+ * - activity_ids: Activities included in that assignment
+ *
+ * @param data - Assignment creation data with date_groups
+ * @returns Promise with bulk creation response containing all created assignments
+ */
+export async function createBulkAssignments(
+  data: AssignmentCreateRequest,
+): Promise<BulkAssignmentCreateResponse> {
+  const url = `/api/v1/assignments/bulk`
+  const response = await apiClient.post<BulkAssignmentCreateResponse>(url, data)
+  return response.data
+}
+
+// =============================================================================
+// Calendar APIs (Story 9.6)
+// =============================================================================
+
+/**
+ * Calendar filter parameters
+ * Story 9.6: Calendar-Based Assignment Scheduling
+ */
+export interface CalendarFilters {
+  startDate: string // ISO date string YYYY-MM-DD
+  endDate: string // ISO date string YYYY-MM-DD
+  classId?: string
+  statusFilter?: AssignmentPublishStatus
+  bookId?: string
+}
+
+/**
+ * Get assignments for calendar view within a date range
+ * Story 9.6: Calendar-Based Assignment Scheduling
+ *
+ * @param filters - Calendar filter parameters (date range, optional filters)
+ * @returns Promise with assignments grouped by date
+ */
+export async function getCalendarAssignments(
+  filters: CalendarFilters,
+): Promise<CalendarAssignmentsResponse> {
+  const url = `/api/v1/assignments/calendar`
+  const params: Record<string, string> = {
+    start_date: filters.startDate,
+    end_date: filters.endDate,
+  }
+  if (filters.classId) {
+    params.class_id = filters.classId
+  }
+  if (filters.statusFilter) {
+    params.status = filters.statusFilter
+  }
+  if (filters.bookId) {
+    params.book_id = filters.bookId
+  }
+  const response = await apiClient.get<CalendarAssignmentsResponse>(url, {
+    params,
+  })
+  return response.data
+}
+
 /**
  * Export as object for easier imports
  */
+// =============================================================================
+// Student Calendar APIs
+// =============================================================================
+
+/**
+ * Student calendar filter parameters
+ */
+export interface StudentCalendarFilters {
+  startDate: string // ISO date string YYYY-MM-DD
+  endDate: string // ISO date string YYYY-MM-DD
+}
+
+/**
+ * Get student's assignments for calendar view within a date range
+ * Only shows published assignments (scheduled ones are not visible until published).
+ *
+ * @param filters - Calendar filter parameters (date range)
+ * @returns Promise with assignments grouped by due date
+ */
+export async function getStudentCalendarAssignments(
+  filters: StudentCalendarFilters,
+): Promise<StudentCalendarAssignmentsResponse> {
+  const url = `/api/v1/students/me/calendar`
+  const params: Record<string, string> = {
+    start_date: filters.startDate,
+    end_date: filters.endDate,
+  }
+  const response = await apiClient.get<StudentCalendarAssignmentsResponse>(url, {
+    params,
+  })
+  return response.data
+}
+
+// =============================================================================
+// Preview/Test Mode APIs (Story 9.7)
+// =============================================================================
+
+/**
+ * Preview an assignment (teacher test mode)
+ * Returns assignment data without creating any student records.
+ * Teachers can only preview their own assignments.
+ *
+ * @param assignmentId - ID of the assignment to preview
+ * @returns Promise with assignment preview data including all activities
+ */
+export async function previewAssignment(
+  assignmentId: string,
+): Promise<AssignmentPreviewResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/preview`
+  const response = await apiClient.get<AssignmentPreviewResponse>(url)
+  return response.data
+}
+
+/**
+ * Preview a single activity
+ * Returns activity data for teacher/publisher preview.
+ * Teachers must have book access to preview the activity.
+ *
+ * @param activityId - ID of the activity to preview
+ * @returns Promise with activity preview data including config
+ */
+export async function previewActivity(
+  activityId: string,
+): Promise<ActivityPreviewResponse> {
+  const url = `/api/v1/assignments/activities/${activityId}/preview`
+  const response = await apiClient.get<ActivityPreviewResponse>(url)
+  return response.data
+}
+
 export const assignmentsApi = {
   getAssignments,
   createAssignment,
@@ -342,6 +493,14 @@ export const assignmentsApi = {
   // Multi-activity analytics APIs (Story 8.4)
   getAssignmentAnalytics,
   getStudentAssignmentResult,
+  // Bulk assignment APIs (Time Planning Mode)
+  createBulkAssignments,
+  // Calendar APIs (Story 9.6)
+  getCalendarAssignments,
+  getStudentCalendarAssignments,
+  // Preview/Test Mode APIs (Story 9.7)
+  previewAssignment,
+  previewActivity,
 }
 
 export default assignmentsApi

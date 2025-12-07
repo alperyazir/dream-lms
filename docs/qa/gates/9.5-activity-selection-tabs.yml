@@ -1,0 +1,59 @@
+schema: 1
+story: '9.5'
+story_title: 'Activity Selection Tabs'
+gate: PASS
+status_reason: 'Priority issues resolved: state sync bug fixed, frontend tests added for ActivitySelectionTabs (11 tests). Remaining items (search/filter, clear confirmation, additional component tests) are non-blocking.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-12-05T19:00:00Z'
+
+top_issues:
+  - severity: low
+    description: 'No frontend tests for PageSelectionGrid and ModuleSelectionList components (ActivitySelectionTabs tests added)'
+    suggested_owner: dev
+    refs:
+      - frontend/src/components/assignments/PageSelectionGrid.tsx
+      - frontend/src/components/assignments/ModuleSelectionList.tsx
+  - severity: low
+    description: 'AC 10 (search/filter in Individual tab) not implemented'
+    suggested_owner: dev
+    refs:
+      - frontend/src/components/assignments/ActivitySelectionTabs.tsx
+
+waiver:
+  active: false
+
+quality_score: 80  # 100 - (10*2 low) = 80. Medium issues resolved.
+expires: '2025-12-19T19:00:00Z'
+
+evidence:
+  tests_reviewed: 4  # +1 for new ActivitySelectionTabs.test.tsx
+  risks_identified: 2  # reduced from 3 after state sync fix
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 29]
+    ac_gaps: [10, 28]  # Search/filter, Clear All confirmation
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Proper role-based access control (admin, publisher, teacher). Teacher access via BookAssignment. 404 for unauthorized access.'
+  performance:
+    status: CONCERNS
+    notes: 'No pagination on /structure endpoint. Each thumbnail is separate API call. May be slow for large books.'
+  reliability:
+    status: PASS
+    notes: 'State sync issue fixed with useEffect. Infinite loop bug was fixed during review. Tested with 11 frontend tests.'
+  maintainability:
+    status: PASS
+    notes: 'Clean component structure. Good typing. Well-documented code. Frontend tests added.'
+
+recommendations:
+  immediate: []  # All immediate items resolved
+  future:
+    - action: 'Add frontend tests for PageSelectionGrid and ModuleSelectionList components'
+      refs: ['frontend/src/components/assignments/PageSelectionGrid.tsx', 'frontend/src/components/assignments/ModuleSelectionList.tsx']
+    - action: 'Add search/filter input in Individual tab (AC 10)'
+      refs: ['frontend/src/components/assignments/ActivitySelectionTabs.tsx']
+    - action: 'Add Clear All confirmation dialog (AC 28)'
+      refs: ['frontend/src/components/assignments/ActivitySelectionTabs.tsx']
+    - action: 'Consider pagination for /structure endpoint for large books'
+      refs: ['backend/app/api/routes/books.py']

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { ArrowLeft, Inbox, Loader2, Plus, Search, User } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { z } from "zod"
+import { ComposeMessageModal } from "@/components/messaging/ComposeMessageModal"
 import { ConversationList } from "@/components/messaging/ConversationList"
 import { MessageForm } from "@/components/messaging/MessageForm"
 import { MessageThread } from "@/components/messaging/MessageThread"
@@ -10,10 +11,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import useAuth from "@/hooks/useAuth"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useMessagingPage, useSendMessage } from "@/hooks/useMessages"
-import useAuth from "@/hooks/useAuth"
-import { ComposeMessageModal } from "@/components/messaging/ComposeMessageModal"
 
 // Search params schema for the messaging page
 const messagingSearchSchema = z.object({
@@ -29,7 +29,9 @@ function MessagingInbox() {
   const { user } = useAuth()
   const { user: userParam } = Route.useSearch()
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null)
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(
+    null,
+  )
   const [isComposeOpen, setIsComposeOpen] = useState(false)
   const debouncedSearch = useDebouncedValue(searchTerm, 300)
 
@@ -206,7 +208,8 @@ function MessagingInbox() {
                       </h2>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         <User className="h-3 w-3 inline mr-1" />
-                        {participant.role.charAt(0).toUpperCase() + participant.role.slice(1)}
+                        {participant.role.charAt(0).toUpperCase() +
+                          participant.role.slice(1)}
                       </p>
                     </div>
                   </div>
@@ -229,9 +232,7 @@ function MessagingInbox() {
                 {/* Message Form */}
                 <div className="flex-none border-t border-gray-200 dark:border-gray-700">
                   <div className="px-4">
-                    <MessageForm
-                      onSendMessage={handleSendMessage}
-                    />
+                    <MessageForm onSendMessage={handleSendMessage} />
                   </div>
                 </div>
               </CardContent>

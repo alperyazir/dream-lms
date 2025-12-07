@@ -5,6 +5,7 @@
  * Displays score trend over time with encouraging highlights
  */
 
+import { TrendingUp } from "lucide-react"
 import React from "react"
 import {
   CartesianGrid,
@@ -17,7 +18,6 @@ import {
   YAxis,
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp } from "lucide-react"
 import type { ScoreTrendPoint } from "@/types/analytics"
 
 export interface ProgressScoreChartProps {
@@ -56,7 +56,10 @@ export const ProgressScoreChart = React.memo(
     // Format date for display
     const formatDate = (dateStr: string) => {
       const date = new Date(dateStr)
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
     }
 
     const chartData = data.map((point) => ({
@@ -73,9 +76,16 @@ export const ProgressScoreChart = React.memo(
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="w-full h-64" role="img" aria-label="Score trend chart">
+          <div
+            className="w-full h-64"
+            role="img"
+            aria-label="Score trend chart"
+          >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              >
                 <CartesianGrid
                   strokeDasharray="3 3"
                   className="opacity-30"
@@ -142,16 +152,17 @@ export const ProgressScoreChart = React.memo(
               <span className="text-muted-foreground">Your Scores</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-0.5 bg-amber-500" style={{ borderStyle: "dashed" }} />
+              <div
+                className="w-6 h-0.5 bg-amber-500"
+                style={{ borderStyle: "dashed" }}
+              />
               <span className="text-muted-foreground">
                 Average ({Math.round(average)}%)
               </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="text-muted-foreground">
-                Best ({bestScore}%)
-              </span>
+              <span className="text-muted-foreground">Best ({bestScore}%)</span>
             </div>
           </div>
         </CardContent>

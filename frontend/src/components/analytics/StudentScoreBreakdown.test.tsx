@@ -61,7 +61,7 @@ const createTestQueryClient = () =>
 const renderWithQueryClient = (ui: React.ReactElement) => {
   const queryClient = createTestQueryClient()
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
   )
 }
 
@@ -78,11 +78,13 @@ describe("StudentScoreBreakdown", () => {
     } as any)
 
     const { container } = renderWithQueryClient(
-      <StudentScoreBreakdown assignmentId="1" />
+      <StudentScoreBreakdown assignmentId="1" />,
     )
 
     // Should show loading skeleton (skeleton uses animate-pulse class)
-    const skeletonElements = container.querySelectorAll('[class*="animate-pulse"]')
+    const skeletonElements = container.querySelectorAll(
+      '[class*="animate-pulse"]',
+    )
     expect(skeletonElements.length).toBeGreaterThan(0)
   })
 

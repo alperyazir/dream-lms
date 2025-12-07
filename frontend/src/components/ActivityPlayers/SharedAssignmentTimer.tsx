@@ -2,31 +2,40 @@
  * Shared Assignment Timer Component
  * Story 8.3: Student Multi-Activity Assignment Player
  *
- * Displays countdown timer for timed assignments.
- * Shared across all activities in a multi-activity assignment.
- * Warning states: yellow when < 5 minutes, red when < 1 minute.
+ * Displays either:
+ * - Countdown timer for timed assignments (time limit set)
+ * - Elapsed time for untimed assignments (no time limit)
+ *
+ * Warning states for countdown: yellow when < 5 minutes, red when < 1 minute.
  */
 
 import { useCallback, useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 export interface SharedAssignmentTimerProps {
-  /** Total time limit in minutes */
-  totalTimeLimit: number
+  /** Total time limit in minutes (null/undefined for elapsed mode) */
+  totalTimeLimit?: number | null
   /** Time already elapsed in minutes (for resume) */
   elapsedMinutes: number
-  /** Callback when time expires */
-  onTimeExpired: () => void
+  /** Callback when time expires (only for countdown mode) */
+  onTimeExpired?: () => void
+  /** Callback to report current elapsed seconds (for saving) */
+  onElapsedChange?: (elapsedSeconds: number) => void
 }
 
 /**
- * Format seconds to MM:SS display
+ * Format seconds to MM:SS or HH:MM:SS display
  */
-function formatTime(totalSeconds: number): string {
-  if (totalSeconds <= 0) return "00:00"
+function formatTime(totalSeconds: number, includeHours = false): string {
+  if (totalSeconds < 0) totalSeconds = 0
 
-  const minutes = Math.floor(totalSeconds / 60)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
+
+  if (includeHours || hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+  }
 
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
 }
@@ -35,12 +44,20 @@ export function SharedAssignmentTimer({
   totalTimeLimit,
   elapsedMinutes,
   onTimeExpired,
+  onElapsedChange,
 }: SharedAssignmentTimerProps) {
-  // Calculate remaining time in seconds
-  const [remainingSeconds, setRemainingSeconds] = useState(() => {
-    const totalSeconds = totalTimeLimit * 60
-    const elapsedSeconds = elapsedMinutes * 60
-    return Math.max(0, totalSeconds - elapsedSeconds)
+  const isCountdownMode = totalTimeLimit != null && totalTimeLimit > 0
+
+  // For countdown: track remaining seconds
+  // For elapsed: track elapsed seconds
+  const [seconds, setSeconds] = useState(() => {
+    if (isCountdownMode) {
+      const totalSeconds = totalTimeLimit * 60
+      const elapsedSeconds = elapsedMinutes * 60
+      return Math.max(0, totalSeconds - elapsedSeconds)
+    }
+    // Elapsed mode: start from previously elapsed time
+    return Math.floor(elapsedMinutes * 60)
   })
 
   // Track if we've already fired the expiry callback
@@ -48,35 +65,57 @@ export function SharedAssignmentTimer({
 
   // Timer tick
   useEffect(() => {
-    if (remainingSeconds <= 0) {
-      if (!hasExpired) {
-        setHasExpired(true)
-        onTimeExpired()
-      }
-      return
-    }
-
-    const intervalId = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        const newValue = prev - 1
-        if (newValue <= 0) {
-          clearInterval(intervalId)
+    if (isCountdownMode) {
+      // Countdown mode
+      if (seconds <= 0) {
+        if (!hasExpired) {
+          setHasExpired(true)
+          onTimeExpired?.()
         }
-        return newValue
-      })
-    }, 1000)
+        return
+      }
 
-    return () => clearInterval(intervalId)
-  }, [remainingSeconds, hasExpired, onTimeExpired])
+      const intervalId = setInterval(() => {
+        setSeconds((prev) => {
+          const newValue = prev - 1
+          if (newValue <= 0) {
+            clearInterval(intervalId)
+          }
+          return newValue
+        })
+      }, 1000)
 
-  // Determine state based on remaining time
-  const remainingMinutes = Math.floor(remainingSeconds / 60)
-  const isCritical = remainingMinutes < 1 && remainingSeconds > 0
-  const isWarning = remainingMinutes < 5 && remainingMinutes >= 1
-  const isExpired = remainingSeconds <= 0
+      return () => clearInterval(intervalId)
+    } else {
+      // Elapsed mode - count up
+      const intervalId = setInterval(() => {
+        setSeconds((prev) => {
+          const newValue = prev + 1
+          onElapsedChange?.(newValue)
+          return newValue
+        })
+      }, 1000)
+
+      return () => clearInterval(intervalId)
+    }
+  }, [isCountdownMode, seconds, hasExpired, onTimeExpired, onElapsedChange])
+
+  // Report initial elapsed time
+  useEffect(() => {
+    if (!isCountdownMode) {
+      onElapsedChange?.(seconds)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Determine state based on time (only for countdown)
+  const remainingMinutes = isCountdownMode ? Math.floor(seconds / 60) : 0
+  const isCritical = isCountdownMode && remainingMinutes < 1 && seconds > 0
+  const isWarning = isCountdownMode && remainingMinutes < 5 && remainingMinutes >= 1
+  const isExpired = isCountdownMode && seconds <= 0
 
   // Accessibility announcement for screen readers
   const handleAnnounce = useCallback(() => {
+    if (!isCountdownMode) return null
     if (remainingMinutes === 5) {
       return "5 minutes remaining"
     }
@@ -84,18 +123,20 @@ export function SharedAssignmentTimer({
       return "1 minute remaining"
     }
     return null
-  }, [remainingMinutes])
+  }, [isCountdownMode, remainingMinutes])
 
   useEffect(() => {
     const announcement = handleAnnounce()
     if (announcement) {
-      // Create an aria-live announcement
       const announcer = document.getElementById("timer-announcer")
       if (announcer) {
         announcer.textContent = announcement
       }
     }
   }, [handleAnnounce])
+
+  // Show hours if elapsed time is > 1 hour
+  const showHours = !isCountdownMode && seconds >= 3600
 
   return (
     <>
@@ -110,21 +151,29 @@ export function SharedAssignmentTimer({
       {/* Timer display */}
       <div
         className={cn(
-          "flex items-center gap-2 rounded-lg px-4 py-2 font-mono text-lg font-bold",
-          isExpired && "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300",
-          isCritical && !isExpired && "animate-pulse bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300",
-          isWarning && "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300",
-          !isCritical && !isWarning && !isExpired && "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+          "flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-sm font-semibold",
+          isExpired &&
+            "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300",
+          isCritical &&
+            !isExpired &&
+            "animate-pulse bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300",
+          isWarning &&
+            "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300",
+          !isCritical &&
+            !isWarning &&
+            !isExpired &&
+            "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
         )}
         role="timer"
-        aria-label={`Time remaining: ${formatTime(remainingSeconds)}`}
+        aria-label={
+          isCountdownMode
+            ? `Time remaining: ${formatTime(seconds)}`
+            : `Time elapsed: ${formatTime(seconds, showHours)}`
+        }
       >
         {/* Clock icon */}
         <svg
-          className={cn(
-            "h-5 w-5",
-            isCritical && "animate-pulse",
-          )}
+          className={cn("h-4 w-4", isCritical && "animate-pulse")}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -141,7 +190,7 @@ export function SharedAssignmentTimer({
 
         {/* Time display */}
         <span className="tabular-nums">
-          {isExpired ? "Time's up!" : formatTime(remainingSeconds)}
+          {isExpired ? "Time's up!" : formatTime(seconds, showHours)}
         </span>
       </div>
     </>

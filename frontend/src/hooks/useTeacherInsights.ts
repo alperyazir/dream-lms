@@ -5,9 +5,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-  getMyInsights,
-  getInsightDetail,
   dismissInsight,
+  getInsightDetail,
+  getMyInsights,
 } from "@/services/teachersApi"
 import type { TeacherInsightsResponse } from "@/types/analytics"
 
@@ -87,10 +87,10 @@ export function useDismissInsight() {
           return {
             ...old,
             insights: old.insights.filter(
-              (insight) => insight.id !== dismissedInsightId
+              (insight) => insight.id !== dismissedInsightId,
             ),
           }
-        }
+        },
       )
       // Invalidate detail query for this insight
       queryClient.invalidateQueries({

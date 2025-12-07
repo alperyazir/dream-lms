@@ -5,11 +5,8 @@
 
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
+import type { BenchmarkData, ClassMetrics } from "@/types/benchmarks"
 import { BenchmarkCard } from "./BenchmarkCard"
-import type {
-  BenchmarkData,
-  ClassMetrics,
-} from "@/types/benchmarks"
 
 // Mock class metrics
 const mockClassMetrics: ClassMetrics = {

@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowLeft,
   ArrowUp,
-  AlertTriangle,
   Award,
   BarChart3,
   BookOpen,
@@ -25,7 +25,6 @@ import {
   YAxis,
 } from "recharts"
 import { type StudentPublic, TeachersService } from "@/client"
-import { Badge } from "@/components/ui/badge"
 import {
   ActivityBenchmarkTable,
   BenchmarkCard,
@@ -33,6 +32,7 @@ import {
   BenchmarkDisabledMessage,
   BenchmarkMessage,
 } from "@/components/benchmarks"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -102,7 +102,8 @@ function ClassDetailPage() {
   const params = useParams({ from: "/_layout/teacher/classrooms_/$classId" })
   const classId = params.classId
   const [period, setPeriod] = useState<ClassPeriodType>("monthly")
-  const [benchmarkPeriod, setBenchmarkPeriod] = useState<BenchmarkPeriod>("monthly")
+  const [benchmarkPeriod, setBenchmarkPeriod] =
+    useState<BenchmarkPeriod>("monthly")
   const [activeTab, setActiveTab] = useState("analytics")
 
   // Fetch class details
@@ -131,7 +132,11 @@ function ClassDetailPage() {
   })
 
   // Fetch class analytics
-  const { analytics, isLoading: isLoadingAnalytics, error } = useClassAnalytics({
+  const {
+    analytics,
+    isLoading: isLoadingAnalytics,
+    error,
+  } = useClassAnalytics({
     classId,
     period,
   })
@@ -157,8 +162,12 @@ function ClassDetailPage() {
   }, [analytics])
 
   // Find trends
-  const scoreTrend = analytics?.trends.find((t) => t.metric_name === "Average Score")
-  const completionTrend = analytics?.trends.find((t) => t.metric_name === "Completions")
+  const scoreTrend = analytics?.trends.find(
+    (t) => t.metric_name === "Average Score",
+  )
+  const completionTrend = analytics?.trends.find(
+    (t) => t.metric_name === "Completions",
+  )
 
   // Loading state
   if (isLoadingClass || isLoadingAnalytics) {
@@ -467,11 +476,7 @@ function ClassDetailPage() {
                       <XAxis type="number" domain={[0, 100]} />
                       <YAxis dataKey="name" type="category" width={100} />
                       <Tooltip />
-                      <Bar
-                        dataKey="avgScore"
-                        name="Avg Score"
-                        fill="#14B8A6"
-                      />
+                      <Bar dataKey="avgScore" name="Avg Score" fill="#14B8A6" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -727,22 +732,20 @@ function ClassDetailPage() {
           )}
 
           {/* No data state */}
-          {!isLoadingBenchmarks &&
-            !isBenchmarkingDisabled &&
-            !benchmarks && (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    No Benchmark Data Available
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Benchmark comparisons will appear once enough data is
-                    collected from assignments.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+          {!isLoadingBenchmarks && !isBenchmarkingDisabled && !benchmarks && (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  No Benchmark Data Available
+                </h3>
+                <p className="text-muted-foreground">
+                  Benchmark comparisons will appear once enough data is
+                  collected from assignments.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

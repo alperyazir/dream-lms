@@ -11,7 +11,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowLeft, BookOpen } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
 import { ActivityList } from "@/components/books/ActivityList"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { booksApi } from "@/services/booksApi"
+import { booksApi, getAuthenticatedCoverUrl } from "@/services/booksApi"
 import type { Activity } from "@/types/book"
 
 export const Route = createFileRoute("/_layout/teacher/books/$bookId")({
@@ -37,6 +37,9 @@ function BookDetailPage() {
 function BookDetailContent() {
   const { bookId } = Route.useParams()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [isLoadingCover, setIsLoadingCover] = useState(true)
+  const [imageError, setImageError] = useState(false)
 
   // Fetch book details (using list endpoint to find the book)
   const {
@@ -48,6 +51,37 @@ function BookDetailContent() {
     queryFn: () => booksApi.getBookById(bookId),
     staleTime: 5 * 60 * 1000,
   })
+
+  // Story 9.8: Fetch authenticated cover URL
+  useEffect(() => {
+    let isMounted = true
+    let blobUrl: string | null = null
+
+    setImageError(false)
+
+    async function fetchCover() {
+      if (!book?.cover_image_url) {
+        setIsLoadingCover(false)
+        return
+      }
+
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      if (isMounted) {
+        blobUrl = url
+        setCoverUrl(url)
+        setIsLoadingCover(false)
+      }
+    }
+
+    fetchCover()
+
+    return () => {
+      isMounted = false
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl)
+      }
+    }
+  }, [book?.cover_image_url])
 
   // Fetch activities for this book
   const { data: activities, isLoading: activitiesLoading } = useQuery({
@@ -137,13 +171,18 @@ function BookDetailContent() {
       <Card className="mb-8">
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Book Cover */}
+            {/* Book Cover - Story 9.8: Prominent display with authenticated URL */}
             <div className="md:col-span-1">
-              {book.cover_image_url ? (
+              {isLoadingCover ? (
+                <div className="w-full aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-24 h-24 text-gray-400 animate-pulse" />
+                </div>
+              ) : coverUrl && !imageError ? (
                 <img
-                  src={book.cover_image_url}
+                  src={coverUrl}
                   alt={`${book.title} cover`}
                   className="w-full h-auto object-cover rounded-lg shadow-md"
+                  onError={() => setImageError(true)}
                 />
               ) : (
                 <div className="w-full aspect-[3/4] bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg flex items-center justify-center">

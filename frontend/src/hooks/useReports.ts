@@ -5,13 +5,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-  generateReport,
-  getReportStatus,
-  downloadReport,
-  getReportHistory,
-  saveReportTemplate,
-  getReportTemplates,
   deleteReportTemplate,
+  downloadReport,
+  generateReport,
+  getReportHistory,
+  getReportStatus,
+  getReportTemplates,
+  saveReportTemplate,
 } from "@/services/reportsApi"
 import type {
   ReportGenerateRequest,
@@ -145,7 +145,7 @@ export function useReportTemplates() {
       // Optimistically update the cache
       queryClient.setQueryData<SavedReportTemplate[]>(
         REPORT_TEMPLATES_QUERY_KEY,
-        (old) => (old ? [newTemplate, ...old] : [newTemplate])
+        (old) => (old ? [newTemplate, ...old] : [newTemplate]),
       )
     },
   })
@@ -157,7 +157,7 @@ export function useReportTemplates() {
       // Optimistically remove from cache
       queryClient.setQueryData<SavedReportTemplate[]>(
         REPORT_TEMPLATES_QUERY_KEY,
-        (old) => old?.filter((t) => t.id !== deletedId) ?? []
+        (old) => old?.filter((t) => t.id !== deletedId) ?? [],
       )
     },
   })

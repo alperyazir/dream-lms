@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import Appearance from "@/components/UserSettings/Appearance"
+import AvatarSelection from "@/components/UserSettings/AvatarSelection"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
 import DeleteAccount from "@/components/UserSettings/DeleteAccount"
 import NotificationSettings from "@/components/UserSettings/NotificationSettings"
@@ -9,8 +10,13 @@ import useAuth from "@/hooks/useAuth"
 
 const tabsConfig = [
   { value: "my-profile", title: "My profile", component: UserInformation },
+  { value: "avatar", title: "Avatar", component: AvatarSelection },
   { value: "password", title: "Password", component: ChangePassword },
-  { value: "notifications", title: "Notifications", component: NotificationSettings },
+  {
+    value: "notifications",
+    title: "Notifications",
+    component: NotificationSettings,
+  },
   { value: "appearance", title: "Appearance", component: Appearance },
   { value: "danger-zone", title: "Danger zone", component: DeleteAccount },
 ]

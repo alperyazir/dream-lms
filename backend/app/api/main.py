@@ -3,7 +3,9 @@ from fastapi import APIRouter
 from app.api.routes import (
     admin,
     assignments,
+    avatars,
     book_assets,
+    book_assignments,
     books,
     classes,
     dev,
@@ -34,6 +36,7 @@ api_router.include_router(students.router)
 api_router.include_router(classes.router)
 api_router.include_router(books.router, prefix="/books", tags=["books"])
 api_router.include_router(book_assets.router)
+api_router.include_router(book_assignments.router)
 api_router.include_router(assignments.router)
 api_router.include_router(reports.router)
 api_router.include_router(webhooks.router)
@@ -41,6 +44,7 @@ api_router.include_router(notifications.router)
 api_router.include_router(messages.router)
 api_router.include_router(scheduled_tasks.router)
 api_router.include_router(feedback.router)
+api_router.include_router(avatars.router)
 
 
 if settings.ENVIRONMENT == "local":

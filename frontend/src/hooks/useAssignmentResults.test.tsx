@@ -379,7 +379,9 @@ describe("useAssignmentResults", () => {
     expect(result.current.results?.student_results).toHaveLength(3)
     expect(result.current.results?.student_results[0].name).toBe("Alice Smith")
     expect(result.current.results?.student_results[0].score).toBe(95)
-    expect(result.current.results?.student_results[2].status).toBe("in_progress")
+    expect(result.current.results?.student_results[2].status).toBe(
+      "in_progress",
+    )
     expect(result.current.results?.student_results[2].score).toBeNull()
   })
 
@@ -402,9 +404,12 @@ describe("useAssignmentResults", () => {
 
     expect(result.current.results?.question_analysis?.questions).toHaveLength(2)
     expect(
-      result.current.results?.question_analysis?.questions?.[0].correct_percentage,
+      result.current.results?.question_analysis?.questions?.[0]
+        .correct_percentage,
     ).toBe(85.0)
-    expect(result.current.results?.question_analysis?.most_missed).toHaveLength(1)
+    expect(result.current.results?.question_analysis?.most_missed).toHaveLength(
+      1,
+    )
     expect(
       result.current.results?.question_analysis?.most_missed?.[0].question_id,
     ).toBe("zone2")

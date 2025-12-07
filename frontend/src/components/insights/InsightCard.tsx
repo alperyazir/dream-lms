@@ -6,9 +6,9 @@
  */
 
 import { AlertCircle, AlertTriangle, ChevronRight, X } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import type { InsightCard as InsightCardType } from "@/types/analytics"
 
 export interface InsightCardProps {
@@ -39,19 +39,22 @@ function getSeverityStyles(severity: InsightCardType["severity"]) {
   switch (severity) {
     case "critical":
       return {
-        badge: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+        badge:
+          "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
         icon: "text-red-500",
         border: "border-l-red-500",
       }
     case "moderate":
       return {
-        badge: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+        badge:
+          "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
         icon: "text-amber-500",
         border: "border-l-amber-500",
       }
     default:
       return {
-        badge: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+        badge:
+          "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
         icon: "text-blue-500",
         border: "border-l-blue-500",
       }

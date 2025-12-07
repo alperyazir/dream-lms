@@ -7,10 +7,10 @@
  */
 
 import { useQuery } from "@tanstack/react-query"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { BADGE_ICONS, BADGE_LABELS } from "@/types/feedback"
 import { LuAward, LuLoader } from "react-icons/lu"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { BADGE_ICONS, BADGE_LABELS } from "@/types/feedback"
 
 interface StudentBadgeSummaryProps {
   showMonthly?: boolean
@@ -58,7 +58,7 @@ export function StudentBadgeSummary({
 
   // Get all badge types that have at least one count
   const earnedBadges = Object.entries(data.badge_counts).filter(
-    ([_, count]) => count > 0
+    ([_, count]) => count > 0,
   )
 
   if (earnedBadges.length === 0) {
@@ -123,9 +123,7 @@ export function StudentBadgeSummary({
                 <p className="font-medium text-sm truncate">
                   {BADGE_LABELS[slug] || slug}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {count} earned
-                </p>
+                <p className="text-xs text-muted-foreground">{count} earned</p>
               </div>
             </div>
           ))}

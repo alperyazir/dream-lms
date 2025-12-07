@@ -4,8 +4,8 @@
  * Story 6.5: Feedback Enhancements (Badges & Emoji Reactions)
  */
 
-export { FeedbackModal } from "./FeedbackModal"
-export { BadgeSelector } from "./BadgeSelector"
 export { BadgeDisplay } from "./BadgeDisplay"
+export { BadgeSelector } from "./BadgeSelector"
 export { EmojiPicker } from "./EmojiPicker"
+export { FeedbackModal } from "./FeedbackModal"
 export { StudentBadgeSummary } from "./StudentBadgeSummary"

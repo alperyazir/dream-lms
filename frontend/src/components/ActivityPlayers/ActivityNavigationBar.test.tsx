@@ -55,7 +55,11 @@ function createActivityStates(
 
 describe("ActivityNavigationBar", () => {
   it("renders all activity buttons", () => {
-    const states = createActivityStates(["not_started", "not_started", "not_started"])
+    const states = createActivityStates([
+      "not_started",
+      "not_started",
+      "not_started",
+    ])
     const onNavigate = vi.fn()
 
     render(
@@ -74,7 +78,11 @@ describe("ActivityNavigationBar", () => {
   })
 
   it("highlights current activity", () => {
-    const states = createActivityStates(["in_progress", "not_started", "not_started"])
+    const states = createActivityStates([
+      "in_progress",
+      "not_started",
+      "not_started",
+    ])
     const onNavigate = vi.fn()
 
     render(
@@ -92,7 +100,11 @@ describe("ActivityNavigationBar", () => {
   })
 
   it("calls onNavigate when clicking an activity", () => {
-    const states = createActivityStates(["not_started", "not_started", "not_started"])
+    const states = createActivityStates([
+      "not_started",
+      "not_started",
+      "not_started",
+    ])
     const onNavigate = vi.fn()
 
     render(
@@ -111,7 +123,11 @@ describe("ActivityNavigationBar", () => {
   })
 
   it("shows correct status for completed activities", () => {
-    const states = createActivityStates(["completed", "in_progress", "not_started"])
+    const states = createActivityStates([
+      "completed",
+      "in_progress",
+      "not_started",
+    ])
     const onNavigate = vi.fn()
 
     render(
@@ -124,12 +140,18 @@ describe("ActivityNavigationBar", () => {
     )
 
     // First activity should show completed (checkmark icon)
-    const firstButton = screen.getByRole("button", { name: /Activity 1.*completed/i })
+    const firstButton = screen.getByRole("button", {
+      name: /Activity 1.*completed/i,
+    })
     expect(firstButton).toBeInTheDocument()
   })
 
   it("disables navigation when disabled prop is true", () => {
-    const states = createActivityStates(["not_started", "not_started", "not_started"])
+    const states = createActivityStates([
+      "not_started",
+      "not_started",
+      "not_started",
+    ])
     const onNavigate = vi.fn()
 
     render(
@@ -154,7 +176,11 @@ describe("ActivityNavigationBar", () => {
   })
 
   it("shows progress bar based on completed activities", () => {
-    const states = createActivityStates(["completed", "completed", "not_started"])
+    const states = createActivityStates([
+      "completed",
+      "completed",
+      "not_started",
+    ])
     const onNavigate = vi.fn()
 
     const { container } = render(

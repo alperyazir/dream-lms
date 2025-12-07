@@ -2,17 +2,25 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   BookOpen,
+  Check,
+  ChevronsUpDown,
+  Copy,
   Edit,
   Eye,
   EyeOff,
+  ImagePlus,
+  KeyRound,
   Mail,
   Plus,
   Search,
   Trash2,
+  Upload,
+  X,
 } from "lucide-react"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import {
   AdminService,
+  OpenAPI,
   type PublisherCreateAPI,
   type PublisherPublic,
   type PublisherUpdate,
@@ -21,6 +29,14 @@ import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 import {
   Dialog,
   DialogContent,
@@ -32,6 +48,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
   Table,
   TableBody,
   TableCell,
@@ -40,6 +61,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import useCustomToast from "@/hooks/useCustomToast"
+import { cn } from "@/lib/utils"
+import { generateUsername } from "@/utils/usernameGenerator"
 
 export const Route = createFileRoute("/_layout/admin/publishers")({
   component: () => (
@@ -62,6 +85,17 @@ function AdminPublishers() {
     id: string
     name: string
   } | null>(null)
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
+    useState(false)
+  const [isPasswordResultDialogOpen, setIsPasswordResultDialogOpen] =
+    useState(false)
+  const [publisherToResetPassword, setPublisherToResetPassword] = useState<{
+    userId: string
+    userName: string
+  } | null>(null)
+  const [newPassword, setNewPassword] = useState<string | null>(null)
+  const [passwordCopied, setPasswordCopied] = useState(false)
+  const [publisherNameOpen, setPublisherNameOpen] = useState(false)
   const [newPublisher, setNewPublisher] = useState<PublisherCreateAPI>({
     name: "",
     contact_email: "",
@@ -73,8 +107,12 @@ function AdminPublishers() {
     name: "",
     contact_email: "",
     user_email: "",
+    user_username: "",
     user_full_name: "",
   })
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   // Track which passwords are revealed (Eye icon state)
   const [revealedPasswords, setRevealedPasswords] = useState<
@@ -154,6 +192,57 @@ function AdminPublishers() {
     },
   })
 
+  // Reset password mutation [Story 9.2]
+  const resetPasswordMutation = useMutation({
+    mutationFn: (userId: string) => AdminService.resetUserPassword({ userId }),
+    onSuccess: (response) => {
+      setNewPassword(response.new_password)
+      setIsResetPasswordDialogOpen(false)
+      setIsPasswordResultDialogOpen(true)
+      queryClient.invalidateQueries({ queryKey: ["publishers"] })
+    },
+    onError: (error: any) => {
+      showErrorToast(
+        error.body?.detail || "Failed to reset password. Please try again.",
+      )
+    },
+  })
+
+  // Logo upload mutation [Story 9.2]
+  const uploadLogoMutation = useMutation({
+    mutationFn: ({ publisherId, file }: { publisherId: string; file: File }) =>
+      AdminService.uploadPublisherLogo({
+        publisherId,
+        formData: { file },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publishers"] })
+      setLogoFile(null)
+      setLogoPreview(null)
+      showSuccessToast("Logo uploaded successfully!")
+    },
+    onError: (error: any) => {
+      showErrorToast(
+        error.body?.detail || "Failed to upload logo. Please try again.",
+      )
+    },
+  })
+
+  // Delete logo mutation [Story 9.2]
+  const deleteLogoMutation = useMutation({
+    mutationFn: (publisherId: string) =>
+      AdminService.deletePublisherLogo({ publisherId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publishers"] })
+      showSuccessToast("Logo removed successfully!")
+    },
+    onError: (error: any) => {
+      showErrorToast(
+        error.body?.detail || "Failed to remove logo. Please try again.",
+      )
+    },
+  })
+
   const handleAddPublisher = () => {
     if (
       !newPublisher.name ||
@@ -167,9 +256,9 @@ function AdminPublishers() {
     }
 
     // Validate username format
-    if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newPublisher.username)) {
+    if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(newPublisher.username)) {
       showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen",
+        "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
       )
       return
     }
@@ -183,8 +272,12 @@ function AdminPublishers() {
       name: publisher.name,
       contact_email: publisher.contact_email || "",
       user_email: publisher.user_email,
+      user_username: publisher.user_username || "",
       user_full_name: publisher.user_full_name,
     })
+    // Clear any previous logo selection
+    setLogoFile(null)
+    setLogoPreview(null)
     setIsEditDialogOpen(true)
   }
 
@@ -215,6 +308,85 @@ function AdminPublishers() {
       deletePublisherMutation.mutate(publisherToDelete.id)
       setPublisherToDelete(null)
     }
+  }
+
+  // Password reset handlers [Story 9.2]
+  const handleResetPassword = (userId: string, userName: string) => {
+    setPublisherToResetPassword({ userId, userName })
+    setIsResetPasswordDialogOpen(true)
+  }
+
+  const confirmResetPassword = () => {
+    if (publisherToResetPassword) {
+      resetPasswordMutation.mutate(publisherToResetPassword.userId)
+    }
+  }
+
+  const handleCopyPassword = async () => {
+    if (newPassword) {
+      await navigator.clipboard.writeText(newPassword)
+      setPasswordCopied(true)
+      setTimeout(() => setPasswordCopied(false), 2000)
+    }
+  }
+
+  const closePasswordResultDialog = () => {
+    setIsPasswordResultDialogOpen(false)
+    setNewPassword(null)
+    setPublisherToResetPassword(null)
+    setPasswordCopied(false)
+  }
+
+  // Logo handlers [Story 9.2]
+  const handleLogoFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        showErrorToast("Please select an image file (jpg, png, etc.)")
+        return
+      }
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        showErrorToast("File size must be less than 2MB")
+        return
+      }
+      setLogoFile(file)
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleLogoUpload = (publisherId: string) => {
+    if (logoFile) {
+      uploadLogoMutation.mutate({ publisherId, file: logoFile })
+    }
+  }
+
+  const handleLogoDelete = (publisherId: string) => {
+    deleteLogoMutation.mutate(publisherId)
+  }
+
+  const clearLogoSelection = () => {
+    setLogoFile(null)
+    setLogoPreview(null)
+    if (logoInputRef.current) {
+      logoInputRef.current.value = ""
+    }
+  }
+
+  // Get publisher initials for placeholder
+  const getPublisherInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   const filteredPublishers = publishers.filter(
@@ -300,6 +472,7 @@ function AdminPublishers() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">Logo</TableHead>
                   <TableHead>Publisher Name</TableHead>
                   <TableHead>Username</TableHead>
                   <TableHead>User Full Name</TableHead>
@@ -313,6 +486,19 @@ function AdminPublishers() {
               <TableBody>
                 {filteredPublishers.map((publisher) => (
                   <TableRow key={publisher.id}>
+                    <TableCell>
+                      {publisher.logo_url ? (
+                        <img
+                          src={`${OpenAPI.BASE}${publisher.logo_url}`}
+                          alt={`${publisher.name} logo`}
+                          className="w-10 h-10 rounded-full object-cover border"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm">
+                          {getPublisherInitials(publisher.name)}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">
                       {publisher.name}
                     </TableCell>
@@ -380,6 +566,21 @@ function AdminPublishers() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() =>
+                            handleResetPassword(
+                              publisher.user_id,
+                              publisher.user_full_name || publisher.name,
+                            )
+                          }
+                          disabled={resetPasswordMutation.isPending}
+                          className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          title="Reset Password"
+                        >
+                          <KeyRound className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleEditPublisher(publisher)}
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         >
@@ -418,14 +619,90 @@ function AdminPublishers() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="publisher-name">Publisher Name *</Label>
-              <Input
-                id="publisher-name"
-                placeholder="e.g., Oxford University Press"
-                value={newPublisher.name}
-                onChange={(e) =>
-                  setNewPublisher({ ...newPublisher, name: e.target.value })
-                }
-              />
+              <Popover
+                open={publisherNameOpen}
+                onOpenChange={setPublisherNameOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={publisherNameOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {newPublisher.name || "Select or enter publisher name..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] p-0"
+                  align="start"
+                >
+                  <Command>
+                    <CommandInput
+                      placeholder="Search or enter new publisher..."
+                      value={newPublisher.name}
+                      onValueChange={(value) =>
+                        setNewPublisher({ ...newPublisher, name: value })
+                      }
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        <div className="py-2 px-2 text-sm">
+                          <span className="text-muted-foreground">
+                            No existing publisher found.
+                          </span>
+                          {newPublisher.name && (
+                            <div className="mt-1">
+                              Press enter or click to create:{" "}
+                              <span className="font-medium text-foreground">
+                                "{newPublisher.name}"
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </CommandEmpty>
+                      <CommandGroup heading="Existing Publishers">
+                        {/* Get unique publisher names */}
+                        {Array.from(new Set(publishers.map((p) => p.name)))
+                          .filter((name) =>
+                            name
+                              .toLowerCase()
+                              .includes(
+                                (newPublisher.name || "").toLowerCase(),
+                              ),
+                          )
+                          .map((name) => (
+                            <CommandItem
+                              key={name}
+                              value={name}
+                              onSelect={(currentValue) => {
+                                setNewPublisher({
+                                  ...newPublisher,
+                                  name: currentValue,
+                                })
+                                setPublisherNameOpen(false)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  newPublisher.name === name
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              {name}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Select an existing publisher or enter a new name
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="full-name">Full Name *</Label>
@@ -435,13 +712,8 @@ function AdminPublishers() {
                 value={newPublisher.full_name}
                 onChange={(e) => {
                   const fullName = e.target.value
-                  // Auto-generate username from full name
-                  const generatedUsername = fullName
-                    .toLowerCase()
-                    .trim()
-                    .replace(/\s+/g, "-") // Replace spaces with hyphens
-                    .replace(/[^a-z0-9_-]/g, "") // Remove non-alphanumeric except _ and -
-                    .slice(0, 50) // Max 50 characters
+                  // Auto-generate username with Turkish character support
+                  const generatedUsername = generateUsername(fullName)
 
                   setNewPublisher({
                     ...newPublisher,
@@ -530,6 +802,97 @@ function AdminPublishers() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Logo Upload Section [Story 9.2] */}
+            <div className="space-y-2">
+              <Label>Publisher Logo</Label>
+              <div className="flex items-center gap-4">
+                {/* Current logo or preview */}
+                <div className="relative">
+                  {logoPreview ? (
+                    <img
+                      src={logoPreview}
+                      alt="Logo preview"
+                      className="w-16 h-16 rounded-full object-cover border"
+                    />
+                  ) : selectedPublisher?.logo_url ? (
+                    <img
+                      src={`${OpenAPI.BASE}${selectedPublisher.logo_url}`}
+                      alt={`${selectedPublisher.name} logo`}
+                      className="w-16 h-16 rounded-full object-cover border"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-semibold">
+                      {selectedPublisher
+                        ? getPublisherInitials(selectedPublisher.name)
+                        : "?"}
+                    </div>
+                  )}
+                  {logoPreview && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearLogoSelection}
+                      className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-red-100 hover:bg-red-200"
+                    >
+                      <X className="w-3 h-3 text-red-600" />
+                    </Button>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoFileSelect}
+                    className="hidden"
+                    id="logo-upload"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadLogoMutation.isPending}
+                    >
+                      <ImagePlus className="w-4 h-4 mr-1" />
+                      {logoPreview ? "Change" : "Select"}
+                    </Button>
+                    {logoFile && selectedPublisher && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleLogoUpload(selectedPublisher.id)}
+                        disabled={uploadLogoMutation.isPending}
+                        className="bg-teal-500 hover:bg-teal-600"
+                      >
+                        <Upload className="w-4 h-4 mr-1" />
+                        {uploadLogoMutation.isPending
+                          ? "Uploading..."
+                          : "Upload"}
+                      </Button>
+                    )}
+                    {selectedPublisher?.logo_url && !logoPreview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleLogoDelete(selectedPublisher.id)}
+                        disabled={deleteLogoMutation.isPending}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    JPG or PNG, max 2MB
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="edit-publisher-name">Publisher Name *</Label>
               <Input
@@ -569,6 +932,23 @@ function AdminPublishers() {
                   })
                 }
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-user-username">Username *</Label>
+              <Input
+                id="edit-user-username"
+                placeholder="e.g., johndoe"
+                value={editPublisher.user_username || ""}
+                onChange={(e) =>
+                  setEditPublisher({
+                    ...editPublisher,
+                    user_username: e.target.value,
+                  })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                3-50 characters, alphanumeric, underscore, hyphen, or dot
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-user-email">User Email *</Label>
@@ -619,6 +999,73 @@ function AdminPublishers() {
         variant="danger"
         isLoading={deletePublisherMutation.isPending}
       />
+
+      {/* Reset Password Confirmation Dialog [Story 9.2] */}
+      <ConfirmDialog
+        open={isResetPasswordDialogOpen}
+        onOpenChange={setIsResetPasswordDialogOpen}
+        onConfirm={confirmResetPassword}
+        title="Reset Password"
+        description={`Are you sure you want to reset the password for "${publisherToResetPassword?.userName}"? A new password will be generated and the user will be notified.`}
+        confirmText="Reset Password"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={resetPasswordMutation.isPending}
+      />
+
+      {/* New Password Display Dialog [Story 9.2] */}
+      <Dialog
+        open={isPasswordResultDialogOpen}
+        onOpenChange={closePasswordResultDialog}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-green-500" />
+              Password Reset Successful
+            </DialogTitle>
+            <DialogDescription>
+              The password for {publisherToResetPassword?.userName} has been
+              reset. Please share this password securely with the user.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label className="text-sm text-muted-foreground mb-2 block">
+              New Password
+            </Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 p-3 bg-muted rounded-md font-mono text-sm select-all">
+                {newPassword}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyPassword}
+                className="flex items-center gap-1"
+              >
+                {passwordCopied ? (
+                  <>
+                    <Check className="w-4 h-4 text-green-500" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              This password is displayed only once. Make sure to copy it before
+              closing this dialog.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={closePasswordResultDialog}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -13,7 +13,10 @@ import { MultiActivityPlayer } from "@/components/ActivityPlayers/MultiActivityP
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { startMultiActivityAssignment } from "@/services/assignmentsApi"
-import type { MultiActivityStartResponse, MultiActivitySubmitResponse } from "@/types/assignment"
+import type {
+  MultiActivityStartResponse,
+  MultiActivitySubmitResponse,
+} from "@/types/assignment"
 
 export const Route = createFileRoute(
   "/_layout/student/assignments/$assignmentId/play-multi",

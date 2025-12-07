@@ -52,7 +52,7 @@ function createTestQueryClient() {
 function renderWithClient(ui: React.ReactElement) {
   const queryClient = createTestQueryClient()
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
   )
 }
 
@@ -75,17 +75,20 @@ describe("ActivitySidePanel", () => {
     renderWithClient(<ActivitySidePanel {...defaultProps} />)
 
     expect(
-      screen.getByText(/select pages from the left to see activities/i)
+      screen.getByText(/select pages from the left to see activities/i),
     ).toBeInTheDocument()
   })
 
   it("shows activities when pages are selected", async () => {
     const selectedPages = new Map<string, PageInfo>([
-      ["Module 1:5", { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" }],
+      [
+        "Module 1:5",
+        { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" },
+      ],
     ])
 
     renderWithClient(
-      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />
+      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />,
     )
 
     await waitFor(() => {
@@ -97,7 +100,10 @@ describe("ActivitySidePanel", () => {
 
   it("shows selected count badge", async () => {
     const selectedPages = new Map<string, PageInfo>([
-      ["Module 1:5", { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" }],
+      [
+        "Module 1:5",
+        { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" },
+      ],
     ])
     const selectedActivityIds = new Set(["act-1"])
 
@@ -106,7 +112,7 @@ describe("ActivitySidePanel", () => {
         {...defaultProps}
         selectedPages={selectedPages}
         selectedActivityIds={selectedActivityIds}
-      />
+      />,
     )
 
     await waitFor(() => {
@@ -117,7 +123,10 @@ describe("ActivitySidePanel", () => {
   it("calls onActivityToggle when checkbox clicked", async () => {
     const onActivityToggle = vi.fn()
     const selectedPages = new Map<string, PageInfo>([
-      ["Module 1:5", { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" }],
+      [
+        "Module 1:5",
+        { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" },
+      ],
     ])
 
     renderWithClient(
@@ -125,7 +134,7 @@ describe("ActivitySidePanel", () => {
         {...defaultProps}
         selectedPages={selectedPages}
         onActivityToggle={onActivityToggle}
-      />
+      />,
     )
 
     await waitFor(() => {
@@ -141,11 +150,14 @@ describe("ActivitySidePanel", () => {
 
   it("shows Select All button", async () => {
     const selectedPages = new Map<string, PageInfo>([
-      ["Module 1:5", { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" }],
+      [
+        "Module 1:5",
+        { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" },
+      ],
     ])
 
     renderWithClient(
-      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />
+      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />,
     )
 
     await waitFor(() => {
@@ -155,7 +167,10 @@ describe("ActivitySidePanel", () => {
 
   it("shows Deselect All when all activities selected", async () => {
     const selectedPages = new Map<string, PageInfo>([
-      ["Module 1:5", { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" }],
+      [
+        "Module 1:5",
+        { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" },
+      ],
     ])
     const selectedActivityIds = new Set(["act-1", "act-2"])
 
@@ -164,7 +179,7 @@ describe("ActivitySidePanel", () => {
         {...defaultProps}
         selectedPages={selectedPages}
         selectedActivityIds={selectedActivityIds}
-      />
+      />,
     )
 
     await waitFor(() => {
@@ -174,11 +189,14 @@ describe("ActivitySidePanel", () => {
 
   it("shows page header with module and page number", async () => {
     const selectedPages = new Map<string, PageInfo>([
-      ["Module 1:5", { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" }],
+      [
+        "Module 1:5",
+        { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" },
+      ],
     ])
 
     renderWithClient(
-      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />
+      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />,
     )
 
     await waitFor(() => {
@@ -190,27 +208,33 @@ describe("ActivitySidePanel", () => {
     vi.mocked(booksApi.getPageActivities).mockResolvedValue([])
 
     const selectedPages = new Map<string, PageInfo>([
-      ["Module 1:5", { page_number: 5, activity_count: 0, thumbnail_url: "/thumb/5" }],
+      [
+        "Module 1:5",
+        { page_number: 5, activity_count: 0, thumbnail_url: "/thumb/5" },
+      ],
     ])
 
     renderWithClient(
-      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />
+      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />,
     )
 
     await waitFor(() => {
       expect(
-        screen.getByText(/no interactive activities on this page/i)
+        screen.getByText(/no interactive activities on this page/i),
       ).toBeInTheDocument()
     })
   })
 
   it("shows activity type badges", async () => {
     const selectedPages = new Map<string, PageInfo>([
-      ["Module 1:5", { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" }],
+      [
+        "Module 1:5",
+        { page_number: 5, activity_count: 2, thumbnail_url: "/thumb/5" },
+      ],
     ])
 
     renderWithClient(
-      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />
+      <ActivitySidePanel {...defaultProps} selectedPages={selectedPages} />,
     )
 
     await waitFor(() => {

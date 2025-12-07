@@ -161,8 +161,7 @@ function AdminBenchmarksPage() {
           System-wide performance benchmarks and school settings
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Last calculated:{" "}
-          {new Date(overview.last_calculated).toLocaleString()}
+          Last calculated: {new Date(overview.last_calculated).toLocaleString()}
         </p>
       </div>
 
@@ -183,24 +182,22 @@ function AdminBenchmarksPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Average</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              System Average
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {overview.system_average_score.toFixed(1)}%
             </div>
-            <p className="text-xs text-muted-foreground">
-              across all schools
-            </p>
+            <p className="text-xs text-muted-foreground">across all schools</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Above Average
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Above Average</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -247,7 +244,10 @@ function AdminBenchmarksPage() {
                 <XAxis type="number" domain={[0, 100]} />
                 <YAxis dataKey="name" type="category" width={150} />
                 <Tooltip
-                  formatter={(value: number) => [`${value.toFixed(1)}%`, "Avg Score"]}
+                  formatter={(value: number) => [
+                    `${value.toFixed(1)}%`,
+                    "Avg Score",
+                  ]}
                 />
                 <Bar dataKey="average" name="Average Score">
                   {activityChartData.map((entry, index) => (
@@ -291,9 +291,7 @@ function AdminBenchmarksPage() {
                     <TableHead className="text-center">Classes</TableHead>
                     <TableHead className="text-center">Avg Score</TableHead>
                     <TableHead className="text-center">Performance</TableHead>
-                    <TableHead className="text-center">
-                      Benchmarking
-                    </TableHead>
+                    <TableHead className="text-center">Benchmarking</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -336,7 +334,9 @@ function AdminBenchmarksPage() {
                             }
                           />
                           <span className="text-sm text-muted-foreground">
-                            {school.benchmarking_enabled ? "Enabled" : "Disabled"}
+                            {school.benchmarking_enabled
+                              ? "Enabled"
+                              : "Disabled"}
                           </span>
                         </div>
                       </TableCell>

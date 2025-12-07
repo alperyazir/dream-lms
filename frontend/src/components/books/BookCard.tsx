@@ -28,11 +28,15 @@ export interface BookCardProps {
 export function BookCard({ book, onClick }: BookCardProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [isLoadingCover, setIsLoadingCover] = useState(true)
+  const [imageError, setImageError] = useState(false)
 
   // Fetch authenticated cover URL
   useEffect(() => {
     let isMounted = true
     let blobUrl: string | null = null
+
+    // Reset error state when cover URL changes
+    setImageError(false)
 
     async function fetchCover() {
       if (!book.cover_image_url) {
@@ -67,12 +71,13 @@ export function BookCard({ book, onClick }: BookCardProps) {
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
             <BookOpen className="w-16 h-16 text-gray-400 animate-pulse" />
           </div>
-        ) : coverUrl ? (
+        ) : coverUrl && !imageError ? (
           <img
             src={coverUrl}
             alt={`${book.title} cover`}
             className="w-full h-full object-cover"
             loading="lazy"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-teal-100 to-teal-200">

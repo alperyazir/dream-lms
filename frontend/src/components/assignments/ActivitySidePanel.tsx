@@ -28,12 +28,12 @@ interface ActivitySidePanelProps {
   onSelectAllOnPage: (
     moduleName: string,
     pageNumber: number,
-    activities: PageActivity[]
+    activities: PageActivity[],
   ) => void
   onDeselectAllOnPage: (
     moduleName: string,
     pageNumber: number,
-    activities: PageActivity[]
+    activities: PageActivity[],
   ) => void
 }
 
@@ -58,7 +58,7 @@ export function ActivitySidePanel({
     ([key, page]) => {
       const [moduleName] = key.split(":")
       return { moduleName, pageNumber: page.page_number }
-    }
+    },
   )
 
   // Fetch activities for each selected page
@@ -79,7 +79,7 @@ export function ActivitySidePanel({
       activities: activitiesQueries[index]?.data || [],
       isLoading: activitiesQueries[index]?.isLoading || false,
       error: activitiesQueries[index]?.error as Error | null,
-    })
+    }),
   )
 
   // Sort by page number within each module
@@ -132,14 +132,14 @@ export function ActivitySidePanel({
               onSelectAllOnPage(
                 group.moduleName,
                 group.pageNumber,
-                group.activities
+                group.activities,
               )
             }
             onDeselectAll={() =>
               onDeselectAllOnPage(
                 group.moduleName,
                 group.pageNumber,
-                group.activities
+                group.activities,
               )
             }
           />
@@ -174,9 +174,10 @@ function PageActivityGroup({
 }: PageActivityGroupProps) {
   // Calculate selection state for this page
   const selectedCount = activities.filter((a) =>
-    selectedActivityIds.has(a.id)
+    selectedActivityIds.has(a.id),
   ).length
-  const allSelected = activities.length > 0 && selectedCount === activities.length
+  const allSelected =
+    activities.length > 0 && selectedCount === activities.length
 
   if (isLoading) {
     return (

@@ -5,7 +5,7 @@
  * Displays per-activity score breakdown for students viewing their results.
  */
 
-import { CheckCircle, Clock, FileText, Loader2, XCircle } from "lucide-react"
+import { CheckCircle, Clock, FileText, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -31,13 +31,19 @@ function formatActivityType(type: string): string {
     coloring: "Coloring",
     drawing: "Drawing",
   }
-  return typeMap[type] || type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  return (
+    typeMap[type] ||
+    type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  )
 }
 
 /**
  * Get status icon and color
  */
-function getStatusDisplay(status: string): { icon: React.ReactNode; color: string } {
+function getStatusDisplay(status: string): {
+  icon: React.ReactNode
+  color: string
+} {
   switch (status) {
     case "completed":
       return {
@@ -74,9 +80,10 @@ function getScoreColor(score: number | null, maxScore: number): string {
  */
 function ActivityScoreCard({ activity }: { activity: ActivityScoreItem }) {
   const statusDisplay = getStatusDisplay(activity.status)
-  const scorePercentage = activity.score !== null
-    ? Math.round((activity.score / activity.max_score) * 100)
-    : null
+  const scorePercentage =
+    activity.score !== null
+      ? Math.round((activity.score / activity.max_score) * 100)
+      : null
 
   return (
     <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -94,7 +101,9 @@ function ActivityScoreCard({ activity }: { activity: ActivityScoreItem }) {
       <div className="text-right">
         {activity.score !== null ? (
           <>
-            <div className={`text-2xl font-bold ${getScoreColor(activity.score, activity.max_score)}`}>
+            <div
+              className={`text-2xl font-bold ${getScoreColor(activity.score, activity.max_score)}`}
+            >
               {scorePercentage}%
             </div>
             <div className="text-sm text-muted-foreground">
@@ -126,8 +135,14 @@ function ScoreBreakdownSkeleton() {
 /**
  * Main student score breakdown component
  */
-export function StudentScoreBreakdown({ assignmentId }: StudentScoreBreakdownProps) {
-  const { data: result, isLoading, error } = useStudentAssignmentResult(assignmentId)
+export function StudentScoreBreakdown({
+  assignmentId,
+}: StudentScoreBreakdownProps) {
+  const {
+    data: result,
+    isLoading,
+    error,
+  } = useStudentAssignmentResult(assignmentId)
 
   if (isLoading) {
     return <ScoreBreakdownSkeleton />
@@ -152,7 +167,7 @@ export function StudentScoreBreakdown({ assignmentId }: StudentScoreBreakdownPro
   }
 
   const completionPercent = Math.round(
-    (result.completed_activities / result.total_activities) * 100
+    (result.completed_activities / result.total_activities) * 100,
   )
 
   return (
@@ -161,7 +176,9 @@ export function StudentScoreBreakdown({ assignmentId }: StudentScoreBreakdownPro
         <CardTitle className="flex items-center justify-between">
           <span>{result.assignment_name}</span>
           {result.total_score !== null && (
-            <div className={`text-3xl font-bold ${getScoreColor(result.total_score, 100)}`}>
+            <div
+              className={`text-3xl font-bold ${getScoreColor(result.total_score, 100)}`}
+            >
               {Math.round(result.total_score)}%
             </div>
           )}

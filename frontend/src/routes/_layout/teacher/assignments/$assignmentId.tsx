@@ -10,11 +10,11 @@ import {
   Hourglass,
   MessageSquare,
   PieChart,
+  Play,
   Users,
   XCircle,
 } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
-import * as XLSX from "xlsx"
 import {
   Bar,
   BarChart,
@@ -25,9 +25,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import * as XLSX from "xlsx"
 import { MultiActivityAnalyticsTable } from "@/components/analytics/MultiActivityAnalyticsTable"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { FeedbackModal } from "@/components/feedback"
+import { TestModePlayer } from "@/components/preview"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,7 +51,11 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAssignmentAnalytics } from "@/hooks/useAssignmentAnalytics"
-import { useAssignmentResults, useStudentAnswers } from "@/hooks/useAssignmentResults"
+import {
+  useAssignmentResults,
+  useStudentAnswers,
+} from "@/hooks/useAssignmentResults"
+import { useQuickAssignmentTest } from "@/hooks/usePreviewMode"
 import type {
   ActivityTypeAnalysis,
   MostMissedQuestion,
@@ -263,7 +269,9 @@ function MostMissedQuestionsCard({
                   {q.common_wrong_answer && (
                     <span>
                       Common wrong answer:{" "}
-                      <span className="font-medium">{q.common_wrong_answer}</span>
+                      <span className="font-medium">
+                        {q.common_wrong_answer}
+                      </span>
                     </span>
                   )}
                 </div>
@@ -288,7 +296,7 @@ function QuestionAnalysisChart({
   const chartData = questions.map((q) => ({
     name:
       q.question_text.length > 20
-        ? q.question_text.substring(0, 20) + "..."
+        ? `${q.question_text.substring(0, 20)}...`
         : q.question_text,
     fullName: q.question_text,
     correctPercent: q.correct_percentage,
@@ -301,7 +309,10 @@ function QuestionAnalysisChart({
         <CardTitle>Question Performance</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={Math.max(250, questions.length * 40)}>
+        <ResponsiveContainer
+          width="100%"
+          height={Math.max(250, questions.length * 40)}
+        >
           <BarChart data={chartData} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" domain={[0, 100]} unit="%" />
@@ -361,39 +372,44 @@ function ActivityTypeAnalysisSection({
       <QuestionAnalysisChart questions={analysis.questions} />
 
       {/* Word Matching Errors (for matchTheWords activity type) */}
-      {analysis.word_matching_errors && analysis.word_matching_errors.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Common Word Matching Errors</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Word</TableHead>
-                  <TableHead>Correct Match</TableHead>
-                  <TableHead>Common Mistake</TableHead>
-                  <TableHead className="text-right">Error Count</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {analysis.word_matching_errors.map((error) => (
-                  <TableRow key={error.word}>
-                    <TableCell className="font-medium">{error.word}</TableCell>
-                    <TableCell className="text-green-600">
-                      {error.correct_match}
-                    </TableCell>
-                    <TableCell className="text-red-600">
-                      {error.common_incorrect_match}
-                    </TableCell>
-                    <TableCell className="text-right">{error.error_count}</TableCell>
+      {analysis.word_matching_errors &&
+        analysis.word_matching_errors.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Common Word Matching Errors</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Word</TableHead>
+                    <TableHead>Correct Match</TableHead>
+                    <TableHead>Common Mistake</TableHead>
+                    <TableHead className="text-right">Error Count</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+                </TableHeader>
+                <TableBody>
+                  {analysis.word_matching_errors.map((error) => (
+                    <TableRow key={error.word}>
+                      <TableCell className="font-medium">
+                        {error.word}
+                      </TableCell>
+                      <TableCell className="text-green-600">
+                        {error.correct_match}
+                      </TableCell>
+                      <TableCell className="text-red-600">
+                        {error.common_incorrect_match}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {error.error_count}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Word Search Analysis */}
       {analysis.word_search && analysis.word_search.length > 0 && (
@@ -428,8 +444,12 @@ function ActivityTypeAnalysisSection({
                         {word.find_rate.toFixed(0)}%
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">{word.found_count}</TableCell>
-                    <TableCell className="text-right">{word.total_attempts}</TableCell>
+                    <TableCell className="text-right">
+                      {word.found_count}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {word.total_attempts}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -453,7 +473,9 @@ function StudentResultsTable({
   const [statusFilter, setStatusFilter] = useState<StudentStatus>("all")
   const [sortBy, setSortBy] = useState<SortBy>("name")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
+    null,
+  )
   const [feedbackStudent, setFeedbackStudent] = useState<{
     id: string
     name: string
@@ -482,7 +504,8 @@ function StudentResultsTable({
           if (!a.completed_at) return 1
           if (!b.completed_at) return -1
           comparison =
-            new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
+            new Date(a.completed_at).getTime() -
+            new Date(b.completed_at).getTime()
           break
       }
       return sortDirection === "asc" ? comparison : -comparison
@@ -524,7 +547,9 @@ function StudentResultsTable({
             <div className="flex gap-4">
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as StudentStatus)}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as StudentStatus)
+                }
                 className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 aria-label="Filter by status"
               >
@@ -536,7 +561,8 @@ function StudentResultsTable({
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Showing {filteredAndSortedStudents.length} of {students.length} students
+            Showing {filteredAndSortedStudents.length} of {students.length}{" "}
+            students
           </p>
         </CardHeader>
         <CardContent>
@@ -554,7 +580,8 @@ function StudentResultsTable({
                       onClick={() => handleSort("name")}
                     >
                       Student Name{" "}
-                      {sortBy === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                      {sortBy === "name" &&
+                        (sortDirection === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead
@@ -562,14 +589,16 @@ function StudentResultsTable({
                       onClick={() => handleSort("score")}
                     >
                       Score{" "}
-                      {sortBy === "score" && (sortDirection === "asc" ? "↑" : "↓")}
+                      {sortBy === "score" &&
+                        (sortDirection === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead
                       className="cursor-pointer hover:bg-muted text-right"
                       onClick={() => handleSort("time")}
                     >
                       Time Spent{" "}
-                      {sortBy === "time" && (sortDirection === "asc" ? "↑" : "↓")}
+                      {sortBy === "time" &&
+                        (sortDirection === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead
                       className="cursor-pointer hover:bg-muted"
@@ -622,9 +651,13 @@ function StudentResultsTable({
                       <TableCell>
                         {student.completed_at ? (
                           <div>
-                            {new Date(student.completed_at).toLocaleDateString()}
+                            {new Date(
+                              student.completed_at,
+                            ).toLocaleDateString()}
                             <div className="text-xs text-muted-foreground">
-                              {new Date(student.completed_at).toLocaleTimeString([], {
+                              {new Date(
+                                student.completed_at,
+                              ).toLocaleTimeString([], {
                                 hour: "2-digit",
                                 minute: "2-digit",
                               })}
@@ -644,7 +677,10 @@ function StudentResultsTable({
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
-                              console.log("[ViewDetails] Button clicked for student:", student.student_id)
+                              console.log(
+                                "[ViewDetails] Button clicked for student:",
+                                student.student_id,
+                              )
                               setSelectedStudentId(student.student_id)
                             }}
                             disabled={student.status === "not_started"}
@@ -654,9 +690,13 @@ function StudentResultsTable({
                           </Button>
                           <Button
                             type="button"
-                            variant={student.has_feedback ? "secondary" : "outline"}
+                            variant={
+                              student.has_feedback ? "secondary" : "outline"
+                            }
                             size="sm"
-                            className={student.has_feedback ? "text-green-600" : ""}
+                            className={
+                              student.has_feedback ? "text-green-600" : ""
+                            }
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
@@ -669,7 +709,9 @@ function StudentResultsTable({
                             disabled={student.status === "not_started"}
                           >
                             <MessageSquare className="h-4 w-4 mr-1" />
-                            {student.has_feedback ? "Edit Feedback" : "Feedback"}
+                            {student.has_feedback
+                              ? "Edit Feedback"
+                              : "Feedback"}
                           </Button>
                         </div>
                       </TableCell>
@@ -719,10 +761,17 @@ function StudentAnswersDialog({
     studentId: studentId || "",
   })
 
-  console.log("[StudentAnswersDialog] Hook result:", { answers, isLoading, error, studentId })
+  console.log("[StudentAnswersDialog] Hook result:", {
+    answers,
+    isLoading,
+    error,
+    studentId,
+  })
 
   if (!studentId) {
-    console.log("[StudentAnswersDialog] Returning null because studentId is null")
+    console.log(
+      "[StudentAnswersDialog] Returning null because studentId is null",
+    )
     return null
   }
 
@@ -741,7 +790,9 @@ function StudentAnswersDialog({
         {isLoading ? (
           <div className="text-center py-8">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-teal-600 border-r-transparent" />
-            <p className="text-muted-foreground mt-4">Loading student answers...</p>
+            <p className="text-muted-foreground mt-4">
+              Loading student answers...
+            </p>
           </div>
         ) : answers ? (
           <div className="space-y-4">
@@ -757,8 +808,12 @@ function StudentAnswersDialog({
                 </p>
               </div>
               <div>
-                <span className="text-sm text-muted-foreground">Time Spent</span>
-                <p className="font-medium">{answers.time_spent_minutes} minutes</p>
+                <span className="text-sm text-muted-foreground">
+                  Time Spent
+                </span>
+                <p className="font-medium">
+                  {answers.time_spent_minutes} minutes
+                </p>
               </div>
               <div>
                 <span className="text-sm text-muted-foreground">Completed</span>
@@ -804,6 +859,22 @@ function AssignmentDetailContent() {
   const { data: analytics } = useAssignmentAnalytics(assignmentId)
   const isMultiActivity = analytics && analytics.activities.length > 1
 
+  // Story 9.7: Test mode functionality
+  const {
+    previewAssignment,
+    isLoading: isLoadingPreview,
+    isTestModeActive,
+    testKey,
+    startTestMode,
+    exitTestMode,
+    retryTestMode,
+  } = useQuickAssignmentTest()
+
+  // Handle test mode start
+  const handleStartTestMode = useCallback(() => {
+    startTestMode(assignmentId)
+  }, [assignmentId, startTestMode])
+
   // Export results to Excel
   const handleExportExcel = useCallback(() => {
     if (!results) return
@@ -817,7 +888,12 @@ function AssignmentDetailContent() {
       [],
       ["Assignment Name", results.assignment_name],
       ["Activity Type", results.activity_type],
-      ["Due Date", results.due_date ? new Date(results.due_date).toLocaleDateString() : "N/A"],
+      [
+        "Due Date",
+        results.due_date
+          ? new Date(results.due_date).toLocaleDateString()
+          : "N/A",
+      ],
       [],
       ["Completion Overview"],
       ["Completed", results.completion_overview.completed],
@@ -827,22 +903,50 @@ function AssignmentDetailContent() {
       ["Total", results.completion_overview.total],
       [],
       ["Score Statistics"],
-      ["Average Score", results.score_statistics ? `${results.score_statistics.avg_score.toFixed(1)}%` : "N/A"],
-      ["Median Score", results.score_statistics ? `${results.score_statistics.median_score}%` : "N/A"],
-      ["Highest Score", results.score_statistics ? `${results.score_statistics.highest_score}%` : "N/A"],
-      ["Lowest Score", results.score_statistics ? `${results.score_statistics.lowest_score}%` : "N/A"],
+      [
+        "Average Score",
+        results.score_statistics
+          ? `${results.score_statistics.avg_score.toFixed(1)}%`
+          : "N/A",
+      ],
+      [
+        "Median Score",
+        results.score_statistics
+          ? `${results.score_statistics.median_score}%`
+          : "N/A",
+      ],
+      [
+        "Highest Score",
+        results.score_statistics
+          ? `${results.score_statistics.highest_score}%`
+          : "N/A",
+      ],
+      [
+        "Lowest Score",
+        results.score_statistics
+          ? `${results.score_statistics.lowest_score}%`
+          : "N/A",
+      ],
     ]
     const summaryWs = XLSX.utils.aoa_to_sheet(summaryData)
     XLSX.utils.book_append_sheet(wb, summaryWs, "Summary")
 
     // Student Results sheet
-    const studentHeaders = ["Name", "Status", "Score", "Time Spent (min)", "Completed At"]
+    const studentHeaders = [
+      "Name",
+      "Status",
+      "Score",
+      "Time Spent (min)",
+      "Completed At",
+    ]
     const studentRows = results.student_results.map((student) => [
       student.name,
       student.status,
       student.score !== null ? `${student.score}%` : "N/A",
       student.time_spent_minutes,
-      student.completed_at ? new Date(student.completed_at).toLocaleString() : "N/A",
+      student.completed_at
+        ? new Date(student.completed_at).toLocaleString()
+        : "N/A",
     ])
     const studentWs = XLSX.utils.aoa_to_sheet([studentHeaders, ...studentRows])
     XLSX.utils.book_append_sheet(wb, studentWs, "Student Results")
@@ -855,12 +959,18 @@ function AssignmentDetailContent() {
         `${q.correct_percentage.toFixed(1)}%`,
         q.total_responses,
       ])
-      const questionWs = XLSX.utils.aoa_to_sheet([questionHeaders, ...questionRows])
+      const questionWs = XLSX.utils.aoa_to_sheet([
+        questionHeaders,
+        ...questionRows,
+      ])
       XLSX.utils.book_append_sheet(wb, questionWs, "Question Analysis")
     }
 
     // Most Missed Questions sheet (if available)
-    if (results.question_analysis?.most_missed && results.question_analysis.most_missed.length > 0) {
+    if (
+      results.question_analysis?.most_missed &&
+      results.question_analysis.most_missed.length > 0
+    ) {
       const missedHeaders = ["Question", "Correct %", "Common Wrong Answer"]
       const missedRows = results.question_analysis.most_missed.map((q) => [
         q.question_text,
@@ -882,7 +992,9 @@ function AssignmentDetailContent() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-teal-600 border-r-transparent" />
-          <p className="text-muted-foreground mt-4">Loading assignment results...</p>
+          <p className="text-muted-foreground mt-4">
+            Loading assignment results...
+          </p>
         </div>
       </div>
     )
@@ -924,7 +1036,9 @@ function AssignmentDetailContent() {
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold mb-2">{results.assignment_name}</h1>
+              <h1 className="text-3xl font-bold mb-2">
+                {results.assignment_name}
+              </h1>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Badge variant="outline">{results.activity_type}</Badge>
                 {results.due_date && (
@@ -938,6 +1052,17 @@ function AssignmentDetailContent() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Story 9.7: Preview Assignment button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStartTestMode}
+                disabled={isLoadingPreview}
+                className="flex items-center gap-2"
+              >
+                <Play className="h-4 w-4" />
+                {isLoadingPreview ? "Loading..." : "Preview"}
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -962,9 +1087,21 @@ function AssignmentDetailContent() {
         </CardHeader>
       </Card>
 
+      {/* Story 9.7: Test Mode Player */}
+      {isTestModeActive && previewAssignment && (
+        <TestModePlayer
+          key={testKey}
+          assignment={previewAssignment}
+          onExit={exitTestMode}
+          onRetry={retryTestMode}
+        />
+      )}
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`grid w-full ${isMultiActivity ? "grid-cols-3" : "grid-cols-2"} max-w-md`}>
+        <TabsList
+          className={`grid w-full ${isMultiActivity ? "grid-cols-3" : "grid-cols-2"} max-w-md`}
+        >
           <TabsTrigger value="results" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Results

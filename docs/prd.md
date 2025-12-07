@@ -28,6 +28,7 @@ saves teachers time, keeps students motivated, and helps publishers distribute c
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-10-21 | 1.0 | Initial PRD creation | PM Agent (John) |
+| 2025-12-03 | 1.1 | Added Epic 9 requirements (FR34-FR60): Book licensing, calendar scheduling, activity selection tabs, preview/test mode, bulk import, UI enhancements | Claude |
 
 ---
 
@@ -98,6 +99,54 @@ saves teachers time, keeps students motivated, and helps publishers distribute c
 - FR31: Admin shall be able to view and manage all schools, publishers, teachers, and students in the system
 - FR32: Admin shall be able to access system-wide reports and analytics
 - FR33: Admin shall be able to manage publisher accounts and their content permissions
+
+**Book Access & Licensing (Epic 9):**
+
+- FR34: Publishers shall be able to assign book access permissions to specific schools and/or individual teachers
+- FR35: Teachers shall only see and be able to assign from books that have been assigned to them or their school by the publisher
+- FR36: Publishers shall be able to view and revoke book access assignments
+
+**Assignment Scheduling & Calendar (Epic 9):**
+
+- FR37: Teachers shall be able to schedule assignments to auto-publish on a future date
+- FR38: System shall automatically publish scheduled assignments when their publish date is reached
+- FR39: Teachers shall be able to view all assignments (scheduled, active, past) on a calendar interface
+- FR40: Teachers shall be able to create assignments directly from the calendar by clicking on a date
+
+**Activity Selection Methods (Epic 9):**
+
+- FR41: Teachers shall be able to select activities for assignments using multiple methods: individual selection, by page (all activities on selected pages), or by module (all activities in selected modules)
+- FR42: Activity selection interface shall show cumulative selection count and allow removal of individual activities
+
+**Assignment Preview & Testing (Epic 9):**
+
+- FR43: Teachers shall be able to preview individual activities before adding them to assignments
+- FR44: Teachers shall be able to test/play through an entire assignment as a student would, with scoring displayed but not recorded
+
+**Bulk Student Import (Epic 9):**
+
+- FR45: Admin and Teachers shall be able to bulk import students via Excel file upload
+- FR46: System shall provide a downloadable Excel template with required columns (Full Name) and optional columns (Username, Password, Email, Student ID, Class)
+- FR47: System shall auto-generate usernames from full names with Turkish character mapping (ığüşöç → igusoc) when not provided
+- FR48: System shall auto-generate secure passwords when not provided
+- FR49: System shall validate uploaded Excel data and display preview with errors/warnings before import
+- FR50: System shall provide one-time download of generated credentials after successful import
+
+**User Management Enhancements (Epic 9):**
+
+- FR51: Admin shall be able to reset any user's password (generating a new password, not viewing stored passwords)
+- FR52: Admin shall be able to edit user fields (full name, email, username) after account creation
+- FR53: Admin shall be able to upload and manage publisher organization logos
+- FR54: School creation shall require Publisher selection (validation)
+- FR55: Teacher creation shall require School selection (validation)
+
+**Profile & UI Enhancements (Epic 9):**
+
+- FR56: All users shall be able to upload a profile image or select from predefined avatar options
+- FR57: Publishers shall see their organization logo displayed in their dashboard/profile area
+- FR58: Teachers shall be able to view books in list view (in addition to grid view) in the library
+- FR59: Teachers shall be able to zoom in/out when viewing book pages
+- FR60: Teachers shall be able to edit assignment activity selections after creation
 
 ### Non-Functional Requirements
 

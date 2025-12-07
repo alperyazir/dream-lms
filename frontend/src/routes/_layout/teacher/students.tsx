@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { BarChart3, Edit, Plus, Trash2, Users } from "lucide-react"
+import {
+  BarChart3,
+  Edit,
+  FileSpreadsheet,
+  Plus,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import {
   type StudentCreateAPI,
@@ -8,6 +16,7 @@ import {
   type StudentUpdate,
   TeachersService,
 } from "@/client"
+import { ImportStudentsDialog } from "@/components/Admin/ImportStudentsDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import {
   AlertDialog,
@@ -41,6 +50,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import useCustomToast from "@/hooks/useCustomToast"
+import { generateUsername } from "@/utils/usernameGenerator"
 
 export const Route = createFileRoute("/_layout/teacher/students")({
   component: () => (
@@ -79,6 +89,11 @@ function TeacherStudentsPage() {
   const [studentClassroomsMap, setStudentClassroomsMap] = useState<
     Record<string, string[]>
   >({})
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
+    new Set(),
+  )
 
   // Fetch students from API
   const {
@@ -261,6 +276,31 @@ function TeacherStudentsPage() {
     },
   })
 
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) =>
+      TeachersService.bulkDeleteStudents({ requestBody: { ids } }),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["teacherStudents"] })
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
+      setSelectedStudentIds(new Set())
+      setIsBulkDeleteDialogOpen(false)
+      if (response.deleted_count > 0) {
+        showSuccessToast(
+          `Successfully deleted ${response.deleted_count} student(s)`,
+        )
+      }
+      if (response.failed_count > 0) {
+        showErrorToast(`Failed to delete ${response.failed_count} student(s)`)
+      }
+    },
+    onError: (error: any) => {
+      showErrorToast(
+        error.body?.detail || "Failed to delete students. Please try again.",
+      )
+    },
+  })
+
   const handleAddStudent = () => {
     if (
       !newStudent.username ||
@@ -272,9 +312,9 @@ function TeacherStudentsPage() {
     }
 
     // Validate username format
-    if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newStudent.username)) {
+    if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(newStudent.username)) {
       showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen",
+        "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
       )
       return
     }
@@ -316,6 +356,35 @@ function TeacherStudentsPage() {
     deleteStudentMutation.mutate(selectedStudent.id)
   }
 
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedStudentIds(new Set(filteredStudents.map((s) => s.id)))
+    } else {
+      setSelectedStudentIds(new Set())
+    }
+  }
+
+  const handleSelectStudent = (studentId: string, checked: boolean) => {
+    const newSelected = new Set(selectedStudentIds)
+    if (checked) {
+      newSelected.add(studentId)
+    } else {
+      newSelected.delete(studentId)
+    }
+    setSelectedStudentIds(newSelected)
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedStudentIds.size > 0) {
+      setIsBulkDeleteDialogOpen(true)
+    }
+  }
+
+  const confirmBulkDelete = () => {
+    bulkDeleteMutation.mutate(Array.from(selectedStudentIds))
+  }
+
   const filteredStudents = students.filter(
     (student) =>
       student.user_full_name
@@ -346,14 +415,53 @@ function TeacherStudentsPage() {
             className="w-full"
           />
         </div>
-        <Button
-          onClick={() => setIsAddDialogOpen(true)}
-          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Student
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsImportDialogOpen(true)}
+            className="border-teal-200 hover:border-teal-300 hover:bg-teal-50"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Import Students
+          </Button>
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Student
+          </Button>
+        </div>
       </div>
+
+      {/* Bulk Action Bar */}
+      {selectedStudentIds.size > 0 && (
+        <div className="flex items-center justify-between p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg mb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+              {selectedStudentIds.size} student(s) selected
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedStudentIds(new Set())}
+              className="text-teal-600 hover:text-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleteMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Selected
+          </Button>
+        </div>
+      )}
 
       {/* Loading/Error States */}
       {error ? (
@@ -379,6 +487,16 @@ function TeacherStudentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={
+                      filteredStudents.length > 0 &&
+                      selectedStudentIds.size === filteredStudents.length
+                    }
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all"
+                  />
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
@@ -390,7 +508,23 @@ function TeacherStudentsPage() {
             </TableHeader>
             <TableBody>
               {filteredStudents.map((student) => (
-                <TableRow key={student.id}>
+                <TableRow
+                  key={student.id}
+                  className={
+                    selectedStudentIds.has(student.id)
+                      ? "bg-teal-50 dark:bg-teal-900/20"
+                      : ""
+                  }
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedStudentIds.has(student.id)}
+                      onCheckedChange={(checked) =>
+                        handleSelectStudent(student.id, checked as boolean)
+                      }
+                      aria-label={`Select ${student.user_full_name}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-xs">
@@ -501,13 +635,8 @@ function TeacherStudentsPage() {
                 value={newStudent.full_name}
                 onChange={(e) => {
                   const fullName = e.target.value
-                  // Auto-generate username
-                  const generatedUsername = fullName
-                    .toLowerCase()
-                    .trim()
-                    .replace(/\s+/g, "-")
-                    .replace(/[^a-z0-9_-]/g, "")
-                    .slice(0, 50)
+                  // Auto-generate username with Turkish character support
+                  const generatedUsername = generateUsername(fullName)
 
                   setNewStudent({
                     ...newStudent,
@@ -540,7 +669,7 @@ function TeacherStudentsPage() {
                 id="email"
                 type="email"
                 placeholder="e.g., student@school.com"
-                value={newStudent.user_email}
+                value={newStudent.user_email || ""}
                 onChange={(e) =>
                   setNewStudent({ ...newStudent, user_email: e.target.value })
                 }
@@ -685,7 +814,7 @@ function TeacherStudentsPage() {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                3-50 characters, alphanumeric, underscore, or hyphen
+                3-50 characters, alphanumeric, underscore, hyphen, or dot
               </p>
             </div>
             <div className="space-y-2">
@@ -803,6 +932,47 @@ function TeacherStudentsPage() {
               {deleteStudentMutation.isPending
                 ? "Deleting..."
                 : "Delete Student"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Import Students Dialog [Story 9.9] */}
+      <ImportStudentsDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        onImportComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ["teacherStudents"] })
+        }}
+        isAdmin={false}
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isBulkDeleteDialogOpen}
+        onOpenChange={setIsBulkDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected Students</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedStudentIds.size} selected
+              student(s)? This action cannot be undone and will remove them from
+              all classrooms.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleteMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {bulkDeleteMutation.isPending
+                ? "Deleting..."
+                : `Delete ${selectedStudentIds.size} Student(s)`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

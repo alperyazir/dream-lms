@@ -12,14 +12,39 @@ from pydantic import (
     model_validator,
 )
 
-from app.models import AssignmentStatus
+from app.models import AssignmentPublishStatus, AssignmentStatus
+
+
+class DateGroupCreate(BaseModel):
+    """Schema for a date group in Time Planning mode.
+
+    Each date group creates a separate assignment with its own publish date.
+    """
+    scheduled_publish_date: datetime  # When to publish/make visible
+    due_date: datetime | None = None  # When due for this group
+    time_limit_minutes: int | None = None
+    activity_ids: list[uuid.UUID]
+
+    @field_validator("scheduled_publish_date")
+    @classmethod
+    def validate_scheduled_date(cls, v: datetime) -> datetime:
+        """Scheduled publish date can be in the future or now (for immediate publishing)."""
+        return v
+
+    @field_validator("activity_ids")
+    @classmethod
+    def validate_activity_ids_not_empty(cls, v: list[uuid.UUID]) -> list[uuid.UUID]:
+        """Validate at least one activity is in the group."""
+        if not v or len(v) == 0:
+            raise ValueError("Each date group must have at least one activity")
+        return v
 
 
 class AssignmentCreate(BaseModel):
     """Schema for creating a new assignment.
 
     Supports both single-activity (backward compatible) and multi-activity assignments.
-    Provide either activity_id (single) OR activity_ids (multi), not both.
+    Provide either activity_id (single) OR activity_ids (multi) OR date_groups (Time Planning).
     """
 
     book_id: uuid.UUID
@@ -33,6 +58,18 @@ class AssignmentCreate(BaseModel):
     activity_id: uuid.UUID | None = None
     # Multi-activity: list of activities with order
     activity_ids: list[uuid.UUID] | None = None
+    # Scheduling fields
+    scheduled_publish_date: datetime | None = None
+    # Time Planning mode: creates multiple assignments, one per date group
+    date_groups: list[DateGroupCreate] | None = None
+
+    @field_validator("scheduled_publish_date")
+    @classmethod
+    def validate_scheduled_publish_date(cls, v: datetime | None) -> datetime | None:
+        """Validate scheduled publish date is in the future if provided."""
+        if v is not None and v < datetime.now(UTC):
+            raise ValueError("Scheduled publish date must be in the future")
+        return v
 
     @field_validator("name")
     @classmethod
@@ -73,15 +110,35 @@ class AssignmentCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_activity_ids(self) -> "AssignmentCreate":
-        """Validate that either activity_id OR activity_ids is provided, not both."""
+        """Validate that either activity_id OR activity_ids OR date_groups is provided."""
         has_single = self.activity_id is not None
         has_multi = self.activity_ids is not None and len(self.activity_ids) > 0
+        has_date_groups = self.date_groups is not None and len(self.date_groups) > 0
 
+        # Time Planning mode uses date_groups (each group has its own activities)
+        if has_date_groups:
+            # When using date_groups, don't require activity_id or activity_ids
+            if has_single or has_multi:
+                raise ValueError("Cannot provide activity_id or activity_ids with date_groups")
+            return self
+
+        # Standard mode: require activity_id or activity_ids
         if not has_single and not has_multi:
             raise ValueError("Either activity_id or activity_ids must be provided")
         if has_single and has_multi:
             raise ValueError("Cannot provide both activity_id and activity_ids")
 
+        return self
+
+    @model_validator(mode="after")
+    def validate_publish_before_due(self) -> "AssignmentCreate":
+        """Validate scheduled_publish_date is before or equal to due_date."""
+        if (
+            self.scheduled_publish_date is not None
+            and self.due_date is not None
+            and self.scheduled_publish_date > self.due_date
+        ):
+            raise ValueError("Scheduled publish date must be before or equal to due date")
         return self
 
     def get_activity_ids(self) -> list[uuid.UUID]:
@@ -94,12 +151,19 @@ class AssignmentCreate(BaseModel):
 
 
 class AssignmentUpdate(BaseModel):
-    """Schema for updating an existing assignment (partial update)."""
+    """Schema for updating an existing assignment (partial update).
+
+    Story 9.8: Added activity_ids field to allow editing activities.
+    """
 
     name: str | None = None
     instructions: str | None = None
     due_date: datetime | None = None
     time_limit_minutes: int | None = None
+    scheduled_publish_date: datetime | None = None
+    status: AssignmentPublishStatus | None = None
+    # Story 9.8: Allow updating activities (add/remove/reorder)
+    activity_ids: list[uuid.UUID] | None = None
 
     @field_validator("name")
     @classmethod
@@ -126,6 +190,22 @@ class AssignmentUpdate(BaseModel):
         """Validate time limit is positive if provided."""
         if v is not None and v <= 0:
             raise ValueError("Time limit must be greater than 0")
+        return v
+
+    @field_validator("scheduled_publish_date")
+    @classmethod
+    def validate_scheduled_publish_date(cls, v: datetime | None) -> datetime | None:
+        """Validate scheduled publish date is in the future if provided."""
+        if v is not None and v < datetime.now(UTC):
+            raise ValueError("Scheduled publish date must be in the future")
+        return v
+
+    @field_validator("activity_ids")
+    @classmethod
+    def validate_activity_ids_not_empty(cls, v: list[uuid.UUID] | None) -> list[uuid.UUID] | None:
+        """Validate activity_ids list is not empty if provided."""
+        if v is not None and len(v) == 0:
+            raise ValueError("Activity list cannot be empty - must have at least one activity")
         return v
 
 
@@ -174,6 +254,9 @@ class AssignmentResponse(BaseModel):
     # Multi-activity support
     activities: list[ActivityInfo] = []
     activity_count: int = 0
+    # Scheduling fields
+    scheduled_publish_date: datetime | None = None
+    status: AssignmentPublishStatus = AssignmentPublishStatus.published
 
 
 class AssignmentListItem(BaseModel):
@@ -203,6 +286,10 @@ class AssignmentListItem(BaseModel):
 
     # Teacher info (for admin view)
     teacher_name: str | None = None
+
+    # Scheduling fields
+    scheduled_publish_date: datetime | None = None
+    status: AssignmentPublishStatus = AssignmentPublishStatus.published
 
 
 class StudentAssignmentResponse(BaseModel):
@@ -650,3 +737,150 @@ class StudentAssignmentResultResponse(BaseModel):
     activity_scores: list[ActivityScoreItem]
     total_activities: int
     completed_activities: int
+
+
+# --- Calendar Schemas (Story 9.6) ---
+
+
+class CalendarAssignmentItem(BaseModel):
+    """Assignment item for calendar view."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    due_date: datetime | None
+    scheduled_publish_date: datetime | None
+    status: AssignmentPublishStatus
+    activity_count: int
+    class_names: list[str] = []
+    book_id: uuid.UUID
+    book_title: str
+
+
+class CalendarDateAssignments(BaseModel):
+    """Assignments grouped by date for calendar view."""
+
+    date: str  # ISO date string YYYY-MM-DD
+    assignments: list[CalendarAssignmentItem]
+
+
+class CalendarAssignmentsResponse(BaseModel):
+    """Response schema for calendar assignments endpoint."""
+
+    start_date: str
+    end_date: str
+    total_assignments: int
+    assignments_by_date: dict[str, list[CalendarAssignmentItem]]
+
+
+# --- Time Planning (Bulk Assignment Creation) Schemas ---
+
+
+class BulkAssignmentCreatedItem(BaseModel):
+    """Individual assignment created in bulk operation."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    scheduled_publish_date: datetime | None
+    due_date: datetime | None
+    status: AssignmentPublishStatus
+    activity_count: int
+
+
+class BulkAssignmentCreateResponse(BaseModel):
+    """Response schema for bulk assignment creation (Time Planning mode)."""
+
+    success: bool
+    message: str
+    total_created: int
+    assignments: list[BulkAssignmentCreatedItem]
+
+
+# --- Student Calendar Schemas ---
+
+
+class StudentCalendarAssignmentItem(BaseModel):
+    """Assignment item for student calendar view."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    due_date: datetime | None
+    book_id: uuid.UUID
+    book_title: str
+    book_cover_url: str | None
+    activity_count: int
+    status: str  # not_started, in_progress, completed
+
+
+class StudentCalendarAssignmentsResponse(BaseModel):
+    """Response schema for student calendar assignments endpoint."""
+
+    start_date: str
+    end_date: str
+    total_assignments: int
+    assignments_by_date: dict[str, list[StudentCalendarAssignmentItem]]
+
+
+# =============================================================================
+# Preview/Test Mode Schemas (Story 9.7)
+# =============================================================================
+
+
+class AssignmentPreviewResponse(BaseModel):
+    """Response schema for teacher assignment preview/test mode.
+
+    Similar to MultiActivityStartResponse but without student-specific data.
+    Used for teachers to preview/test assignments before or after publishing.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    # Assignment info
+    assignment_id: uuid.UUID
+    assignment_name: str
+    instructions: str | None
+    due_date: datetime | None
+    time_limit_minutes: int | None
+    status: AssignmentPublishStatus
+
+    # Book info
+    book_id: uuid.UUID
+    book_title: str
+    book_name: str
+    publisher_name: str
+    book_cover_url: str | None
+
+    # Multi-activity data
+    activities: list[ActivityWithConfig]
+    total_activities: int
+
+    # Preview mode indicator
+    is_preview: bool = True
+
+
+class ActivityPreviewResponse(BaseModel):
+    """Response schema for single activity preview.
+
+    Returns activity data in student-view format for teacher preview.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    # Activity info
+    activity_id: uuid.UUID
+    activity_title: str | None
+    activity_type: str
+    config_json: dict
+
+    # Book info (for image URL construction)
+    book_id: uuid.UUID
+    book_name: str
+    publisher_name: str
+
+    # Preview mode indicator
+    is_preview: bool = True

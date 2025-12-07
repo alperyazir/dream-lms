@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { BookOpen, School, Users } from "lucide-react"
-import { PublishersService } from "@/client"
+import { OpenAPI, PublishersService } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { StatCard } from "@/components/dashboard/StatCard"
+import { getMyProfile } from "@/services/publishersApi"
 
 export const Route = createFileRoute("/_layout/publisher/dashboard")({
   component: () => (
@@ -25,16 +26,51 @@ function PublisherDashboard() {
     staleTime: 30000, // Cache for 30 seconds
   })
 
+  // Fetch publisher profile for logo display
+  const { data: profile } = useQuery({
+    queryKey: ["publisherProfile"],
+    queryFn: () => getMyProfile(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  })
+
+  // Get publisher initials for fallback
+  const getPublisherInitials = (name: string): string => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
   return (
     <div className="max-w-full p-6 space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Publisher Dashboard
-        </h1>
-        <p className="text-muted-foreground">
-          Overview of your organization's schools, books, and teachers
-        </p>
+      {/* Header with Logo */}
+      <div className="flex items-center gap-6">
+        {/* Publisher Logo */}
+        {profile && (
+          <div className="flex-shrink-0">
+            {profile.logo_url ? (
+              <img
+                src={`${OpenAPI.BASE}${profile.logo_url}`}
+                alt={`${profile.name} logo`}
+                className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-lg"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                {getPublisherInitials(profile.name)}
+              </div>
+            )}
+          </div>
+        )}
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            {profile?.name || "Publisher Dashboard"}
+          </h1>
+          <p className="text-muted-foreground">
+            Overview of your organization's schools, books, and teachers
+          </p>
+        </div>
       </div>
 
       {/* Stats Cards */}

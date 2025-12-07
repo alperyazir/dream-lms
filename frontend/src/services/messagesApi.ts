@@ -83,7 +83,9 @@ export async function getConversations(
  * @param partnerId - ID of the conversation partner
  * @returns Promise with message thread
  */
-export async function getThread(partnerId: string): Promise<MessageThreadResponse> {
+export async function getThread(
+  partnerId: string,
+): Promise<MessageThreadResponse> {
   const url = `/api/v1/messages/thread/${partnerId}`
   const response = await apiClient.get<MessageThreadResponse>(url)
   return response.data
@@ -107,7 +109,9 @@ export async function sendMessage(data: MessageCreate): Promise<Message> {
  * @param messageId - ID of the message to mark as read
  * @returns Promise with the updated message read status
  */
-export async function markAsRead(messageId: string): Promise<MessageReadResponse> {
+export async function markAsRead(
+  messageId: string,
+): Promise<MessageReadResponse> {
   const url = `/api/v1/messages/${messageId}/read`
   const response = await apiClient.patch<MessageReadResponse>(url)
   return response.data

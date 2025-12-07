@@ -150,6 +150,159 @@ def generate_temp_password(length: int = 12) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
+# Turkish character mapping for username generation (Story 9.9)
+TURKISH_CHAR_MAP: dict[str, str] = {
+    'ı': 'i', 'İ': 'I',
+    'ğ': 'g', 'Ğ': 'G',
+    'ü': 'u', 'Ü': 'U',
+    'ş': 's', 'Ş': 'S',
+    'ö': 'o', 'Ö': 'O',
+    'ç': 'c', 'Ç': 'C',
+}
+
+
+def turkish_to_ascii(text: str) -> str:
+    """
+    Convert Turkish special characters to ASCII equivalents.
+
+    Args:
+        text: Input text containing Turkish characters
+
+    Returns:
+        Text with Turkish characters replaced with ASCII equivalents
+
+    Example:
+        >>> turkish_to_ascii("Öğrenci")
+        "Ogrenci"
+    """
+    result = []
+    for char in text:
+        result.append(TURKISH_CHAR_MAP.get(char, char))
+    return ''.join(result)
+
+
+def generate_username_from_fullname(full_name: str) -> str:
+    """
+    Generate a username from a full name for bulk import.
+
+    Rules (Story 9.9 AC 22):
+    - Converts to lowercase
+    - Maps Turkish characters (ığüşöç → igusoc)
+    - Replaces spaces with dots
+    - Removes special characters except dots
+
+    Args:
+        full_name: User's full name
+
+    Returns:
+        Generated username (e.g., "ahmet.yilmaz")
+
+    Example:
+        >>> generate_username_from_fullname("Ahmet Yılmaz")
+        "ahmet.yilmaz"
+        >>> generate_username_from_fullname("Ömer Faruk Şahin")
+        "omer.faruk.sahin"
+    """
+    if not full_name or not full_name.strip():
+        return ""
+
+    # Trim and apply Turkish character mapping
+    name = full_name.strip()
+    name = turkish_to_ascii(name)
+
+    # Convert to lowercase
+    name = name.lower()
+
+    # Replace multiple spaces with single space
+    name = re.sub(r'\s+', ' ', name)
+
+    # Replace spaces with dots
+    name = name.replace(' ', '.')
+
+    # Remove all characters except alphanumeric and dots
+    name = re.sub(r'[^a-z0-9.]', '', name)
+
+    # Remove consecutive dots
+    name = re.sub(r'\.+', '.', name)
+
+    # Remove leading/trailing dots
+    name = name.strip('.')
+
+    return name
+
+
+def ensure_unique_username(base_username: str, existing_usernames: set[str]) -> str:
+    """
+    Ensure username is unique by appending numbers if needed.
+
+    Args:
+        base_username: The base username to make unique
+        existing_usernames: Set of already-used usernames
+
+    Returns:
+        Unique username (e.g., "john.doe", "john.doe2", "john.doe3")
+
+    Example:
+        >>> ensure_unique_username("john.doe", {"john.doe", "john.doe2"})
+        "john.doe3"
+    """
+    if base_username not in existing_usernames:
+        return base_username
+
+    counter = 2
+    while True:
+        candidate = f"{base_username}{counter}"
+        if candidate not in existing_usernames:
+            return candidate
+        counter += 1
+        if counter > 1000:  # Safety limit
+            raise ValueError(f"Could not generate unique username for '{base_username}'")
+
+
+def generate_student_password(length: int = 8) -> str:
+    """
+    Generate an easy-to-type password for students.
+
+    Rules (Story 9.9 AC 23):
+    - 8 characters by default
+    - Mix of letters and numbers
+    - No confusing characters (0/O, 1/l/I)
+    - Easy to type and communicate verbally
+
+    Args:
+        length: Length of password (default: 8)
+
+    Returns:
+        Generated password
+
+    Example:
+        >>> password = generate_student_password()
+        >>> len(password)
+        8
+    """
+    # Unambiguous characters - excluding 0, O, 1, l, I
+    lowercase = 'abcdefghjkmnpqrstuvwxyz'  # no l
+    uppercase = 'ABCDEFGHJKMNPQRSTUVWXYZ'  # no I, O
+    digits = '23456789'  # no 0, 1
+
+    # Ensure at least one of each type
+    password_chars = [
+        secrets.choice(lowercase),
+        secrets.choice(uppercase),
+        secrets.choice(digits),
+    ]
+
+    # Fill remaining with mixed characters
+    all_chars = lowercase + uppercase + digits
+    for _ in range(length - 3):
+        password_chars.append(secrets.choice(all_chars))
+
+    # Shuffle to randomize position
+    secrets.SystemRandom().shuffle(password_chars)
+
+    return ''.join(password_chars)
+
+
 def generate_username(full_name: str, session: Session) -> str:
     """
     Generate unique username from full name.
@@ -297,7 +450,7 @@ async def parse_excel_file(file: UploadFile) -> list[dict[str, Any]]:
 
         # Parse data rows
         rows = []
-        for idx, row in enumerate(rows_iter, start=2):  # Start at 2 (row 1 is headers)
+        for idx, row in enumerate(rows_iter, start=1):  # Start at 1 for user-friendly display
             row_dict: dict[str, Any] = {}
 
             # Map headers to values
@@ -305,7 +458,7 @@ async def parse_excel_file(file: UploadFile) -> list[dict[str, Any]]:
                 if header:  # Skip empty header columns
                     row_dict[str(header)] = value
 
-            # Add row number for error reporting
+            # Add row number for error reporting (user-friendly, starting from 1)
             row_dict['_row_number'] = idx
             rows.append(row_dict)
 

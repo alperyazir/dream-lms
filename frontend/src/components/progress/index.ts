@@ -3,19 +3,18 @@
  * Story 5.5: Student Progress Tracking & Personal Analytics
  */
 
-export { ProgressStatsCard } from "./ProgressStatsCard"
-export { ProgressScoreChart } from "./ProgressScoreChart"
-export { ActivityBreakdown } from "./ActivityBreakdown"
-export { RecentAssignments } from "./RecentAssignments"
+export type { AchievementBadgesProps } from "./AchievementBadges"
 export { AchievementBadges } from "./AchievementBadges"
-export { StudyTimeCard } from "./StudyTimeCard"
+export type { ActivityBreakdownProps } from "./ActivityBreakdown"
+export { ActivityBreakdown } from "./ActivityBreakdown"
+export type { ImprovementTipsProps } from "./ImprovementTips"
 export { ImprovementTips } from "./ImprovementTips"
-
+export type { ProgressScoreChartProps } from "./ProgressScoreChart"
+export { ProgressScoreChart } from "./ProgressScoreChart"
 // Re-export types for convenience
 export type { ProgressStatsCardProps } from "./ProgressStatsCard"
-export type { ProgressScoreChartProps } from "./ProgressScoreChart"
-export type { ActivityBreakdownProps } from "./ActivityBreakdown"
+export { ProgressStatsCard } from "./ProgressStatsCard"
 export type { RecentAssignmentsProps } from "./RecentAssignments"
-export type { AchievementBadgesProps } from "./AchievementBadges"
+export { RecentAssignments } from "./RecentAssignments"
 export type { StudyTimeCardProps } from "./StudyTimeCard"
-export type { ImprovementTipsProps } from "./ImprovementTips"
+export { StudyTimeCard } from "./StudyTimeCard"

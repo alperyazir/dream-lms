@@ -8,6 +8,70 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type { CircleActivity } from "@/lib/mockData"
 import { getActivityImageUrl } from "@/services/booksApi"
 
+/**
+ * Animated border selection indicator
+ * Uses SVG rect animation to draw around the entire selection area
+ */
+function AnimatedBorder({
+  width,
+  height,
+  type,
+}: {
+  width: number
+  height: number
+  type: "circle" | "markwithx"
+}) {
+  const strokeColor = type === "markwithx" ? "#ef4444" : "#3b82f6" // red-500 or blue-500
+  const strokeWidth = 5
+  const radius = 8 // border-radius for rounded corners
+  const padding = strokeWidth / 2
+
+  // Calculate the perimeter of the rounded rectangle
+  const perimeter =
+    2 * (width - 2 * radius) + 2 * (height - 2 * radius) + 2 * Math.PI * radius
+
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0"
+      width="100%"
+      height="100%"
+      style={{ overflow: "visible" }}
+    >
+      <rect
+        x={padding}
+        y={padding}
+        width={width - strokeWidth}
+        height={height - strokeWidth}
+        rx={radius}
+        ry={radius}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{
+          strokeDasharray: perimeter,
+          strokeDashoffset: 0,
+          animation: "draw-border 0.5s ease-out forwards",
+          filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.15))",
+        }}
+      />
+      <style>
+        {`
+          @keyframes draw-border {
+            from {
+              stroke-dashoffset: ${perimeter};
+            }
+            to {
+              stroke-dashoffset: 0;
+            }
+          }
+        `}
+      </style>
+    </svg>
+  )
+}
+
 interface CirclePlayerProps {
   activity: CircleActivity
   bookId: string // Story 4.2: For backend-proxied image URLs
@@ -15,6 +79,8 @@ interface CirclePlayerProps {
   showResults?: boolean
   correctAnswers?: Map<number, number>
   initialAnswers?: Map<number, number>
+  // Story 9.7: Show correct answers in preview mode
+  showCorrectAnswers?: boolean
 }
 
 export function CirclePlayer({
@@ -24,6 +90,7 @@ export function CirclePlayer({
   showResults = false,
   correctAnswers,
   initialAnswers,
+  showCorrectAnswers = false,
 }: CirclePlayerProps) {
   // Map of questionIndex -> selectedAnswerIndex
   const [selections, setSelections] = useState<Map<number, number>>(
@@ -34,7 +101,6 @@ export function CirclePlayer({
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [imageError, setImageError] = useState(false)
   const [imageScale, setImageScale] = useState({ x: 1, y: 1 })
-  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 })
   const imageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -65,8 +131,6 @@ export function CirclePlayer({
     >
   >(new Map())
 
-  const icon = activity.type === "markwithx" ? "✗" : "✓"
-
   // Handle special circleCount values
   let effectiveCircleCount = activity.circleCount ?? 2 // Default to 2 if undefined
   const isMultiSelectMode = effectiveCircleCount === -1
@@ -93,23 +157,16 @@ export function CirclePlayer({
     const containerAspect = container.clientWidth / container.clientHeight
 
     // Calculate painted (rendered) dimensions with object-contain
-    let paintedWidth: number,
-      paintedHeight: number,
-      xOffset: number,
-      yOffset: number
+    let paintedWidth: number, paintedHeight: number
 
     if (imageAspect > containerAspect) {
       // Image is wider - constrained by width, letterboxing top/bottom
       paintedWidth = container.clientWidth
       paintedHeight = container.clientWidth / imageAspect
-      xOffset = 0
-      yOffset = (container.clientHeight - paintedHeight) / 2
     } else {
       // Image is taller - constrained by height, pillarboxing left/right
       paintedHeight = container.clientHeight
       paintedWidth = container.clientHeight * imageAspect
-      xOffset = (container.clientWidth - paintedWidth) / 2
-      yOffset = 0
     }
 
     // Calculate scale factors based on painted dimensions
@@ -124,11 +181,6 @@ export function CirclePlayer({
       }
       const containerHeight = container.clientHeight
 
-      console.log("CirclePlayer - Locking dimensions:", {
-        imageDims,
-        containerHeight,
-      })
-
       setLockedImageDimensions(imageDims)
       setLockedContainerHeight(containerHeight)
     }
@@ -136,29 +188,20 @@ export function CirclePlayer({
     // Round to 4 decimal places to prevent floating-point drift
     const roundedXScale = Math.round(xScale * 10000) / 10000
     const roundedYScale = Math.round(yScale * 10000) / 10000
-    const roundedXOffset = Math.round(xOffset * 10000) / 10000
-    const roundedYOffset = Math.round(yOffset * 10000) / 10000
 
     // Only update state if values have actually changed to prevent unnecessary re-renders
     setImageScale((prev) => {
       if (prev.x === roundedXScale && prev.y === roundedYScale) return prev
       return { x: roundedXScale, y: roundedYScale }
     })
-    setImageOffset((prev) => {
-      if (prev.x === roundedXOffset && prev.y === roundedYOffset) return prev
-      return { x: roundedXOffset, y: roundedYOffset }
-    })
 
     // Pre-calculate all button positions and cache them
+    // Note: No offset needed since overlays are positioned relative to the image wrapper
     scaledCoordsCache.current.clear()
     activity.answer.forEach((answer, answerIndex) => {
       const coords = {
-        left:
-          Math.round((roundedXOffset + answer.coords.x * roundedXScale) * 100) /
-          100,
-        top:
-          Math.round((roundedYOffset + answer.coords.y * roundedYScale) * 100) /
-          100,
+        left: Math.round(answer.coords.x * roundedXScale * 100) / 100,
+        top: Math.round(answer.coords.y * roundedYScale * 100) / 100,
         width: Math.round(answer.coords.w * roundedXScale * 100) / 100,
         height: Math.round(answer.coords.h * roundedYScale * 100) / 100,
       }
@@ -318,6 +361,11 @@ export function CirclePlayer({
     return correctAnswers.get(questionIndex) === answerIndex
   }
 
+  // Story 9.7: Check if this answer is the correct one for its question (for preview mode)
+  const isCorrectAnswer = (answerIndex: number): boolean => {
+    return activity.answer[answerIndex]?.isCorrect === true
+  }
+
   // Get scaled coordinates - use cached values to prevent recalculation
   const getScaledCoords = useCallback(
     (answerIndex: number) => {
@@ -330,13 +378,13 @@ export function CirclePlayer({
       // Fallback: calculate on the fly (shouldn't happen if image is loaded)
       const answer = activity.answer[answerIndex]
       return {
-        left: imageOffset.x + answer.coords.x * imageScale.x,
-        top: imageOffset.y + answer.coords.y * imageScale.y,
+        left: answer.coords.x * imageScale.x,
+        top: answer.coords.y * imageScale.y,
         width: answer.coords.w * imageScale.x,
         height: answer.coords.h * imageScale.y,
       }
     },
-    [activity.answer, imageScale, imageOffset],
+    [activity.answer, imageScale],
   )
 
   // Handle reset - clear all selections
@@ -390,7 +438,7 @@ export function CirclePlayer({
       {/* Background Image with Selectable Areas - fills remaining height */}
       <div
         ref={containerRef}
-        className="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
         style={{
           willChange: "auto",
           height: lockedContainerHeight ? `${lockedContainerHeight}px` : "auto",
@@ -423,135 +471,149 @@ export function CirclePlayer({
           </div>
         )}
 
-        {/* Image */}
+        {/* Image wrapper - positions overlays relative to the image */}
         {imageUrl && (
-          <img
-            ref={imageRef}
-            src={imageUrl}
-            alt="Activity background"
-            className="mx-auto object-contain"
+          <div
+            className="relative"
             style={{
-              display: "block",
               width: lockedImageDimensions
                 ? `${lockedImageDimensions.width}px`
                 : "auto",
               height: lockedImageDimensions
                 ? `${lockedImageDimensions.height}px`
                 : "auto",
-              maxWidth: lockedImageDimensions ? "none" : "100%",
-              maxHeight: lockedImageDimensions ? "none" : "100%",
-              flexShrink: 0,
             }}
-          />
+          >
+            {/* Image */}
+            <img
+              ref={imageRef}
+              src={imageUrl}
+              alt="Activity background"
+              className="block"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+              }}
+            />
+
+            {/* Selectable Areas Overlay - positioned relative to image wrapper */}
+            {activity.answer.map((_answer, answerIndex) => {
+              const selected = isSelected(answerIndex)
+              const correct = isCorrect(answerIndex)
+              const scaledCoords = getScaledCoords(answerIndex)
+              const questionIndex = getQuestionIndex(answerIndex)
+              // Story 9.7: Check if this is the correct answer for preview mode
+              const isCorrectForPreview = showCorrectAnswers && isCorrectAnswer(answerIndex)
+
+              return (
+                <button
+                  type="button"
+                  key={answerIndex}
+                  onClick={() => !showCorrectAnswers && handleAreaClick(answerIndex)}
+                  className={`
+                  absolute flex items-center justify-center rounded-md transition-colors duration-200 box-border
+                  ${
+                    showCorrectAnswers
+                      ? isCorrectForPreview
+                        ? "border-2 border-green-500 bg-green-100/80 dark:bg-green-900/50"
+                        : "border-2 border-gray-300 bg-white/20 dark:border-gray-600"
+                      : showResults
+                        ? selected
+                          ? correct
+                            ? "border-2 border-green-500 bg-green-100/80 dark:bg-green-900/50"
+                            : "border-2 border-red-500 bg-red-100/80 dark:bg-red-900/50"
+                          : !correct
+                            ? "border-2 border-gray-300 bg-white/20 dark:border-gray-600"
+                            : "border-2 border-orange-500 bg-orange-100/80 dark:bg-orange-900/50"
+                        : selected
+                          ? activity.type === "markwithx"
+                            ? "cursor-pointer border-transparent bg-red-50/60 dark:bg-red-900/30"
+                            : "cursor-pointer border-transparent bg-blue-50/60 dark:bg-blue-900/30"
+                          : "cursor-pointer border-2 border-gray-400 border-dashed bg-white/20 hover:border-gray-500 hover:bg-white/40 dark:border-gray-500 dark:hover:bg-gray-700/30"
+                  }
+                `}
+                  style={{
+                    ...scaledCoords,
+                    position: "absolute",
+                    pointerEvents: showResults || showCorrectAnswers ? "none" : "auto",
+                  }}
+                  aria-pressed={selected || isCorrectForPreview}
+                  tabIndex={!showResults && !showCorrectAnswers ? 0 : -1}
+                  aria-label={`Question ${questionIndex + 1}, Option ${(answerIndex % effectiveCircleCount) + 1}${selected ? " (selected)" : ""}${isCorrectForPreview ? " (correct answer)" : ""}`}
+                  disabled={showResults || showCorrectAnswers}
+                >
+                  {/* Selection indicator - animated border around selection area */}
+                  {selected && !showResults && !showCorrectAnswers && (
+                    <AnimatedBorder
+                      width={scaledCoords.width}
+                      height={scaledCoords.height}
+                      type={activity.type}
+                    />
+                  )}
+
+                  {/* Story 9.7: Show correct answer indicator in preview mode */}
+                  {showCorrectAnswers && isCorrectForPreview && (
+                    <div
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-xl font-bold text-white shadow-lg shrink-0"
+                      style={{ minWidth: "2rem", minHeight: "2rem" }}
+                    >
+                      ✓
+                    </div>
+                  )}
+
+                  {/* Results indicator */}
+                  {showResults && (
+                    <div
+                      className={`
+                      flex h-8 w-8 items-center justify-center rounded-full text-xl font-bold shadow-lg shrink-0
+                      ${
+                        selected
+                          ? correct
+                            ? "bg-green-500 text-white"
+                            : "bg-red-500 text-white"
+                          : correct
+                            ? "bg-orange-500 text-white"
+                            : ""
+                      }
+                    `}
+                      style={{ minWidth: "2rem", minHeight: "2rem" }}
+                    >
+                      {selected ? (correct ? "✓" : "✗") : correct ? "!" : ""}
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         )}
-
-        {/* Selectable Areas Overlay - only show when image is loaded */}
-        {imageUrl &&
-          activity.answer.map((_answer, answerIndex) => {
-            const selected = isSelected(answerIndex)
-            const correct = isCorrect(answerIndex)
-            const scaledCoords = getScaledCoords(answerIndex)
-            const questionIndex = getQuestionIndex(answerIndex)
-
-            // Visual grouping: Add subtle border between question groups
-            const isFirstInGroup =
-              !isMultiSelectMode && answerIndex % effectiveCircleCount === 0
-            const groupClass =
-              isFirstInGroup && answerIndex > 0
-                ? "border-t-4 border-t-gray-300 dark:border-t-gray-600"
-                : ""
-
-            return (
-              <button
-                type="button"
-                key={answerIndex}
-                onClick={() => handleAreaClick(answerIndex)}
-                className={`
-                absolute flex items-center justify-center rounded-md border-2 transition-colors duration-200 box-border
-                ${groupClass}
-                ${
-                  showResults
-                    ? selected
-                      ? correct
-                        ? "border-green-500 bg-green-100/80 dark:bg-green-900/50"
-                        : "border-red-500 bg-red-100/80 dark:bg-red-900/50"
-                      : !correct
-                        ? "border-gray-300 bg-white/20 dark:border-gray-600"
-                        : "border-orange-500 bg-orange-100/80 dark:bg-orange-900/50"
-                    : selected
-                      ? activity.type === "markwithx"
-                        ? "cursor-pointer border-red-500 bg-red-100/80 hover:bg-red-200/80 dark:bg-red-900/50"
-                        : "cursor-pointer border-blue-500 bg-blue-100/80 hover:bg-blue-200/80 dark:bg-blue-900/50"
-                      : "cursor-pointer border-gray-400 border-dashed bg-white/20 hover:border-gray-500 hover:bg-white/40 dark:border-gray-500 dark:hover:bg-gray-700/30"
-                }
-              `}
-                style={{
-                  ...scaledCoords,
-                  position: "absolute",
-                  pointerEvents: showResults ? "none" : "auto",
-                }}
-                aria-pressed={selected}
-                tabIndex={!showResults ? 0 : -1}
-                aria-label={`Question ${questionIndex + 1}, Option ${(answerIndex % effectiveCircleCount) + 1}${selected ? ` (selected with ${icon})` : ""}`}
-                disabled={showResults}
-              >
-                {/* Selection indicator */}
-                {selected && (
-                  <div
-                    className={`
-                    flex h-8 w-8 items-center justify-center rounded-full text-xl font-bold shadow-lg shrink-0
-                    ${
-                      activity.type === "markwithx"
-                        ? "bg-red-500 text-white"
-                        : "bg-blue-500 text-white"
-                    }
-                  `}
-                    style={{ minWidth: "2rem", minHeight: "2rem" }}
-                  >
-                    {icon}
-                  </div>
-                )}
-
-                {/* Results indicator */}
-                {showResults && (
-                  <div
-                    className={`
-                    flex h-8 w-8 items-center justify-center rounded-full text-xl font-bold shadow-lg shrink-0
-                    ${
-                      selected
-                        ? correct
-                          ? "bg-green-500 text-white"
-                          : "bg-red-500 text-white"
-                        : correct
-                          ? "bg-orange-500 text-white"
-                          : ""
-                    }
-                  `}
-                    style={{ minWidth: "2rem", minHeight: "2rem" }}
-                  >
-                    {selected ? (correct ? "✓" : "✗") : correct ? "!" : ""}
-                  </div>
-                )}
-              </button>
-            )
-          })}
       </div>
 
       {/* Results Legend - compact */}
       {showResults && (
         <div className="mt-2 shrink-0 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
           <div className="flex flex-wrap items-center gap-3 text-xs">
-            <span className="font-medium text-gray-700 dark:text-gray-300">Legend:</span>
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              Legend:
+            </span>
             <div className="flex items-center gap-1">
-              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-green-500 text-[10px] text-white">✓</div>
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-green-500 text-[10px] text-white">
+                ✓
+              </div>
               <span className="text-gray-600 dark:text-gray-400">Correct</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">✗</div>
-              <span className="text-gray-600 dark:text-gray-400">Incorrect</span>
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                ✗
+              </div>
+              <span className="text-gray-600 dark:text-gray-400">
+                Incorrect
+              </span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] text-white">!</div>
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] text-white">
+                !
+              </div>
               <span className="text-gray-600 dark:text-gray-400">Missed</span>
             </div>
           </div>

@@ -102,7 +102,9 @@ export async function getUnreadCount(): Promise<UnreadCountResponse> {
  * @param notificationId - ID of the notification to mark as read
  * @returns Promise with the updated notification
  */
-export async function markAsRead(notificationId: string): Promise<Notification> {
+export async function markAsRead(
+  notificationId: string,
+): Promise<Notification> {
   const url = `/api/v1/notifications/${notificationId}/read`
   const response = await apiClient.patch<Notification>(url)
   return response.data
@@ -144,7 +146,11 @@ export async function updatePreferences(
   updates: NotificationPreferencesBulkUpdate,
 ): Promise<NotificationPreferencesBulkUpdateResponse> {
   const url = `/api/v1/notifications/preferences`
-  const response = await apiClient.patch<NotificationPreferencesBulkUpdateResponse>(url, updates)
+  const response =
+    await apiClient.patch<NotificationPreferencesBulkUpdateResponse>(
+      url,
+      updates,
+    )
   return response.data
 }
 
@@ -174,7 +180,9 @@ export async function updateSinglePreference(
  * @param request - Hours to mute (1-24)
  * @returns Promise with mute status
  */
-export async function setGlobalMute(request: GlobalMuteRequest): Promise<GlobalMuteStatus> {
+export async function setGlobalMute(
+  request: GlobalMuteRequest,
+): Promise<GlobalMuteStatus> {
   const url = `/api/v1/notifications/mute`
   const response = await apiClient.post<GlobalMuteStatus>(url, request)
   return response.data

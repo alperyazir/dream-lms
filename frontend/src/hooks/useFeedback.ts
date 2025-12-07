@@ -35,7 +35,7 @@ export function useFeedbackQuery(
   studentId: string | null,
   options: {
     enabled?: boolean
-  } = {}
+  } = {},
 ) {
   const { enabled = true } = options
 
@@ -84,7 +84,7 @@ export function useCreateOrUpdateFeedback() {
       // Update the feedback cache
       queryClient.setQueryData(
         feedbackQueryKey(assignmentId, studentId),
-        newFeedback
+        newFeedback,
       )
       // Invalidate assignment results to update has_feedback flag
       queryClient.invalidateQueries({
@@ -123,7 +123,7 @@ export function useUpdateFeedback() {
       // Update the feedback cache
       queryClient.setQueryData(
         feedbackQueryKey(assignmentId, studentId),
-        updatedFeedback
+        updatedFeedback,
       )
     },
   })
@@ -152,7 +152,7 @@ interface SaveFeedbackOptions {
  */
 export function useFeedbackModal(
   assignmentId: string | null,
-  studentId: string | null
+  studentId: string | null,
 ) {
   const feedback = useFeedbackQuery(assignmentId, studentId)
   const createOrUpdate = useCreateOrUpdateFeedback()
@@ -161,7 +161,7 @@ export function useFeedbackModal(
   const handleSaveFeedback = async (
     feedbackText: string,
     isDraft: boolean = false,
-    options?: SaveFeedbackOptions
+    options?: SaveFeedbackOptions,
   ) => {
     if (!assignmentId || !studentId) return null
 
@@ -181,32 +181,31 @@ export function useFeedbackModal(
         studentId,
       })
       return result
-    } else {
-      // Create new feedback
-      const result = await createOrUpdate.createOrUpdateAsync({
-        assignmentId,
-        studentId,
-        data: {
-          feedback_text: feedbackText,
-          is_draft: isDraft,
-          badges: options?.badges,
-          emoji_reaction: options?.emoji_reaction,
-        },
-      })
-      return result
     }
+    // Create new feedback
+    const result = await createOrUpdate.createOrUpdateAsync({
+      assignmentId,
+      studentId,
+      data: {
+        feedback_text: feedbackText,
+        is_draft: isDraft,
+        badges: options?.badges,
+        emoji_reaction: options?.emoji_reaction,
+      },
+    })
+    return result
   }
 
   const handleSaveDraft = async (
     feedbackText: string,
-    options?: SaveFeedbackOptions
+    options?: SaveFeedbackOptions,
   ) => {
     return handleSaveFeedback(feedbackText, true, options)
   }
 
   const handlePublish = async (
     feedbackText: string,
-    options?: SaveFeedbackOptions
+    options?: SaveFeedbackOptions,
   ) => {
     return handleSaveFeedback(feedbackText, false, options)
   }
@@ -242,7 +241,7 @@ export function useFeedbackModal(
  */
 export function useStudentFeedback(
   assignmentId: string | null,
-  studentId: string | null
+  studentId: string | null,
 ) {
   const feedback = useFeedbackQuery(assignmentId, studentId)
 

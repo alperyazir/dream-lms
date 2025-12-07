@@ -11,9 +11,7 @@ describe("BenchmarkDisabledMessage", () => {
   it("renders default message when no custom message provided", () => {
     render(<BenchmarkDisabledMessage />)
 
-    expect(
-      screen.getByText("Benchmarking Not Available"),
-    ).toBeInTheDocument()
+    expect(screen.getByText("Benchmarking Not Available")).toBeInTheDocument()
     expect(
       screen.getByText(
         "Benchmarking has been disabled for your school. Contact your administrator for more information.",
@@ -40,9 +38,7 @@ describe("BenchmarkDisabledMessage", () => {
     render(<BenchmarkDisabledMessage />)
 
     // Card variant shows the "Not Available" title
-    expect(
-      screen.getByText("Benchmarking Not Available"),
-    ).toBeInTheDocument()
+    expect(screen.getByText("Benchmarking Not Available")).toBeInTheDocument()
   })
 
   it("renders as alert variant when specified", () => {

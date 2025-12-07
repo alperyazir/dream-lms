@@ -7,16 +7,19 @@ import {
   CheckCircle,
   Clock,
   Edit,
+  ListOrdered,
   MoreVertical,
   PlayCircle,
   Plus,
   Search,
+  Timer,
   Trash2,
   Users,
 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
 import { DeleteAssignmentDialog } from "@/components/assignments/DeleteAssignmentDialog"
+import { EditActivitiesDialog } from "@/components/assignments/EditActivitiesDialog"
 import { EditAssignmentDialog } from "@/components/assignments/EditAssignmentDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -52,6 +55,8 @@ export const Route = createFileRoute("/_layout/teacher/assignments/")({
 function TeacherAssignmentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingAssignment, setEditingAssignment] =
+    useState<AssignmentListItem | null>(null)
+  const [editingActivities, setEditingActivities] =
     useState<AssignmentListItem | null>(null)
   const [deletingAssignment, setDeletingAssignment] =
     useState<AssignmentListItem | null>(null)
@@ -111,6 +116,11 @@ function TeacherAssignmentsPage() {
 
   const handleEdit = (assignment: AssignmentListItem) => {
     setEditingAssignment(assignment)
+  }
+
+  // Story 9.8: Handle edit activities
+  const handleEditActivities = (assignment: AssignmentListItem) => {
+    setEditingActivities(assignment)
   }
 
   const handleDelete = (assignment: AssignmentListItem) => {
@@ -191,7 +201,9 @@ function TeacherAssignmentsPage() {
             </Label>
             <Select
               value={sortBy}
-              onValueChange={(value: "created_at" | "due_date" | "name") => setSortBy(value)}
+              onValueChange={(value: "created_at" | "due_date" | "name") =>
+                setSortBy(value)
+              }
             >
               <SelectTrigger id="sortBy">
                 <SelectValue placeholder="Sort by..." />
@@ -250,6 +262,7 @@ function TeacherAssignmentsPage() {
               key={assignment.id}
               assignment={assignment}
               onEdit={handleEdit}
+              onEditActivities={handleEditActivities}
               onDelete={handleDelete}
             />
           ))}
@@ -277,6 +290,26 @@ function TeacherAssignmentsPage() {
         onClose={() => setDeletingAssignment(null)}
         assignment={deletingAssignment}
       />
+
+      {/* Story 9.8: Edit Activities Dialog */}
+      {editingActivities && (
+        <EditActivitiesDialog
+          isOpen={!!editingActivities}
+          onClose={() => setEditingActivities(null)}
+          assignmentId={editingActivities.id}
+          assignmentName={editingActivities.name}
+          bookId={editingActivities.book_id}
+          bookTitle={editingActivities.book_title}
+          currentActivities={[
+            {
+              id: editingActivities.activity_id,
+              title: editingActivities.activity_title,
+              activity_type: editingActivities.activity_type,
+              order_index: 0,
+            },
+          ]}
+        />
+      )}
     </div>
   )
 }
@@ -284,10 +317,11 @@ function TeacherAssignmentsPage() {
 interface AssignmentCardProps {
   assignment: AssignmentListItem
   onEdit: (assignment: AssignmentListItem) => void
+  onEditActivities: (assignment: AssignmentListItem) => void
   onDelete: (assignment: AssignmentListItem) => void
 }
 
-function AssignmentCard({ assignment, onEdit, onDelete }: AssignmentCardProps) {
+function AssignmentCard({ assignment, onEdit, onEditActivities, onDelete }: AssignmentCardProps) {
   const navigate = useNavigate()
   const completionRate =
     assignment.total_students > 0
@@ -295,7 +329,38 @@ function AssignmentCard({ assignment, onEdit, onDelete }: AssignmentCardProps) {
       : 0
 
   const dueDate = assignment.due_date ? new Date(assignment.due_date) : null
-  const isOverdue = dueDate && dueDate < new Date()
+  const isOverdue = dueDate && dueDate < new Date() && assignment.status === "published"
+  const scheduledDate = assignment.scheduled_publish_date
+    ? new Date(assignment.scheduled_publish_date)
+    : null
+
+  // Determine status badge variant and label
+  const getStatusBadge = () => {
+    switch (assignment.status) {
+      case "scheduled":
+        return {
+          variant: "outline" as const,
+          className: "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
+          label: "Scheduled",
+        }
+      case "draft":
+        return {
+          variant: "outline" as const,
+          className: "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800",
+          label: "Draft",
+        }
+      case "archived":
+        return {
+          variant: "secondary" as const,
+          className: "",
+          label: "Archived",
+        }
+      default:
+        return null // Published - no badge needed (default state)
+    }
+  }
+
+  const statusBadge = getStatusBadge()
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -305,6 +370,12 @@ function AssignmentCard({ assignment, onEdit, onDelete }: AssignmentCardProps) {
             {assignment.name}
           </CardTitle>
           <div className="flex items-center gap-2 ml-2">
+            {/* Story 9.6: Show status badge for non-published assignments */}
+            {statusBadge && (
+              <Badge variant={statusBadge.variant} className={statusBadge.className}>
+                {statusBadge.label}
+              </Badge>
+            )}
             {isOverdue && <Badge variant="destructive">Overdue</Badge>}
             {/* Actions Dropdown */}
             <DropdownMenu>
@@ -316,7 +387,12 @@ function AssignmentCard({ assignment, onEdit, onDelete }: AssignmentCardProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onEdit(assignment)}>
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit
+                  Edit Details
+                </DropdownMenuItem>
+                {/* Story 9.8: Edit Activities option */}
+                <DropdownMenuItem onClick={() => onEditActivities(assignment)}>
+                  <ListOrdered className="mr-2 h-4 w-4" />
+                  Edit Activities
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onDelete(assignment)}
@@ -342,6 +418,14 @@ function AssignmentCard({ assignment, onEdit, onDelete }: AssignmentCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Story 9.6: Scheduled Publish Date */}
+        {scheduledDate && assignment.status === "scheduled" && (
+          <div className="flex items-center text-sm text-amber-600 dark:text-amber-400">
+            <Timer className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span>Publishes {formatDistanceToNow(scheduledDate, { addSuffix: true })}</span>
+          </div>
+        )}
+
         {/* Due Date */}
         {dueDate && (
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">

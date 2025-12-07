@@ -63,11 +63,11 @@ apiClient.interceptors.request.use(async (config) => {
  * @returns Job response with job_id for status polling
  */
 export async function generateReport(
-  config: ReportGenerateRequest
+  config: ReportGenerateRequest,
 ): Promise<ReportJobResponse> {
   const response = await apiClient.post<ReportJobResponse>(
     "/api/v1/reports/generate",
-    config
+    config,
   )
   return response.data
 }
@@ -79,10 +79,10 @@ export async function generateReport(
  * @returns Current status and progress
  */
 export async function getReportStatus(
-  jobId: string
+  jobId: string,
 ): Promise<ReportStatusResponse> {
   const response = await apiClient.get<ReportStatusResponse>(
-    `/api/v1/reports/${jobId}/status`
+    `/api/v1/reports/${jobId}/status`,
   )
   return response.data
 }
@@ -95,7 +95,7 @@ export async function getReportStatus(
  */
 export async function downloadReport(
   jobId: string,
-  filename?: string
+  filename?: string,
 ): Promise<void> {
   const response = await apiClient.get(`/api/v1/reports/${jobId}/download`, {
     responseType: "blob",
@@ -131,7 +131,7 @@ export async function downloadReport(
  */
 export async function getReportHistory(): Promise<ReportHistoryResponse> {
   const response = await apiClient.get<ReportHistoryResponse>(
-    "/api/v1/reports/history"
+    "/api/v1/reports/history",
   )
   return response.data
 }
@@ -143,11 +143,11 @@ export async function getReportHistory(): Promise<ReportHistoryResponse> {
  * @returns Created template
  */
 export async function saveReportTemplate(
-  template: SavedReportTemplateCreate
+  template: SavedReportTemplateCreate,
 ): Promise<SavedReportTemplate> {
   const response = await apiClient.post<SavedReportTemplate>(
     "/api/v1/reports/templates",
-    template
+    template,
   )
   return response.data
 }
@@ -159,7 +159,7 @@ export async function saveReportTemplate(
  */
 export async function getReportTemplates(): Promise<SavedReportTemplate[]> {
   const response = await apiClient.get<SavedReportTemplate[]>(
-    "/api/v1/reports/templates"
+    "/api/v1/reports/templates",
   )
   return response.data
 }

@@ -3,7 +3,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from sqlmodel import select
+from sqlmodel import select, SQLModel
 
 from app import crud
 from app.api.deps import AsyncSessionDep, SessionDep, require_role
@@ -116,7 +116,8 @@ def create_student(
         username=student_in.username,
         password=initial_password,
         full_name=student_in.full_name,
-        student_create=student_create
+        student_create=student_create,
+        created_by_teacher_id=teacher.id
     )
 
     # Build student response with user information
@@ -266,7 +267,8 @@ async def bulk_import_students(
                 username=username,
                 password=temp_password,
                 full_name=full_name,
-                student_create=student_create
+                student_create=student_create,
+                created_by_teacher_id=teacher.id
             )
 
             created_credentials.append({
@@ -300,7 +302,7 @@ async def bulk_import_students(
     "/me/students",
     response_model=list[StudentPublic],
     summary="List my students",
-    description="Retrieve all students (teachers can see all students to enroll them in classes). Teacher only.",
+    description="Retrieve students created by the current teacher or enrolled in their classes. Teacher only.",
 )
 def list_my_students(
     *,
@@ -308,12 +310,11 @@ def list_my_students(
     current_user: User = require_role(UserRole.teacher)
 ) -> Any:
     """
-    List all students.
+    List students accessible to this teacher.
 
-    Note: Shows all students so teachers can see students they created and enroll them in classes.
-    In a future update, this will be filtered by school or teacher relationship.
-
-    Returns list of students.
+    Returns students that were either:
+    - Created by this teacher, OR
+    - Enrolled in any of this teacher's classes
     """
     # Get Teacher record for current user
     teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
@@ -325,14 +326,39 @@ def list_my_students(
             detail="Teacher record not found for this user"
         )
 
-    # Get all students (for now - will be filtered by school in future)
-    students_statement = select(Student)
+    # Get students created by this teacher OR enrolled in teacher's classes
+    # First, get all class IDs for this teacher
+    teacher_class_ids = select(Class.id).where(Class.teacher_id == teacher.id)
+
+    # Get student IDs enrolled in teacher's classes
+    enrolled_student_ids = (
+        select(ClassStudent.student_id)
+        .where(ClassStudent.class_id.in_(teacher_class_ids))
+    )
+
+    # Get students: created by teacher OR enrolled in their classes
+    students_statement = (
+        select(Student)
+        .where(
+            (Student.created_by_teacher_id == teacher.id) |
+            (Student.id.in_(enrolled_student_ids))
+        )
+        .distinct()
+    )
     students = session.exec(students_statement).all()
 
     # Build response list with user information for each student
     result = []
     for s in students:
         user = session.get(User, s.user_id)
+        # Get teacher name if created_by_teacher_id exists
+        teacher_name = None
+        if s.created_by_teacher_id:
+            created_by_teacher = session.get(Teacher, s.created_by_teacher_id)
+            if created_by_teacher:
+                teacher_user = session.get(User, created_by_teacher.user_id)
+                teacher_name = teacher_user.full_name if teacher_user else None
+
         student_data = StudentPublic(
             grade_level=s.grade_level,
             parent_email=s.parent_email,
@@ -341,6 +367,9 @@ def list_my_students(
             user_email=user.email if user else "",
             user_username=user.username if user else "",
             user_full_name=user.full_name if user and user.full_name else "",
+            user_initial_password=user.initial_password if user else None,
+            created_by_teacher_id=s.created_by_teacher_id,
+            created_by_teacher_name=teacher_name,
             created_at=s.created_at,
             updated_at=s.updated_at
         )
@@ -387,6 +416,23 @@ def update_student(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Student not found"
+        )
+
+    # Verify student belongs to this teacher (created by them OR enrolled in their class)
+    teacher_class_ids = session.exec(
+        select(Class.id).where(Class.teacher_id == teacher.id)
+    ).all()
+
+    is_enrolled = session.exec(
+        select(ClassStudent)
+        .where(ClassStudent.student_id == student_id)
+        .where(ClassStudent.class_id.in_(teacher_class_ids))
+    ).first() is not None
+
+    if student.created_by_teacher_id != teacher.id and not is_enrolled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot update a student that is not in your classes"
         )
 
     # Update student fields (grade_level, parent_email)
@@ -498,6 +544,23 @@ def delete_student(
             detail="Student not found"
         )
 
+    # Verify student belongs to this teacher (created by them OR enrolled in their class)
+    teacher_class_ids = session.exec(
+        select(Class.id).where(Class.teacher_id == teacher.id)
+    ).all()
+
+    is_enrolled = session.exec(
+        select(ClassStudent)
+        .where(ClassStudent.student_id == student_id)
+        .where(ClassStudent.class_id.in_(teacher_class_ids))
+    ).first() is not None
+
+    if student.created_by_teacher_id != teacher.id and not is_enrolled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot delete a student that is not in your classes"
+        )
+
     # Remove from all classes first
     class_students = session.exec(
         select(ClassStudent).where(ClassStudent.student_id == student_id)
@@ -520,6 +583,106 @@ def delete_student(
     session.commit()
 
     return {"message": "Student deleted successfully"}
+
+
+class BulkDeleteRequest(SQLModel):
+    """Request body for bulk delete operations."""
+    ids: list[uuid.UUID]
+
+
+class BulkDeleteResponse(SQLModel):
+    """Response for bulk delete operations."""
+    deleted_count: int
+    failed_count: int
+    errors: list[str] = []
+
+
+@router.post(
+    "/me/students/bulk-delete",
+    response_model=BulkDeleteResponse,
+    summary="Bulk delete students",
+    description="Delete multiple students by IDs. Teacher only.",
+)
+def bulk_delete_students(
+    *,
+    session: SessionDep,
+    request: BulkDeleteRequest,
+    current_user: User = require_role(UserRole.teacher)
+) -> BulkDeleteResponse:
+    """
+    Delete multiple students by their IDs.
+
+    - **ids**: List of student IDs to delete
+
+    Teachers can only delete students they created or students in their classes.
+    Returns count of successfully deleted and failed deletions.
+    """
+    # Get Teacher record
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get teacher's class IDs for permission checking
+    teacher_class_ids = session.exec(
+        select(Class.id).where(Class.teacher_id == teacher.id)
+    ).all()
+
+    deleted_count = 0
+    failed_count = 0
+    errors: list[str] = []
+
+    for student_id in request.ids:
+        try:
+            student = session.get(Student, student_id)
+            if not student:
+                failed_count += 1
+                errors.append(f"Student {student_id} not found")
+                continue
+
+            # Check permission: created by teacher OR in teacher's class
+            is_enrolled = session.exec(
+                select(ClassStudent)
+                .where(ClassStudent.student_id == student_id)
+                .where(ClassStudent.class_id.in_(teacher_class_ids))
+            ).first() is not None
+
+            if student.created_by_teacher_id != teacher.id and not is_enrolled:
+                failed_count += 1
+                errors.append(f"No permission to delete student {student_id}")
+                continue
+
+            # Remove from all classes first
+            class_students = session.exec(
+                select(ClassStudent).where(ClassStudent.student_id == student_id)
+            ).all()
+            for cs in class_students:
+                session.delete(cs)
+
+            # Get user_id and delete
+            user_id = student.user_id
+            session.delete(student)
+
+            user = session.get(User, user_id)
+            if user:
+                session.delete(user)
+
+            deleted_count += 1
+        except Exception as e:
+            failed_count += 1
+            errors.append(f"Failed to delete student {student_id}: {str(e)}")
+
+    session.commit()
+
+    return BulkDeleteResponse(
+        deleted_count=deleted_count,
+        failed_count=failed_count,
+        errors=errors
+    )
 
 
 @router.get(

@@ -4,7 +4,7 @@
  */
 
 export { ReportBuilder } from "./ReportBuilder"
-export { ReportTemplateCard, ReportTemplateGrid } from "./ReportTemplateCard"
-export { ReportProgress } from "./ReportProgress"
 export { ReportHistory } from "./ReportHistory"
+export { ReportProgress } from "./ReportProgress"
+export { ReportTemplateCard, ReportTemplateGrid } from "./ReportTemplateCard"
 export { SavedTemplates } from "./SavedTemplates"

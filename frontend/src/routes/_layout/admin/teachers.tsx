@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
+  Check,
+  Copy,
   Edit,
   Eye,
   EyeOff,
+  KeyRound,
   Mail,
   Plus,
   Search,
@@ -48,6 +51,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import useCustomToast from "@/hooks/useCustomToast"
+import { generateUsername } from "@/utils/usernameGenerator"
 
 export const Route = createFileRoute("/_layout/admin/teachers")({
   component: () => (
@@ -71,6 +75,16 @@ function AdminTeachers() {
     id: string
     userName: string
   } | null>(null)
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
+    useState(false)
+  const [isPasswordResultDialogOpen, setIsPasswordResultDialogOpen] =
+    useState(false)
+  const [teacherToResetPassword, setTeacherToResetPassword] = useState<{
+    userId: string
+    userName: string
+  } | null>(null)
+  const [newPassword, setNewPassword] = useState<string | null>(null)
+  const [passwordCopied, setPasswordCopied] = useState(false)
   const [newTeacher, setNewTeacher] = useState<TeacherCreateAPI>({
     username: "",
     user_email: "",
@@ -82,6 +96,7 @@ function AdminTeachers() {
     school_id: undefined,
     subject_specialization: "",
     user_email: "",
+    user_username: "",
     user_full_name: "",
   })
 
@@ -169,6 +184,22 @@ function AdminTeachers() {
     },
   })
 
+  // Reset password mutation [Story 9.2]
+  const resetPasswordMutation = useMutation({
+    mutationFn: (userId: string) => AdminService.resetUserPassword({ userId }),
+    onSuccess: (response) => {
+      setNewPassword(response.new_password)
+      setIsResetPasswordDialogOpen(false)
+      setIsPasswordResultDialogOpen(true)
+      queryClient.invalidateQueries({ queryKey: ["teachers"] })
+    },
+    onError: (error: any) => {
+      showErrorToast(
+        error.body?.detail || "Failed to reset password. Please try again.",
+      )
+    },
+  })
+
   const handleAddTeacher = () => {
     if (
       !newTeacher.username ||
@@ -181,9 +212,9 @@ function AdminTeachers() {
     }
 
     // Validate username format
-    if (!/^[a-zA-Z0-9_-]{3,50}$/.test(newTeacher.username)) {
+    if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(newTeacher.username)) {
       showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, or hyphen",
+        "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
       )
       return
     }
@@ -197,6 +228,7 @@ function AdminTeachers() {
       school_id: teacher.school_id,
       subject_specialization: teacher.subject_specialization || "",
       user_email: teacher.user_email,
+      user_username: teacher.user_username || "",
       user_full_name: teacher.user_full_name,
     })
     setIsEditDialogOpen(true)
@@ -228,6 +260,33 @@ function AdminTeachers() {
       deleteTeacherMutation.mutate(teacherToDelete.id)
       setTeacherToDelete(null)
     }
+  }
+
+  // Password reset handlers [Story 9.2]
+  const handleResetPassword = (userId: string, userName: string) => {
+    setTeacherToResetPassword({ userId, userName })
+    setIsResetPasswordDialogOpen(true)
+  }
+
+  const confirmResetPassword = () => {
+    if (teacherToResetPassword) {
+      resetPasswordMutation.mutate(teacherToResetPassword.userId)
+    }
+  }
+
+  const handleCopyPassword = async () => {
+    if (newPassword) {
+      await navigator.clipboard.writeText(newPassword)
+      setPasswordCopied(true)
+      setTimeout(() => setPasswordCopied(false), 2000)
+    }
+  }
+
+  const closePasswordResultDialog = () => {
+    setIsPasswordResultDialogOpen(false)
+    setNewPassword(null)
+    setTeacherToResetPassword(null)
+    setPasswordCopied(false)
   }
 
   const filteredTeachers = teachers.filter(
@@ -395,6 +454,21 @@ function AdminTeachers() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() =>
+                            handleResetPassword(
+                              teacher.user_id,
+                              teacher.user_full_name || "Teacher",
+                            )
+                          }
+                          disabled={resetPasswordMutation.isPending}
+                          className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          title="Reset Password"
+                        >
+                          <KeyRound className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleEditTeacher(teacher)}
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         >
@@ -447,6 +521,23 @@ function AdminTeachers() {
                   })
                 }
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-username">Username *</Label>
+              <Input
+                id="edit-username"
+                placeholder="e.g., johndoe"
+                value={editTeacher.user_username || ""}
+                onChange={(e) =>
+                  setEditTeacher({
+                    ...editTeacher,
+                    user_username: e.target.value,
+                  })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                3-50 characters, alphanumeric, underscore, hyphen, or dot
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-email">Email *</Label>
@@ -505,7 +596,12 @@ function AdminTeachers() {
             </Button>
             <Button
               onClick={handleUpdateTeacher}
-              disabled={updateTeacherMutation.isPending}
+              disabled={
+                updateTeacherMutation.isPending ||
+                !editTeacher.user_full_name ||
+                !editTeacher.user_email ||
+                !editTeacher.school_id
+              }
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
               {updateTeacherMutation.isPending
@@ -532,13 +628,8 @@ function AdminTeachers() {
                 value={newTeacher.full_name}
                 onChange={(e) => {
                   const fullName = e.target.value
-                  // Auto-generate username from full name
-                  const generatedUsername = fullName
-                    .toLowerCase()
-                    .trim()
-                    .replace(/\s+/g, "-") // Replace spaces with hyphens
-                    .replace(/[^a-z0-9_-]/g, "") // Remove non-alphanumeric except _ and -
-                    .slice(0, 50) // Max 50 characters
+                  // Auto-generate username with Turkish character support
+                  const generatedUsername = generateUsername(fullName)
 
                   setNewTeacher({
                     ...newTeacher,
@@ -622,7 +713,13 @@ function AdminTeachers() {
             </Button>
             <Button
               onClick={handleAddTeacher}
-              disabled={createTeacherMutation.isPending}
+              disabled={
+                createTeacherMutation.isPending ||
+                !newTeacher.full_name ||
+                !newTeacher.username ||
+                !newTeacher.user_email ||
+                !newTeacher.school_id
+              }
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
               {createTeacherMutation.isPending
@@ -630,6 +727,14 @@ function AdminTeachers() {
                 : "Create Teacher"}
             </Button>
           </DialogFooter>
+          {!newTeacher.school_id &&
+            newTeacher.full_name &&
+            newTeacher.username &&
+            newTeacher.user_email && (
+              <p className="text-sm text-red-500 -mt-2">
+                Please select a school to continue
+              </p>
+            )}
         </DialogContent>
       </Dialog>
 
@@ -645,6 +750,73 @@ function AdminTeachers() {
         variant="danger"
         isLoading={deleteTeacherMutation.isPending}
       />
+
+      {/* Reset Password Confirmation Dialog [Story 9.2] */}
+      <ConfirmDialog
+        open={isResetPasswordDialogOpen}
+        onOpenChange={setIsResetPasswordDialogOpen}
+        onConfirm={confirmResetPassword}
+        title="Reset Password"
+        description={`Are you sure you want to reset the password for "${teacherToResetPassword?.userName}"? A new password will be generated and the user will be notified.`}
+        confirmText="Reset Password"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={resetPasswordMutation.isPending}
+      />
+
+      {/* New Password Display Dialog [Story 9.2] */}
+      <Dialog
+        open={isPasswordResultDialogOpen}
+        onOpenChange={closePasswordResultDialog}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-green-500" />
+              Password Reset Successful
+            </DialogTitle>
+            <DialogDescription>
+              The password for {teacherToResetPassword?.userName} has been
+              reset. Please share this password securely with the user.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label className="text-sm text-muted-foreground mb-2 block">
+              New Password
+            </Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 p-3 bg-muted rounded-md font-mono text-sm select-all">
+                {newPassword}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyPassword}
+                className="flex items-center gap-1"
+              >
+                {passwordCopied ? (
+                  <>
+                    <Check className="w-4 h-4 text-green-500" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              This password is displayed only once. Make sure to copy it before
+              closing this dialog.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={closePasswordResultDialog}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

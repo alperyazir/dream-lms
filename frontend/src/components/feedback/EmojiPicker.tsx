@@ -14,8 +14,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { AVAILABLE_EMOJI_REACTIONS } from "@/types/feedback"
 import { cn } from "@/lib/utils"
+import { AVAILABLE_EMOJI_REACTIONS } from "@/types/feedback"
 
 interface EmojiPickerProps {
   selectedEmoji: string | null
@@ -54,7 +54,7 @@ export function EmojiPicker({
                     "h-12 w-12 text-2xl transition-all",
                     selectedEmoji === emojiInfo.slug &&
                       "ring-2 ring-primary bg-primary/10 border-primary",
-                    disabled && "opacity-50 cursor-not-allowed"
+                    disabled && "opacity-50 cursor-not-allowed",
                   )}
                   onClick={() => handleEmojiClick(emojiInfo.slug)}
                   disabled={disabled}

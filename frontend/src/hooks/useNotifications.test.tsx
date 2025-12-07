@@ -4,19 +4,22 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { renderHook, waitFor, act } from "@testing-library/react"
+import { act, renderHook, waitFor } from "@testing-library/react"
 import type { ReactNode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import * as notificationsApi from "@/services/notificationsApi"
+import type {
+  Notification,
+  NotificationListResponse,
+} from "@/types/notification"
 import {
-  useNotifications,
-  useUnreadCount,
-  useMarkAsRead,
-  useMarkAllAsRead,
   NOTIFICATIONS_QUERY_KEY,
   UNREAD_COUNT_QUERY_KEY,
+  useMarkAllAsRead,
+  useMarkAsRead,
+  useNotifications,
+  useUnreadCount,
 } from "./useNotifications"
-import * as notificationsApi from "@/services/notificationsApi"
-import type { Notification, NotificationListResponse } from "@/types/notification"
 
 // Mock the API
 vi.mock("@/services/notificationsApi", () => ({
@@ -79,7 +82,7 @@ describe("useNotifications", () => {
 
   it("fetches notifications successfully", async () => {
     vi.mocked(notificationsApi.getNotifications).mockResolvedValue(
-      mockNotificationListResponse
+      mockNotificationListResponse,
     )
 
     const { result } = renderHook(() => useNotifications(), {
@@ -99,7 +102,7 @@ describe("useNotifications", () => {
 
   it("passes query params to API", async () => {
     vi.mocked(notificationsApi.getNotifications).mockResolvedValue(
-      mockNotificationListResponse
+      mockNotificationListResponse,
     )
 
     renderHook(
@@ -110,7 +113,7 @@ describe("useNotifications", () => {
           limit: 10,
           offset: 0,
         }),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     )
 
     await waitFor(() => {
@@ -189,7 +192,9 @@ describe("useMarkAsRead", () => {
       ...mockNotifications[0],
       is_read: true,
     }
-    vi.mocked(notificationsApi.markAsRead).mockResolvedValue(updatedNotification)
+    vi.mocked(notificationsApi.markAsRead).mockResolvedValue(
+      updatedNotification,
+    )
 
     const { result } = renderHook(() => useMarkAsRead(), {
       wrapper: createWrapper(),
@@ -211,7 +216,9 @@ describe("useMarkAsRead", () => {
       ...mockNotifications[0],
       is_read: true,
     }
-    vi.mocked(notificationsApi.markAsRead).mockResolvedValue(updatedNotification)
+    vi.mocked(notificationsApi.markAsRead).mockResolvedValue(
+      updatedNotification,
+    )
 
     const { result } = renderHook(() => useMarkAsRead(), {
       wrapper: createWrapper(),

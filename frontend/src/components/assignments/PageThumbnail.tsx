@@ -43,7 +43,7 @@ export function PageThumbnail({
           observer.disconnect()
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     )
 
     if (containerRef.current) {
@@ -85,7 +85,7 @@ export function PageThumbnail({
         URL.revokeObjectURL(imageUrl)
       }
     }
-  }, [isVisible, thumbnailUrl])
+  }, [isVisible, thumbnailUrl, imageUrl])
 
   // Clean up blob URL on unmount
   useEffect(() => {
@@ -112,13 +112,13 @@ export function PageThumbnail({
     >
       {/* Thumbnail Image */}
       <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
-        {isLoading && (
-          <Skeleton className="w-full h-full" />
-        )}
+        {isLoading && <Skeleton className="w-full h-full" />}
         {!isLoading && hasError && (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
             <span className="text-3xl font-bold">{pageNumber}</span>
-            <span className="text-xs mt-1">{activityCount} {activityCount === 1 ? 'activity' : 'activities'}</span>
+            <span className="text-xs mt-1">
+              {activityCount} {activityCount === 1 ? "activity" : "activities"}
+            </span>
           </div>
         )}
         {!isLoading && imageUrl && (
@@ -138,9 +138,7 @@ export function PageThumbnail({
       </div>
 
       {/* Activity Count Badge */}
-      <Badge
-        className="absolute top-2 right-2 bg-teal-600 hover:bg-teal-600 text-white text-xs"
-      >
+      <Badge className="absolute top-2 right-2 bg-teal-600 hover:bg-teal-600 text-white text-xs">
         {activityCount}
       </Badge>
 

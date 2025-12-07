@@ -4,11 +4,11 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import type { ReactNode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { NotificationBell } from "../NotificationBell"
 import * as useNotificationsModule from "@/hooks/useNotifications"
+import { NotificationBell } from "../NotificationBell"
 
 // Mock the router
 vi.mock("@tanstack/react-router", () => ({
@@ -68,7 +68,9 @@ describe("NotificationBell", () => {
     render(<NotificationBell />, { wrapper: createWrapper() })
 
     // Should render the bell button
-    expect(screen.getByRole("button", { name: /notifications/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /notifications/i }),
+    ).toBeInTheDocument()
   })
 
   it("shows unread count badge when count > 0", () => {
@@ -123,7 +125,7 @@ describe("NotificationBell", () => {
     render(<NotificationBell />, { wrapper: createWrapper() })
 
     expect(
-      screen.getByRole("button", { name: /notifications.*3 unread/i })
+      screen.getByRole("button", { name: /notifications.*3 unread/i }),
     ).toBeInTheDocument()
   })
 

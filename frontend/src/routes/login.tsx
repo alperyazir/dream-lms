@@ -141,28 +141,60 @@ function Login() {
             </p>
           )}
           {!isError && quickLoginUsers && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
               {[
-                { key: "admin" as const, emoji: "👑", label: "Admin" },
-                { key: "publisher" as const, emoji: "📚", label: "Publisher" },
-                { key: "teacher" as const, emoji: "🍎", label: "Teacher" },
-                { key: "student" as const, emoji: "🎓", label: "Student" },
+                {
+                  key: "admin" as const,
+                  emoji: "👑",
+                  label: "Admin",
+                  color: "text-yellow-600",
+                },
+                {
+                  key: "publisher" as const,
+                  emoji: "📚",
+                  label: "Publisher",
+                  color: "text-blue-600",
+                },
+                {
+                  key: "teacher" as const,
+                  emoji: "🍎",
+                  label: "Teacher",
+                  color: "text-green-600",
+                },
+                {
+                  key: "student" as const,
+                  emoji: "🎓",
+                  label: "Student",
+                  color: "text-purple-600",
+                },
               ].map((role) => {
-                const users = quickLoginUsers[role.key]?.slice(0, 2) || []
-                return users.map((user) => (
-                  <Button
-                    key={user.username}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => testLogin(user.username, user.password)}
-                    disabled={isSubmitting}
-                    className="text-xs"
-                    title={user.email} // Tooltip showing email
-                  >
-                    {role.emoji} {user.username}
-                  </Button>
-                ))
+                const users = quickLoginUsers[role.key] || []
+                if (users.length === 0) return null
+                return (
+                  <div key={role.key}>
+                    <p className={`text-xs font-semibold mb-1 ${role.color}`}>
+                      {role.emoji} {role.label}s ({users.length})
+                    </p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {users.map((user) => (
+                        <Button
+                          key={user.username}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            testLogin(user.username, user.password)
+                          }
+                          disabled={isSubmitting}
+                          className="text-xs h-7"
+                          title={user.email}
+                        >
+                          {user.username}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )
               })}
             </div>
           )}

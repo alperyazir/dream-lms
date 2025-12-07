@@ -7,22 +7,22 @@
  * Supports draft saving, publishing, and badge/emoji functionality.
  */
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
+import { LuLoader, LuSave, LuSend } from "react-icons/lu"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "@/hooks/use-toast"
 import { useFeedbackModal } from "@/hooks/useFeedback"
 import { isFeedbackPublic } from "@/types/feedback"
-import { LuSave, LuSend, LuLoader } from "react-icons/lu"
-import { toast } from "@/hooks/use-toast"
 import { BadgeSelector } from "./BadgeSelector"
 import { EmojiPicker } from "./EmojiPicker"
 
@@ -68,7 +68,7 @@ export function FeedbackModal({
       setSelectedEmoji(
         feedback.emoji_reactions && feedback.emoji_reactions.length > 0
           ? feedback.emoji_reactions[0]
-          : null
+          : null,
       )
     } else if (isOpen && !feedback) {
       setFeedbackText("")
@@ -103,7 +103,7 @@ export function FeedbackModal({
         title: "Draft Saved",
         description: "Feedback saved as draft",
       })
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to save draft. Please try again.",
@@ -136,7 +136,7 @@ export function FeedbackModal({
         description: `Student has been notified of your feedback${badgeMessage}`,
       })
       onClose()
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to publish feedback. Please try again.",
@@ -222,11 +222,7 @@ export function FeedbackModal({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isSaving}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button

@@ -5,8 +5,8 @@
 
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { RecentAssignments } from "../RecentAssignments"
 import type { ProgressRecentAssignment } from "@/types/analytics"
+import { RecentAssignments } from "../RecentAssignments"
 
 const mockAssignments: ProgressRecentAssignment[] = [
   {

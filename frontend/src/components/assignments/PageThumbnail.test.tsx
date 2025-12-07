@@ -5,7 +5,15 @@
  */
 
 import { fireEvent, render, screen } from "@testing-library/react"
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import { PageThumbnail } from "./PageThumbnail"
 
 // Mock IntersectionObserver for Node.js test environment
@@ -32,14 +40,15 @@ class MockIntersectionObserver {
             time: Date.now(),
           },
         ],
-        this
+        this,
       )
     }, 0)
   }
 }
 
 beforeAll(() => {
-  window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver
+  window.IntersectionObserver =
+    MockIntersectionObserver as unknown as typeof IntersectionObserver
 })
 
 describe("PageThumbnail", () => {
@@ -97,7 +106,7 @@ describe("PageThumbnail", () => {
 
   it("shows unselected state with gray border", () => {
     const { container } = render(
-      <PageThumbnail {...defaultProps} isSelected={false} />
+      <PageThumbnail {...defaultProps} isSelected={false} />,
     )
 
     // Check for gray border when not selected

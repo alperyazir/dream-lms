@@ -213,7 +213,7 @@ export interface PageDetail {
  */
 export interface ModuleInfo {
   name: string
-  first_page_index: number  // Index in the flat pages array
+  first_page_index: number // Index in the flat pages array
   page_count: number
 }
 
@@ -231,8 +231,42 @@ export interface ModulePagesDetail {
  */
 export interface BookPagesDetailResponse {
   book_id: string
-  modules: ModuleInfo[]    // Module shortcuts for navigation
-  pages: PageDetail[]      // Flat list of ALL pages in order
+  modules: ModuleInfo[] // Module shortcuts for navigation
+  pages: PageDetail[] // Flat list of ALL pages in order
+  total_pages: number
+  total_activities: number
+}
+
+// --- Story 9.5: Activity Selection Tabs ---
+
+/**
+ * Page information with activity IDs for bulk selection
+ */
+export interface PageWithActivities {
+  page_number: number
+  thumbnail_url: string
+  activity_count: number
+  activity_ids: string[]
+}
+
+/**
+ * Module information with pages and activity IDs for bulk selection
+ */
+export interface ModuleWithActivities {
+  name: string
+  page_start: number
+  page_end: number
+  activity_count: number
+  activity_ids: string[]
+  pages: PageWithActivities[]
+}
+
+/**
+ * Book structure response with modules and pages for activity selection tabs
+ */
+export interface BookStructureResponse {
+  book_id: string
+  modules: ModuleWithActivities[]
   total_pages: number
   total_activities: number
 }

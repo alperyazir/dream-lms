@@ -6,8 +6,8 @@
  */
 
 import { formatDistanceToNow } from "date-fns"
-import { cn } from "@/lib/utils"
 import { getNotificationIconConfig } from "@/lib/notificationIcons"
+import { cn } from "@/lib/utils"
 import type { Notification } from "@/types/notification"
 
 export interface NotificationItemProps {
@@ -22,7 +22,7 @@ export interface NotificationItemProps {
  */
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text
-  return text.slice(0, maxLength).trim() + "..."
+  return `${text.slice(0, maxLength).trim()}...`
 }
 
 /**
@@ -61,17 +61,15 @@ export function NotificationItem({
       className={cn(
         "flex items-start gap-3 p-3 rounded-md cursor-pointer transition-colors",
         "hover:bg-accent focus:bg-accent focus:outline-none",
-        notification.is_read
-          ? "bg-background"
-          : "bg-accent/50",
-        className
+        notification.is_read ? "bg-background" : "bg-accent/50",
+        className,
       )}
     >
       {/* Icon */}
       <div
         className={cn(
           "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center",
-          iconConfig.bgColor
+          iconConfig.bgColor,
         )}
       >
         <IconComponent className={cn("w-5 h-5", iconConfig.color)} />
@@ -85,7 +83,7 @@ export function NotificationItem({
               "text-sm truncate",
               notification.is_read
                 ? "font-normal text-muted-foreground"
-                : "font-semibold text-foreground"
+                : "font-semibold text-foreground",
             )}
             title={notification.title}
           >
@@ -99,7 +97,7 @@ export function NotificationItem({
         <p
           className={cn(
             "text-sm text-muted-foreground mt-0.5",
-            !showFullMessage && "line-clamp-2"
+            !showFullMessage && "line-clamp-2",
           )}
           title={notification.message}
         >

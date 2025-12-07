@@ -36,7 +36,9 @@ export function scoreDragDrop(
     const dropZoneId = `${answer.coords.x}-${answer.coords.y}`
     const userAnswer = userAnswers.get(dropZoneId)
 
-    console.log(`[scoreDragDrop] Zone ${dropZoneId}: user="${userAnswer}" vs correct="${answer.text}" => ${userAnswer === answer.text ? "✓" : "✗"}`)
+    console.log(
+      `[scoreDragDrop] Zone ${dropZoneId}: user="${userAnswer}" vs correct="${answer.text}" => ${userAnswer === answer.text ? "✓" : "✗"}`,
+    )
 
     if (userAnswer === answer.text) {
       correct++
@@ -44,7 +46,9 @@ export function scoreDragDrop(
   })
 
   const percentage = Math.round((correct / correctAnswers.length) * 100)
-  console.log(`[scoreDragDrop] Result: ${correct}/${correctAnswers.length} = ${percentage}%`)
+  console.log(
+    `[scoreDragDrop] Result: ${correct}/${correctAnswers.length} = ${percentage}%`,
+  )
 
   return {
     score: percentage,
@@ -115,7 +119,7 @@ export function scoreMatch(
     const parts = key.split("-")
     if (parts.length === 2) {
       const sentenceIndex = parseInt(parts[1], 10)
-      if (!isNaN(sentenceIndex)) {
+      if (!Number.isNaN(sentenceIndex)) {
         sentenceToWord.set(sentenceIndex, word)
       }
     }
@@ -124,14 +128,18 @@ export function scoreMatch(
   sentences.forEach((sentence, sentenceIndex) => {
     const userAnswer = sentenceToWord.get(sentenceIndex)
     const isCorrect = userAnswer === sentence.word
-    console.log(`[scoreMatch] Sentence ${sentenceIndex} "${sentence.sentence}": user="${userAnswer}" vs correct="${sentence.word}" => ${isCorrect ? "✓" : "✗"}`)
+    console.log(
+      `[scoreMatch] Sentence ${sentenceIndex} "${sentence.sentence}": user="${userAnswer}" vs correct="${sentence.word}" => ${isCorrect ? "✓" : "✗"}`,
+    )
     if (isCorrect) {
       correct++
     }
   })
 
   const percentage = Math.round((correct / sentences.length) * 100)
-  console.log(`[scoreMatch] Result: ${correct}/${sentences.length} = ${percentage}%`)
+  console.log(
+    `[scoreMatch] Result: ${correct}/${sentences.length} = ${percentage}%`,
+  )
 
   return {
     score: percentage,

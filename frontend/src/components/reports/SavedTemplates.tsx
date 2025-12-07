@@ -5,21 +5,8 @@
  * Lists and manages saved report configurations
  */
 
+import { FileText, Play, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
-import { Plus, Play, Trash2, FileText } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +18,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import type {
   ReportGenerateRequest,
@@ -156,9 +156,7 @@ export function SavedTemplates({
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-sm">{template.name}</h4>
                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                  <span>
-                    {REPORT_TYPE_LABELS[template.config.report_type]}
-                  </span>
+                  <span>{REPORT_TYPE_LABELS[template.config.report_type]}</span>
                   <span>•</span>
                   <span>{REPORT_PERIOD_LABELS[template.config.period]}</span>
                   <span>•</span>

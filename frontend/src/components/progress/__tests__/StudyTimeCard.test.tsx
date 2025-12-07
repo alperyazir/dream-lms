@@ -5,8 +5,8 @@
 
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { StudyTimeCard } from "../StudyTimeCard"
 import type { StudyTimeStats } from "@/types/analytics"
+import { StudyTimeCard } from "../StudyTimeCard"
 
 const mockStatsWithHours: StudyTimeStats = {
   this_week_minutes: 120, // 2 hours

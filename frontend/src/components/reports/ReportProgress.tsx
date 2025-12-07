@@ -88,7 +88,9 @@ export function ReportProgress({
         {(status === "pending" || status === "processing") && (
           <div className="w-full max-w-xs space-y-2">
             <Progress value={progress} className={getProgressColor()} />
-            <p className="text-sm text-muted-foreground">{progress}% complete</p>
+            <p className="text-sm text-muted-foreground">
+              {progress}% complete
+            </p>
           </div>
         )}
 

@@ -1,8 +1,8 @@
 import React from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import type { Conversation } from "@/types/message"
 import { cn } from "@/lib/utils"
+import type { Conversation } from "@/types/message"
 
 export interface ConversationListProps {
   conversations: Conversation[]

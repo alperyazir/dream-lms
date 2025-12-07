@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.get("/quick-login-users")
-def get_quick_login_users(db: Session = Depends(get_db)) -> dict[str, list[dict[str, str]]]:
+def get_quick_login_users(db: Session = Depends(get_db)) -> dict[str, list[dict[str, str | None]]]:
     """
     Get users for quick test login (development only).
 
@@ -25,7 +25,7 @@ def get_quick_login_users(db: Session = Depends(get_db)) -> dict[str, list[dict[
         raise HTTPException(status_code=404, detail="Not found")
 
     # Query up to 5 users per role
-    result: dict[str, list[dict[str, str]]] = {}
+    result: dict[str, list[dict[str, str | None]]] = {}
     for role in UserRole:
         users = db.exec(
             select(User)
@@ -36,7 +36,7 @@ def get_quick_login_users(db: Session = Depends(get_db)) -> dict[str, list[dict[
         result[role.value] = [
             {
                 "username": u.username,
-                "email": u.email,
+                "email": u.email,  # Can be None for students
                 # For admin, use settings password; for others, use initial_password
                 "password": settings.FIRST_SUPERUSER_PASSWORD if role == UserRole.admin else (u.initial_password or "changethis")
             }

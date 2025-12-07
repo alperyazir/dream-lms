@@ -4,8 +4,8 @@ import { MessageForm } from "@/components/messaging/MessageForm"
 import { MessageThread } from "@/components/messaging/MessageThread"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { useMessageThread, useSendMessage } from "@/hooks/useMessages"
 import useAuth from "@/hooks/useAuth"
+import { useMessageThread, useSendMessage } from "@/hooks/useMessages"
 
 export const Route = createFileRoute("/_layout/messaging/$conversationId")({
   component: ConversationView,
@@ -16,12 +16,8 @@ function ConversationView() {
   const { user } = useAuth()
 
   // Use real API hooks
-  const {
-    messages,
-    participant,
-    isLoading,
-    refetch,
-  } = useMessageThread(conversationId)
+  const { messages, participant, isLoading, refetch } =
+    useMessageThread(conversationId)
 
   const sendMessage = useSendMessage()
 
@@ -115,7 +111,8 @@ function ConversationView() {
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 <User className="h-3 w-3 inline mr-1" />
-                {participant.role.charAt(0).toUpperCase() + participant.role.slice(1)}
+                {participant.role.charAt(0).toUpperCase() +
+                  participant.role.slice(1)}
               </p>
             </div>
           </div>
@@ -124,10 +121,7 @@ function ConversationView() {
 
       {/* Message Thread - Scrollable Area Only */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 min-h-0">
-        <MessageThread
-          messages={messages}
-          currentUserId={user?.id ?? ""}
-        />
+        <MessageThread messages={messages} currentUserId={user?.id ?? ""} />
       </div>
 
       {/* Message Form - Fixed at Bottom */}

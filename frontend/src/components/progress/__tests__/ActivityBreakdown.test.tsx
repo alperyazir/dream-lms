@@ -4,9 +4,9 @@
  */
 
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it, beforeAll } from "vitest"
-import { ActivityBreakdown } from "../ActivityBreakdown"
+import { beforeAll, describe, expect, it } from "vitest"
 import type { ActivityTypeScore } from "@/types/analytics"
+import { ActivityBreakdown } from "../ActivityBreakdown"
 
 // Mock ResizeObserver for Recharts
 beforeAll(() => {

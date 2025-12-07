@@ -5,8 +5,8 @@
 
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { BenchmarkMessage } from "./BenchmarkMessage"
 import type { BenchmarkMessage as BenchmarkMessageType } from "@/types/benchmarks"
+import { BenchmarkMessage } from "./BenchmarkMessage"
 
 describe("BenchmarkMessage", () => {
   it("renders excelling message correctly", () => {

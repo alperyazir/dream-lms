@@ -5,30 +5,30 @@
  * Full page for generating, downloading, and managing reports.
  */
 
-import { useState } from "react"
-import { createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { BarChart2, FileText, Clock, BookOpen } from "lucide-react"
+import { createFileRoute } from "@tanstack/react-router"
+import { BarChart2, BookOpen, Clock, FileText } from "lucide-react"
+import { useState } from "react"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
 import { ReportBuilder } from "@/components/reports/ReportBuilder"
-import { ReportProgress } from "@/components/reports/ReportProgress"
 import { ReportHistory } from "@/components/reports/ReportHistory"
-import { SavedTemplates } from "@/components/reports/SavedTemplates"
+import { ReportProgress } from "@/components/reports/ReportProgress"
 import { ReportTemplateGrid } from "@/components/reports/ReportTemplateCard"
+import { SavedTemplates } from "@/components/reports/SavedTemplates"
+import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  useReportWorkflow,
+  useDownloadReport,
   useReportHistory,
   useReportTemplates,
-  useDownloadReport,
+  useReportWorkflow,
 } from "@/hooks/useReports"
 import { getMyClasses, getMyStudents } from "@/services/teachersApi"
 import type {
   ReportGenerateRequest,
-  ReportTemplateInfo,
   ReportHistoryItem,
+  ReportTemplateInfo,
 } from "@/types/reports"
 import { PREDEFINED_TEMPLATES } from "@/types/reports"
 
@@ -44,7 +44,7 @@ type PageView = "builder" | "progress"
 
 function TeacherReportsPage() {
   const [activeTab, setActiveTab] = useState<"build" | "history" | "templates">(
-    "build"
+    "build",
   )
   const [pageView, setPageView] = useState<PageView>("builder")
   const [currentConfig, setCurrentConfig] =
@@ -113,7 +113,7 @@ function TeacherReportsPage() {
   }
 
   // Handle template selection (navigate to builder with prefilled config)
-  const handleTemplateSelect = (template: ReportTemplateInfo) => {
+  const handleTemplateSelect = (_template: ReportTemplateInfo) => {
     // Pre-fill the form would require lifting form state - for now just switch to build tab
     setActiveTab("build")
   }

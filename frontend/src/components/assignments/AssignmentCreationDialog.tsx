@@ -12,6 +12,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { format } from "date-fns"
+import { Eye } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import {
   AlertDialog,
@@ -31,12 +32,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import useCustomToast from "@/hooks/useCustomToast"
+import { useQuickActivityPreview } from "@/hooks/usePreviewMode"
 import { assignmentsApi } from "@/services/assignmentsApi"
 import type {
   AssignmentCreateRequest,
   AssignmentFormData,
 } from "@/types/assignment"
 import type { Book } from "@/types/book"
+import { ActivityPreviewModal } from "../preview"
 import { StepConfigureSettings } from "./StepConfigureSettings"
 import { StepSelectActivities } from "./StepSelectActivities"
 import { StepSelectBook } from "./StepSelectBook"
@@ -46,6 +49,7 @@ interface AssignmentCreationDialogProps {
   isOpen: boolean
   onClose: () => void
   book?: Book // Optional pre-selected book
+  prefilledPublishDate?: Date | null // Optional pre-filled publish date (from calendar click)
 }
 
 const STEPS = [
@@ -60,6 +64,7 @@ export function AssignmentCreationDialog({
   isOpen,
   onClose,
   book: initialBook,
+  prefilledPublishDate,
 }: AssignmentCreationDialogProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -76,6 +81,14 @@ export function AssignmentCreationDialog({
   const [currentStep, setCurrentStep] = useState(initialBook ? 1 : 0)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+
+  // Story 9.7: Activity preview
+  const {
+    previewActivity,
+    isModalOpen: isPreviewModalOpen,
+    openPreview,
+    closePreview,
+  } = useQuickActivityPreview()
   const [formData, setFormData] = useState<AssignmentFormData>({
     name: "",
     instructions: "",
@@ -84,6 +97,9 @@ export function AssignmentCreationDialog({
     student_ids: [],
     class_ids: [],
     activity_ids: [],
+    scheduled_publish_date: null, // Story 9.6: Scheduled publishing
+    time_planning_enabled: false,
+    date_groups: [],
   })
 
   // Reset state when dialog opens
@@ -101,10 +117,14 @@ export function AssignmentCreationDialog({
         student_ids: [],
         class_ids: [],
         activity_ids: [],
+        // If prefilledPublishDate is provided (from calendar click), use it
+        scheduled_publish_date: prefilledPublishDate || null,
+        time_planning_enabled: false,
+        date_groups: [],
       })
       setShowCancelConfirm(false)
     }
-  }, [isOpen, initialBook])
+  }, [isOpen, initialBook, prefilledPublishDate])
 
   // Update form name when activities are selected
   useEffect(() => {
@@ -123,13 +143,14 @@ export function AssignmentCreationDialog({
     }
   }, [selectedActivityIds, selectedBook])
 
-  // Mutation for creating assignment
+  // Mutation for creating single assignment
   const createAssignmentMutation = useMutation({
     mutationFn: assignmentsApi.createAssignment,
     onSuccess: (data) => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["assignments"] })
       queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
 
       showSuccessToast(
         `Assignment "${data.name}" created successfully for ${data.student_count} student${data.student_count !== 1 ? "s" : ""}`,
@@ -148,6 +169,33 @@ export function AssignmentCreationDialog({
       console.error("Failed to create assignment:", error)
       const errorMessage =
         error?.response?.data?.detail || "Failed to create assignment"
+      showErrorToast(errorMessage)
+    },
+  })
+
+  // Mutation for creating bulk assignments (Time Planning mode)
+  const createBulkAssignmentsMutation = useMutation({
+    mutationFn: assignmentsApi.createBulkAssignments,
+    onSuccess: (data) => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
+
+      showSuccessToast(
+        `${data.total_created} assignments created successfully! They will become visible on their scheduled dates.`,
+      )
+
+      // Close dialog and navigate to assignments list
+      onClose()
+      navigate({
+        to: "/teacher/assignments",
+      })
+    },
+    onError: (error: any) => {
+      console.error("Failed to create bulk assignments:", error)
+      const errorMessage =
+        error?.response?.data?.detail || "Failed to create assignments"
       showErrorToast(errorMessage)
     },
   })
@@ -190,6 +238,18 @@ export function AssignmentCreationDialog({
         showErrorToast("Please select at least one activity")
         return
       }
+      // Time Planning mode validation
+      if (formData.time_planning_enabled) {
+        if (formData.date_groups.length === 0) {
+          showErrorToast("Please add at least one date when Time Planning is enabled")
+          return
+        }
+        const hasEmptyGroup = formData.date_groups.some(g => g.activityIds.length === 0)
+        if (hasEmptyGroup) {
+          showErrorToast("Each date must have at least one activity assigned")
+          return
+        }
+      }
     }
 
     // Validate step 2 (Select Recipients)
@@ -214,6 +274,19 @@ export function AssignmentCreationDialog({
       ) {
         showErrorToast("Time limit must be at least 1 minute")
         return
+      }
+      // Story 9.6: Validate scheduled publish date if scheduling
+      if (formData.scheduled_publish_date) {
+        // Scheduled publish date must be in the future
+        if (formData.scheduled_publish_date <= new Date()) {
+          showErrorToast("Scheduled publish date must be in the future")
+          return
+        }
+        // Scheduled publish date must be before or equal to due date (if set)
+        if (formData.due_date && formData.scheduled_publish_date > formData.due_date) {
+          showErrorToast("Publish date must be before or equal to the due date")
+          return
+        }
       }
     }
 
@@ -264,6 +337,10 @@ export function AssignmentCreationDialog({
     if (formData.time_limit_minutes !== null) {
       return true
     }
+    // Story 9.6: Check if scheduled publish date was set
+    if (formData.scheduled_publish_date !== null) {
+      return true
+    }
 
     return false
   }
@@ -290,10 +367,36 @@ export function AssignmentCreationDialog({
       student_ids: [],
       class_ids: [],
       activity_ids: [],
+      scheduled_publish_date: null, // Story 9.6: Scheduled publishing
+      time_planning_enabled: false,
+      date_groups: [],
     })
     setShowCancelConfirm(false)
     onClose()
   }
+
+  // Story 9.7: Open preview in new tab
+  const handlePreviewInNewTab = useCallback(() => {
+    if (!selectedBook || selectedActivityIds.length === 0) {
+      showErrorToast("Please select a book and activities first")
+      return
+    }
+
+    // Store preview data in sessionStorage
+    const previewData = {
+      bookId: selectedBook.id,
+      bookTitle: selectedBook.title,
+      bookName: selectedBook.title, // Use title as name
+      publisherName: selectedBook.publisher_name,
+      activityIds: selectedActivityIds,
+      assignmentName: formData.name || `${selectedBook.title} Preview`,
+      timeLimitMinutes: formData.time_limit_minutes,
+    }
+    sessionStorage.setItem("assignment-preview-data", JSON.stringify(previewData))
+
+    // Open preview in new tab
+    window.open("/teacher/assignments/preview", "_blank")
+  }, [selectedBook, selectedActivityIds, formData.name, formData.time_limit_minutes, showErrorToast])
 
   const handleCreateAssignment = async () => {
     if (!selectedBook) {
@@ -306,7 +409,29 @@ export function AssignmentCreationDialog({
       return
     }
 
-    // Prepare API request payload
+    // Time Planning mode: create multiple assignments via bulk endpoint
+    if (formData.time_planning_enabled && formData.date_groups.length > 0) {
+      const requestData: AssignmentCreateRequest = {
+        book_id: selectedBook.id,
+        name: formData.name,
+        instructions: formData.instructions || null,
+        student_ids:
+          formData.student_ids.length > 0 ? formData.student_ids : undefined,
+        class_ids: formData.class_ids.length > 0 ? formData.class_ids : undefined,
+        // Convert date groups to API format
+        date_groups: formData.date_groups.map((group) => ({
+          scheduled_publish_date: group.date.toISOString(),
+          due_date: group.dueDate ? group.dueDate.toISOString() : null,
+          time_limit_minutes: group.timeLimit || null,
+          activity_ids: group.activityIds,
+        })),
+      }
+      // Use bulk creation endpoint for Time Planning mode
+      createBulkAssignmentsMutation.mutate(requestData)
+      return
+    }
+
+    // Normal mode: create single assignment
     const requestData: AssignmentCreateRequest = {
       book_id: selectedBook.id,
       name: formData.name,
@@ -318,6 +443,10 @@ export function AssignmentCreationDialog({
       class_ids: formData.class_ids.length > 0 ? formData.class_ids : undefined,
       // Story 8.2: Use activity_ids for multi-activity assignments
       activity_ids: selectedActivityIds,
+      // Story 9.6: Scheduled publishing
+      scheduled_publish_date: formData.scheduled_publish_date
+        ? formData.scheduled_publish_date.toISOString()
+        : null,
     }
 
     // Call mutation
@@ -326,19 +455,23 @@ export function AssignmentCreationDialog({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+      <Dialog open={isOpen} onOpenChange={(open) => !open && setShowCancelConfirm(true)}>
+        <DialogContent
+          className="max-w-[95vw] w-[1400px] h-[85vh] max-h-[850px] overflow-hidden flex flex-col"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Create Assignment</DialogTitle>
           </DialogHeader>
 
-          {/* Step Indicator - Elegant Design */}
-          <div className="relative mb-4 shrink-0">
+          {/* Step Indicator - Compact Design */}
+          <div className="relative mb-2 shrink-0">
             {/* Progress Bar Background */}
-            <div className="absolute top-3 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700" />
+            <div className="absolute top-2.5 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700" />
             {/* Progress Bar Fill */}
             <div
-              className="absolute top-3 left-0 h-0.5 bg-gradient-to-r from-teal-500 to-teal-400 transition-all duration-300"
+              className="absolute top-2.5 left-0 h-0.5 bg-gradient-to-r from-teal-500 to-teal-400 transition-all duration-300"
               style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
             />
 
@@ -352,17 +485,27 @@ export function AssignmentCreationDialog({
                   <div key={step.number} className="flex flex-col items-center">
                     {/* Step Circle */}
                     <div
-                      className={`relative flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-all duration-200 ${
+                      className={`relative flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-medium transition-all duration-200 ${
                         isCompleted
                           ? "bg-teal-500 text-white shadow-sm"
                           : isCurrent
-                          ? "bg-teal-500 text-white ring-4 ring-teal-500/20 shadow-md"
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600"
+                            ? "bg-teal-500 text-white ring-2 ring-teal-500/20 shadow-md"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600"
                       }`}
                     >
                       {isCompleted ? (
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={3}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       ) : (
                         <span>{step.number + 1}</span>
@@ -370,7 +513,7 @@ export function AssignmentCreationDialog({
                     </div>
                     {/* Step Label */}
                     <span
-                      className={`text-[10px] mt-1.5 font-medium transition-colors ${
+                      className={`text-[9px] mt-1 font-medium transition-colors ${
                         isCompleted || isCurrent
                           ? "text-teal-600 dark:text-teal-400"
                           : "text-gray-400 dark:text-gray-500"
@@ -385,7 +528,7 @@ export function AssignmentCreationDialog({
           </div>
 
           {/* Step Content */}
-          <div className="min-h-[550px] overflow-hidden flex-1 min-w-0">
+          <div className="flex-1 overflow-hidden min-w-0 min-h-0">
             {currentStep === 0 && (
               <StepSelectBook
                 selectedBook={selectedBook}
@@ -399,6 +542,15 @@ export function AssignmentCreationDialog({
                 book={selectedBook}
                 selectedActivityIds={selectedActivityIds}
                 onActivityIdsChange={handleActivityIdsChange}
+                timePlanningEnabled={formData.time_planning_enabled}
+                onTimePlanningChange={(enabled) =>
+                  handleFormDataChange({ time_planning_enabled: enabled })
+                }
+                dateGroups={formData.date_groups}
+                onDateGroupsChange={(groups) =>
+                  handleFormDataChange({ date_groups: groups })
+                }
+                onPreviewActivity={openPreview}
               />
             )}
 
@@ -413,6 +565,7 @@ export function AssignmentCreationDialog({
               <StepConfigureSettings
                 formData={formData}
                 onFormDataChange={handleFormDataChange}
+                activityCount={selectedActivityIds.length}
               />
             )}
 
@@ -448,15 +601,28 @@ export function AssignmentCreationDialog({
                   Next
                 </Button>
               ) : (
-                <Button
-                  onClick={handleCreateAssignment}
-                  disabled={createAssignmentMutation.isPending}
-                  className="bg-teal-600 hover:bg-teal-700"
-                >
-                  {createAssignmentMutation.isPending
-                    ? "Creating..."
-                    : "Create Assignment"}
-                </Button>
+                <>
+                  {/* Story 9.7: Preview button on final step */}
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviewInNewTab}
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Preview
+                  </Button>
+                  <Button
+                    onClick={handleCreateAssignment}
+                    disabled={createAssignmentMutation.isPending || createBulkAssignmentsMutation.isPending}
+                    className="bg-teal-600 hover:bg-teal-700"
+                  >
+                    {createAssignmentMutation.isPending || createBulkAssignmentsMutation.isPending
+                      ? "Creating..."
+                      : formData.time_planning_enabled
+                        ? `Create ${formData.date_groups.length} Assignments`
+                        : "Create Assignment"}
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -483,6 +649,13 @@ export function AssignmentCreationDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Story 9.7: Activity Preview Modal */}
+      <ActivityPreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={closePreview}
+        activity={previewActivity}
+      />
     </>
   )
 }
@@ -519,15 +692,38 @@ function StepReviewCreateMulti({
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
           <h4 className="font-medium text-foreground mb-2">Book</h4>
           <p className="text-muted-foreground">{book.title}</p>
-          <p className="text-sm text-muted-foreground">by {book.publisher_name}</p>
+          <p className="text-sm text-muted-foreground">
+            by {book.publisher_name}
+          </p>
         </div>
 
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
           <h4 className="font-medium text-foreground mb-2">Activities</h4>
-          <p className="text-muted-foreground">
-            {activityCount} {activityCount === 1 ? "activity" : "activities"}{" "}
-            selected
-          </p>
+          {formData.time_planning_enabled && formData.date_groups.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground mb-2">
+                Grouped by due date ({formData.date_groups.length} dates):
+              </p>
+              {formData.date_groups.map((group, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-sm">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
+                    {format(group.date, "MMM dd, yyyy")}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {group.activityIds.length} {group.activityIds.length === 1 ? "activity" : "activities"}
+                  </span>
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground mt-2 italic">
+                Each date group will create a separate assignment
+              </p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">
+              {activityCount} {activityCount === 1 ? "activity" : "activities"}{" "}
+              selected
+            </p>
+          )}
         </div>
 
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -541,6 +737,30 @@ function StepReviewCreateMulti({
             <p className="text-muted-foreground">{formData.instructions}</p>
           </div>
         )}
+
+        {/* Story 9.6: Show publishing schedule */}
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <h4 className="font-medium text-foreground mb-2">Publishing</h4>
+          {formData.scheduled_publish_date ? (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                Scheduled
+              </span>
+              <p className="text-muted-foreground">
+                Will publish on {format(formData.scheduled_publish_date, "PPP 'at' p")}
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                Immediate
+              </span>
+              <p className="text-muted-foreground">
+                Will be published immediately upon creation
+              </p>
+            </div>
+          )}
+        </div>
 
         {formData.due_date && (
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">

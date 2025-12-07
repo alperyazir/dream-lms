@@ -1,19 +1,98 @@
 /**
- * Step Select Book Component - Story 8.2
+ * Step Select Book Component - Story 8.2, Story 9.8
  *
  * Step 0: Book selection for assignment creation
  * Extracted from StepSelectBookActivity for cleaner separation
+ * Story 9.8: Added book cover thumbnails to help identify books
  */
 
 import { useQuery } from "@tanstack/react-query"
 import { BookOpen, Search } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { booksApi } from "@/services/booksApi"
+import { booksApi, getAuthenticatedCoverUrl } from "@/services/booksApi"
 import type { Book } from "@/types/book"
+
+/**
+ * Story 9.8: Book cover thumbnail component with authenticated URL
+ */
+function BookCoverThumbnail({
+  book,
+  size = "small",
+}: {
+  book: Book
+  size?: "small" | "medium"
+}) {
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [imageError, setImageError] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    let blobUrl: string | null = null
+
+    setImageError(false)
+
+    async function fetchCover() {
+      if (!book.cover_image_url) {
+        setIsLoading(false)
+        return
+      }
+
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      if (isMounted) {
+        blobUrl = url
+        setCoverUrl(url)
+        setIsLoading(false)
+      }
+    }
+
+    fetchCover()
+
+    return () => {
+      isMounted = false
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl)
+      }
+    }
+  }, [book.cover_image_url])
+
+  const sizeClasses =
+    size === "small" ? "w-12 h-16" : "w-20 h-28"
+  const iconSize = size === "small" ? "w-6 h-6" : "w-10 h-10"
+
+  if (isLoading) {
+    return (
+      <div
+        className={`${sizeClasses} bg-gradient-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center flex-shrink-0`}
+      >
+        <BookOpen className={`${iconSize} text-gray-400 animate-pulse`} />
+      </div>
+    )
+  }
+
+  if (coverUrl && !imageError) {
+    return (
+      <img
+        src={coverUrl}
+        alt={`${book.title} cover`}
+        className={`${sizeClasses} object-cover rounded flex-shrink-0 shadow-sm`}
+        onError={() => setImageError(true)}
+      />
+    )
+  }
+
+  return (
+    <div
+      className={`${sizeClasses} bg-gradient-to-br from-teal-100 to-teal-200 rounded flex items-center justify-center flex-shrink-0`}
+    >
+      <BookOpen className={`${iconSize} text-teal-600`} />
+    </div>
+  )
+}
 
 interface StepSelectBookProps {
   selectedBook: Book | null
@@ -83,22 +162,28 @@ export function StepSelectBook({
                     onClick={() => onSelectBook(book)}
                   >
                     <CardContent className="p-4">
-                      <h4 className="font-semibold line-clamp-2 mb-2 text-foreground">
-                        {book.title}
-                      </h4>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge
-                          variant="secondary"
-                          className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-100 text-xs"
-                        >
-                          {book.publisher_name}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {book.activity_count}{" "}
-                          {book.activity_count === 1
-                            ? "activity"
-                            : "activities"}
-                        </Badge>
+                      {/* Story 9.8: Book cover thumbnail with title and metadata */}
+                      <div className="flex gap-3">
+                        <BookCoverThumbnail book={book} size="small" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold line-clamp-2 text-foreground text-sm">
+                            {book.title}
+                          </h4>
+                          <div className="flex items-center gap-2 flex-wrap mt-2">
+                            <Badge
+                              variant="secondary"
+                              className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-100 text-xs"
+                            >
+                              {book.publisher_name}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {book.activity_count}{" "}
+                              {book.activity_count === 1
+                                ? "activity"
+                                : "activities"}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -107,35 +192,46 @@ export function StepSelectBook({
             )}
           </>
         ) : (
-          /* Selected Book Display */
+          /* Selected Book Display - Story 9.8: Prominent cover display */
           <Card className="bg-teal-50 dark:bg-teal-950 border-teal-200 dark:border-teal-800">
             <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-semibold text-foreground">
-                    {selectedBook.title}
-                  </h4>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge
-                      variant="secondary"
-                      className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-100 text-xs"
+              <div className="flex gap-4">
+                {/* Book cover - medium size for selected book */}
+                <BookCoverThumbnail book={selectedBook} size="medium" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold text-foreground text-lg">
+                        {selectedBook.title}
+                      </h4>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <Badge
+                          variant="secondary"
+                          className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-100 text-xs"
+                        >
+                          {selectedBook.publisher_name}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {selectedBook.activity_count}{" "}
+                          {selectedBook.activity_count === 1
+                            ? "activity"
+                            : "activities"}
+                        </Badge>
+                      </div>
+                      {selectedBook.description && (
+                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                          {selectedBook.description}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => onSelectBook(null)}
+                      className="text-sm text-teal-600 dark:text-teal-400 hover:underline flex-shrink-0 ml-2"
                     >
-                      {selectedBook.publisher_name}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {selectedBook.activity_count}{" "}
-                      {selectedBook.activity_count === 1
-                        ? "activity"
-                        : "activities"}
-                    </Badge>
+                      Change
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={() => onSelectBook(null)}
-                  className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
-                >
-                  Change
-                </button>
               </div>
             </CardContent>
           </Card>

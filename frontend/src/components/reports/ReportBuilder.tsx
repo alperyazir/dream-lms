@@ -9,27 +9,19 @@
  * - Format selection (PDF/Excel)
  */
 
+import { zodResolver } from "@hookform/resolvers/zod"
+import {
+  ClipboardList,
+  FileSpreadsheet,
+  FileText,
+  User,
+  Users,
+} from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import {
-  FileText,
-  FileSpreadsheet,
-  Users,
-  User,
-  ClipboardList,
-} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Form,
   FormControl,
@@ -38,6 +30,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import type {
   ReportGenerateRequest,
   ReportTemplateType,
@@ -74,7 +74,7 @@ const reportFormSchema = z
     {
       message: "Start and end dates are required for custom period",
       path: ["start_date"],
-    }
+    },
   )
 
 type ReportFormData = z.infer<typeof reportFormSchema>
@@ -256,7 +256,7 @@ export function ReportBuilder({
                         <SelectItem key={value} value={value}>
                           {label}
                         </SelectItem>
-                      )
+                      ),
                     )}
                   </SelectContent>
                 </Select>

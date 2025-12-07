@@ -59,6 +59,8 @@ interface ActivityPlayerProps {
   embedded?: boolean | "header-only"
   // Callback when activity is completed (for multi-activity progress tracking)
   onActivityComplete?: (score: number, answersJson: Record<string, any>) => void
+  // Story 9.7: Show correct answers in preview mode (highlights correct positions)
+  showCorrectAnswers?: boolean
 }
 
 // Type for activity answers - different players use different data structures
@@ -92,7 +94,12 @@ export function restoreProgressFromJson(
     if (!rawAnswers || typeof rawAnswers !== "object") return null
     if (Object.keys(rawAnswers).length === 0) return null
 
-    console.log("[restoreProgress] Activity type:", activityType, "Raw answers:", rawAnswers)
+    console.log(
+      "[restoreProgress] Activity type:",
+      activityType,
+      "Raw answers:",
+      rawAnswers,
+    )
 
     if (
       activityType === "dragdroppicture" ||
@@ -113,7 +120,9 @@ export function restoreProgressFromJson(
     }
     if (activityType === "puzzleFindWords") {
       // Convert array back to Set - could be rawAnswers directly or .words property
-      const wordsArray = Array.isArray(rawAnswers) ? rawAnswers : (rawAnswers.words || [])
+      const wordsArray = Array.isArray(rawAnswers)
+        ? rawAnswers
+        : rawAnswers.words || []
       return new Set(wordsArray)
     }
   } catch (error) {
@@ -137,6 +146,7 @@ export function ActivityPlayer({
   initialTimeSpent = 0,
   embedded = false,
   onActivityComplete,
+  showCorrectAnswers = false,
 }: ActivityPlayerProps) {
   // Story 4.8: Initialize answers from saved progress (must happen before first render)
   const [answers, setAnswers] = useState<ActivityAnswers>(() =>
@@ -279,11 +289,19 @@ export function ActivityPlayer({
         const scoreResult = scoreMatch(userMatches, config.sentences)
         calculatedScore = scoreResult.score
         answersJson = { answers: Object.fromEntries(userMatches) }
-      } else if (normalizedType === "circle" || normalizedType === "markwithx") {
+      } else if (
+        normalizedType === "circle" ||
+        normalizedType === "markwithx"
+      ) {
         const config = activityConfig as CircleActivity
         const userSelections = answers as Map<number, number>
         const circleCount = config.circleCount ?? 2
-        const scoreResult = scoreCircle(userSelections, config.answer, config.type, circleCount)
+        const scoreResult = scoreCircle(
+          userSelections,
+          config.answer,
+          config.type,
+          circleCount,
+        )
         calculatedScore = scoreResult.score
         answersJson = { answers: Object.fromEntries(userSelections) }
       } else if (normalizedType === "puzzlefindwords") {
@@ -571,6 +589,7 @@ export function ActivityPlayer({
               showResults={showResults}
               correctAnswers={correctAnswers as Set<string>}
               initialAnswers={answers as Map<string, string>}
+              showCorrectAnswers={showCorrectAnswers}
             />
           </ErrorBoundary>
         )
@@ -585,6 +604,7 @@ export function ActivityPlayer({
               showResults={showResults}
               correctAnswers={correctAnswers as Set<string>}
               initialAnswers={answers as Map<string, string>}
+              showCorrectAnswers={showCorrectAnswers}
             />
           </ErrorBoundary>
         )
@@ -598,6 +618,7 @@ export function ActivityPlayer({
             showResults={showResults}
             correctAnswers={correctAnswers as Set<string>}
             initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
           />
         )
 
@@ -611,6 +632,7 @@ export function ActivityPlayer({
             showResults={showResults}
             correctAnswers={correctAnswers as Map<number, number>}
             initialAnswers={answers as Map<number, number>}
+            showCorrectAnswers={showCorrectAnswers}
           />
         )
 
@@ -622,6 +644,7 @@ export function ActivityPlayer({
             showResults={showResults}
             assignmentId={assignmentId}
             initialAnswers={answers as Set<string>}
+            showCorrectAnswers={showCorrectAnswers}
           />
         )
 

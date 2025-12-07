@@ -3,10 +3,10 @@
  * Story 5.6: Time-Based Reporting & Trend Analysis
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach } from "vitest"
-import { ReportTemplateCard, ReportTemplateGrid } from "../ReportTemplateCard"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { ReportTemplateInfo } from "@/types/reports"
+import { ReportTemplateCard, ReportTemplateGrid } from "../ReportTemplateCard"
 
 const mockTemplate: ReportTemplateInfo = {
   type: "weekly_class_summary",
@@ -47,15 +47,12 @@ describe("ReportTemplateCard", () => {
 
   it("renders template information correctly", () => {
     render(
-      <ReportTemplateCard
-        template={mockTemplate}
-        onSelect={mockOnSelect}
-      />
+      <ReportTemplateCard template={mockTemplate} onSelect={mockOnSelect} />,
     )
 
     expect(screen.getByText("Weekly Class Summary")).toBeInTheDocument()
     expect(
-      screen.getByText("Generate a weekly summary of class performance")
+      screen.getByText("Generate a weekly summary of class performance"),
     ).toBeInTheDocument()
     expect(screen.getByText("class")).toBeInTheDocument()
     expect(screen.getByText("Default: week")).toBeInTheDocument()
@@ -63,14 +60,13 @@ describe("ReportTemplateCard", () => {
 
   it("calls onSelect when card is clicked", () => {
     render(
-      <ReportTemplateCard
-        template={mockTemplate}
-        onSelect={mockOnSelect}
-      />
+      <ReportTemplateCard template={mockTemplate} onSelect={mockOnSelect} />,
     )
 
     // Click the card
-    const card = screen.getByText("Weekly Class Summary").closest("div[class*='card']")
+    const card = screen
+      .getByText("Weekly Class Summary")
+      .closest("div[class*='card']")
     if (card) {
       fireEvent.click(card)
     }
@@ -84,7 +80,7 @@ describe("ReportTemplateCard", () => {
         template={mockTemplate}
         onSelect={mockOnSelect}
         onQuickGenerate={mockOnQuickGenerate}
-      />
+      />,
     )
 
     expect(screen.getByRole("button", { name: /Quick/i })).toBeInTheDocument()
@@ -92,13 +88,12 @@ describe("ReportTemplateCard", () => {
 
   it("does not show Quick button when onQuickGenerate is not provided", () => {
     render(
-      <ReportTemplateCard
-        template={mockTemplate}
-        onSelect={mockOnSelect}
-      />
+      <ReportTemplateCard template={mockTemplate} onSelect={mockOnSelect} />,
     )
 
-    expect(screen.queryByRole("button", { name: /Quick/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /Quick/i }),
+    ).not.toBeInTheDocument()
   })
 
   it("calls onQuickGenerate when Quick button is clicked", () => {
@@ -107,7 +102,7 @@ describe("ReportTemplateCard", () => {
         template={mockTemplate}
         onSelect={mockOnSelect}
         onQuickGenerate={mockOnQuickGenerate}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: /Quick/i }))
@@ -124,11 +119,13 @@ describe("ReportTemplateCard", () => {
         onSelect={mockOnSelect}
         onQuickGenerate={mockOnQuickGenerate}
         disabled={true}
-      />
+      />,
     )
 
     // Click the card
-    const card = screen.getByText("Weekly Class Summary").closest("div[class*='card']")
+    const card = screen
+      .getByText("Weekly Class Summary")
+      .closest("div[class*='card']")
     if (card) {
       fireEvent.click(card)
     }
@@ -143,7 +140,7 @@ describe("ReportTemplateCard", () => {
         onSelect={mockOnSelect}
         onQuickGenerate={mockOnQuickGenerate}
         disabled={true}
-      />
+      />,
     )
 
     expect(screen.getByRole("button", { name: /Quick/i })).toBeDisabled()
@@ -160,10 +157,7 @@ describe("ReportTemplateGrid", () => {
 
   it("renders grid title", () => {
     render(
-      <ReportTemplateGrid
-        templates={mockTemplates}
-        onSelect={mockOnSelect}
-      />
+      <ReportTemplateGrid templates={mockTemplates} onSelect={mockOnSelect} />,
     )
 
     expect(screen.getByText("Quick Templates")).toBeInTheDocument()
@@ -171,10 +165,7 @@ describe("ReportTemplateGrid", () => {
 
   it("renders all templates", () => {
     render(
-      <ReportTemplateGrid
-        templates={mockTemplates}
-        onSelect={mockOnSelect}
-      />
+      <ReportTemplateGrid templates={mockTemplates} onSelect={mockOnSelect} />,
     )
 
     expect(screen.getByText("Weekly Class Summary")).toBeInTheDocument()
@@ -188,7 +179,7 @@ describe("ReportTemplateGrid", () => {
         templates={mockTemplates}
         onSelect={mockOnSelect}
         onQuickGenerate={mockOnQuickGenerate}
-      />
+      />,
     )
 
     // All templates should have Quick buttons
@@ -203,7 +194,7 @@ describe("ReportTemplateGrid", () => {
         onSelect={mockOnSelect}
         onQuickGenerate={mockOnQuickGenerate}
         disabled={true}
-      />
+      />,
     )
 
     const quickButtons = screen.getAllByRole("button", { name: /Quick/i })

@@ -5,8 +5,8 @@
  * Displays class average, school average, and publisher average side by side
  */
 
+import { BarChart3, Building2, Info, School, Users } from "lucide-react"
 import React from "react"
-import { BarChart3, School, Building2, Users, Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -15,10 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import type {
-  ClassMetrics,
-  BenchmarkData,
-} from "@/types/benchmarks"
+import type { BenchmarkData, ClassMetrics } from "@/types/benchmarks"
 
 export interface BenchmarkCardProps {
   classMetrics: ClassMetrics
@@ -78,7 +75,11 @@ const BenchmarkItem = ({
 )
 
 export const BenchmarkCard = React.memo(
-  ({ classMetrics, schoolBenchmark, publisherBenchmark }: BenchmarkCardProps) => {
+  ({
+    classMetrics,
+    schoolBenchmark,
+    publisherBenchmark,
+  }: BenchmarkCardProps) => {
     return (
       <Card className="shadow-neuro border-blue-100 dark:border-blue-900">
         <CardHeader className="pb-2">
@@ -127,9 +128,7 @@ export const BenchmarkCard = React.memo(
               <Users className="w-4 h-4" />
               {classMetrics.active_students} active students
             </span>
-            <span>
-              {classMetrics.total_assignments} assignments
-            </span>
+            <span>{classMetrics.total_assignments} assignments</span>
             <span>
               {Math.round(classMetrics.completion_rate)}% completion rate
             </span>

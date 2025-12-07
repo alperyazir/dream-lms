@@ -3,10 +3,10 @@
  * Story 6.1: Notification System Foundation
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
-import { NotificationItem } from "../NotificationItem"
 import type { Notification } from "@/types/notification"
+import { NotificationItem } from "../NotificationItem"
 
 const mockNotificationUnread: Notification = {
   id: "notif-1",
@@ -34,8 +34,10 @@ const mockNotificationLong: Notification = {
   id: "notif-3",
   user_id: "user-1",
   type: "system_announcement",
-  title: "A very long notification title that should be truncated when displayed in the UI component",
-  message: "This is a very long message that contains a lot of text and should be truncated when displayed in the notification item component to prevent UI overflow issues.",
+  title:
+    "A very long notification title that should be truncated when displayed in the UI component",
+  message:
+    "This is a very long message that contains a lot of text and should be truncated when displayed in the notification item component to prevent UI overflow issues.",
   link: null,
   is_read: false,
   created_at: new Date().toISOString(),
@@ -46,7 +48,9 @@ describe("NotificationItem", () => {
     render(<NotificationItem notification={mockNotificationUnread} />)
 
     expect(screen.getByText(/New Assignment Available/i)).toBeInTheDocument()
-    expect(screen.getByText(/You have a new math assignment/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/You have a new math assignment/i),
+    ).toBeInTheDocument()
   })
 
   it("displays relative timestamp", () => {
@@ -58,7 +62,7 @@ describe("NotificationItem", () => {
 
   it("shows unread indicator for unread notifications", () => {
     const { container } = render(
-      <NotificationItem notification={mockNotificationUnread} />
+      <NotificationItem notification={mockNotificationUnread} />,
     )
 
     // Unread indicator should be present (blue dot)
@@ -68,18 +72,20 @@ describe("NotificationItem", () => {
 
   it("does not show unread indicator for read notifications", () => {
     const { container } = render(
-      <NotificationItem notification={mockNotificationRead} />
+      <NotificationItem notification={mockNotificationRead} />,
     )
 
     // The container should not have the unread dot
     // We look for the specific class pattern used for the unread indicator
-    const unreadIndicator = container.querySelector(".w-2.h-2.rounded-full.bg-primary")
+    const unreadIndicator = container.querySelector(
+      ".w-2.h-2.rounded-full.bg-primary",
+    )
     expect(unreadIndicator).not.toBeInTheDocument()
   })
 
   it("displays correct icon for assignment_created type", () => {
     const { container } = render(
-      <NotificationItem notification={mockNotificationUnread} />
+      <NotificationItem notification={mockNotificationUnread} />,
     )
 
     // FileText icon for assignment_created type
@@ -90,7 +96,7 @@ describe("NotificationItem", () => {
 
   it("displays correct icon for feedback_received type", () => {
     const { container } = render(
-      <NotificationItem notification={mockNotificationRead} />
+      <NotificationItem notification={mockNotificationRead} />,
     )
 
     // MessageSquare icon for feedback_received type
@@ -105,7 +111,7 @@ describe("NotificationItem", () => {
       <NotificationItem
         notification={mockNotificationUnread}
         onClick={handleClick}
-      />
+      />,
     )
 
     const item = screen.getByRole("button")
@@ -120,7 +126,7 @@ describe("NotificationItem", () => {
       <NotificationItem
         notification={mockNotificationUnread}
         onClick={handleClick}
-      />
+      />,
     )
 
     const item = screen.getByRole("button")
@@ -141,10 +147,7 @@ describe("NotificationItem", () => {
 
   it("shows full message when showFullMessage is true", () => {
     render(
-      <NotificationItem
-        notification={mockNotificationLong}
-        showFullMessage
-      />
+      <NotificationItem notification={mockNotificationLong} showFullMessage />,
     )
 
     const message = screen.getByText(/This is a very long message/i)

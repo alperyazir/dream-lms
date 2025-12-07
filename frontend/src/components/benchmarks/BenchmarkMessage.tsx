@@ -5,15 +5,15 @@
  * Displays encouraging or constructive feedback based on benchmark performance
  */
 
-import React from "react"
 import {
-  Trophy,
-  TrendingUp,
-  Target,
   AlertTriangle,
   BookOpen,
   Sparkles,
+  Target,
+  TrendingUp,
+  Trophy,
 } from "lucide-react"
+import React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import type { BenchmarkMessage as BenchmarkMessageType } from "@/types/benchmarks"
 

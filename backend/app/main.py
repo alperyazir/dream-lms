@@ -1,8 +1,10 @@
 import logging
+import os
 import sentry_sdk
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.cors import CORSMiddleware
@@ -84,5 +86,11 @@ if settings.all_cors_origins:
 
 # Add SlowAPI middleware for rate limiting (Story 4.8 QA Fix)
 app.add_middleware(SlowAPIMiddleware)
+
+# Mount static files directory for serving uploaded content (logos, etc.)
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
+os.makedirs(os.path.join(STATIC_DIR, "logos"), exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

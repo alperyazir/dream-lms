@@ -157,3 +157,35 @@ class BookPagesDetailResponse(BaseModel):
     pages: list[PageDetail]  # Flat list of ALL pages in order
     total_pages: int
     total_activities: int
+
+
+# --- Story 9.5: Activity Selection Tabs ---
+
+
+class PageWithActivities(BaseModel):
+    """Page information with activity IDs for bulk selection."""
+
+    page_number: int
+    thumbnail_url: str
+    activity_count: int
+    activity_ids: list[uuid.UUID]
+
+
+class ModuleWithActivities(BaseModel):
+    """Module information with pages and activity IDs for bulk selection."""
+
+    name: str
+    page_start: int
+    page_end: int
+    activity_count: int
+    activity_ids: list[uuid.UUID]
+    pages: list[PageWithActivities]
+
+
+class BookStructureResponse(BaseModel):
+    """Book structure response with modules and pages for activity selection tabs."""
+
+    book_id: uuid.UUID
+    modules: list[ModuleWithActivities]
+    total_pages: int
+    total_activities: int

@@ -3,9 +3,8 @@
  * Story 5.6: Time-Based Reporting & Trend Analysis
  */
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi, beforeEach } from "vitest"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ReportBuilder } from "../ReportBuilder"
 
 const mockClasses = [
@@ -31,7 +30,7 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     expect(screen.getByText("Configure Report")).toBeInTheDocument()
@@ -39,7 +38,7 @@ describe("ReportBuilder", () => {
     expect(screen.getByText("Time Period")).toBeInTheDocument()
     expect(screen.getByText("Output Format")).toBeInTheDocument()
     expect(
-      screen.getByRole("button", { name: /Generate Report/i })
+      screen.getByRole("button", { name: /Generate Report/i }),
     ).toBeInTheDocument()
   })
 
@@ -49,13 +48,13 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     expect(screen.getByRole("button", { name: /Student/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Class/i })).toBeInTheDocument()
     expect(
-      screen.getByRole("button", { name: /Assignment/i })
+      screen.getByRole("button", { name: /Assignment/i }),
     ).toBeInTheDocument()
   })
 
@@ -65,7 +64,7 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     expect(screen.getByRole("button", { name: /PDF/i })).toBeInTheDocument()
@@ -78,7 +77,7 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     // Use getAllByText since label and placeholder both have the same text
@@ -92,7 +91,7 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: /Class/i }))
@@ -109,7 +108,7 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: /Assignment/i }))
@@ -126,7 +125,7 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     const excelButton = screen.getByRole("button", { name: /Excel/i })
@@ -145,7 +144,7 @@ describe("ReportBuilder", () => {
         students={mockStudents}
         onGenerate={mockOnGenerate}
         isGenerating={true}
-      />
+      />,
     )
 
     const button = screen.getByRole("button", { name: /Generating/i })
@@ -159,7 +158,7 @@ describe("ReportBuilder", () => {
         students={mockStudents}
         onGenerate={mockOnGenerate}
         isGenerating={true}
-      />
+      />,
     )
 
     expect(screen.getByText("Generating...")).toBeInTheDocument()
@@ -167,15 +166,13 @@ describe("ReportBuilder", () => {
 
   it("renders with empty classes and students arrays", () => {
     render(
-      <ReportBuilder
-        classes={[]}
-        students={[]}
-        onGenerate={mockOnGenerate}
-      />
+      <ReportBuilder classes={[]} students={[]} onGenerate={mockOnGenerate} />,
     )
 
     expect(screen.getByText("Configure Report")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Generate Report/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /Generate Report/i }),
+    ).toBeInTheDocument()
   })
 
   it("default values are correctly set", () => {
@@ -184,7 +181,7 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     // Student button should be active by default
@@ -202,7 +199,7 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     // Initially student is selected
@@ -223,7 +220,7 @@ describe("ReportBuilder", () => {
         classes={mockClasses}
         students={mockStudents}
         onGenerate={mockOnGenerate}
-      />
+      />,
     )
 
     // Initially PDF is selected
@@ -245,7 +242,7 @@ describe("ReportBuilder", () => {
         students={mockStudents}
         onGenerate={mockOnGenerate}
         isGenerating={false}
-      />
+      />,
     )
 
     const button = screen.getByRole("button", { name: /Generate Report/i })

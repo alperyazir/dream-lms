@@ -4,7 +4,7 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { MultiActivityAnalyticsResponse } from "@/types/assignment"
@@ -63,7 +63,7 @@ const createTestQueryClient = () =>
 const renderWithQueryClient = (ui: React.ReactElement) => {
   const queryClient = createTestQueryClient()
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
   )
 }
 
@@ -80,11 +80,13 @@ describe("MultiActivityAnalyticsTable", () => {
     } as any)
 
     const { container } = renderWithQueryClient(
-      <MultiActivityAnalyticsTable assignmentId="1" />
+      <MultiActivityAnalyticsTable assignmentId="1" />,
     )
 
     // Should show loading skeleton (skeleton uses animate-pulse class)
-    const skeletonElements = container.querySelectorAll('[class*="animate-pulse"]')
+    const skeletonElements = container.querySelectorAll(
+      '[class*="animate-pulse"]',
+    )
     expect(skeletonElements.length).toBeGreaterThan(0)
   })
 

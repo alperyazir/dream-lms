@@ -8,11 +8,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   getConversations,
-  getThread,
-  sendMessage,
-  markAsRead,
   getRecipients,
+  getThread,
   getUnreadCount,
+  markAsRead,
+  sendMessage,
 } from "@/services/messagesApi"
 import type {
   ConversationQueryParams,
@@ -24,7 +24,10 @@ import type {
  * Query keys for messages
  */
 export const CONVERSATIONS_QUERY_KEY = ["messages", "conversations"] as const
-export const MESSAGES_UNREAD_COUNT_QUERY_KEY = ["messages", "unread-count"] as const
+export const MESSAGES_UNREAD_COUNT_QUERY_KEY = [
+  "messages",
+  "unread-count",
+] as const
 export const RECIPIENTS_QUERY_KEY = ["messages", "recipients"] as const
 
 /**
@@ -52,7 +55,7 @@ export function useConversations(
   options: {
     enabled?: boolean
     refetchInterval?: number | false
-  } = {}
+  } = {},
 ) {
   const queryClient = useQueryClient()
   const { enabled = true, refetchInterval = 30000 } = options
@@ -91,18 +94,22 @@ export function useMessageThread(
   options: {
     enabled?: boolean
     refetchInterval?: number | false
-  } = {}
+  } = {},
 ) {
   const queryClient = useQueryClient()
   const { enabled = true, refetchInterval = 10000 } = options
 
   const query = useQuery({
-    queryKey: partnerId ? threadQueryKey(partnerId) : ["messages", "thread", "none"],
+    queryKey: partnerId
+      ? threadQueryKey(partnerId)
+      : ["messages", "thread", "none"],
     queryFn: async () => {
       const result = await getThread(partnerId!)
       // Backend marks messages as read when fetching thread,
       // so invalidate unread count and conversations to reflect this
-      queryClient.invalidateQueries({ queryKey: MESSAGES_UNREAD_COUNT_QUERY_KEY })
+      queryClient.invalidateQueries({
+        queryKey: MESSAGES_UNREAD_COUNT_QUERY_KEY,
+      })
       queryClient.invalidateQueries({ queryKey: CONVERSATIONS_QUERY_KEY })
       return result
     },
@@ -138,10 +145,7 @@ export function useMessageThread(
  * Polls every 30 seconds when window is focused
  */
 export function useMessagesUnreadCount(
-  options: {
-    enabled?: boolean
-    refetchInterval?: number | false
-  } = {}
+  options: { enabled?: boolean; refetchInterval?: number | false } = {},
 ) {
   const { enabled = true, refetchInterval = 30000 } = options
 
@@ -165,11 +169,7 @@ export function useMessagesUnreadCount(
 /**
  * Hook for fetching allowed recipients
  */
-export function useRecipients(
-  options: {
-    enabled?: boolean
-  } = {}
-) {
+export function useRecipients(options: { enabled?: boolean } = {}) {
   const { enabled = true } = options
 
   const query = useQuery({
@@ -241,7 +241,9 @@ export function useMarkMessageAsRead() {
     onSuccess: () => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: CONVERSATIONS_QUERY_KEY })
-      queryClient.invalidateQueries({ queryKey: MESSAGES_UNREAD_COUNT_QUERY_KEY })
+      queryClient.invalidateQueries({
+        queryKey: MESSAGES_UNREAD_COUNT_QUERY_KEY,
+      })
     },
   })
 

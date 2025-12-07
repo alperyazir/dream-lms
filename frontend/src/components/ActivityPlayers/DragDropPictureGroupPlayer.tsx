@@ -18,6 +18,8 @@ interface DragDropPictureGroupPlayerProps {
   showResults?: boolean
   correctAnswers?: Set<string>
   initialAnswers?: Map<string, string>
+  // Story 9.7: Show correct answers in preview mode
+  showCorrectAnswers?: boolean
 }
 
 export function DragDropPictureGroupPlayer({
@@ -27,6 +29,7 @@ export function DragDropPictureGroupPlayer({
   showResults = false,
   correctAnswers,
   initialAnswers,
+  showCorrectAnswers = false,
 }: DragDropPictureGroupPlayerProps) {
   const [answers, setAnswers] = useState<Map<string, string>>(
     initialAnswers || new Map(),
@@ -252,6 +255,15 @@ export function DragDropPictureGroupPlayer({
     return correctAnswers.has(dropZoneId)
   }
 
+  // Story 9.7: Get first correct answer for a drop zone (for preview mode)
+  const getCorrectAnswerText = (dropZoneId: string): string | null => {
+    const answer = activity.answer.find(
+      (a) => getDropZoneId(a.coords) === dropZoneId
+    )
+    // For group type, return the first item in the group array
+    return answer?.group?.[0] || null
+  }
+
   // Calculate completion
   const completionCount = answers.size
   const totalCount = activity.answer.length
@@ -422,6 +434,9 @@ export function DragDropPictureGroupPlayer({
               const isHovered = hoveredZone === dropZoneId
               const correct = isCorrect(dropZoneId)
               const scaledCoords = getScaledCoords(answer.coords)
+              // Story 9.7: Get correct answer for preview mode
+              const correctAnswerText = showCorrectAnswers ? getCorrectAnswerText(dropZoneId) : null
+              const displayWord = showCorrectAnswers ? correctAnswerText : placedWord
 
               return (
                 <button
@@ -433,35 +448,37 @@ export function DragDropPictureGroupPlayer({
                     }
                   }}
                   onDragOver={(e) =>
-                    !showResults && handleDragOver(e, dropZoneId)
+                    !showResults && !showCorrectAnswers && handleDragOver(e, dropZoneId)
                   }
                   onDragLeave={handleDragLeave}
-                  onDrop={(e) => !showResults && handleDrop(e, dropZoneId)}
+                  onDrop={(e) => !showResults && !showCorrectAnswers && handleDrop(e, dropZoneId)}
                   onClick={() =>
-                    !showResults && handleDropZoneClick(dropZoneId)
+                    !showResults && !showCorrectAnswers && handleDropZoneClick(dropZoneId)
                   }
                   onKeyDown={(e) => handleDropZoneKeyDown(e, dropZoneId, index)}
                   className={`
                 absolute flex items-center justify-center rounded-md transition-all duration-200 p-1
                 ${
-                  placedWord
-                    ? showResults
-                      ? correct
-                        ? "border-2 border-green-500 bg-green-100/95 text-green-900 dark:bg-green-900/80 dark:text-green-100"
-                        : "border-2 border-red-500 bg-red-100/95 text-red-900 dark:bg-red-900/80 dark:text-red-100"
-                      : "border-2 border-teal-500 bg-teal-100/95 text-teal-900 dark:bg-teal-900/80 dark:text-teal-100"
-                    : isHovered
-                      ? "border-2 border-dashed border-teal-500 bg-teal-50/50 dark:bg-teal-900/30"
-                      : "border-2 border-dashed border-gray-400 bg-white/50 hover:border-gray-500 dark:border-gray-500 dark:bg-gray-800/50"
+                  showCorrectAnswers
+                    ? "border-2 border-green-500 bg-green-100/95 text-green-900 dark:bg-green-900/80 dark:text-green-100"
+                    : placedWord
+                      ? showResults
+                        ? correct
+                          ? "border-2 border-green-500 bg-green-100/95 text-green-900 dark:bg-green-900/80 dark:text-green-100"
+                          : "border-2 border-red-500 bg-red-100/95 text-red-900 dark:bg-red-900/80 dark:text-red-100"
+                        : "border-2 border-teal-500 bg-teal-100/95 text-teal-900 dark:bg-teal-900/80 dark:text-teal-100"
+                      : isHovered
+                        ? "border-2 border-dashed border-teal-500 bg-teal-50/50 dark:bg-teal-900/30"
+                        : "border-2 border-dashed border-gray-400 bg-white/50 hover:border-gray-500 dark:border-gray-500 dark:bg-gray-800/50"
                 }
               `}
                   style={scaledCoords}
-                  tabIndex={!showResults ? 0 : -1}
-                  aria-label={`Drop zone ${index + 1}${placedWord ? `: ${placedWord}` : ""}`}
-                  disabled={showResults}
+                  tabIndex={!showResults && !showCorrectAnswers ? 0 : -1}
+                  aria-label={`Drop zone ${index + 1}${displayWord ? `: ${displayWord}` : ""}`}
+                  disabled={showResults || showCorrectAnswers}
                 >
                   <span className="text-center text-base font-bold leading-tight">
-                    {placedWord || ""}
+                    {displayWord || ""}
                   </span>
 
                   {/* Results indicator */}
@@ -473,6 +490,13 @@ export function DragDropPictureGroupPlayer({
                   `}
                     >
                       {correct ? "✓" : "✗"}
+                    </div>
+                  )}
+
+                  {/* Story 9.7: Show checkmark for correct answers in preview mode */}
+                  {showCorrectAnswers && correctAnswerText && (
+                    <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-sm font-bold text-white shadow-lg">
+                      ✓
                     </div>
                   )}
                 </button>

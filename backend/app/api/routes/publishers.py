@@ -9,6 +9,7 @@ from app.api.deps import SessionDep, require_role
 from app.models import (
     DashboardStats,
     Publisher,
+    PublisherPublic,
     School,
     SchoolCreateByPublisher,
     SchoolPublic,
@@ -24,6 +25,48 @@ from app.models import (
 from app.utils import generate_temp_password
 
 router = APIRouter(prefix="/publishers", tags=["publishers"])
+
+
+@router.get(
+    "/me/profile",
+    response_model=PublisherPublic,
+    summary="Get my publisher profile",
+    description="Retrieve the authenticated publisher's profile including organization details and logo. Publisher only.",
+)
+def get_my_profile(
+    *,
+    session: SessionDep,
+    current_user: User = require_role(UserRole.publisher)
+) -> Any:
+    """
+    Get the authenticated publisher's profile.
+
+    Returns publisher profile including name, logo_url, and user information.
+    """
+    # Get Publisher record for current user
+    statement = select(Publisher).where(Publisher.user_id == current_user.id)
+    publisher = session.exec(statement).first()
+
+    if not publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher record not found for this user"
+        )
+
+    return PublisherPublic(
+        id=publisher.id,
+        name=publisher.name,
+        contact_email=publisher.contact_email,
+        logo_url=publisher.logo_url,
+        benchmarking_enabled=publisher.benchmarking_enabled,
+        user_id=publisher.user_id,
+        user_email=current_user.email,
+        user_username=current_user.username,
+        user_full_name=current_user.full_name or "",
+        user_initial_password=current_user.initial_password,
+        created_at=publisher.created_at,
+        updated_at=publisher.updated_at,
+    )
 
 
 @router.get(

@@ -3,8 +3,8 @@
  * Story 5.6: Time-Based Reporting & Trend Analysis
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach } from "vitest"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ReportProgress } from "../ReportProgress"
 
 describe("ReportProgress", () => {
@@ -24,7 +24,7 @@ describe("ReportProgress", () => {
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     expect(screen.getByText("Preparing report...")).toBeInTheDocument()
@@ -40,7 +40,7 @@ describe("ReportProgress", () => {
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     expect(screen.getByText("Generating report...")).toBeInTheDocument()
@@ -55,14 +55,16 @@ describe("ReportProgress", () => {
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     expect(screen.getByText("Report ready!")).toBeInTheDocument()
     expect(
-      screen.getByRole("button", { name: "Download Report" })
+      screen.getByRole("button", { name: "Download Report" }),
     ).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "New Report" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "New Report" }),
+    ).toBeInTheDocument()
   })
 
   it("renders failed state with error message and retry button", () => {
@@ -74,7 +76,7 @@ describe("ReportProgress", () => {
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     expect(screen.getByText("Report generation failed")).toBeInTheDocument()
@@ -91,7 +93,7 @@ describe("ReportProgress", () => {
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: "Download Report" }))
@@ -107,7 +109,7 @@ describe("ReportProgress", () => {
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }))
@@ -122,7 +124,7 @@ describe("ReportProgress", () => {
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
@@ -137,7 +139,7 @@ describe("ReportProgress", () => {
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: "New Report" }))
@@ -153,11 +155,11 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
         isDownloading={true}
-      />
+      />,
     )
 
     expect(
-      screen.getByRole("button", { name: /Download Report/i })
+      screen.getByRole("button", { name: /Download Report/i }),
     ).toBeDisabled()
   })
 
@@ -169,7 +171,7 @@ describe("ReportProgress", () => {
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     expect(screen.getByText("Initializing...")).toBeInTheDocument()

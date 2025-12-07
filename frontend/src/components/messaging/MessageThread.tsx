@@ -1,8 +1,8 @@
 import React, { useRef } from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import type { Message } from "@/types/message"
 import { cn } from "@/lib/utils"
+import type { Message } from "@/types/message"
 
 export interface MessageThreadProps {
   messages: Message[]

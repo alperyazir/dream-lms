@@ -5,19 +5,22 @@
  * Displays a summary of insights on the teacher dashboard with links to full view.
  */
 
-import { Lightbulb, RefreshCw, ChevronRight } from "lucide-react"
 import { Link } from "@tanstack/react-router"
+import { ChevronRight, Lightbulb, RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  useDismissInsight,
+  useTeacherInsights,
+} from "@/hooks/useTeacherInsights"
 import { InsightCard } from "./InsightCard"
-import { useTeacherInsights, useDismissInsight } from "@/hooks/useTeacherInsights"
 
 export interface InsightsDashboardCardProps {
   /** Maximum number of insights to show */
@@ -33,13 +36,8 @@ export function InsightsDashboardCard({
   viewAllRoute = "/teacher/insights",
   onViewInsightDetails,
 }: InsightsDashboardCardProps) {
-  const {
-    insights,
-    lastRefreshed,
-    isLoading,
-    error,
-    refreshInsights,
-  } = useTeacherInsights()
+  const { insights, lastRefreshed, isLoading, error, refreshInsights } =
+    useTeacherInsights()
 
   const { dismissInsight, isDismissing } = useDismissInsight()
 
@@ -165,7 +163,8 @@ export function InsightsDashboardCard({
                   variant="ghost"
                   className="w-full justify-center text-teal-600 hover:text-teal-700 dark:text-teal-400"
                 >
-                  View {remainingCount} more insight{remainingCount !== 1 ? "s" : ""}
+                  View {remainingCount} more insight
+                  {remainingCount !== 1 ? "s" : ""}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>

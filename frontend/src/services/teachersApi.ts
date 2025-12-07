@@ -10,11 +10,8 @@
 
 import axios from "axios"
 import { OpenAPI } from "../client"
+import type { InsightDetail, TeacherInsightsResponse } from "../types/analytics"
 import type { Class, Student } from "../types/teacher"
-import type {
-  InsightDetail,
-  TeacherInsightsResponse,
-} from "../types/analytics"
 
 /**
  * Create axios instance with OpenAPI config
@@ -85,7 +82,7 @@ export async function getMyStudents(): Promise<Student[]> {
  * @returns Promise with teacher insights response
  */
 export async function getMyInsights(
-  forceRefresh: boolean = false
+  forceRefresh: boolean = false,
 ): Promise<TeacherInsightsResponse> {
   const url = `/api/v1/teachers/me/insights`
   const response = await apiClient.get<TeacherInsightsResponse>(url, {
@@ -101,7 +98,7 @@ export async function getMyInsights(
  * @returns Promise with insight detail
  */
 export async function getInsightDetail(
-  insightId: string
+  insightId: string,
 ): Promise<InsightDetail> {
   const url = `/api/v1/teachers/me/insights/${insightId}`
   const response = await apiClient.get<InsightDetail>(url)

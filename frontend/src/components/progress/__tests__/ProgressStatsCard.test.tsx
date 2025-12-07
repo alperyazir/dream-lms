@@ -5,8 +5,8 @@
 
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { ProgressStatsCard } from "../ProgressStatsCard"
 import type { StudentProgressStats } from "@/types/analytics"
+import { ProgressStatsCard } from "../ProgressStatsCard"
 
 const mockStatsImproving: StudentProgressStats = {
   total_completed: 15,

@@ -15,6 +15,7 @@ import type {
   BookListResponse,
   BookPagesDetailResponse,
   BookPagesResponse,
+  BookStructureResponse,
   BooksFilter,
   PageActivity,
 } from "../types/book"
@@ -322,6 +323,27 @@ export async function getPageImageUrl(
   }
 }
 
+// --- Story 9.5: Activity Selection Tabs ---
+
+/**
+ * Get book structure with modules and pages for activity selection tabs
+ *
+ * Story 9.5: Activity Selection Tabs
+ *
+ * Returns modules with page ranges, activity counts, and activity IDs
+ * for bulk selection in "By Page" and "By Module" selection modes.
+ *
+ * @param bookId - UUID of the book
+ * @returns Promise with book structure including activity IDs
+ */
+export async function getBookStructure(
+  bookId: string,
+): Promise<BookStructureResponse> {
+  const url = `/api/v1/books/${bookId}/structure`
+  const response = await apiClient.get<BookStructureResponse>(url)
+  return response.data
+}
+
 /**
  * Export as object for easier imports
  */
@@ -336,6 +358,7 @@ export const booksApi = {
   getPageThumbnailUrl,
   getBookPagesDetail,
   getPageImageUrl,
+  getBookStructure,
 }
 
 export default booksApi

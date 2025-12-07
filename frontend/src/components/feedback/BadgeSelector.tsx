@@ -42,7 +42,10 @@ export function BadgeSelector({
             } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             onClick={() =>
               !disabled &&
-              handleBadgeToggle(badge.slug, !selectedBadges.includes(badge.slug))
+              handleBadgeToggle(
+                badge.slug,
+                !selectedBadges.includes(badge.slug),
+              )
             }
           >
             <Checkbox

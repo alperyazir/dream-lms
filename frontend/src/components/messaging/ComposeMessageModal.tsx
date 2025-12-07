@@ -36,7 +36,8 @@ export interface ComposeMessageModalProps {
  */
 export const ComposeMessageModal = React.memo(
   ({ isOpen, onClose, onSuccess }: ComposeMessageModalProps) => {
-    const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(null)
+    const [selectedRecipient, setSelectedRecipient] =
+      useState<Recipient | null>(null)
     const [searchTerm, setSearchTerm] = useState("")
     const [subject, setSubject] = useState("")
     const [body, setBody] = useState("")

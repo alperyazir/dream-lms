@@ -49,21 +49,21 @@ export const AVAILABLE_EMOJI_REACTIONS: EmojiInfo[] = [
  * Badge labels lookup for display
  */
 export const BADGE_LABELS: Record<string, string> = Object.fromEntries(
-  PREDEFINED_BADGES.map((b) => [b.slug, b.label])
+  PREDEFINED_BADGES.map((b) => [b.slug, b.label]),
 )
 
 /**
  * Badge icons lookup for display
  */
 export const BADGE_ICONS: Record<string, string> = Object.fromEntries(
-  PREDEFINED_BADGES.map((b) => [b.slug, b.icon])
+  PREDEFINED_BADGES.map((b) => [b.slug, b.icon]),
 )
 
 /**
  * Emoji display lookup
  */
 export const EMOJI_DISPLAY: Record<string, string> = Object.fromEntries(
-  AVAILABLE_EMOJI_REACTIONS.map((e) => [e.slug, e.emoji])
+  AVAILABLE_EMOJI_REACTIONS.map((e) => [e.slug, e.emoji]),
 )
 
 /**
@@ -144,7 +144,7 @@ export type FeedbackResponse = FeedbackPublic | FeedbackStudentView
  * Type guard to check if feedback is the full public version
  */
 export function isFeedbackPublic(
-  feedback: FeedbackResponse
+  feedback: FeedbackResponse,
 ): feedback is FeedbackPublic {
   return "is_draft" in feedback && "student_id" in feedback
 }
@@ -153,7 +153,7 @@ export function isFeedbackPublic(
  * Type guard to check if feedback is the student view
  */
 export function isFeedbackStudentView(
-  feedback: FeedbackResponse
+  feedback: FeedbackResponse,
 ): feedback is FeedbackStudentView {
   return !("is_draft" in feedback)
 }

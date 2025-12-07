@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
+  ChevronRight,
   FileText,
   MessageSquare,
   TrendingUp,
   Trophy,
-  ChevronRight,
 } from "lucide-react"
 import {
   CartesianGrid,
@@ -85,19 +85,21 @@ function StudentDashboard() {
   const { recentFeedback } = studentDashboardData
 
   // Use real progress data if available, otherwise fallback to mock
-  const scoreHistory = progress?.score_trend.map((point) => ({
-    assignmentName: point.assignment_name,
-    score: point.score,
-    date: point.date,
-  })) || studentDashboardData.scoreHistory
+  const scoreHistory =
+    progress?.score_trend.map((point) => ({
+      assignmentName: point.assignment_name,
+      score: point.score,
+      date: point.date,
+    })) || studentDashboardData.scoreHistory
 
-  const achievements = progress?.achievements.map((a) => ({
-    id: a.id,
-    title: a.title,
-    description: a.description,
-    icon: getAchievementEmoji(a.icon),
-    earnedDate: a.earned_at,
-  })) || studentDashboardData.achievements
+  const achievements =
+    progress?.achievements.map((a) => ({
+      id: a.id,
+      title: a.title,
+      description: a.description,
+      icon: getAchievementEmoji(a.icon),
+      earnedDate: a.earned_at,
+    })) || studentDashboardData.achievements
 
   // Calculate average score from real data
   const averageScore = progress?.stats.avg_score
@@ -124,7 +126,11 @@ function StudentDashboard() {
           <ProgressStatsCard stats={progress.stats} />
           <div className="flex justify-end">
             <Link to="/student/progress">
-              <Button variant="ghost" size="sm" className="text-teal-600 hover:text-teal-700">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-teal-600 hover:text-teal-700"
+              >
                 View Full Progress <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>

@@ -230,7 +230,9 @@ describe("useClassAnalytics", () => {
   })
 
   it("sets error state on failed fetch", async () => {
-    const mockError = new Error("Network error - failed to fetch class analytics")
+    const mockError = new Error(
+      "Network error - failed to fetch class analytics",
+    )
     vi.mocked(classesApi.getClassAnalytics).mockRejectedValue(mockError)
 
     const { result } = renderHook(
@@ -317,7 +319,9 @@ describe("useClassAnalytics", () => {
         }),
       {
         wrapper: createWrapper(),
-        initialProps: { period: "monthly" as "monthly" | "weekly" | "semester" | "ytd" },
+        initialProps: {
+          period: "monthly" as "monthly" | "weekly" | "semester" | "ytd",
+        },
       },
     )
 
@@ -443,7 +447,9 @@ describe("useClassAnalytics", () => {
     })
 
     expect(result.current.analytics?.struggling_students).toHaveLength(2)
-    expect(result.current.analytics?.struggling_students[0].name).toBe("Dan Brown")
+    expect(result.current.analytics?.struggling_students[0].name).toBe(
+      "Dan Brown",
+    )
     expect(result.current.analytics?.struggling_students[0].alert_reason).toBe(
       "Score below 60%",
     )
@@ -467,7 +473,9 @@ describe("useClassAnalytics", () => {
     })
 
     expect(result.current.analytics?.score_distribution).toHaveLength(5)
-    expect(result.current.analytics?.score_distribution[0].range_label).toBe("0-59%")
+    expect(result.current.analytics?.score_distribution[0].range_label).toBe(
+      "0-59%",
+    )
     expect(result.current.analytics?.score_distribution[4].range_label).toBe(
       "90-100%",
     )
@@ -491,7 +499,9 @@ describe("useClassAnalytics", () => {
     })
 
     expect(result.current.analytics?.trends).toHaveLength(2)
-    expect(result.current.analytics?.trends[0].metric_name).toBe("Average Score")
+    expect(result.current.analytics?.trends[0].metric_name).toBe(
+      "Average Score",
+    )
     expect(result.current.analytics?.trends[0].trend).toBe("up")
     expect(result.current.analytics?.trends[0].change_percent).toBe(4.4)
   })

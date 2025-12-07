@@ -14,8 +14,9 @@ import {
 } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
-import type { UserPublic, UserRole } from "@/client"
+import { OpenAPI, type UserPublic, type UserRole } from "@/client"
 import { getStudentAssignments } from "@/services/assignmentsApi"
+import { getMyProfile } from "@/services/publishersApi"
 
 interface SidebarItemsProps {
   onClose?: () => void
@@ -132,6 +133,24 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     queryFn: () => getStudentAssignments(),
     enabled: userRole === "student",
   })
+
+  // Fetch publisher profile for logo display
+  const { data: publisherProfile } = useQuery({
+    queryKey: ["publisherProfile"],
+    queryFn: () => getMyProfile(),
+    enabled: userRole === "publisher",
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  })
+
+  // Get publisher initials for fallback
+  const getPublisherInitials = (name: string): string => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
 
   // Count incomplete student assignments (not_started + in_progress + past_due)
   const incompleteAssignmentsCount = Array.isArray(studentAssignments)
@@ -251,6 +270,48 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
 
   return (
     <>
+      {/* Publisher Logo Section */}
+      {userRole === "publisher" && publisherProfile && (
+        <div
+          className={`border-b border-gray-200 dark:border-gray-700 ${
+            isCollapsed ? "py-3 px-2" : "p-4"
+          }`}
+        >
+          <div
+            className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}
+          >
+            {publisherProfile.logo_url ? (
+              <img
+                src={`${OpenAPI.BASE}${publisherProfile.logo_url}`}
+                alt={`${publisherProfile.name} logo`}
+                className={`rounded-full object-cover border border-gray-200 dark:border-gray-600 ${
+                  isCollapsed ? "w-10 h-10" : "w-10 h-10"
+                }`}
+              />
+            ) : (
+              <div
+                className={`rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white font-semibold ${
+                  isCollapsed ? "w-10 h-10 text-sm" : "w-10 h-10 text-sm"
+                }`}
+                title={publisherProfile.name}
+              >
+                {getPublisherInitials(publisherProfile.name)}
+              </div>
+            )}
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                  {publisherProfile.name}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Publisher
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {!isCollapsed && (
         <p className="text-xs px-4 py-2 font-bold text-gray-500 dark:text-gray-400">
           Menu

@@ -98,7 +98,8 @@ export async function getClassBenchmarks(
       // Transform 403 into a specific error type for disabled benchmarking
       const disabledError: BenchmarkDisabledError = {
         message:
-          error.response.data?.detail || "Benchmarking is disabled for this school",
+          error.response.data?.detail ||
+          "Benchmarking is disabled for this school",
         isDisabled: true,
       }
       throw disabledError
@@ -130,7 +131,10 @@ export async function updateSchoolBenchmarkSettings(
   settings: BenchmarkSettingsUpdate,
 ): Promise<BenchmarkSettingsResponse> {
   const url = `/api/v1/admin/schools/${schoolId}/settings`
-  const response = await apiClient.patch<BenchmarkSettingsResponse>(url, settings)
+  const response = await apiClient.patch<BenchmarkSettingsResponse>(
+    url,
+    settings,
+  )
   return response.data
 }
 
@@ -146,7 +150,10 @@ export async function updatePublisherBenchmarkSettings(
   settings: BenchmarkSettingsUpdate,
 ): Promise<BenchmarkSettingsResponse> {
   const url = `/api/v1/admin/publishers/${publisherId}/settings`
-  const response = await apiClient.patch<BenchmarkSettingsResponse>(url, settings)
+  const response = await apiClient.patch<BenchmarkSettingsResponse>(
+    url,
+    settings,
+  )
   return response.data
 }
 

@@ -3,25 +3,25 @@
  * Story 5.6: Time-Based Reporting & Trend Analysis
  */
 
-import { renderHook, waitFor, act } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { act, renderHook, waitFor } from "@testing-library/react"
 import type { ReactNode } from "react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type {
+  ReportGenerateRequest,
+  ReportHistoryResponse,
+  ReportJobResponse,
+  ReportStatusResponse,
+  SavedReportTemplate,
+} from "@/types/reports"
 import {
-  useGenerateReport,
-  useReportStatus,
   useDownloadReport,
+  useGenerateReport,
   useReportHistory,
+  useReportStatus,
   useReportTemplates,
   useReportWorkflow,
 } from "./useReports"
-import type {
-  ReportGenerateRequest,
-  ReportJobResponse,
-  ReportStatusResponse,
-  ReportHistoryResponse,
-  SavedReportTemplate,
-} from "@/types/reports"
 
 // Mock the API functions
 vi.mock("@/services/reportsApi", () => ({
@@ -35,13 +35,13 @@ vi.mock("@/services/reportsApi", () => ({
 }))
 
 import {
-  generateReport,
-  getReportStatus,
-  downloadReport,
-  getReportHistory,
-  saveReportTemplate,
-  getReportTemplates,
   deleteReportTemplate,
+  downloadReport,
+  generateReport,
+  getReportHistory,
+  getReportStatus,
+  getReportTemplates,
+  saveReportTemplate,
 } from "@/services/reportsApi"
 
 const mockConfig: ReportGenerateRequest = {
@@ -264,7 +264,9 @@ describe("useDownloadReport", () => {
   })
 
   it("should handle download errors", async () => {
-    vi.mocked(downloadReport).mockRejectedValueOnce(new Error("Download failed"))
+    vi.mocked(downloadReport).mockRejectedValueOnce(
+      new Error("Download failed"),
+    )
 
     const { result } = renderHook(() => useDownloadReport(), {
       wrapper: createWrapper(),
@@ -348,7 +350,10 @@ describe("useReportTemplates", () => {
     })
 
     await act(async () => {
-      result.current.saveTemplate({ name: "Weekly Class Report", config: mockConfig })
+      result.current.saveTemplate({
+        name: "Weekly Class Report",
+        config: mockConfig,
+      })
     })
 
     await waitFor(() => {

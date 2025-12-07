@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router"
-import { FaUserAstronaut } from "react-icons/fa"
 import { FiLogOut, FiUser } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import useAuth from "@/hooks/useAuth"
+import UserAvatar from "./UserAvatar"
 
 const UserMenu = () => {
   const { user, logout } = useAuth()
@@ -27,9 +27,14 @@ const UserMenu = () => {
             <Button
               data-testid="user-menu"
               variant="default"
-              className="max-w-sm truncate"
+              className="max-w-sm truncate gap-2"
             >
-              <FaUserAstronaut fontSize="18" />
+              <UserAvatar
+                avatarUrl={user?.avatar_url}
+                name={user?.full_name}
+                size="xs"
+                className="border-0"
+              />
               <span>{user?.full_name || "User"}</span>
             </Button>
           </DropdownMenuTrigger>

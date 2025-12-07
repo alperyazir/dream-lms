@@ -4,7 +4,13 @@
  * Follows QML ActivityMatchTheWords.qml pattern
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react"
 import type { MatchTheWordsActivity } from "@/lib/mockData"
 import { getActivityImageUrl } from "@/services/booksApi"
 
@@ -15,6 +21,8 @@ interface MatchTheWordsPlayerProps {
   showResults?: boolean
   correctAnswers?: Set<string>
   initialAnswers?: Map<string, string>
+  // Story 9.7: Show correct answers in preview mode
+  showCorrectAnswers?: boolean
 }
 
 interface LineData {
@@ -31,8 +39,9 @@ export function MatchTheWordsPlayer({
   bookId,
   onAnswersChange,
   showResults = false,
-  correctAnswers,
+  correctAnswers: _correctAnswers,
   initialAnswers,
+  showCorrectAnswers = false,
 }: MatchTheWordsPlayerProps) {
   const [matches, setMatches] = useState<Map<string, string>>(
     initialAnswers || new Map(),
@@ -62,6 +71,23 @@ export function MatchTheWordsPlayer({
       "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
     invisibleDragImage.current = img
   }, [])
+
+  // Story 9.7: Generate correct matches for preview mode
+  const correctMatchesForPreview = useCallback(() => {
+    const correctMatches = new Map<string, string>()
+    activity.sentences.forEach((sentence, sentenceIndex) => {
+      // Find the word index that matches this sentence's correct word
+      const wordIndex = activity.sentences.findIndex((s) => s.word === sentence.word)
+      if (wordIndex !== -1) {
+        const matchKey = `${wordIndex}-${sentenceIndex}`
+        correctMatches.set(matchKey, sentence.word)
+      }
+    })
+    return correctMatches
+  }, [activity.sentences])
+
+  // Use correct matches when showing answers, otherwise use user matches
+  const displayMatches = showCorrectAnswers ? correctMatchesForPreview() : matches
 
   // Get matched items
   const matchedSentences = new Set(
@@ -109,7 +135,7 @@ export function MatchTheWordsPlayer({
   const updateLinesFromMatches = useCallback(() => {
     const newLines: LineData[] = []
 
-    matches.forEach((word, matchKey) => {
+    displayMatches.forEach((word, matchKey) => {
       // matchKey format: "wordIndex-sentenceIndex"
       const [wordIndexStr, sentenceIndexStr] = matchKey.split("-")
       const wordIndex = parseInt(wordIndexStr, 10)
@@ -137,6 +163,9 @@ export function MatchTheWordsPlayer({
           const sentence = activity.sentences[sentenceIndex]
           const isCorrect = word === sentence.word
           color = isCorrect ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)" // green-500 : red-500
+        } else if (showCorrectAnswers) {
+          // Story 9.7: Show all correct matches in green
+          color = "rgb(34, 197, 94)" // green-500
         } else {
           color = "rgb(20, 184, 166)" // teal-500
         }
@@ -146,7 +175,7 @@ export function MatchTheWordsPlayer({
     })
 
     setLines(newLines)
-  }, [matches, showResults, activity.sentences])
+  }, [displayMatches, showResults, showCorrectAnswers, activity.sentences])
 
   // Update lines when matches change - use layout effect to prevent visual jumps
   useLayoutEffect(() => {
@@ -317,7 +346,7 @@ export function MatchTheWordsPlayer({
   const totalCount = activity.sentences.length
 
   // Ensure we have same number of items on both sides for alignment
-  const maxItems = Math.max(
+  const _maxItems = Math.max(
     activity.match_words.length,
     activity.sentences.length,
   )

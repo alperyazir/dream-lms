@@ -3,10 +3,10 @@
  * Story 5.6: Time-Based Reporting & Trend Analysis
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach } from "vitest"
-import { ReportHistory } from "../ReportHistory"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { ReportHistoryItem } from "@/types/reports"
+import { ReportHistory } from "../ReportHistory"
 
 const mockReports: ReportHistoryItem[] = [
   {
@@ -44,7 +44,11 @@ describe("ReportHistory", () => {
 
   it("renders loading state correctly", () => {
     render(
-      <ReportHistory reports={[]} isLoading={true} onDownload={mockOnDownload} />
+      <ReportHistory
+        reports={[]}
+        isLoading={true}
+        onDownload={mockOnDownload}
+      />,
     )
 
     expect(screen.getByText("Report History")).toBeInTheDocument()
@@ -57,12 +61,12 @@ describe("ReportHistory", () => {
         reports={[]}
         isLoading={false}
         onDownload={mockOnDownload}
-      />
+      />,
     )
 
     expect(screen.getByText("No reports generated yet")).toBeInTheDocument()
     expect(
-      screen.getByText("Reports are available for 7 days after generation")
+      screen.getByText("Reports are available for 7 days after generation"),
     ).toBeInTheDocument()
   })
 
@@ -72,7 +76,7 @@ describe("ReportHistory", () => {
         reports={mockReports}
         isLoading={false}
         onDownload={mockOnDownload}
-      />
+      />,
     )
 
     // Check table headers
@@ -94,7 +98,7 @@ describe("ReportHistory", () => {
         reports={mockReports}
         isLoading={false}
         onDownload={mockOnDownload}
-      />
+      />,
     )
 
     expect(screen.getByText("Expired")).toBeInTheDocument()
@@ -106,7 +110,7 @@ describe("ReportHistory", () => {
         reports={mockReports}
         isLoading={false}
         onDownload={mockOnDownload}
-      />
+      />,
     )
 
     // There should be one download button (for the non-expired report)
@@ -120,7 +124,7 @@ describe("ReportHistory", () => {
         reports={mockReports}
         isLoading={false}
         onDownload={mockOnDownload}
-      />
+      />,
     )
 
     // Find and click the download button
@@ -144,7 +148,7 @@ describe("ReportHistory", () => {
         reports={expiredOnly}
         isLoading={false}
         onDownload={mockOnDownload}
-      />
+      />,
     )
 
     // Should show dash instead of download button
@@ -157,7 +161,7 @@ describe("ReportHistory", () => {
         reports={mockReports}
         isLoading={false}
         onDownload={mockOnDownload}
-      />
+      />,
     )
 
     // Check format labels (component uses uppercase text-xs)

@@ -7,22 +7,22 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-  getNotifications,
-  getUnreadCount,
-  markAsRead,
-  markAllAsRead,
-  getPreferences,
-  updateSinglePreference,
-  setGlobalMute,
   cancelGlobalMute,
   getMuteStatus,
+  getNotifications,
+  getPreferences,
+  getUnreadCount,
+  markAllAsRead,
+  markAsRead,
+  setGlobalMute,
+  updateSinglePreference,
 } from "@/services/notificationsApi"
 import type {
+  GlobalMuteStatus,
   Notification,
+  NotificationPreference,
   NotificationQueryParams,
   NotificationType,
-  NotificationPreference,
-  GlobalMuteStatus,
 } from "@/types/notification"
 
 /**
@@ -37,9 +37,7 @@ export const MUTE_STATUS_QUERY_KEY = ["notifications", "mute"] as const
  * Query key factory for filtered notifications
  */
 export const notificationsQueryKey = (params?: NotificationQueryParams) =>
-  params
-    ? (["notifications", params] as const)
-    : (["notifications"] as const)
+  params ? (["notifications", params] as const) : (["notifications"] as const)
 
 /**
  * Hook for fetching notifications with optional filtering and pagination
@@ -52,7 +50,7 @@ export function useNotifications(
   options: {
     enabled?: boolean
     refetchInterval?: number | false
-  } = {}
+  } = {},
 ) {
   const queryClient = useQueryClient()
   const { enabled = true, refetchInterval = 30000 } = options
@@ -84,10 +82,7 @@ export function useNotifications(
  * Polls every 30 seconds when window is focused
  */
 export function useUnreadCount(
-  options: {
-    enabled?: boolean
-    refetchInterval?: number | false
-  } = {}
+  options: { enabled?: boolean; refetchInterval?: number | false } = {},
 ) {
   const { enabled = true, refetchInterval = 30000 } = options
 
@@ -122,23 +117,20 @@ export function useMarkAsRead() {
         notifications: Notification[]
         total: number
         has_more: boolean
-      }>(
-        { queryKey: NOTIFICATIONS_QUERY_KEY },
-        (old) => {
-          if (!old) return old
-          return {
-            ...old,
-            notifications: old.notifications.map((n) =>
-              n.id === updatedNotification.id ? updatedNotification : n
-            ),
-          }
+      }>({ queryKey: NOTIFICATIONS_QUERY_KEY }, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          notifications: old.notifications.map((n) =>
+            n.id === updatedNotification.id ? updatedNotification : n,
+          ),
         }
-      )
+      })
 
       // Update unread count
       queryClient.setQueryData<{ count: number }>(
         UNREAD_COUNT_QUERY_KEY,
-        (old) => (old ? { count: Math.max(0, old.count - 1) } : { count: 0 })
+        (old) => (old ? { count: Math.max(0, old.count - 1) } : { count: 0 }),
       )
     },
     onSettled: () => {
@@ -171,19 +163,16 @@ export function useMarkAllAsRead() {
         notifications: Notification[]
         total: number
         has_more: boolean
-      }>(
-        { queryKey: NOTIFICATIONS_QUERY_KEY },
-        (old) => {
-          if (!old) return old
-          return {
-            ...old,
-            notifications: old.notifications.map((n) => ({
-              ...n,
-              is_read: true,
-            })),
-          }
+      }>({ queryKey: NOTIFICATIONS_QUERY_KEY }, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          notifications: old.notifications.map((n) => ({
+            ...n,
+            is_read: true,
+          })),
         }
-      )
+      })
 
       // Set unread count to 0
       queryClient.setQueryData<{ count: number }>(UNREAD_COUNT_QUERY_KEY, {
@@ -256,7 +245,9 @@ export function useNotificationPanel() {
 /**
  * Hook for the full notifications page with filtering support
  */
-export function useNotificationsPage(initialParams: NotificationQueryParams = {}) {
+export function useNotificationsPage(
+  initialParams: NotificationQueryParams = {},
+) {
   const notifications = useNotifications(initialParams, {
     // Disable automatic polling on the full page
     refetchInterval: false,
@@ -362,9 +353,7 @@ export function useUpdatePreference() {
         return {
           ...old,
           preferences: old.preferences.map((p) =>
-            p.notification_type === notificationType
-              ? { ...p, enabled }
-              : p
+            p.notification_type === notificationType ? { ...p, enabled } : p,
           ),
         }
       })
@@ -460,7 +449,7 @@ export function useNotificationSettings() {
 
   const handleTogglePreference = async (
     notificationType: NotificationType,
-    enabled: boolean
+    enabled: boolean,
   ) => {
     await updatePreference.updatePreferenceAsync({ notificationType, enabled })
   }
