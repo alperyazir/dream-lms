@@ -276,7 +276,7 @@ describe("useAutoSaveWithData", () => {
 
   it("uses updated answers and timeSpent on each save", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined)
-    let answers = { question1: "answer1" }
+    let answers: Record<string, string> = { question1: "answer1" }
     let timeSpent = 5
 
     const { result, rerender } = renderHook(

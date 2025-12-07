@@ -345,11 +345,6 @@ export function MatchTheWordsPlayer({
   const completionCount = matches.size
   const totalCount = activity.sentences.length
 
-  // Ensure we have same number of items on both sides for alignment
-  const _maxItems = Math.max(
-    activity.match_words.length,
-    activity.sentences.length,
-  )
 
   // Handle reset - clear all matches
   const handleReset = () => {

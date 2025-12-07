@@ -28,6 +28,7 @@ describe("MatchTheWordsPlayer", () => {
     render(
       <MatchTheWordsPlayer
         activity={mockActivity}
+        bookId="test-book-id"
         onAnswersChange={onAnswersChange}
       />,
     )
@@ -62,6 +63,7 @@ describe("MatchTheWordsPlayer", () => {
     render(
       <MatchTheWordsPlayer
         activity={mockActivity}
+        bookId="test-book-id"
         onAnswersChange={onAnswersChange}
       />,
     )

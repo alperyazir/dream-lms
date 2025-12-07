@@ -107,7 +107,9 @@ export function restoreProgressFromJson(
       activityType === "matchTheWords"
     ) {
       // Convert object back to Map<string, string>
-      const map = new Map(Object.entries(rawAnswers))
+      const map = new Map<string, string>(
+        Object.entries(rawAnswers).map(([k, v]) => [k, String(v)])
+      )
       console.log("[restoreProgress] Restored Map with", map.size, "entries")
       return map
     }
@@ -250,7 +252,9 @@ export function ActivityPlayer({
     // Create a hash of current answers to detect actual changes
     let answersHash: string
     if (answers instanceof Map) {
-      answersHash = JSON.stringify(Array.from(answers.entries()).sort())
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const entries = [...(answers as Map<any, any>).entries()]
+      answersHash = JSON.stringify(entries.sort((a, b) => String(a[0]).localeCompare(String(b[0]))))
     } else if (answers instanceof Set) {
       answersHash = JSON.stringify(Array.from(answers).sort())
     } else {
@@ -307,7 +311,7 @@ export function ActivityPlayer({
       } else if (normalizedType === "puzzlefindwords") {
         const config = activityConfig as PuzzleFindWordsActivity
         const foundWords = answers as Set<string>
-        const scoreResult = scoreWordSearch(foundWords, config.wordList)
+        const scoreResult = scoreWordSearch(foundWords, config.words)
         calculatedScore = scoreResult.score
         answersJson = { answers: Array.from(foundWords) }
       }

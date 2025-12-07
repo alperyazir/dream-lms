@@ -24,13 +24,12 @@ function ActivityPlayerPage() {
     data: activity,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<ActivityStartResponse>({
     queryKey: ["activities", assignmentId, "play"],
-    queryFn: (): Promise<ActivityStartResponse> =>
-      startAssignment(assignmentId),
+    queryFn: () => startAssignment(assignmentId),
     retry: false,
     staleTime: 0, // Always refetch to get latest progress_json
-    cacheTime: 0, // Don't cache - we want fresh data every time
+    gcTime: 0, // Don't cache - we want fresh data every time
   })
 
   const handleExit = () => {

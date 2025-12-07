@@ -274,7 +274,10 @@ describe("useStudentAnalytics", () => {
       mockAnalyticsResponse,
     )
 
-    const { result, rerender } = renderHook(
+    const { result, rerender } = renderHook<
+      ReturnType<typeof useStudentAnalytics>,
+      { period: "7d" | "30d" | "3m" | "all" }
+    >(
       ({ period }) =>
         useStudentAnalytics({
           studentId: "test-student-123",
@@ -282,7 +285,7 @@ describe("useStudentAnalytics", () => {
         }),
       {
         wrapper: createWrapper(),
-        initialProps: { period: "30d" as const },
+        initialProps: { period: "30d" },
       },
     )
 
@@ -296,7 +299,7 @@ describe("useStudentAnalytics", () => {
     )
 
     // Change period
-    rerender({ period: "7d" as const })
+    rerender({ period: "7d" })
 
     await waitFor(() => {
       expect(studentsApi.getStudentAnalytics).toHaveBeenCalledWith(

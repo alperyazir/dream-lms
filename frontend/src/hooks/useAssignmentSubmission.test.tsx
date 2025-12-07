@@ -52,7 +52,8 @@ describe("useAssignmentSubmission", () => {
 
     return ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router}>{children}</RouterProvider>
+        <RouterProvider router={router} />
+        {children}
       </QueryClientProvider>
     )
   }

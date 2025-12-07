@@ -71,8 +71,7 @@ function TeacherReportsPage() {
   const templates = useReportTemplates()
 
   // Download hook for history items
-  const { download: downloadHistoryReport, isDownloading: historyDownloading } =
-    useDownloadReport()
+  const { download: downloadHistoryReport } = useDownloadReport()
 
   // Handle starting a new report
   const handleGenerate = async (config: ReportGenerateRequest) => {

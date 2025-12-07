@@ -17,13 +17,14 @@ import {
 import { PageThumbnail } from "./PageThumbnail"
 
 // Mock IntersectionObserver for Node.js test environment
-class MockIntersectionObserver {
+class MockIntersectionObserver implements IntersectionObserver {
   observe = vi.fn()
   unobserve = vi.fn()
   disconnect = vi.fn()
+  takeRecords = vi.fn(() => [])
   root = null
   rootMargin = ""
-  thresholds = []
+  thresholds = [] as readonly number[]
 
   constructor(callback: IntersectionObserverCallback) {
     // Immediately trigger the callback with an intersecting entry

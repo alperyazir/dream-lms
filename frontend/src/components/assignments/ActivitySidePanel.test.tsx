@@ -31,7 +31,7 @@ const mockActivities: PageActivity[] = [
   {
     id: "act-2",
     title: "Match Exercise",
-    activity_type: "match_the_words",
+    activity_type: "matchTheWords",
     section_index: 1,
     order_index: 1001,
   },

@@ -329,12 +329,11 @@ describe("scoreCircle", () => {
         [1, 3], // Q2: selected False (correct)
       ])
 
-      // @ts-expect-error - Testing undefined circleCount edge case
       const result = scoreCircle(
         userSelections,
         trueFalseAnswers,
         "circle",
-        undefined,
+        undefined as unknown as number, // Testing undefined circleCount edge case
       )
 
       expect(result.score).toBe(100)
@@ -351,12 +350,11 @@ describe("scoreCircle", () => {
 
       const userSelections = new Map<number, number>([[0, 0]])
 
-      // @ts-expect-error - Testing null circleCount edge case
       const result = scoreCircle(
         userSelections,
         trueFalseAnswers,
         "circle",
-        null,
+        null as unknown as number, // Testing null circleCount edge case
       )
 
       expect(result.score).toBe(100)

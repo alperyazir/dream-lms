@@ -165,6 +165,7 @@ export interface MatchWord {
 export interface MatchSentence {
   sentence: string
   word: string // Correct matching term
+  image_path?: string // Optional image for the sentence
 }
 
 export interface MatchTheWordsActivity {

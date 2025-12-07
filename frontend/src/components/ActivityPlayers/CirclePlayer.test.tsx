@@ -29,6 +29,7 @@ describe("CirclePlayer", () => {
     render(
       <CirclePlayer
         activity={mockActivity}
+        bookId="test-book-id"
         onAnswersChange={onAnswersChange}
       />,
     )
@@ -51,6 +52,7 @@ describe("CirclePlayer", () => {
     render(
       <CirclePlayer
         activity={mockActivity}
+        bookId="test-book-id"
         onAnswersChange={onAnswersChange}
       />,
     )
