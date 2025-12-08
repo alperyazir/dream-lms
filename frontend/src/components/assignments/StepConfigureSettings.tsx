@@ -1,5 +1,5 @@
 /**
- * Step 3: Configure Settings - Story 3.7, Story 9.6
+ * Step 4: Configure Settings - Story 3.7, Story 9.6
  *
  * Form for configuring assignment settings (name, instructions, due date, time limit)
  * Story 9.6: Added scheduling option for publish immediately or schedule for later
@@ -362,30 +362,32 @@ export function StepConfigureSettings({
 
   // Normal Mode Layout (existing)
   return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold">Configure Assignment Settings</h3>
+    <div className="flex flex-col h-full">
+      <h3 className="text-lg font-semibold mb-4 shrink-0">Configure Assignment Settings</h3>
 
-      {/* Activity Summary Card */}
-      <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
-              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="flex-1">
-              <div className="font-medium text-foreground">
-                {activityCount} {activityCount === 1 ? "Activity" : "Activities"} Selected
+      <ScrollArea className="flex-1 pr-4">
+        <div className="space-y-6 pb-4">
+          {/* Activity Summary Card */}
+          <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
+                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-foreground">
+                    {activityCount} {activityCount === 1 ? "Activity" : "Activities"} Selected
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    All activities will have the same due date
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                All activities will have the same due date
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardContent className="pt-6 space-y-6">
+          <Card>
+            <CardContent className="pt-6 space-y-6">
           {/* Assignment Name */}
           <div className="space-y-2">
             <Label htmlFor="assignment-name" className="text-sm font-medium">
@@ -516,13 +518,15 @@ export function StepConfigureSettings({
               Restrict how long students have to complete the assignment once started
             </p>
           </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Help Text */}
-      <p className="text-sm text-muted-foreground text-center">
-        Review your settings and click "Next" to continue.
-      </p>
+          {/* Help Text */}
+          <p className="text-sm text-muted-foreground text-center">
+            Review your settings and click "Next" to continue.
+          </p>
+        </div>
+      </ScrollArea>
     </div>
   )
 }

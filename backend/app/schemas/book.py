@@ -189,3 +189,23 @@ class BookStructureResponse(BaseModel):
     modules: list[ModuleWithActivities]
     total_pages: int
     total_activities: int
+
+
+# --- Story 10.3: Video Attachment to Assignments ---
+
+
+class VideoInfo(BaseModel):
+    """Video file information from Dream Central Storage."""
+
+    path: str  # Relative path like "videos/chapter1.mp4"
+    name: str  # File name like "chapter1.mp4"
+    size_bytes: int  # File size
+    has_subtitles: bool  # True if .srt file exists
+
+
+class BookVideosResponse(BaseModel):
+    """Response for book videos endpoint."""
+
+    book_id: uuid.UUID
+    videos: list[VideoInfo]
+    total_count: int

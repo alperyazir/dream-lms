@@ -3,6 +3,8 @@
 import json
 import uuid
 from datetime import UTC, datetime
+from enum import Enum
+from typing import Literal
 
 from pydantic import (
     BaseModel,
@@ -13,6 +15,48 @@ from pydantic import (
 )
 
 from app.models import AssignmentPublishStatus, AssignmentStatus
+
+# --- Additional Resources Schemas ---
+
+
+class ResourceType(str, Enum):
+    """Types of additional resources that can be attached to assignments."""
+    video = "video"
+    # Future types:
+    # pdf = "pdf"
+    # image = "image"
+    # link = "link"
+
+
+class VideoResource(BaseModel):
+    """Schema for a video resource attached to an assignment.
+
+    Story 10.3+: Video with subtitle control for students.
+    """
+    type: Literal["video"] = "video"
+    path: str  # Relative path like "video/1.mp4"
+    name: str  # Display name
+    subtitles_enabled: bool = True  # Whether students can see subtitles
+    has_subtitles: bool = False  # Whether the video has subtitle files
+
+    @field_validator("path")
+    @classmethod
+    def validate_path(cls, v: str) -> str:
+        """Validate path is safe."""
+        if ".." in v:
+            raise ValueError("Invalid path: path traversal not allowed")
+        if len(v) > 500:
+            raise ValueError("Path must be 500 characters or less")
+        return v
+
+
+class AdditionalResources(BaseModel):
+    """Schema for additional resources attached to an assignment.
+
+    Currently supports video resources. Extensible for future resource types.
+    """
+    videos: list[VideoResource] = []
+    # Future: pdfs, images, links, etc.
 
 
 class DateGroupCreate(BaseModel):
@@ -62,6 +106,11 @@ class AssignmentCreate(BaseModel):
     scheduled_publish_date: datetime | None = None
     # Time Planning mode: creates multiple assignments, one per date group
     date_groups: list[DateGroupCreate] | None = None
+    # Story 10.3: Video attachment - stores relative path like "videos/chapter1.mp4"
+    # DEPRECATED: Use resources.videos instead for new assignments
+    video_path: str | None = None
+    # Additional Resources: videos with subtitle control, extensible for future types
+    resources: AdditionalResources | None = None
 
     @field_validator("scheduled_publish_date")
     @classmethod
@@ -95,6 +144,17 @@ class AssignmentCreate(BaseModel):
         """Validate time limit is positive if provided."""
         if v is not None and v <= 0:
             raise ValueError("Time limit must be greater than 0")
+        return v
+
+    @field_validator("video_path")
+    @classmethod
+    def validate_video_path(cls, v: str | None) -> str | None:
+        """Validate video_path is within max length and safe."""
+        if v is not None:
+            if len(v) > 500:
+                raise ValueError("Video path must be 500 characters or less")
+            if ".." in v:
+                raise ValueError("Invalid video path: path traversal not allowed")
         return v
 
     @model_validator(mode="after")
@@ -154,6 +214,7 @@ class AssignmentUpdate(BaseModel):
     """Schema for updating an existing assignment (partial update).
 
     Story 9.8: Added activity_ids field to allow editing activities.
+    Story 10.3: Added video_path field to allow attaching/removing video.
     """
 
     name: str | None = None
@@ -164,6 +225,11 @@ class AssignmentUpdate(BaseModel):
     status: AssignmentPublishStatus | None = None
     # Story 9.8: Allow updating activities (add/remove/reorder)
     activity_ids: list[uuid.UUID] | None = None
+    # Story 10.3: Video attachment - can set to null to remove video
+    # DEPRECATED: Use resources.videos instead
+    video_path: str | None = None
+    # Additional Resources: videos with subtitle control
+    resources: AdditionalResources | None = None
 
     @field_validator("name")
     @classmethod
@@ -206,6 +272,17 @@ class AssignmentUpdate(BaseModel):
         """Validate activity_ids list is not empty if provided."""
         if v is not None and len(v) == 0:
             raise ValueError("Activity list cannot be empty - must have at least one activity")
+        return v
+
+    @field_validator("video_path")
+    @classmethod
+    def validate_video_path(cls, v: str | None) -> str | None:
+        """Validate video_path is within max length and safe."""
+        if v is not None:
+            if len(v) > 500:
+                raise ValueError("Video path must be 500 characters or less")
+            if ".." in v:
+                raise ValueError("Invalid video path: path traversal not allowed")
         return v
 
 
@@ -257,6 +334,8 @@ class AssignmentResponse(BaseModel):
     # Scheduling fields
     scheduled_publish_date: datetime | None = None
     status: AssignmentPublishStatus = AssignmentPublishStatus.published
+    # Story 10.3: Video attachment
+    video_path: str | None = None
 
 
 class AssignmentListItem(BaseModel):
@@ -554,6 +633,11 @@ class MultiActivityStartResponse(BaseModel):
     current_status: str
     time_spent_minutes: int
     started_at: datetime | None
+
+    # Story 10.3: Video attachment (legacy, use resources instead)
+    video_path: str | None = None
+    # Additional Resources with subtitle control
+    resources: AdditionalResources | None = None
 
     @computed_field  # type: ignore[misc]
     @property
@@ -861,6 +945,11 @@ class AssignmentPreviewResponse(BaseModel):
 
     # Preview mode indicator
     is_preview: bool = True
+
+    # Story 10.3: Video attachment (legacy, use resources instead)
+    video_path: str | None = None
+    # Additional Resources with subtitle control
+    resources: AdditionalResources | None = None
 
 
 class ActivityPreviewResponse(BaseModel):

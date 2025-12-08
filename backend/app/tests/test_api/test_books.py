@@ -737,3 +737,255 @@ class TestGetBookStructure:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
+
+
+class TestListBookVideos:
+    """Test GET /api/v1/books/{book_id}/videos endpoint (Story 10.3)."""
+
+    def test_get_videos_requires_authentication(self, client: TestClient):
+        """Test that unauthenticated requests are rejected."""
+        book_id = uuid.uuid4()
+        response = client.get(f"{settings.API_V1_STR}/books/{book_id}/videos")
+        assert response.status_code == 401
+
+    def test_get_videos_requires_teacher_role(
+        self, client: TestClient, student_token: str
+    ):
+        """Test that non-teacher users cannot access book videos."""
+        book_id = uuid.uuid4()
+        response = client.get(
+            f"{settings.API_V1_STR}/books/{book_id}/videos",
+            headers={"Authorization": f"Bearer {student_token}"},
+        )
+        assert response.status_code == 403
+        detail = response.json()["detail"].lower()
+        assert "forbidden" in detail or "permissions" in detail
+
+    def test_get_videos_returns_404_for_inaccessible_book(
+        self,
+        client: TestClient,
+        session: Session,
+        teacher_user_with_record: User,
+    ):
+        """Test that teachers cannot access videos of books they don't have access to."""
+        # Get teacher token
+        response = client.post(
+            f"{settings.API_V1_STR}/login/access-token",
+            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+        )
+        teacher_token = response.json()["access_token"]
+
+        # Create another publisher and book
+        other_pub_user = User(
+            id=uuid.uuid4(),
+            email="otherpub_video@example.com",
+            username="otherpub_video",
+            hashed_password="hashed",
+            role=UserRole.publisher,
+        )
+        session.add(other_pub_user)
+        session.commit()
+
+        other_publisher = Publisher(
+            id=uuid.uuid4(),
+            user_id=other_pub_user.id,
+            name="Other Publisher Video",
+        )
+        session.add(other_publisher)
+        session.commit()
+
+        other_book = Book(
+            id=uuid.uuid4(),
+            dream_storage_id="other-book-video",
+            title="Other Book Video",
+            book_name="Other Video",
+            publisher_name=other_publisher.name,
+            publisher_id=other_publisher.id,
+        )
+        session.add(other_book)
+        session.commit()
+
+        # No BookAssignment created - teacher should not have access
+
+        # Request videos (should get 404)
+        response = client.get(
+            f"{settings.API_V1_STR}/books/{other_book.id}/videos",
+            headers={"Authorization": f"Bearer {teacher_token}"},
+        )
+
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+    def test_get_videos_returns_404_for_nonexistent_book(
+        self,
+        client: TestClient,
+        teacher_user_with_record: User,
+    ):
+        """Test 404 response for non-existent book."""
+        # Get teacher token
+        response = client.post(
+            f"{settings.API_V1_STR}/login/access-token",
+            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+        )
+        teacher_token = response.json()["access_token"]
+
+        # Request videos for non-existent book
+        fake_book_id = uuid.uuid4()
+        response = client.get(
+            f"{settings.API_V1_STR}/books/{fake_book_id}/videos",
+            headers={"Authorization": f"Bearer {teacher_token}"},
+        )
+
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+    def test_get_videos_returns_empty_list_on_dcs_error(
+        self,
+        client: TestClient,
+        session: Session,
+        teacher_user_with_record: User,
+        mocker,
+    ):
+        """Test that DCS errors result in empty list rather than server error."""
+        # Get teacher token
+        response = client.post(
+            f"{settings.API_V1_STR}/login/access-token",
+            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+        )
+        teacher_token = response.json()["access_token"]
+
+        # Get teacher's publisher
+        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
+        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
+        publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+
+        # Create book
+        book = Book(
+            id=uuid.uuid4(),
+            dream_storage_id="book-video-test",
+            title="Video Test Book",
+            book_name="Video Test",
+            publisher_name=publisher.name,
+            publisher_id=publisher.id,
+        )
+        session.add(book)
+        session.commit()
+
+        # Grant access via BookAssignment
+        assignment = BookAssignment(
+            id=uuid.uuid4(),
+            book_id=book.id,
+            school_id=school.id,
+            assigned_by=teacher_user_with_record.id,
+        )
+        session.add(assignment)
+        session.commit()
+
+        # Mock DCS client to raise an error
+        mock_client = mocker.Mock()
+        mock_client.list_videos = mocker.AsyncMock(side_effect=Exception("DCS error"))
+        mocker.patch(
+            "app.api.routes.books.get_dream_storage_client",
+            return_value=mock_client
+        )
+
+        # Request videos - should return empty list, not 500
+        response = client.get(
+            f"{settings.API_V1_STR}/books/{book.id}/videos",
+            headers={"Authorization": f"Bearer {teacher_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["videos"] == []
+        assert data["total_count"] == 0
+
+    def test_get_videos_returns_video_list(
+        self,
+        client: TestClient,
+        session: Session,
+        teacher_user_with_record: User,
+        mocker,
+    ):
+        """Test that videos endpoint returns list of videos from DCS."""
+        # Get teacher token
+        response = client.post(
+            f"{settings.API_V1_STR}/login/access-token",
+            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+        )
+        teacher_token = response.json()["access_token"]
+
+        # Get teacher's publisher
+        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
+        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
+        publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+
+        # Create book
+        book = Book(
+            id=uuid.uuid4(),
+            dream_storage_id="book-video-list-test",
+            title="Video List Test Book",
+            book_name="Video List Test",
+            publisher_name=publisher.name,
+            publisher_id=publisher.id,
+        )
+        session.add(book)
+        session.commit()
+
+        # Grant access via BookAssignment
+        assignment = BookAssignment(
+            id=uuid.uuid4(),
+            book_id=book.id,
+            school_id=school.id,
+            assigned_by=teacher_user_with_record.id,
+        )
+        session.add(assignment)
+        session.commit()
+
+        # Mock DCS client to return video list
+        mock_videos = [
+            {
+                "path": "videos/intro.mp4",
+                "name": "intro.mp4",
+                "size_bytes": 1024000,
+                "has_subtitles": True,
+            },
+            {
+                "path": "videos/chapter1.mp4",
+                "name": "chapter1.mp4",
+                "size_bytes": 2048000,
+                "has_subtitles": False,
+            },
+        ]
+        mock_client = mocker.Mock()
+        mock_client.list_videos = mocker.AsyncMock(return_value=mock_videos)
+        mocker.patch(
+            "app.api.routes.books.get_dream_storage_client",
+            return_value=mock_client
+        )
+
+        # Request videos
+        response = client.get(
+            f"{settings.API_V1_STR}/books/{book.id}/videos",
+            headers={"Authorization": f"Bearer {teacher_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["book_id"] == str(book.id)
+        assert data["total_count"] == 2
+        assert len(data["videos"]) == 2
+
+        # Verify first video
+        video1 = data["videos"][0]
+        assert video1["path"] == "videos/intro.mp4"
+        assert video1["name"] == "intro.mp4"
+        assert video1["size_bytes"] == 1024000
+        assert video1["has_subtitles"] is True
+
+        # Verify second video
+        video2 = data["videos"][1]
+        assert video2["path"] == "videos/chapter1.mp4"
+        assert video2["name"] == "chapter1.mp4"
+        assert video2["size_bytes"] == 2048000
+        assert video2["has_subtitles"] is False

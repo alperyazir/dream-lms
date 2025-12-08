@@ -849,6 +849,12 @@ class AssignmentBase(SQLModel):
     time_limit_minutes: int | None = Field(default=None, gt=0)
     scheduled_publish_date: datetime | None = Field(default=None)
     status: AssignmentPublishStatus = Field(default=AssignmentPublishStatus.published)
+    # Story 10.3: Video attachment - stores relative path like "videos/chapter1.mp4"
+    video_path: str | None = Field(default=None, max_length=500)
+    # Additional Resources: JSON array of resource objects
+    # Each resource: {type: "video", path: "...", subtitles_enabled: true, name: "..."}
+    # Future types: "pdf", "image", "link", etc.
+    resources: dict | None = Field(default=None, sa_column=Column(JSON))
 
 
 class AssignmentCreate(AssignmentBase):

@@ -55,7 +55,7 @@ function AdminBooks() {
   useEffect(() => {
     fetchBooks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchBooks])
+  }, [])
 
   const handleSync = async () => {
     try {

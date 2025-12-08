@@ -341,58 +341,8 @@ export function MatchTheWordsPlayer({
     return word === sentence.word
   }
 
-  // Calculate completion
-  const completionCount = matches.size
-  const totalCount = activity.sentences.length
-
-
-  // Handle reset - clear all matches
-  const handleReset = () => {
-    setMatches(new Map())
-    onAnswersChange(new Map())
-    setLines([])
-    setDraggedWord(null)
-    setDraggedIndex(null)
-    setDragLine(null)
-  }
-
   return (
     <div className="flex h-full flex-col p-2">
-      {/* Header - compact */}
-      <div className="mb-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">
-              {activity.headerText}
-            </h2>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
-              Drag to match • {completionCount} / {totalCount}
-            </p>
-          </div>
-          {!showResults && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            >
-              <svg
-                className="h-3 w-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Reset
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* Three-column layout with canvas overlay - fills remaining space */}
       <div

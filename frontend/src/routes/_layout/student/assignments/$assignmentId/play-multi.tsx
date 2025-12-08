@@ -149,6 +149,8 @@ function MultiActivityPlayerPage() {
       initialTimeSpent={assignment.time_spent_minutes}
       onExit={handleExit}
       onSubmitSuccess={handleSubmitSuccess}
+      videoPath={assignment.video_path}
+      resources={assignment.resources}
     />
   )
 }

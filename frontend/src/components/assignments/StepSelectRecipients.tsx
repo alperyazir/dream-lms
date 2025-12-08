@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { teachersApi } from "@/services/teachersApi"
 import type { AssignmentFormData } from "@/types/assignment"
@@ -114,9 +115,9 @@ export function StepSelectRecipients({
     formData.student_ids.length === filteredStudents.length
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full">
       {/* Selected count badge */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <h3 className="text-lg font-semibold">Select Recipients</h3>
         <Badge variant="secondary" className="text-sm">
           {totalStudentCount.fromClasses > 0 &&
@@ -133,7 +134,7 @@ export function StepSelectRecipients({
       </div>
 
       {/* Tabs for class vs individual selection */}
-      <Tabs defaultValue="classes" className="w-full">
+      <Tabs defaultValue="classes" className="w-full flex-1 flex flex-col min-h-0">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="classes">
             <Users className="w-4 h-4 mr-2" />
@@ -146,7 +147,9 @@ export function StepSelectRecipients({
         </TabsList>
 
         {/* By Class Tab */}
-        <TabsContent value="classes" className="space-y-4">
+        <TabsContent value="classes" className="flex-1 min-h-0 mt-2">
+          <ScrollArea className="h-full pr-4">
+          <div className="space-y-4">
           {classesLoading ? (
             <Card>
               <CardContent className="pt-6 text-center text-muted-foreground">
@@ -226,10 +229,14 @@ export function StepSelectRecipients({
               </div>
             </>
           )}
+          </div>
+          </ScrollArea>
         </TabsContent>
 
         {/* By Individual Students Tab */}
-        <TabsContent value="students" className="space-y-4">
+        <TabsContent value="students" className="flex-1 min-h-0 mt-2">
+          <ScrollArea className="h-full pr-4">
+          <div className="space-y-4">
           {studentsLoading ? (
             <Card>
               <CardContent className="pt-6 text-center text-muted-foreground">
@@ -330,11 +337,13 @@ export function StepSelectRecipients({
               )}
             </>
           )}
+          </div>
+          </ScrollArea>
         </TabsContent>
       </Tabs>
 
       {/* Help Text */}
-      <p className="text-sm text-muted-foreground text-center">
+      <p className="text-sm text-muted-foreground text-center mt-4 shrink-0">
         Select at least one class or student to assign this activity to.
       </p>
     </div>

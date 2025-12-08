@@ -207,6 +207,160 @@ export async function getActivityImageUrl(
   }
 }
 
+// --- Story 10.2: Audio Media Streaming ---
+
+/**
+ * Get authenticated blob URL for activity audio
+ *
+ * Story 10.2: Frontend Audio Player Component
+ *
+ * Fetches audio via authenticated API and returns a blob URL
+ * that can be used by the <audio> element.
+ *
+ * @param bookId - Book UUID
+ * @param audioPath - audio_extra.path from config.json (e.g., "./books/SwitchtoCLIL/audio/08.mp3")
+ * @returns Promise with blob URL string, or null if fetch fails
+ */
+export async function getActivityAudioUrl(
+  bookId: string,
+  audioPath: string | null,
+): Promise<string | null> {
+  if (!audioPath || !bookId) {
+    console.warn("Missing required parameters for audio URL:", {
+      bookId,
+      audioPath,
+    })
+    return null
+  }
+
+  try {
+    // Extract asset path from audio_path
+    // Convert "./books/BOOKNAME/audio/08.mp3" to "audio/08.mp3"
+    let assetPath = audioPath
+    const booksPrefix = /^\.\/books\/[^/]+\//
+    if (booksPrefix.test(audioPath)) {
+      assetPath = audioPath.replace(booksPrefix, "")
+    }
+
+    // Remove leading "./" if still present
+    if (assetPath.startsWith("./")) {
+      assetPath = assetPath.substring(2)
+    }
+
+    // Remove leading slash if present
+    if (assetPath.startsWith("/")) {
+      assetPath = assetPath.substring(1)
+    }
+
+    // Use the media streaming endpoint for audio
+    const url = `/api/v1/books/${bookId}/media/${assetPath}`
+
+    console.log("Fetching activity audio:", {
+      bookId,
+      audioPath,
+      assetPath,
+      url,
+    })
+
+    // Fetch audio with authentication
+    const response = await apiClient.get(url, {
+      responseType: "blob",
+    })
+
+    // Create blob URL
+    const blobUrl = URL.createObjectURL(response.data)
+
+    console.log("Activity audio loaded successfully, blob URL created")
+
+    return blobUrl
+  } catch (error) {
+    console.error("Failed to fetch activity audio:", error, {
+      bookId,
+      audioPath,
+    })
+    return null
+  }
+}
+
+// --- Story 10.3: Video Attachment to Assignments ---
+
+/**
+ * Video information from DCS
+ */
+export interface VideoInfo {
+  path: string
+  name: string
+  size_bytes: number
+  has_subtitles: boolean
+}
+
+/**
+ * Response from book videos endpoint
+ */
+export interface BookVideosResponse {
+  book_id: string
+  videos: VideoInfo[]
+  total_count: number
+}
+
+/**
+ * Get list of videos available in a book
+ *
+ * Story 10.3: Video Attachment to Assignments
+ *
+ * @param bookId - UUID of the book
+ * @returns Promise with list of videos
+ */
+export async function getBookVideos(bookId: string): Promise<BookVideosResponse> {
+  const url = `/api/v1/books/${bookId}/videos`
+  const response = await apiClient.get<BookVideosResponse>(url)
+  return response.data
+}
+
+/**
+ * Get auth token from localStorage
+ */
+function getAuthToken(): string | null {
+  return localStorage.getItem("access_token")
+}
+
+/**
+ * Get authenticated video stream URL
+ *
+ * Story 10.3: Video Attachment to Assignments
+ *
+ * HTML5 video elements don't send Authorization headers, so we include
+ * the token as a query parameter for authentication.
+ *
+ * @param bookId - Book UUID
+ * @param videoPath - Video path from VideoInfo (e.g., "video/1.mp4")
+ * @returns The URL to stream video with auth token
+ */
+export function getVideoStreamUrl(bookId: string, videoPath: string): string {
+  const token = getAuthToken()
+  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
+  return `${OpenAPI.BASE}/api/v1/books/${bookId}/media/${videoPath}${tokenParam}`
+}
+
+/**
+ * Get subtitle file URL for a video
+ *
+ * Story 10.3: Video Attachment to Assignments
+ *
+ * HTML5 video elements don't send Authorization headers, so we include
+ * the token as a query parameter for authentication.
+ *
+ * @param bookId - Book UUID
+ * @param videoPath - Video path (e.g., "video/1.mp4")
+ * @returns The URL to fetch subtitles (replaces .mp4 with .srt) with auth token
+ */
+export function getSubtitleUrl(bookId: string, videoPath: string): string {
+  const subtitlePath = videoPath.replace(/\.[^.]+$/, ".srt")
+  const token = getAuthToken()
+  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
+  return `${OpenAPI.BASE}/api/v1/books/${bookId}/media/${subtitlePath}${tokenParam}`
+}
+
 // --- Story 8.2: Page-Based Activity Selection ---
 
 /**
@@ -353,12 +507,16 @@ export const booksApi = {
   getBookById,
   getAuthenticatedCoverUrl,
   getActivityImageUrl,
+  getActivityAudioUrl,
   getBookPages,
   getPageActivities,
   getPageThumbnailUrl,
   getBookPagesDetail,
   getPageImageUrl,
   getBookStructure,
+  getBookVideos,
+  getVideoStreamUrl,
+  getSubtitleUrl,
 }
 
 export default booksApi

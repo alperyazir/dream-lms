@@ -61,6 +61,8 @@ interface ActivityPlayerProps {
   onActivityComplete?: (score: number, answersJson: Record<string, any>) => void
   // Story 9.7: Show correct answers in preview mode (highlights correct positions)
   showCorrectAnswers?: boolean
+  // Story 10.3: External reset trigger - increments to trigger reset
+  resetTrigger?: number
 }
 
 // Type for activity answers - different players use different data structures
@@ -149,6 +151,7 @@ export function ActivityPlayer({
   embedded = false,
   onActivityComplete,
   showCorrectAnswers = false,
+  resetTrigger = 0,
 }: ActivityPlayerProps) {
   // Story 4.8: Initialize answers from saved progress (must happen before first render)
   const [answers, setAnswers] = useState<ActivityAnswers>(() =>
@@ -161,6 +164,22 @@ export function ActivityPlayer({
   >(new Set())
   const [startTime] = useState<number>(Date.now())
   const { toast } = useToast()
+
+  // Story 10.3: Track reset trigger to reset answers when parent requests
+  const prevResetTriggerRef = useRef(resetTrigger)
+  useEffect(() => {
+    if (resetTrigger !== prevResetTriggerRef.current && resetTrigger > 0) {
+      // Reset answers based on activity type
+      if (activityType === "puzzleFindWords") {
+        setAnswers(new Set<string>())
+      } else if (activityType === "circle" || activityType === "markwithx") {
+        setAnswers(new Map<number, number>())
+      } else {
+        setAnswers(new Map<string, string>())
+      }
+      prevResetTriggerRef.current = resetTrigger
+    }
+  }, [resetTrigger, activityType])
 
   // Calculate time spent (initial + new time)
   const getTimeSpent = () => {
@@ -692,6 +711,8 @@ export function ActivityPlayer({
           activityType={activityType}
           timeLimit={undefined} // Timer handled by MultiActivityPlayer
           onTimeExpired={handleTimeExpired}
+          activityConfig={activityConfig}
+          bookId={bookId}
         />
 
         {/* Main Content - Full remaining height */}
@@ -720,6 +741,8 @@ export function ActivityPlayer({
         activityType={activityType}
         timeLimit={timeLimit}
         onTimeExpired={handleTimeExpired}
+        activityConfig={activityConfig}
+        bookId={bookId}
       />
 
       {/* Main Content - Centered */}

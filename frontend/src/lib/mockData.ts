@@ -119,7 +119,16 @@ export interface Activity {
 
 // ============================================================================
 // ACTIVITY CONFIG TYPE DEFINITIONS (Story 2.5)
+// Story 10.2: Added AudioExtra for audio support
 // ============================================================================
+
+/**
+ * Audio extra configuration for activities with audio content
+ * Story 10.2: Frontend Audio Player Component
+ */
+export interface AudioExtra {
+  path: string
+}
 
 export interface Coordinates {
   x: number
@@ -141,6 +150,7 @@ export interface DragDropPictureActivity {
   section_path: string // Background image URL
   words: string[] // Draggable word bank
   answer: DragDropAnswer[] // Correct placements
+  audio_extra?: AudioExtra // Story 10.2: Optional audio content
 }
 
 export interface DragDropGroupAnswer {
@@ -156,6 +166,7 @@ export interface DragDropPictureGroupActivity {
   section_path: string // Background image URL
   words: string[] // Draggable word bank
   answer: DragDropGroupAnswer[] // Drop zones with multiple correct answers
+  audio_extra?: AudioExtra // Story 10.2: Optional audio content
 }
 
 export interface MatchWord {
@@ -175,6 +186,7 @@ export interface MatchTheWordsActivity {
   headerText: string
   match_words: MatchWord[]
   sentences: MatchSentence[]
+  audio_extra?: AudioExtra // Story 10.2: Optional audio content
 }
 
 export interface CircleAnswer {
@@ -189,6 +201,7 @@ export interface CircleActivity {
   circleCount?: number // Max selections per group (-1 = multi-select, 0 or undefined = 2/true-false, >0 = specific count)
   section_path: string // Background image
   answer: CircleAnswer[]
+  audio_extra?: AudioExtra // Story 10.2: Optional audio content
 }
 
 export interface PuzzleFindWordsActivity {
@@ -197,6 +210,7 @@ export interface PuzzleFindWordsActivity {
   type: "puzzleFindWords"
   headerText: string
   words: string[] // Words to find in grid
+  audio_extra?: AudioExtra // Story 10.2: Optional audio content
 }
 
 export type ActivityConfig =

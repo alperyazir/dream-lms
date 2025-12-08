@@ -3,12 +3,41 @@
  * Story 3.7: Assignment Creation Dialog & Configuration
  * Story 3.8: Teacher Assignment Management Dashboard
  * Story 8.1: Multi-Activity Assignment Data Model
+ * Story 10.3+: Additional Resources with subtitle control
  */
 
 /**
  * Assignment status enumeration
  */
 export type AssignmentStatus = "not_started" | "in_progress" | "completed"
+
+// --- Additional Resources Types ---
+
+/**
+ * Resource types that can be attached to assignments
+ */
+export type ResourceType = "video" // Future: "pdf" | "image" | "link"
+
+/**
+ * Video resource attached to an assignment
+ * Story 10.3+: Video with subtitle control for students
+ */
+export interface VideoResource {
+  type: "video"
+  path: string // Relative path like "video/1.mp4"
+  name: string // Display name
+  subtitles_enabled: boolean // Whether students can see subtitles
+  has_subtitles: boolean // Whether the video has subtitle files
+}
+
+/**
+ * Additional resources attached to an assignment
+ * Currently supports video resources. Extensible for future resource types.
+ */
+export interface AdditionalResources {
+  videos: VideoResource[]
+  // Future: pdfs, images, links, etc.
+}
 
 /**
  * Date group for time planning mode
@@ -26,6 +55,7 @@ export interface DateActivityGroup {
  * Story 8.2: Added activity_ids for multi-activity selection
  * Story 9.6: Added scheduled_publish_date for scheduled publishing
  * Story 9.x: Added time_planning_enabled and date_groups for time planning
+ * Story 10.3: Added video_path for video attachment
  */
 export interface AssignmentFormData {
   name: string
@@ -39,6 +69,10 @@ export interface AssignmentFormData {
   // Time Planning mode
   time_planning_enabled: boolean
   date_groups: DateActivityGroup[]
+  // Story 10.3: Video attachment (deprecated, use resources)
+  video_path: string | null
+  // Additional Resources with subtitle control
+  resources: AdditionalResources | null
 }
 
 /**
@@ -56,6 +90,7 @@ export interface DateGroupCreateRequest {
  * Story 8.1: Supports both single-activity (backward compatible) and multi-activity assignments.
  * Story 9.6: Added scheduled_publish_date for scheduled publishing.
  * Story 9.x: Added date_groups for Time Planning mode (creates multiple assignments)
+ * Story 10.3: Added video_path for video attachment
  * Provide either activity_id (single) OR activity_ids (multi), not both.
  */
 export interface AssignmentCreateRequest {
@@ -74,6 +109,10 @@ export interface AssignmentCreateRequest {
   scheduled_publish_date?: string | null // ISO 8601 datetime string
   // Story 9.x: Time Planning mode - creates multiple assignments
   date_groups?: DateGroupCreateRequest[]
+  // Story 10.3: Video attachment (deprecated, use resources)
+  video_path?: string | null
+  // Additional Resources with subtitle control
+  resources?: AdditionalResources | null
 }
 
 /**
@@ -344,6 +383,7 @@ export interface ActivityProgressInfo {
 /**
  * Multi-activity assignment start response
  * Story 8.3: Student Multi-Activity Assignment Player
+ * Story 10.3: Added video_path for video attachment
  */
 export interface MultiActivityStartResponse {
   // Assignment info
@@ -373,6 +413,12 @@ export interface MultiActivityStartResponse {
   // Computed fields
   completed_activities_count: number
   all_activities_completed: boolean
+
+  // Story 10.3: Video attachment
+  video_path: string | null
+
+  // Story 10.3+: Additional resources with subtitle control
+  resources: AdditionalResources | null
 }
 
 /**
@@ -637,6 +683,9 @@ export interface AssignmentPreviewResponse {
 
   // Preview mode indicator
   is_preview: boolean
+
+  // Story 10.3: Video attachment
+  video_path: string | null
 }
 
 /**

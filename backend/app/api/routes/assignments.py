@@ -715,6 +715,8 @@ async def create_assignment(
         time_limit_minutes=assignment_in.time_limit_minutes,
         scheduled_publish_date=assignment_in.scheduled_publish_date,
         status=assignment_status,
+        video_path=assignment_in.video_path,  # Story 10.3: Video attachment (deprecated)
+        resources=assignment_in.resources.model_dump() if assignment_in.resources else None,  # Story 10.3+: Additional resources
         created_at=now,
         updated_at=now,
     )
@@ -802,6 +804,7 @@ async def create_assignment(
         time_limit_minutes=assignment.time_limit_minutes,
         scheduled_publish_date=assignment.scheduled_publish_date,
         status=assignment.status,
+        video_path=assignment.video_path,  # Story 10.3
         created_at=assignment.created_at,
         updated_at=assignment.updated_at,
         student_count=len(students),
@@ -939,6 +942,8 @@ async def create_bulk_assignments(
             time_limit_minutes=group.time_limit_minutes,
             scheduled_publish_date=group.scheduled_publish_date,
             status=assignment_status,
+            video_path=assignment_in.video_path,  # Story 10.3: Video attachment (deprecated)
+            resources=assignment_in.resources.model_dump() if assignment_in.resources else None,  # Story 10.3+: Additional resources
             created_at=now,
             updated_at=now,
         )
@@ -1556,6 +1561,8 @@ async def start_multi_activity_assignment(
         current_status=assignment_student.status.value,
         time_spent_minutes=assignment_student.time_spent_minutes,
         started_at=assignment_student.started_at,
+        video_path=assignment.video_path,  # Story 10.3: Video attachment
+        resources=assignment.resources,  # Story 10.3+: Additional resources
     )
 
     logger.info(
@@ -3120,6 +3127,7 @@ async def preview_assignment(
         activities=activities,
         total_activities=len(activities),
         is_preview=True,
+        video_path=assignment.video_path,  # Story 10.3: Include video attachment
     )
 
     logger.info(

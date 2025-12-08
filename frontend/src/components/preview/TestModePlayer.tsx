@@ -82,6 +82,7 @@ export function TestModePlayer({
         onExit={onExit}
         previewMode={true}
         onPreviewComplete={handlePreviewComplete}
+        videoPath={assignment.video_path}
       />
 
       <TestModeResultsSummary

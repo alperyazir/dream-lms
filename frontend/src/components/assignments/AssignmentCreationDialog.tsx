@@ -1,12 +1,13 @@
 /**
- * Assignment Creation Dialog - Story 3.7, Story 8.2
+ * Assignment Creation Dialog - Story 3.7, Story 8.2, Story 10.3+
  *
  * Multi-step wizard for creating assignments:
  * - Step 0: Select Book
  * - Step 1: Select Activities (page-based - Story 8.2)
  * - Step 2: Select Recipients (classes or individual students)
- * - Step 3: Configure Settings (name, due date, time limit, instructions)
- * - Step 4: Review & Create
+ * - Step 3: Additional Resources (videos with subtitle control - Story 10.3+)
+ * - Step 4: Configure Settings (name, due date, time limit, instructions)
+ * - Step 5: Review & Create
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -31,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import useCustomToast from "@/hooks/useCustomToast"
 import { useQuickActivityPreview } from "@/hooks/usePreviewMode"
 import { assignmentsApi } from "@/services/assignmentsApi"
@@ -40,6 +42,7 @@ import type {
 } from "@/types/assignment"
 import type { Book } from "@/types/book"
 import { ActivityPreviewModal } from "../preview"
+import { StepAdditionalResources } from "./StepAdditionalResources"
 import { StepConfigureSettings } from "./StepConfigureSettings"
 import { StepSelectActivities } from "./StepSelectActivities"
 import { StepSelectBook } from "./StepSelectBook"
@@ -56,8 +59,9 @@ const STEPS = [
   { number: 0, label: "Select Book" },
   { number: 1, label: "Select Activities" },
   { number: 2, label: "Select Recipients" },
-  { number: 3, label: "Configure Settings" },
-  { number: 4, label: "Review & Create" },
+  { number: 3, label: "Resources" },
+  { number: 4, label: "Settings" },
+  { number: 5, label: "Review" },
 ]
 
 export function AssignmentCreationDialog({
@@ -100,6 +104,8 @@ export function AssignmentCreationDialog({
     scheduled_publish_date: null, // Story 9.6: Scheduled publishing
     time_planning_enabled: false,
     date_groups: [],
+    video_path: null, // Story 10.3: Video attachment (deprecated)
+    resources: null, // Story 10.3+: Additional resources with subtitle control
   })
 
   // Reset state when dialog opens
@@ -121,6 +127,8 @@ export function AssignmentCreationDialog({
         scheduled_publish_date: prefilledPublishDate || null,
         time_planning_enabled: false,
         date_groups: [],
+        video_path: null, // Story 10.3: Video attachment (deprecated)
+        resources: null, // Story 10.3+: Additional resources
       })
       setShowCancelConfirm(false)
     }
@@ -262,8 +270,11 @@ export function AssignmentCreationDialog({
       }
     }
 
-    // Validate step 3 (Configure Settings)
-    if (currentStep === 3) {
+    // Validate step 3 (Additional Resources) - optional, no validation needed
+    // Users can skip adding resources
+
+    // Validate step 4 (Configure Settings)
+    if (currentStep === 4) {
       if (!formData.name || formData.name.trim() === "") {
         showErrorToast("Please enter an assignment name")
         return
@@ -370,6 +381,8 @@ export function AssignmentCreationDialog({
       scheduled_publish_date: null, // Story 9.6: Scheduled publishing
       time_planning_enabled: false,
       date_groups: [],
+      video_path: null, // Story 10.3: Video attachment (deprecated)
+      resources: null, // Story 10.3+: Additional resources
     })
     setShowCancelConfirm(false)
     onClose()
@@ -447,6 +460,10 @@ export function AssignmentCreationDialog({
       scheduled_publish_date: formData.scheduled_publish_date
         ? formData.scheduled_publish_date.toISOString()
         : null,
+      // Story 10.3: Video attachment (deprecated, use resources)
+      video_path: formData.video_path,
+      // Story 10.3+: Additional resources with subtitle control
+      resources: formData.resources,
     }
 
     // Call mutation
@@ -561,7 +578,15 @@ export function AssignmentCreationDialog({
               />
             )}
 
-            {currentStep === 3 && (
+            {currentStep === 3 && selectedBook && (
+              <StepAdditionalResources
+                formData={formData}
+                onFormDataChange={handleFormDataChange}
+                bookId={selectedBook.id}
+              />
+            )}
+
+            {currentStep === 4 && selectedBook && (
               <StepConfigureSettings
                 formData={formData}
                 onFormDataChange={handleFormDataChange}
@@ -569,7 +594,7 @@ export function AssignmentCreationDialog({
               />
             )}
 
-            {currentStep === 4 && selectedBook && (
+            {currentStep === 5 && selectedBook && (
               <StepReviewCreateMulti
                 book={selectedBook}
                 activityCount={selectedActivityIds.length}
@@ -678,11 +703,12 @@ function StepReviewCreateMulti({
       : `${formData.student_ids.length} student(s)`
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-foreground">
+    <div className="flex flex-col h-full">
+      <h3 className="text-lg font-semibold text-foreground mb-4 shrink-0">
         Review Assignment
       </h3>
 
+      <ScrollArea className="flex-1 pr-4">
       <div className="grid gap-4">
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
           <h4 className="font-medium text-foreground mb-2">Assignment Name</h4>
@@ -779,7 +805,18 @@ function StepReviewCreateMulti({
             </p>
           </div>
         )}
+
+        {/* Show resources if any */}
+        {formData.resources && formData.resources.videos.length > 0 && (
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h4 className="font-medium text-foreground mb-2">Additional Resources</h4>
+            <p className="text-muted-foreground">
+              {formData.resources.videos.length} video{formData.resources.videos.length > 1 ? "s" : ""} attached
+            </p>
+          </div>
+        )}
       </div>
+      </ScrollArea>
     </div>
   )
 }

@@ -115,3 +115,21 @@ Comprehensive UX improvements across all user roles. Includes UI polish (navbar,
 **Deliverable:** Polished, production-ready LMS with advanced workflows and improved UX
 
 ---
+
+## Epic 10: Audio & Video Media Integration
+
+**Estimated Effort:** 2-3 weeks | **Status:** Planning
+
+Enable activities to include audio content from book configurations and allow teachers to attach video content to assignments. Media is streamed efficiently from Dream Central Storage with HTTP Range support for seeking.
+
+**What Currently Exists:** Image asset proxy from DCS, activity players for 6 types, no audio/video support
+**What We Build:** Streaming media proxy (Range-aware) + Audio player component + Video attachment system
+
+**Stories:**
+- 10.1: Backend Streaming Media Proxy with Range Support
+- 10.2: Frontend Audio Player Component
+- 10.3: Video Attachment to Assignments (Phase 2)
+
+**Deliverable:** Students can play audio instructions with activities, teachers can attach videos to assignments
+
+---

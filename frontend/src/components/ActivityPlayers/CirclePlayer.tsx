@@ -138,11 +138,6 @@ export function CirclePlayer({
     effectiveCircleCount = 2 // Default to true/false
   }
 
-  // Calculate number of question groups
-  const questionCount = isMultiSelectMode
-    ? 1
-    : Math.ceil(activity.answer.length / effectiveCircleCount)
-
   // Update image scale when image loads or window resizes
   const updateImageScale = useCallback(() => {
     const img = imageRef.current
@@ -261,6 +256,7 @@ export function CirclePlayer({
 
   useEffect(() => {
     const img = imageRef.current
+    const container = containerRef.current
     if (img) {
       if (img.complete) {
         updateImageScale()
@@ -269,11 +265,23 @@ export function CirclePlayer({
       }
     }
 
+    // Use ResizeObserver for container size changes (e.g., sidebar open/close)
+    let resizeObserver: ResizeObserver | null = null
+    if (container) {
+      resizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(updateImageScale)
+      })
+      resizeObserver.observe(container)
+    }
+
     window.addEventListener("resize", updateImageScale)
     return () => {
       window.removeEventListener("resize", updateImageScale)
       if (img) {
         img.removeEventListener("load", updateImageScale)
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect()
       }
     }
   }, [updateImageScale])
@@ -387,53 +395,8 @@ export function CirclePlayer({
     [activity.answer, imageScale],
   )
 
-  // Handle reset - clear all selections
-  const handleReset = () => {
-    setSelections(new Map())
-    onAnswersChange(new Map())
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col p-2">
-      {/* Instructions - compact */}
-      <div className="mb-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">
-              {activity.type === "markwithx"
-                ? "Mark the incorrect items"
-                : "Select the correct items"}
-            </h2>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
-              {isMultiSelectMode
-                ? `Answered: ${selections.size}`
-                : `${selections.size} / ${questionCount}`}
-            </p>
-          </div>
-          {!showResults && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            >
-              <svg
-                className="h-3 w-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Reset
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* Background Image with Selectable Areas - fills remaining height */}
       <div

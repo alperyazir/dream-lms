@@ -9,6 +9,7 @@ response caching, and comprehensive error handling.
 import asyncio
 import hashlib
 import logging
+from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -507,14 +508,55 @@ class DreamCentralStorageClient:
             book_name: Book name
 
         Returns:
-            List[str]: List of file paths
+            List[str]: Flat list of relative file paths (e.g., "video/1.mp4", "video/1.srt")
 
         Raises:
             DreamStorageError: If request fails
         """
         url = f"/storage/books/{publisher}/{book_name}"
         response = await self._make_request("GET", url)
-        return response.json()
+        tree_data = response.json()
+
+        # The book path prefix that we want to strip from full paths
+        # e.g., "Universal ELT/SwitchtoCLIL/" -> we want just "video/1.mp4"
+        book_prefix = f"{publisher}/{book_name}/"
+
+        # DCS returns a nested tree structure. Flatten it to a list of relative paths.
+        def flatten_tree(node: dict | list) -> list[str]:
+            """Recursively flatten tree structure to list of file paths."""
+            results: list[str] = []
+
+            # Handle list of nodes (top-level response or children array)
+            if isinstance(node, list):
+                for item in node:
+                    results.extend(flatten_tree(item))
+                return results
+
+            # Handle single node (dict with path, type, children)
+            if not isinstance(node, dict):
+                return results
+
+            node_path = node.get("path", "")
+            node_type = node.get("type", "")
+            children = node.get("children", [])
+
+            # If it's a file, add to results (using path from node directly)
+            if node_type == "file" and node_path:
+                # Strip the book prefix to get relative path
+                # e.g., "Universal ELT/SwitchtoCLIL/video/1.mp4" -> "video/1.mp4"
+                if node_path.startswith(book_prefix):
+                    relative_path = node_path[len(book_prefix):]
+                else:
+                    relative_path = node_path
+                results.append(relative_path)
+
+            # Recurse into children
+            if children:
+                results.extend(flatten_tree(children))
+
+            return results
+
+        return flatten_tree(tree_data)
 
     def get_asset_url(self, publisher: str, book_name: str, asset_path: str) -> str:
         """
@@ -557,6 +599,187 @@ class DreamCentralStorageClient:
         # Use longer timeout for downloads
         response = await self._make_request("GET", url, use_long_timeout=True)
         return response.content
+
+    async def get_asset_size(
+        self,
+        publisher: str,
+        book_name: str,
+        asset_path: str,
+    ) -> int:
+        """
+        Get the size of an asset file without downloading it.
+
+        Uses a Range request to get the total file size from Content-Range header.
+
+        Args:
+            publisher: Publisher name
+            book_name: Book name
+            asset_path: Relative path to asset
+
+        Returns:
+            File size in bytes
+
+        Raises:
+            DreamStorageNotFoundError: If asset doesn't exist
+            DreamStorageError: If request fails
+        """
+        self._validate_asset_path(asset_path)
+
+        # Get valid token
+        token = await self._get_valid_token()
+
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher}/{book_name}/object"
+        params = {"path": asset_path}
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Range": "bytes=0-0",  # Request first byte to get total size
+        }
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, params=params, headers=headers)
+
+            if response.status_code == 404:
+                raise DreamStorageNotFoundError(f"Asset not found: {asset_path}")
+
+            if response.status_code not in (200, 206):
+                raise DreamStorageError(f"Unexpected status: {response.status_code}")
+
+            # Parse Content-Range to get total size
+            content_range = response.headers.get("Content-Range")
+            if content_range:
+                # Format: "bytes 0-0/782836"
+                try:
+                    total_size = int(content_range.split("/")[1])
+                    return total_size
+                except (IndexError, ValueError) as e:
+                    raise DreamStorageError(f"Invalid Content-Range header: {content_range}") from e
+
+            # Fallback to Content-Length if no Content-Range
+            content_length = response.headers.get("Content-Length")
+            if content_length:
+                return int(content_length)
+
+            raise DreamStorageError("Unable to determine file size")
+
+    async def stream_asset(
+        self,
+        publisher: str,
+        book_name: str,
+        asset_path: str,
+        start: int = 0,
+        end: int | None = None,
+        chunk_size: int = 32 * 1024,
+    ) -> AsyncGenerator[bytes, None]:
+        """
+        Stream an asset file with optional byte range.
+
+        Args:
+            publisher: Publisher name
+            book_name: Book name
+            asset_path: Relative path to asset
+            start: Start byte position
+            end: End byte position (None for end of file)
+            chunk_size: Size of chunks to yield (default 32KB)
+
+        Yields:
+            Bytes chunks of the file
+
+        Raises:
+            DreamStorageNotFoundError: If asset doesn't exist
+            DreamStorageError: If request fails
+        """
+        self._validate_asset_path(asset_path)
+
+        # Get valid token
+        token = await self._get_valid_token()
+
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher}/{book_name}/object"
+        params = {"path": asset_path}
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Add Range header if specified
+        if end is not None:
+            headers["Range"] = f"bytes={start}-{end}"
+        elif start > 0:
+            headers["Range"] = f"bytes={start}-"
+
+        # Use longer timeout for streaming (120s for large files)
+        timeout = httpx.Timeout(connect=5.0, read=120.0, write=10.0, pool=5.0)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            async with client.stream("GET", url, params=params, headers=headers) as response:
+                if response.status_code == 404:
+                    raise DreamStorageNotFoundError(f"Asset not found: {asset_path}")
+
+                if response.status_code == 416:
+                    raise DreamStorageError("Range not satisfiable")
+
+                if response.status_code not in (200, 206):
+                    raise DreamStorageError(f"Unexpected status: {response.status_code}")
+
+                async for chunk in response.aiter_bytes(chunk_size):
+                    yield chunk
+
+
+    async def list_videos(
+        self, publisher: str, book_name: str
+    ) -> list[dict[str, Any]]:
+        """
+        List available video files in a book's DCS storage.
+
+        Args:
+            publisher: Publisher name
+            book_name: Book name
+
+        Returns:
+            List of video info dicts with path, name, size_bytes, has_subtitles
+
+        Raises:
+            DreamStorageError: If request fails
+        """
+        cache_key = self._generate_cache_key("list_videos", publisher, book_name)
+
+        # Check cache
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
+        # Get all files in the book directory
+        all_files = await self.list_book_contents(publisher, book_name)
+
+        # Filter for video files
+        video_extensions = (".mp4", ".webm", ".ogg", ".mov")
+        videos: list[dict[str, Any]] = []
+
+        for file_path in all_files:
+            if file_path.lower().endswith(video_extensions):
+                # Check if subtitle file exists
+                srt_path = file_path.rsplit(".", 1)[0] + ".srt"
+                has_subtitles = srt_path in all_files
+
+                # Get file name from path
+                file_name = file_path.split("/")[-1] if "/" in file_path else file_path
+
+                # Get file size
+                try:
+                    size_bytes = await self.get_asset_size(publisher, book_name, file_path)
+                except Exception as e:
+                    logger.warning(f"Could not get size for {file_path}: {e}")
+                    size_bytes = 0
+
+                videos.append(
+                    {
+                        "path": file_path,
+                        "name": file_name,
+                        "size_bytes": size_bytes,
+                        "has_subtitles": has_subtitles,
+                    }
+                )
+
+        # Cache for 15 minutes
+        self._set_cached(cache_key, videos, ttl_seconds=15 * 60)
+
+        return videos
 
 
 # ============================================================================

@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Eye, EyeOff, LogOut } from "lucide-react"
+import { Eye, EyeOff, FolderOpen, LogOut, RotateCcw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import type {
   ActivityConfig,
@@ -24,19 +24,50 @@ import type {
   ActivityWithConfig,
   AssignmentStudentActivityStatus,
   MultiActivitySubmitResponse,
+  VideoResource,
 } from "@/types/assignment"
+import { hasAudio } from "@/lib/audioUtils"
+import { getActivityAudioUrl } from "@/services/booksApi"
+import { getSubtitleUrl, getVideoStreamUrl } from "@/services/booksApi"
+import type { AdditionalResources } from "@/types/assignment"
+import { Button } from "@/components/ui/button"
 import { ActivityNavigationBar } from "./ActivityNavigationBar"
 import { ActivityPlayer } from "./ActivityPlayer"
+import { AudioPlayer } from "./AudioPlayer"
+import { ResourceSidebar } from "./ResourceSidebar"
 import { SharedAssignmentTimer } from "./SharedAssignmentTimer"
 import { SubmitConfirmationDialog } from "./SubmitConfirmationDialog"
+import { VideoPlayer } from "./VideoPlayer"
+
+/**
+ * Get default header text for activity type
+ */
+function getDefaultActivityHeader(activityType: string): string {
+  const type = activityType.toLowerCase()
+  switch (type) {
+    case "dragdroppicture":
+    case "dragdroppicturegroup":
+      return "Complete the sentences."
+    case "matchthewords":
+    case "match_the_words":
+      return "Match the words."
+    case "markwithx":
+      return "Mark the correct option."
+    case "circle":
+      return "Circle the correct option."
+    case "puzzlefindwords":
+      return "Find the words."
+    default:
+      return ""
+  }
+}
 
 /**
  * Get the question/header text for an activity
- * Checks config.headerText first, then activity.title, then falls back to default
+ * Checks config.headerText first, then falls back to activity-type-specific defaults
  */
 function getActivityHeaderText(
   activity: ActivityWithConfig,
-  activityIndex: number,
 ): string {
   const config = activity.config_json as ActivityConfig
 
@@ -46,13 +77,8 @@ function getActivityHeaderText(
       .headerText
   }
 
-  // Use activity title if available
-  if (activity.title) {
-    return activity.title
-  }
-
-  // Default fallback
-  return `Activity ${activityIndex + 1}`
+  // Use activity-type-specific default headers
+  return getDefaultActivityHeader(activity.activity_type)
 }
 
 export interface MultiActivityPlayerProps {
@@ -72,6 +98,10 @@ export interface MultiActivityPlayerProps {
   previewMode?: boolean
   /** Story 9.7: Callback for preview mode completion */
   onPreviewComplete?: (results: PreviewResults) => void
+  /** Story 10.3: Video path attached to assignment (relative path like "videos/chapter1.mp4") - deprecated */
+  videoPath?: string | null
+  /** Story 10.3+: Additional resources with subtitle control */
+  resources?: AdditionalResources | null
 }
 
 /**
@@ -133,6 +163,8 @@ export function MultiActivityPlayer({
   onSubmitSuccess,
   previewMode = false,
   onPreviewComplete,
+  videoPath,
+  resources,
 }: MultiActivityPlayerProps) {
   const { toast } = useToast()
 
@@ -177,6 +209,29 @@ export function MultiActivityPlayer({
   // Story 9.7: Show answers toggle for preview mode
   const [showAnswers, setShowAnswers] = useState(false)
 
+  // Story 10.3: Video player expanded state
+  const [videoExpanded, setVideoExpanded] = useState(true)
+
+  // Story 10.3+: Resource sidebar state
+  const [resourceSidebarOpen, setResourceSidebarOpen] = useState(false)
+  const [selectedResourceVideo, setSelectedResourceVideo] = useState<VideoResource | null>(null)
+  const resourceCount = resources?.videos?.length ?? 0
+
+  // Story 10.3: Reset trigger and confirmation dialog
+  const [resetTrigger, setResetTrigger] = useState(0)
+  const [showResetDialog, setShowResetDialog] = useState(false)
+
+  // Story 10.3: Video URLs (only compute if videoPath exists)
+  const videoSrc = useMemo(() => {
+    if (!videoPath) return null
+    return getVideoStreamUrl(bookId, videoPath)
+  }, [bookId, videoPath])
+
+  const subtitleSrc = useMemo(() => {
+    if (!videoPath) return null
+    return getSubtitleUrl(bookId, videoPath)
+  }, [bookId, videoPath])
+
   // Time tracking - track elapsed seconds for accurate saving
   const [elapsedSeconds, setElapsedSeconds] = useState(
     Math.floor(initialTimeSpent * 60),
@@ -195,6 +250,51 @@ export function MultiActivityPlayer({
   // Current activity data
   const currentActivity = activities[currentIndex]
   const currentState = activityStates.get(currentActivity?.id || "")
+
+  // Story 10.2: Check if current activity has audio
+  const audioPath = useMemo(() => {
+    const config = currentActivity?.config_json
+    if (hasAudio(config)) {
+      return config.audio_extra.path
+    }
+    return null
+  }, [currentActivity?.config_json])
+
+  // Story 10.2: Fetch authenticated audio blob URL
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [audioLoading, setAudioLoading] = useState(false)
+
+  useEffect(() => {
+    // Reset audio URL when activity changes
+    setAudioUrl(null)
+
+    if (!audioPath) return
+
+    let cancelled = false
+    setAudioLoading(true)
+
+    getActivityAudioUrl(bookId, audioPath)
+      .then((url) => {
+        if (!cancelled) {
+          setAudioUrl(url)
+          setAudioLoading(false)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAudioLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+      // Revoke old blob URL to prevent memory leak
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioPath, bookId, currentIndex])
 
   // Computed: all activities completed?
   const completedCount = useMemo(() => {
@@ -506,7 +606,7 @@ export function MultiActivityPlayer({
 
   // Get current activity header text
   const currentActivityHeader = currentActivity
-    ? getActivityHeaderText(currentActivity, currentIndex)
+    ? getActivityHeaderText(currentActivity)
     : ""
 
   return (
@@ -524,11 +624,14 @@ export function MultiActivityPlayer({
 
       {/* Compact header with stepper, timer, and question */}
       <header className="shrink-0 border-b bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="mx-auto max-w-7xl px-3 py-2">
-          {/* Top row: stepper and timer */}
-          <div className="flex items-center justify-between">
-            {/* Activity stepper (mini-map) */}
-            <div className="flex-1 min-w-0">
+        <div className="px-3 py-2">
+          {/* Top row: centered stepper with timer/resources on sides */}
+          <div className="relative flex items-center justify-center">
+            {/* Left spacer for balance */}
+            <div className="absolute left-0 w-32" />
+
+            {/* Activity stepper (mini-map) - centered */}
+            <div className="flex justify-center">
               <ActivityNavigationBar
                 activities={activities}
                 currentIndex={currentIndex}
@@ -538,8 +641,24 @@ export function MultiActivityPlayer({
               />
             </div>
 
-            {/* Timer - shows remaining time if timed, elapsed time otherwise */}
-            <div className="ml-4 shrink-0">
+            {/* Timer and Resources button - absolute right */}
+            <div className="absolute right-0 flex items-center gap-2">
+              {/* Resources button */}
+              {resourceCount > 0 && (
+                <Button
+                  variant={resourceSidebarOpen ? "default" : "outline"}
+                  size="sm"
+                  className={`gap-1.5 ${resourceSidebarOpen ? "bg-teal-600 hover:bg-teal-700 text-white" : ""}`}
+                  onClick={() => setResourceSidebarOpen(!resourceSidebarOpen)}
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  <span className="hidden sm:inline text-xs">Resources</span>
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-500 px-1 text-xs font-medium text-white">
+                    {resourceCount}
+                  </span>
+                </Button>
+              )}
+
               <SharedAssignmentTimer
                 totalTimeLimit={timeLimit}
                 elapsedMinutes={initialTimeSpent}
@@ -558,142 +677,214 @@ export function MultiActivityPlayer({
         </div>
       </header>
 
-      {/* Main content - Activity Player - takes remaining height */}
-      <main className="min-h-0 flex-1 overflow-hidden">
-        <div className="h-full">
-          <ActivityPlayer
-            key={`${currentActivity.id}-${showAnswers}`} // Re-mount on activity change or show answers toggle
-            activityConfig={currentActivity.config_json as ActivityConfig}
-            assignmentId={assignmentId}
-            bookId={bookId}
-            bookName={bookName}
-            publisherName={publisherName}
-            bookTitle={bookTitle}
-            activityType={normalizeActivityType(currentActivity.activity_type)}
-            // No per-activity time limit - shared timer handles it
-            timeLimit={undefined}
-            onExit={handleSaveAndExit}
-            initialProgress={currentState?.responseData}
-            initialTimeSpent={0} // Time tracked at assignment level
-            embedded={true} // Fully embedded - hide header and footer
-            onActivityComplete={handleActivityComplete} // Story 8.3: Notify parent when activity completed with score
-            showCorrectAnswers={previewMode && showAnswers} // Story 9.7: Show correct answers in preview mode
-          />
+      {/* Story 10.3: Video Player Section - shown when assignment has video attached */}
+      {videoSrc && (
+        <div className="shrink-0 border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-850">
+          <div className="mx-auto max-w-4xl px-3 py-2">
+            <VideoPlayer
+              src={videoSrc}
+              subtitleSrc={subtitleSrc || undefined}
+              isExpanded={videoExpanded}
+              onMinimize={() => setVideoExpanded(false)}
+              onExpand={() => setVideoExpanded(true)}
+              className={videoExpanded ? "" : ""}
+            />
+          </div>
         </div>
-      </main>
+      )}
+
+      {/* Main content area with optional sidebar */}
+      <div className="min-h-0 flex-1 flex overflow-hidden">
+        {/* Activity Player - takes remaining width with smooth transition */}
+        <main className="flex-1 min-w-0 overflow-hidden transition-all duration-300 ease-in-out">
+          <div className="h-full">
+            <ActivityPlayer
+              key={`${currentActivity.id}-${showAnswers}`} // Re-mount on activity change or show answers toggle
+              activityConfig={currentActivity.config_json as ActivityConfig}
+              assignmentId={assignmentId}
+              bookId={bookId}
+              bookName={bookName}
+              publisherName={publisherName}
+              bookTitle={bookTitle}
+              activityType={normalizeActivityType(currentActivity.activity_type)}
+              // No per-activity time limit - shared timer handles it
+              timeLimit={undefined}
+              onExit={handleSaveAndExit}
+              initialProgress={currentState?.responseData}
+              initialTimeSpent={0} // Time tracked at assignment level
+              embedded={true} // Fully embedded - hide header and footer
+              onActivityComplete={handleActivityComplete} // Story 8.3: Notify parent when activity completed with score
+              showCorrectAnswers={previewMode && showAnswers} // Story 9.7: Show correct answers in preview mode
+              resetTrigger={resetTrigger} // Story 10.3: External reset trigger from footer
+            />
+          </div>
+        </main>
+
+        {/* Story 10.3+: Resource Sidebar - pushes content when open */}
+        <ResourceSidebar
+          resources={resources ?? null}
+          bookId={bookId}
+          getVideoUrl={getVideoStreamUrl}
+          getSubtitleUrl={getSubtitleUrl}
+          isOpen={resourceSidebarOpen}
+          onClose={() => setResourceSidebarOpen(false)}
+          selectedVideo={selectedResourceVideo}
+          onSelectVideo={setSelectedResourceVideo}
+        />
+      </div>
 
       {/* Compact footer with navigation and submit */}
-      <footer className="shrink-0 border-t bg-white px-3 py-1.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          {/* Left side: Save & Exit (or Show Answers toggle in preview mode) */}
-          {previewMode ? (
-            <button
-              type="button"
-              onClick={() => setShowAnswers(!showAnswers)}
-              className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                showAnswers
-                  ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
-                  : "border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-              }`}
-            >
-              {showAnswers ? (
-                <>
-                  <EyeOff className="h-3 w-3" />
-                  Hide Answers
-                </>
+      <footer className="shrink-0 border-t bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        {/* Story 10.2: Audio Player Row - always shown when activity has audio */}
+        {audioPath && (
+          <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-900">
+            <div className="mx-auto max-w-3xl">
+              {audioLoading ? (
+                <div className="flex items-center justify-center gap-2 py-1 text-sm text-gray-500">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+                  <span>Loading audio...</span>
+                </div>
+              ) : audioUrl ? (
+                <AudioPlayer
+                  src={audioUrl}
+                  isExpanded={true}
+                />
               ) : (
-                <>
-                  <Eye className="h-3 w-3" />
-                  Show Answers
-                </>
+                <div className="py-1 text-center text-sm text-red-500">
+                  Failed to load audio
+                </div>
               )}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSaveAndExit}
-              disabled={isSaving || isSubmitting}
-              className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-            >
-              {isSaving ? "Saving..." : "Save & Exit"}
-            </button>
-          )}
-
-          {/* Center: Activity navigation - compact */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleNavigate(currentIndex - 1)}
-              disabled={currentIndex === 0 || isSaving || isSubmitting}
-              className="flex items-center gap-0.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            >
-              <svg
-                className="h-3 w-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Prev
-            </button>
-
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {currentIndex + 1} / {activities.length}
-            </span>
-
-            <button
-              type="button"
-              onClick={() => handleNavigate(currentIndex + 1)}
-              disabled={
-                currentIndex === activities.length - 1 ||
-                isSaving ||
-                isSubmitting
-              }
-              className="flex items-center gap-0.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            >
-              Next
-              <svg
-                className="h-3 w-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
+            </div>
           </div>
+        )}
 
-          {/* Right side: Submit (or Exit Preview in preview mode) */}
-          {previewMode ? (
-            <button
-              type="button"
-              onClick={onExit}
-              className="flex items-center gap-1.5 rounded-md bg-gray-600 px-3 py-1 text-xs font-semibold text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600"
-            >
-              <LogOut className="h-3 w-3" />
-              Exit Preview
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSubmitClick}
-              disabled={isSubmitting}
-              className="rounded-md bg-teal-600 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
-            >
-              {isSubmitting ? "Submitting..." : "Submit"}
-            </button>
-          )}
+        {/* Main footer controls */}
+        <div className="px-3 py-1.5">
+          <div className="mx-auto flex max-w-7xl items-center justify-between">
+            {/* Left side: Reset button + Show Answers toggle in preview mode */}
+            <div className="flex items-center gap-2">
+              {/* Reset button */}
+              <button
+                type="button"
+                onClick={() => setShowResetDialog(true)}
+                disabled={isSaving || isSubmitting}
+                className="flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reset
+              </button>
+              {/* Show Answers toggle in preview mode */}
+              {previewMode && (
+                <button
+                  type="button"
+                  onClick={() => setShowAnswers(!showAnswers)}
+                  className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                    showAnswers
+                      ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
+                      : "border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  {showAnswers ? (
+                    <>
+                      <EyeOff className="h-3 w-3" />
+                      Hide Answers
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3 w-3" />
+                      Show Answers
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Center: Activity navigation - compact */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleNavigate(currentIndex - 1)}
+                disabled={currentIndex === 0 || isSaving || isSubmitting}
+                className="flex items-center gap-0.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                <svg
+                  className="h-3 w-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                Prev
+              </button>
+
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {currentIndex + 1} / {activities.length}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => handleNavigate(currentIndex + 1)}
+                disabled={
+                  currentIndex === activities.length - 1 ||
+                  isSaving ||
+                  isSubmitting
+                }
+                className="flex items-center gap-0.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Next
+                <svg
+                  className="h-3 w-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Right side: Save & Exit + Submit (or Exit Preview in preview mode) */}
+            {previewMode ? (
+              <button
+                type="button"
+                onClick={onExit}
+                className="flex items-center gap-1.5 rounded-md bg-gray-600 px-3 py-1 text-xs font-semibold text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600"
+              >
+                <LogOut className="h-3 w-3" />
+                Exit Preview
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveAndExit}
+                  disabled={isSaving || isSubmitting}
+                  className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  {isSaving ? "Saving..." : "Save & Exit"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmitClick}
+                  disabled={isSubmitting}
+                  className="rounded-md bg-teal-600 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </footer>
 
@@ -707,6 +898,65 @@ export function MultiActivityPlayer({
         activityStates={activityStates}
         activities={activities}
       />
+
+      {/* Reset confirmation dialog */}
+      {showResetDialog && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900">
+                <RotateCcw className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Reset Activity?
+              </h3>
+            </div>
+            <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
+              This will clear all your answers for the current activity. Are you sure you want to start over?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowResetDialog(false)}
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setResetTrigger((prev) => prev + 1)
+                  setShowResetDialog(false)
+                  // Also reset the activity state in the parent
+                  if (currentActivity) {
+                    setActivityStates((prev) => {
+                      const newStates = new Map(prev)
+                      const state = newStates.get(currentActivity.id)
+                      if (state) {
+                        newStates.set(currentActivity.id, {
+                          ...state,
+                          status: "in_progress",
+                          responseData: null,
+                          score: null,
+                          isDirty: true,
+                        })
+                      }
+                      return newStates
+                    })
+                  }
+                  toast({
+                    title: "Activity Reset",
+                    description: "Your answers have been cleared.",
+                  })
+                }}
+                className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

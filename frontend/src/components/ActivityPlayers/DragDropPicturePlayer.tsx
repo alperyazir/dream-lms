@@ -135,6 +135,7 @@ export function DragDropPicturePlayer({
 
   useEffect(() => {
     const img = imageRef.current
+    const container = containerRef.current
     if (img) {
       if (img.complete) {
         updateImageScale()
@@ -143,11 +144,24 @@ export function DragDropPicturePlayer({
       }
     }
 
+    // Use ResizeObserver for container size changes (e.g., sidebar open/close)
+    let resizeObserver: ResizeObserver | null = null
+    if (container) {
+      resizeObserver = new ResizeObserver(() => {
+        // Use requestAnimationFrame to debounce
+        requestAnimationFrame(updateImageScale)
+      })
+      resizeObserver.observe(container)
+    }
+
     window.addEventListener("resize", updateImageScale)
     return () => {
       window.removeEventListener("resize", updateImageScale)
       if (img) {
         img.removeEventListener("load", updateImageScale)
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect()
       }
     }
   }, [updateImageScale])
@@ -258,10 +272,6 @@ export function DragDropPicturePlayer({
     return answer?.text || null
   }
 
-  // Calculate completion
-  const completionCount = answers.size
-  const totalCount = activity.answer.length
-
   // Keyboard navigation for word bank
   const handleWordKeyDown = (e: React.KeyboardEvent, word: string) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -304,49 +314,10 @@ export function DragDropPicturePlayer({
     wordRefs.current = wordRefs.current.slice(0, activity.words.length)
   }, [activity.answer.length, activity.words.length])
 
-  // Handle reset - clear all selections
-  const handleReset = () => {
-    setAnswers(new Map())
-    onAnswersChange(new Map())
-    setSelectedWord(null)
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col p-2">
-      {/* Word Bank - Compact header */}
+      {/* Word Bank - just words, no header or counter */}
       <div className="mb-2 shrink-0">
-        <div className="mb-1 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Word Bank
-            </h3>
-            <span className="text-xs text-gray-500">
-              {completionCount} / {totalCount}
-            </span>
-          </div>
-          {!showResults && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            >
-              <svg
-                className="h-3 w-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Reset
-            </button>
-          )}
-        </div>
         <div className="flex min-h-[48px] flex-wrap justify-center gap-1.5">
           {activity.words.map((word, index) => (
             <button

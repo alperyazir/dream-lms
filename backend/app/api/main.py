@@ -6,6 +6,7 @@ from app.api.routes import (
     avatars,
     book_assets,
     book_assignments,
+    book_media,
     books,
     classes,
     dev,
@@ -36,6 +37,7 @@ api_router.include_router(students.router)
 api_router.include_router(classes.router)
 api_router.include_router(books.router, prefix="/books", tags=["books"])
 api_router.include_router(book_assets.router)
+api_router.include_router(book_media.router)
 api_router.include_router(book_assignments.router)
 api_router.include_router(assignments.router)
 api_router.include_router(reports.router)

@@ -869,18 +869,20 @@ function TeacherCalendarPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Assignment?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                Are you sure you want to delete{" "}
-                <span className="font-semibold text-foreground">
-                  &quot;{assignmentToDelete?.name}&quot;
-                </span>
-                ?
-              </p>
-              <p className="text-red-600 dark:text-red-400 font-medium">
-                This action cannot be undone. Students will lose access to this
-                assignment and all their progress.
-              </p>
+            <AlertDialogDescription asChild>
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-foreground">
+                    &quot;{assignmentToDelete?.name}&quot;
+                  </span>
+                  ?
+                </p>
+                <p className="text-red-600 dark:text-red-400 font-medium">
+                  This action cannot be undone. Students will lose access to this
+                  assignment and all their progress.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

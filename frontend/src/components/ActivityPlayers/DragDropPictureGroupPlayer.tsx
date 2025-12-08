@@ -139,6 +139,7 @@ export function DragDropPictureGroupPlayer({
 
   useEffect(() => {
     const img = imageRef.current
+    const container = containerRef.current
     if (img) {
       if (img.complete) {
         updateImageScale()
@@ -147,11 +148,23 @@ export function DragDropPictureGroupPlayer({
       }
     }
 
+    // Use ResizeObserver for container size changes (e.g., sidebar open/close)
+    let resizeObserver: ResizeObserver | null = null
+    if (container) {
+      resizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(updateImageScale)
+      })
+      resizeObserver.observe(container)
+    }
+
     window.addEventListener("resize", updateImageScale)
     return () => {
       window.removeEventListener("resize", updateImageScale)
       if (img) {
         img.removeEventListener("load", updateImageScale)
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect()
       }
     }
   }, [updateImageScale])
@@ -310,44 +323,10 @@ export function DragDropPictureGroupPlayer({
     wordRefs.current = wordRefs.current.slice(0, activity.words.length)
   }, [activity.answer.length, activity.words.length])
 
-  // Handle reset - clear all selections
-  const handleReset = () => {
-    setAnswers(new Map())
-    onAnswersChange(new Map())
-    setSelectedWord(null)
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col p-4">
-      {/* Word Bank - Fixed min-height to prevent layout shifts */}
+      {/* Word Bank - no header, just words */}
       <div className="mb-4 shrink-0">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Word Bank - Drag to Categories
-          </h3>
-          {!showResults && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Reset
-            </button>
-          )}
-        </div>
         <div className="flex min-h-[60px] flex-wrap justify-center gap-2">
           {activity.words.map((word, index) => (
             <button

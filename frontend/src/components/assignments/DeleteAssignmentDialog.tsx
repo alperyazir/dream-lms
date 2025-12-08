@@ -69,19 +69,21 @@ export function DeleteAssignmentDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Assignment?</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <p>
-              Are you sure you want to delete{" "}
-              <span className="font-semibold text-foreground">
-                &quot;{assignment.name}&quot;
-              </span>
-              ?
-            </p>
-            <p className="text-red-600 dark:text-red-400 font-medium">
-              This action cannot be undone. {assignment.total_students} student
-              {assignment.total_students !== 1 ? "s" : ""} will lose access to
-              this assignment.
-            </p>
+          <AlertDialogDescription asChild>
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-foreground">
+                  &quot;{assignment.name}&quot;
+                </span>
+                ?
+              </p>
+              <p className="text-red-600 dark:text-red-400 font-medium">
+                This action cannot be undone. {assignment.total_students} student
+                {assignment.total_students !== 1 ? "s" : ""} will lose access to
+                this assignment.
+              </p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

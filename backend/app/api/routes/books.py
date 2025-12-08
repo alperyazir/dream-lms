@@ -30,6 +30,7 @@ from app.schemas.book import (
     BookPagesResponse,
     BookStructureResponse,
     BookSyncResponse,
+    BookVideosResponse,
     ModuleInfo,
     ModulePages,
     ModuleWithActivities,
@@ -37,9 +38,12 @@ from app.schemas.book import (
     PageDetail,
     PageInfo,
     PageWithActivities,
+    VideoInfo,
 )
 from app.services import book_assignment_service
 from app.services.book_service import sync_all_books
+from app.services.config_parser import parse_video_sections
+from app.services.dream_storage_client import get_dream_storage_client
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -1064,4 +1068,138 @@ async def get_book_structure(
         modules=modules,
         total_pages=total_pages,
         total_activities=total_activities
+    )
+
+
+# --- Story 10.3: Video Attachment to Assignments ---
+
+
+@router.get(
+    "/{book_id}/videos",
+    response_model=BookVideosResponse,
+    summary="List available videos for a book",
+    description="Returns available videos defined in the book's config.json."
+)
+async def list_book_videos(
+    *,
+    session: AsyncSessionDep,
+    book_id: uuid.UUID,
+    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
+) -> BookVideosResponse:
+    """
+    List available videos for a book from its config.json.
+
+    Story 10.3: Video Attachment to Assignments
+
+    Videos are defined as sections with type="video" in the book's config.json.
+    Each video section has a title and video_path.
+
+    Access control:
+    - Admin: Can see all book videos
+    - Publisher: Must have access through BookAccess
+    - Teacher: Must have access through BookAssignment (Story 9.4)
+    """
+    # Verify access and get book based on role
+    if current_user.role == UserRole.teacher:
+        book = await _verify_teacher_book_access(session, current_user, book_id)
+    elif current_user.role == UserRole.publisher:
+        publisher_id = await _get_publisher_id_for_user(session, current_user)
+        book = await _verify_book_access(session, book_id, publisher_id)
+    else:
+        # Admin - verify book exists and is not archived
+        result = await session.execute(
+            select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
+        )
+        book = result.scalar_one_or_none()
+        if not book:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Book not found"
+            )
+
+    # Get Dream Storage client and fetch config.json
+    dcs_client = await get_dream_storage_client()
+    try:
+        config_data = await dcs_client.get_book_config(
+            publisher=book.publisher_name,
+            book_name=book.book_name
+        )
+    except Exception as e:
+        logger.error(f"Failed to fetch config.json for book {book_id}: {e}")
+        # Return empty list on error rather than failing
+        return BookVideosResponse(book_id=book_id, videos=[], total_count=0)
+
+    # Parse video sections from config
+    video_sections = parse_video_sections(config_data)
+
+    # Get all files in the book to check for subtitles
+    try:
+        all_files = await dcs_client.list_book_contents(
+            publisher=book.publisher_name,
+            book_name=book.book_name
+        )
+    except Exception as e:
+        logger.warning(f"Could not list book contents for subtitle detection: {e}")
+        all_files = []
+
+    # Build response - extract video info from parsed sections
+    # Use a dict to deduplicate videos by path (same video might appear on multiple pages)
+    unique_videos: dict[str, VideoInfo] = {}
+
+    for video_section in video_sections:
+        original_path = video_section.video_path
+        video_path = original_path
+
+        # Normalize path:
+        # Config has paths like "./books/SwitchtoCLIL/video/1.mp4"
+        # We need just "video/1.mp4" for the media endpoint
+        # Remove leading "./" if present
+        if video_path.startswith("./"):
+            video_path = video_path[2:]
+
+        # Remove "books/{book_name}/" prefix if present
+        # Path format: "books/{publisher_or_book}/video/X.mp4"
+        parts = video_path.split("/")
+        if len(parts) >= 3 and parts[0] == "books":
+            # Skip "books" and the book folder name, keep the rest
+            video_path = "/".join(parts[2:])
+
+        logger.info(f"Video path normalization: '{original_path}' -> '{video_path}'")
+
+        if video_path not in unique_videos:
+            # Extract filename from path
+            video_name = video_path.split("/")[-1] if "/" in video_path else video_path
+
+            # Use title from config if available, otherwise use filename
+            display_name = video_section.title or video_name
+
+            # Check if subtitle file exists (.srt with same base name)
+            srt_path = video_path.rsplit(".", 1)[0] + ".srt"
+            has_subtitles = srt_path in all_files
+
+            # Fetch actual file size from DCS
+            try:
+                size_bytes = await dcs_client.get_asset_size(
+                    publisher=book.publisher_name,
+                    book_name=book.book_name,
+                    asset_path=video_path
+                )
+            except Exception as e:
+                logger.warning(f"Could not get size for {video_path}: {e}")
+                size_bytes = 0
+
+            unique_videos[video_path] = VideoInfo(
+                path=video_path,
+                name=display_name,
+                size_bytes=size_bytes,
+                has_subtitles=has_subtitles
+            )
+
+    # Filter out videos with 0 bytes (files that don't exist in DCS)
+    videos = [v for v in unique_videos.values() if v.size_bytes > 0]
+
+    return BookVideosResponse(
+        book_id=book_id,
+        videos=videos,
+        total_count=len(videos)
     )
