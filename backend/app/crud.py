@@ -153,7 +153,7 @@ def create_publisher(
     db_user = User.model_validate(
         user_create, update={
             "hashed_password": get_password_hash(password),
-            "initial_password": password  # Store for admin reference
+            "must_change_password": True  # New users must change password on first login
         }
     )
     session.add(db_user)
@@ -216,7 +216,7 @@ def create_teacher(
     db_user = User.model_validate(
         user_create, update={
             "hashed_password": get_password_hash(password),
-            "initial_password": password  # Store for admin reference
+            "must_change_password": True  # New users must change password on first login
         }
     )
     session.add(db_user)
@@ -281,7 +281,7 @@ def create_student(
     db_user = User.model_validate(
         user_create, update={
             "hashed_password": get_password_hash(password),
-            "initial_password": password  # Store for admin reference
+            "must_change_password": True  # New users must change password on first login
         }
     )
     session.add(db_user)

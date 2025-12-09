@@ -13,6 +13,8 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
+    ChangeInitialPasswordRequest,
+    ChangePasswordResponse,
     Message,
     UpdatePassword,
     User,
@@ -101,12 +103,8 @@ def update_password_me(
 ) -> Any:
     """
     Update own password.
+    Also clears must_change_password flag if set.
     """
-    if current_user.must_change_password:
-        raise HTTPException(
-            status_code=400,
-            detail="Please use the first-time password change endpoint"
-        )
     if not verify_password(body.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect password")
     if body.current_password == body.new_password:
@@ -115,9 +113,47 @@ def update_password_me(
         )
     hashed_password = get_password_hash(body.new_password)
     current_user.hashed_password = hashed_password
+    current_user.must_change_password = False
     session.add(current_user)
     session.commit()
     return Message(message="Password updated successfully")
+
+
+@router.post("/me/change-initial-password", response_model=ChangePasswordResponse)
+def change_initial_password(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    body: ChangeInitialPasswordRequest,
+) -> ChangePasswordResponse:
+    """
+    Change password for first login (when must_change_password is true).
+    Also works as a general password change.
+
+    - Validates current password
+    - Updates to new password
+    - Clears must_change_password flag
+    """
+    # Verify current password
+    if not verify_password(body.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    # Validate new password is different
+    if body.current_password == body.new_password:
+        raise HTTPException(
+            status_code=400, detail="New password must be different from current password"
+        )
+
+    # Update password and clear must_change_password flag
+    current_user.hashed_password = get_password_hash(body.new_password)
+    current_user.must_change_password = False
+    session.add(current_user)
+    session.commit()
+
+    return ChangePasswordResponse(
+        success=True,
+        message="Password changed successfully"
+    )
 
 
 @router.get("/me", response_model=UserPublic)

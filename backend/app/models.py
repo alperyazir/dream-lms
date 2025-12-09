@@ -121,11 +121,23 @@ class UpdatePassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=40)
 
 
+class ChangeInitialPasswordRequest(SQLModel):
+    """Request body for changing initial/temporary password"""
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=40)
+
+
+class ChangePasswordResponse(SQLModel):
+    """Response for password change"""
+    success: bool
+    message: str
+
+
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    initial_password: str | None = Field(default=None, max_length=255)  # Stored for admin reference
+    must_change_password: bool = Field(default=False)  # True for new users requiring password change
 
     # Avatar fields
     avatar_url: str | None = Field(default=None, max_length=500)  # URL to avatar image
@@ -140,7 +152,7 @@ class User(UserBase, table=True):
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
-    initial_password: str | None = None  # Only visible to admins
+    must_change_password: bool = False
     avatar_url: str | None = None
     avatar_type: AvatarType | None = None
 
@@ -159,6 +171,7 @@ class Message(SQLModel):
 class Token(SQLModel):
     access_token: str
     token_type: str = "bearer"
+    must_change_password: bool = False
 
 
 # Contents of JWT token
@@ -223,7 +236,6 @@ class PublisherPublic(PublisherBase):
     user_email: str
     user_username: str
     user_full_name: str
-    user_initial_password: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -335,7 +347,6 @@ class TeacherPublic(TeacherBase):
     user_email: str
     user_username: str
     user_full_name: str
-    user_initial_password: str | None = None
     school_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
@@ -396,7 +407,6 @@ class StudentPublic(StudentBase):
     user_email: str | None = None
     user_username: str
     user_full_name: str
-    user_initial_password: str | None = None
     created_by_teacher_id: uuid.UUID | None = None
     created_by_teacher_name: str | None = None
     created_at: datetime
@@ -414,18 +424,27 @@ class StudentCreateAPI(SQLModel):
 
 # Response for user creation endpoints with temporary password
 class UserCreationResponse(SQLModel):
-    """Response schema for role-specific user creation endpoints"""
+    """Response schema for role-specific user creation endpoints.
+
+    Security: temporary_password is only included when user has no email.
+    When user has email, password_emailed=True and temporary_password is None.
+    """
     user: UserPublic
-    initial_password: str
     role_record: PublisherPublic | TeacherPublic | StudentPublic
+    temporary_password: str | None = None  # Only set if user has no email
+    password_emailed: bool = False  # True if email was sent
+    message: str = ""  # Status message
 
 
 class PasswordResetResponse(SQLModel):
-    """Response schema for password reset endpoint"""
-    user_id: uuid.UUID
-    email: str
-    new_password: str
-    message: str = "Password reset successfully"
+    """Response schema for password reset endpoint - secure version (Story 11.2)
+
+    Never contains the actual password unless user has no email address.
+    """
+    success: bool
+    message: str
+    password_emailed: bool  # True if password was sent via email
+    temporary_password: str | None = None  # Only set if user has NO email (fallback)
 
 
 # Dashboard statistics

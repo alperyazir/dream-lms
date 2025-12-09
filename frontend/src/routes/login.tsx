@@ -4,6 +4,7 @@ import {
   Link as RouterLink,
   redirect,
 } from "@tanstack/react-router"
+import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import type { Body_login_login_access_token as AccessToken } from "@/client"
 import { OpenAPI } from "@/client"
@@ -17,11 +18,18 @@ import Logo from "/assets/images/dreamedtech_with_name.svg"
 import { passwordRules } from "../utils"
 
 // Type for quick login users response
+interface QuickLoginUser {
+  username: string
+  email: string
+  password: string
+  must_change_password: boolean
+}
+
 interface QuickLoginUsers {
-  admin: Array<{ username: string; email: string; password: string }>
-  publisher: Array<{ username: string; email: string; password: string }>
-  teacher: Array<{ username: string; email: string; password: string }>
-  student: Array<{ username: string; email: string; password: string }>
+  admin: QuickLoginUser[]
+  publisher: QuickLoginUser[]
+  teacher: QuickLoginUser[]
+  student: QuickLoginUser[]
 }
 
 export const Route = createFileRoute("/login")({
@@ -36,11 +44,12 @@ export const Route = createFileRoute("/login")({
 })
 
 function Login() {
-  const { loginMutation, resetError } = useAuth()
+  const { loginMutation } = useAuth()
+  const [loginError, setLoginError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = useForm<AccessToken>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -76,22 +85,24 @@ function Login() {
   const onSubmit: SubmitHandler<AccessToken> = async (data) => {
     if (isSubmitting) return
 
-    resetError()
+    setLoginError(null)
 
     try {
       await loginMutation.mutateAsync(data)
-    } catch {
-      // error is handled by useAuth hook
+    } catch (err: unknown) {
+      const error = err as { body?: { detail?: string } }
+      setLoginError(error.body?.detail || "Invalid credentials")
     }
   }
 
   // Test login helper - now accepts username
   const testLogin = async (username: string, password: string) => {
-    resetError()
+    setLoginError(null)
     try {
       await loginMutation.mutateAsync({ username, password })
-    } catch {
-      // error is handled by useAuth hook
+    } catch (err: unknown) {
+      const error = err as { body?: { detail?: string } }
+      setLoginError(error.body?.detail || "Invalid credentials")
     }
   }
 
@@ -122,18 +133,32 @@ function Login() {
         {...register("password", passwordRules())}
         placeholder="Password"
       />
+      {errors.password && (
+        <p className="text-sm text-destructive -mt-2">{errors.password.message}</p>
+      )}
+
+      {/* Inline error message */}
+      {loginError && (
+        <p className="text-sm text-destructive text-center py-2 px-3 bg-destructive/10 rounded-md">
+          {loginError}
+        </p>
+      )}
+
       <RouterLink to="/recover-password" className="main-link">
         Forgot Password?
       </RouterLink>
-      <Button variant="default" type="submit" disabled={isSubmitting}>
-        Log In
+      <Button variant="default" type="submit" disabled={isSubmitting || loginMutation.isPending}>
+        {loginMutation.isPending ? "Logging in..." : "Log In"}
       </Button>
 
       {/* Test Login Buttons - Only in Development */}
       {import.meta.env.DEV && (
         <div className="mt-6 pt-6 border-t border-gray-300 dark:border-gray-700">
-          <p className="text-xs text-center text-muted-foreground mb-3 font-semibold">
+          <p className="text-xs text-center text-muted-foreground mb-1 font-semibold">
             🧪 Quick Test Login
+          </p>
+          <p className="text-[10px] text-center text-muted-foreground mb-3">
+            <span className="text-orange-500">🔑</span> = requires password change after login
           </p>
           {isError && (
             <p className="text-xs text-center text-red-500">
@@ -186,10 +211,13 @@ function Login() {
                             testLogin(user.username, user.password)
                           }
                           disabled={isSubmitting}
-                          className="text-xs h-7"
-                          title={user.email}
+                          className={`text-xs h-7 ${user.must_change_password ? "border-orange-400 dark:border-orange-600" : ""}`}
+                          title={`${user.email}${user.must_change_password ? " (requires password change)" : ""}`}
                         >
                           {user.username}
+                          {user.must_change_password && (
+                            <span className="ml-1 text-orange-500">🔑</span>
+                          )}
                         </Button>
                       ))}
                     </div>

@@ -78,7 +78,8 @@ def test_teacher_bulk_import_students_success(
     assert data["created_count"] == 2
     assert data["error_count"] == 0
     assert len(data["credentials"]) == 2
-    assert "initial_password" in data["credentials"][0]
+    # Bulk import returns temp_password (secure password flow)
+    assert "temp_password" in data["credentials"][0]
     assert "email" in data["credentials"][0]
 
     # Verify students were created in database

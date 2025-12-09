@@ -32,20 +32,25 @@ def test_create_publisher_as_admin(
     assert response.status_code == 201
     data = response.json()
 
-    # Verify response structure
+    # Verify response structure (new secure password flow)
     assert "user" in data
-    assert "initial_password" in data
     assert "role_record" in data
+    assert "temporary_password" in data
+    assert "password_emailed" in data
+    assert "message" in data
 
     # Verify user data
     assert data["user"]["email"] == publisher_data["user_email"]
     assert data["user"]["full_name"] == publisher_data["full_name"]
     assert data["user"]["role"] == "publisher"
+    assert data["user"]["must_change_password"] is True  # New users must change password
 
-    # Verify initial password is present and properly formatted
-    initial_password = data["initial_password"]
-    assert len(initial_password) == 12
-    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', initial_password)
+    # In test mode, emails are disabled so password should be in response
+    assert data["password_emailed"] is False
+    temp_password = data["temporary_password"]
+    assert temp_password is not None
+    assert len(temp_password) == 12
+    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', temp_password)
 
     # Verify publisher record
     assert data["role_record"]["name"] == publisher_data["name"]
@@ -265,10 +270,10 @@ def test_list_schools_filtered_by_publisher(
         assert school["publisher_id"] == str(publisher1.id)
 
 
-def test_initial_password_format(
+def test_temporary_password_format(
     client: TestClient, admin_token: str
 ) -> None:
-    """Test generated temporary password meets requirements"""
+    """Test generated temporary password meets requirements (secure password flow)"""
     publisher_data = {
         "name": "Password Test Publisher",
         "contact_email": "pwtest@example.com",
@@ -286,12 +291,19 @@ def test_initial_password_format(
     assert response.status_code == 201
     data = response.json()
 
-    initial_password = data["initial_password"]
+    # Verify new secure password response structure
+    assert "temporary_password" in data
+    assert "password_emailed" in data
+    assert "message" in data
+    assert data["user"]["must_change_password"] is True
 
-    # Verify password meets requirements
-    assert len(initial_password) == 12, "Password should be 12 characters"
-    assert any(c.isupper() for c in initial_password), "Password should contain uppercase"
-    assert any(c.islower() for c in initial_password), "Password should contain lowercase"
+    temp_password = data["temporary_password"]
+
+    # In test mode, emails are disabled so password should be in response
+    assert temp_password is not None
+    assert len(temp_password) == 12, "Password should be 12 characters"
+    assert any(c.isupper() for c in temp_password), "Password should contain uppercase"
+    assert any(c.islower() for c in temp_password), "Password should contain lowercase"
     # Note: digits and special characters check is probabilistic but should pass most times
     # Given the alphabet includes both, at least one should be present in 12 chars
 

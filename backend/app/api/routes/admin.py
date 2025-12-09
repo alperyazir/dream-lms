@@ -13,6 +13,8 @@ from app.core.security import get_password_hash
 from app.models import (
     BulkImportErrorDetail,
     BulkImportResponse,
+    Class,
+    ClassStudent,
     DashboardStats,
     NotificationType,
     PasswordResetResponse,
@@ -51,9 +53,12 @@ from app.schemas.benchmarks import (
     BenchmarkSettingsUpdate,
 )
 from app.utils import (
+    generate_new_account_email,
+    generate_password_reset_by_admin_email,
     generate_temp_password,
     generate_username,
     parse_excel_file,
+    send_email,
     validate_excel_headers,
     validate_file_size,
 )
@@ -104,7 +109,7 @@ def create_publisher(
         )
 
     # Generate secure temporary password
-    initial_password = generate_temp_password()
+    temp_password = generate_temp_password()
 
     # Check if there's an existing publisher with the same name to copy logo
     existing_publisher = session.exec(
@@ -125,10 +130,33 @@ def create_publisher(
         session=session,
         email=publisher_in.user_email,
         username=publisher_in.username,
-        password=initial_password,
+        password=temp_password,
         full_name=publisher_in.full_name,
         publisher_create=publisher_create
     )
+
+    # Handle password delivery based on email availability
+    password_emailed = False
+    temp_password_for_response = None
+
+    if user.email and settings.emails_enabled:
+        # Send password via email - secure path
+        email_data = generate_new_account_email(
+            email_to=user.email,
+            username=user.username,
+            password=temp_password
+        )
+        send_email(
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content
+        )
+        password_emailed = True
+        message = "Password sent via email"
+    else:
+        # No email or emails disabled - return password once for manual communication
+        temp_password_for_response = temp_password
+        message = "Please share the temporary password securely with the user"
 
     # Build publisher response with user information
     publisher_data = PublisherPublic(
@@ -140,15 +168,16 @@ def create_publisher(
         user_email=user.email,
         user_username=user.username,
         user_full_name=user.full_name or "",
-        user_initial_password=user.initial_password,
         created_at=publisher.created_at,
         updated_at=publisher.updated_at
     )
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        initial_password=initial_password,
-        role_record=publisher_data
+        role_record=publisher_data,
+        temporary_password=temp_password_for_response,
+        password_emailed=password_emailed,
+        message=message
     )
 
 
@@ -229,7 +258,6 @@ def list_publishers(
             user_email=user.email if user else "",
             user_username=user.username if user else "",
             user_full_name=(user.full_name or "") if user else "",
-            user_initial_password=user.initial_password if user else None,
             created_at=p.created_at,
             updated_at=p.updated_at
         )
@@ -343,7 +371,6 @@ def update_publisher(
         user_email=user.email,
         user_username=user.username,
         user_full_name=user.full_name or "",
-        user_initial_password=user.initial_password,
         created_at=publisher.created_at,
         updated_at=publisher.updated_at,
         logo_url=publisher.logo_url,
@@ -706,7 +733,7 @@ def create_teacher(
             )
 
     # Generate secure temporary password
-    initial_password = generate_temp_password()
+    temp_password = generate_temp_password()
 
     # Create Teacher record data
     teacher_create = TeacherCreate(
@@ -720,10 +747,33 @@ def create_teacher(
         session=session,
         email=teacher_in.user_email,
         username=teacher_in.username,
-        password=initial_password,
+        password=temp_password,
         full_name=teacher_in.full_name,
         teacher_create=teacher_create
     )
+
+    # Handle password delivery based on email availability
+    password_emailed = False
+    temp_password_for_response = None
+
+    if user.email and settings.emails_enabled:
+        # Send password via email - secure path
+        email_data = generate_new_account_email(
+            email_to=user.email,
+            username=user.username,
+            password=temp_password
+        )
+        send_email(
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content
+        )
+        password_emailed = True
+        message = "Password sent via email"
+    else:
+        # No email or emails disabled - return password once for manual communication
+        temp_password_for_response = temp_password
+        message = "Please share the temporary password securely with the user"
 
     # Build teacher response with user information
     teacher_data = TeacherPublic(
@@ -733,7 +783,6 @@ def create_teacher(
         user_email=user.email,
         user_username=user.username,
         user_full_name=user.full_name or "",
-        user_initial_password=user.initial_password,
         school_id=teacher.school_id,
         created_at=teacher.created_at,
         updated_at=teacher.updated_at
@@ -741,8 +790,10 @@ def create_teacher(
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        initial_password=initial_password,
-        role_record=teacher_data
+        role_record=teacher_data,
+        temporary_password=temp_password_for_response,
+        password_emailed=password_emailed,
+        message=message
     )
 
 
@@ -786,7 +837,6 @@ def list_teachers(
             user_email=user.email if user else "",
             user_username=user.username if user else "",
             user_full_name=(user.full_name or "") if user else "",
-            user_initial_password=user.initial_password if user else None,
             school_id=t.school_id,
             created_at=t.created_at,
             updated_at=t.updated_at
@@ -909,7 +959,6 @@ def update_teacher(
         user_email=user.email,
         user_username=user.username,
         user_full_name=user.full_name or "",
-        user_initial_password=user.initial_password,
         school_id=teacher.school_id,
         created_at=teacher.created_at,
         updated_at=teacher.updated_at
@@ -999,7 +1048,7 @@ def create_student(
         )
 
     # Generate secure temporary password
-    initial_password = generate_temp_password()
+    temp_password = generate_temp_password()
 
     # Create Student record data
     student_create = StudentCreate(
@@ -1013,10 +1062,33 @@ def create_student(
         session=session,
         email=student_in.user_email,
         username=student_in.username,
-        password=initial_password,
+        password=temp_password,
         full_name=student_in.full_name,
         student_create=student_create
     )
+
+    # Handle password delivery based on email availability
+    password_emailed = False
+    temp_password_for_response = None
+
+    if user.email and settings.emails_enabled:
+        # Send password via email - secure path
+        email_data = generate_new_account_email(
+            email_to=user.email,
+            username=user.username,
+            password=temp_password
+        )
+        send_email(
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content
+        )
+        password_emailed = True
+        message = "Password sent via email"
+    else:
+        # No email or emails disabled - return password once for manual communication
+        temp_password_for_response = temp_password
+        message = "Please share the temporary password securely with the user"
 
     # Build student response with user information
     student_data = StudentPublic(
@@ -1027,15 +1099,16 @@ def create_student(
         user_email=user.email,
         user_username=user.username,
         user_full_name=user.full_name or "",
-        user_initial_password=user.initial_password,
         created_at=student.created_at,
         updated_at=student.updated_at
     )
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        initial_password=initial_password,
-        role_record=student_data
+        role_record=student_data,
+        temporary_password=temp_password_for_response,
+        password_emailed=password_emailed,
+        message=message
     )
 
 
@@ -1084,7 +1157,6 @@ def list_students(
             user_email=user.email if user else "",
             user_username=user.username if user else "",
             user_full_name=(user.full_name or "") if user else "",
-            user_initial_password=user.initial_password if user else None,
             created_by_teacher_id=s.created_by_teacher_id,
             created_by_teacher_name=teacher_name,
             created_at=s.created_at,
@@ -1200,7 +1272,6 @@ def update_student(
         user_email=user.email,
         user_username=user.username,
         user_full_name=user.full_name or "",
-        user_initial_password=user.initial_password,
         created_at=student.created_at,
         updated_at=student.updated_at
     )
@@ -1873,29 +1944,105 @@ def admin_update_user(
 # ============================================================================
 
 
+async def _is_user_under_publisher(
+    session: AsyncSessionDep,
+    publisher_user: User,
+    target_user: User
+) -> bool:
+    """
+    Check if target user is a teacher or student under the publisher's schools.
+
+    [Source: Story 11.2 - Publisher permission helper]
+
+    Args:
+        session: Async database session
+        publisher_user: The publisher's User record
+        target_user: The user being checked
+
+    Returns:
+        True if target_user is a teacher/student in one of the publisher's schools
+    """
+    # Get the publisher record
+    result = await session.execute(
+        select(Publisher).where(Publisher.user_id == publisher_user.id)
+    )
+    publisher = result.scalar_one_or_none()
+
+    if not publisher:
+        return False
+
+    if target_user.role == UserRole.teacher:
+        # Check if teacher is in any of publisher's schools
+        teacher_result = await session.execute(
+            select(Teacher).where(Teacher.user_id == target_user.id)
+        )
+        teacher = teacher_result.scalar_one_or_none()
+        if teacher:
+            # Get teacher's school
+            school = await session.get(School, teacher.school_id)
+            if school and school.publisher_id == publisher.id:
+                return True
+
+    elif target_user.role == UserRole.student:
+        # Check if student is enrolled in any class in publisher's schools
+        # Student → ClassStudent → Class → School → Publisher
+        student_result = await session.execute(
+            select(Student).where(Student.user_id == target_user.id)
+        )
+        student = student_result.scalar_one_or_none()
+        if student:
+            # Get all class enrollments for this student
+            enrollments_result = await session.execute(
+                select(ClassStudent).where(ClassStudent.student_id == student.id)
+            )
+            enrollments = enrollments_result.scalars().all()
+
+            for enrollment in enrollments:
+                # Get the class
+                class_obj = await session.get(Class, enrollment.class_id)
+                if class_obj:
+                    # Get the school
+                    school = await session.get(School, class_obj.school_id)
+                    if school and school.publisher_id == publisher.id:
+                        return True
+
+    return False
+
+
 @router.post(
     "/users/{user_id}/reset-password",
     response_model=PasswordResetResponse,
     summary="Reset user password",
-    description="Reset a user's password to a new auto-generated password. Admin only.",
+    description=(
+        "Reset a user's password. Admin can reset any user. "
+        "Publisher can reset their teachers/students only."
+    ),
 )
 async def reset_user_password(
     *,
     session: AsyncSessionDep,
     user_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = require_role(UserRole.admin, UserRole.publisher)
 ) -> PasswordResetResponse:
     """
     Reset a user's password.
 
-    [Source: Story 9.2 AC: 1, 2, 3, 4, 5, 6]
+    [Source: Story 11.2 - Secure password reset]
 
     - **user_id**: ID of the user whose password to reset
 
-    Generates a secure random password (12+ chars with mixed case, numbers, symbols).
-    Returns the new password for one-time display to the admin.
-    The password is stored hashed and cannot be retrieved later.
+    Generates a secure random password (12+ chars with mixed case, numbers,
+    symbols).
+
+    - If user has email and emails are enabled: sends password via email
+    - If user has no email or emails disabled: returns password once
+
+    Sets must_change_password = True so user must change password on next login.
     Creates a notification for the user that their password was reset.
+
+    **Permissions:**
+    - Admin: can reset any user's password (except other admins)
+    - Publisher: can only reset passwords for their own teachers/students
     """
     # Get the user
     result = await session.execute(select(User).where(User.id == user_id))
@@ -1913,13 +2060,29 @@ async def reset_user_password(
             detail="Cannot reset admin password via this endpoint"
         )
 
+    # Permission check based on current user's role
+    if current_user.role == UserRole.admin:
+        pass  # Admin can reset anyone (except other admins, already checked)
+    elif current_user.role == UserRole.publisher:
+        # Publisher can only reset their teachers/students
+        if not await _is_user_under_publisher(session, current_user, user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to reset this user's password"
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin or publisher can reset passwords"
+        )
+
     # Generate new secure password
     new_password = generate_temp_password(length=12)
 
     # Hash and update password
     user.hashed_password = get_password_hash(new_password)
-    # Update initial_password so quick login still works in dev mode
-    user.initial_password = new_password
+    # Force password change on next login
+    user.must_change_password = True
 
     session.add(user)
     await session.commit()
@@ -1927,24 +2090,54 @@ async def reset_user_password(
 
     # Log the password reset action
     logger.info(
-        f"Password reset for user {user.email} (ID: {user.id}) by admin {current_user.email}"
+        f"Password reset for user {user.username} (ID: {user.id}) "
+        f"by {current_user.role} {current_user.username}"
     )
 
-    # Create notification for user [AC: 6]
+    # Create notification for user
     await notification_service.create_notification(
         db=session,
         user_id=user.id,
         notification_type=NotificationType.password_reset,
         title="Password Reset",
-        message="Your password was reset by an administrator. Please change your password after logging in.",
+        message=(
+            "Your password was reset by an administrator. "
+            "Please change your password after logging in."
+        ),
         link="/settings",
     )
 
+    # Handle password delivery based on email availability
+    password_emailed = False
+    temp_password_for_response = None
+
+    if user.email and settings.emails_enabled:
+        # Send password via email - secure path (Story 11.2)
+        email_data = generate_password_reset_by_admin_email(
+            email_to=user.email,
+            username=user.username,
+            password=new_password
+        )
+        send_email(
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content
+        )
+        password_emailed = True
+        message = f"Password reset successfully. New password sent to {user.email}"
+    else:
+        # No email or emails disabled - return password for manual sharing
+        temp_password_for_response = new_password
+        message = (
+            "Password reset successfully. "
+            "Please share the temporary password securely with the user."
+        )
+
     return PasswordResetResponse(
-        user_id=user.id,
-        email=user.email,
-        new_password=new_password,
-        message="Password reset successfully. Please share this password securely with the user."
+        success=True,
+        message=message,
+        password_emailed=password_emailed,
+        temporary_password=temp_password_for_response
     )
 
 

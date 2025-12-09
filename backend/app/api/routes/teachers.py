@@ -35,11 +35,14 @@ from app.services.analytics_service import (
     get_insight_detail,
     get_teacher_insights,
 )
+from app.core.config import settings
 from app.services.bulk_import import validate_bulk_import
 from app.utils import (
+    generate_new_account_email,
     generate_temp_password,
     generate_username,
     parse_excel_file,
+    send_email,
     validate_excel_headers,
     validate_file_size,
 )
@@ -100,7 +103,7 @@ def create_student(
         )
 
     # Generate secure temporary password
-    initial_password = generate_temp_password()
+    temp_password = generate_temp_password()
 
     # Create Student record data
     student_create = StudentCreate(
@@ -114,11 +117,34 @@ def create_student(
         session=session,
         email=student_in.user_email,
         username=student_in.username,
-        password=initial_password,
+        password=temp_password,
         full_name=student_in.full_name,
         student_create=student_create,
         created_by_teacher_id=teacher.id
     )
+
+    # Handle password delivery based on email availability
+    password_emailed = False
+    temp_password_for_response = None
+
+    if user.email and settings.emails_enabled:
+        # Send password via email - secure path
+        email_data = generate_new_account_email(
+            email_to=user.email,
+            username=user.username,
+            password=temp_password
+        )
+        send_email(
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content
+        )
+        password_emailed = True
+        message = "Password sent via email"
+    else:
+        # No email or emails disabled - return password once for manual communication
+        temp_password_for_response = temp_password
+        message = "Please share the temporary password securely with the student"
 
     # Build student response with user information
     student_data = StudentPublic(
@@ -135,8 +161,10 @@ def create_student(
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        initial_password=initial_password,
-        role_record=student_data
+        role_record=student_data,
+        temporary_password=temp_password_for_response,
+        password_emailed=password_emailed,
+        message=message
     )
 
 
@@ -367,7 +395,6 @@ def list_my_students(
             user_email=user.email if user else "",
             user_username=user.username if user else "",
             user_full_name=user.full_name if user and user.full_name else "",
-            user_initial_password=user.initial_password if user else None,
             created_by_teacher_id=s.created_by_teacher_id,
             created_by_teacher_name=teacher_name,
             created_at=s.created_at,

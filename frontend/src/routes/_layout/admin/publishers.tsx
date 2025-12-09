@@ -6,8 +6,6 @@ import {
   ChevronsUpDown,
   Copy,
   Edit,
-  Eye,
-  EyeOff,
   ImagePlus,
   KeyRound,
   Mail,
@@ -93,7 +91,11 @@ function AdminPublishers() {
     userId: string
     userName: string
   } | null>(null)
-  const [newPassword, setNewPassword] = useState<string | null>(null)
+  const [resetResult, setResetResult] = useState<{
+    passwordEmailed: boolean
+    temporaryPassword: string | null
+    message: string
+  } | null>(null)
   const [passwordCopied, setPasswordCopied] = useState(false)
   const [publisherNameOpen, setPublisherNameOpen] = useState(false)
   const [newPublisher, setNewPublisher] = useState<PublisherCreateAPI>({
@@ -114,10 +116,6 @@ function AdminPublishers() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
-  // Track which passwords are revealed (Eye icon state)
-  const [revealedPasswords, setRevealedPasswords] = useState<
-    Record<string, boolean>
-  >({})
 
   // Fetch publishers from API
   const {
@@ -133,7 +131,7 @@ function AdminPublishers() {
   const createPublisherMutation = useMutation({
     mutationFn: (data: PublisherCreateAPI) =>
       AdminService.createPublisher({ requestBody: data }),
-    onSuccess: (_response) => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["publishers"] })
       setIsAddDialogOpen(false)
       setNewPublisher({
@@ -144,9 +142,19 @@ function AdminPublishers() {
         full_name: "",
       })
 
-      showSuccessToast(
-        "Publisher created successfully! Password visible in table.",
-      )
+      if (response.password_emailed) {
+        showSuccessToast("Publisher created. Password sent to their email.")
+      } else if (response.temporary_password) {
+        // Show one-time password dialog
+        setResetResult({
+          passwordEmailed: false,
+          temporaryPassword: response.temporary_password,
+          message: "Publisher created successfully",
+        })
+        setIsPasswordResultDialogOpen(true)
+      } else {
+        showSuccessToast("Publisher created successfully!")
+      }
     },
     onError: (error: any) => {
       showErrorToast(
@@ -192,11 +200,15 @@ function AdminPublishers() {
     },
   })
 
-  // Reset password mutation [Story 9.2]
+  // Reset password mutation [Story 11.4]
   const resetPasswordMutation = useMutation({
     mutationFn: (userId: string) => AdminService.resetUserPassword({ userId }),
     onSuccess: (response) => {
-      setNewPassword(response.new_password)
+      setResetResult({
+        passwordEmailed: response.password_emailed,
+        temporaryPassword: response.temporary_password ?? null,
+        message: response.message,
+      })
       setIsResetPasswordDialogOpen(false)
       setIsPasswordResultDialogOpen(true)
       queryClient.invalidateQueries({ queryKey: ["publishers"] })
@@ -323,16 +335,17 @@ function AdminPublishers() {
   }
 
   const handleCopyPassword = async () => {
-    if (newPassword) {
-      await navigator.clipboard.writeText(newPassword)
+    if (resetResult?.temporaryPassword) {
+      await navigator.clipboard.writeText(resetResult.temporaryPassword)
       setPasswordCopied(true)
+      showSuccessToast("Password copied to clipboard")
       setTimeout(() => setPasswordCopied(false), 2000)
     }
   }
 
   const closePasswordResultDialog = () => {
     setIsPasswordResultDialogOpen(false)
-    setNewPassword(null)
+    setResetResult(null)
     setPublisherToResetPassword(null)
     setPasswordCopied(false)
   }
@@ -479,7 +492,6 @@ function AdminPublishers() {
                   <TableHead>User Email</TableHead>
                   <TableHead>Contact Email</TableHead>
                   <TableHead>Created At</TableHead>
-                  <TableHead>Password</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -527,38 +539,6 @@ function AdminPublishers() {
                           day: "numeric",
                           year: "numeric",
                         },
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {(publisher as any).user_initial_password ? (
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm">
-                            {revealedPasswords[publisher.user_id]
-                              ? (publisher as any).user_initial_password
-                              : "••••••••••••"}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              setRevealedPasswords((prev) => ({
-                                ...prev,
-                                [publisher.user_id]: !prev[publisher.user_id],
-                              }))
-                            }
-                            className="h-7 w-7 p-0"
-                          >
-                            {revealedPasswords[publisher.user_id] ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          N/A
-                        </span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -1013,7 +993,7 @@ function AdminPublishers() {
         isLoading={resetPasswordMutation.isPending}
       />
 
-      {/* New Password Display Dialog [Story 9.2] */}
+      {/* Password Result Dialog [Story 11.4] */}
       <Dialog
         open={isPasswordResultDialogOpen}
         onOpenChange={closePasswordResultDialog}
@@ -1022,47 +1002,45 @@ function AdminPublishers() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-green-500" />
-              Password Reset Successful
+              Password Reset
             </DialogTitle>
-            <DialogDescription>
-              The password for {publisherToResetPassword?.userName} has been
-              reset. Please share this password securely with the user.
-            </DialogDescription>
+            <DialogDescription>{resetResult?.message}</DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Label className="text-sm text-muted-foreground mb-2 block">
-              New Password
-            </Label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 p-3 bg-muted rounded-md font-mono text-sm select-all">
-                {newPassword}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyPassword}
-                className="flex items-center gap-1"
-              >
-                {passwordCopied ? (
-                  <>
-                    <Check className="w-4 h-4 text-green-500" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    Copy
-                  </>
-                )}
-              </Button>
+
+          {resetResult?.passwordEmailed ? (
+            <div className="flex items-center gap-2 py-4 text-green-600">
+              <Mail className="h-5 w-5" />
+              <span>New password has been emailed to the user.</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              This password is displayed only once. Make sure to copy it before
-              closing this dialog.
-            </p>
-          </div>
+          ) : resetResult?.temporaryPassword ? (
+            <div className="space-y-3 py-4">
+              <p className="text-amber-600">
+                User has no email address. Please share this password securely:
+              </p>
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                <span className="font-mono text-lg flex-1">
+                  {resetResult.temporaryPassword}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCopyPassword}
+                >
+                  {passwordCopied ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This password will not be shown again.
+              </p>
+            </div>
+          ) : null}
+
           <DialogFooter>
-            <Button onClick={closePasswordResultDialog}>Done</Button>
+            <Button onClick={closePasswordResultDialog}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

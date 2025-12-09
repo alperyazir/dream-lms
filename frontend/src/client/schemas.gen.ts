@@ -872,6 +872,24 @@ export const ActivityWithConfigSchema = {
     description: 'Activity info with full config for multi-activity player.'
 } as const;
 
+export const AdditionalResourcesSchema = {
+    properties: {
+        videos: {
+            items: {
+                '$ref': '#/components/schemas/VideoResource'
+            },
+            type: 'array',
+            title: 'Videos',
+            default: []
+        }
+    },
+    type: 'object',
+    title: 'AdditionalResources',
+    description: `Schema for additional resources attached to an assignment.
+
+Currently supports video resources. Extensible for future resource types.`
+} as const;
+
 export const AdminBenchmarkOverviewSchema = {
     properties: {
         total_schools: {
@@ -1124,6 +1142,27 @@ export const AssignmentCreateSchema = {
                 }
             ],
             title: 'Date Groups'
+        },
+        video_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Video Path'
+        },
+        resources: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/AdditionalResources'
+                },
+                {
+                    type: 'null'
+                }
+            ]
         }
     },
     type: 'object',
@@ -1440,6 +1479,27 @@ export const AssignmentPreviewResponseSchema = {
             type: 'boolean',
             title: 'Is Preview',
             default: true
+        },
+        video_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Video Path'
+        },
+        resources: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/AdditionalResources'
+                },
+                {
+                    type: 'null'
+                }
+            ]
         }
     },
     type: 'object',
@@ -1568,6 +1628,17 @@ export const AssignmentResponseSchema = {
         status: {
             '$ref': '#/components/schemas/AssignmentPublishStatus',
             default: 'published'
+        },
+        video_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Video Path'
         }
     },
     type: 'object',
@@ -1764,13 +1835,35 @@ export const AssignmentUpdateSchema = {
                 }
             ],
             title: 'Activity Ids'
+        },
+        video_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Video Path'
+        },
+        resources: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/AdditionalResources'
+                },
+                {
+                    type: 'null'
+                }
+            ]
         }
     },
     type: 'object',
     title: 'AssignmentUpdate',
     description: `Schema for updating an existing assignment (partial update).
 
-Story 9.8: Added activity_ids field to allow editing activities.`
+Story 9.8: Added activity_ids field to allow editing activities.
+Story 10.3: Added video_path field to allow attaching/removing video.`
 } as const;
 
 export const AvatarTypeSchema = {
@@ -2606,6 +2699,31 @@ export const BookSyncResponseSchema = {
     description: 'Book synchronization response schema.'
 } as const;
 
+export const BookVideosResponseSchema = {
+    properties: {
+        book_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Book Id'
+        },
+        videos: {
+            items: {
+                '$ref': '#/components/schemas/VideoInfo'
+            },
+            type: 'array',
+            title: 'Videos'
+        },
+        total_count: {
+            type: 'integer',
+            title: 'Total Count'
+        }
+    },
+    type: 'object',
+    required: ['book_id', 'videos', 'total_count'],
+    title: 'BookVideosResponse',
+    description: 'Response for book videos endpoint.'
+} as const;
+
 export const BulkAssignmentCreateResponseSchema = {
     properties: {
         success: {
@@ -2936,6 +3054,43 @@ export const CalendarAssignmentsResponseSchema = {
     required: ['start_date', 'end_date', 'total_assignments', 'assignments_by_date'],
     title: 'CalendarAssignmentsResponse',
     description: 'Response schema for calendar assignments endpoint.'
+} as const;
+
+export const ChangeInitialPasswordRequestSchema = {
+    properties: {
+        current_password: {
+            type: 'string',
+            minLength: 1,
+            title: 'Current Password'
+        },
+        new_password: {
+            type: 'string',
+            maxLength: 40,
+            minLength: 8,
+            title: 'New Password'
+        }
+    },
+    type: 'object',
+    required: ['current_password', 'new_password'],
+    title: 'ChangeInitialPasswordRequest',
+    description: 'Request body for changing initial/temporary password'
+} as const;
+
+export const ChangePasswordResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        }
+    },
+    type: 'object',
+    required: ['success', 'message'],
+    title: 'ChangePasswordResponse',
+    description: 'Response for password change'
 } as const;
 
 export const ClassAnalyticsResponseSchema = {
@@ -4982,6 +5137,27 @@ export const MultiActivityStartResponseSchema = {
             ],
             title: 'Started At'
         },
+        video_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Video Path'
+        },
+        resources: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/AdditionalResources'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
         completed_activities_count: {
             type: 'integer',
             title: 'Completed Activities Count',
@@ -5399,29 +5575,36 @@ export const PageWithActivitiesSchema = {
 
 export const PasswordResetResponseSchema = {
     properties: {
-        user_id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'User Id'
-        },
-        email: {
-            type: 'string',
-            title: 'Email'
-        },
-        new_password: {
-            type: 'string',
-            title: 'New Password'
+        success: {
+            type: 'boolean',
+            title: 'Success'
         },
         message: {
             type: 'string',
-            title: 'Message',
-            default: 'Password reset successfully'
+            title: 'Message'
+        },
+        password_emailed: {
+            type: 'boolean',
+            title: 'Password Emailed'
+        },
+        temporary_password: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Temporary Password'
         }
     },
     type: 'object',
-    required: ['user_id', 'email', 'new_password'],
+    required: ['success', 'message', 'password_emailed'],
     title: 'PasswordResetResponse',
-    description: 'Response schema for password reset endpoint'
+    description: `Response schema for password reset endpoint - secure version (Story 11.2)
+
+Never contains the actual password unless user has no email address.`
 } as const;
 
 export const PerActivityScoreSchema = {
@@ -5710,17 +5893,6 @@ export const PublisherPublicSchema = {
         user_full_name: {
             type: 'string',
             title: 'User Full Name'
-        },
-        user_initial_password: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'User Initial Password'
         },
         created_at: {
             type: 'string',
@@ -7464,17 +7636,6 @@ export const StudentPublicSchema = {
             type: 'string',
             title: 'User Full Name'
         },
-        user_initial_password: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'User Initial Password'
-        },
         created_by_teacher_id: {
             anyOf: [
                 {
@@ -7758,17 +7919,6 @@ export const TeacherPublicSchema = {
             type: 'string',
             title: 'User Full Name'
         },
-        user_initial_password: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'User Initial Password'
-        },
         school_id: {
             type: 'string',
             format: 'uuid',
@@ -7891,6 +8041,11 @@ export const TokenSchema = {
             type: 'string',
             title: 'Token Type',
             default: 'bearer'
+        },
+        must_change_password: {
+            type: 'boolean',
+            title: 'Must Change Password',
+            default: false
         }
     },
     type: 'object',
@@ -8038,10 +8193,6 @@ export const UserCreationResponseSchema = {
         user: {
             '$ref': '#/components/schemas/UserPublic'
         },
-        initial_password: {
-            type: 'string',
-            title: 'Initial Password'
-        },
         role_record: {
             anyOf: [
                 {
@@ -8055,12 +8206,36 @@ export const UserCreationResponseSchema = {
                 }
             ],
             title: 'Role Record'
+        },
+        temporary_password: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Temporary Password'
+        },
+        password_emailed: {
+            type: 'boolean',
+            title: 'Password Emailed',
+            default: false
+        },
+        message: {
+            type: 'string',
+            title: 'Message',
+            default: ''
         }
     },
     type: 'object',
-    required: ['user', 'initial_password', 'role_record'],
+    required: ['user', 'role_record'],
     title: 'UserCreationResponse',
-    description: 'Response schema for role-specific user creation endpoints'
+    description: `Response schema for role-specific user creation endpoints.
+
+Security: temporary_password is only included when user has no email.
+When user has email, password_emailed=True and temporary_password is None.`
 } as const;
 
 export const UserPublicSchema = {
@@ -8115,16 +8290,10 @@ export const UserPublicSchema = {
             format: 'uuid',
             title: 'Id'
         },
-        initial_password: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Initial Password'
+        must_change_password: {
+            type: 'boolean',
+            title: 'Must Change Password',
+            default: false
         },
         avatar_url: {
             anyOf: [
@@ -8324,6 +8493,66 @@ export const ValidationErrorSchema = {
     type: 'object',
     required: ['loc', 'msg', 'type'],
     title: 'ValidationError'
+} as const;
+
+export const VideoInfoSchema = {
+    properties: {
+        path: {
+            type: 'string',
+            title: 'Path'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        size_bytes: {
+            type: 'integer',
+            title: 'Size Bytes'
+        },
+        has_subtitles: {
+            type: 'boolean',
+            title: 'Has Subtitles'
+        }
+    },
+    type: 'object',
+    required: ['path', 'name', 'size_bytes', 'has_subtitles'],
+    title: 'VideoInfo',
+    description: 'Video file information from Dream Central Storage.'
+} as const;
+
+export const VideoResourceSchema = {
+    properties: {
+        type: {
+            type: 'string',
+            const: 'video',
+            title: 'Type',
+            default: 'video'
+        },
+        path: {
+            type: 'string',
+            title: 'Path'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        subtitles_enabled: {
+            type: 'boolean',
+            title: 'Subtitles Enabled',
+            default: true
+        },
+        has_subtitles: {
+            type: 'boolean',
+            title: 'Has Subtitles',
+            default: false
+        }
+    },
+    type: 'object',
+    required: ['path', 'name'],
+    title: 'VideoResource',
+    description: `Schema for a video resource attached to an assignment.
+
+Story 10.3+: Video with subtitle control for students.`
 } as const;
 
 export const WebhookBookDataSchema = {

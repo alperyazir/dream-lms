@@ -80,18 +80,22 @@ def test_teacher_create_student(
     assert response.status_code == 201
     data = response.json()
 
-    # Verify response structure
+    # Verify response structure (secure password flow)
     assert "user" in data
-    assert "initial_password" in data
+    assert "temporary_password" in data
     assert "role_record" in data
+    assert "password_emailed" in data
+    assert "message" in data
 
     # Verify user data
     assert data["user"]["email"] == student_data["user_email"]
     assert data["user"]["full_name"] == student_data["full_name"]
     assert data["user"]["role"] == "student"
+    assert data["user"]["must_change_password"] is True
 
-    # Verify temp password
-    assert len(data["initial_password"]) == 12
+    # Verify temp password (returned since emails disabled in tests)
+    assert data["temporary_password"] is not None
+    assert len(data["temporary_password"]) == 12
 
     # Verify student record
     assert data["role_record"]["grade_level"] == student_data["grade_level"]
@@ -229,10 +233,10 @@ def test_teacher_list_students(
     assert str(student2.id) in student_ids
 
 
-def test_teacher_receives_initial_password(
+def test_teacher_receives_temporary_password(
     client: TestClient, session: Session, teacher_token: str, teacher_user: User
 ) -> None:
-    """Test response includes temp password when creating student"""
+    """Test response includes temp password when creating student (secure password flow)"""
     # Create publisher user and publisher
     from app.models import Publisher
     pub_user = User(
@@ -289,10 +293,17 @@ def test_teacher_receives_initial_password(
     assert response.status_code == 201
     data = response.json()
 
-    # Verify temp password format
-    initial_password = data["initial_password"]
-    assert len(initial_password) == 12
-    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', initial_password)
+    # Verify secure password response structure
+    assert "temporary_password" in data
+    assert "password_emailed" in data
+    assert "message" in data
+    assert data["user"]["must_change_password"] is True
+
+    # Verify temp password format (returned since emails disabled in tests)
+    temp_password = data["temporary_password"]
+    assert temp_password is not None
+    assert len(temp_password) == 12
+    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', temp_password)
 
 
 def test_students_appear_in_correct_teacher_list(

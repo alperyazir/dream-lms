@@ -108,6 +108,38 @@ def generate_new_account_email(
     return EmailData(html_content=html_content, subject=subject)
 
 
+def generate_password_reset_by_admin_email(
+    email_to: str, username: str, password: str
+) -> EmailData:
+    """
+    Generate email content for admin-initiated password reset.
+
+    This is different from user-initiated password recovery - this sends
+    the new temporary password directly to the user.
+
+    Args:
+        email_to: User's email address
+        username: User's username for display
+        password: The new temporary password
+
+    Returns:
+        EmailData with subject and HTML content
+    """
+    project_name = settings.PROJECT_NAME
+    subject = f"{project_name} - Your password has been reset"
+    html_content = render_email_template(
+        template_name="password_reset_by_admin.html",
+        context={
+            "project_name": settings.PROJECT_NAME,
+            "username": username,
+            "password": password,
+            "email": email_to,
+            "link": settings.FRONTEND_HOST,
+        },
+    )
+    return EmailData(html_content=html_content, subject=subject)
+
+
 def generate_password_reset_token(email: str) -> str:
     delta = timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
     now = datetime.now(timezone.utc)

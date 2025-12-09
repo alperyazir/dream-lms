@@ -118,7 +118,7 @@ Comprehensive UX improvements across all user roles. Includes UI polish (navbar,
 
 ## Epic 10: Audio & Video Media Integration
 
-**Estimated Effort:** 2-3 weeks | **Status:** Planning
+**Estimated Effort:** 2-3 weeks | **Status:** ✅ DONE
 
 Enable activities to include audio content from book configurations and allow teachers to attach video content to assignments. Media is streamed efficiently from Dream Central Storage with HTTP Range support for seeking.
 
@@ -131,5 +131,44 @@ Enable activities to include audio content from book configurations and allow te
 - 10.3: Video Attachment to Assignments (Phase 2)
 
 **Deliverable:** Students can play audio instructions with activities, teachers can attach videos to assignments
+
+---
+
+## Epic 11: Secure Password Management & Email Notifications
+
+**Estimated Effort:** 1-2 weeks | **Status:** Planning
+
+Transform user creation from insecure plaintext password display to a secure workflow where temporary passwords are emailed to users, and first-time login forces password change. Admins/Publishers retain ability to reset passwords without seeing actual credentials.
+
+**What Currently Exists:** Admin/Publisher can see `initial_password` field when creating users, security concern
+**What We Build:** Remove password visibility + Email temp passwords + Force first-login password change + Secure reset flow
+
+**Stories:**
+- 11.1: Backend - Secure Password Infrastructure
+- 11.2: Backend - Password Reset Endpoint
+- 11.3: Backend - First Login Password Change
+- 11.4: Frontend - Remove Password Display & Add Reset Button
+- 11.5: Frontend - First Login Password Change Flow
+
+**Deliverable:** Secure user creation with emailed credentials and mandatory first-login password change
+
+---
+
+## Epic 12: User Onboarding Tour
+
+**Estimated Effort:** 1 week | **Status:** Planning
+
+Introduce an interactive onboarding tour that guides new users (Teachers, Students, Publishers) through key UI elements on their first login, with the ability to skip and never show again.
+
+**What Currently Exists:** Users land directly on dashboard with no guidance
+**What We Build:** Interactive tour library + Role-specific tour steps + Tour completion tracking + Skip functionality
+
+**Stories:**
+- 12.1: Backend - Tour Completion Tracking
+- 12.2: Frontend - Tour Library Integration & Infrastructure
+- 12.3: Frontend - Role-Specific Tour Content
+- 12.4: Frontend - Tour Trigger & Flow Integration
+
+**Deliverable:** Engaging onboarding experience for new Teachers, Students, and Publishers (Admin excluded)
 
 ---

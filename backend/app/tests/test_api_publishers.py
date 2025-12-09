@@ -45,6 +45,7 @@ def test_publisher_list_own_schools(
     other_user = User(
         id=uuid.uuid4(),
         email="other@publisher.com",
+        username="otherpublisher",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
         full_name="Other Publisher"
@@ -128,18 +129,22 @@ def test_publisher_create_teacher_in_own_school(
     assert response.status_code == 201
     data = response.json()
 
-    # Verify response structure
+    # Verify response structure (secure password flow)
     assert "user" in data
-    assert "initial_password" in data
+    assert "temporary_password" in data
     assert "role_record" in data
+    assert "password_emailed" in data
+    assert "message" in data
 
     # Verify user data
     assert data["user"]["email"] == teacher_data["user_email"]
     assert data["user"]["full_name"] == teacher_data["full_name"]
     assert data["user"]["role"] == "teacher"
+    assert data["user"]["must_change_password"] is True
 
-    # Verify temp password
-    assert len(data["initial_password"]) == 12
+    # Verify temp password (returned since emails disabled in tests)
+    assert data["temporary_password"] is not None
+    assert len(data["temporary_password"]) == 12
 
     # Verify teacher record
     assert data["role_record"]["school_id"] == teacher_data["school_id"]
@@ -217,10 +222,10 @@ def test_publisher_cannot_create_teacher_in_other_school(
     assert "Cannot create teacher in another publisher's school" in response.json()["detail"]
 
 
-def test_publisher_receives_initial_password(
+def test_publisher_receives_temporary_password(
     client: TestClient, session: Session, publisher_token: str, publisher_user: User
 ) -> None:
-    """Test response includes temporary password"""
+    """Test response includes temporary password (secure password flow)"""
     # Create publisher and school
     publisher = Publisher(
         id=uuid.uuid4(),
@@ -257,7 +262,14 @@ def test_publisher_receives_initial_password(
     assert response.status_code == 201
     data = response.json()
 
-    # Verify temp password format
-    initial_password = data["initial_password"]
-    assert len(initial_password) == 12
-    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', initial_password)
+    # Verify secure password response structure
+    assert "temporary_password" in data
+    assert "password_emailed" in data
+    assert "message" in data
+    assert data["user"]["must_change_password"] is True
+
+    # Verify temp password format (returned since emails disabled in tests)
+    temp_password = data["temporary_password"]
+    assert temp_password is not None
+    assert len(temp_password) == 12
+    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', temp_password)

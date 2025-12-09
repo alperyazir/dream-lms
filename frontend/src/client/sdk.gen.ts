@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminUpdatePublisherResponse, AdminDeletePublisherData, AdminDeletePublisherResponse, AdminUploadPublisherLogoData, AdminUploadPublisherLogoResponse, AdminDeletePublisherLogoData, AdminDeletePublisherLogoResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkDeleteStudentsData, AdminBulkDeleteStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, AdminAdminUpdateUserData, AdminAdminUpdateUserResponse, AdminResetUserPasswordData, AdminResetUserPasswordResponse, AdminTestDreamStorageConnectionResponse, AdminRegisterWebhooksManuallyData, AdminRegisterWebhooksManuallyResponse, AdminGetBenchmarkOverviewEndpointResponse, AdminUpdateSchoolBenchmarkSettingsData, AdminUpdateSchoolBenchmarkSettingsResponse, AdminUpdatePublisherBenchmarkSettingsData, AdminUpdatePublisherBenchmarkSettingsResponse, AssignmentsListAssignmentsResponse, AssignmentsCreateAssignmentData, AssignmentsCreateAssignmentResponse, AssignmentsListAllAssignmentsAdminResponse, AssignmentsGetCalendarAssignmentsData, AssignmentsGetCalendarAssignmentsResponse, AssignmentsCreateBulkAssignmentsData, AssignmentsCreateBulkAssignmentsResponse, AssignmentsUpdateAssignmentData, AssignmentsUpdateAssignmentResponse, AssignmentsDeleteAssignmentData, AssignmentsDeleteAssignmentResponse, AssignmentsStartAssignmentData, AssignmentsStartAssignmentResponse, AssignmentsStartMultiActivityAssignmentData, AssignmentsStartMultiActivityAssignmentResponse, AssignmentsSaveActivityProgressData, AssignmentsSaveActivityProgressResponse, AssignmentsSubmitMultiActivityAssignmentData, AssignmentsSubmitMultiActivityAssignmentResponse, AssignmentsSaveProgressData, AssignmentsSaveProgressResponse, AssignmentsSubmitAssignmentData, AssignmentsSubmitAssignmentResponse, AssignmentsGetDetailedResultsData, AssignmentsGetDetailedResultsResponse, AssignmentsGetStudentAnswersData, AssignmentsGetStudentAnswersResponse, AssignmentsGetMultiActivityAnalyticsData, AssignmentsGetMultiActivityAnalyticsResponse, AssignmentsGetStudentAssignmentResultData, AssignmentsGetStudentAssignmentResultResponse, AssignmentsCreateOrUpdateFeedbackData, AssignmentsCreateOrUpdateFeedbackResponse, AssignmentsGetFeedbackData, AssignmentsGetFeedbackResponse, AssignmentsGetMyFeedbackData, AssignmentsGetMyFeedbackResponse, AssignmentsUpdateFeedbackData, AssignmentsUpdateFeedbackResponse, AssignmentsPreviewAssignmentData, AssignmentsPreviewAssignmentResponse, AssignmentsPreviewActivityData, AssignmentsPreviewActivityResponse, AvatarsGetPredefinedAvatarsResponse, AvatarsRemoveAvatarResponse, AvatarsSelectPredefinedAvatarData, AvatarsSelectPredefinedAvatarResponse, BookAssetsServeBookAssetData, BookAssetsServeBookAssetResponse, BookAssetsServePageImageData, BookAssetsServePageImageResponse, BookAssignmentsCreateBookAssignmentData, BookAssignmentsCreateBookAssignmentResponse, BookAssignmentsListBookAssignmentsData, BookAssignmentsListBookAssignmentsResponse, BookAssignmentsCreateBulkBookAssignmentsData, BookAssignmentsCreateBulkBookAssignmentsResponse, BookAssignmentsDeleteBookAssignmentData, BookAssignmentsDeleteBookAssignmentResponse, BookAssignmentsGetBookAssignmentsData, BookAssignmentsGetBookAssignmentsResponse, BooksTriggerBookSyncResponse, BooksListBooksData, BooksListBooksResponse, BooksGetBookActivitiesData, BooksGetBookActivitiesResponse, BooksGetBookPagesData, BooksGetBookPagesResponse, BooksGetPageActivitiesData, BooksGetPageActivitiesResponse, BooksGetBookPagesDetailData, BooksGetBookPagesDetailResponse, BooksGetBookStructureData, BooksGetBookStructureResponse, ClassesCreateClassData, ClassesCreateClassResponse, ClassesListClassesData, ClassesListClassesResponse, ClassesGetClassDetailData, ClassesGetClassDetailResponse, ClassesUpdateClassData, ClassesUpdateClassResponse, ClassesArchiveClassData, ClassesArchiveClassResponse, ClassesAddStudentsToClassData, ClassesAddStudentsToClassResponse, ClassesRemoveStudentFromClassData, ClassesRemoveStudentFromClassResponse, ClassesGetClassAnalyticsEndpointData, ClassesGetClassAnalyticsEndpointResponse, ClassesGetClassBenchmarksEndpointData, ClassesGetClassBenchmarksEndpointResponse, DevGetQuickLoginUsersResponse, FeedbackGetFeedbackOptionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MessagesSendMessageData, MessagesSendMessageResponse, MessagesGetConversationsData, MessagesGetConversationsResponse, MessagesGetMessageThreadData, MessagesGetMessageThreadResponse, MessagesMarkMessageAsReadData, MessagesMarkMessageAsReadResponse, MessagesGetAllowedRecipientsResponse, MessagesGetUnreadMessagesCountResponse, NotificationsGetNotificationsData, NotificationsGetNotificationsResponse, NotificationsGetUnreadCountResponse, NotificationsMarkNotificationAsReadData, NotificationsMarkNotificationAsReadResponse, NotificationsMarkAllNotificationsAsReadResponse, NotificationsGetNotificationPreferencesResponse, NotificationsUpdateNotificationPreferencesData, NotificationsUpdateNotificationPreferencesResponse, NotificationsUpdateSinglePreferenceData, NotificationsUpdateSinglePreferenceResponse, NotificationsGetMuteStatusResponse, NotificationsSetGlobalMuteData, NotificationsSetGlobalMuteResponse, NotificationsCancelGlobalMuteResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersGetMyProfileResponse, PublishersListMySchoolsResponse, PublishersCreateSchoolData, PublishersCreateSchoolResponse, PublishersListMyTeachersResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, PublishersGetMyStatsResponse, ReportsGenerateReportData, ReportsGenerateReportResponse, ReportsCheckReportStatusData, ReportsCheckReportStatusResponse, ReportsDownloadReportData, ReportsDownloadReportResponse, ReportsListReportHistoryResponse, ReportsListReportTemplatesResponse, ReportsCreateReportTemplateData, ReportsCreateReportTemplateResponse, ReportsRemoveReportTemplateData, ReportsRemoveReportTemplateResponse, ScheduledTasksRunDeadlineRemindersData, ScheduledTasksRunDeadlineRemindersResponse, ScheduledTasksRunApproachingDeadlinesOnlyData, ScheduledTasksRunApproachingDeadlinesOnlyResponse, ScheduledTasksRunPastDueOnlyData, ScheduledTasksRunPastDueOnlyResponse, ScheduledTasksRunPublishScheduledAssignmentsData, ScheduledTasksRunPublishScheduledAssignmentsResponse, StudentsGetStudentAssignmentsData, StudentsGetStudentAssignmentsResponse, StudentsGetStudentProgressData, StudentsGetStudentProgressResponse, StudentsGetStudentAnalyticsData, StudentsGetStudentAnalyticsResponse, StudentsGetMyBadgesResponse, StudentsGetStudentBadgesData, StudentsGetStudentBadgesResponse, StudentsGetStudentCalendarAssignmentsData, StudentsGetStudentCalendarAssignmentsResponse, StudentsGetImportTemplateResponse, StudentsValidateImportFileData, StudentsValidateImportFileResponse, StudentsExecuteImportData, StudentsExecuteImportResponse, StudentsDownloadCredentialsData, StudentsDownloadCredentialsResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersBulkDeleteStudentsData, TeachersBulkDeleteStudentsResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, TeachersGetMyInsightsResponse, TeachersGetInsightDetailsData, TeachersGetInsightDetailsResponse, TeachersDismissInsightEndpointData, TeachersDismissInsightEndpointResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksReceiveDreamStorageWebhookResponse, WebhooksTestDreamStorageWebhookData, WebhooksTestDreamStorageWebhookResponse } from './types.gen';
+import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminUpdatePublisherResponse, AdminDeletePublisherData, AdminDeletePublisherResponse, AdminUploadPublisherLogoData, AdminUploadPublisherLogoResponse, AdminDeletePublisherLogoData, AdminDeletePublisherLogoResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkDeleteStudentsData, AdminBulkDeleteStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, AdminAdminUpdateUserData, AdminAdminUpdateUserResponse, AdminResetUserPasswordData, AdminResetUserPasswordResponse, AdminTestDreamStorageConnectionResponse, AdminRegisterWebhooksManuallyData, AdminRegisterWebhooksManuallyResponse, AdminGetBenchmarkOverviewEndpointResponse, AdminUpdateSchoolBenchmarkSettingsData, AdminUpdateSchoolBenchmarkSettingsResponse, AdminUpdatePublisherBenchmarkSettingsData, AdminUpdatePublisherBenchmarkSettingsResponse, AssignmentsListAssignmentsResponse, AssignmentsCreateAssignmentData, AssignmentsCreateAssignmentResponse, AssignmentsListAllAssignmentsAdminResponse, AssignmentsGetCalendarAssignmentsData, AssignmentsGetCalendarAssignmentsResponse, AssignmentsCreateBulkAssignmentsData, AssignmentsCreateBulkAssignmentsResponse, AssignmentsUpdateAssignmentData, AssignmentsUpdateAssignmentResponse, AssignmentsDeleteAssignmentData, AssignmentsDeleteAssignmentResponse, AssignmentsStartAssignmentData, AssignmentsStartAssignmentResponse, AssignmentsStartMultiActivityAssignmentData, AssignmentsStartMultiActivityAssignmentResponse, AssignmentsSaveActivityProgressData, AssignmentsSaveActivityProgressResponse, AssignmentsSubmitMultiActivityAssignmentData, AssignmentsSubmitMultiActivityAssignmentResponse, AssignmentsSaveProgressData, AssignmentsSaveProgressResponse, AssignmentsSubmitAssignmentData, AssignmentsSubmitAssignmentResponse, AssignmentsGetDetailedResultsData, AssignmentsGetDetailedResultsResponse, AssignmentsGetStudentAnswersData, AssignmentsGetStudentAnswersResponse, AssignmentsGetMultiActivityAnalyticsData, AssignmentsGetMultiActivityAnalyticsResponse, AssignmentsGetStudentAssignmentResultData, AssignmentsGetStudentAssignmentResultResponse, AssignmentsCreateOrUpdateFeedbackData, AssignmentsCreateOrUpdateFeedbackResponse, AssignmentsGetFeedbackData, AssignmentsGetFeedbackResponse, AssignmentsGetMyFeedbackData, AssignmentsGetMyFeedbackResponse, AssignmentsUpdateFeedbackData, AssignmentsUpdateFeedbackResponse, AssignmentsPreviewAssignmentData, AssignmentsPreviewAssignmentResponse, AssignmentsPreviewActivityData, AssignmentsPreviewActivityResponse, AvatarsGetPredefinedAvatarsResponse, AvatarsRemoveAvatarResponse, AvatarsSelectPredefinedAvatarData, AvatarsSelectPredefinedAvatarResponse, BookAssetsServeBookAssetData, BookAssetsServeBookAssetResponse, BookAssetsServePageImageData, BookAssetsServePageImageResponse, BookAssignmentsCreateBookAssignmentData, BookAssignmentsCreateBookAssignmentResponse, BookAssignmentsListBookAssignmentsData, BookAssignmentsListBookAssignmentsResponse, BookAssignmentsCreateBulkBookAssignmentsData, BookAssignmentsCreateBulkBookAssignmentsResponse, BookAssignmentsDeleteBookAssignmentData, BookAssignmentsDeleteBookAssignmentResponse, BookAssignmentsGetBookAssignmentsData, BookAssignmentsGetBookAssignmentsResponse, BookMediaStreamMediaData, BookMediaStreamMediaResponse, BooksTriggerBookSyncResponse, BooksListBooksData, BooksListBooksResponse, BooksGetBookActivitiesData, BooksGetBookActivitiesResponse, BooksGetBookPagesData, BooksGetBookPagesResponse, BooksGetPageActivitiesData, BooksGetPageActivitiesResponse, BooksGetBookPagesDetailData, BooksGetBookPagesDetailResponse, BooksGetBookStructureData, BooksGetBookStructureResponse, BooksListBookVideosData, BooksListBookVideosResponse, ClassesCreateClassData, ClassesCreateClassResponse, ClassesListClassesData, ClassesListClassesResponse, ClassesGetClassDetailData, ClassesGetClassDetailResponse, ClassesUpdateClassData, ClassesUpdateClassResponse, ClassesArchiveClassData, ClassesArchiveClassResponse, ClassesAddStudentsToClassData, ClassesAddStudentsToClassResponse, ClassesRemoveStudentFromClassData, ClassesRemoveStudentFromClassResponse, ClassesGetClassAnalyticsEndpointData, ClassesGetClassAnalyticsEndpointResponse, ClassesGetClassBenchmarksEndpointData, ClassesGetClassBenchmarksEndpointResponse, DevGetQuickLoginUsersResponse, FeedbackGetFeedbackOptionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MessagesSendMessageData, MessagesSendMessageResponse, MessagesGetConversationsData, MessagesGetConversationsResponse, MessagesGetMessageThreadData, MessagesGetMessageThreadResponse, MessagesMarkMessageAsReadData, MessagesMarkMessageAsReadResponse, MessagesGetAllowedRecipientsResponse, MessagesGetUnreadMessagesCountResponse, NotificationsGetNotificationsData, NotificationsGetNotificationsResponse, NotificationsGetUnreadCountResponse, NotificationsMarkNotificationAsReadData, NotificationsMarkNotificationAsReadResponse, NotificationsMarkAllNotificationsAsReadResponse, NotificationsGetNotificationPreferencesResponse, NotificationsUpdateNotificationPreferencesData, NotificationsUpdateNotificationPreferencesResponse, NotificationsUpdateSinglePreferenceData, NotificationsUpdateSinglePreferenceResponse, NotificationsGetMuteStatusResponse, NotificationsSetGlobalMuteData, NotificationsSetGlobalMuteResponse, NotificationsCancelGlobalMuteResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersGetMyProfileResponse, PublishersListMySchoolsResponse, PublishersCreateSchoolData, PublishersCreateSchoolResponse, PublishersListMyTeachersResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, PublishersGetMyStatsResponse, ReportsGenerateReportData, ReportsGenerateReportResponse, ReportsCheckReportStatusData, ReportsCheckReportStatusResponse, ReportsDownloadReportData, ReportsDownloadReportResponse, ReportsListReportHistoryResponse, ReportsListReportTemplatesResponse, ReportsCreateReportTemplateData, ReportsCreateReportTemplateResponse, ReportsRemoveReportTemplateData, ReportsRemoveReportTemplateResponse, ScheduledTasksRunDeadlineRemindersData, ScheduledTasksRunDeadlineRemindersResponse, ScheduledTasksRunApproachingDeadlinesOnlyData, ScheduledTasksRunApproachingDeadlinesOnlyResponse, ScheduledTasksRunPastDueOnlyData, ScheduledTasksRunPastDueOnlyResponse, ScheduledTasksRunPublishScheduledAssignmentsData, ScheduledTasksRunPublishScheduledAssignmentsResponse, StudentsGetStudentAssignmentsData, StudentsGetStudentAssignmentsResponse, StudentsGetStudentProgressData, StudentsGetStudentProgressResponse, StudentsGetStudentAnalyticsData, StudentsGetStudentAnalyticsResponse, StudentsGetMyBadgesResponse, StudentsGetStudentBadgesData, StudentsGetStudentBadgesResponse, StudentsGetStudentCalendarAssignmentsData, StudentsGetStudentCalendarAssignmentsResponse, StudentsGetImportTemplateResponse, StudentsValidateImportFileData, StudentsValidateImportFileResponse, StudentsExecuteImportData, StudentsExecuteImportResponse, StudentsDownloadCredentialsData, StudentsDownloadCredentialsResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersBulkDeleteStudentsData, TeachersBulkDeleteStudentsResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, TeachersGetMyInsightsResponse, TeachersGetInsightDetailsData, TeachersGetInsightDetailsResponse, TeachersDismissInsightEndpointData, TeachersDismissInsightEndpointResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersChangeInitialPasswordData, UsersChangeInitialPasswordResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksReceiveDreamStorageWebhookResponse, WebhooksTestDreamStorageWebhookData, WebhooksTestDreamStorageWebhookResponse } from './types.gen';
 
 export class AdminService {
     /**
@@ -527,7 +527,7 @@ export class AdminService {
     
     /**
      * Reset user password
-     * Reset a user's password to a new auto-generated password. Admin only.
+     * Reset a user's password. Admin can reset any user. Publisher can reset their teachers/students only.
      * @param data The data for the request.
      * @param data.userId
      * @returns PasswordResetResponse Successful Response
@@ -1423,6 +1423,39 @@ export class BookAssignmentsService {
     }
 }
 
+export class BookMediaService {
+    /**
+     * Stream media file
+     * Stream audio/video from Dream Central Storage with Range support
+     * @param data The data for the request.
+     * @param data.bookId Book ID
+     * @param data.assetPath Relative path to media (e.g., 'audio/08.mp3', 'videos/intro.mp4')
+     * @param data.token
+     * @param data.range
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static streamMedia(data: BookMediaStreamMediaData): CancelablePromise<BookMediaStreamMediaResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/media/{asset_path}',
+            path: {
+                book_id: data.bookId,
+                asset_path: data.assetPath
+            },
+            headers: {
+                Range: data.range
+            },
+            query: {
+                token: data.token
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class BooksService {
     /**
      * Sync books from Dream Central Storage
@@ -1566,6 +1599,27 @@ export class BooksService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/books/{book_id}/structure',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List available videos for a book
+     * Returns available videos defined in the book's config.json.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns BookVideosResponse Successful Response
+     * @throws ApiError
+     */
+    public static listBookVideos(data: BooksListBookVideosData): CancelablePromise<BooksListBookVideosResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/videos',
             path: {
                 book_id: data.bookId
             },
@@ -1792,6 +1846,10 @@ export class DevService {
      * Returns users grouped by role, limited to 5 per role, sorted by newest first.
      * Only accessible when ENVIRONMENT != "production".
      *
+     * Note: Since initial_password is no longer stored in the database for security reasons,
+     * quick login only works for the admin user (uses FIRST_SUPERUSER_PASSWORD) and users
+     * whose password is the default "changethis" (typically used in dev/test seeding).
+     *
      * Returns:
      * Dictionary with role names as keys and lists of user dicts (username, email, password) as values
      * @returns unknown Successful Response
@@ -1828,7 +1886,8 @@ export class FeedbackService {
 export class LoginService {
     /**
      * Login Access Token
-     * OAuth2 compatible token login, get an access token for future requests
+     * OAuth2 compatible token login, get an access token for future requests.
+     * Returns must_change_password flag to indicate if password change is required.
      * @param data The data for the request.
      * @param data.formData
      * @returns Token Successful Response
@@ -3275,6 +3334,7 @@ export class UsersService {
     /**
      * Update Password Me
      * Update own password.
+     * Also clears must_change_password flag if set.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns Message Successful Response
@@ -3284,6 +3344,31 @@ export class UsersService {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/v1/users/me/password',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Change Initial Password
+     * Change password for first login (when must_change_password is true).
+     * Also works as a general password change.
+     *
+     * - Validates current password
+     * - Updates to new password
+     * - Clears must_change_password flag
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns ChangePasswordResponse Successful Response
+     * @throws ApiError
+     */
+    public static changeInitialPassword(data: UsersChangeInitialPasswordData): CancelablePromise<UsersChangeInitialPasswordResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/users/me/change-initial-password',
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {

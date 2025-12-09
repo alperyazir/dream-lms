@@ -260,6 +260,15 @@ export type ActivityWithConfig = {
 };
 
 /**
+ * Schema for additional resources attached to an assignment.
+ *
+ * Currently supports video resources. Extensible for future resource types.
+ */
+export type AdditionalResources = {
+    videos?: Array<VideoResource>;
+};
+
+/**
  * System-wide benchmark overview for admin dashboard.
  *
  * [Source: Story 5.7 AC: 12]
@@ -333,6 +342,8 @@ export type AssignmentCreate = {
     activity_ids?: (Array<(string)> | null);
     scheduled_publish_date?: (string | null);
     date_groups?: (Array<DateGroupCreate> | null);
+    video_path?: (string | null);
+    resources?: (AdditionalResources | null);
 };
 
 /**
@@ -405,6 +416,8 @@ export type AssignmentPreviewResponse = {
     activities: Array<ActivityWithConfig>;
     total_activities: number;
     is_preview?: boolean;
+    video_path?: (string | null);
+    resources?: (AdditionalResources | null);
 };
 
 /**
@@ -431,6 +444,7 @@ export type AssignmentResponse = {
     activity_count?: number;
     scheduled_publish_date?: (string | null);
     status?: AssignmentPublishStatus;
+    video_path?: (string | null);
 };
 
 /**
@@ -479,6 +493,7 @@ export type AssignmentSubmitRequest = {
  * Schema for updating an existing assignment (partial update).
  *
  * Story 9.8: Added activity_ids field to allow editing activities.
+ * Story 10.3: Added video_path field to allow attaching/removing video.
  */
 export type AssignmentUpdate = {
     name?: (string | null);
@@ -488,6 +503,8 @@ export type AssignmentUpdate = {
     scheduled_publish_date?: (string | null);
     status?: (AssignmentPublishStatus | null);
     activity_ids?: (Array<(string)> | null);
+    video_path?: (string | null);
+    resources?: (AdditionalResources | null);
 };
 
 /**
@@ -757,6 +774,15 @@ export type BookSyncResponse = {
 };
 
 /**
+ * Response for book videos endpoint.
+ */
+export type BookVideosResponse = {
+    book_id: string;
+    videos: Array<VideoInfo>;
+    total_count: number;
+};
+
+/**
  * Individual assignment created in bulk operation.
  */
 export type BulkAssignmentCreatedItem = {
@@ -852,6 +878,22 @@ export type CalendarAssignmentsResponse = {
     assignments_by_date: {
         [key: string]: Array<CalendarAssignmentItem>;
     };
+};
+
+/**
+ * Request body for changing initial/temporary password
+ */
+export type ChangeInitialPasswordRequest = {
+    current_password: string;
+    new_password: string;
+};
+
+/**
+ * Response for password change
+ */
+export type ChangePasswordResponse = {
+    success: boolean;
+    message: string;
 };
 
 /**
@@ -1500,6 +1542,8 @@ export type MultiActivityStartResponse = {
     current_status: string;
     time_spent_minutes: number;
     started_at: (string | null);
+    video_path?: (string | null);
+    resources?: (AdditionalResources | null);
     /**
      * Count of completed activities.
      */
@@ -1657,13 +1701,15 @@ export type PageWithActivities = {
 };
 
 /**
- * Response schema for password reset endpoint
+ * Response schema for password reset endpoint - secure version (Story 11.2)
+ *
+ * Never contains the actual password unless user has no email address.
  */
 export type PasswordResetResponse = {
-    user_id: string;
-    email: string;
-    new_password: string;
-    message?: string;
+    success: boolean;
+    message: string;
+    password_emailed: boolean;
+    temporary_password?: (string | null);
 };
 
 /**
@@ -1762,7 +1808,6 @@ export type PublisherPublic = {
     user_email: string;
     user_username: string;
     user_full_name: string;
-    user_initial_password?: (string | null);
     created_at: string;
     updated_at: string;
 };
@@ -2279,7 +2324,6 @@ export type StudentPublic = {
     user_email?: (string | null);
     user_username: string;
     user_full_name: string;
-    user_initial_password?: (string | null);
     created_by_teacher_id?: (string | null);
     created_by_teacher_name?: (string | null);
     created_at: string;
@@ -2348,7 +2392,6 @@ export type TeacherPublic = {
     user_email: string;
     user_username: string;
     user_full_name: string;
-    user_initial_password?: (string | null);
     school_id: string;
     created_at: string;
     updated_at: string;
@@ -2377,6 +2420,7 @@ export type TimeAnalytics = {
 export type Token = {
     access_token: string;
     token_type?: string;
+    must_change_password?: boolean;
 };
 
 /**
@@ -2422,12 +2466,17 @@ export type UserCreate = {
 };
 
 /**
- * Response schema for role-specific user creation endpoints
+ * Response schema for role-specific user creation endpoints.
+ *
+ * Security: temporary_password is only included when user has no email.
+ * When user has email, password_emailed=True and temporary_password is None.
  */
 export type UserCreationResponse = {
     user: UserPublic;
-    initial_password: string;
     role_record: (PublisherPublic | TeacherPublic | StudentPublic);
+    temporary_password?: (string | null);
+    password_emailed?: boolean;
+    message?: string;
 };
 
 export type UserPublic = {
@@ -2438,7 +2487,7 @@ export type UserPublic = {
     full_name?: (string | null);
     role?: UserRole;
     id: string;
-    initial_password?: (string | null);
+    must_change_password?: boolean;
     avatar_url?: (string | null);
     avatar_type?: (AvatarType | null);
 };
@@ -2473,6 +2522,29 @@ export type ValidationError = {
     loc: Array<(string | number)>;
     msg: string;
     type: string;
+};
+
+/**
+ * Video file information from Dream Central Storage.
+ */
+export type VideoInfo = {
+    path: string;
+    name: string;
+    size_bytes: number;
+    has_subtitles: boolean;
+};
+
+/**
+ * Schema for a video resource attached to an assignment.
+ *
+ * Story 10.3+: Video with subtitle control for students.
+ */
+export type VideoResource = {
+    type?: "video";
+    path: string;
+    name: string;
+    subtitles_enabled?: boolean;
+    has_subtitles?: boolean;
 };
 
 /**
@@ -2939,6 +3011,21 @@ export type BookAssignmentsGetBookAssignmentsData = {
 
 export type BookAssignmentsGetBookAssignmentsResponse = (Array<BookAssignmentResponse>);
 
+export type BookMediaStreamMediaData = {
+    /**
+     * Relative path to media (e.g., 'audio/08.mp3', 'videos/intro.mp4')
+     */
+    assetPath: string;
+    /**
+     * Book ID
+     */
+    bookId: string;
+    range?: (string | null);
+    token?: (string | null);
+};
+
+export type BookMediaStreamMediaResponse = (unknown);
+
 export type BooksTriggerBookSyncResponse = (BookSyncResponse);
 
 export type BooksListBooksData = {
@@ -2981,6 +3068,12 @@ export type BooksGetBookStructureData = {
 };
 
 export type BooksGetBookStructureResponse = (BookStructureResponse);
+
+export type BooksListBookVideosData = {
+    bookId: string;
+};
+
+export type BooksListBookVideosResponse = (BookVideosResponse);
 
 export type ClassesCreateClassData = {
     requestBody: ClassCreateByTeacher;
@@ -3441,6 +3534,12 @@ export type UsersUpdatePasswordMeData = {
 };
 
 export type UsersUpdatePasswordMeResponse = (Message);
+
+export type UsersChangeInitialPasswordData = {
+    requestBody: ChangeInitialPasswordRequest;
+};
+
+export type UsersChangeInitialPasswordResponse = (ChangePasswordResponse);
 
 export type UsersReadUserByIdData = {
     userId: string;

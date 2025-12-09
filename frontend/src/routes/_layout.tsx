@@ -3,7 +3,7 @@ import { UsersService } from "@/client"
 import Navbar from "@/components/Common/Navbar"
 import Sidebar from "@/components/Common/Sidebar"
 import { NavigationProvider } from "@/contexts/NavigationContext"
-import { isLoggedIn } from "@/hooks/useAuth"
+import { isLoggedIn, getMustChangePassword } from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -11,6 +11,13 @@ export const Route = createFileRoute("/_layout")({
     if (!isLoggedIn()) {
       throw redirect({
         to: "/login",
+      })
+    }
+
+    // Redirect to password change if required
+    if (getMustChangePassword()) {
+      throw redirect({
+        to: "/change-password",
       })
     }
 

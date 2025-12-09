@@ -22,7 +22,8 @@ from app.models import (
     UserPublic,
     UserRole,
 )
-from app.utils import generate_temp_password
+from app.core.config import settings
+from app.utils import generate_new_account_email, generate_temp_password, send_email
 
 router = APIRouter(prefix="/publishers", tags=["publishers"])
 
@@ -63,7 +64,6 @@ def get_my_profile(
         user_email=current_user.email,
         user_username=current_user.username,
         user_full_name=current_user.full_name or "",
-        user_initial_password=current_user.initial_password,
         created_at=publisher.created_at,
         updated_at=publisher.updated_at,
     )
@@ -221,7 +221,7 @@ def create_teacher(
         )
 
     # Generate secure temporary password
-    initial_password = generate_temp_password()
+    temp_password = generate_temp_password()
 
     # Create Teacher record data
     teacher_create = TeacherCreate(
@@ -235,10 +235,33 @@ def create_teacher(
         session=session,
         email=teacher_in.user_email,
         username=teacher_in.username,
-        password=initial_password,
+        password=temp_password,
         full_name=teacher_in.full_name,
         teacher_create=teacher_create
     )
+
+    # Handle password delivery based on email availability
+    password_emailed = False
+    temp_password_for_response = None
+
+    if user.email and settings.emails_enabled:
+        # Send password via email - secure path
+        email_data = generate_new_account_email(
+            email_to=user.email,
+            username=user.username,
+            password=temp_password
+        )
+        send_email(
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content
+        )
+        password_emailed = True
+        message = "Password sent via email"
+    else:
+        # No email or emails disabled - return password once for manual communication
+        temp_password_for_response = temp_password
+        message = "Please share the temporary password securely with the user"
 
     # Build teacher response with user information
     teacher_data = TeacherPublic(
@@ -255,8 +278,10 @@ def create_teacher(
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
-        initial_password=initial_password,
-        role_record=teacher_data
+        role_record=teacher_data,
+        temporary_password=temp_password_for_response,
+        password_emailed=password_emailed,
+        message=message
     )
 
 

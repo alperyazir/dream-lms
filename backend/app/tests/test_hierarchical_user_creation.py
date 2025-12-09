@@ -30,7 +30,8 @@ def test_admin_creates_publisher_success(client: TestClient, admin_token: str) -
     assert "user" in data
     assert data["user"]["email"] == "newpub@example.com"
     assert "username" in data["user"]  # Username should be auto-generated
-    assert "initial_password" in data
+    assert "temporary_password" in data  # Secure password flow
+    assert data["user"]["must_change_password"] is True
 
 
 def test_admin_creates_teacher_success(
