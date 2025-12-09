@@ -28,6 +28,7 @@ interface Item {
   title: string
   path: string
   comingSoon?: boolean
+  dataTour?: string
 }
 
 interface AdminStats {
@@ -40,7 +41,7 @@ interface AdminStats {
 // Role-specific menu items
 const roleMenuItems: Record<UserRole, Item[]> = {
   admin: [
-    { icon: FiHome, title: "Dashboard", path: "/admin/dashboard" },
+    { icon: FiHome, title: "Dashboard", path: "/admin/dashboard", dataTour: "sidebar-dashboard" },
     { icon: FiBriefcase, title: "Publishers", path: "/admin/publishers" },
     { icon: FiTrendingUp, title: "Schools", path: "/admin/schools" },
     { icon: FiUsers, title: "Teachers", path: "/admin/teachers" },
@@ -50,31 +51,34 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiBarChart2, title: "Benchmarks", path: "/admin/benchmarks" },
   ],
   publisher: [
-    { icon: FiHome, title: "Dashboard", path: "/publisher/dashboard" },
+    { icon: FiHome, title: "Dashboard", path: "/publisher/dashboard", dataTour: "sidebar-dashboard" },
     {
       icon: FiBook,
       title: "Library",
       path: "/publisher/library",
+      dataTour: "sidebar-library",
     },
     {
       icon: FiTrendingUp,
       title: "Schools",
       path: "/publisher/schools",
+      dataTour: "sidebar-schools",
     },
     {
       icon: FiUsers,
       title: "Teachers",
       path: "/publisher/teachers",
+      dataTour: "sidebar-teachers",
     },
   ],
   teacher: [
-    { icon: FiHome, title: "Dashboard", path: "/teacher/dashboard" },
+    { icon: FiHome, title: "Dashboard", path: "/teacher/dashboard", dataTour: "sidebar-dashboard" },
     {
       icon: FiCalendar,
       title: "Calendar",
       path: "/teacher/calendar",
     },
-    { icon: FiBook, title: "Library", path: "/teacher/books" },
+    { icon: FiBook, title: "Library", path: "/teacher/books", dataTour: "sidebar-library" },
     {
       icon: FiTrendingUp,
       title: "Classrooms",
@@ -84,9 +88,10 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       icon: FiUsers,
       title: "Students",
       path: "/teacher/students",
+      dataTour: "sidebar-students",
     },
-    { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments" },
-    { icon: FiZap, title: "Insights", path: "/teacher/insights" },
+    { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments", dataTour: "sidebar-assignments" },
+    { icon: FiZap, title: "Insights", path: "/teacher/insights", dataTour: "sidebar-insights" },
     {
       icon: FiBarChart2,
       title: "Reports",
@@ -94,14 +99,14 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     },
   ],
   student: [
-    { icon: FiHome, title: "Dashboard", path: "/student/dashboard" },
+    { icon: FiHome, title: "Dashboard", path: "/student/dashboard", dataTour: "sidebar-dashboard" },
     {
       icon: FiCalendar,
       title: "Calendar",
       path: "/student/calendar",
     },
-    { icon: FiClipboard, title: "Assignments", path: "/student/assignments" },
-    { icon: FiTrendingUp, title: "My Progress", path: "/student/progress" },
+    { icon: FiClipboard, title: "Assignments", path: "/student/assignments", dataTour: "sidebar-assignments" },
+    { icon: FiTrendingUp, title: "My Progress", path: "/student/progress", dataTour: "sidebar-progress" },
     {
       icon: FiBarChart2,
       title: "Reports",
@@ -190,7 +195,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   }
 
   const renderMenuItem = (item: Item) => {
-    const { icon: IconComponent, title, path, comingSoon } = item
+    const { icon: IconComponent, title, path, comingSoon, dataTour } = item
     const isActive = location.pathname === path
     const itemCount = getItemCount(path)
 
@@ -204,6 +209,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
             : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
         } ${comingSoon ? "opacity-60" : ""}`}
         title={isCollapsed ? title : undefined}
+        data-tour={dataTour}
       >
         <IconComponent
           className={`self-center h-5 w-5 ${isActive ? "text-teal-600 dark:text-teal-400" : ""} ${
@@ -256,7 +262,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   }
 
   const bottomItems: Item[] = [
-    { icon: FiSettings, title: "Settings", path: "/settings" },
+    { icon: FiSettings, title: "Settings", path: "/settings", dataTour: "sidebar-settings" },
   ]
 
   // Add User Management for admins only

@@ -138,6 +138,7 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     must_change_password: bool = Field(default=False)  # True for new users requiring password change
+    has_completed_tour: bool = Field(default=False)  # True after user completes onboarding tour
 
     # Avatar fields
     avatar_url: str | None = Field(default=None, max_length=500)  # URL to avatar image
@@ -153,6 +154,7 @@ class User(UserBase, table=True):
 class UserPublic(UserBase):
     id: uuid.UUID
     must_change_password: bool = False
+    has_completed_tour: bool = False
     avatar_url: str | None = None
     avatar_type: AvatarType | None = None
 
@@ -172,6 +174,7 @@ class Token(SQLModel):
     access_token: str
     token_type: str = "bearer"
     must_change_password: bool = False
+    has_completed_tour: bool = False
 
 
 # Contents of JWT token

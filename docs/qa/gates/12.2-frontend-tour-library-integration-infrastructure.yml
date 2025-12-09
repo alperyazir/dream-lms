@@ -1,0 +1,189 @@
+# QA Gate: Story 12.2 - Frontend Tour Library Integration & Infrastructure
+# Generated: 2025-12-09
+# QA Agent: Quinn
+
+story_id: "12.2"
+story_title: "Frontend - Tour Library Integration & Infrastructure"
+status: PASS
+reviewed_by: "Quinn (QA Agent)"
+review_date: "2025-12-09"
+
+# Acceptance Criteria Verification
+acceptance_criteria:
+  - id: AC1
+    description: "Install and configure React Joyride"
+    status: PASS
+    evidence: "react-joyride@2.9.2 installed in package.json, imported in Tour.tsx"
+
+  - id: AC2
+    description: "Create TourProvider component to wrap application"
+    status: PASS
+    evidence: "TourProvider in contexts/TourContext.tsx, integrated in routes/_layout.tsx"
+
+  - id: AC3
+    description: "Create useTour hook for tour control"
+    status: PASS
+    evidence: "useTour hook in hooks/useTour.ts with full API integration"
+
+  - id: AC4
+    description: "Tour state management (active, step index, completed)"
+    status: PASS
+    evidence: "TourState interface with isActive, stepIndex, isCompleted, tourId, steps"
+
+  - id: AC5
+    description: "Skip functionality that calls API and dismisses tour"
+    status: PASS
+    evidence: "skipTour() calls UsersService.completeTour() API, sets isCompleted=true"
+
+  - id: AC6
+    description: "Styling matches Shadcn UI / neumorphic design system"
+    status: PASS
+    evidence: "TourTooltip uses Shadcn Button, Tailwind classes matching design system"
+
+# Test Results
+test_results:
+  total_tests: 25
+  passed: 25
+  failed: 0
+  skipped: 0
+  coverage_notes: "Hook and component tests cover all critical paths"
+
+  test_files:
+    - file: "src/hooks/useTour.test.tsx"
+      tests: 12
+      status: PASS
+      coverage:
+        - startTour sets isActive to true
+        - startTour with tourId
+        - nextStep advances step
+        - prevStep goes back
+        - boundary check (step 0)
+        - goToStep navigation
+        - skipTour calls API
+        - skipTour handles API failure gracefully
+        - completeTour calls API
+        - stopTour without completion
+        - resetTour clears state
+        - auto-complete when past last step
+
+    - file: "src/components/tour/TourTooltip.test.tsx"
+      tests: 13
+      status: PASS
+      coverage:
+        - renders title and content
+        - displays step progress indicator
+        - onNext callback
+        - onBack callback
+        - hides Back on first step
+        - onSkip callback
+        - onClose callback
+        - shows Finish on last step
+        - accessible dialog role
+        - aria-labelledby attribute
+        - aria-describedby attribute
+        - renders without title
+        - hides Next when not continuous
+
+# Build Verification
+build_verification:
+  typescript_build: PASS
+  lint_check: PASS
+  no_console_errors: PASS
+  bundle_size_impact: "Minimal - react-joyride adds ~26KB gzipped"
+
+# Code Quality Assessment
+code_quality:
+  type_safety: PASS
+  notes: "Full TypeScript coverage with proper interfaces"
+
+  patterns_followed:
+    - "React Context pattern matches existing NavigationContext"
+    - "Hook pattern matches existing useAuth pattern"
+    - "API integration uses TanStack Query mutations"
+    - "Shadcn UI styling conventions"
+
+  accessibility:
+    - "aria-labelledby on dialog"
+    - "aria-describedby on dialog"
+    - "aria-label on all buttons"
+    - "role='dialog' on tooltip"
+    - "Keyboard navigation supported via Joyride"
+
+# Integration Points
+integration:
+  - component: "TourProvider"
+    location: "routes/_layout.tsx"
+    status: PASS
+    notes: "Properly wrapped inside NavigationProvider"
+
+  - component: "Tour"
+    location: "routes/_layout.tsx"
+    status: PASS
+    notes: "Rendered alongside LayoutContent"
+
+  - component: "UsersService.completeTour"
+    location: "client/sdk.gen.ts"
+    status: PASS
+    notes: "Generated from OpenAPI spec"
+
+# Non-Functional Requirements
+nfr:
+  performance:
+    status: PASS
+    notes: "Joyride uses portals, minimal DOM impact"
+
+  maintainability:
+    status: PASS
+    notes: "Clear separation of concerns, well-documented types"
+
+  extensibility:
+    status: PASS
+    notes: "Infrastructure ready for Stories 12.3/12.4 to define tour steps"
+
+# Files Changed
+files:
+  new:
+    - "frontend/src/types/tour.ts"
+    - "frontend/src/contexts/TourContext.tsx"
+    - "frontend/src/hooks/useTour.ts"
+    - "frontend/src/hooks/useTour.test.tsx"
+    - "frontend/src/components/tour/Tour.tsx"
+    - "frontend/src/components/tour/TourTooltip.tsx"
+    - "frontend/src/components/tour/TourTooltip.test.tsx"
+
+  modified:
+    - "frontend/src/routes/_layout.tsx"
+    - "frontend/package.json"
+    - "frontend/src/client/*"
+
+# Known Issues / Technical Debt
+issues:
+  - severity: LOW
+    description: "react-joyride installed with --legacy-peer-deps due to React 19 peer dependency"
+    mitigation: "Monitor for react-joyride updates with React 19 support"
+
+  - severity: INFO
+    description: "react-is package added to fix recharts build issue"
+    mitigation: "Can be removed when recharts updates its dependencies"
+
+# Recommendations
+recommendations:
+  - "Story 12.3/12.4 can proceed to implement actual tour step definitions"
+  - "Consider adding E2E tests when tour steps are defined"
+  - "Monitor react-joyride for React 19 official support"
+
+# Final Verdict
+verdict:
+  status: PASS
+  summary: |
+    Story 12.2 successfully implements the tour infrastructure with:
+    - Complete React Joyride integration
+    - Proper state management via React Context
+    - API integration for tour completion tracking
+    - Shadcn UI styled custom tooltip
+    - 100% test pass rate (25/25 tests)
+    - Clean TypeScript build
+    - Proper accessibility attributes
+
+    The infrastructure is ready for subsequent stories to define
+    role-specific tour steps for students and teachers.

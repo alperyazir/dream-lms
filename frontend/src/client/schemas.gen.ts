@@ -8046,6 +8046,11 @@ export const TokenSchema = {
             type: 'boolean',
             title: 'Must Change Password',
             default: false
+        },
+        has_completed_tour: {
+            type: 'boolean',
+            title: 'Has Completed Tour',
+            default: false
         }
     },
     type: 'object',
@@ -8293,6 +8298,11 @@ export const UserPublicSchema = {
         must_change_password: {
             type: 'boolean',
             title: 'Must Change Password',
+            default: false
+        },
+        has_completed_tour: {
+            type: 'boolean',
+            title: 'Has Completed Tour',
             default: false
         },
         avatar_url: {

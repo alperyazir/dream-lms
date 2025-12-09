@@ -156,6 +156,21 @@ def change_initial_password(
     )
 
 
+@router.post("/me/complete-tour", response_model=Message)
+def complete_tour(
+    session: SessionDep,
+    current_user: CurrentUser
+) -> Message:
+    """
+    Mark onboarding tour as completed for the current user.
+    This endpoint is idempotent - calling multiple times is safe.
+    """
+    current_user.has_completed_tour = True
+    session.add(current_user)
+    session.commit()
+    return Message(message="Tour completed successfully")
+
+
 @router.get("/me", response_model=UserPublic)
 def read_user_me(current_user: CurrentUser) -> Any:
     """

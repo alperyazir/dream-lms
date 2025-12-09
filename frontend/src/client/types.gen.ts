@@ -2421,6 +2421,7 @@ export type Token = {
     access_token: string;
     token_type?: string;
     must_change_password?: boolean;
+    has_completed_tour?: boolean;
 };
 
 /**
@@ -2488,6 +2489,7 @@ export type UserPublic = {
     role?: UserRole;
     id: string;
     must_change_password?: boolean;
+    has_completed_tour?: boolean;
     avatar_url?: (string | null);
     avatar_type?: (AvatarType | null);
 };
@@ -3137,8 +3139,12 @@ export type ClassesGetClassBenchmarksEndpointResponse = (ClassBenchmarkResponse)
 
 export type DevGetQuickLoginUsersResponse = ({
     [key: string]: Array<{
-        [key: string]: (string | null);
+        [key: string]: (string | boolean | null);
     }>;
+});
+
+export type DevResetQuickLoginPasswordsResponse = ({
+    [key: string]: (string | number);
 });
 
 export type FeedbackGetFeedbackOptionsResponse = (FeedbackOptionsResponse);
@@ -3540,6 +3546,8 @@ export type UsersChangeInitialPasswordData = {
 };
 
 export type UsersChangeInitialPasswordResponse = (ChangePasswordResponse);
+
+export type UsersCompleteTourResponse = (Message);
 
 export type UsersReadUserByIdData = {
     userId: string;
