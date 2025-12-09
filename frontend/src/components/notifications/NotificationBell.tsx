@@ -60,6 +60,7 @@ export function NotificationBell({
               : "Notifications"
           }
           className={cn("relative", buttonClasses, className)}
+          data-tour="navbar-notifications"
         >
           <Bell style={{ width: iconSize, height: iconSize }} />
           {unreadCount > 0 && (
