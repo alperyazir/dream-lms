@@ -781,6 +781,486 @@ class DreamCentralStorageClient:
 
         return videos
 
+    # ========================================================================
+    # Teacher Materials Storage (Story 13.1)
+    # ========================================================================
+
+    TEACHERS_BUCKET = "teachers"
+
+    async def upload_teacher_material(
+        self,
+        teacher_id: str,
+        file_content: bytes,
+        filename: str,
+        content_type: str,
+        material_type: str,
+    ) -> str:
+        """
+        Upload a file to teacher's personal storage.
+
+        Uses the DCS /teachers/{teacher_uuid}/upload endpoint which expects
+        multipart/form-data with a 'file' field.
+
+        Args:
+            teacher_id: Teacher UUID string
+            file_content: File bytes
+            filename: Original filename
+            content_type: MIME type
+            material_type: Category (document, image, audio, video)
+
+        Returns:
+            Storage path in format "{category}/{filename}"
+
+        Raises:
+            DreamStorageError: If upload fails
+        """
+        # Get valid token
+        token = await self._get_valid_token()
+
+        # Use DCS teacher upload endpoint
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/upload"
+
+        # Prepare multipart form data
+        files = {
+            "file": (filename, file_content, content_type)
+        }
+
+        # Use longer timeout for uploads
+        timeout = httpx.Timeout(connect=5.0, read=120.0, write=120.0, pool=5.0)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                url,
+                files=files,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+            if response.status_code == 404:
+                raise DreamStorageNotFoundError(f"Teacher storage not found: {teacher_id}")
+
+            if response.status_code == 413:
+                raise DreamStorageError("File too large for storage")
+
+            if response.status_code == 422:
+                detail = response.json().get("detail", "Validation error")
+                raise DreamStorageError(f"Upload validation failed: {detail}")
+
+            if response.status_code not in (200, 201):
+                raise DreamStorageError(
+                    f"Upload failed with status {response.status_code}: {response.text}"
+                )
+
+            # Parse response to get the storage path
+            result = response.json()
+            # DCS returns: {category, filename, path, ...}
+            # path format: "{category}/{filename}"
+            storage_path = result.get("path", f"{result['category']}/{result['filename']}")
+
+            logger.info(f"Uploaded teacher material: {storage_path}")
+            return storage_path
+
+    async def download_teacher_material(
+        self,
+        teacher_id: str,
+        storage_path: str,
+    ) -> bytes:
+        """
+        Download a file from teacher's storage.
+
+        Uses DCS /teachers/{teacher_uuid}/files/{category}/{filename}/download
+        to get a presigned URL, then fetches the file content.
+
+        Args:
+            teacher_id: Teacher UUID string
+            storage_path: Storage path in format "{teacher_uuid}/{category}/{filename}"
+
+        Returns:
+            File bytes
+
+        Raises:
+            ValueError: If path format is invalid
+            DreamStorageError: If download fails
+        """
+        # Parse storage path: {teacher_uuid}/{category}/{filename}
+        parts = storage_path.split("/", 2)
+        if len(parts) != 3:
+            raise ValueError(f"Invalid storage path format: {storage_path}")
+        _teacher_uuid, category, filename = parts
+
+        # Get presigned download URL from DCS
+        token = await self._get_valid_token()
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}/download"
+
+        timeout = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+            if response.status_code == 404:
+                raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
+
+            if response.status_code != 200:
+                raise DreamStorageError(
+                    f"Failed to get download URL: {response.status_code}"
+                )
+
+            result = response.json()
+            download_url = result.get("url")
+
+            if not download_url:
+                raise DreamStorageError("No download URL returned from DCS")
+
+            # Presigned URLs from DCS contain 'minio:9000' (internal Docker hostname).
+            # We need to rewrite to localhost:9000 but preserve the Host header for signature validation.
+            original_host = None
+            if "minio:9000" in download_url:
+                original_host = "minio:9000"
+                download_url = download_url.replace("http://minio:9000", "http://localhost:9000")
+
+            # Fetch the actual file content from the presigned URL
+            headers = {}
+            if original_host:
+                headers["Host"] = original_host
+            file_response = await client.get(download_url, headers=headers)
+
+            if file_response.status_code != 200:
+                raise DreamStorageError(
+                    f"Failed to download file: {file_response.status_code}"
+                )
+
+            return file_response.content
+
+    async def stream_teacher_material(
+        self,
+        teacher_id: str,
+        storage_path: str,
+        start: int = 0,
+        end: int | None = None,
+        chunk_size: int = 32 * 1024,
+    ) -> AsyncGenerator[bytes, None]:
+        """
+        Stream a file from teacher's storage with optional byte range.
+
+        Gets a presigned URL from DCS and streams the file content.
+
+        Args:
+            teacher_id: Teacher UUID string
+            storage_path: Storage path in format "{teacher_uuid}/{category}/{filename}"
+            start: Start byte position
+            end: End byte position (None for end of file)
+            chunk_size: Size of chunks to yield (default 32KB)
+
+        Yields:
+            Bytes chunks of the file
+
+        Raises:
+            ValueError: If path format is invalid
+            DreamStorageError: If streaming fails
+        """
+        # Parse storage path: {teacher_uuid}/{category}/{filename}
+        parts = storage_path.split("/", 2)
+        if len(parts) != 3:
+            raise ValueError(f"Invalid storage path format: {storage_path}")
+        _teacher_uuid, category, filename = parts
+
+        # Get presigned download URL from DCS
+        token = await self._get_valid_token()
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}/download"
+
+        timeout = httpx.Timeout(connect=5.0, read=120.0, write=10.0, pool=5.0)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            # First, get the presigned URL
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+            if response.status_code == 404:
+                raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
+
+            if response.status_code != 200:
+                raise DreamStorageError(
+                    f"Failed to get download URL: {response.status_code}"
+                )
+
+            result = response.json()
+            download_url = result.get("url")
+
+            if not download_url:
+                raise DreamStorageError("No download URL returned from DCS")
+
+            # Presigned URLs from DCS contain 'minio:9000' (internal Docker hostname).
+            # We need to rewrite to localhost:9000 but preserve the Host header for signature validation.
+            original_host = None
+            if "minio:9000" in download_url:
+                original_host = "minio:9000"
+                download_url = download_url.replace("http://minio:9000", "http://localhost:9000")
+
+            # Prepare headers for streaming with range support
+            stream_headers = {}
+            if original_host:
+                stream_headers["Host"] = original_host
+            if end is not None:
+                stream_headers["Range"] = f"bytes={start}-{end}"
+            elif start > 0:
+                stream_headers["Range"] = f"bytes={start}-"
+
+            # Stream from the presigned URL
+            async with client.stream("GET", download_url, headers=stream_headers) as stream_response:
+                if stream_response.status_code == 404:
+                    raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
+
+                if stream_response.status_code == 416:
+                    raise DreamStorageError("Range not satisfiable")
+
+                if stream_response.status_code not in (200, 206):
+                    raise DreamStorageError(f"Unexpected status: {stream_response.status_code}")
+
+                async for chunk in stream_response.aiter_bytes(chunk_size):
+                    yield chunk
+
+    async def delete_teacher_material(
+        self,
+        teacher_id: str,
+        storage_path: str,
+    ) -> None:
+        """
+        Delete a file from teacher's storage.
+
+        Uses DCS /teachers/{teacher_uuid}/files/{category}/{filename} DELETE endpoint.
+
+        Args:
+            teacher_id: Teacher UUID string
+            storage_path: Storage path in format "{category}/{filename}"
+
+        Raises:
+            ValueError: If path format is invalid
+            DreamStorageError: If deletion fails
+        """
+        # Parse storage path to get category and filename
+        parts = storage_path.split("/", 1)
+        if len(parts) != 2:
+            raise ValueError(f"Invalid storage path format: {storage_path}")
+        category, filename = parts
+
+        # Get valid token
+        token = await self._get_valid_token()
+
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}"
+
+        timeout = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.delete(
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+            if response.status_code == 404:
+                # File already deleted or never existed - not an error
+                logger.warning(f"Material not found for deletion: {storage_path}")
+                return
+
+            if response.status_code not in (200, 204):
+                raise DreamStorageError(
+                    f"Failed to delete material: {response.status_code}"
+                )
+
+        logger.info(f"Deleted teacher material: {storage_path}")
+
+    async def get_teacher_material_presigned_url(
+        self,
+        teacher_id: str,
+        storage_path: str,
+        expires_minutes: int = 60,
+    ) -> dict:
+        """
+        Get a presigned URL for direct browser access to a teacher material.
+
+        Args:
+            teacher_id: Teacher UUID string
+            storage_path: Storage path in format "{teacher_uuid}/{category}/{filename}"
+            expires_minutes: URL expiry in minutes (default 60, max 1440)
+
+        Returns:
+            Dict with url, expires_in_seconds, path
+
+        Raises:
+            ValueError: If path format is invalid
+            DreamStorageError: If request fails
+        """
+        # Parse storage path: {teacher_uuid}/{category}/{filename}
+        parts = storage_path.split("/", 2)
+        if len(parts) != 3:
+            raise ValueError(f"Invalid storage path format: {storage_path}")
+        _teacher_uuid, category, filename = parts
+
+        # Get presigned URL from DCS
+        token = await self._get_valid_token()
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}/download"
+        params = {"expires_minutes": min(expires_minutes, 1440)}
+
+        timeout = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(
+                url,
+                params=params,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+            if response.status_code == 404:
+                raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
+
+            if response.status_code != 200:
+                raise DreamStorageError(
+                    f"Failed to get presigned URL: {response.status_code}"
+                )
+
+            result = response.json()
+
+            # Note: For browser access, presigned URLs contain 'minio:9000' which
+            # browsers can't resolve. The frontend should use backend proxy endpoints
+            # (/stream, /download) instead of presigned URLs directly.
+
+            return result
+
+    async def get_teacher_material_size(
+        self,
+        teacher_id: str,
+        storage_path: str,
+    ) -> int:
+        """
+        Get the size of a teacher material file without downloading it.
+
+        Uses the presigned URL with a HEAD request to get Content-Length.
+
+        Args:
+            teacher_id: Teacher UUID string
+            storage_path: Storage path in format "{teacher_uuid}/{category}/{filename}"
+
+        Returns:
+            File size in bytes
+
+        Raises:
+            ValueError: If path format is invalid
+            DreamStorageError: If request fails
+        """
+        # Parse storage path: {teacher_uuid}/{category}/{filename}
+        parts = storage_path.split("/", 2)
+        if len(parts) != 3:
+            raise ValueError(f"Invalid storage path format: {storage_path}")
+        _teacher_uuid, category, filename = parts
+
+        # Get presigned download URL from DCS
+        token = await self._get_valid_token()
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}/download"
+
+        timeout = httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+            if response.status_code == 404:
+                raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
+
+            if response.status_code != 200:
+                raise DreamStorageError(
+                    f"Failed to get download URL: {response.status_code}"
+                )
+
+            result = response.json()
+            download_url = result.get("url")
+
+            if not download_url:
+                raise DreamStorageError("No download URL returned from DCS")
+
+            # Presigned URLs from DCS contain 'minio:9000' (internal Docker hostname).
+            # We need to rewrite to localhost:9000 but preserve the Host header for signature validation.
+            original_host = None
+            if "minio:9000" in download_url:
+                original_host = "minio:9000"
+                download_url = download_url.replace("http://minio:9000", "http://localhost:9000")
+
+            # Prepare headers for HEAD request
+            head_headers = {}
+            if original_host:
+                head_headers["Host"] = original_host
+
+            # Make a HEAD request to the presigned URL to get size
+            head_response = await client.head(download_url, headers=head_headers)
+
+            if head_response.status_code == 404:
+                raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
+
+            if head_response.status_code != 200:
+                # Fallback: try Range request
+                range_headers = {"Range": "bytes=0-0"}
+                if original_host:
+                    range_headers["Host"] = original_host
+                range_response = await client.get(
+                    download_url,
+                    headers=range_headers,
+                )
+
+                content_range = range_response.headers.get("Content-Range")
+                if content_range:
+                    try:
+                        total_size = int(content_range.split("/")[1])
+                        return total_size
+                    except (IndexError, ValueError):
+                        pass
+
+                raise DreamStorageError(f"Unable to get file size: {head_response.status_code}")
+
+            # Get Content-Length from HEAD response
+            content_length = head_response.headers.get("Content-Length")
+            if content_length:
+                return int(content_length)
+
+            raise DreamStorageError("Unable to determine file size")
+
+    def _sanitize_filename(self, filename: str) -> str:
+        """
+        Sanitize filename for safe storage.
+
+        Args:
+            filename: Original filename
+
+        Returns:
+            Sanitized filename safe for storage
+        """
+        import os
+        import re
+        import unicodedata
+
+        # Normalize unicode
+        filename = unicodedata.normalize("NFKD", filename)
+
+        # Keep only safe characters (alphanumeric, underscore, hyphen, dot, space)
+        filename = re.sub(r"[^\w\s\-\.]", "", filename)
+
+        # Replace spaces with underscores
+        filename = filename.replace(" ", "_")
+
+        # Remove consecutive underscores/dots
+        filename = re.sub(r"_{2,}", "_", filename)
+        filename = re.sub(r"\.{2,}", ".", filename)
+
+        # Limit length (preserve extension)
+        name, ext = os.path.splitext(filename)
+        if len(name) > 100:
+            name = name[:100]
+
+        return f"{name}{ext}"
+
 
 # ============================================================================
 # Singleton Instance (optional - can also use dependency injection)

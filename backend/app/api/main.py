@@ -19,6 +19,7 @@ from app.api.routes import (
     reports,
     scheduled_tasks,
     students,
+    teacher_materials,
     teachers,
     users,
     utils,
@@ -47,6 +48,7 @@ api_router.include_router(messages.router)
 api_router.include_router(scheduled_tasks.router)
 api_router.include_router(feedback.router)
 api_router.include_router(avatars.router)
+api_router.include_router(teacher_materials.router)
 
 
 if settings.ENVIRONMENT == "local":

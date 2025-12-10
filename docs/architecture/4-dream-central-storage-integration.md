@@ -292,4 +292,101 @@ async def start_assignment(id: UUID):
 - Display friendly error message to students
 - Queue activity starts for retry when storage recovers
 
+## 4.8 Teacher Materials Storage (Story 13.1)
+
+**Bucket:** `teachers`
+
+**Purpose:** Personal storage for teachers to upload supplementary materials (documents, images, audio, video) that can be attached to assignments.
+
+### Bucket Structure
+
+```
+teachers/
+├── {teacher_uuid}/
+│   ├── documents/
+│   │   ├── abc123_lesson_plan.pdf
+│   │   └── def456_worksheet.docx
+│   ├── images/
+│   │   ├── ghi789_diagram.png
+│   │   └── jkl012_photo.jpg
+│   ├── audio/
+│   │   └── mno345_pronunciation.mp3
+│   └── video/
+│       └── pqr678_tutorial.mp4
+```
+
+### Setup Instructions
+
+1. **Create bucket in MinIO:**
+   ```bash
+   # Via MinIO Client (mc)
+   mc mb myminio/teachers
+
+   # Or via MinIO Console
+   # Navigate to Buckets → Create Bucket → Name: "teachers"
+   ```
+
+2. **Configure bucket policy:**
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Principal": {"AWS": ["arn:aws:iam::*:user/dream-lms-backend"]},
+         "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"],
+         "Resource": [
+           "arn:aws:s3:::teachers/*",
+           "arn:aws:s3:::teachers"
+         ]
+       }
+     ]
+   }
+   ```
+
+3. **CORS Configuration (if direct browser access needed):**
+   ```json
+   {
+     "CORSRules": [
+       {
+         "AllowedOrigins": ["https://your-frontend-domain.com"],
+         "AllowedMethods": ["GET"],
+         "AllowedHeaders": ["*"],
+         "ExposeHeaders": ["Content-Range", "Content-Length"],
+         "MaxAgeSeconds": 3600
+       }
+     ]
+   }
+   ```
+
+### Storage Quota
+
+- Default: 500MB per teacher
+- Configurable in `teacher_storage_quotas` table
+- Quota tracked in database, not MinIO
+
+### File Validation
+
+| Type | MIME Types | Max Size |
+|------|------------|----------|
+| Document | `application/pdf`, `text/plain`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | 100MB |
+| Image | `image/jpeg`, `image/png`, `image/gif`, `image/webp` | 100MB |
+| Audio | `audio/mpeg`, `audio/wav`, `audio/ogg`, `audio/mp4`, `audio/x-m4a` | 100MB |
+| Video | `video/mp4`, `video/webm`, `video/quicktime` | 100MB |
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/teachers/materials/upload` | Upload file |
+| POST | `/api/v1/teachers/materials/notes` | Create text note |
+| POST | `/api/v1/teachers/materials/urls` | Create URL link |
+| GET | `/api/v1/teachers/materials` | List materials |
+| GET | `/api/v1/teachers/materials/{id}` | Get material |
+| GET | `/api/v1/teachers/materials/{id}/download` | Download file |
+| GET | `/api/v1/teachers/materials/{id}/stream` | Stream media |
+| GET | `/api/v1/teachers/materials/quota` | Get quota info |
+| PATCH | `/api/v1/teachers/materials/{id}` | Update name |
+| DELETE | `/api/v1/teachers/materials/{id}` | Delete material |
+
 ---

@@ -22,10 +22,7 @@ from app.models import AssignmentPublishStatus, AssignmentStatus
 class ResourceType(str, Enum):
     """Types of additional resources that can be attached to assignments."""
     video = "video"
-    # Future types:
-    # pdf = "pdf"
-    # image = "image"
-    # link = "link"
+    teacher_material = "teacher_material"
 
 
 class VideoResource(BaseModel):
@@ -50,13 +47,48 @@ class VideoResource(BaseModel):
         return v
 
 
+class TeacherMaterialResource(BaseModel):
+    """Schema for a teacher-uploaded material attached to an assignment.
+
+    Story 13.3: Teacher Materials Assignment Integration.
+    Stores denormalized name/type for display even if material is deleted.
+    """
+    type: Literal["teacher_material"] = "teacher_material"
+    material_id: uuid.UUID
+    # Denormalized fields for display (cached from TeacherMaterial)
+    name: str
+    material_type: str  # document, image, audio, video, url, text_note
+
+
+class TeacherMaterialResourceResponse(TeacherMaterialResource):
+    """Response schema with availability status and enriched data.
+
+    Used when returning assignment resources to include current material state.
+    """
+    is_available: bool = True
+    file_size: int | None = None
+    mime_type: str | None = None
+    # For URLs
+    url: str | None = None
+    # For text notes
+    text_content: str | None = None
+    # Download URL (for files)
+    download_url: str | None = None
+
+
 class AdditionalResources(BaseModel):
     """Schema for additional resources attached to an assignment.
 
-    Currently supports video resources. Extensible for future resource types.
+    Supports video resources and teacher-uploaded materials.
     """
     videos: list[VideoResource] = []
-    # Future: pdfs, images, links, etc.
+    teacher_materials: list[TeacherMaterialResource] = []
+
+
+class AdditionalResourcesResponse(BaseModel):
+    """Response schema with enriched material data and availability status."""
+    videos: list[VideoResource] = []
+    teacher_materials: list[TeacherMaterialResourceResponse] = []
 
 
 class DateGroupCreate(BaseModel):
@@ -636,8 +668,9 @@ class MultiActivityStartResponse(BaseModel):
 
     # Story 10.3: Video attachment (legacy, use resources instead)
     video_path: str | None = None
-    # Additional Resources with subtitle control
-    resources: AdditionalResources | None = None
+    # Additional Resources with subtitle control and teacher materials
+    # Uses AdditionalResourcesResponse to include availability status for students
+    resources: AdditionalResourcesResponse | None = None
 
     @computed_field  # type: ignore[misc]
     @property
@@ -948,8 +981,8 @@ class AssignmentPreviewResponse(BaseModel):
 
     # Story 10.3: Video attachment (legacy, use resources instead)
     video_path: str | None = None
-    # Additional Resources with subtitle control
-    resources: AdditionalResources | None = None
+    # Additional Resources with subtitle control and teacher materials
+    resources: AdditionalResourcesResponse | None = None
 
 
 class ActivityPreviewResponse(BaseModel):

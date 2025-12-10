@@ -101,6 +101,9 @@ class Settings(BaseSettings):
     DREAM_CENTRAL_STORAGE_PASSWORD: str = "admin"
     DREAM_CENTRAL_STORAGE_TOKEN_EXPIRY: int = 1800  # 30 minutes in seconds
     DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET: str = "changethis"
+    # External MinIO URL for presigned URLs (replaces internal Docker hostname)
+    MINIO_EXTERNAL_URL: str = "http://localhost:9000"
+    MINIO_INTERNAL_URL: str = "http://minio:9000"
 
     # Scheduled task API key for external schedulers (cron, Lambda, etc.)
     SCHEDULER_API_KEY: str | None = None

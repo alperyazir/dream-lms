@@ -31,12 +31,45 @@ export interface VideoResource {
 }
 
 /**
+ * Teacher material resource attached to an assignment
+ * Story 13.3: Teacher Materials Assignment Integration
+ */
+export interface TeacherMaterialResource {
+  type: "teacher_material"
+  material_id: string
+  name: string
+  material_type: string // document, image, audio, video, url, text_note
+}
+
+/**
+ * Teacher material resource with availability status (for responses)
+ * Used when displaying materials to students
+ */
+export interface TeacherMaterialResourceResponse extends TeacherMaterialResource {
+  is_available: boolean
+  file_size: number | null
+  mime_type: string | null
+  url: string | null // For URL type
+  text_content: string | null // For text_note type
+  download_url: string | null // For file downloads
+}
+
+/**
  * Additional resources attached to an assignment
- * Currently supports video resources. Extensible for future resource types.
+ * Supports video resources and teacher-uploaded materials.
  */
 export interface AdditionalResources {
   videos: VideoResource[]
-  // Future: pdfs, images, links, etc.
+  teacher_materials: TeacherMaterialResource[]
+}
+
+/**
+ * Additional resources response with enriched data
+ * Used in student/preview responses
+ */
+export interface AdditionalResourcesResponse {
+  videos: VideoResource[]
+  teacher_materials: TeacherMaterialResourceResponse[]
 }
 
 /**
@@ -120,6 +153,7 @@ export interface AssignmentCreateRequest {
  * Story 3.8: Only editable fields can be updated
  * Story 9.6: Added status for publish now functionality
  * Story 9.8: Added activity_ids for editing activities
+ * Story 13.3: Added resources for teacher materials
  */
 export interface AssignmentUpdateRequest {
   name?: string
@@ -129,6 +163,7 @@ export interface AssignmentUpdateRequest {
   scheduled_publish_date?: string | null // ISO 8601 datetime string
   status?: AssignmentPublishStatus // For publish now functionality
   activity_ids?: string[] // Story 9.8: Update activities (add/remove/reorder)
+  resources?: AdditionalResources | null // Story 13.3: Teacher materials
 }
 
 /**
@@ -384,6 +419,7 @@ export interface ActivityProgressInfo {
  * Multi-activity assignment start response
  * Story 8.3: Student Multi-Activity Assignment Player
  * Story 10.3: Added video_path for video attachment
+ * Story 13.3: Teacher materials with availability status
  */
 export interface MultiActivityStartResponse {
   // Assignment info
@@ -417,8 +453,8 @@ export interface MultiActivityStartResponse {
   // Story 10.3: Video attachment
   video_path: string | null
 
-  // Story 10.3+: Additional resources with subtitle control
-  resources: AdditionalResources | null
+  // Story 10.3+/13.3: Additional resources with teacher materials
+  resources: AdditionalResourcesResponse | null
 }
 
 /**
@@ -661,6 +697,7 @@ export interface StudentCalendarAssignmentsResponse {
 /**
  * Response for assignment preview (teacher test mode)
  * Similar to MultiActivityStartResponse but without student-specific data
+ * Story 13.3: Added resources for teacher materials
  */
 export interface AssignmentPreviewResponse {
   assignment_id: string
@@ -686,6 +723,9 @@ export interface AssignmentPreviewResponse {
 
   // Story 10.3: Video attachment
   video_path: string | null
+
+  // Story 13.3: Additional resources with teacher materials
+  resources: AdditionalResourcesResponse | null
 }
 
 /**

@@ -6,6 +6,7 @@ import {
   FiBriefcase,
   FiCalendar,
   FiClipboard,
+  FiFolder,
   FiHome,
   FiSettings,
   FiTrendingUp,
@@ -79,6 +80,12 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       path: "/teacher/calendar",
     },
     { icon: FiBook, title: "Library", path: "/teacher/books", dataTour: "sidebar-library" },
+    {
+      icon: FiFolder,
+      title: "My Materials",
+      path: "/teacher/materials",
+      dataTour: "sidebar-materials",
+    },
     {
       icon: FiTrendingUp,
       title: "Classrooms",

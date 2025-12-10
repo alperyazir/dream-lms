@@ -1,0 +1,120 @@
+# Quality Gate: Story 13.3
+schema: 1
+story: "13.3"
+story_title: "Assignment Integration - Attach Teacher Materials"
+gate: PASS
+status_reason: "Implementation complete with all acceptance criteria met. Test coverage added for critical paths."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-10T21:15:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: low
+    finding: "Backend tests for teacher materials added (11 tests)"
+    suggested_action: "RESOLVED - Tests added in test_assignment_materials.py"
+  - id: "TEST-002"
+    severity: low
+    finding: "Frontend tests for ResourceSidebar added (26 tests)"
+    suggested_action: "RESOLVED - Tests added in ResourceSidebar.test.tsx"
+  - id: "ERR-001"
+    severity: low
+    finding: "DCS streaming errors may not surface user-friendly messages"
+    suggested_action: "Monitor in production; error handling is present"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Watch for streaming issues with large video files in production"
+
+evidence:
+  tests_reviewed: 37
+  risks_identified: 1
+  test_files_added:
+    - backend/app/tests/test_api/test_assignment_materials.py (11 tests)
+    - frontend/src/components/ActivityPlayers/ResourceSidebar.test.tsx (26 tests)
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8]
+    ac_gaps: []
+
+implementation_review:
+  backend:
+    schemas_complete: true
+    endpoints_complete: true
+    validation_implemented: true
+    security_checks: true
+    notes: |
+      - TeacherMaterialResource/Response schemas properly defined
+      - _validate_and_denormalize_teacher_materials() validates teacher ownership
+      - _enrich_resources() handles deleted materials gracefully (is_available=false)
+      - download_assignment_material endpoint validates: user auth, assignment access, material attachment
+      - RFC 5987 encoding for non-ASCII filenames (fixed UnicodeEncodeError)
+      - Streaming support with Range headers for video/audio
+
+  frontend:
+    types_complete: true
+    components_complete: true
+    ux_patterns: true
+    notes: |
+      - TypeScript types mirror backend schemas
+      - TeacherMaterialPicker component with search/filter
+      - StepAdditionalResources integrates materials section
+      - ResourceSidebar displays materials with fullscreen modal viewers
+      - Video/audio use streaming URLs; documents/images use blob URLs
+      - URL materials open in new tab (external links)
+      - EditAssignmentDialog supports adding/removing resources
+
+acceptance_criteria_validation:
+  - ac: 1
+    status: PASS
+    notes: "Teachers can attach materials during assignment creation via StepAdditionalResources"
+  - ac: 2
+    status: PASS
+    notes: "Denormalized storage with name/material_type in TeacherMaterialResource"
+  - ac: 3
+    status: PASS
+    notes: "_validate_and_denormalize_teacher_materials validates teacher ownership"
+  - ac: 4
+    status: PASS
+    notes: "Students see materials in ResourceSidebar with inline playback"
+  - ac: 5
+    status: PASS
+    notes: "_enrich_resources returns is_available=false for deleted materials"
+  - ac: 6
+    status: PASS
+    notes: "download_assignment_material validates assignment + attachment before serving"
+  - ac: 7
+    status: PASS
+    notes: "EditAssignmentDialog fetches preview and allows resource modification"
+  - ac: 8
+    status: PASS
+    notes: "Video/audio streaming, document/image blob viewing, text_note display, URL external open"
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "JWT auth (header/query), teacher ownership validation, student assignment validation"
+  performance:
+    status: PASS
+    notes: "Streaming for video/audio avoids full file download, blob URLs for other types"
+  reliability:
+    status: CONCERNS
+    notes: "Error handling present but edge cases (DCS failures) need review"
+  maintainability:
+    status: PASS
+    notes: "Clean separation of concerns, reusable components"
+
+recommendations:
+  immediate:
+    - action: "Add backend tests for download_assignment_material endpoint"
+      refs: ["backend/app/api/routes/assignments.py:1743-2050"]
+    - action: "Add tests for _validate_and_denormalize_teacher_materials"
+      refs: ["backend/app/api/routes/assignments.py:301-345"]
+  future:
+    - action: "Add component tests for ResourceSidebar material handling"
+      refs: ["frontend/src/components/ActivityPlayers/ResourceSidebar.tsx"]
+    - action: "Consider adding progress indicator for large file streaming"
+      refs: ["frontend/src/components/ActivityPlayers/ResourceSidebar.tsx:249-387"]

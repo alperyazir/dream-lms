@@ -1,15 +1,15 @@
 /**
- * Step 3: Additional Resources - Story 10.3+
+ * Step 3: Additional Resources - Story 10.3+, Story 13.3
  *
  * Form for adding supplementary resources to assignments.
- * Currently supports video with subtitle control.
- * Extensible for future resource types (PDFs, images, links, etc.)
+ * Supports video with subtitle control and teacher materials.
  */
 
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   Eye,
+  FileBox,
   FolderOpen,
   Plus,
   Subtitles,
@@ -24,8 +24,16 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { VideoPreviewModal } from "@/components/ActivityPlayers/VideoPreviewModal"
+import { MaterialTypeIcon, getMaterialTypeLabel } from "@/components/materials/MaterialTypeIcon"
+import { TeacherMaterialPicker } from "@/components/materials/TeacherMaterialPicker"
 import { getBookVideos, type VideoInfo } from "@/services/booksApi"
-import type { AdditionalResources, AssignmentFormData, VideoResource } from "@/types/assignment"
+import type {
+  AdditionalResources,
+  AssignmentFormData,
+  TeacherMaterialResource,
+  VideoResource,
+} from "@/types/assignment"
+import type { Material, MaterialType } from "@/types/material"
 
 interface StepAdditionalResourcesProps {
   formData: AssignmentFormData
@@ -51,6 +59,9 @@ export function StepAdditionalResources({
   const [previewVideo, setPreviewVideo] = useState<VideoInfo | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
+  // Teacher material picker state
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+
   // Fetch available videos from book
   const {
     data: videosData,
@@ -65,7 +76,7 @@ export function StepAdditionalResources({
   const availableVideos = videosData?.videos ?? []
 
   // Get current resources or initialize empty
-  const currentResources: AdditionalResources = formData.resources ?? { videos: [] }
+  const currentResources: AdditionalResources = formData.resources ?? { videos: [], teacher_materials: [] }
 
   /**
    * Add a video resource
@@ -99,7 +110,9 @@ export function StepAdditionalResources({
       videos: updatedVideos,
     }
 
-    onFormDataChange({ resources: updatedResources.videos.length > 0 ? updatedResources : null })
+    const hasResources = updatedResources.videos.length > 0 ||
+      (updatedResources.teacher_materials?.length ?? 0) > 0
+    onFormDataChange({ resources: hasResources ? updatedResources : null })
   }
 
   /**
@@ -142,8 +155,59 @@ export function StepAdditionalResources({
     return availableVideos.filter(v => !addedPaths.has(v.path))
   }
 
+  /**
+   * Add teacher materials from picker
+   */
+  const handleAddMaterials = (materials: Material[]) => {
+    const newMaterialResources: TeacherMaterialResource[] = materials.map((mat) => ({
+      type: "teacher_material" as const,
+      material_id: mat.id,
+      name: mat.name,
+      material_type: mat.type,
+    }))
+
+    // Filter out materials that are already added
+    const existingIds = new Set(
+      (currentResources.teacher_materials ?? []).map((m) => m.material_id)
+    )
+    const uniqueNew = newMaterialResources.filter(
+      (m) => !existingIds.has(m.material_id)
+    )
+
+    if (uniqueNew.length === 0) return
+
+    const updatedResources: AdditionalResources = {
+      ...currentResources,
+      teacher_materials: [...(currentResources.teacher_materials ?? []), ...uniqueNew],
+    }
+
+    onFormDataChange({ resources: updatedResources })
+  }
+
+  /**
+   * Remove a teacher material by material_id
+   */
+  const handleRemoveMaterial = (materialId: string) => {
+    const updatedMaterials = (currentResources.teacher_materials ?? []).filter(
+      (m) => m.material_id !== materialId
+    )
+
+    const updatedResources: AdditionalResources = {
+      ...currentResources,
+      teacher_materials: updatedMaterials,
+    }
+
+    const hasResources = updatedResources.videos.length > 0 ||
+      updatedResources.teacher_materials.length > 0
+    onFormDataChange({ resources: hasResources ? updatedResources : null })
+  }
+
   const videosToAdd = getAvailableToAdd()
   const hasVideos = currentResources.videos.length > 0
+  const hasMaterials = (currentResources.teacher_materials?.length ?? 0) > 0
+  const selectedMaterialIds = (currentResources.teacher_materials ?? []).map(
+    (m) => m.material_id
+  )
 
   return (
     <div className="flex flex-col h-full">
@@ -315,18 +379,80 @@ export function StepAdditionalResources({
         </CardContent>
       </Card>
 
-      {/* Future Resource Types Placeholder */}
-      <Card className="border-dashed">
-        <CardContent className="py-6">
-          <div className="flex flex-col items-center justify-center text-center">
-            <div className="rounded-full bg-muted p-3 mb-3">
-              <Plus className="h-5 w-5 text-muted-foreground" />
+      {/* Teacher Materials Section - Story 13.3 */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileBox className="h-5 w-5 text-teal-600" />
+              <CardTitle className="text-base">My Materials</CardTitle>
             </div>
-            <p className="text-sm font-medium text-muted-foreground">
-              More resource types coming soon
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              PDFs, images, links, and more
+            {hasMaterials && (
+              <Badge variant="secondary">
+                {currentResources.teacher_materials?.length} added
+              </Badge>
+            )}
+          </div>
+          <CardDescription>
+            Attach materials from your library for students to access
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Added Materials List */}
+          {hasMaterials && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Attached Materials</Label>
+              <div className="space-y-2">
+                {(currentResources.teacher_materials ?? []).map((material) => (
+                  <div
+                    key={material.material_id}
+                    className="flex items-center justify-between rounded-lg border bg-muted/30 p-3"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="p-1.5 rounded-md bg-background">
+                        <MaterialTypeIcon
+                          type={material.material_type as MaterialType}
+                          size="sm"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {material.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {getMaterialTypeLabel(material.material_type as MaterialType)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Remove Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => handleRemoveMaterial(material.material_id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Separator />
+            </div>
+          )}
+
+          {/* Add Materials Button */}
+          <div className="flex flex-col items-center justify-center py-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsPickerOpen(true)}
+              className="w-full max-w-xs"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {hasMaterials ? "Add More Materials" : "Add Materials"}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Select documents, images, audio, videos, or links from your library
             </p>
           </div>
         </CardContent>
@@ -344,6 +470,14 @@ export function StepAdditionalResources({
           showAttachButton={false}
         />
       )}
+
+      {/* Teacher Material Picker Modal */}
+      <TeacherMaterialPicker
+        open={isPickerOpen}
+        onOpenChange={setIsPickerOpen}
+        selectedIds={selectedMaterialIds}
+        onSelect={handleAddMaterials}
+      />
     </div>
   )
 }

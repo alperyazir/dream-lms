@@ -3,13 +3,22 @@
 import logging
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
-from fastapi import HTTPException, Query, Request, status
+import jwt
+from collections.abc import AsyncGenerator
+from fastapi import Depends, Header, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
 from fastapi.routing import APIRouter
+from fastapi.security import OAuth2PasswordBearer
+from jwt.exceptions import InvalidTokenError
+from pydantic import ValidationError
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from app.api.deps import AsyncSessionDep, require_role
+from app.core import security
+from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.models import (
     Activity,
@@ -27,6 +36,8 @@ from app.models import (
     NotificationType,
     Student,
     Teacher,
+    TeacherMaterial,
+    TokenPayload,
     User,
     UserRole,
 )
@@ -44,6 +55,8 @@ from app.schemas.assignment import (
     ActivityScoreItem,
     ActivityStartResponse,
     ActivityWithConfig,
+    AdditionalResources,
+    AdditionalResourcesResponse,
     AssignmentCreate,
     AssignmentListItem,
     AssignmentPreviewResponse,
@@ -64,6 +77,7 @@ from app.schemas.assignment import (
     PerActivityScore,
     StudentActivityScore,
     StudentAssignmentResultResponse,
+    TeacherMaterialResourceResponse,
 )
 from app.schemas.feedback import (
     FeedbackCreate,
@@ -72,6 +86,12 @@ from app.schemas.feedback import (
     FeedbackUpdate,
 )
 from app.services import book_assignment_service, feedback_service, notification_service
+from app.services.dream_storage_client import (
+    DreamCentralStorageClient,
+    DreamStorageError,
+    DreamStorageNotFoundError,
+    get_dream_storage_client,
+)
 from app.services.analytics_service import (
     get_assignment_detailed_results,
     get_student_assignment_answers,
@@ -79,6 +99,12 @@ from app.services.analytics_service import (
 
 router = APIRouter(prefix="/assignments", tags=["assignments"])
 logger = logging.getLogger(__name__)
+
+# OAuth2 scheme for header-based auth (auto_error=False to allow fallback to query param)
+_media_oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/login/access-token",
+    auto_error=False,
+)
 
 
 async def _verify_activity_access(
@@ -270,6 +296,123 @@ def _validate_due_date(due_date: datetime | None) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Due date must be in the future",
         )
+
+
+async def _validate_and_denormalize_teacher_materials(
+    session: AsyncSessionDep,
+    resources: AdditionalResources | None,
+    teacher_id: uuid.UUID,
+) -> AdditionalResources | None:
+    """
+    Validate teacher materials belong to the teacher and denormalize data.
+
+    Story 13.3: Teacher Materials Assignment Integration.
+
+    Args:
+        session: Database session
+        resources: Resources to validate
+        teacher_id: Teacher's ID for ownership check
+
+    Returns:
+        Updated resources with denormalized material data
+
+    Raises:
+        HTTPException(404): Material not found or doesn't belong to teacher
+    """
+    if not resources or not resources.teacher_materials:
+        return resources
+
+    for mat_ref in resources.teacher_materials:
+        # Fetch the actual material
+        result = await session.execute(
+            select(TeacherMaterial).where(
+                TeacherMaterial.id == mat_ref.material_id,
+                TeacherMaterial.teacher_id == teacher_id,
+            )
+        )
+        material = result.scalar_one_or_none()
+
+        if not material:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Material {mat_ref.material_id} not found or access denied",
+            )
+
+        # Update denormalized fields from actual material
+        mat_ref.name = material.name
+        mat_ref.material_type = material.type.value
+
+    return resources
+
+
+async def _enrich_resources(
+    session: AsyncSessionDep,
+    resources_dict: dict | None,
+) -> AdditionalResourcesResponse | None:
+    """
+    Enrich resource references with current data and availability status.
+
+    Story 13.3: Teacher Materials Assignment Integration.
+
+    Args:
+        session: Database session
+        resources_dict: Raw resources dict from assignment
+
+    Returns:
+        Enriched resources response with availability status and download URLs
+    """
+    if not resources_dict:
+        return None
+
+    try:
+        resources = AdditionalResources.model_validate(resources_dict)
+    except Exception:
+        # Invalid resources data - return empty
+        return AdditionalResourcesResponse(videos=[], teacher_materials=[])
+
+    enriched_materials: list[TeacherMaterialResourceResponse] = []
+
+    for mat_ref in resources.teacher_materials:
+        # Try to fetch current material data
+        result = await session.execute(
+            select(TeacherMaterial).where(TeacherMaterial.id == mat_ref.material_id)
+        )
+        material = result.scalar_one_or_none()
+
+        if material:
+            # Material exists - use current data
+            enriched_materials.append(
+                TeacherMaterialResourceResponse(
+                    type="teacher_material",
+                    material_id=mat_ref.material_id,
+                    name=material.name,  # Use current name
+                    material_type=material.type.value,
+                    is_available=True,
+                    file_size=material.file_size,
+                    mime_type=material.mime_type,
+                    url=material.url,
+                    text_content=material.text_content,
+                    download_url=f"/api/v1/teachers/materials/{material.id}/download"
+                    if material.storage_path
+                    else None,
+                )
+            )
+        else:
+            # Material was deleted - use cached/denormalized data
+            enriched_materials.append(
+                TeacherMaterialResourceResponse(
+                    type="teacher_material",
+                    material_id=mat_ref.material_id,
+                    name=mat_ref.name,  # Use cached name
+                    material_type=mat_ref.material_type,
+                    is_available=False,
+                )
+            )
+
+    return AdditionalResourcesResponse(
+        videos=resources.videos,
+        teacher_materials=enriched_materials,
+    )
 
 
 @router.get(
@@ -691,6 +834,11 @@ async def create_assignment(
             detail="No valid students selected for assignment",
         )
 
+    # Story 13.3: Validate and denormalize teacher materials
+    validated_resources = await _validate_and_denormalize_teacher_materials(
+        session, assignment_in.resources, teacher.id
+    )
+
     # Create Assignment record
     now = datetime.now(UTC)
     # Keep activity_id for backward compatibility (set to first activity if multi)
@@ -716,7 +864,7 @@ async def create_assignment(
         scheduled_publish_date=assignment_in.scheduled_publish_date,
         status=assignment_status,
         video_path=assignment_in.video_path,  # Story 10.3: Video attachment (deprecated)
-        resources=assignment_in.resources.model_dump() if assignment_in.resources else None,  # Story 10.3+: Additional resources
+        resources=validated_resources.model_dump(mode="json") if validated_resources else None,  # Story 10.3+/13.3: Additional resources
         created_at=now,
         updated_at=now,
     )
@@ -1108,8 +1256,24 @@ async def update_assignment(
     # Story 9.8: Handle activity_ids separately
     new_activity_ids = update_data.pop("activity_ids", None)
 
+    # Story 13.3: Handle resources separately for validation
+    new_resources = update_data.pop("resources", None)
+
     for field, value in update_data.items():
         setattr(assignment, field, value)
+
+    # Story 13.3: Validate and save resources if provided
+    if new_resources is not None:
+        if new_resources:
+            # Convert dict back to Pydantic model for validation
+            resources_model = AdditionalResources.model_validate(new_resources)
+            validated_resources = await _validate_and_denormalize_teacher_materials(
+                session, resources_model, teacher.id
+            )
+            assignment.resources = validated_resources.model_dump(mode="json") if validated_resources else None
+        else:
+            # Clear resources if empty dict/None
+            assignment.resources = None
 
     # Story 9.8: Update activities if provided
     if new_activity_ids is not None:
@@ -1543,6 +1707,9 @@ async def start_multi_activity_assignment(
     await session.commit()
     await session.refresh(assignment_student)
 
+    # Story 13.3: Enrich resources with availability status for students
+    enriched_resources = await _enrich_resources(session, assignment.resources)
+
     # Build response
     response = MultiActivityStartResponse(
         assignment_id=assignment.id,
@@ -1562,7 +1729,7 @@ async def start_multi_activity_assignment(
         time_spent_minutes=assignment_student.time_spent_minutes,
         started_at=assignment_student.started_at,
         video_path=assignment.video_path,  # Story 10.3: Video attachment
-        resources=assignment.resources,  # Story 10.3+: Additional resources
+        resources=enriched_resources,  # Story 10.3+/13.3: Enriched resources with availability
     )
 
     logger.info(
@@ -1571,6 +1738,314 @@ async def start_multi_activity_assignment(
     )
 
     return response
+
+
+@router.get(
+    "/{assignment_id}/materials/{material_id}/download",
+    summary="Stream teacher material for viewing",
+    description="Stream a teacher material attached to an assignment. Students can access materials attached to assignments they're assigned to. Teachers can access materials on their own assignments.",
+)
+async def download_assignment_material(
+    *,
+    session: AsyncSessionDep,
+    dcs_client: DreamCentralStorageClient = Depends(get_dream_storage_client),
+    assignment_id: uuid.UUID,
+    material_id: uuid.UUID,
+    header_token: Annotated[str | None, Depends(_media_oauth2_scheme)] = None,
+    query_token: Annotated[str | None, Query(alias="token")] = None,
+    range_header: Annotated[str | None, Header(alias="Range")] = None,
+) -> StreamingResponse:
+    """
+    Stream a teacher material attached to an assignment for viewing.
+
+    Story 13.3: Teacher Materials Assignment Integration.
+
+    **Authentication:**
+    - Header: `Authorization: Bearer <token>` (for fetch/axios requests)
+    - Query param: `?token=<token>` (for HTML5 video/audio/img elements)
+
+    **Authorization:**
+    - Students: Must be assigned to the assignment, assignment must be published
+    - Teachers: Must own the assignment
+    - Material must be attached to the assignment
+    - Material must still exist (is_available=true)
+
+    **Returns:**
+    Streaming file for inline viewing (video, audio, image, document)
+
+    **Status Codes:**
+    - 200: File stream
+    - 400: Material type cannot be streamed (URL/text_note)
+    - 401: Not authenticated
+    - 403: Not authorized to access this assignment
+    - 404: Assignment/material not found or not attached
+    """
+    # Authenticate user - support both header and query param token
+    token = header_token or query_token
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+    except (InvalidTokenError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        )
+
+    user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    current_user = await session.get(User, user_id)
+    if not current_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+
+    # Verify user role
+    if current_user.role not in [UserRole.student, UserRole.teacher]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    assignment = None
+
+    if current_user.role == UserRole.student:
+        # Get Student record
+        result = await session.execute(
+            select(Student).where(Student.user_id == current_user.id)
+        )
+        student = result.scalar_one_or_none()
+
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student record not found",
+            )
+
+        # Verify student is assigned to this assignment
+        result = await session.execute(
+            select(AssignmentStudent, Assignment)
+            .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+            .where(
+                AssignmentStudent.assignment_id == assignment_id,
+                AssignmentStudent.student_id == student.id,
+            )
+        )
+        assignment_data = result.one_or_none()
+
+        if not assignment_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Assignment not found",
+            )
+
+        assignment_student, assignment = assignment_data
+
+        # Verify assignment is published for students
+        if assignment.status != AssignmentPublishStatus.published:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Assignment not found",
+            )
+    else:
+        # Teacher - verify they own the assignment
+        result = await session.execute(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        )
+        teacher = result.scalar_one_or_none()
+
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Teacher record not found",
+            )
+
+        result = await session.execute(
+            select(Assignment).where(
+                Assignment.id == assignment_id,
+                Assignment.teacher_id == teacher.id,
+            )
+        )
+        assignment = result.scalar_one_or_none()
+
+        if not assignment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Assignment not found",
+            )
+
+    # Verify material is attached to this assignment
+    if not assignment.resources:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not attached to this assignment",
+        )
+
+    try:
+        resources = AdditionalResources.model_validate(assignment.resources)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not attached to this assignment",
+        )
+
+    # Check if material is in the attached materials
+    material_attached = any(
+        str(mat.material_id) == str(material_id)
+        for mat in resources.teacher_materials
+    )
+
+    if not material_attached:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not attached to this assignment",
+        )
+
+    # Get the actual material
+    result = await session.execute(
+        select(TeacherMaterial).where(TeacherMaterial.id == material_id)
+    )
+    material = result.scalar_one_or_none()
+
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material no longer available",
+        )
+
+    # URLs and text notes cannot be downloaded (they're accessed differently)
+    from app.models import MaterialType
+    if material.type in [MaterialType.url, MaterialType.text_note]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="URLs and text notes cannot be downloaded",
+        )
+
+    if not material.storage_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material file not found",
+        )
+
+    # Get file size for Range support
+    try:
+        file_size = await dcs_client.get_teacher_material_size(
+            teacher_id=str(material.teacher_id),
+            storage_path=material.storage_path,
+        )
+    except DreamStorageNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in storage",
+        )
+    except DreamStorageError as e:
+        logger.error(f"Failed to get material size: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to access file",
+        )
+
+    # Parse range if provided
+    start = 0
+    end = file_size - 1
+    is_range_request = False
+
+    if range_header:
+        is_range_request = True
+        # Parse "bytes=start-end" format
+        try:
+            range_spec = range_header.replace("bytes=", "")
+            if range_spec.startswith("-"):
+                # Last N bytes: bytes=-500
+                suffix_length = int(range_spec[1:])
+                start = max(0, file_size - suffix_length)
+                end = file_size - 1
+            elif range_spec.endswith("-"):
+                # From start to end: bytes=1024-
+                start = int(range_spec[:-1])
+                end = file_size - 1
+            else:
+                # Specific range: bytes=0-1023
+                range_parts = range_spec.split("-")
+                start = int(range_parts[0])
+                end = int(range_parts[1]) if range_parts[1] else file_size - 1
+
+            # Validate range
+            if start > end or start >= file_size:
+                raise HTTPException(
+                    status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
+                    detail="Invalid range",
+                    headers={"Content-Range": f"bytes */{file_size}"},
+                )
+            end = min(end, file_size - 1)
+        except (ValueError, IndexError):
+            # Invalid range format, ignore and serve full file
+            is_range_request = False
+            start = 0
+            end = file_size - 1
+
+    content_length = end - start + 1
+
+    # Create streaming generator
+    async def stream_generator() -> AsyncGenerator[bytes, None]:
+        try:
+            async for chunk in dcs_client.stream_teacher_material(
+                teacher_id=str(material.teacher_id),
+                storage_path=material.storage_path,
+                start=start,
+                end=end,
+            ):
+                yield chunk
+        except DreamStorageError as e:
+            logger.error(f"Error streaming material: {e}")
+            raise
+
+    # Prepare filename for Content-Disposition (RFC 5987 for non-ASCII)
+    filename = material.original_filename or material.name
+    # ASCII fallback - replace non-ASCII chars
+    ascii_filename = filename.encode("ascii", errors="replace").decode("ascii").replace("?", "_")
+    ascii_filename = ascii_filename.replace('"', "'").replace("\n", " ")
+    # UTF-8 encoded filename for modern browsers
+    from urllib.parse import quote
+    utf8_filename = quote(filename, safe="")
+
+    logger.info(
+        f"Material streamed: assignment_id={assignment_id}, "
+        f"material_id={material_id}, user_id={current_user.id}, range={range_header}"
+    )
+
+    # Build response headers with RFC 5987 filename encoding
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Length": str(content_length),
+        "Content-Disposition": f"inline; filename=\"{ascii_filename}\"; filename*=UTF-8''{utf8_filename}",
+        "Cache-Control": "max-age=86400",  # 24 hours
+    }
+
+    content_type = material.mime_type or "application/octet-stream"
+
+    if is_range_request:
+        headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+        return StreamingResponse(
+            stream_generator(),
+            status_code=status.HTTP_206_PARTIAL_CONTENT,
+            media_type=content_type,
+            headers=headers,
+        )
+    else:
+        return StreamingResponse(
+            stream_generator(),
+            status_code=status.HTTP_200_OK,
+            media_type=content_type,
+            headers=headers,
+        )
 
 
 @router.patch(
@@ -3111,6 +3586,9 @@ async def preview_assignment(
             )
         )
 
+    # Story 13.3: Enrich resources with availability status for preview
+    enriched_resources = await _enrich_resources(session, assignment.resources)
+
     # Build response
     response = AssignmentPreviewResponse(
         assignment_id=assignment.id,
@@ -3128,6 +3606,7 @@ async def preview_assignment(
         total_activities=len(activities),
         is_preview=True,
         video_path=assignment.video_path,  # Story 10.3: Include video attachment
+        resources=enriched_resources,  # Story 13.3: Include teacher materials
     )
 
     logger.info(

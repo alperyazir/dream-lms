@@ -29,7 +29,7 @@ import type {
 import { hasAudio } from "@/lib/audioUtils"
 import { getActivityAudioUrl } from "@/services/booksApi"
 import { getSubtitleUrl, getVideoStreamUrl } from "@/services/booksApi"
-import type { AdditionalResources } from "@/types/assignment"
+import type { AdditionalResourcesResponse } from "@/types/assignment"
 import { Button } from "@/components/ui/button"
 import { ActivityNavigationBar } from "./ActivityNavigationBar"
 import { ActivityPlayer } from "./ActivityPlayer"
@@ -101,7 +101,7 @@ export interface MultiActivityPlayerProps {
   /** Story 10.3: Video path attached to assignment (relative path like "videos/chapter1.mp4") - deprecated */
   videoPath?: string | null
   /** Story 10.3+: Additional resources with subtitle control */
-  resources?: AdditionalResources | null
+  resources?: AdditionalResourcesResponse | null
 }
 
 /**
@@ -212,10 +212,10 @@ export function MultiActivityPlayer({
   // Story 10.3: Video player expanded state
   const [videoExpanded, setVideoExpanded] = useState(true)
 
-  // Story 10.3+: Resource sidebar state
+  // Story 10.3+/13.3: Resource sidebar state
   const [resourceSidebarOpen, setResourceSidebarOpen] = useState(false)
   const [selectedResourceVideo, setSelectedResourceVideo] = useState<VideoResource | null>(null)
-  const resourceCount = resources?.videos?.length ?? 0
+  const resourceCount = (resources?.videos?.length ?? 0) + (resources?.teacher_materials?.length ?? 0)
 
   // Story 10.3: Reset trigger and confirmation dialog
   const [resetTrigger, setResetTrigger] = useState(0)
@@ -720,10 +720,11 @@ export function MultiActivityPlayer({
           </div>
         </main>
 
-        {/* Story 10.3+: Resource Sidebar - pushes content when open */}
+        {/* Story 10.3+/13.3: Resource Sidebar - pushes content when open */}
         <ResourceSidebar
           resources={resources ?? null}
           bookId={bookId}
+          assignmentId={assignmentId}
           getVideoUrl={getVideoStreamUrl}
           getSubtitleUrl={getSubtitleUrl}
           isOpen={resourceSidebarOpen}

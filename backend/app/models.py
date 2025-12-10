@@ -28,6 +28,8 @@ if TYPE_CHECKING:
         School,
         Student,
         Teacher,
+        TeacherMaterial,
+        TeacherStorageQuota,
     )
 
 
@@ -1416,6 +1418,21 @@ class NotificationType(str, Enum):
     password_reset = "password_reset"
 
 
+# =============================================================================
+# Teacher Materials Models (Story 13.1)
+# =============================================================================
+
+
+class MaterialType(str, Enum):
+    """Types of teacher materials"""
+    document = "document"
+    image = "image"
+    audio = "audio"
+    video = "video"
+    url = "url"
+    text_note = "text_note"
+
+
 class Notification(SQLModel, table=True):
     """Notification database model for in-app notifications."""
 
@@ -1551,3 +1568,53 @@ class NotificationMute(SQLModel, table=True):
 
     # Relationship
     user: "User" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+
+
+# =============================================================================
+# Teacher Materials Tables (Story 13.1)
+# =============================================================================
+
+
+class TeacherMaterial(SQLModel, table=True):
+    """Teacher uploaded material database model."""
+
+    __tablename__ = "teacher_materials"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+
+    # Material info
+    name: str = Field(max_length=255)  # Display name
+    type: MaterialType = Field(sa_column=Column(SAEnum(MaterialType, name="materialtype"), nullable=False))
+
+    # Storage info (null for URLs and text notes)
+    storage_path: str | None = Field(default=None, max_length=500)
+    file_size: int | None = Field(default=None)  # Bytes
+    mime_type: str | None = Field(default=None, max_length=100)
+    original_filename: str | None = Field(default=None, max_length=255)
+
+    # For URLs only
+    url: str | None = Field(default=None, max_length=2000)
+
+    # For text notes only
+    text_content: str | None = Field(default=None)  # Max ~50KB
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+
+
+class TeacherStorageQuota(SQLModel, table=True):
+    """Teacher storage quota tracking database model."""
+
+    __tablename__ = "teacher_storage_quotas"
+
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", primary_key=True, ondelete="CASCADE")
+    used_bytes: int = Field(default=0)
+    quota_bytes: int = Field(default=524288000)  # 500MB default
+
+    # Relationship
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
