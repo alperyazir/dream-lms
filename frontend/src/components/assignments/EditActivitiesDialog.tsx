@@ -9,13 +9,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  AlertTriangle,
-  GripVertical,
-  Plus,
-  Trash2,
-  X,
-} from "lucide-react"
+import { AlertTriangle, GripVertical, Plus, Trash2, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -136,7 +130,11 @@ function ActivityItem({
         className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={() => onRemove(activity.id)}
         disabled={!canRemove}
-        title={canRemove ? "Remove activity" : "Cannot remove - at least one activity required"}
+        title={
+          canRemove
+            ? "Remove activity"
+            : "Cannot remove - at least one activity required"
+        }
       >
         <Trash2 className="h-4 w-4" />
       </Button>
@@ -207,7 +205,9 @@ export function EditActivitiesDialog({
   // Initialize activities when dialog opens
   useEffect(() => {
     if (isOpen) {
-      setActivities([...currentActivities].sort((a, b) => a.order_index - b.order_index))
+      setActivities(
+        [...currentActivities].sort((a, b) => a.order_index - b.order_index),
+      )
       setShowAddPanel(false)
     }
   }, [isOpen, currentActivities])
@@ -251,7 +251,10 @@ export function EditActivitiesDialog({
     if (index <= 0) return
     setActivities((prev) => {
       const newList = [...prev]
-      ;[newList[index - 1], newList[index]] = [newList[index], newList[index - 1]]
+      ;[newList[index - 1], newList[index]] = [
+        newList[index],
+        newList[index - 1],
+      ]
       return newList
     })
   }, [])
@@ -260,7 +263,10 @@ export function EditActivitiesDialog({
     setActivities((prev) => {
       if (index >= prev.length - 1) return prev
       const newList = [...prev]
-      ;[newList[index], newList[index + 1]] = [newList[index + 1], newList[index]]
+      ;[newList[index], newList[index + 1]] = [
+        newList[index + 1],
+        newList[index],
+      ]
       return newList
     })
   }, [])
@@ -299,7 +305,9 @@ export function EditActivitiesDialog({
   const hasChanges =
     activities.length !== currentActivities.length ||
     activities.some(
-      (a, i) => a.id !== currentActivities.sort((x, y) => x.order_index - y.order_index)[i]?.id
+      (a, i) =>
+        a.id !==
+        currentActivities.sort((x, y) => x.order_index - y.order_index)[i]?.id,
     )
 
   // Get IDs of currently selected activities for the add panel
@@ -317,11 +325,14 @@ export function EditActivitiesDialog({
 
         {/* Warning about student progress */}
         {currentActivities.length > 0 && (
-          <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
+          <Alert
+            variant="default"
+            className="border-amber-500/50 bg-amber-500/10"
+          >
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-sm">
-              Removing activities that students have already started may affect their progress.
-              Reordering activities is safe.
+              Removing activities that students have already started may affect
+              their progress. Reordering activities is safe.
             </AlertDescription>
           </Alert>
         )}
@@ -382,7 +393,9 @@ export function EditActivitiesDialog({
           {/* Add Activities Panel */}
           {showAddPanel && (
             <div className="w-64 flex flex-col min-h-0 border-l pl-4">
-              <h4 className="text-sm font-semibold mb-2">Available Activities</h4>
+              <h4 className="text-sm font-semibold mb-2">
+                Available Activities
+              </h4>
               <ScrollArea className="flex-1 pr-2">
                 {isLoadingActivities ? (
                   <div className="space-y-2">
@@ -422,7 +435,9 @@ export function EditActivitiesDialog({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={updateMutation.isPending || !hasChanges || activities.length === 0}
+            disabled={
+              updateMutation.isPending || !hasChanges || activities.length === 0
+            }
           >
             {updateMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>

@@ -6,7 +6,10 @@
  */
 
 import { useCallback, useState } from "react"
-import type { ActivityProgressInfo, AssignmentPreviewResponse } from "@/types/assignment"
+import type {
+  ActivityProgressInfo,
+  AssignmentPreviewResponse,
+} from "@/types/assignment"
 import {
   MultiActivityPlayer,
   type PreviewResults,

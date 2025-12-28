@@ -1,40 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
-  BookOpen,
   Check,
-  ChevronsUpDown,
   Copy,
   Edit,
-  ImagePlus,
   KeyRound,
+  Loader2,
   Mail,
   Plus,
   Search,
   Trash2,
-  Upload,
-  X,
+  UserPlus,
 } from "lucide-react"
-import { useRef, useState } from "react"
+import { useState } from "react"
 import {
   AdminService,
-  OpenAPI,
-  type PublisherCreateAPI,
-  type PublisherPublic,
-  type PublisherUpdate,
+  type PublisherAccountCreate,
+  type PublisherAccountPublic,
+  type PublisherAccountUpdate,
 } from "@/client"
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
 import {
   Dialog,
   DialogContent,
@@ -45,11 +33,14 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PublisherLogo } from "@/components/ui/publisher-logo"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -59,7 +50,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import useCustomToast from "@/hooks/useCustomToast"
-import { cn } from "@/lib/utils"
 import { generateUsername } from "@/utils/usernameGenerator"
 
 export const Route = createFileRoute("/_layout/admin/publishers")({
@@ -74,144 +64,148 @@ function AdminPublishers() {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const [searchQuery, setSearchQuery] = useState("")
+
+  // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedPublisher, setSelectedPublisher] =
-    useState<PublisherPublic | null>(null)
-  const [publisherToDelete, setPublisherToDelete] = useState<{
-    id: string
-    name: string
-  } | null>(null)
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
     useState(false)
   const [isPasswordResultDialogOpen, setIsPasswordResultDialogOpen] =
     useState(false)
-  const [publisherToResetPassword, setPublisherToResetPassword] = useState<{
+
+  // Selected account states
+  const [selectedAccount, setSelectedAccount] =
+    useState<PublisherAccountPublic | null>(null)
+  const [accountToDelete, setAccountToDelete] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+  const [accountToResetPassword, setAccountToResetPassword] = useState<{
     userId: string
     userName: string
   } | null>(null)
-  const [resetResult, setResetResult] = useState<{
+
+  // Password result state
+  const [passwordResult, setPasswordResult] = useState<{
     passwordEmailed: boolean
     temporaryPassword: string | null
     message: string
   } | null>(null)
   const [passwordCopied, setPasswordCopied] = useState(false)
-  const [publisherNameOpen, setPublisherNameOpen] = useState(false)
-  const [newPublisher, setNewPublisher] = useState<PublisherCreateAPI>({
-    name: "",
-    contact_email: "",
+
+  // Form states
+  const [newAccount, setNewAccount] = useState<PublisherAccountCreate>({
+    dcs_publisher_id: 0,
     username: "",
-    user_email: "",
+    email: "",
     full_name: "",
   })
-  const [editPublisher, setEditPublisher] = useState<PublisherUpdate>({
-    name: "",
-    contact_email: "",
-    user_email: "",
-    user_username: "",
-    user_full_name: "",
+  const [editAccount, setEditAccount] = useState<PublisherAccountUpdate>({
+    dcs_publisher_id: null,
+    username: null,
+    email: null,
+    full_name: null,
+    is_active: null,
   })
-  const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
-  const logoInputRef = useRef<HTMLInputElement>(null)
 
-
-  // Fetch publishers from API
+  // Fetch publisher USER accounts (not DCS publishers)
   const {
-    data: publishers = [],
-    isLoading,
-    error,
+    data: accountsResponse,
+    isLoading: isLoadingAccounts,
+    error: accountsError,
   } = useQuery({
-    queryKey: ["publishers"],
-    queryFn: () => AdminService.listPublishers(),
+    queryKey: ["publisherAccounts"],
+    queryFn: () => AdminService.listPublisherAccounts(),
   })
 
-  // Create publisher mutation
-  const createPublisherMutation = useMutation({
-    mutationFn: (data: PublisherCreateAPI) =>
-      AdminService.createPublisher({ requestBody: data }),
+  // Fetch DCS publishers for dropdown
+  const { data: dcsPublishers = [], isLoading: isLoadingPublishers } = useQuery(
+    {
+      queryKey: ["dcsPublishers"],
+      queryFn: () => AdminService.listPublishers(),
+    },
+  )
+
+  // Create account mutation
+  const createMutation = useMutation({
+    mutationFn: (data: PublisherAccountCreate) =>
+      AdminService.createPublisherAccount({ requestBody: data }),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["publishers"] })
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
       setIsAddDialogOpen(false)
-      setNewPublisher({
-        name: "",
-        contact_email: "",
-        username: "",
-        user_email: "",
-        full_name: "",
-      })
+      resetNewAccountForm()
 
       if (response.password_emailed) {
-        showSuccessToast("Publisher created. Password sent to their email.")
+        showSuccessToast("Account created. Password sent to email.")
       } else if (response.temporary_password) {
-        // Show one-time password dialog
-        setResetResult({
+        setPasswordResult({
           passwordEmailed: false,
           temporaryPassword: response.temporary_password,
-          message: "Publisher created successfully",
+          message: response.message || "Account created successfully.",
         })
         setIsPasswordResultDialogOpen(true)
       } else {
-        showSuccessToast("Publisher created successfully!")
+        showSuccessToast("Publisher account created successfully!")
       }
     },
     onError: (error: any) => {
       showErrorToast(
-        error.body?.detail || "Failed to create publisher. Please try again.",
+        error.body?.detail || "Failed to create account. Please try again.",
       )
     },
   })
 
-  // Update publisher mutation
-  const updatePublisherMutation = useMutation({
+  // Update account mutation
+  const updateMutation = useMutation({
     mutationFn: ({
-      publisherId,
+      userId,
       data,
     }: {
-      publisherId: string
-      data: PublisherUpdate
-    }) => AdminService.updatePublisher({ publisherId, requestBody: data }),
+      userId: string
+      data: PublisherAccountUpdate
+    }) => AdminService.updatePublisherAccount({ userId, requestBody: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publishers"] })
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
       setIsEditDialogOpen(false)
-      setSelectedPublisher(null)
-      showSuccessToast("Publisher updated successfully!")
+      setSelectedAccount(null)
+      showSuccessToast("Publisher account updated successfully!")
     },
     onError: (error: any) => {
       showErrorToast(
-        error.body?.detail || "Failed to update publisher. Please try again.",
+        error.body?.detail || "Failed to update account. Please try again.",
       )
     },
   })
 
-  // Delete publisher mutation
-  const deletePublisherMutation = useMutation({
-    mutationFn: (publisherId: string) =>
-      AdminService.deletePublisher({ publisherId }),
+  // Delete account mutation
+  const deleteMutation = useMutation({
+    mutationFn: (userId: string) =>
+      AdminService.deletePublisherAccount({ userId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publishers"] })
-      showSuccessToast("Publisher deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
+      setAccountToDelete(null)
+      showSuccessToast("Publisher account deleted successfully!")
     },
     onError: (error: any) => {
       showErrorToast(
-        error.body?.detail || "Failed to delete publisher. Please try again.",
+        error.body?.detail || "Failed to delete account. Please try again.",
       )
     },
   })
 
-  // Reset password mutation [Story 11.4]
+  // Reset password mutation
   const resetPasswordMutation = useMutation({
     mutationFn: (userId: string) => AdminService.resetUserPassword({ userId }),
     onSuccess: (response) => {
-      setResetResult({
+      setPasswordResult({
         passwordEmailed: response.password_emailed,
         temporaryPassword: response.temporary_password ?? null,
         message: response.message,
       })
       setIsResetPasswordDialogOpen(false)
       setIsPasswordResultDialogOpen(true)
-      queryClient.invalidateQueries({ queryKey: ["publishers"] })
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
     },
     onError: (error: any) => {
       showErrorToast(
@@ -220,123 +214,84 @@ function AdminPublishers() {
     },
   })
 
-  // Logo upload mutation [Story 9.2]
-  const uploadLogoMutation = useMutation({
-    mutationFn: ({ publisherId, file }: { publisherId: string; file: File }) =>
-      AdminService.uploadPublisherLogo({
-        publisherId,
-        formData: { file },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publishers"] })
-      setLogoFile(null)
-      setLogoPreview(null)
-      showSuccessToast("Logo uploaded successfully!")
-    },
-    onError: (error: any) => {
-      showErrorToast(
-        error.body?.detail || "Failed to upload logo. Please try again.",
-      )
-    },
-  })
+  // Helper functions
+  const resetNewAccountForm = () => {
+    setNewAccount({
+      dcs_publisher_id: 0,
+      username: "",
+      email: "",
+      full_name: "",
+    })
+  }
 
-  // Delete logo mutation [Story 9.2]
-  const deleteLogoMutation = useMutation({
-    mutationFn: (publisherId: string) =>
-      AdminService.deletePublisherLogo({ publisherId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publishers"] })
-      showSuccessToast("Logo removed successfully!")
-    },
-    onError: (error: any) => {
-      showErrorToast(
-        error.body?.detail || "Failed to remove logo. Please try again.",
-      )
-    },
-  })
+  const handleOpenAddDialog = () => {
+    resetNewAccountForm()
+    setIsAddDialogOpen(true)
+  }
 
-  const handleAddPublisher = () => {
+  const handleCreateAccount = () => {
     if (
-      !newPublisher.name ||
-      !newPublisher.contact_email ||
-      !newPublisher.username ||
-      !newPublisher.user_email ||
-      !newPublisher.full_name
+      !newAccount.dcs_publisher_id ||
+      !newAccount.email ||
+      !newAccount.full_name
     ) {
       showErrorToast("Please fill in all required fields")
       return
     }
-
-    // Validate username format
-    if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(newPublisher.username)) {
-      showErrorToast(
-        "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
-      )
-      return
-    }
-
-    createPublisherMutation.mutate(newPublisher)
+    createMutation.mutate(newAccount)
   }
 
-  const handleEditPublisher = (publisher: PublisherPublic) => {
-    setSelectedPublisher(publisher)
-    setEditPublisher({
-      name: publisher.name,
-      contact_email: publisher.contact_email || "",
-      user_email: publisher.user_email,
-      user_username: publisher.user_username || "",
-      user_full_name: publisher.user_full_name,
+  const handleOpenEditDialog = (account: PublisherAccountPublic) => {
+    setSelectedAccount(account)
+    setEditAccount({
+      dcs_publisher_id: account.dcs_publisher_id,
+      username: account.username,
+      email: account.email,
+      full_name: account.full_name,
+      is_active: account.is_active,
     })
-    // Clear any previous logo selection
-    setLogoFile(null)
-    setLogoPreview(null)
     setIsEditDialogOpen(true)
   }
 
-  const handleUpdatePublisher = () => {
-    if (!selectedPublisher) return
-    if (
-      !editPublisher.name ||
-      !editPublisher.contact_email ||
-      !editPublisher.user_email ||
-      !editPublisher.user_full_name
-    ) {
-      showErrorToast("Please fill in all required fields")
-      return
-    }
-    updatePublisherMutation.mutate({
-      publisherId: selectedPublisher.id,
-      data: editPublisher,
+  const handleUpdateAccount = () => {
+    if (!selectedAccount) return
+    updateMutation.mutate({
+      userId: selectedAccount.id,
+      data: editAccount,
     })
   }
 
-  const handleDeletePublisher = (publisherId: string, name: string) => {
-    setPublisherToDelete({ id: publisherId, name })
+  const handleOpenDeleteDialog = (account: PublisherAccountPublic) => {
+    setAccountToDelete({
+      id: account.id,
+      name: account.full_name || account.username,
+    })
     setIsDeleteDialogOpen(true)
   }
 
-  const confirmDeletePublisher = () => {
-    if (publisherToDelete) {
-      deletePublisherMutation.mutate(publisherToDelete.id)
-      setPublisherToDelete(null)
+  const confirmDeleteAccount = () => {
+    if (accountToDelete) {
+      deleteMutation.mutate(accountToDelete.id)
     }
   }
 
-  // Password reset handlers [Story 9.2]
-  const handleResetPassword = (userId: string, userName: string) => {
-    setPublisherToResetPassword({ userId, userName })
+  const handleOpenResetPasswordDialog = (account: PublisherAccountPublic) => {
+    setAccountToResetPassword({
+      userId: account.id,
+      userName: account.full_name || account.username,
+    })
     setIsResetPasswordDialogOpen(true)
   }
 
   const confirmResetPassword = () => {
-    if (publisherToResetPassword) {
-      resetPasswordMutation.mutate(publisherToResetPassword.userId)
+    if (accountToResetPassword) {
+      resetPasswordMutation.mutate(accountToResetPassword.userId)
     }
   }
 
   const handleCopyPassword = async () => {
-    if (resetResult?.temporaryPassword) {
-      await navigator.clipboard.writeText(resetResult.temporaryPassword)
+    if (passwordResult?.temporaryPassword) {
+      await navigator.clipboard.writeText(passwordResult.temporaryPassword)
       setPasswordCopied(true)
       showSuccessToast("Password copied to clipboard")
       setTimeout(() => setPasswordCopied(false), 2000)
@@ -345,84 +300,35 @@ function AdminPublishers() {
 
   const closePasswordResultDialog = () => {
     setIsPasswordResultDialogOpen(false)
-    setResetResult(null)
-    setPublisherToResetPassword(null)
+    setPasswordResult(null)
+    setAccountToResetPassword(null)
     setPasswordCopied(false)
   }
 
-  // Logo handlers [Story 9.2]
-  const handleLogoFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        showErrorToast("Please select an image file (jpg, png, etc.)")
-        return
-      }
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        showErrorToast("File size must be less than 2MB")
-        return
-      }
-      setLogoFile(file)
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
+  // Get publisher name by ID
+  const getPublisherName = (publisherId: number | null): string => {
+    if (!publisherId) return "N/A"
+    const publisher = dcsPublishers.find((p) => p.id === publisherId)
+    return publisher?.name || "Unknown"
   }
 
-  const handleLogoUpload = (publisherId: string) => {
-    if (logoFile) {
-      uploadLogoMutation.mutate({ publisherId, file: logoFile })
-    }
-  }
-
-  const handleLogoDelete = (publisherId: string) => {
-    deleteLogoMutation.mutate(publisherId)
-  }
-
-  const clearLogoSelection = () => {
-    setLogoFile(null)
-    setLogoPreview(null)
-    if (logoInputRef.current) {
-      logoInputRef.current.value = ""
-    }
-  }
-
-  // Get publisher initials for placeholder
-  const getPublisherInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
-  const filteredPublishers = publishers.filter(
-    (publisher) =>
-      publisher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      publisher.contact_email
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      ((publisher as any).user_username
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ??
-        false) ||
-      publisher.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      publisher.user_full_name
+  // Filter accounts based on search query
+  const accounts = accountsResponse?.data ?? []
+  const filteredAccounts = accounts.filter(
+    (account) =>
+      account.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      account.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      account.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      account.dcs_publisher_name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()),
   )
 
-  if (error) {
+  if (accountsError) {
     return (
       <div className="max-w-full p-6">
         <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded">
-          Error loading publishers. Please try again later.
+          Error loading publisher accounts. Please try again later.
         </div>
       </div>
     )
@@ -434,18 +340,18 @@ function AdminPublishers() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Publishers
+            Publisher Accounts
           </h1>
           <p className="text-muted-foreground">
-            Manage content publishers in the system
+            Manage publisher user accounts linked to DCS
           </p>
         </div>
         <Button
-          onClick={() => setIsAddDialogOpen(true)}
-          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
+          onClick={handleOpenAddDialog}
+          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Publisher
+          Add Publisher Account
         </Button>
       </div>
 
@@ -454,7 +360,7 @@ function AdminPublishers() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search publishers by name or email..."
+            placeholder="Search by name, email, or publisher..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -462,96 +368,100 @@ function AdminPublishers() {
         </div>
       </div>
 
-      {/* Publishers Table */}
+      {/* Accounts Table */}
       <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-teal-500" />
-            All Publishers ({filteredPublishers.length})
+            <UserPlus className="w-5 h-5 text-teal-500" />
+            All Publisher Accounts ({filteredAccounts.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading publishers...
+          {isLoadingAccounts ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Loading publisher accounts...
             </div>
-          ) : filteredPublishers.length === 0 ? (
+          ) : filteredAccounts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {searchQuery
-                ? "No publishers found matching your search"
-                : "No publishers yet. Add your first publisher!"}
+                ? "No publisher accounts found matching your search"
+                : "No publisher accounts yet. Add your first publisher account!"}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">Logo</TableHead>
-                  <TableHead>Publisher Name</TableHead>
-                  <TableHead>Username</TableHead>
-                  <TableHead>User Full Name</TableHead>
-                  <TableHead>User Email</TableHead>
-                  <TableHead>Contact Email</TableHead>
-                  <TableHead>Created At</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>DCS Publisher</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPublishers.map((publisher) => (
-                  <TableRow key={publisher.id}>
+                {filteredAccounts.map((account) => (
+                  <TableRow key={account.id}>
                     <TableCell>
-                      {publisher.logo_url ? (
-                        <img
-                          src={`${OpenAPI.BASE}${publisher.logo_url}`}
-                          alt={`${publisher.name} logo`}
-                          className="w-10 h-10 rounded-full object-cover border"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm">
-                          {getPublisherInitials(publisher.name)}
+                      <div>
+                        <div className="font-medium">{account.full_name}</div>
+                        <div className="text-sm text-muted-foreground font-mono">
+                          @{account.username}
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {publisher.name}
-                    </TableCell>
-                    <TableCell className="text-sm font-mono">
-                      {(publisher as any).user_username || "N/A"}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {publisher.user_full_name || "N/A"}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Mail className="w-3 h-3" />
                         <span className="text-sm">
-                          {publisher.user_email || "N/A"}
+                          {account.email || "N/A"}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {publisher.contact_email || "N/A"}
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {account.dcs_publisher_id && (
+                          <PublisherLogo
+                            publisherId={account.dcs_publisher_id}
+                            size="sm"
+                          />
+                        )}
+                        <span>
+                          {account.dcs_publisher_name ||
+                            getPublisherName(account.dcs_publisher_id)}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          account.is_active
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        }`}
+                      >
+                        {account.is_active ? "Active" : "Inactive"}
+                      </span>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(publisher.created_at).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        },
-                      )}
+                      {account.created_at
+                        ? new Date(account.created_at).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )
+                        : "N/A"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            handleResetPassword(
-                              publisher.user_id,
-                              publisher.user_full_name || publisher.name,
-                            )
-                          }
+                          onClick={() => handleOpenResetPasswordDialog(account)}
                           disabled={resetPasswordMutation.isPending}
                           className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                           title="Reset Password"
@@ -561,19 +471,19 @@ function AdminPublishers() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEditPublisher(publisher)}
+                          onClick={() => handleOpenEditDialog(account)}
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          title="Edit Account"
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            handleDeletePublisher(publisher.id, publisher.name)
-                          }
-                          disabled={deletePublisherMutation.isPending}
+                          onClick={() => handleOpenDeleteDialog(account)}
+                          disabled={deleteMutation.isPending}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          title="Delete Account"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -587,166 +497,116 @@ function AdminPublishers() {
         </CardContent>
       </Card>
 
-      {/* Add Publisher Dialog */}
+      {/* Add Account Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Publisher</DialogTitle>
+            <DialogTitle>Add Publisher Account</DialogTitle>
             <DialogDescription>
-              Create a new publisher account in the system
+              Create a user account linked to a DCS publisher
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* DCS Publisher Selector */}
             <div className="space-y-2">
-              <Label htmlFor="publisher-name">Publisher Name *</Label>
-              <Popover
-                open={publisherNameOpen}
-                onOpenChange={setPublisherNameOpen}
+              <Label htmlFor="add-dcs-publisher">
+                DCS Publisher{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
+              <Select
+                value={
+                  newAccount.dcs_publisher_id
+                    ? newAccount.dcs_publisher_id.toString()
+                    : ""
+                }
+                onValueChange={(value) =>
+                  setNewAccount({
+                    ...newAccount,
+                    dcs_publisher_id: parseInt(value, 10),
+                  })
+                }
+                disabled={isLoadingPublishers}
               >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={publisherNameOpen}
-                    className="w-full justify-between font-normal"
-                  >
-                    {newPublisher.name || "Select or enter publisher name..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[var(--radix-popover-trigger-width)] p-0"
-                  align="start"
-                >
-                  <Command>
-                    <CommandInput
-                      placeholder="Search or enter new publisher..."
-                      value={newPublisher.name}
-                      onValueChange={(value) =>
-                        setNewPublisher({ ...newPublisher, name: value })
-                      }
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        <div className="py-2 px-2 text-sm">
-                          <span className="text-muted-foreground">
-                            No existing publisher found.
-                          </span>
-                          {newPublisher.name && (
-                            <div className="mt-1">
-                              Press enter or click to create:{" "}
-                              <span className="font-medium text-foreground">
-                                "{newPublisher.name}"
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </CommandEmpty>
-                      <CommandGroup heading="Existing Publishers">
-                        {/* Get unique publisher names */}
-                        {Array.from(new Set(publishers.map((p) => p.name)))
-                          .filter((name) =>
-                            name
-                              .toLowerCase()
-                              .includes(
-                                (newPublisher.name || "").toLowerCase(),
-                              ),
-                          )
-                          .map((name) => (
-                            <CommandItem
-                              key={name}
-                              value={name}
-                              onSelect={(currentValue) => {
-                                setNewPublisher({
-                                  ...newPublisher,
-                                  name: currentValue,
-                                })
-                                setPublisherNameOpen(false)
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  newPublisher.name === name
-                                    ? "opacity-100"
-                                    : "opacity-0",
-                                )}
-                              />
-                              {name}
-                            </CommandItem>
-                          ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground">
-                Select an existing publisher or enter a new name
-              </p>
+                <SelectTrigger id="add-dcs-publisher">
+                  <SelectValue placeholder="Select a publisher..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {dcsPublishers.map((publisher) => (
+                    <SelectItem
+                      key={publisher.id}
+                      value={publisher.id.toString()}
+                    >
+                      {publisher.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {/* Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="full-name">Full Name *</Label>
+              <Label htmlFor="add-full-name">
+                Full Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
-                id="full-name"
+                id="add-full-name"
                 placeholder="e.g., John Doe"
-                value={newPublisher.full_name}
+                value={newAccount.full_name}
                 onChange={(e) => {
                   const fullName = e.target.value
                   // Auto-generate username with Turkish character support
                   const generatedUsername = generateUsername(fullName)
 
-                  setNewPublisher({
-                    ...newPublisher,
+                  setNewAccount({
+                    ...newAccount,
                     full_name: fullName,
                     username: generatedUsername,
                   })
                 }}
               />
             </div>
+
+            {/* Username */}
             <div className="space-y-2">
-              <Label htmlFor="username">Username *</Label>
+              <Label htmlFor="add-username">
+                Username{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
-                id="username"
+                id="add-username"
                 placeholder="e.g., johndoe"
-                value={newPublisher.username}
+                value={newAccount.username || ""}
                 onChange={(e) =>
-                  setNewPublisher({
-                    ...newPublisher,
-                    username: e.target.value,
-                  })
+                  setNewAccount({ ...newAccount, username: e.target.value })
                 }
               />
               <p className="text-xs text-muted-foreground">
                 Auto-generated from full name (editable)
               </p>
             </div>
+
+            {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="user-email">User Email *</Label>
+              <Label htmlFor="add-email">
+                Email{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
-                id="user-email"
+                id="add-email"
                 type="email"
-                placeholder="user@example.com"
-                value={newPublisher.user_email}
+                placeholder="e.g., user@publisher.com"
+                value={newAccount.email}
                 onChange={(e) =>
-                  setNewPublisher({
-                    ...newPublisher,
-                    user_email: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact-email">Contact Email *</Label>
-              <Input
-                id="contact-email"
-                type="email"
-                placeholder="contact@example.com"
-                value={newPublisher.contact_email}
-                onChange={(e) =>
-                  setNewPublisher({
-                    ...newPublisher,
-                    contact_email: e.target.value,
-                  })
+                  setNewAccount({ ...newAccount, email: e.target.value })
                 }
               />
             </div>
@@ -755,193 +615,110 @@ function AdminPublishers() {
             <Button
               variant="outline"
               onClick={() => setIsAddDialogOpen(false)}
-              disabled={createPublisherMutation.isPending}
+              disabled={createMutation.isPending}
             >
               Cancel
             </Button>
             <Button
-              onClick={handleAddPublisher}
-              disabled={createPublisherMutation.isPending}
+              onClick={handleCreateAccount}
+              disabled={createMutation.isPending}
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
-              {createPublisherMutation.isPending
-                ? "Creating..."
-                : "Create Publisher"}
+              {createMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Publisher Dialog */}
+      {/* Edit Account Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Publisher</DialogTitle>
+            <DialogTitle>Edit Publisher Account</DialogTitle>
             <DialogDescription>
-              Update the publisher and user information
+              Update the publisher account information
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* Logo Upload Section [Story 9.2] */}
+            {/* DCS Publisher Selector */}
             <div className="space-y-2">
-              <Label>Publisher Logo</Label>
-              <div className="flex items-center gap-4">
-                {/* Current logo or preview */}
-                <div className="relative">
-                  {logoPreview ? (
-                    <img
-                      src={logoPreview}
-                      alt="Logo preview"
-                      className="w-16 h-16 rounded-full object-cover border"
-                    />
-                  ) : selectedPublisher?.logo_url ? (
-                    <img
-                      src={`${OpenAPI.BASE}${selectedPublisher.logo_url}`}
-                      alt={`${selectedPublisher.name} logo`}
-                      className="w-16 h-16 rounded-full object-cover border"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-semibold">
-                      {selectedPublisher
-                        ? getPublisherInitials(selectedPublisher.name)
-                        : "?"}
-                    </div>
-                  )}
-                  {logoPreview && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearLogoSelection}
-                      className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-red-100 hover:bg-red-200"
+              <Label htmlFor="edit-dcs-publisher">DCS Publisher</Label>
+              <Select
+                value={
+                  editAccount.dcs_publisher_id
+                    ? editAccount.dcs_publisher_id.toString()
+                    : ""
+                }
+                onValueChange={(value) =>
+                  setEditAccount({
+                    ...editAccount,
+                    dcs_publisher_id: parseInt(value, 10),
+                  })
+                }
+                disabled={isLoadingPublishers}
+              >
+                <SelectTrigger id="edit-dcs-publisher">
+                  <SelectValue placeholder="Select a publisher..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {dcsPublishers.map((publisher) => (
+                    <SelectItem
+                      key={publisher.id}
+                      value={publisher.id.toString()}
                     >
-                      <X className="w-3 h-3 text-red-600" />
-                    </Button>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <input
-                    ref={logoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoFileSelect}
-                    className="hidden"
-                    id="logo-upload"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => logoInputRef.current?.click()}
-                      disabled={uploadLogoMutation.isPending}
-                    >
-                      <ImagePlus className="w-4 h-4 mr-1" />
-                      {logoPreview ? "Change" : "Select"}
-                    </Button>
-                    {logoFile && selectedPublisher && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => handleLogoUpload(selectedPublisher.id)}
-                        disabled={uploadLogoMutation.isPending}
-                        className="bg-teal-500 hover:bg-teal-600"
-                      >
-                        <Upload className="w-4 h-4 mr-1" />
-                        {uploadLogoMutation.isPending
-                          ? "Uploading..."
-                          : "Upload"}
-                      </Button>
-                    )}
-                    {selectedPublisher?.logo_url && !logoPreview && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleLogoDelete(selectedPublisher.id)}
-                        disabled={deleteLogoMutation.isPending}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    JPG or PNG, max 2MB
-                  </p>
-                </div>
-              </div>
+                      {publisher.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
+            {/* Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="edit-publisher-name">Publisher Name *</Label>
+              <Label htmlFor="edit-full-name">Full Name</Label>
               <Input
-                id="edit-publisher-name"
-                placeholder="e.g., ABC Publishing"
-                value={editPublisher.name || ""}
-                onChange={(e) =>
-                  setEditPublisher({ ...editPublisher, name: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-contact-email">Contact Email *</Label>
-              <Input
-                id="edit-contact-email"
-                type="email"
-                placeholder="e.g., contact@publisher.com"
-                value={editPublisher.contact_email || ""}
-                onChange={(e) =>
-                  setEditPublisher({
-                    ...editPublisher,
-                    contact_email: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-user-full-name">User Full Name *</Label>
-              <Input
-                id="edit-user-full-name"
+                id="edit-full-name"
                 placeholder="e.g., John Doe"
-                value={editPublisher.user_full_name || ""}
+                value={editAccount.full_name || ""}
                 onChange={(e) =>
-                  setEditPublisher({
-                    ...editPublisher,
-                    user_full_name: e.target.value,
-                  })
+                  setEditAccount({ ...editAccount, full_name: e.target.value })
                 }
               />
             </div>
+
+            {/* Username */}
             <div className="space-y-2">
-              <Label htmlFor="edit-user-username">Username *</Label>
+              <Label htmlFor="edit-username">Username</Label>
               <Input
-                id="edit-user-username"
+                id="edit-username"
                 placeholder="e.g., johndoe"
-                value={editPublisher.user_username || ""}
+                value={editAccount.username || ""}
                 onChange={(e) =>
-                  setEditPublisher({
-                    ...editPublisher,
-                    user_username: e.target.value,
-                  })
+                  setEditAccount({ ...editAccount, username: e.target.value })
                 }
               />
               <p className="text-xs text-muted-foreground">
                 3-50 characters, alphanumeric, underscore, hyphen, or dot
               </p>
             </div>
+
+            {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="edit-user-email">User Email *</Label>
+              <Label htmlFor="edit-email">Email</Label>
               <Input
-                id="edit-user-email"
+                id="edit-email"
                 type="email"
                 placeholder="e.g., user@publisher.com"
-                value={editPublisher.user_email || ""}
+                value={editAccount.email || ""}
                 onChange={(e) =>
-                  setEditPublisher({
-                    ...editPublisher,
-                    user_email: e.target.value,
-                  })
+                  setEditAccount({ ...editAccount, email: e.target.value })
                 }
               />
             </div>
@@ -950,18 +727,23 @@ function AdminPublishers() {
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
-              disabled={updatePublisherMutation.isPending}
+              disabled={updateMutation.isPending}
             >
               Cancel
             </Button>
             <Button
-              onClick={handleUpdatePublisher}
-              disabled={updatePublisherMutation.isPending}
+              onClick={handleUpdateAccount}
+              disabled={updateMutation.isPending}
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
-              {updatePublisherMutation.isPending
-                ? "Updating..."
-                : "Update Publisher"}
+              {updateMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Account"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -971,29 +753,29 @@ function AdminPublishers() {
       <ConfirmDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={confirmDeletePublisher}
-        title="Delete Publisher"
-        description={`Are you sure you want to delete "${publisherToDelete?.name}"? This action cannot be undone and will remove all associated data.`}
+        onConfirm={confirmDeleteAccount}
+        title="Delete Publisher Account"
+        description={`Are you sure you want to delete the account for "${accountToDelete?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
-        isLoading={deletePublisherMutation.isPending}
+        isLoading={deleteMutation.isPending}
       />
 
-      {/* Reset Password Confirmation Dialog [Story 9.2] */}
+      {/* Reset Password Confirmation Dialog */}
       <ConfirmDialog
         open={isResetPasswordDialogOpen}
         onOpenChange={setIsResetPasswordDialogOpen}
         onConfirm={confirmResetPassword}
         title="Reset Password"
-        description={`Are you sure you want to reset the password for "${publisherToResetPassword?.userName}"? A new password will be generated and the user will be notified.`}
+        description={`Are you sure you want to reset the password for "${accountToResetPassword?.userName}"? A new password will be generated and the user will be notified.`}
         confirmText="Reset Password"
         cancelText="Cancel"
         variant="warning"
         isLoading={resetPasswordMutation.isPending}
       />
 
-      {/* Password Result Dialog [Story 11.4] */}
+      {/* Password Result Dialog */}
       <Dialog
         open={isPasswordResultDialogOpen}
         onOpenChange={closePasswordResultDialog}
@@ -1002,24 +784,25 @@ function AdminPublishers() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-green-500" />
-              Password Reset
+              Password {accountToResetPassword ? "Reset" : "Generated"}
             </DialogTitle>
-            <DialogDescription>{resetResult?.message}</DialogDescription>
+            <DialogDescription>{passwordResult?.message}</DialogDescription>
           </DialogHeader>
 
-          {resetResult?.passwordEmailed ? (
+          {passwordResult?.passwordEmailed ? (
             <div className="flex items-center gap-2 py-4 text-green-600">
               <Mail className="h-5 w-5" />
-              <span>New password has been emailed to the user.</span>
+              <span>Password has been sent to the user's email address.</span>
             </div>
-          ) : resetResult?.temporaryPassword ? (
+          ) : passwordResult?.temporaryPassword ? (
             <div className="space-y-3 py-4">
               <p className="text-amber-600">
-                User has no email address. Please share this password securely:
+                Email delivery is not available. Please share this password
+                securely:
               </p>
               <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
                 <span className="font-mono text-lg flex-1">
-                  {resetResult.temporaryPassword}
+                  {passwordResult.temporaryPassword}
                 </span>
                 <Button
                   variant="ghost"
@@ -1034,7 +817,7 @@ function AdminPublishers() {
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                This password will not be shown again.
+                The user should change this password after first login.
               </p>
             </div>
           ) : null}

@@ -1,6 +1,8 @@
 """Report generation service for time-based reporting and trend analysis - Story 5.6."""
 
+import logging
 import os
+import re
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -9,12 +11,13 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+logger = logging.getLogger(__name__)
+
 from app.models import (
     Activity,
     Assignment,
     AssignmentStatus,
     AssignmentStudent,
-    Book,
     Class,
     ClassStudent,
     ReportFormatEnum,
@@ -31,7 +34,6 @@ from app.schemas.reports import (
     ClassReportData,
     ReportGenerateRequest,
     ReportHistoryItem,
-    ReportJobResponse,
     ReportPeriod,
     ReportStatusResponse,
     ReportSummaryStats,
@@ -54,6 +56,116 @@ ACTIVITY_TYPE_LABELS = {
 
 # Report storage directory
 REPORTS_DIR = Path("generated_reports")
+
+
+def sanitize_filename(text: str, max_length: int = 50, ascii_only: bool = False) -> str:
+    """
+    Sanitize text for use in filenames.
+
+    - Replace spaces with underscores
+    - Remove special characters
+    - Truncate to max length
+    - Handle unicode characters
+    - Optionally transliterate to ASCII for HTTP headers
+
+    Args:
+        text: Text to sanitize
+        max_length: Maximum length for the sanitized text
+        ascii_only: If True, transliterate non-ASCII characters (for HTTP headers)
+
+    Returns:
+        Sanitized filename-safe string
+    """
+    # Transliterate Turkish and other special characters to ASCII if needed
+    if ascii_only:
+        # Turkish character mappings
+        turkish_map = {
+            'ı': 'i', 'İ': 'I', 'ş': 's', 'Ş': 'S', 'ğ': 'g', 'Ğ': 'G',
+            'ü': 'u', 'Ü': 'U', 'ö': 'o', 'Ö': 'O', 'ç': 'c', 'Ç': 'C',
+        }
+        for turkish_char, ascii_char in turkish_map.items():
+            text = text.replace(turkish_char, ascii_char)
+
+        # Remove any remaining non-ASCII characters
+        text = text.encode('ascii', 'ignore').decode('ascii')
+
+    # Replace spaces with underscores
+    text = text.replace(" ", "_")
+
+    # Remove characters not safe for filenames
+    # Keep letters, numbers, underscores, hyphens
+    if ascii_only:
+        # Stricter for ASCII-only (HTTP headers)
+        text = re.sub(r"[^a-zA-Z0-9_\-]", "", text)
+    else:
+        # Keep Unicode word characters for local filenames
+        text = re.sub(r"[^\w\-]", "", text)
+
+    # Remove multiple consecutive underscores
+    text = re.sub(r"_+", "_", text)
+
+    # Strip leading/trailing underscores
+    text = text.strip("_")
+
+    # Truncate
+    if len(text) > max_length:
+        text = text[:max_length].rstrip("_")
+
+    return text or "unnamed"
+
+
+def generate_report_filename(
+    report_type: str,
+    student_name: str | None = None,
+    class_name: str | None = None,
+    teacher_name: str | None = None,
+) -> str:
+    """
+    Generate a human-readable filename for reports.
+
+    Format:
+    - Student report: {StudentName}_Progress_Report_{Date}.pdf
+    - Class report: {ClassName}_Class_Report_{Date}.pdf
+    - Assignment report: {TeacherName}_Assignment_Report_{Date}.pdf
+
+    Args:
+        report_type: Type of report (student, class, assignment)
+        student_name: Student name for student reports
+        class_name: Class name for class reports
+        teacher_name: Teacher name for assignment reports
+
+    Returns:
+        Human-readable filename for the report
+    """
+    logger.info(
+        f"DEBUG FILENAME GENERATION: type={report_type}, student={student_name}, "
+        f"class={class_name}, teacher={teacher_name}"
+    )
+
+    # Date
+    date_str = datetime.now().strftime("%Y%m%d")
+
+    # Build filename based on report type
+    # Use ascii_only=True to ensure HTTP header compatibility
+    parts = []
+
+    if report_type == "student" and student_name:
+        sanitized_name = sanitize_filename(student_name, max_length=40, ascii_only=True)
+        parts = [sanitized_name, "Progress_Report", date_str]
+    elif report_type == "class" and class_name:
+        sanitized_name = sanitize_filename(class_name, max_length=40, ascii_only=True)
+        parts = [sanitized_name, "Class_Report", date_str]
+    elif report_type == "assignment" and teacher_name:
+        sanitized_name = sanitize_filename(teacher_name, max_length=40, ascii_only=True)
+        parts = [sanitized_name, "Assignment_Report", date_str]
+    else:
+        # Fallback for unknown types
+        parts = ["Report", date_str]
+
+    filename = "_".join(parts) + ".pdf"
+    logger.info(f"DEBUG GENERATED FILENAME: {filename}")
+
+    return filename
 
 
 def get_period_dates(
@@ -1079,8 +1191,8 @@ async def process_report_job(
         session: Database session
         job_id: Report job UUID
     """
-    from app.services.pdf_generator import generate_pdf_report
     from app.services.excel_generator import generate_excel_report
+    from app.services.pdf_generator import generate_pdf_report
 
     job = await get_report_job(session, job_id)
     if not job:

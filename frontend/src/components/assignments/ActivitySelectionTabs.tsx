@@ -15,7 +15,7 @@ import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
 import {
   CalendarDays,
-  Eye,
+  Clock,
   FileText,
   Grid3X3,
   Layers,
@@ -45,7 +45,7 @@ import { PageSelectionGrid } from "./PageSelectionGrid"
 import { PageViewer } from "./PageViewer"
 
 interface ActivitySelectionTabsProps {
-  bookId: string
+  bookId: string | number
   book: Book
   selectedActivityIds: string[]
   onActivityIdsChange: (activityIds: string[]) => void
@@ -54,8 +54,6 @@ interface ActivitySelectionTabsProps {
   onTimePlanningChange?: (enabled: boolean) => void
   dateGroups?: DateActivityGroup[]
   onDateGroupsChange?: (groups: DateActivityGroup[]) => void
-  // Story 9.7: Activity preview callback
-  onPreviewActivity?: (activityId: string) => void
 }
 
 // Store activity data for display in summary
@@ -76,7 +74,6 @@ export function ActivitySelectionTabs({
   onTimePlanningChange,
   dateGroups = [],
   onDateGroupsChange,
-  onPreviewActivity,
 }: ActivitySelectionTabsProps) {
   // Track selected activities as a Set for O(1) operations
   const [selectedActivities, setSelectedActivities] = useState<Set<string>>(
@@ -167,7 +164,7 @@ export function ActivitySelectionTabs({
                 return {
                   ...group,
                   activityIds: group.activityIds.filter(
-                    (id) => !activityIds.includes(id)
+                    (id) => !activityIds.includes(id),
                   ),
                 }
               }
@@ -204,14 +201,13 @@ export function ActivitySelectionTabs({
                   ...group,
                   activityIds: [...group.activityIds, ...newIds],
                 }
-              } else {
-                // Remove from other groups
-                return {
-                  ...group,
-                  activityIds: group.activityIds.filter(
-                    (id) => !activityIds.includes(id)
-                  ),
-                }
+              }
+              // Remove from other groups
+              return {
+                ...group,
+                activityIds: group.activityIds.filter(
+                  (id) => !activityIds.includes(id),
+                ),
               }
             })
             onDateGroupsChange(newGroups)
@@ -263,7 +259,13 @@ export function ActivitySelectionTabs({
         return newActivities
       })
     },
-    [onActivityIdsChange, timePlanningEnabled, dateGroups, selectedDateIndex, onDateGroupsChange],
+    [
+      onActivityIdsChange,
+      timePlanningEnabled,
+      dateGroups,
+      selectedDateIndex,
+      onDateGroupsChange,
+    ],
   )
 
   // Handle module selection toggle
@@ -294,7 +296,7 @@ export function ActivitySelectionTabs({
                 return {
                   ...group,
                   activityIds: group.activityIds.filter(
-                    (id) => !activityIds.includes(id)
+                    (id) => !activityIds.includes(id),
                   ),
                 }
               }
@@ -331,14 +333,13 @@ export function ActivitySelectionTabs({
                   ...group,
                   activityIds: [...group.activityIds, ...newIds],
                 }
-              } else {
-                // Remove from other groups
-                return {
-                  ...group,
-                  activityIds: group.activityIds.filter(
-                    (id) => !activityIds.includes(id)
-                  ),
-                }
+              }
+              // Remove from other groups
+              return {
+                ...group,
+                activityIds: group.activityIds.filter(
+                  (id) => !activityIds.includes(id),
+                ),
               }
             })
             onDateGroupsChange(newGroups)
@@ -390,7 +391,13 @@ export function ActivitySelectionTabs({
         return newActivities
       })
     },
-    [onActivityIdsChange, timePlanningEnabled, dateGroups, selectedDateIndex, onDateGroupsChange],
+    [
+      onActivityIdsChange,
+      timePlanningEnabled,
+      dateGroups,
+      selectedDateIndex,
+      onDateGroupsChange,
+    ],
   )
 
   // Handle remove individual activity from summary
@@ -478,13 +485,17 @@ export function ActivitySelectionTabs({
               if (i === selectedDateIndex) {
                 return {
                   ...group,
-                  activityIds: group.activityIds.filter((id) => id !== activityId),
+                  activityIds: group.activityIds.filter(
+                    (id) => id !== activityId,
+                  ),
                 }
               }
               // Also remove from other groups if it exists there
               return {
                 ...group,
-                activityIds: group.activityIds.filter((id) => id !== activityId),
+                activityIds: group.activityIds.filter(
+                  (id) => id !== activityId,
+                ),
               }
             })
             onDateGroupsChange(newGroups)
@@ -506,7 +517,9 @@ export function ActivitySelectionTabs({
                 // Remove from other groups
                 return {
                   ...group,
-                  activityIds: group.activityIds.filter((id) => id !== activityId),
+                  activityIds: group.activityIds.filter(
+                    (id) => id !== activityId,
+                  ),
                 }
               }
               return group
@@ -543,7 +556,6 @@ export function ActivitySelectionTabs({
       onDateGroupsChange,
     ],
   )
-
 
   // Group selected activities by source for summary display
   const groupedActivities = useMemo(() => {
@@ -590,7 +602,9 @@ export function ActivitySelectionTabs({
           {onTimePlanningChange && (
             <div className="flex items-center gap-1.5">
               <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">Time Planning</span>
+              <span className="text-[10px] text-muted-foreground">
+                Time Planning
+              </span>
               <Switch
                 checked={timePlanningEnabled}
                 onCheckedChange={onTimePlanningChange}
@@ -606,6 +620,19 @@ export function ActivitySelectionTabs({
           )}
         </div>
       </div>
+
+      {/* Story 20.4: Time Planning Mode Indicator */}
+      {timePlanningEnabled && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-2 shrink-0">
+          <div className="flex items-center gap-2 text-blue-700">
+            <Clock className="h-4 w-4" />
+            <span className="font-medium text-sm">Time Planning Mode</span>
+          </div>
+          <p className="text-sm text-blue-600 mt-1">
+            Activities will be selected based on time sessions, not manually.
+          </p>
+        </div>
+      )}
 
       {/* Main Content - Tabs, Date List (when enabled), and Summary */}
       <div className="flex gap-3 flex-1 min-h-0 overflow-hidden h-full">
@@ -634,12 +661,16 @@ export function ActivitySelectionTabs({
             <TabsContent
               value="individual"
               className="flex-1 min-h-0 overflow-hidden mt-2"
-              style={{ height: 'calc(100% - 44px)' }}
+              style={{ height: "calc(100% - 44px)" }}
             >
               <PageViewer
                 bookId={bookId}
                 selectedActivityIds={selectedActivities}
-                onActivityToggle={timePlanningEnabled ? handleActivityToggleWithPlanning : handleActivityToggle}
+                onActivityToggle={
+                  timePlanningEnabled
+                    ? handleActivityToggleWithPlanning
+                    : handleActivityToggle
+                }
               />
             </TabsContent>
 
@@ -647,7 +678,7 @@ export function ActivitySelectionTabs({
             <TabsContent
               value="by-page"
               className="flex-1 min-h-0 overflow-hidden mt-2"
-              style={{ height: 'calc(100% - 44px)' }}
+              style={{ height: "calc(100% - 44px)" }}
             >
               {isStructureLoading ? (
                 <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
@@ -670,7 +701,7 @@ export function ActivitySelectionTabs({
             <TabsContent
               value="by-module"
               className="flex-1 min-h-0 overflow-hidden mt-2"
-              style={{ height: 'calc(100% - 44px)' }}
+              style={{ height: "calc(100% - 44px)" }}
             >
               {isStructureLoading ? (
                 <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
@@ -706,23 +737,27 @@ export function ActivitySelectionTabs({
                       "flex items-center gap-1 p-1.5 rounded-md cursor-pointer transition-colors group",
                       selectedDateIndex === index
                         ? "bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700"
-                        : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent"
+                        : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent",
                     )}
                     onClick={() => setSelectedDateIndex(index)}
                   >
-                    <CalendarDays className={cn(
-                      "h-3 w-3 shrink-0",
-                      selectedDateIndex === index
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-muted-foreground"
-                    )} />
-                    <div className="flex-1 min-w-0">
-                      <div className={cn(
-                        "text-[10px] font-medium truncate",
+                    <CalendarDays
+                      className={cn(
+                        "h-3 w-3 shrink-0",
                         selectedDateIndex === index
-                          ? "text-blue-700 dark:text-blue-300"
-                          : "text-foreground"
-                      )}>
+                          ? "text-blue-600 dark:text-blue-400"
+                          : "text-muted-foreground",
+                      )}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={cn(
+                          "text-[10px] font-medium truncate",
+                          selectedDateIndex === index
+                            ? "text-blue-700 dark:text-blue-300"
+                            : "text-foreground",
+                        )}
+                      >
                         {format(group.date, "dd MMM yyyy")}
                       </div>
                       <div className="text-[9px] text-muted-foreground">
@@ -765,7 +800,9 @@ export function ActivitySelectionTabs({
                       disabled={(date) => {
                         // Disable dates that are already added
                         return dateGroups.some(
-                          (g) => format(g.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
+                          (g) =>
+                            format(g.date, "yyyy-MM-dd") ===
+                            format(date, "yyyy-MM-dd"),
                         )
                       }}
                       initialFocus
@@ -793,12 +830,16 @@ export function ActivitySelectionTabs({
                 <div className="flex items-center gap-1">
                   <CalendarDays className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                   <h4 className="font-medium text-[10px] text-blue-600 dark:text-blue-400">
-                    {format(dateGroups[selectedDateIndex]?.date || new Date(), "dd MMM yyyy")}
+                    {format(
+                      dateGroups[selectedDateIndex]?.date || new Date(),
+                      "dd MMM yyyy",
+                    )}
                   </h4>
                 </div>
               </div>
               <div className="text-[9px] text-muted-foreground mb-2">
-                {dateGroups[selectedDateIndex]?.activityIds.length || 0} activities
+                {dateGroups[selectedDateIndex]?.activityIds.length || 0}{" "}
+                activities
               </div>
               {dateGroups[selectedDateIndex]?.activityIds.length === 0 ? (
                 <div className="text-[10px] text-muted-foreground py-4 text-center">
@@ -807,60 +848,51 @@ export function ActivitySelectionTabs({
               ) : (
                 <ScrollArea className="flex-1">
                   <div className="space-y-0.5 pr-2">
-                    {dateGroups[selectedDateIndex]?.activityIds.map((activityId) => {
-                      const info = activityInfoMap.get(activityId)
-                      const config = info?.activityType
-                        ? ACTIVITY_TYPE_CONFIG[info.activityType as keyof typeof ACTIVITY_TYPE_CONFIG]
-                        : null
-                      return (
-                        <div
-                          key={activityId}
-                          className="flex items-start gap-1 p-1 rounded group bg-blue-50 dark:bg-blue-900/20"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[9px] font-medium text-foreground truncate">
-                              {info?.title || `Activity`}
+                    {dateGroups[selectedDateIndex]?.activityIds.map(
+                      (activityId) => {
+                        const info = activityInfoMap.get(activityId)
+                        const config = info?.activityType
+                          ? ACTIVITY_TYPE_CONFIG[
+                              info.activityType as keyof typeof ACTIVITY_TYPE_CONFIG
+                            ]
+                          : null
+                        return (
+                          <div
+                            key={activityId}
+                            className="flex items-start gap-1 p-1 rounded group bg-blue-50 dark:bg-blue-900/20"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[9px] font-medium text-foreground truncate">
+                                {info?.title || `Activity`}
+                              </div>
+                              {config && (
+                                <Badge
+                                  variant={config.badgeVariant || "outline"}
+                                  className="text-[8px] px-1 py-0"
+                                >
+                                  {config.label}
+                                </Badge>
+                              )}
                             </div>
-                            {config && (
-                              <Badge
-                                variant={config.badgeVariant || "outline"}
-                                className="text-[8px] px-1 py-0"
-                              >
-                                {config.label}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {/* Story 9.7: Preview button */}
-                            {onPreviewActivity && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => onPreviewActivity(activityId)}
-                                className="h-3 w-3 text-blue-600 hover:text-blue-700"
-                                title="Preview activity"
-                              >
-                                <Eye className="h-2 w-2" />
-                              </Button>
-                            )}
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleRemoveActivity(activityId)}
-                              className="h-3 w-3"
+                              className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <X className="h-2 w-2" />
                             </Button>
                           </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      },
+                    )}
                   </div>
                 </ScrollArea>
               )}
               {/* Total summary */}
               <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-[9px] text-muted-foreground">
-                Total: {activityCount} activities across {dateGroups.length} dates
+                Total: {activityCount} activities across {dateGroups.length}{" "}
+                dates
               </div>
             </>
           ) : (
@@ -915,37 +947,25 @@ export function ActivitySelectionTabs({
                                     </div>
                                     {config && (
                                       <Badge
-                                        variant={config.badgeVariant || "outline"}
+                                        variant={
+                                          config.badgeVariant || "outline"
+                                        }
                                         className="text-[8px] px-1 py-0"
                                       >
                                         {config.label}
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {/* Story 9.7: Preview button */}
-                                    {onPreviewActivity && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => onPreviewActivity(activity.id)}
-                                        className="h-3 w-3 text-blue-600 hover:text-blue-700"
-                                        title="Preview activity"
-                                      >
-                                        <Eye className="h-2 w-2" />
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() =>
-                                        handleRemoveActivity(activity.id)
-                                      }
-                                      className="h-3 w-3"
-                                    >
-                                      <X className="h-2 w-2" />
-                                    </Button>
-                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      handleRemoveActivity(activity.id)
+                                    }
+                                    className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-2 w-2" />
+                                  </Button>
                                 </div>
                               )
                             })}

@@ -1,0 +1,64 @@
+- UI re-construction & check
+- production ready work (test with securitiy and high consumption) and clean-up
+- Teacher Announcments
+- KVKK
+- Cant create assignment for different Publisher(Edulink)
+
+UI 
+- Genel olarak uygulamada açılan formlardaki required alanlarda kırmızı yıldız olsun, optional kısımları extra olarak optional belirtmeye gerek yok.
+- Bildirimlere tıkladığımda önce bildirimi kaldırıyor. İlgili yere gidebilemem için aynı bildirime tekrar tıklama zorunda kalıyorum. Tek tıklama hem iligli yere gitmeli hemde bildirimi silmeli.
+- Yeni bir user daha ekleyeceğiz, "Supervisor" Bu kullanıcı admin ile aynı yetkilere sahip olacak. Ama Diğer supervisor'ları silemeyecek. Admini silemeyecek.
+- Bütün alanlardaki Danger zone kısmını kaldıralım. Kimse kendini silemesin.
+ADMIN:
+- Publishers tablosunda bulunan logolar DCS üzerinden çekilmeli. (logo endpointi eklenecek)
+- Publisher edit edilirken Logo ekleme kısmı kaldıralacak.
+- Yeni Publisher eklenirken Dialogda şifre veriliyor ve mail adresi yok deniliyor. mail adresi girilmesine rağmen. 
+- Girilen mail adresine mail gönderilmeli ilk şifresi belirtilmeli.
+- Yeni Teacher eklenirken Dialogda şifre veriliyor ve mail adresi yok deniliyor. mail adresi girilmesine rağmen.
+- Teacher'a kitap atama yapılabilemeli. Publisher yapabiliyor adminde yapabilmeli.
+- Books Altında kitapların book_cover'ları görünmeli. Ve filtreleme ile arama yapılabilemeli.
+- sol Paneldeki Books ismi Library olsun
+- Assignment'ların detaylarını görebilmeli silebilmeli gerekirse edit edebilmeliti.
+- Supervisor sekmesi ekle. Burda mevcut olan süpervisor leri ekleyip düzenleyebildiğimiz ve silebildğimiz bir alan olsun. 
+
+
+PUBLISHER:
+- Publisher Ekranında ilgili yerlere Yayıncını logosunu otomatik olarak DCS'Den çekip kullanacağız.
+- Library ekranında kitaplar şuan büyük bir şekilde görünüyor. Bunu istenirse tablo istenirse büyük grid şekilde görebilsin.
+- Library'deki kitapları hazır fitreler ile filtreleyebilsin.
+- Kitap kurusunun Altında Details var. Burda kitabın atandığı öğretmenler görülüyor. veya yeni öğretmenelere ekleyebiliyoruz. Details yanında Assign butonu ekleyip ordan daha kısa olarak assign edebiliriz.
+- School ekranında kartları daha detaylı yapalım, istenirse liste olarakta görünebilsin.
+- Teachers kısmında Benzer şekilde kartlara daha fazla bilgi ekleyelim ve istenirse liste olarakda görünebilsin. hazır filtreler ile.
+
+TEACHER:
+- Library altında Book Catalog Yazısı Library olsun.
+- Hem liste hemde kart olarak görebilielim.
+- Aynı pencrede "Vie Activities dediğimiz zaman açılan kısımda Preview çalışmıyor. şuan deactif durumda. Assign'ı kaldıralım. ayrıca yeni bir sutun içinde aktivitenin hangi sayfada olduğunu gösterelim. 
+- My Materials kısmında ki materyaller'e download butonu ekledik ama bu çalışmıyor. İlgili materyali tekrar indirmesine imkan verelim.
+- Assignment'ları da hem kart hemde tablo list olarak gösterelim. hazır filtereler ile aramaya iman verelim.
+- Create Assignment dialogu Select activitiesde seçilen akticiteler sağ tarafa görünüyor. hover ettiğimizde göz işareti çıkıyor ama etkkisiz. onu kaldıralım.
+Time planning aktif edildiğinde eğer hali hazırda seçili ektivieler varsa onlar kaldırılsın. Eğer aktivite varsa onların kaldırılacağı uyarısı kullanıcıya gösterilsin.
+- Create Assignment dialogu Select Recipients kısmında eğer sınıftaki öğrenci saylarınıda gösterelim. Seçilen sınıftaki öğrencileride sağ tarafta bir kutu oluşturup orda gösterelim(activities gibi
+)
+- Resources kısmında eğer kitapda video yoksa o alanı hiç göstermeyelim.
+- Resources kısmında materyal eklerken, öğretmenin yeni materyal ekleyebilmesine olanak sağlayalım.
+- preview assginment'a show answer butonu hata veriyor(Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.) ayrıca reset çalışmıyor.
+- Class'a dahil olmayan öğrencilerde assignmetn atanabilsin şuan hata veriyor.
+- Edit assignment kısmına tıkladığımda "Create Assignment" dialogu tekrar mevcut seçilen konfigurasyon ile açılmalı ve edite olanak sağlamalı.
+- Edit Activities kaldırılmalı çünki dialog ile herşeyi baştan editleyebileceğiz.
+- teacher/analytics sayfası var ve dummy veriler var. Assignment> Student tıkladığımda /teacher/analytics/aa3ed55b-3a49-4894-9ceb-a946fb139f12 kısmına yönlendiriyor. Burdan geri dediğimde bu sayfaya ulaşıyorum. Bu sayfayı kaldıralım. Ama öğrencinin analizine ulaşabilelim.
+- Insights kısmını kaldıralım. 
+- Rapor oluşturuktan sonra ekranda görebilelim. Direk Download butonu yeterli değil. Rapor ismide öğrenci bilgleri olsun şuan unique bir id isminde.
+- Mesaj gönderebileceği kişiler arasındabütün publisher görünüyor. Ama hangi publisher olduğu bilgisi yok. Kişilere o bilgiyede ekleyelim.
+
+STUDENT:
+- DashBoard'da your Progress Recent FeedBack Achievents gibi kısımları My Progress altında gösterelim. Reports'u kaldıralım.
+- Dashboard Your Progress ve upcoming Assignments alanı kalsın. 
+- Tips'leri kaldıralım.
+- DashBoard'da öğrenci is DashBoard şeklinde bir başlık olsun.
+- Aktivite'de Resources alanı tam açılmıyor. Sağ tarafta kalan  bir kısım var.
+- Aktivitede taşınan kısımda aynı isimde bir kelime/harf varsa, bir tanesi taşınıp bırakıldıktan sonra diğer aynı isimdeki kelimelerde deactiv oluyor
+- Match aktivitesinde yer olmasına rağmen resimli kısımlar küçük görünüyor. Eğer yer varsa bunları daha büyük yapalım.
+- Match Aktivitesinde eğer tutup çektiğim ok daire boş bir alanda bırakınca yerine hemen gitmiyor. bir kaç saniye bekliyor. Onu hemen gidecek şekilde düzeltelim.
+- Aktiviteyi save exit yapıp geri geldiğimde ve submit edip bitirdiğimde. Result Screeninde bırakıp geri devam ettiğim kısmıda gösteriyor. Burada en son son submit ettiğim durumu göstermeli.
+

@@ -4,7 +4,6 @@ Integration tests for report generation API - Story 5.6
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,7 +21,6 @@ from app.models import (
     Class,
     ClassStudent,
     Publisher,
-    ReportFormatEnum,
     ReportJob,
     ReportJobStatusEnum,
     ReportTypeEnum,
@@ -33,12 +31,12 @@ from app.models import (
     User,
     UserRole,
 )
+from app.schemas.reports import ReportPeriod
 from app.services.report_service import (
     calculate_trend,
     generate_narrative_summary,
     get_period_dates,
 )
-from app.schemas.reports import ReportPeriod
 
 
 @pytest.fixture(name="reports_publisher")

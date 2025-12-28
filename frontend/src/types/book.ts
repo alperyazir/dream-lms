@@ -38,9 +38,12 @@ export function isActivityTypeSupported(type: ActivityType): boolean {
 
 /**
  * Book data from API
+ *
+ * Note: Book IDs are now integers (DCS book IDs) instead of UUIDs.
+ * Books are fetched from Dream Central Storage on-demand.
  */
 export interface Book {
-  id: string
+  id: number // Changed from string to number (DCS book ID)
   dream_storage_id: string
   title: string
   publisher_name: string
@@ -54,7 +57,7 @@ export interface Book {
  */
 export interface Activity {
   id: string
-  book_id: string
+  book_id: number // Changed from string to number (DCS book ID)
   activity_type: ActivityType
   title: string | null
   config_json: any
@@ -158,7 +161,7 @@ export interface ModulePages {
  * Response from GET /api/v1/books/{book_id}/pages
  */
 export interface BookPagesResponse {
-  book_id: string
+  book_id: number // Changed from string to number (DCS book ID)
   modules: ModulePages[]
   total_pages: number
   total_activities: number
@@ -230,7 +233,7 @@ export interface ModulePagesDetail {
  * Enhanced book pages response with activity coordinates for page viewer
  */
 export interface BookPagesDetailResponse {
-  book_id: string
+  book_id: number // Changed from string to number (DCS book ID)
   modules: ModuleInfo[] // Module shortcuts for navigation
   pages: PageDetail[] // Flat list of ALL pages in order
   total_pages: number
@@ -265,7 +268,7 @@ export interface ModuleWithActivities {
  * Book structure response with modules and pages for activity selection tabs
  */
 export interface BookStructureResponse {
-  book_id: string
+  book_id: number // Changed from string to number (DCS book ID)
   modules: ModuleWithActivities[]
   total_pages: number
   total_activities: number

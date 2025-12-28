@@ -5,20 +5,14 @@ import re
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
-from app.api.deps import AsyncSessionDep, get_current_active_superuser, require_role
+from app.api.deps import AsyncSessionDep, require_role
 from app.models import (
     Activity,
-    ActivityResponse,
-    Book,
-    BookAccess,
-    BookListResponse,
-    BookResponse,
-    BookStatus,
     Teacher,
     User,
     UserRole,
@@ -26,8 +20,12 @@ from app.models import (
 from app.schemas.book import (
     ActivityCoords,
     ActivityMarker,
+    ActivityResponse,
+    BookListResponse,
     BookPagesDetailResponse,
     BookPagesResponse,
+    BookPublic,
+    BookResponse,
     BookStructureResponse,
     BookSyncResponse,
     BookVideosResponse,
@@ -41,67 +39,103 @@ from app.schemas.book import (
     VideoInfo,
 )
 from app.services import book_assignment_service
-from app.services.book_service import sync_all_books
-from app.services.config_parser import parse_video_sections
+from app.services.book_service_v2 import get_book_service
+from app.services.config_parser import parse_book_config, parse_video_sections
 from app.services.dream_storage_client import get_dream_storage_client
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-async def run_book_sync(db: AsyncSessionDep) -> None:
-    """
-    Background task for book synchronization.
-
-    Args:
-        db: Async database session
-    """
-    try:
-        result = await sync_all_books(db)
-        logger.info(f"Book sync complete: {result}")
-    except Exception as e:
-        logger.error(f"Book sync failed: {e}", exc_info=True)
-
-
 @router.post(
     "/sync",
     response_model=BookSyncResponse,
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="Sync books from Dream Central Storage",
-    description="Triggers synchronization of book catalog from Dream Central Storage (admin only)",
+    status_code=status.HTTP_410_GONE,
+    summary="[DEPRECATED] Sync books from Dream Central Storage",
+    description="This endpoint is deprecated. Books are now fetched on-demand from DCS without sync.",
+    deprecated=True,
 )
-async def trigger_book_sync(
-    background_tasks: BackgroundTasks,
-    db: AsyncSessionDep,
-    current_user: User = Depends(get_current_active_superuser),
-) -> BookSyncResponse:
+async def trigger_book_sync() -> BookSyncResponse:
     """
-    Admin-only endpoint to sync books from Dream Central Storage.
+    [DEPRECATED] Book sync endpoint is no longer needed.
 
-    This endpoint triggers a background sync operation and returns immediately.
-
-    Args:
-        background_tasks: FastAPI background tasks manager
-        db: Database session dependency
-        current_user: Current authenticated admin user
+    Books are now fetched on-demand from Dream Central Storage with caching.
+    No sync operation is required.
 
     Returns:
-        BookSyncResponse: Sync operation status (returns immediately, sync runs in background)
+        HTTP 410 Gone with deprecation message
     """
-    logger.info(f"Book sync triggered by user {current_user.email}")
-
-    # Start background sync
-    background_tasks.add_task(run_book_sync, db)
-
-    return BookSyncResponse(
-        success=True,
-        books_synced=0,
-        books_created=0,
-        books_updated=0,
-        activities_created=0,
-        errors=[],
-        message="Book sync started in background",
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Book sync is deprecated. Books are now fetched on-demand from DCS with caching. No sync needed."
     )
+
+
+@router.get("/{book_id}/cover")
+async def get_book_cover(book_id: int) -> Any:
+    """
+    Get book cover image from DCS.
+
+    Fetches the cover image directly from the fixed location:
+    /storage/books/{publisher}/{book_name}/object?path=images/book_cover.png
+
+    Args:
+        book_id: DCS book ID
+
+    Returns:
+        Image response with cover content
+
+    Raises:
+        HTTPException: 404 if cover not found
+    """
+    from fastapi.responses import Response
+
+    try:
+        # Get book service to find book details
+        book_service = get_book_service()
+        book = await book_service.get_book(book_id)
+
+        if not book:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Book not found"
+            )
+
+        # Get DCS client and fetch cover from fixed path
+        client = await get_dream_storage_client()
+
+        # Book covers are always at: {book}/images/book_cover.png
+        url = f"/storage/books/{book.publisher_name}/{book.name}/object"
+        params = {"path": "images/book_cover.png"}
+
+        try:
+            response = await client._make_request("GET", url, params=params)
+
+            # Get content type from response
+            content_type = response.headers.get("content-type", "image/png")
+
+            return Response(
+                content=response.content,
+                media_type=content_type,
+                headers={
+                    "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+                }
+            )
+        except Exception as e:
+            logger.error(f"Error fetching cover for book {book_id} from DCS: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Book cover not found"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in get_book_cover for book {book_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book cover not found"
+        )
 
 
 # --- Book Catalog Endpoints (Story 3.6) ---
@@ -137,42 +171,26 @@ async def _get_teacher_from_user(session: AsyncSession, user: User) -> Teacher:
     return teacher
 
 
-async def _verify_book_access(
-    session: AsyncSession,
-    book_id: uuid.UUID,
-    publisher_id: uuid.UUID
-) -> Book:
+async def _verify_book_exists(book_id: int) -> BookPublic:
     """
-    Verify that a book is accessible to the given publisher.
+    Verify that a book exists in DCS.
 
     Args:
-        session: Database session
-        book_id: UUID of the book
-        publisher_id: UUID of the publisher
+        book_id: DCS book ID (integer)
 
     Returns:
-        Book object if access verified
+        BookPublic object if found
 
     Raises:
-        HTTPException: 404 if book not found or not accessible
+        HTTPException: 404 if book not found in DCS
     """
-    # Query book with access check (exclude archived books)
-    result = await session.execute(
-        select(Book)
-        .join(BookAccess, Book.id == BookAccess.book_id)
-        .where(
-            Book.id == book_id,
-            BookAccess.publisher_id == publisher_id,
-            Book.status != BookStatus.archived
-        )
-    )
-    book = result.scalar_one_or_none()
+    book_service = get_book_service()
+    book = await book_service.get_book(book_id)
 
     if not book:
-        # Return 404 to not expose existence of other publishers' books
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book not found"
+            detail="Book not found in DCS"
         )
 
     return book
@@ -182,19 +200,19 @@ async def _verify_book_access(
     "",
     response_model=BookListResponse,
     summary="List accessible books",
-    description="Returns books accessible to the authenticated user (admin sees all, publisher/teacher see their publisher's books)."
+    description="Returns books accessible to the authenticated user from DCS (admin/supervisor/publisher see all, teacher sees assigned books)."
 )
 async def list_books(
     *,
     session: AsyncSessionDep,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher),
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher),
     skip: int = 0,
     limit: int = 20,
     search: str | None = None,
     activity_type: str | None = None
 ) -> Any:
     """
-    List books accessible to the current user.
+    List books accessible to the current user (fetched from DCS on-demand).
 
     - **skip**: Number of records to skip (default: 0)
     - **limit**: Maximum records to return (default: 20, max: 100)
@@ -202,9 +220,10 @@ async def list_books(
     - **activity_type**: Filter by activity type
 
     Access control:
-    - Admin: Sees all books
-    - Publisher: Sees their publisher's books
-    - Teacher: Sees their publisher's books (via school)
+    - Admin: Sees all books from DCS
+    - Supervisor: Sees all books from DCS
+    - Publisher: Sees all books from DCS (needed for book assignment)
+    - Teacher: Sees only assigned books (via BookAssignment)
     """
     # Validate pagination parameters
     if skip < 0:
@@ -219,32 +238,12 @@ async def list_books(
             detail="Limit parameter must be between 1 and 100"
         )
 
-    # Determine publisher_ids based on user role
-    publisher_ids = None
+    # Get book service
+    book_service = get_book_service()
 
-    if current_user.role == UserRole.admin:
-        # Admin sees all books (no publisher filter)
-        publisher_ids = None
-    elif current_user.role == UserRole.publisher:
-        # Publisher sees books from their organization (all publishers with same name)
-        from app.models import Publisher
-        result = await session.execute(
-            select(Publisher).where(Publisher.user_id == current_user.id)
-        )
-        publisher = result.scalar_one_or_none()
-        if not publisher:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Publisher record not found for this user"
-            )
-        # Get all publishers in the same organization
-        same_org_result = await session.execute(
-            select(Publisher).where(Publisher.name == publisher.name)
-        )
-        same_org_publishers = same_org_result.scalars().all()
-        publisher_ids = [p.id for p in same_org_publishers]
-    elif current_user.role == UserRole.teacher:
-        # Teacher sees only books assigned to them or their school (Story 9.4)
+    # Determine accessible books based on role
+    if current_user.role == UserRole.teacher:
+        # Teacher sees only books assigned to them via BookAssignment (Story 9.4)
         teacher = await _get_teacher_from_user(session, current_user)
         accessible_book_ids = await book_assignment_service.get_accessible_book_ids(
             db=session,
@@ -259,70 +258,59 @@ async def list_books(
                 limit=limit
             )
 
-    # Build query: Books (using DCS activity count)
-    query = select(Book)
+        # Fetch all books from DCS
+        all_books = await book_service.list_books()
 
-    # Filter out archived books (books deleted from DCS)
-    query = query.where(Book.status != BookStatus.archived)
+        # Filter to only accessible books
+        books = [book for book in all_books if book.id in accessible_book_ids]
+    else:
+        # Admin/Supervisor/Publisher: Fetch all books from DCS
+        books = await book_service.list_books()
 
-    # Apply access filter based on role
-    if current_user.role == UserRole.teacher:
-        # Teacher: filter by assigned book IDs
-        query = query.where(Book.id.in_(accessible_book_ids))
-    elif publisher_ids is not None:
-        # Publisher: filter by BookAccess
-        query = query.join(BookAccess, Book.id == BookAccess.book_id).where(
-            BookAccess.publisher_id.in_(publisher_ids)
-        )
-
-    # Apply search filter
+    # Apply search filter (client-side since DCS doesn't support search)
     if search:
-        search_pattern = f"%{search}%"
-        query = query.where(
-            (Book.title.ilike(search_pattern)) |
-            (Book.publisher_name.ilike(search_pattern))
-        )
+        search_lower = search.lower()
+        books = [
+            book for book in books
+            if (book.title and search_lower in book.title.lower())
+            or (book.publisher_name and search_lower in book.publisher_name.lower())
+        ]
 
-    # Apply activity type filter
+    # Apply activity type filter (requires checking activities in DB)
     if activity_type:
-        # Filter books that have at least one activity of this type
-        query = query.where(
-            Book.id.in_(
-                select(Activity.book_id)
-                .where(Activity.activity_type == activity_type)
-            )
+        # Get book IDs that have activities of this type
+        result = await session.execute(
+            select(Activity.dcs_book_id)
+            .where(Activity.activity_type == activity_type)
+            .distinct()
         )
+        book_ids_with_type = {row[0] for row in result}
+        books = [book for book in books if book.id in book_ids_with_type]
 
-    # Get total count before pagination
-    count_result = await session.execute(
-        select(func.count())
-        .select_from(query.subquery())
-    )
-    total = count_result.scalar_one()
+    # Calculate total before pagination
+    total = len(books)
 
-    # Apply pagination
-    query = query.offset(skip).limit(limit)
+    # Apply pagination (client-side)
+    books = books[skip:skip + limit]
 
-    # Execute query
-    result = await session.execute(query)
-    books_data = result.scalars().all()
-
-    # Build response with DCS activity counts
-    books = [
+    # Convert to BookResponse format
+    response_items = [
         BookResponse(
             id=book.id,
-            dream_storage_id=book.dream_storage_id,
             title=book.title,
+            book_name=book.name,
             publisher_name=book.publisher_name,
-            description=book.description,
-            cover_image_url=book.cover_image_url,
-            activity_count=book.dcs_activity_count or 0  # Use DCS count as source of truth
+            language=None,
+            category=None,
+            cover_image_url=book.cover_url,
+            activity_count=book.activity_count,
+            dream_storage_id=str(book.id)  # For backwards compatibility
         )
-        for book in books_data
+        for book in books
     ]
 
     return BookListResponse(
-        items=books,
+        items=response_items,
         total=total,
         skip=skip,
         limit=limit
@@ -333,49 +321,29 @@ async def list_books(
     "/{book_id}/activities",
     response_model=list[ActivityResponse],
     summary="Get book activities",
-    description="Returns all activities for a specific book (admin sees all, publisher/teacher must have access)."
+    description="Returns all activities for a specific book (admin/supervisor/publisher see all, teacher must have access)."
 )
 async def get_book_activities(
     *,
     session: AsyncSessionDep,
-    book_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
+    book_id: int,  # Changed from UUID to int (DCS book ID)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
 ) -> Any:
     """
     Get all activities for a specific book.
 
     Access control:
     - Admin: Can see all book activities
-    - Publisher: Must have access through BookAccess
-    - Teacher: Must have access through their school's publisher
+    - Supervisor: Can see all book activities
+    - Publisher: Can see all book activities (needed for book assignment)
+    - Teacher: Must have access through BookAssignment
 
     Activities are returned ordered by order_index.
     """
     # Verify access based on role
-    if current_user.role == UserRole.admin:
-        # Admin has access to all books - just verify book exists and is not archived
-        result = await session.execute(
-            select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
-        )
-        book = result.scalar_one_or_none()
-        if not book:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Book not found"
-            )
-    elif current_user.role == UserRole.publisher:
-        # Publisher must have access through BookAccess
-        from app.models import Publisher
-        result = await session.execute(
-            select(Publisher).where(Publisher.user_id == current_user.id)
-        )
-        publisher = result.scalar_one_or_none()
-        if not publisher:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Publisher record not found for this user"
-            )
-        await _verify_book_access(session, book_id, publisher.id)
+    if current_user.role in [UserRole.admin, UserRole.supervisor, UserRole.publisher]:
+        # Admin/Supervisor/Publisher has access to all books - just verify book exists in DCS
+        await _verify_book_exists(book_id)
     elif current_user.role == UserRole.teacher:
         # Teacher must have access through book assignment (Story 9.4)
         teacher = await _get_teacher_from_user(session, current_user)
@@ -390,10 +358,10 @@ async def get_book_activities(
                 detail="Book not found"
             )
 
-    # Get activities for book
+    # Get activities for book (using dcs_book_id)
     result = await session.execute(
         select(Activity)
-        .where(Activity.book_id == book_id)
+        .where(Activity.dcs_book_id == book_id)
         .order_by(Activity.order_index)
     )
     activities = result.scalars().all()
@@ -402,11 +370,13 @@ async def get_book_activities(
     return [
         ActivityResponse(
             id=activity.id,
-            book_id=activity.book_id,
+            book_id=activity.dcs_book_id,
             activity_type=activity.activity_type,
             title=activity.title,
-            config_json=activity.config_json,
-            order_index=activity.order_index
+            config_json=activity.config_json or {},
+            order_index=activity.order_index,
+            module_name=activity.module_name,
+            page_number=activity.page_number
         )
         for activity in activities
     ]
@@ -415,42 +385,17 @@ async def get_book_activities(
 # --- Story 8.2: Page-Based Activity Selection ---
 
 
-async def _get_publisher_id_for_user(session: AsyncSession, user: User) -> uuid.UUID | None:
-    """
-    Get the publisher_id for access control based on user role.
-
-    Returns None for admin (has access to all), or the publisher_id for publisher.
-    For teachers, returns None as they use BookAssignment for access checks.
-    """
-    if user.role == UserRole.admin:
-        return None
-    elif user.role == UserRole.publisher:
-        from app.models import Publisher
-        result = await session.execute(
-            select(Publisher).where(Publisher.user_id == user.id)
-        )
-        publisher = result.scalar_one_or_none()
-        if not publisher:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Publisher record not found for this user"
-            )
-        return publisher.id
-    # For teachers, return None - they use BookAssignment for access (Story 9.4)
-    return None
-
-
-async def _verify_teacher_book_access(session: AsyncSession, user: User, book_id: uuid.UUID) -> Book:
+async def _verify_teacher_book_access(session: AsyncSession, user: User, book_id: int) -> BookPublic:
     """
     Verify that a teacher has access to a book via BookAssignment.
 
     Args:
         session: Database session
         user: Current authenticated user (must be teacher)
-        book_id: UUID of the book
+        book_id: DCS book ID (integer)
 
     Returns:
-        Book object if access verified
+        BookPublic object if access verified
 
     Raises:
         HTTPException: 404 if book not found or teacher doesn't have access
@@ -464,20 +409,11 @@ async def _verify_teacher_book_access(session: AsyncSession, user: User, book_id
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book not found"
+            detail="Book not found or not accessible"
         )
 
-    # Get the book object
-    result = await session.execute(
-        select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
-    )
-    book = result.scalar_one_or_none()
-    if not book:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book not found"
-        )
-    return book
+    # Get the book from DCS
+    return await _verify_book_exists(book_id)
 
 
 def _extract_page_image_paths(config_json: dict) -> dict[tuple[str, int], str]:
@@ -528,9 +464,13 @@ def _extract_page_image_paths(config_json: dict) -> dict[tuple[str, int], str]:
     return page_paths
 
 
-def _extract_all_pages_from_config(config_json: dict, book_id: uuid.UUID) -> tuple[list[dict], list[ModuleInfo]]:
+def _extract_all_pages_from_config(config_json: dict, book_id: int) -> tuple[list[dict], list[ModuleInfo]]:
     """
     Extract ALL pages from config.json (not just pages with activities).
+
+    Args:
+        config_json: Book configuration JSON
+        book_id: DCS book ID (integer)
 
     Returns:
         - List of page dicts: {module_name, page_number, image_url}
@@ -605,8 +545,8 @@ def _extract_all_pages_from_config(config_json: dict, book_id: uuid.UUID) -> tup
 async def get_book_pages(
     *,
     session: AsyncSessionDep,
-    book_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
+    book_id: int,  # Changed from UUID to int (DCS book ID)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
 ) -> BookPagesResponse:
     """
     Get pages for a book, grouped by module.
@@ -618,40 +558,38 @@ async def get_book_pages(
 
     Access control:
     - Admin: Can see all book pages
-    - Publisher: Must have access through BookAccess
+    - Supervisor: Can see all book pages
+    - Publisher: Can see all book pages (needed for book assignment)
     - Teacher: Must have access through BookAssignment (Story 9.4)
     """
-    # Verify access and get book based on role
+    # Verify access based on role
     if current_user.role == UserRole.teacher:
         # Teacher access via BookAssignment (Story 9.4)
-        book = await _verify_teacher_book_access(session, current_user, book_id)
-    elif current_user.role == UserRole.publisher:
-        # Publisher access via BookAccess
-        publisher_id = await _get_publisher_id_for_user(session, current_user)
-        book = await _verify_book_access(session, book_id, publisher_id)
+        await _verify_teacher_book_access(session, current_user, book_id)
     else:
-        # Admin - verify book exists and is not archived
-        result = await session.execute(
-            select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
+        # Admin/Supervisor/Publisher - verify book exists in DCS
+        await _verify_book_exists(book_id)
+
+    # Get book config from DCS
+    book_service = get_book_service()
+    book_config = await book_service.get_book_config(book_id)
+    if not book_config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book configuration not found in DCS"
         )
-        book = result.scalar_one_or_none()
-        if not book:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Book not found"
-            )
 
     # Extract page image paths from config.json
-    page_image_paths = _extract_page_image_paths(book.config_json or {})
+    page_image_paths = _extract_page_image_paths(book_config)
 
-    # Query activities grouped by module and page
+    # Query activities grouped by module and page (using dcs_book_id)
     result = await session.execute(
         select(
             Activity.module_name,
             Activity.page_number,
             func.count(Activity.id).label("activity_count")
         )
-        .where(Activity.book_id == book_id)
+        .where(Activity.dcs_book_id == book_id)
         .group_by(Activity.module_name, Activity.page_number)
         .order_by(Activity.module_name, Activity.page_number)
     )
@@ -740,10 +678,10 @@ def _module_name_to_folder(module_name: str) -> str:
 async def get_page_activities(
     *,
     session: AsyncSessionDep,
-    book_id: uuid.UUID,
+    book_id: int,  # Changed from UUID to int (DCS book ID)
     page_number: int,
     module_name: str | None = None,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
 ) -> list[PageActivityResponse]:
     """
     Get activities for a specific page in a book.
@@ -755,29 +693,20 @@ async def get_page_activities(
 
     Access control:
     - Admin: Can see all book activities
-    - Publisher: Must have access through BookAccess
-    - Teacher: Must have access through their school's publisher
+    - Supervisor: Can see all book activities
+    - Publisher: Can see all book activities (needed for book assignment)
+    - Teacher: Must have access through BookAssignment
     """
-    # Verify access
-    publisher_id = await _get_publisher_id_for_user(session, current_user)
-
-    if publisher_id is not None:
-        await _verify_book_access(session, book_id, publisher_id)
+    # Verify access based on role
+    if current_user.role == UserRole.teacher:
+        await _verify_teacher_book_access(session, current_user, book_id)
     else:
-        # Admin - verify book exists and is not archived
-        result = await session.execute(
-            select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
-        )
-        book = result.scalar_one_or_none()
-        if not book:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Book not found"
-            )
+        # Admin/Supervisor/Publisher - verify book exists in DCS
+        await _verify_book_exists(book_id)
 
-    # Build query
+    # Build query (using dcs_book_id)
     query = select(Activity).where(
-        Activity.book_id == book_id,
+        Activity.dcs_book_id == book_id,
         Activity.page_number == page_number
     )
 
@@ -828,8 +757,8 @@ def _extract_activity_coords(config_json: dict) -> ActivityCoords | None:
 async def get_book_pages_detail(
     *,
     session: AsyncSessionDep,
-    book_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
+    book_id: int,  # Changed from UUID to int (DCS book ID)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
 ) -> BookPagesDetailResponse:
     """
     Get detailed page information for the enhanced page viewer.
@@ -841,37 +770,35 @@ async def get_book_pages_detail(
 
     Access control:
     - Admin: Can see all book pages
-    - Publisher: Must have access through BookAccess
+    - Supervisor: Can see all book pages
+    - Publisher: Can see all book pages (needed for book assignment)
     - Teacher: Must have access through BookAssignment (Story 9.4)
     """
-    # Verify access and get book based on role
+    # Verify access based on role
     if current_user.role == UserRole.teacher:
         # Teacher access via BookAssignment (Story 9.4)
-        book = await _verify_teacher_book_access(session, current_user, book_id)
-    elif current_user.role == UserRole.publisher:
-        # Publisher access via BookAccess
-        publisher_id = await _get_publisher_id_for_user(session, current_user)
-        book = await _verify_book_access(session, book_id, publisher_id)
+        await _verify_teacher_book_access(session, current_user, book_id)
     else:
-        # Admin - verify book exists and is not archived
-        result = await session.execute(
-            select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
+        # Admin/Supervisor/Publisher - verify book exists in DCS
+        await _verify_book_exists(book_id)
+
+    # Get book config from DCS
+    book_service = get_book_service()
+    book_config = await book_service.get_book_config(book_id)
+    if not book_config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book configuration not found in DCS"
         )
-        book = result.scalar_one_or_none()
-        if not book:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Book not found"
-            )
 
     # Extract ALL pages from config.json (not just pages with activities)
-    all_pages, module_infos = _extract_all_pages_from_config(book.config_json or {}, book_id)
+    all_pages, module_infos = _extract_all_pages_from_config(book_config, book_id)
     logger.info(f"Extracted {len(all_pages)} total pages from config.json across {len(module_infos)} modules")
 
-    # Get all activities for this book with their coordinates
+    # Get all activities for this book with their coordinates (using dcs_book_id)
     result = await session.execute(
         select(Activity)
-        .where(Activity.book_id == book_id)
+        .where(Activity.dcs_book_id == book_id)
         .order_by(Activity.module_name, Activity.page_number, Activity.section_index)
     )
     activities = result.scalars().all()
@@ -948,8 +875,8 @@ SUPPORTED_ACTIVITY_TYPES = {
 async def get_book_structure(
     *,
     session: AsyncSessionDep,
-    book_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
+    book_id: int,  # Changed from UUID to int (DCS book ID)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
 ) -> BookStructureResponse:
     """
     Get book structure with modules and pages for activity selection tabs.
@@ -962,35 +889,34 @@ async def get_book_structure(
 
     Access control:
     - Admin: Can see all book structures
-    - Publisher: Must have access through BookAccess
+    - Supervisor: Can see all book structures
+    - Publisher: Can see all book structures (needed for book assignment)
     - Teacher: Must have access through BookAssignment (Story 9.4)
     """
-    # Verify access and get book based on role
+    # Verify access based on role
     if current_user.role == UserRole.teacher:
-        book = await _verify_teacher_book_access(session, current_user, book_id)
-    elif current_user.role == UserRole.publisher:
-        publisher_id = await _get_publisher_id_for_user(session, current_user)
-        book = await _verify_book_access(session, book_id, publisher_id)
+        await _verify_teacher_book_access(session, current_user, book_id)
     else:
-        # Admin - verify book exists and is not archived
-        result = await session.execute(
-            select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
+        # Admin/Supervisor/Publisher - verify book exists in DCS
+        await _verify_book_exists(book_id)
+
+    # Get book config from DCS for page image paths
+    book_service = get_book_service()
+    book_config = await book_service.get_book_config(book_id)
+    if not book_config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book configuration not found in DCS"
         )
-        book = result.scalar_one_or_none()
-        if not book:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Book not found"
-            )
 
     # Extract page image paths from config.json for thumbnails
-    page_image_paths = _extract_page_image_paths(book.config_json or {})
+    page_image_paths = _extract_page_image_paths(book_config)
 
-    # Get all activities for this book (only supported activity types)
+    # Get all activities for this book (only supported activity types, using dcs_book_id)
     result = await session.execute(
         select(Activity)
         .where(
-            Activity.book_id == book_id,
+            Activity.dcs_book_id == book_id,
             Activity.activity_type.in_(SUPPORTED_ACTIVITY_TYPES)
         )
         .order_by(Activity.module_name, Activity.page_number, Activity.section_index)
@@ -1083,8 +1009,8 @@ async def get_book_structure(
 async def list_book_videos(
     *,
     session: AsyncSessionDep,
-    book_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
+    book_id: int,  # Changed from UUID to int (DCS book ID)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
 ) -> BookVideosResponse:
     """
     List available videos for a book from its config.json.
@@ -1096,33 +1022,32 @@ async def list_book_videos(
 
     Access control:
     - Admin: Can see all book videos
-    - Publisher: Must have access through BookAccess
+    - Supervisor: Can see all book videos
+    - Publisher: Can see all book videos (needed for book assignment)
     - Teacher: Must have access through BookAssignment (Story 9.4)
     """
-    # Verify access and get book based on role
+    # Verify access based on role
     if current_user.role == UserRole.teacher:
-        book = await _verify_teacher_book_access(session, current_user, book_id)
-    elif current_user.role == UserRole.publisher:
-        publisher_id = await _get_publisher_id_for_user(session, current_user)
-        book = await _verify_book_access(session, book_id, publisher_id)
+        await _verify_teacher_book_access(session, current_user, book_id)
     else:
-        # Admin - verify book exists and is not archived
-        result = await session.execute(
-            select(Book).where(Book.id == book_id, Book.status != BookStatus.archived)
+        # Admin/Supervisor/Publisher - verify book exists in DCS
+        await _verify_book_exists(book_id)
+
+    # Get book from DCS to fetch publisher_name and book_name
+    book_service = get_book_service()
+    book = await book_service.get_book(book_id)
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found in DCS"
         )
-        book = result.scalar_one_or_none()
-        if not book:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Book not found"
-            )
 
     # Get Dream Storage client and fetch config.json
     dcs_client = await get_dream_storage_client()
     try:
         config_data = await dcs_client.get_book_config(
             publisher=book.publisher_name,
-            book_name=book.book_name
+            book_name=book.name
         )
     except Exception as e:
         logger.error(f"Failed to fetch config.json for book {book_id}: {e}")
@@ -1136,7 +1061,7 @@ async def list_book_videos(
     try:
         all_files = await dcs_client.list_book_contents(
             publisher=book.publisher_name,
-            book_name=book.book_name
+            book_name=book.name
         )
     except Exception as e:
         logger.warning(f"Could not list book contents for subtitle detection: {e}")
@@ -1181,7 +1106,7 @@ async def list_book_videos(
             try:
                 size_bytes = await dcs_client.get_asset_size(
                     publisher=book.publisher_name,
-                    book_name=book.book_name,
+                    book_name=book.name,
                     asset_path=video_path
                 )
             except Exception as e:
@@ -1203,3 +1128,99 @@ async def list_book_videos(
         videos=videos,
         total_count=len(videos)
     )
+
+
+# --- Admin: Import Activities from DCS ---
+
+
+@router.post(
+    "/{book_id}/import-activities",
+    response_model=dict,
+    summary="Import activities from DCS config.json into local database",
+    description="Admin-only endpoint to sync activities from DCS config.json to local Activity table."
+)
+async def import_book_activities(
+    *,
+    session: AsyncSessionDep,
+    book_id: int,
+    current_user: User = require_role(UserRole.admin)
+) -> dict:
+    """
+    Import activities from DCS config.json into local Activity table.
+
+    This endpoint:
+    1. Fetches the book's config.json from DCS
+    2. Parses activities using parse_book_config
+    3. Creates Activity records in the database
+    4. Only imports supported activity types
+
+    Note: This deletes existing activities for the book before importing.
+    """
+    # Verify book exists in DCS
+    book_service = get_book_service()
+    book = await book_service.get_book(book_id)
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found in DCS"
+        )
+
+    # Get book config from DCS
+    book_config = await book_service.get_book_config(book_id)
+    if not book_config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book configuration not found in DCS"
+        )
+
+    # Parse activities from config.json
+    try:
+        activity_data_list = parse_book_config(book_config)
+    except Exception as e:
+        logger.error(f"Failed to parse config.json for book {book_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to parse book configuration: {str(e)}"
+        )
+
+    # Filter for supported activity types only
+    supported_activities = [
+        a for a in activity_data_list
+        if a.activity_type in SUPPORTED_ACTIVITY_TYPES
+    ]
+
+    # Delete existing activities for this book
+    result = await session.execute(
+        select(Activity).where(Activity.dcs_book_id == book_id)
+    )
+    existing_activities = result.scalars().all()
+    for activity in existing_activities:
+        await session.delete(activity)
+
+    # Create new Activity records
+    created_count = 0
+    for activity_data in supported_activities:
+        activity = Activity(
+            dcs_book_id=book_id,
+            module_name=activity_data.module_name,
+            page_number=activity_data.page_number,
+            section_index=activity_data.section_index,
+            activity_type=activity_data.activity_type,
+            title=activity_data.title,
+            config_json=activity_data.config_json,
+            order_index=activity_data.order_index,
+        )
+        session.add(activity)
+        created_count += 1
+
+    await session.commit()
+
+    logger.info(f"Imported {created_count} activities for book {book_id} ({book.title})")
+
+    return {
+        "book_id": book_id,
+        "book_title": book.title,
+        "total_parsed": len(activity_data_list),
+        "supported_imported": created_count,
+        "unsupported_skipped": len(activity_data_list) - created_count,
+    }

@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import select
 
 from app.api.deps import AsyncSessionDep, CurrentUser
-from app.models import DirectMessage, User, UserRole
+from app.models import User, UserRole
 from app.schemas.message import (
     ConversationListResponse,
     MessageCreate,
@@ -176,11 +176,25 @@ async def get_message_thread(
             detail="User not found",
         )
 
+    # Fetch organization name for publisher partners
+    participant_organization_name = None
+    if partner.role == UserRole.publisher and partner.dcs_publisher_id:
+        from app.services.publisher_service_v2 import get_publisher_service
+        publisher_service = get_publisher_service()
+        try:
+            publisher = await publisher_service.get_publisher(partner.dcs_publisher_id)
+            if publisher:
+                participant_organization_name = publisher.name
+        except Exception:
+            # Silently fail - organization name is optional
+            pass
+
     return MessageThreadResponse(
         participant_id=partner.id,
         participant_name=partner.full_name or partner.email.split("@")[0],
         participant_email=partner.email,
         participant_role=partner.role.value,
+        participant_organization_name=participant_organization_name,
         messages=messages,
         total_messages=len(messages),
     )

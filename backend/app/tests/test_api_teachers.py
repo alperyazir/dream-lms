@@ -25,7 +25,7 @@ def test_teacher_create_student(
 ) -> None:
     """Test teacher can create student successfully"""
     # Create publisher user and publisher
-    from app.models import Publisher, UserRole
+    from app.models import UserRole
     pub_user = User(
         id=uuid.uuid4(),
         email="pub@test.com",
@@ -116,7 +116,7 @@ def test_teacher_list_students(
 ) -> None:
     """Test teacher sees students enrolled in their classes"""
     # Create publisher user and publisher
-    from app.models import Publisher
+    from app.models import 
     pub_user = User(
         id=uuid.uuid4(),
         email="pub@test.com",
@@ -238,7 +238,7 @@ def test_teacher_receives_temporary_password(
 ) -> None:
     """Test response includes temp password when creating student (secure password flow)"""
     # Create publisher user and publisher
-    from app.models import Publisher
+    from app.models import 
     pub_user = User(
         id=uuid.uuid4(),
         email="pub2@test.com",
@@ -311,7 +311,7 @@ def test_students_appear_in_correct_teacher_list(
 ) -> None:
     """Test student enrolled in Class A appears for Teacher A"""
     # Create publisher user and publisher
-    from app.models import Publisher
+    from app.models import 
     pub_user = User(
         id=uuid.uuid4(),
         email="pub3@test.com",

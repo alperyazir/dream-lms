@@ -6,7 +6,8 @@
  */
 
 import { Upload, X } from "lucide-react"
-import React, { useCallback, useRef, useState } from "react"
+import type React from "react"
+import { useCallback, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -14,8 +15,8 @@ import { cn } from "@/lib/utils"
 import type { StorageQuota, UploadingFile } from "@/types/material"
 import {
   ALLOWED_EXTENSIONS,
-  MAX_FILE_SIZE,
   getMaterialType,
+  MAX_FILE_SIZE,
   validateFile,
 } from "@/types/material"
 import { MaterialTypeIcon } from "./MaterialTypeIcon"
@@ -104,9 +105,7 @@ export function MaterialUploadZone({
 
           await onUpload(uploading.file, (progress) => {
             setUploadingFiles((prev) =>
-              prev.map((f) =>
-                f.id === uploading.id ? { ...f, progress } : f,
-              ),
+              prev.map((f) => (f.id === uploading.id ? { ...f, progress } : f)),
             )
           })
 
@@ -133,9 +132,7 @@ export function MaterialUploadZone({
 
       // Clear completed files after a delay
       setTimeout(() => {
-        setUploadingFiles((prev) =>
-          prev.filter((f) => f.status !== "complete"),
-        )
+        setUploadingFiles((prev) => prev.filter((f) => f.status !== "complete"))
       }, 2000)
     },
     [isDisabled, onUpload, quota],
@@ -242,7 +239,9 @@ export function MaterialUploadZone({
                   : "Drag and drop files here"}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              {isDisabled ? "Delete files to free up space" : "or click to browse"}
+              {isDisabled
+                ? "Delete files to free up space"
+                : "or click to browse"}
             </p>
             {!isDisabled && (
               <Button

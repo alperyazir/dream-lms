@@ -7,11 +7,11 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import File, HTTPException, Query, UploadFile, status
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 from fastapi.routing import APIRouter
 from openpyxl import Workbook
-from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 from sqlmodel import func, select
 
 from app import crud
@@ -22,11 +22,11 @@ from app.models import (
     AssignmentActivity,
     AssignmentPublishStatus,
     AssignmentStudent,
-    Book,
     Class,
     ClassStudent,
     Student,
     StudentCreate,
+    StudentPublic,
     Teacher,
     User,
     UserRole,
@@ -52,6 +52,7 @@ from app.schemas.student_import import (
     ImportValidationResponse,
 )
 from app.services import analytics_service, feedback_service
+from app.services.book_service_v2 import get_book_service
 from app.utils import (
     ensure_unique_username,
     generate_student_password,
@@ -69,9 +70,9 @@ logger = logging.getLogger(__name__)
     response_model=list[StudentAssignmentResponse],
     summary="Get student's assignments",
 )
-def get_student_assignments(
+async def get_student_assignments(
     *,
-    session: SessionDep,
+    session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
     status_filter: str | None = Query(None, alias="status"),
 ) -> list[StudentAssignmentResponse]:
@@ -85,7 +86,7 @@ def get_student_assignments(
         List of assignments with enriched data (book, activity, progress)
     """
     # Get Student record from authenticated user
-    result = session.execute(
+    result = await session.execute(
         select(Student).where(Student.user_id == current_user.id)
     )
     student = result.scalar_one_or_none()
@@ -106,18 +107,16 @@ def get_student_assignments(
         .subquery()
     )
 
-    # Build query: AssignmentStudent → Assignment → Book → Activity + activity count
+    # Build query: AssignmentStudent → Assignment → Activity + activity count
     # Only show published assignments to students (not scheduled or draft)
     query = (
         select(
             AssignmentStudent,
             Assignment,
-            Book,
             Activity,
             func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
         )
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Book, Assignment.book_id == Book.id)
         .join(Activity, Assignment.activity_id == Activity.id)
         .outerjoin(
             activity_count_subq,
@@ -139,17 +138,27 @@ def get_student_assignments(
         query = query.where(AssignmentStudent.status == status_filter)
 
     # Execute query
-    result = session.execute(query)
+    result = await session.execute(query)
     rows = result.all()
+
+    # Get BookService to fetch book data from DCS
+    book_service = get_book_service()
 
     # Map results to StudentAssignmentResponse
     assignments = []
     for row in rows:
         assignment_student = row[0]
         assignment = row[1]
-        book = row[2]
-        activity = row[3]
-        activity_count = row[4]
+        activity = row[2]
+        activity_count = row[3]
+
+        # Fetch book data from DCS
+        book = await book_service.get_book(assignment.dcs_book_id)
+        if not book:
+            logger.warning(
+                f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
+            )
+            continue
 
         response = StudentAssignmentResponse(
             # Assignment fields
@@ -160,10 +169,10 @@ def get_student_assignments(
             time_limit_minutes=assignment.time_limit_minutes,
             created_at=assignment.created_at,
 
-            # Book fields
+            # Book fields (from DCS via BookService)
             book_id=book.id,
-            book_title=book.title,
-            book_cover_url=book.cover_image_url,
+            book_title=book.title or book.name,
+            book_cover_url=book.cover_url,
 
             # Activity fields (first activity for display purposes)
             activity_id=activity.id,
@@ -452,6 +461,88 @@ async def get_student_badges(
     return StudentBadgeCountsResponse(**badge_data)
 
 
+# --- Unassigned Students Endpoint (Story 20.5) ---
+
+
+@router.get(
+    "/unassigned",
+    response_model=list[StudentPublic],
+    summary="Get students not enrolled in teacher's classes (Story 20.5)",
+)
+async def get_unassigned_students(
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher),
+) -> list[StudentPublic]:
+    """
+    Get students visible to teacher but not in any of teacher's classes.
+
+    This endpoint returns students who:
+    - Were created by the current teacher (via created_by_teacher_id)
+    - Are NOT enrolled in any of the teacher's classes
+
+    This allows teachers to assign individual students who aren't in classes yet.
+
+    Args:
+        session: Database session
+        current_user: Authenticated teacher user
+
+    Returns:
+        List of Student records with user information
+
+    Raises:
+        HTTPException(404): Teacher record not found
+    """
+    # Get teacher record
+    teacher_result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = teacher_result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found"
+        )
+
+    # Get all student IDs that are enrolled in this teacher's classes
+    enrolled_student_ids_result = await session.execute(
+        select(ClassStudent.student_id)
+        .join(Class, ClassStudent.class_id == Class.id)
+        .where(Class.teacher_id == teacher.id)
+    )
+    enrolled_student_ids = {row[0] for row in enrolled_student_ids_result.all()}
+
+    # Get all students created by this teacher who are NOT enrolled in any of their classes
+    unassigned_result = await session.execute(
+        select(Student, User)
+        .join(User, Student.user_id == User.id)
+        .where(
+            Student.created_by_teacher_id == teacher.id,
+            ~Student.id.in_(enrolled_student_ids) if enrolled_student_ids else True,
+        )
+    )
+    rows = unassigned_result.all()
+
+    # Build StudentPublic response
+    unassigned_students = []
+    for student, user in rows:
+        unassigned_students.append(
+            StudentPublic(
+                id=student.id,
+                user_id=user.id,
+                user_email=user.email,
+                user_username=user.username,
+                user_full_name=user.full_name,
+                grade_level=student.grade_level,
+                parent_email=student.parent_email,
+                created_at=student.created_at,
+                updated_at=student.updated_at,
+            )
+        )
+
+    return unassigned_students
+
+
 # --- Student Calendar Endpoints ---
 
 
@@ -511,11 +602,9 @@ async def get_student_calendar_assignments(
         select(
             AssignmentStudent,
             Assignment,
-            Book,
             func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
         )
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Book, Assignment.book_id == Book.id)
         .outerjoin(
             activity_count_subq,
             activity_count_subq.c.assignment_id == Assignment.id
@@ -535,14 +624,24 @@ async def get_student_calendar_assignments(
     result = await session.execute(query)
     rows = result.all()
 
+    # Get BookService to fetch book data from DCS
+    book_service = get_book_service()
+
     # Group assignments by date (priority: due_date > scheduled_publish_date > created_at)
     assignments_by_date: dict[str, list[StudentCalendarAssignmentItem]] = defaultdict(list)
 
     for row in rows:
         assignment_student = row[0]
         assignment = row[1]
-        book = row[2]
-        activity_count = row[3]
+        activity_count = row[2]
+
+        # Fetch book data from DCS
+        book = await book_service.get_book(assignment.dcs_book_id)
+        if not book:
+            logger.warning(
+                f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
+            )
+            continue
 
         # Use due_date as primary, scheduled_publish_date as secondary, created_at as fallback
         calendar_date = assignment.due_date or assignment.scheduled_publish_date or assignment.created_at
@@ -553,8 +652,8 @@ async def get_student_calendar_assignments(
             name=assignment.name,
             due_date=assignment.due_date,
             book_id=book.id,
-            book_title=book.title,
-            book_cover_url=book.cover_image_url,
+            book_title=book.title or book.name,
+            book_cover_url=book.cover_url,
             activity_count=activity_count,
             status=assignment_student.status.value if hasattr(assignment_student.status, 'value') else str(assignment_student.status),
         )

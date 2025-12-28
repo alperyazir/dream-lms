@@ -10,9 +10,9 @@
  */
 
 import { fireEvent, render, screen } from "@testing-library/react"
+import type { TooltipRenderProps } from "react-joyride"
 import { describe, expect, it, vi } from "vitest"
 import { TourTooltip } from "./TourTooltip"
-import type { TooltipRenderProps } from "react-joyride"
 
 const createMockProps = (
   overrides: Partial<TooltipRenderProps> = {},

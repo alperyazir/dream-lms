@@ -69,7 +69,9 @@ export function PuzzleFindWordsPlayer({
   const getWordColor = (word: string): string => {
     // Story 9.7: When showing correct answers, use a consistent index based on all words
     if (showCorrectAnswers) {
-      const allWords = Array.from(new Set([...activity.words.map(w => w.toUpperCase())]))
+      const allWords = Array.from(
+        new Set([...activity.words.map((w) => w.toUpperCase())]),
+      )
       const index = allWords.indexOf(word)
       return index >= 0 ? wordColors[index % wordColors.length] : wordColors[0]
     }

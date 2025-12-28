@@ -10,14 +10,8 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import {
-  ClipboardList,
-  FileSpreadsheet,
-  FileText,
-  User,
-  Users,
-} from "lucide-react"
-import { useState } from "react"
+import { ClipboardList, Search, User, Users, X } from "lucide-react"
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -53,7 +47,7 @@ const reportFormSchema = z
     start_date: z.string().optional(),
     end_date: z.string().optional(),
     target_id: z.string().min(1, "Please select a target"),
-    format: z.enum(["pdf", "excel"]),
+    format: z.literal("pdf"),
     template_type: z
       .enum([
         "weekly_class_summary",
@@ -105,6 +99,24 @@ export function ReportBuilder({
   selectedTemplate = null,
 }: ReportBuilderProps) {
   const [reportType, setReportType] = useState<ReportType>("student")
+  const [studentSearch, setStudentSearch] = useState("")
+  const [classSearch, setClassSearch] = useState("")
+
+  // Filter and sort students based on search query (alphabetically)
+  const filteredStudents = useMemo(() => {
+    const sorted = [...students].sort((a, b) => a.name.localeCompare(b.name))
+    if (!studentSearch.trim()) return sorted
+    const query = studentSearch.toLowerCase()
+    return sorted.filter((s) => s.name.toLowerCase().includes(query))
+  }, [students, studentSearch])
+
+  // Filter and sort classes based on search query (alphabetically)
+  const filteredClasses = useMemo(() => {
+    const sorted = [...classes].sort((a, b) => a.name.localeCompare(b.name))
+    if (!classSearch.trim()) return sorted
+    const query = classSearch.toLowerCase()
+    return sorted.filter((c) => c.name.toLowerCase().includes(query))
+  }, [classes, classSearch])
 
   const form = useForm<ReportFormData>({
     resolver: zodResolver(reportFormSchema),
@@ -136,17 +148,39 @@ export function ReportBuilder({
     setReportType(value)
     form.setValue("report_type", value)
     form.setValue("target_id", "") // Reset target when type changes
+    setStudentSearch("") // Clear search when switching
+    setClassSearch("")
   }
 
   const getTargetOptions = () => {
     if (reportType === "class") {
-      return classes.map((c) => ({ id: c.id, name: c.name }))
+      return filteredClasses.map((c) => ({ id: c.id, name: c.name }))
     }
     if (reportType === "student") {
-      return students.map((s) => ({ id: s.id, name: s.name }))
+      return filteredStudents.map((s) => ({ id: s.id, name: s.name }))
     }
     // For assignment reports, use an empty target or teacher ID
     return []
+  }
+
+  const getSearchValue = () => {
+    return reportType === "student" ? studentSearch : classSearch
+  }
+
+  const setSearchValue = (value: string) => {
+    if (reportType === "student") {
+      setStudentSearch(value)
+    } else {
+      setClassSearch(value)
+    }
+  }
+
+  const clearSearch = () => {
+    if (reportType === "student") {
+      setStudentSearch("")
+    } else {
+      setClassSearch("")
+    }
   }
 
   const getTargetLabel = () => {
@@ -224,11 +258,60 @@ export function ReportBuilder({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {getTargetOptions().map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          {option.name}
-                        </SelectItem>
-                      ))}
+                      {/* Search Input inside dropdown */}
+                      <div className="sticky top-0 bg-popover p-2 border-b">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder={`Search ${reportType === "student" ? "students" : "classes"}...`}
+                            value={getSearchValue()}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              setSearchValue(e.target.value)
+                            }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            className="pl-8 pr-8 h-8 text-sm"
+                          />
+                          {getSearchValue() && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                clearSearch()
+                              }}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                        {/* Search result count */}
+                        {getSearchValue() && (
+                          <p className="text-xs text-muted-foreground mt-1.5 px-0.5">
+                            {getTargetOptions().length} of{" "}
+                            {reportType === "student"
+                              ? students.length
+                              : classes.length}{" "}
+                            {reportType === "student" ? "students" : "classes"}
+                          </p>
+                        )}
+                      </div>
+                      {/* List of options */}
+                      <div className="max-h-[200px] overflow-y-auto">
+                        {getTargetOptions().length === 0 ? (
+                          <div className="py-6 text-center text-sm text-muted-foreground">
+                            {getSearchValue()
+                              ? `No ${reportType === "student" ? "students" : "classes"} found`
+                              : `No ${reportType === "student" ? "students" : "classes"} available`}
+                          </div>
+                        ) : (
+                          getTargetOptions().map((option) => (
+                            <SelectItem key={option.id} value={option.id}>
+                              {option.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </div>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -297,37 +380,8 @@ export function ReportBuilder({
             </div>
           )}
 
-          {/* Format Selection */}
-          <FormField
-            control={form.control}
-            name="format"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Output Format</FormLabel>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    type="button"
-                    variant={field.value === "pdf" ? "default" : "outline"}
-                    className="flex items-center gap-2"
-                    onClick={() => form.setValue("format", "pdf")}
-                  >
-                    <FileText className="h-4 w-4" />
-                    PDF
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={field.value === "excel" ? "default" : "outline"}
-                    className="flex items-center gap-2"
-                    onClick={() => form.setValue("format", "excel")}
-                  >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Excel
-                  </Button>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Format is always PDF - hidden field */}
+          <input type="hidden" {...form.register("format")} value="pdf" />
 
           {/* Generate Button */}
           <Button type="submit" className="w-full" disabled={isGenerating}>

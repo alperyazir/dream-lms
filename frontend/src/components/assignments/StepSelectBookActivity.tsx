@@ -44,7 +44,7 @@ export function StepSelectBookActivity({
   // Fetch activities for selected book
   const { data: activities, isLoading: activitiesLoading } = useQuery({
     queryKey: ["book-activities", selectedBook?.id],
-    queryFn: () => booksApi.getBookActivities(selectedBook!.id),
+    queryFn: () => booksApi.getBookActivities(String(selectedBook!.id)),
     enabled: !!selectedBook,
     staleTime: 5 * 60 * 1000,
   })

@@ -40,7 +40,6 @@ from app.models import (
     UserRole,
 )
 
-
 # --- Fixtures ---
 
 

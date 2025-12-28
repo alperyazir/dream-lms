@@ -9,13 +9,13 @@
  * - Complete tour calls API and sets isCompleted
  */
 
-import { act, renderHook } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { act, renderHook } from "@testing-library/react"
 import type { ReactNode } from "react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { TourProvider } from "@/contexts/TourContext"
-import { useTour } from "./useTour"
 import type { TourStep } from "@/types/tour"
+import { useTour } from "./useTour"
 
 // Mock the UsersService
 vi.mock("@/client", () => ({

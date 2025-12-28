@@ -170,7 +170,7 @@ def _parse_range_header(range_header: str, file_size: int) -> tuple[int, int]:
     description="Stream audio/video from Dream Central Storage with Range support",
 )
 async def stream_media(
-    book_id: Annotated[uuid.UUID, Path(description="Book ID")],
+    book_id: Annotated[int, Path(description="DCS Book ID")],
     asset_path: Annotated[
         str,
         Path(description="Relative path to media (e.g., 'audio/08.mp3', 'videos/intro.mp4')"),
@@ -200,9 +200,9 @@ async def stream_media(
     _validate_asset_path(asset_path)
 
     # Check book access
-    book = _check_book_access(book_id, current_user, db)
+    book = await _check_book_access(book_id, current_user, db)
 
-    logger.info(f"Streaming media: book_id={book_id}, publisher={book.publisher_name}, book_name={book.book_name}, asset_path={asset_path}, range_header={range_header}")
+    logger.info(f"Streaming media: book_id={book_id}, publisher={book.publisher_name}, book_name={book.name}, asset_path={asset_path}, range_header={range_header}")
 
     # Get DCS client
     client = await get_dream_storage_client()
@@ -211,12 +211,12 @@ async def stream_media(
         # Get file metadata (size) first
         file_size = await client.get_asset_size(
             publisher=book.publisher_name,
-            book_name=book.book_name,
+            book_name=book.name,
             asset_path=asset_path,
         )
         logger.info(f"Media file size: {file_size} bytes")
     except DreamStorageNotFoundError:
-        logger.warning(f"Media not found: book_id={book_id}, publisher={book.publisher_name}, book_name={book.book_name}, asset_path={asset_path}")
+        logger.warning(f"Media not found: book_id={book_id}, publisher={book.publisher_name}, book_name={book.name}, asset_path={asset_path}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media not found")
     except DreamStorageError as e:
         logger.error(f"DCS error getting media size: {e}")
@@ -243,7 +243,7 @@ async def stream_media(
         try:
             async for chunk in client.stream_asset(
                 publisher=book.publisher_name,
-                book_name=book.book_name,
+                book_name=book.name,
                 asset_path=asset_path,
                 start=start,
                 end=end,

@@ -324,3 +324,101 @@ def sanitize_filename(filename: str | None) -> str:
         filename = name[:190] + ("." + ext if ext else "")
 
     return filename or "untitled"
+
+
+def sanitize_filename_for_storage(filename: str | None) -> str:
+    """
+    Sanitize filename for cloud storage (DCS).
+
+    Converts Unicode characters to ASCII-safe alternatives to avoid issues
+    with URL encoding and storage system bugs. This function should be used
+    when uploading files to DCS.
+
+    The original filename is preserved in the database for display purposes.
+
+    Args:
+        filename: Original filename or None
+
+    Returns:
+        ASCII-safe filename suitable for storage paths
+
+    Examples:
+        >>> sanitize_filename_for_storage("yağız yazır.MOV")
+        'yagiz_yazir.MOV'
+        >>> sanitize_filename_for_storage("test file.pdf")
+        'test_file.pdf'
+    """
+    import os
+    import re
+    import unicodedata
+
+    if not filename:
+        return "untitled"
+
+    # Turkish-specific character mappings (before NFD normalization)
+    # These characters don't decompose nicely with NFD
+    turkish_map = {
+        "ğ": "g",
+        "Ğ": "G",
+        "ı": "i",
+        "İ": "I",
+        "ş": "s",
+        "Ş": "S",
+        "ç": "c",
+        "Ç": "C",
+        "ö": "o",
+        "Ö": "O",
+        "ü": "u",
+        "Ü": "U",
+    }
+
+    # Apply Turkish mappings first
+    for turkish_char, ascii_char in turkish_map.items():
+        filename = filename.replace(turkish_char, ascii_char)
+
+    # Normalize to NFD (decomposed) to separate base chars from diacritics
+    normalized = unicodedata.normalize("NFD", filename)
+
+    # Remove combining diacritical marks (accents, etc.)
+    # This converts remaining accented chars like é -> e, ñ -> n, etc.
+    ascii_chars = []
+    for char in normalized:
+        if unicodedata.category(char) != "Mn":  # Mn = Mark, Nonspacing
+            ascii_chars.append(char)
+    filename = "".join(ascii_chars)
+
+    # Encode to ASCII, replacing non-ASCII chars
+    try:
+        filename = filename.encode("ascii", "ignore").decode("ascii")
+    except UnicodeError:
+        pass
+
+    # Replace spaces and other problematic characters with underscores
+    filename = re.sub(r"[^\w\-\.]", "_", filename)
+
+    # Replace consecutive underscores with single underscore
+    filename = re.sub(r"_+", "_", filename)
+
+    # Remove leading/trailing underscores
+    filename = filename.strip("_")
+
+    # Preserve extension - handle edge case where filename starts with dot
+    # (e.g., ".txt" from fully stripped non-Latin names)
+    name, ext = os.path.splitext(filename)
+
+    # If name starts with dot and has no extension, it's likely a stripped filename
+    # like ".txt" where splitext treats the whole thing as name
+    if name.startswith(".") and not ext and len(name) > 1:
+        # Treat the dot-prefixed part as extension
+        ext = name
+        name = ""
+
+    # Limit length
+    if len(name) > 100:
+        name = name[:100]
+
+    # Ensure we have something
+    if not name:
+        name = "file"
+
+    return f"{name}{ext}" if ext else name

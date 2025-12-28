@@ -628,7 +628,12 @@ function TeacherStudentsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="full-name">Full Name *</Label>
+              <Label htmlFor="full-name">
+                Full Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="full-name"
                 placeholder="e.g., John Doe"
@@ -647,7 +652,12 @@ function TeacherStudentsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="username">Username *</Label>
+              <Label htmlFor="username">
+                Username{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="username"
                 placeholder="e.g., johndoe"
@@ -664,7 +674,12 @@ function TeacherStudentsPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">
+                Email{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -705,7 +720,7 @@ function TeacherStudentsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Classrooms (Optional)</Label>
+              <Label>Classrooms</Label>
               {classes.length > 0 ? (
                 <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
                   {classes.map((classroom) => (
@@ -787,7 +802,12 @@ function TeacherStudentsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-full-name">Full Name *</Label>
+              <Label htmlFor="edit-full-name">
+                Full Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-full-name"
                 placeholder="e.g., John Doe"
@@ -801,7 +821,12 @@ function TeacherStudentsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-username">Username *</Label>
+              <Label htmlFor="edit-username">
+                Username{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-username"
                 placeholder="e.g., johndoe"
@@ -818,7 +843,12 @@ function TeacherStudentsPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-email">Email *</Label>
+              <Label htmlFor="edit-email">
+                Email{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-email"
                 type="email"

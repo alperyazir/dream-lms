@@ -10,7 +10,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 # Benchmark Level Types
 BenchmarkLevel = Literal["school", "publisher"]
 BenchmarkPeriod = Literal["weekly", "monthly", "semester", "all"]

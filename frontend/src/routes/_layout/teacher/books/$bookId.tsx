@@ -15,6 +15,7 @@ import { useEffect, useState } from "react"
 import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
 import { ActivityList } from "@/components/books/ActivityList"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { ResourcesSection } from "@/components/resources/ResourcesSection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -48,7 +49,7 @@ function BookDetailContent() {
     error: bookError,
   } = useQuery({
     queryKey: ["book", bookId],
-    queryFn: () => booksApi.getBookById(bookId),
+    queryFn: () => booksApi.getBookById(Number(bookId)),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -128,9 +129,12 @@ function BookDetailContent() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Button variant="ghost" asChild className="mb-4">
-          <Link to="/teacher/books">
+          <Link
+            to="/teacher/books"
+            search={{ q: "", publisher: "", activity: "" }}
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Books
+            Back to Library
           </Link>
         </Button>
 
@@ -141,7 +145,12 @@ function BookDetailContent() {
             to it.
           </p>
           <Button asChild>
-            <Link to="/teacher/books">Return to Catalog</Link>
+            <Link
+              to="/teacher/books"
+              search={{ q: "", publisher: "", activity: "" }}
+            >
+              Return to Catalog
+            </Link>
           </Button>
         </Card>
       </div>
@@ -152,16 +161,23 @@ function BookDetailContent() {
     <div className="container mx-auto px-4 py-8">
       {/* Back Button */}
       <Button variant="ghost" asChild className="mb-4">
-        <Link to="/teacher/books">
+        <Link
+          to="/teacher/books"
+          search={{ q: "", publisher: "", activity: "" }}
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Books
+          Back to Library
         </Link>
       </Button>
 
       {/* Breadcrumb */}
       <div className="mb-6 text-sm text-muted-foreground">
-        <Link to="/teacher/books" className="hover:text-foreground">
-          Books
+        <Link
+          to="/teacher/books"
+          search={{ q: "", publisher: "", activity: "" }}
+          className="hover:text-foreground"
+        >
+          Library
         </Link>
         {" > "}
         <span className="text-foreground">{book.title}</span>
@@ -224,6 +240,9 @@ function BookDetailContent() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Resources Section - Story 21.2: Conditionally displays when book has videos */}
+      <ResourcesSection bookId={bookId} className="mb-8" />
 
       {/* Activities Section */}
       <div>

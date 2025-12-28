@@ -14,6 +14,7 @@ import type {
   StudentProgressPeriod,
   StudentProgressResponse,
 } from "../types/analytics"
+import type { Student } from "../types/teacher"
 
 /**
  * Create axios instance with OpenAPI config
@@ -90,11 +91,23 @@ export async function getStudentProgress(
 }
 
 /**
+ * Get students not enrolled in any of the teacher's classes (Story 20.5)
+ *
+ * @returns Promise with array of unassigned students
+ */
+export async function getUnassignedStudents(): Promise<Student[]> {
+  const url = "/api/v1/students/unassigned"
+  const response = await apiClient.get<Student[]>(url)
+  return response.data
+}
+
+/**
  * Export as object for easier imports
  */
 export const studentsApi = {
   getStudentAnalytics,
   getStudentProgress,
+  getUnassignedStudents,
 }
 
 export default studentsApi

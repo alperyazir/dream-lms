@@ -5,6 +5,7 @@ import type { UserRole } from "@/client"
 // Map role to dashboard route
 const roleDashboards: Record<UserRole, string> = {
   admin: "/admin/dashboard",
+  supervisor: "/admin/dashboard", // Supervisors use admin dashboard
   publisher: "/publisher/dashboard",
   teacher: "/teacher/dashboard",
   student: "/student/dashboard",

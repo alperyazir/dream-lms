@@ -3,9 +3,9 @@
  * Styled to match Shadcn UI design system
  */
 
+import { X } from "lucide-react"
 import type { TooltipRenderProps } from "react-joyride"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
 
 export interface TourTooltipProps extends TooltipRenderProps {
   /** Additional class names */
@@ -52,7 +52,10 @@ export function TourTooltip({
       </div>
 
       {/* Content */}
-      <div id="tour-tooltip-content" className="text-sm text-muted-foreground mb-4">
+      <div
+        id="tour-tooltip-content"
+        className="text-sm text-muted-foreground mb-4"
+      >
         {step.content}
       </div>
 
@@ -64,12 +67,7 @@ export function TourTooltip({
       {/* Navigation buttons */}
       <div className="flex items-center justify-between gap-2">
         {/* Skip button on the left */}
-        <Button
-          {...skipProps}
-          variant="ghost"
-          size="sm"
-          aria-label="Skip tour"
-        >
+        <Button {...skipProps} variant="ghost" size="sm" aria-label="Skip tour">
           Skip
         </Button>
 

@@ -134,9 +134,9 @@ describe("MultiActivityPlayer", () => {
   it("renders header with navigation and progress", () => {
     render(<MultiActivityPlayer {...defaultProps} />)
 
-    // Header contains navigation bar and progress indicator (not assignment name/book title)
+    // Header contains navigation bar (shows current activity index)
     expect(screen.getByTestId("activity-navigation")).toBeInTheDocument()
-    expect(screen.getByText("1 of 3 completed")).toBeInTheDocument()
+    expect(screen.getByText("Navigation: 2 of 3")).toBeInTheDocument()
   })
 
   it("renders activity navigation bar", () => {
@@ -153,7 +153,13 @@ describe("MultiActivityPlayer", () => {
   })
 
   it("does not render timer when no time limit", () => {
-    render(<MultiActivityPlayer {...defaultProps} timeLimit={null} />)
+    render(
+      <MultiActivityPlayer
+        {...defaultProps}
+        timeLimit={null}
+        initialTimeSpent={0}
+      />,
+    )
 
     expect(screen.queryByTestId("shared-timer")).not.toBeInTheDocument()
   })
@@ -167,17 +173,17 @@ describe("MultiActivityPlayer", () => {
   it("shows completion progress", () => {
     render(<MultiActivityPlayer {...defaultProps} />)
 
-    // 1 of 3 completed
-    expect(screen.getByText("1 of 3 completed")).toBeInTheDocument()
+    // Progress shown in footer as "2 / 3" (current index 1 = second activity)
+    expect(screen.getByText("2 / 3")).toBeInTheDocument()
   })
 
   it("renders navigation buttons", () => {
     render(<MultiActivityPlayer {...defaultProps} />)
 
-    expect(screen.getByText("← Previous")).toBeInTheDocument()
-    expect(screen.getByText("Next →")).toBeInTheDocument()
+    expect(screen.getByText("Prev")).toBeInTheDocument()
+    expect(screen.getByText("Next")).toBeInTheDocument()
     expect(screen.getByText("Save & Exit")).toBeInTheDocument()
-    expect(screen.getByText("Submit Assignment")).toBeInTheDocument()
+    expect(screen.getByText("Submit")).toBeInTheDocument()
   })
 
   it("disables Previous button on first activity", () => {
@@ -195,7 +201,7 @@ describe("MultiActivityPlayer", () => {
     )
 
     // First activity, Previous should be disabled
-    const prevButton = screen.getByText("← Previous")
+    const prevButton = screen.getByText("Prev")
     expect(prevButton).toBeDisabled()
   })
 
@@ -222,7 +228,7 @@ describe("MultiActivityPlayer", () => {
     // Submit is always enabled - shows warning dialog for incomplete activities
     render(<MultiActivityPlayer {...defaultProps} />)
 
-    const submitButton = screen.getByText("Submit Assignment")
+    const submitButton = screen.getByText("Submit")
     expect(submitButton).not.toBeDisabled()
   })
 
@@ -242,7 +248,7 @@ describe("MultiActivityPlayer", () => {
       />,
     )
 
-    const submitButton = screen.getByText("Submit Assignment")
+    const submitButton = screen.getByText("Submit")
     expect(submitButton).not.toBeDisabled()
   })
 
@@ -250,7 +256,7 @@ describe("MultiActivityPlayer", () => {
     render(<MultiActivityPlayer {...defaultProps} />)
 
     // Should start at first incomplete activity (index 1, in_progress)
-    expect(screen.getByText("Activity 2 of 3")).toBeInTheDocument()
+    expect(screen.getByText("Navigation: 2 of 3")).toBeInTheDocument()
   })
 
   it("shows no activities message when activities array is empty", () => {
@@ -259,5 +265,18 @@ describe("MultiActivityPlayer", () => {
     expect(
       screen.getByText("No activities found in this assignment."),
     ).toBeInTheDocument()
+  })
+
+  it("renders main content area with overflow-auto for proper resource sidebar display", () => {
+    const { container } = render(<MultiActivityPlayer {...defaultProps} />)
+
+    // Find the main content area element
+    const mainElement = container.querySelector("main")
+    expect(mainElement).toBeInTheDocument()
+
+    // Verify it has overflow-auto class instead of overflow-hidden
+    // This ensures the resources sidebar is fully visible and not cut off
+    expect(mainElement?.className).toContain("overflow-auto")
+    expect(mainElement?.className).not.toContain("overflow-hidden")
   })
 })

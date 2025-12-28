@@ -5,9 +5,9 @@ Handles automatic registration of webhooks with Dream Central Storage.
 Can be called on startup or manually via admin endpoint.
 """
 
-import httpx
 import logging
-from typing import Optional
+
+import httpx
 
 from app.core.config import settings
 
@@ -24,7 +24,7 @@ class WebhookRegistrationService:
         self.webhook_secret = settings.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET
         self.webhook_url = f"{settings.SERVER_HOST}/api/v1/webhooks/dream-storage"
 
-    async def get_dream_storage_token(self) -> Optional[str]:
+    async def get_dream_storage_token(self) -> str | None:
         """
         Get admin access token from Dream Central Storage.
 
@@ -55,7 +55,7 @@ class WebhookRegistrationService:
             logger.error(f"Error getting Dream Central Storage token: {e}")
             return None
 
-    async def check_existing_subscription(self, token: str) -> Optional[dict]:
+    async def check_existing_subscription(self, token: str) -> dict | None:
         """
         Check if webhook subscription already exists.
 
@@ -95,7 +95,7 @@ class WebhookRegistrationService:
             logger.error(f"Error checking existing webhook subscriptions: {e}")
             return None
 
-    async def create_webhook_subscription(self, token: str) -> Optional[dict]:
+    async def create_webhook_subscription(self, token: str) -> dict | None:
         """
         Create new webhook subscription with Dream Central Storage.
 
@@ -111,7 +111,7 @@ class WebhookRegistrationService:
                 "secret": self.webhook_secret,
                 "description": f"Dream LMS Auto-registered on startup - {settings.ENVIRONMENT}",
                 "is_active": True,
-                "event_types": "book.created,book.updated,book.deleted",
+                "event_types": "book.created,book.updated,book.deleted,publisher.created,publisher.updated,publisher.deleted",
             }
 
             async with httpx.AsyncClient() as client:
@@ -140,7 +140,7 @@ class WebhookRegistrationService:
 
     async def update_webhook_subscription(
         self, token: str, subscription_id: int
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """
         Update existing webhook subscription to ensure it's active.
 

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import { VideoPlayer } from "./VideoPlayer"
 
 // Mock ResizeObserver for Radix UI components
@@ -79,7 +79,7 @@ beforeEach(() => {
         Promise.resolve(`1
 00:00:00,000 --> 00:00:05,000
 Test subtitle`),
-    } as Response)
+    } as Response),
   )
 
   // Mock document.fullscreenElement
@@ -155,7 +155,7 @@ describe("VideoPlayer", () => {
   it("shows expand button when collapsed (isExpanded=false)", () => {
     const onExpand = vi.fn()
     render(
-      <VideoPlayer {...defaultProps} isExpanded={false} onExpand={onExpand} />
+      <VideoPlayer {...defaultProps} isExpanded={false} onExpand={onExpand} />,
     )
 
     // In collapsed state, should show expand button
@@ -182,7 +182,7 @@ describe("VideoPlayer", () => {
       <VideoPlayer
         {...defaultProps}
         subtitleSrc="http://localhost:8081/api/v1/books/123/media/videos/test.srt"
-      />
+      />,
     )
 
     await waitFor(() => {
@@ -193,7 +193,7 @@ describe("VideoPlayer", () => {
 
   it("renders custom className", () => {
     const { container } = render(
-      <VideoPlayer {...defaultProps} className="custom-class" />
+      <VideoPlayer {...defaultProps} className="custom-class" />,
     )
 
     expect(container.firstChild).toHaveClass("custom-class")
@@ -233,7 +233,7 @@ describe("VideoPlayer collapsed state", () => {
   it("calls onExpand when expand button is clicked", () => {
     const onExpand = vi.fn()
     render(
-      <VideoPlayer {...defaultProps} isExpanded={false} onExpand={onExpand} />
+      <VideoPlayer {...defaultProps} isExpanded={false} onExpand={onExpand} />,
     )
 
     const expandButton = screen.getByRole("button", {

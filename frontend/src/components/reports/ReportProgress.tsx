@@ -17,15 +17,18 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { getReportPreviewBlob } from "@/services/reportsApi"
 import type { ReportJobStatus } from "@/types/reports"
 
 interface ReportProgressProps {
   status: ReportJobStatus | null
   progress: number
   errorMessage?: string | null
+  jobId: string | null
   onDownload: () => void
   onRetry: () => void
   onCancel: () => void
@@ -36,11 +39,37 @@ export function ReportProgress({
   status,
   progress,
   errorMessage,
+  jobId,
   onDownload,
   onRetry,
   onCancel,
   isDownloading = false,
 }: ReportProgressProps) {
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
+
+  // Fetch PDF when status becomes completed
+  useEffect(() => {
+    if (status === "completed" && jobId && !pdfBlobUrl) {
+      const fetchPdf = async () => {
+        try {
+          const blob = await getReportPreviewBlob(jobId)
+          const url = URL.createObjectURL(blob)
+          setPdfBlobUrl(url)
+        } catch (error) {
+          console.error("Failed to load PDF preview:", error)
+        }
+      }
+      fetchPdf()
+    }
+
+    // Cleanup blob URL when component unmounts
+    return () => {
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl)
+      }
+    }
+  }, [status, jobId, pdfBlobUrl])
+
   const getStatusIcon = () => {
     switch (status) {
       case "completed":
@@ -75,6 +104,50 @@ export function ReportProgress({
     return ""
   }
 
+  // If completed, show PDF inline preview
+  if (status === "completed" && jobId) {
+    return (
+      <div className="space-y-4">
+        {/* PDF Viewer */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              Report Ready
+            </h3>
+            <div className="flex gap-2">
+              <Button onClick={onDownload} disabled={isDownloading}>
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Download
+              </Button>
+              <Button variant="outline" onClick={onCancel}>
+                New Report
+              </Button>
+            </div>
+          </div>
+          <div className="w-full h-[800px] border rounded-md overflow-hidden">
+            {pdfBlobUrl ? (
+              <iframe
+                src={pdfBlobUrl}
+                className="w-full h-full"
+                title="Report Preview"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  // Otherwise show progress/status card
   return (
     <Card className="p-6">
       <div className="flex flex-col items-center text-center space-y-4">
@@ -101,17 +174,6 @@ export function ReportProgress({
 
         {/* Action Buttons */}
         <div className="flex gap-3 mt-4">
-          {status === "completed" && (
-            <Button onClick={onDownload} disabled={isDownloading}>
-              {isDownloading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4 mr-2" />
-              )}
-              Download Report
-            </Button>
-          )}
-
           {status === "failed" && (
             <Button onClick={onRetry} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -124,12 +186,6 @@ export function ReportProgress({
             status === "failed") && (
             <Button variant="ghost" onClick={onCancel}>
               Cancel
-            </Button>
-          )}
-
-          {status === "completed" && (
-            <Button variant="outline" onClick={onCancel}>
-              New Report
             </Button>
           )}
         </div>

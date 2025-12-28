@@ -42,6 +42,7 @@ import { Route as LayoutPublisherBookAssignmentsRouteImport } from './routes/_la
 import { Route as LayoutMessagingConversationIdRouteImport } from './routes/_layout/messaging/$conversationId'
 import { Route as LayoutAdminUsersRouteImport } from './routes/_layout/admin.users'
 import { Route as LayoutAdminTeachersRouteImport } from './routes/_layout/admin/teachers'
+import { Route as LayoutAdminSupervisorsRouteImport } from './routes/_layout/admin/supervisors'
 import { Route as LayoutAdminStudentsRouteImport } from './routes/_layout/admin/students'
 import { Route as LayoutAdminSchoolsRouteImport } from './routes/_layout/admin/schools'
 import { Route as LayoutAdminPublishersRouteImport } from './routes/_layout/admin/publishers'
@@ -62,6 +63,7 @@ import { Route as LayoutTeacherAnalyticsStudentIdRouteImport } from './routes/_l
 import { Route as LayoutStudentAssignmentsAssignmentIdRouteImport } from './routes/_layout/student/assignments/$assignmentId'
 import { Route as LayoutStudentAssignmentsAssignmentIdIndexRouteImport } from './routes/_layout/student/assignments/$assignmentId/index'
 import { Route as LayoutStudentAssignmentsAssignmentIdSuccessRouteImport } from './routes/_layout/student/assignments/$assignmentId/success'
+import { Route as LayoutStudentAssignmentsAssignmentIdResultRouteImport } from './routes/_layout/student/assignments/$assignmentId/result'
 import { Route as LayoutStudentAssignmentsAssignmentIdPlayMultiRouteImport } from './routes/_layout/student/assignments/$assignmentId/play-multi'
 import { Route as LayoutStudentAssignmentsAssignmentIdPlayRouteImport } from './routes/_layout/student/assignments/$assignmentId/play'
 
@@ -234,6 +236,11 @@ const LayoutAdminTeachersRoute = LayoutAdminTeachersRouteImport.update({
   path: '/teachers',
   getParentRoute: () => LayoutAdminRoute,
 } as any)
+const LayoutAdminSupervisorsRoute = LayoutAdminSupervisorsRouteImport.update({
+  id: '/supervisors',
+  path: '/supervisors',
+  getParentRoute: () => LayoutAdminRoute,
+} as any)
 const LayoutAdminStudentsRoute = LayoutAdminStudentsRouteImport.update({
   id: '/students',
   path: '/students',
@@ -346,6 +353,12 @@ const LayoutStudentAssignmentsAssignmentIdSuccessRoute =
     path: '/success',
     getParentRoute: () => LayoutStudentAssignmentsAssignmentIdRoute,
   } as any)
+const LayoutStudentAssignmentsAssignmentIdResultRoute =
+  LayoutStudentAssignmentsAssignmentIdResultRouteImport.update({
+    id: '/result',
+    path: '/result',
+    getParentRoute: () => LayoutStudentAssignmentsAssignmentIdRoute,
+  } as any)
 const LayoutStudentAssignmentsAssignmentIdPlayMultiRoute =
   LayoutStudentAssignmentsAssignmentIdPlayMultiRouteImport.update({
     id: '/play-multi',
@@ -378,6 +391,7 @@ export interface FileRoutesByFullPath {
   '/admin/publishers': typeof LayoutAdminPublishersRoute
   '/admin/schools': typeof LayoutAdminSchoolsRoute
   '/admin/students': typeof LayoutAdminStudentsRoute
+  '/admin/supervisors': typeof LayoutAdminSupervisorsRoute
   '/admin/teachers': typeof LayoutAdminTeachersRoute
   '/admin/users': typeof LayoutAdminUsersRoute
   '/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
@@ -412,6 +426,7 @@ export interface FileRoutesByFullPath {
   '/teacher/materials': typeof LayoutTeacherMaterialsIndexRoute
   '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
   '/student/assignments/$assignmentId/play-multi': typeof LayoutStudentAssignmentsAssignmentIdPlayMultiRoute
+  '/student/assignments/$assignmentId/result': typeof LayoutStudentAssignmentsAssignmentIdResultRoute
   '/student/assignments/$assignmentId/success': typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   '/student/assignments/$assignmentId/': typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
@@ -434,6 +449,7 @@ export interface FileRoutesByTo {
   '/admin/publishers': typeof LayoutAdminPublishersRoute
   '/admin/schools': typeof LayoutAdminSchoolsRoute
   '/admin/students': typeof LayoutAdminStudentsRoute
+  '/admin/supervisors': typeof LayoutAdminSupervisorsRoute
   '/admin/teachers': typeof LayoutAdminTeachersRoute
   '/admin/users': typeof LayoutAdminUsersRoute
   '/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
@@ -465,6 +481,7 @@ export interface FileRoutesByTo {
   '/teacher/materials': typeof LayoutTeacherMaterialsIndexRoute
   '/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
   '/student/assignments/$assignmentId/play-multi': typeof LayoutStudentAssignmentsAssignmentIdPlayMultiRoute
+  '/student/assignments/$assignmentId/result': typeof LayoutStudentAssignmentsAssignmentIdResultRoute
   '/student/assignments/$assignmentId/success': typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   '/student/assignments/$assignmentId': typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
@@ -489,6 +506,7 @@ export interface FileRoutesById {
   '/_layout/admin/publishers': typeof LayoutAdminPublishersRoute
   '/_layout/admin/schools': typeof LayoutAdminSchoolsRoute
   '/_layout/admin/students': typeof LayoutAdminStudentsRoute
+  '/_layout/admin/supervisors': typeof LayoutAdminSupervisorsRoute
   '/_layout/admin/teachers': typeof LayoutAdminTeachersRoute
   '/_layout/admin/users': typeof LayoutAdminUsersRoute
   '/_layout/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
@@ -523,6 +541,7 @@ export interface FileRoutesById {
   '/_layout/teacher/materials/': typeof LayoutTeacherMaterialsIndexRoute
   '/_layout/student/assignments/$assignmentId/play': typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
   '/_layout/student/assignments/$assignmentId/play-multi': typeof LayoutStudentAssignmentsAssignmentIdPlayMultiRoute
+  '/_layout/student/assignments/$assignmentId/result': typeof LayoutStudentAssignmentsAssignmentIdResultRoute
   '/_layout/student/assignments/$assignmentId/success': typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   '/_layout/student/assignments/$assignmentId/': typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
@@ -547,6 +566,7 @@ export interface FileRouteTypes {
     | '/admin/publishers'
     | '/admin/schools'
     | '/admin/students'
+    | '/admin/supervisors'
     | '/admin/teachers'
     | '/admin/users'
     | '/messaging/$conversationId'
@@ -581,6 +601,7 @@ export interface FileRouteTypes {
     | '/teacher/materials'
     | '/student/assignments/$assignmentId/play'
     | '/student/assignments/$assignmentId/play-multi'
+    | '/student/assignments/$assignmentId/result'
     | '/student/assignments/$assignmentId/success'
     | '/student/assignments/$assignmentId/'
   fileRoutesByTo: FileRoutesByTo
@@ -603,6 +624,7 @@ export interface FileRouteTypes {
     | '/admin/publishers'
     | '/admin/schools'
     | '/admin/students'
+    | '/admin/supervisors'
     | '/admin/teachers'
     | '/admin/users'
     | '/messaging/$conversationId'
@@ -634,6 +656,7 @@ export interface FileRouteTypes {
     | '/teacher/materials'
     | '/student/assignments/$assignmentId/play'
     | '/student/assignments/$assignmentId/play-multi'
+    | '/student/assignments/$assignmentId/result'
     | '/student/assignments/$assignmentId/success'
     | '/student/assignments/$assignmentId'
   id:
@@ -657,6 +680,7 @@ export interface FileRouteTypes {
     | '/_layout/admin/publishers'
     | '/_layout/admin/schools'
     | '/_layout/admin/students'
+    | '/_layout/admin/supervisors'
     | '/_layout/admin/teachers'
     | '/_layout/admin/users'
     | '/_layout/messaging/$conversationId'
@@ -691,6 +715,7 @@ export interface FileRouteTypes {
     | '/_layout/teacher/materials/'
     | '/_layout/student/assignments/$assignmentId/play'
     | '/_layout/student/assignments/$assignmentId/play-multi'
+    | '/_layout/student/assignments/$assignmentId/result'
     | '/_layout/student/assignments/$assignmentId/success'
     | '/_layout/student/assignments/$assignmentId/'
   fileRoutesById: FileRoutesById
@@ -936,6 +961,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminTeachersRouteImport
       parentRoute: typeof LayoutAdminRoute
     }
+    '/_layout/admin/supervisors': {
+      id: '/_layout/admin/supervisors'
+      path: '/supervisors'
+      fullPath: '/admin/supervisors'
+      preLoaderRoute: typeof LayoutAdminSupervisorsRouteImport
+      parentRoute: typeof LayoutAdminRoute
+    }
     '/_layout/admin/students': {
       id: '/_layout/admin/students'
       path: '/students'
@@ -1076,6 +1108,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutStudentAssignmentsAssignmentIdSuccessRouteImport
       parentRoute: typeof LayoutStudentAssignmentsAssignmentIdRoute
     }
+    '/_layout/student/assignments/$assignmentId/result': {
+      id: '/_layout/student/assignments/$assignmentId/result'
+      path: '/result'
+      fullPath: '/student/assignments/$assignmentId/result'
+      preLoaderRoute: typeof LayoutStudentAssignmentsAssignmentIdResultRouteImport
+      parentRoute: typeof LayoutStudentAssignmentsAssignmentIdRoute
+    }
     '/_layout/student/assignments/$assignmentId/play-multi': {
       id: '/_layout/student/assignments/$assignmentId/play-multi'
       path: '/play-multi'
@@ -1101,6 +1140,7 @@ interface LayoutAdminRouteChildren {
   LayoutAdminPublishersRoute: typeof LayoutAdminPublishersRoute
   LayoutAdminSchoolsRoute: typeof LayoutAdminSchoolsRoute
   LayoutAdminStudentsRoute: typeof LayoutAdminStudentsRoute
+  LayoutAdminSupervisorsRoute: typeof LayoutAdminSupervisorsRoute
   LayoutAdminTeachersRoute: typeof LayoutAdminTeachersRoute
   LayoutAdminUsersRoute: typeof LayoutAdminUsersRoute
 }
@@ -1113,6 +1153,7 @@ const LayoutAdminRouteChildren: LayoutAdminRouteChildren = {
   LayoutAdminPublishersRoute: LayoutAdminPublishersRoute,
   LayoutAdminSchoolsRoute: LayoutAdminSchoolsRoute,
   LayoutAdminStudentsRoute: LayoutAdminStudentsRoute,
+  LayoutAdminSupervisorsRoute: LayoutAdminSupervisorsRoute,
   LayoutAdminTeachersRoute: LayoutAdminTeachersRoute,
   LayoutAdminUsersRoute: LayoutAdminUsersRoute,
 }
@@ -1144,6 +1185,7 @@ const LayoutPublisherRouteWithChildren = LayoutPublisherRoute._addFileChildren(
 interface LayoutStudentAssignmentsAssignmentIdRouteChildren {
   LayoutStudentAssignmentsAssignmentIdPlayRoute: typeof LayoutStudentAssignmentsAssignmentIdPlayRoute
   LayoutStudentAssignmentsAssignmentIdPlayMultiRoute: typeof LayoutStudentAssignmentsAssignmentIdPlayMultiRoute
+  LayoutStudentAssignmentsAssignmentIdResultRoute: typeof LayoutStudentAssignmentsAssignmentIdResultRoute
   LayoutStudentAssignmentsAssignmentIdSuccessRoute: typeof LayoutStudentAssignmentsAssignmentIdSuccessRoute
   LayoutStudentAssignmentsAssignmentIdIndexRoute: typeof LayoutStudentAssignmentsAssignmentIdIndexRoute
 }
@@ -1154,6 +1196,8 @@ const LayoutStudentAssignmentsAssignmentIdRouteChildren: LayoutStudentAssignment
       LayoutStudentAssignmentsAssignmentIdPlayRoute,
     LayoutStudentAssignmentsAssignmentIdPlayMultiRoute:
       LayoutStudentAssignmentsAssignmentIdPlayMultiRoute,
+    LayoutStudentAssignmentsAssignmentIdResultRoute:
+      LayoutStudentAssignmentsAssignmentIdResultRoute,
     LayoutStudentAssignmentsAssignmentIdSuccessRoute:
       LayoutStudentAssignmentsAssignmentIdSuccessRoute,
     LayoutStudentAssignmentsAssignmentIdIndexRoute:

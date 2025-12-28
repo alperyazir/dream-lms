@@ -1,19 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
+import { AlertTriangle, Book, Check, User, UserPlus } from "lucide-react"
+import { useMemo, useState } from "react"
 import {
-  Book,
-  Check,
-  GraduationCap,
-  Mail,
-  MessageSquare,
-  Plus,
-  User,
-} from "lucide-react"
-import { useState } from "react"
-import { PublishersService, type TeacherCreateAPI } from "@/client"
+  AdminService,
+  PublishersService,
+  type TeacherCreateAPI,
+} from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { TeacherCard } from "@/components/teachers/TeacherCard"
+import { TeacherDetailsDialog } from "@/components/teachers/TeacherDetailsDialog"
+import {
+  TeacherFilters,
+  type TeacherFilters as TeacherFiltersType,
+} from "@/components/teachers/TeacherFilters"
+import { TeacherListView } from "@/components/teachers/TeacherListView"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -33,7 +35,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
 import useCustomToast from "@/hooks/useCustomToast"
+import { useViewPreference } from "@/hooks/useViewPreference"
 import { createBulkBookAssignments } from "@/services/bookAssignmentsApi"
 import { booksApi } from "@/services/booksApi"
 import { generateUsername } from "@/utils/usernameGenerator"
@@ -48,8 +52,12 @@ export const Route = createFileRoute("/_layout/publisher/teachers")({
 
 function PublisherTeachersPage() {
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const [viewMode, setViewMode] = useViewPreference("publisherTeachers", "grid")
+  const [filters, setFilters] = useState<TeacherFiltersType>({
+    search: "",
+    school: "",
+  })
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [newTeacher, setNewTeacher] = useState<TeacherCreateAPI>({
     username: "",
@@ -58,7 +66,13 @@ function PublisherTeachersPage() {
     school_id: "",
     subject_specialization: "",
   })
-  const [selectedBookIds, setSelectedBookIds] = useState<string[]>([])
+  const [selectedBookIds, setSelectedBookIds] = useState<number[]>([])
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [teacherToDelete, setTeacherToDelete] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+  const [selectedTeacher, setSelectedTeacher] = useState<any>(null)
 
   // Fetch teachers from API
   const {
@@ -88,7 +102,7 @@ function PublisherTeachersPage() {
   const createTeacherMutation = useMutation({
     mutationFn: async (data: TeacherCreateAPI) => {
       // Create the teacher first
-      const response = await PublishersService.createTeacher({
+      const response = await PublishersService.createMyTeacher({
         requestBody: data,
       })
 
@@ -146,6 +160,44 @@ function PublisherTeachersPage() {
     },
   })
 
+  // Delete teacher mutation
+  const deleteTeacherMutation = useMutation({
+    mutationFn: async (teacherId: string) => {
+      await AdminService.deleteTeacher({ teacherId })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publisherTeachers"] })
+      queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
+      setDeleteDialogOpen(false)
+      setTeacherToDelete(null)
+      showSuccessToast("Teacher deleted successfully!")
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to delete teacher. Please try again."
+      if (error.body?.detail) {
+        errorMessage =
+          typeof error.body.detail === "string"
+            ? error.body.detail
+            : "Failed to delete teacher"
+      }
+      showErrorToast(errorMessage)
+    },
+  })
+
+  const handleDeleteClick = (teacher: {
+    id: string
+    user_full_name: string
+  }) => {
+    setTeacherToDelete({ id: teacher.id, name: teacher.user_full_name })
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (teacherToDelete) {
+      deleteTeacherMutation.mutate(teacherToDelete.id)
+    }
+  }
+
   const handleAddTeacher = () => {
     if (
       !newTeacher.username ||
@@ -168,6 +220,23 @@ function PublisherTeachersPage() {
     createTeacherMutation.mutate(newTeacher)
   }
 
+  // Filter teachers based on search and school filter
+  const filteredTeachers = useMemo(() => {
+    return teachers.filter((teacher) => {
+      const matchesSearch =
+        !filters.search ||
+        teacher.user_full_name
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        teacher.user_email.toLowerCase().includes(filters.search.toLowerCase())
+
+      const matchesSchool =
+        !filters.school || teacher.school_id === filters.school
+
+      return matchesSearch && matchesSchool
+    })
+  }, [teachers, filters])
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -178,13 +247,20 @@ function PublisherTeachersPage() {
         </p>
       </div>
 
-      {/* Add Button */}
-      <div className="flex justify-end mb-6">
+      {/* Filters and Actions */}
+      <TeacherFilters
+        filters={filters}
+        onChange={setFilters}
+        schools={schools}
+      />
+
+      <div className="flex justify-between items-center mb-6">
+        <ViewModeToggle value={viewMode} onChange={setViewMode} />
         <Button
           onClick={() => setIsAddDialogOpen(true)}
           className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <UserPlus className="w-4 h-4 mr-2" />
           Add Teacher
         </Button>
       </div>
@@ -198,66 +274,40 @@ function PublisherTeachersPage() {
         <div className="text-center py-12 text-muted-foreground">
           Loading teachers...
         </div>
-      ) : teachers.length === 0 ? (
+      ) : filteredTeachers.length === 0 ? (
         /* Empty State */
         <div className="text-center py-12">
           <User className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <p className="text-lg text-muted-foreground mb-2">No teachers yet</p>
+          <p className="text-lg text-muted-foreground mb-2">
+            {teachers.length === 0
+              ? "No teachers yet"
+              : "No teachers match your filters"}
+          </p>
           <p className="text-sm text-muted-foreground">
-            Teachers will appear here once they are created
+            {teachers.length === 0
+              ? "Teachers will appear here once they are created"
+              : "Try adjusting your search or filter criteria"}
           </p>
         </div>
-      ) : (
+      ) : viewMode === "grid" ? (
         /* Teachers Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {teachers.map((teacher) => (
-            <Card
+          {filteredTeachers.map((teacher) => (
+            <TeacherCard
               key={teacher.id}
-              className="shadow-neuro border-teal-100 dark:border-teal-900 hover:shadow-neuro-lg transition-shadow"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-foreground mb-1">
-                      {teacher.user_full_name}
-                    </h3>
-                    <div className="flex items-center text-sm text-muted-foreground mb-1">
-                      <Mail className="w-4 h-4 mr-1" />
-                      {teacher.user_email}
-                    </div>
-                    <div className="text-sm text-muted-foreground mb-1">
-                      @{teacher.user_username}
-                    </div>
-                    {teacher.subject_specialization && (
-                      <div className="flex items-center text-sm text-teal-600 dark:text-teal-400 mt-2">
-                        <GraduationCap className="w-4 h-4 mr-1" />
-                        {teacher.subject_specialization}
-                      </div>
-                    )}
-                  </div>
-                  <User className="w-8 h-8 text-teal-500" />
-                </div>
-                {/* Message Button */}
-                <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-teal-600 hover:text-teal-700 hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-900/20"
-                    onClick={() =>
-                      navigate({
-                        to: "/messaging",
-                        search: { user: teacher.user_id } as { user?: string },
-                      })
-                    }
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Message
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              teacher={teacher}
+              onViewDetails={() => setSelectedTeacher(teacher)}
+              onDelete={() => handleDeleteClick(teacher)}
+            />
           ))}
         </div>
+      ) : (
+        /* Teachers List */
+        <TeacherListView
+          teachers={filteredTeachers}
+          onViewDetails={setSelectedTeacher}
+          onDelete={handleDeleteClick}
+        />
       )}
 
       {/* Add Teacher Dialog */}
@@ -279,7 +329,12 @@ function PublisherTeachersPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="full-name">Full Name *</Label>
+              <Label htmlFor="full-name">
+                Full Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="full-name"
                 placeholder="e.g., John Doe"
@@ -298,7 +353,12 @@ function PublisherTeachersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="username">Username *</Label>
+              <Label htmlFor="username">
+                Username{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="username"
                 placeholder="e.g., johndoe"
@@ -315,7 +375,12 @@ function PublisherTeachersPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">
+                Email{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -327,7 +392,12 @@ function PublisherTeachersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="school">School *</Label>
+              <Label htmlFor="school">
+                School{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Select
                 value={newTeacher.school_id}
                 onValueChange={(value) =>
@@ -367,7 +437,7 @@ function PublisherTeachersPage() {
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
                     <Book className="h-4 w-4" />
-                    Assign Books (Optional)
+                    Assign Books
                   </Label>
                   {selectedBookIds.length > 0 && (
                     <span className="text-xs text-muted-foreground">
@@ -439,6 +509,50 @@ function PublisherTeachersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Teacher
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">{teacherToDelete?.name}</span>?
+              This action cannot be undone and will remove all associated data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleteTeacherMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteTeacherMutation.isPending}
+            >
+              {deleteTeacherMutation.isPending
+                ? "Deleting..."
+                : "Delete Teacher"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Teacher Details Dialog */}
+      {selectedTeacher && (
+        <TeacherDetailsDialog
+          open={!!selectedTeacher}
+          onOpenChange={(open) => !open && setSelectedTeacher(null)}
+          teacher={selectedTeacher}
+        />
+      )}
     </div>
   )
 }

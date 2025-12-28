@@ -12,9 +12,7 @@ but may require test infrastructure improvements to execute reliably.
 """
 
 import uuid
-from datetime import UTC, datetime
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
@@ -23,9 +21,7 @@ from app.models import (
     Activity,
     ActivityType,
     Book,
-    BookAccess,
     BookAssignment,
-    BookStatus,
     Publisher,
     School,
     Teacher,

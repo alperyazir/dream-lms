@@ -5,11 +5,17 @@
  * Skip confirmation is shown when user presses Escape or clicks Skip button.
  */
 
-import { useState, useCallback, useEffect } from "react"
-import Joyride, { type CallBackProps, type Step, STATUS, ACTIONS, EVENTS } from "react-joyride"
+import { useCallback, useEffect, useState } from "react"
+import Joyride, {
+  ACTIONS,
+  type CallBackProps,
+  EVENTS,
+  STATUS,
+  type Step,
+} from "react-joyride"
 import { useTour } from "@/hooks/useTour"
-import { TourTooltip } from "./TourTooltip"
 import { SkipTourDialog } from "./SkipTourDialog"
+import { TourTooltip } from "./TourTooltip"
 
 export function Tour() {
   const {

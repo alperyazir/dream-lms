@@ -7,37 +7,37 @@
  * and minimize/expand functionality.
  */
 
-import { useRef, useState, useEffect, useCallback } from "react"
 import {
-  Play,
-  Pause,
-  Loader2,
-  RotateCcw,
-  Volume2,
-  VolumeX,
-  Volume1,
-  Maximize,
-  Minimize2,
-  ChevronUp,
-  ChevronDown,
   Captions,
   CaptionsOff,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Maximize,
+  Minimize2,
+  Pause,
+  Play,
+  RotateCcw,
   Settings,
+  Volume1,
+  Volume2,
+  VolumeX,
 } from "lucide-react"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { parseSRT, type Subtitle, getCurrentSubtitle } from "@/lib/videoUtils"
+import { getCurrentSubtitle, parseSRT, type Subtitle } from "@/lib/videoUtils"
 
 export interface VideoPlayerProps {
   /** URL to the video file */
@@ -61,7 +61,7 @@ const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
  * Format seconds as MM:SS or HH:MM:SS for longer videos
  */
 function formatTime(seconds: number): string {
-  if (!isFinite(seconds) || seconds < 0) {
+  if (!Number.isFinite(seconds) || seconds < 0) {
     return "0:00"
   }
   const hours = Math.floor(seconds / 3600)
@@ -365,7 +365,7 @@ export function VideoPlayer({
         video.pause()
       }
     }
-  }, [src])
+  }, [])
 
   // Calculate progress percentage
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
@@ -551,7 +551,9 @@ export function VideoPlayer({
             <div
               className={cn(
                 "absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400 shadow-lg transition-all",
-                isHoveringProgress ? "scale-100 opacity-100" : "scale-0 opacity-0",
+                isHoveringProgress
+                  ? "scale-100 opacity-100"
+                  : "scale-0 opacity-0",
               )}
               style={{ left: `${progress}%` }}
             />
@@ -670,7 +672,9 @@ export function VideoPlayer({
                         ? "bg-teal-500/20 text-teal-400"
                         : "text-white/60 hover:bg-white/10 hover:text-white",
                     )}
-                    aria-label={showSubtitles ? "Hide subtitles" : "Show subtitles"}
+                    aria-label={
+                      showSubtitles ? "Hide subtitles" : "Show subtitles"
+                    }
                   >
                     {showSubtitles ? (
                       <Captions className="h-5 w-5" />

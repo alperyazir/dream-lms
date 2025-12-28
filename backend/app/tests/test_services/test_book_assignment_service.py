@@ -1,71 +1,43 @@
 """Tests for Book Assignment Service - Story 9.4 QA Fix."""
 
 import uuid
-from datetime import UTC, datetime
 
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Book, BookAssignment, Publisher, School, Teacher, User, UserRole
+from app.models import School, Teacher, User, UserRole
 from app.services import book_assignment_service
 
 
 @pytest_asyncio.fixture
-async def publisher_with_book(async_session: AsyncSession):
-    """Create a publisher with a book for testing."""
-    # Create publisher user
-    pub_user = User(
+async def test_user_with_book_id(async_session: AsyncSession):
+    """Create a test user and return a mock DCS book ID."""
+    # Create admin user to act as "assigned_by"
+    user = User(
         id=uuid.uuid4(),
-        email="service_test_publisher@example.com",
-        username="servicetestpub",
+        email="service_test_admin@example.com",
+        username="servicetestadmin",
         hashed_password="hashed",
-        role=UserRole.publisher,
+        role=UserRole.admin,
         is_active=True,
-        full_name="Service Test Publisher"
+        full_name="Service Test Admin"
     )
-    async_session.add(pub_user)
+    async_session.add(user)
     await async_session.commit()
-    await async_session.refresh(pub_user)
+    await async_session.refresh(user)
 
-    # Create publisher record
-    publisher = Publisher(
-        id=uuid.uuid4(),
-        user_id=pub_user.id,
-        name="Service Test Publisher Co"
-    )
-    async_session.add(publisher)
-    await async_session.commit()
-    await async_session.refresh(publisher)
-
-    # Create book with all required fields
-    book = Book(
-        id=uuid.uuid4(),
-        dream_storage_id=f"test-book-{uuid.uuid4().hex[:8]}",
-        title="Service Test Book",
-        book_name="service_test_book",
-        publisher_name="Service Test Publisher Co",
-        publisher_id=publisher.id,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC)
-    )
-    async_session.add(book)
-    await async_session.commit()
-    await async_session.refresh(book)
-
-    return {"user": pub_user, "publisher": publisher, "book": book}
+    return {"user": user, "book_id": 123}
 
 
 @pytest_asyncio.fixture
-async def school_with_teacher(async_session: AsyncSession, publisher_with_book):
+async def school_with_teacher(async_session: AsyncSession):
     """Create a school with a teacher for testing."""
-    publisher = publisher_with_book["publisher"]
-
     # Create school
     school = School(
         id=uuid.uuid4(),
         name="Service Test School",
-        publisher_id=publisher.id
+        dcs_publisher_id=456  # Mock DCS publisher ID
     )
     async_session.add(school)
     await async_session.commit()
@@ -103,63 +75,63 @@ class TestCreateAssignment:
 
     @pytest.mark.asyncio
     async def test_create_assignment_with_school(
-        self, async_session: AsyncSession, publisher_with_book, school_with_teacher
+        self, async_session: AsyncSession, test_user_with_book_id, school_with_teacher
     ):
         """Test creating a school-level book assignment."""
-        book = publisher_with_book["book"]
-        pub_user = publisher_with_book["user"]
+        book_id = test_user_with_book_id["book_id"]
+        user = test_user_with_book_id["user"]
         school = school_with_teacher["school"]
 
         assignment = await book_assignment_service.create_assignment(
             db=async_session,
-            book_id=book.id,
-            assigned_by=pub_user.id,
+            book_id=book_id,
+            assigned_by=user.id,
             school_id=school.id,
             teacher_id=None
         )
 
         assert assignment is not None
-        assert assignment.book_id == book.id
+        assert assignment.dcs_book_id == book_id
         assert assignment.school_id == school.id
         assert assignment.teacher_id is None
-        assert assignment.assigned_by == pub_user.id
+        assert assignment.assigned_by == user.id
 
     @pytest.mark.asyncio
     async def test_create_assignment_with_teacher(
-        self, async_session: AsyncSession, publisher_with_book, school_with_teacher
+        self, async_session: AsyncSession, test_user_with_book_id, school_with_teacher
     ):
         """Test creating a teacher-level book assignment."""
-        book = publisher_with_book["book"]
-        pub_user = publisher_with_book["user"]
+        book_id = test_user_with_book_id["book_id"]
+        user = test_user_with_book_id["user"]
         school = school_with_teacher["school"]
         teacher = school_with_teacher["teacher"]
 
         assignment = await book_assignment_service.create_assignment(
             db=async_session,
-            book_id=book.id,
-            assigned_by=pub_user.id,
+            book_id=book_id,
+            assigned_by=user.id,
             school_id=school.id,
             teacher_id=teacher.id
         )
 
         assert assignment is not None
-        assert assignment.book_id == book.id
+        assert assignment.dcs_book_id == book_id
         assert assignment.school_id == school.id
         assert assignment.teacher_id == teacher.id
 
     @pytest.mark.asyncio
     async def test_create_assignment_requires_target(
-        self, async_session: AsyncSession, publisher_with_book
+        self, async_session: AsyncSession, test_user_with_book_id
     ):
         """Test that assignment requires school_id or teacher_id."""
-        book = publisher_with_book["book"]
-        pub_user = publisher_with_book["user"]
+        book_id = test_user_with_book_id["book_id"]
+        user = test_user_with_book_id["user"]
 
         with pytest.raises(ValueError, match="At least one of school_id or teacher_id"):
             await book_assignment_service.create_assignment(
                 db=async_session,
-                book_id=book.id,
-                assigned_by=pub_user.id,
+                book_id=book_id,
+                assigned_by=user.id,
                 school_id=None,
                 teacher_id=None
             )
@@ -170,18 +142,18 @@ class TestCreateBulkAssignments:
 
     @pytest.mark.asyncio
     async def test_bulk_assign_to_all_teachers(
-        self, async_session: AsyncSession, publisher_with_book, school_with_teacher
+        self, async_session: AsyncSession, test_user_with_book_id, school_with_teacher
     ):
         """Test bulk assignment to entire school (all teachers)."""
-        book = publisher_with_book["book"]
-        pub_user = publisher_with_book["user"]
+        book_id = test_user_with_book_id["book_id"]
+        user = test_user_with_book_id["user"]
         school = school_with_teacher["school"]
 
         assignments = await book_assignment_service.create_bulk_assignments(
             db=async_session,
-            book_id=book.id,
+            book_id=book_id,
             school_id=school.id,
-            assigned_by=pub_user.id,
+            assigned_by=user.id,
             assign_to_all=True
         )
 
@@ -191,11 +163,11 @@ class TestCreateBulkAssignments:
 
     @pytest.mark.asyncio
     async def test_bulk_assign_to_specific_teachers(
-        self, async_session: AsyncSession, publisher_with_book, school_with_teacher
+        self, async_session: AsyncSession, test_user_with_book_id, school_with_teacher
     ):
         """Test bulk assignment to specific teachers."""
-        book = publisher_with_book["book"]
-        pub_user = publisher_with_book["user"]
+        book_id = test_user_with_book_id["book_id"]
+        user = test_user_with_book_id["user"]
         school = school_with_teacher["school"]
         teacher = school_with_teacher["teacher"]
 
@@ -222,9 +194,9 @@ class TestCreateBulkAssignments:
 
         assignments = await book_assignment_service.create_bulk_assignments(
             db=async_session,
-            book_id=book.id,
+            book_id=book_id,
             school_id=school.id,
-            assigned_by=pub_user.id,
+            assigned_by=user.id,
             teacher_ids=[teacher.id, teacher2.id],
             assign_to_all=False
         )
@@ -240,19 +212,19 @@ class TestCheckTeacherBookAccess:
 
     @pytest.mark.asyncio
     async def test_teacher_has_direct_access(
-        self, async_session: AsyncSession, publisher_with_book, school_with_teacher
+        self, async_session: AsyncSession, test_user_with_book_id, school_with_teacher
     ):
         """Test teacher with direct assignment has access."""
-        book = publisher_with_book["book"]
-        pub_user = publisher_with_book["user"]
+        book_id = test_user_with_book_id["book_id"]
+        user = test_user_with_book_id["user"]
         school = school_with_teacher["school"]
         teacher = school_with_teacher["teacher"]
 
         # Create direct teacher assignment
         await book_assignment_service.create_assignment(
             db=async_session,
-            book_id=book.id,
-            assigned_by=pub_user.id,
+            book_id=book_id,
+            assigned_by=user.id,
             school_id=school.id,
             teacher_id=teacher.id
         )
@@ -260,26 +232,26 @@ class TestCheckTeacherBookAccess:
         has_access = await book_assignment_service.check_teacher_book_access(
             db=async_session,
             teacher_id=teacher.id,
-            book_id=book.id
+            book_id=book_id
         )
 
         assert has_access is True
 
     @pytest.mark.asyncio
     async def test_teacher_has_school_level_access(
-        self, async_session: AsyncSession, publisher_with_book, school_with_teacher
+        self, async_session: AsyncSession, test_user_with_book_id, school_with_teacher
     ):
         """Test teacher with school-level assignment has access."""
-        book = publisher_with_book["book"]
-        pub_user = publisher_with_book["user"]
+        book_id = test_user_with_book_id["book_id"]
+        user = test_user_with_book_id["user"]
         school = school_with_teacher["school"]
         teacher = school_with_teacher["teacher"]
 
         # Create school-level assignment (teacher_id = None)
         await book_assignment_service.create_assignment(
             db=async_session,
-            book_id=book.id,
-            assigned_by=pub_user.id,
+            book_id=book_id,
+            assigned_by=user.id,
             school_id=school.id,
             teacher_id=None
         )
@@ -287,17 +259,17 @@ class TestCheckTeacherBookAccess:
         has_access = await book_assignment_service.check_teacher_book_access(
             db=async_session,
             teacher_id=teacher.id,
-            book_id=book.id
+            book_id=book_id
         )
 
         assert has_access is True
 
     @pytest.mark.asyncio
     async def test_teacher_without_access(
-        self, async_session: AsyncSession, publisher_with_book, school_with_teacher
+        self, async_session: AsyncSession, test_user_with_book_id, school_with_teacher
     ):
         """Test teacher without assignment has no access."""
-        book = publisher_with_book["book"]
+        book_id = test_user_with_book_id["book_id"]
         teacher = school_with_teacher["teacher"]
 
         # No assignment created
@@ -305,7 +277,7 @@ class TestCheckTeacherBookAccess:
         has_access = await book_assignment_service.check_teacher_book_access(
             db=async_session,
             teacher_id=teacher.id,
-            book_id=book.id
+            book_id=book_id
         )
 
         assert has_access is False
@@ -316,19 +288,19 @@ class TestGetAccessibleBookIds:
 
     @pytest.mark.asyncio
     async def test_get_accessible_books_direct_assignment(
-        self, async_session: AsyncSession, publisher_with_book, school_with_teacher
+        self, async_session: AsyncSession, test_user_with_book_id, school_with_teacher
     ):
         """Test getting accessible books with direct teacher assignment."""
-        book = publisher_with_book["book"]
-        pub_user = publisher_with_book["user"]
+        book_id = test_user_with_book_id["book_id"]
+        user = test_user_with_book_id["user"]
         school = school_with_teacher["school"]
         teacher = school_with_teacher["teacher"]
 
         # Create direct assignment
         await book_assignment_service.create_assignment(
             db=async_session,
-            book_id=book.id,
-            assigned_by=pub_user.id,
+            book_id=book_id,
+            assigned_by=user.id,
             school_id=school.id,
             teacher_id=teacher.id
         )
@@ -338,7 +310,7 @@ class TestGetAccessibleBookIds:
             teacher_id=teacher.id
         )
 
-        assert book.id in accessible_ids
+        assert book_id in accessible_ids
 
     @pytest.mark.asyncio
     async def test_get_accessible_books_no_assignments(
@@ -356,47 +328,19 @@ class TestGetAccessibleBookIds:
 
 
 class TestDeleteAssignment:
-    """Tests for delete_assignment service function."""
+    """Tests for delete_assignment service function (DEPRECATED)."""
 
     @pytest.mark.asyncio
-    async def test_delete_assignment_success(
-        self, async_session: AsyncSession, publisher_with_book, school_with_teacher
+    async def test_delete_assignment_deprecated(
+        self, async_session: AsyncSession, test_user_with_book_id
     ):
-        """Test deleting an assignment."""
-        book = publisher_with_book["book"]
-        publisher = publisher_with_book["publisher"]
-        pub_user = publisher_with_book["user"]
-        school = school_with_teacher["school"]
-
-        # Create assignment
-        assignment = await book_assignment_service.create_assignment(
-            db=async_session,
-            book_id=book.id,
-            assigned_by=pub_user.id,
-            school_id=school.id,
-            teacher_id=None
-        )
-
-        # Delete it
-        result = await book_assignment_service.delete_assignment(
-            db=async_session,
-            assignment_id=assignment.id,
-            publisher_id=publisher.id
-        )
-
-        assert result is True
-
-    @pytest.mark.asyncio
-    async def test_delete_nonexistent_assignment(
-        self, async_session: AsyncSession, publisher_with_book
-    ):
-        """Test deleting a non-existent assignment returns False."""
-        publisher = publisher_with_book["publisher"]
-
+        """Test that delete_assignment is deprecated and returns False."""
+        # delete_assignment is deprecated - publisher role removed
+        # Function always returns False now
         result = await book_assignment_service.delete_assignment(
             db=async_session,
             assignment_id=uuid.uuid4(),
-            publisher_id=publisher.id
+            publisher_id=uuid.uuid4()
         )
 
         assert result is False

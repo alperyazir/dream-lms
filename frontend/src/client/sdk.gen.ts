@@ -3,48 +3,33 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminCreatePublisherData, AdminCreatePublisherResponse, AdminListPublishersData, AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminUpdatePublisherResponse, AdminDeletePublisherData, AdminDeletePublisherResponse, AdminUploadPublisherLogoData, AdminUploadPublisherLogoResponse, AdminDeletePublisherLogoData, AdminDeletePublisherLogoResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkDeleteStudentsData, AdminBulkDeleteStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, AdminAdminUpdateUserData, AdminAdminUpdateUserResponse, AdminResetUserPasswordData, AdminResetUserPasswordResponse, AdminTestDreamStorageConnectionResponse, AdminRegisterWebhooksManuallyData, AdminRegisterWebhooksManuallyResponse, AdminGetBenchmarkOverviewEndpointResponse, AdminUpdateSchoolBenchmarkSettingsData, AdminUpdateSchoolBenchmarkSettingsResponse, AdminUpdatePublisherBenchmarkSettingsData, AdminUpdatePublisherBenchmarkSettingsResponse, AssignmentsListAssignmentsResponse, AssignmentsCreateAssignmentData, AssignmentsCreateAssignmentResponse, AssignmentsListAllAssignmentsAdminResponse, AssignmentsGetCalendarAssignmentsData, AssignmentsGetCalendarAssignmentsResponse, AssignmentsCreateBulkAssignmentsData, AssignmentsCreateBulkAssignmentsResponse, AssignmentsUpdateAssignmentData, AssignmentsUpdateAssignmentResponse, AssignmentsDeleteAssignmentData, AssignmentsDeleteAssignmentResponse, AssignmentsStartAssignmentData, AssignmentsStartAssignmentResponse, AssignmentsStartMultiActivityAssignmentData, AssignmentsStartMultiActivityAssignmentResponse, AssignmentsSaveActivityProgressData, AssignmentsSaveActivityProgressResponse, AssignmentsSubmitMultiActivityAssignmentData, AssignmentsSubmitMultiActivityAssignmentResponse, AssignmentsSaveProgressData, AssignmentsSaveProgressResponse, AssignmentsSubmitAssignmentData, AssignmentsSubmitAssignmentResponse, AssignmentsGetDetailedResultsData, AssignmentsGetDetailedResultsResponse, AssignmentsGetStudentAnswersData, AssignmentsGetStudentAnswersResponse, AssignmentsGetMultiActivityAnalyticsData, AssignmentsGetMultiActivityAnalyticsResponse, AssignmentsGetStudentAssignmentResultData, AssignmentsGetStudentAssignmentResultResponse, AssignmentsCreateOrUpdateFeedbackData, AssignmentsCreateOrUpdateFeedbackResponse, AssignmentsGetFeedbackData, AssignmentsGetFeedbackResponse, AssignmentsGetMyFeedbackData, AssignmentsGetMyFeedbackResponse, AssignmentsUpdateFeedbackData, AssignmentsUpdateFeedbackResponse, AssignmentsPreviewAssignmentData, AssignmentsPreviewAssignmentResponse, AssignmentsPreviewActivityData, AssignmentsPreviewActivityResponse, AvatarsGetPredefinedAvatarsResponse, AvatarsRemoveAvatarResponse, AvatarsSelectPredefinedAvatarData, AvatarsSelectPredefinedAvatarResponse, BookAssetsServeBookAssetData, BookAssetsServeBookAssetResponse, BookAssetsServePageImageData, BookAssetsServePageImageResponse, BookAssignmentsCreateBookAssignmentData, BookAssignmentsCreateBookAssignmentResponse, BookAssignmentsListBookAssignmentsData, BookAssignmentsListBookAssignmentsResponse, BookAssignmentsCreateBulkBookAssignmentsData, BookAssignmentsCreateBulkBookAssignmentsResponse, BookAssignmentsDeleteBookAssignmentData, BookAssignmentsDeleteBookAssignmentResponse, BookAssignmentsGetBookAssignmentsData, BookAssignmentsGetBookAssignmentsResponse, BookMediaStreamMediaData, BookMediaStreamMediaResponse, BooksTriggerBookSyncResponse, BooksListBooksData, BooksListBooksResponse, BooksGetBookActivitiesData, BooksGetBookActivitiesResponse, BooksGetBookPagesData, BooksGetBookPagesResponse, BooksGetPageActivitiesData, BooksGetPageActivitiesResponse, BooksGetBookPagesDetailData, BooksGetBookPagesDetailResponse, BooksGetBookStructureData, BooksGetBookStructureResponse, BooksListBookVideosData, BooksListBookVideosResponse, ClassesCreateClassData, ClassesCreateClassResponse, ClassesListClassesData, ClassesListClassesResponse, ClassesGetClassDetailData, ClassesGetClassDetailResponse, ClassesUpdateClassData, ClassesUpdateClassResponse, ClassesArchiveClassData, ClassesArchiveClassResponse, ClassesAddStudentsToClassData, ClassesAddStudentsToClassResponse, ClassesRemoveStudentFromClassData, ClassesRemoveStudentFromClassResponse, ClassesGetClassAnalyticsEndpointData, ClassesGetClassAnalyticsEndpointResponse, ClassesGetClassBenchmarksEndpointData, ClassesGetClassBenchmarksEndpointResponse, DevGetQuickLoginUsersResponse, DevResetQuickLoginPasswordsResponse, FeedbackGetFeedbackOptionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MessagesSendMessageData, MessagesSendMessageResponse, MessagesGetConversationsData, MessagesGetConversationsResponse, MessagesGetMessageThreadData, MessagesGetMessageThreadResponse, MessagesMarkMessageAsReadData, MessagesMarkMessageAsReadResponse, MessagesGetAllowedRecipientsResponse, MessagesGetUnreadMessagesCountResponse, NotificationsGetNotificationsData, NotificationsGetNotificationsResponse, NotificationsGetUnreadCountResponse, NotificationsMarkNotificationAsReadData, NotificationsMarkNotificationAsReadResponse, NotificationsMarkAllNotificationsAsReadResponse, NotificationsGetNotificationPreferencesResponse, NotificationsUpdateNotificationPreferencesData, NotificationsUpdateNotificationPreferencesResponse, NotificationsUpdateSinglePreferenceData, NotificationsUpdateSinglePreferenceResponse, NotificationsGetMuteStatusResponse, NotificationsSetGlobalMuteData, NotificationsSetGlobalMuteResponse, NotificationsCancelGlobalMuteResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersGetMyProfileResponse, PublishersListMySchoolsResponse, PublishersCreateSchoolData, PublishersCreateSchoolResponse, PublishersListMyTeachersResponse, PublishersCreateTeacherData, PublishersCreateTeacherResponse, PublishersGetMyStatsResponse, ReportsGenerateReportData, ReportsGenerateReportResponse, ReportsCheckReportStatusData, ReportsCheckReportStatusResponse, ReportsDownloadReportData, ReportsDownloadReportResponse, ReportsListReportHistoryResponse, ReportsListReportTemplatesResponse, ReportsCreateReportTemplateData, ReportsCreateReportTemplateResponse, ReportsRemoveReportTemplateData, ReportsRemoveReportTemplateResponse, ScheduledTasksRunDeadlineRemindersData, ScheduledTasksRunDeadlineRemindersResponse, ScheduledTasksRunApproachingDeadlinesOnlyData, ScheduledTasksRunApproachingDeadlinesOnlyResponse, ScheduledTasksRunPastDueOnlyData, ScheduledTasksRunPastDueOnlyResponse, ScheduledTasksRunPublishScheduledAssignmentsData, ScheduledTasksRunPublishScheduledAssignmentsResponse, StudentsGetStudentAssignmentsData, StudentsGetStudentAssignmentsResponse, StudentsGetStudentProgressData, StudentsGetStudentProgressResponse, StudentsGetStudentAnalyticsData, StudentsGetStudentAnalyticsResponse, StudentsGetMyBadgesResponse, StudentsGetStudentBadgesData, StudentsGetStudentBadgesResponse, StudentsGetStudentCalendarAssignmentsData, StudentsGetStudentCalendarAssignmentsResponse, StudentsGetImportTemplateResponse, StudentsValidateImportFileData, StudentsValidateImportFileResponse, StudentsExecuteImportData, StudentsExecuteImportResponse, StudentsDownloadCredentialsData, StudentsDownloadCredentialsResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersBulkDeleteStudentsData, TeachersBulkDeleteStudentsResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, TeachersGetMyInsightsResponse, TeachersGetInsightDetailsData, TeachersGetInsightDetailsResponse, TeachersDismissInsightEndpointData, TeachersDismissInsightEndpointResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersChangeInitialPasswordData, UsersChangeInitialPasswordResponse, UsersCompleteTourResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksReceiveDreamStorageWebhookResponse, WebhooksTestDreamStorageWebhookData, WebhooksTestDreamStorageWebhookResponse } from './types.gen';
+import type { AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminDeletePublisherData, AdminUploadPublisherLogoData, AdminUploadPublisherLogoResponse, AdminDeletePublisherLogoData, AdminDeletePublisherLogoResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkDeleteStudentsData, AdminBulkDeleteStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, AdminAdminUpdateUserData, AdminAdminUpdateUserResponse, AdminResetUserPasswordData, AdminResetUserPasswordResponse, AdminGetCacheStatsResponse, AdminClearCacheResponse, AdminTestDreamStorageConnectionResponse, AdminRegisterWebhooksManuallyData, AdminRegisterWebhooksManuallyResponse, AdminGetBenchmarkOverviewEndpointResponse, AdminUpdateSchoolBenchmarkSettingsData, AdminUpdateSchoolBenchmarkSettingsResponse, AdminUpdatePublisherBenchmarkSettingsData, AdminUpdatePublisherBenchmarkSettingsResponse, AdminCreatePublisherAccountData, AdminCreatePublisherAccountResponse, AdminListPublisherAccountsData, AdminListPublisherAccountsResponse, AdminGetPublisherAccountData, AdminGetPublisherAccountResponse, AdminUpdatePublisherAccountData, AdminUpdatePublisherAccountResponse, AdminDeletePublisherAccountData, AdminDeletePublisherAccountResponse, AdminListAllAssignmentsData, AdminListAllAssignmentsResponse, AdminDeleteAssignmentData, AdminDeleteAssignmentResponse, AssignmentsListAssignmentsResponse, AssignmentsCreateAssignmentData, AssignmentsCreateAssignmentResponse, AssignmentsListAllAssignmentsAdminResponse, AssignmentsGetCalendarAssignmentsData, AssignmentsGetCalendarAssignmentsResponse, AssignmentsCreateBulkAssignmentsData, AssignmentsCreateBulkAssignmentsResponse, AssignmentsUpdateAssignmentData, AssignmentsUpdateAssignmentResponse, AssignmentsDeleteAssignmentData, AssignmentsDeleteAssignmentResponse, AssignmentsStartAssignmentData, AssignmentsStartAssignmentResponse, AssignmentsStartMultiActivityAssignmentData, AssignmentsStartMultiActivityAssignmentResponse, AssignmentsDownloadAssignmentMaterialData, AssignmentsDownloadAssignmentMaterialResponse, AssignmentsSaveActivityProgressData, AssignmentsSaveActivityProgressResponse, AssignmentsSubmitMultiActivityAssignmentData, AssignmentsSubmitMultiActivityAssignmentResponse, AssignmentsSaveProgressData, AssignmentsSaveProgressResponse, AssignmentsSubmitAssignmentData, AssignmentsSubmitAssignmentResponse, AssignmentsGetDetailedResultsData, AssignmentsGetDetailedResultsResponse, AssignmentsGetStudentAnswersData, AssignmentsGetStudentAnswersResponse, AssignmentsGetMultiActivityAnalyticsData, AssignmentsGetMultiActivityAnalyticsResponse, AssignmentsGetStudentAssignmentResultData, AssignmentsGetStudentAssignmentResultResponse, AssignmentsCreateOrUpdateFeedbackData, AssignmentsCreateOrUpdateFeedbackResponse, AssignmentsGetFeedbackData, AssignmentsGetFeedbackResponse, AssignmentsGetMyFeedbackData, AssignmentsGetMyFeedbackResponse, AssignmentsUpdateFeedbackData, AssignmentsUpdateFeedbackResponse, AssignmentsPreviewAssignmentData, AssignmentsPreviewAssignmentResponse, AssignmentsPreviewActivityData, AssignmentsPreviewActivityResponse, AvatarsGetPredefinedAvatarsResponse, AvatarsRemoveAvatarResponse, AvatarsSelectPredefinedAvatarData, AvatarsSelectPredefinedAvatarResponse, BookAssetsServeBookAssetData, BookAssetsServeBookAssetResponse, BookAssetsServePageImageData, BookAssetsServePageImageResponse, BookAssignmentsCreateBookAssignmentData, BookAssignmentsCreateBookAssignmentResponse, BookAssignmentsListBookAssignmentsData, BookAssignmentsListBookAssignmentsResponse, BookAssignmentsCreateBulkBookAssignmentsData, BookAssignmentsCreateBulkBookAssignmentsResponse, BookAssignmentsDeleteBookAssignmentData, BookAssignmentsDeleteBookAssignmentResponse, BookAssignmentsGetBookAssignmentsData, BookAssignmentsGetBookAssignmentsResponse, BookMediaStreamMediaData, BookMediaStreamMediaResponse, BooksGetBookCoverData, BooksGetBookCoverResponse, BooksListBooksData, BooksListBooksResponse, BooksGetBookActivitiesData, BooksGetBookActivitiesResponse, BooksGetBookPagesData, BooksGetBookPagesResponse, BooksGetPageActivitiesData, BooksGetPageActivitiesResponse, BooksGetBookPagesDetailData, BooksGetBookPagesDetailResponse, BooksGetBookStructureData, BooksGetBookStructureResponse, BooksListBookVideosData, BooksListBookVideosResponse, ClassesCreateClassData, ClassesCreateClassResponse, ClassesListClassesData, ClassesListClassesResponse, ClassesGetClassDetailData, ClassesGetClassDetailResponse, ClassesUpdateClassData, ClassesUpdateClassResponse, ClassesArchiveClassData, ClassesArchiveClassResponse, ClassesAddStudentsToClassData, ClassesAddStudentsToClassResponse, ClassesRemoveStudentFromClassData, ClassesRemoveStudentFromClassResponse, ClassesGetClassAnalyticsEndpointData, ClassesGetClassAnalyticsEndpointResponse, ClassesGetClassBenchmarksEndpointData, ClassesGetClassBenchmarksEndpointResponse, DevGetQuickLoginUsersResponse, DevResetQuickLoginPasswordsResponse, DevInstantLoginData, DevInstantLoginResponse, FeedbackGetFeedbackOptionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MessagesSendMessageData, MessagesSendMessageResponse, MessagesGetConversationsData, MessagesGetConversationsResponse, MessagesGetMessageThreadData, MessagesGetMessageThreadResponse, MessagesMarkMessageAsReadData, MessagesMarkMessageAsReadResponse, MessagesGetAllowedRecipientsResponse, MessagesGetUnreadMessagesCountResponse, NotificationsGetNotificationsData, NotificationsGetNotificationsResponse, NotificationsGetUnreadCountResponse, NotificationsMarkNotificationAsReadData, NotificationsMarkNotificationAsReadResponse, NotificationsMarkAllNotificationsAsReadResponse, NotificationsGetNotificationPreferencesResponse, NotificationsUpdateNotificationPreferencesData, NotificationsUpdateNotificationPreferencesResponse, NotificationsUpdateSinglePreferenceData, NotificationsUpdateSinglePreferenceResponse, NotificationsGetMuteStatusResponse, NotificationsSetGlobalMuteData, NotificationsSetGlobalMuteResponse, NotificationsCancelGlobalMuteResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersGetPublisherLogoData, PublishersGetPublisherLogoResponse, PublishersGetMyProfileResponse, PublishersGetMyStatsResponse, PublishersListMySchoolsResponse, PublishersCreateMySchoolData, PublishersCreateMySchoolResponse, PublishersListMyTeachersResponse, PublishersCreateMyTeacherData, PublishersCreateMyTeacherResponse, PublishersListMyBooksResponse, ReportsGenerateReportData, ReportsGenerateReportResponse, ReportsCheckReportStatusData, ReportsCheckReportStatusResponse, ReportsDownloadReportData, ReportsDownloadReportResponse, ReportsListReportHistoryResponse, ReportsListReportTemplatesResponse, ReportsCreateReportTemplateData, ReportsCreateReportTemplateResponse, ReportsRemoveReportTemplateData, ReportsRemoveReportTemplateResponse, ScheduledTasksRunDeadlineRemindersData, ScheduledTasksRunDeadlineRemindersResponse, ScheduledTasksRunApproachingDeadlinesOnlyData, ScheduledTasksRunApproachingDeadlinesOnlyResponse, ScheduledTasksRunPastDueOnlyData, ScheduledTasksRunPastDueOnlyResponse, ScheduledTasksRunPublishScheduledAssignmentsData, ScheduledTasksRunPublishScheduledAssignmentsResponse, StudentsGetStudentAssignmentsData, StudentsGetStudentAssignmentsResponse, StudentsGetStudentProgressData, StudentsGetStudentProgressResponse, StudentsGetStudentAnalyticsData, StudentsGetStudentAnalyticsResponse, StudentsGetMyBadgesResponse, StudentsGetStudentBadgesData, StudentsGetStudentBadgesResponse, StudentsGetStudentCalendarAssignmentsData, StudentsGetStudentCalendarAssignmentsResponse, StudentsGetImportTemplateResponse, StudentsValidateImportFileData, StudentsValidateImportFileResponse, StudentsExecuteImportData, StudentsExecuteImportResponse, StudentsDownloadCredentialsData, StudentsDownloadCredentialsResponse, SupervisorsListSupervisorsData, SupervisorsListSupervisorsResponse, SupervisorsCreateSupervisorData, SupervisorsCreateSupervisorResponse, SupervisorsGetSupervisorData, SupervisorsGetSupervisorResponse, SupervisorsUpdateSupervisorData, SupervisorsUpdateSupervisorResponse, SupervisorsDeleteSupervisorData, SupervisorsDeleteSupervisorResponse, SupervisorsResetSupervisorPasswordData, SupervisorsResetSupervisorPasswordResponse, TeacherMaterialsUploadMaterialData, TeacherMaterialsUploadMaterialResponse, TeacherMaterialsCreateTextNoteData, TeacherMaterialsCreateTextNoteResponse, TeacherMaterialsUpdateTextNoteData, TeacherMaterialsUpdateTextNoteResponse, TeacherMaterialsCreateUrlLinkData, TeacherMaterialsCreateUrlLinkResponse, TeacherMaterialsListMaterialsData, TeacherMaterialsListMaterialsResponse, TeacherMaterialsGetQuotaResponse, TeacherMaterialsGetMaterialData, TeacherMaterialsGetMaterialResponse, TeacherMaterialsUpdateMaterialData, TeacherMaterialsUpdateMaterialResponse, TeacherMaterialsDeleteMaterialData, TeacherMaterialsDeleteMaterialResponse, TeacherMaterialsGetPresignedUrlData, TeacherMaterialsGetPresignedUrlResponse, TeacherMaterialsDownloadMaterialData, TeacherMaterialsDownloadMaterialResponse, TeacherMaterialsStreamMaterialData, TeacherMaterialsStreamMaterialResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersBulkDeleteStudentsData, TeachersBulkDeleteStudentsResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, TeachersGetMyInsightsResponse, TeachersGetInsightDetailsData, TeachersGetInsightDetailsResponse, TeachersDismissInsightEndpointData, TeachersDismissInsightEndpointResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersChangeInitialPasswordData, UsersChangeInitialPasswordResponse, UsersCompleteTourResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksReceiveDreamStorageWebhookResponse, WebhooksTestDreamStorageWebhookData, WebhooksTestDreamStorageWebhookResponse } from './types.gen';
 
 export class AdminService {
     /**
-     * Create new publisher
-     * Creates a new publisher user and Publisher record. Admin only.
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns UserCreationResponse Successful Response
+     * List all publishers
+     * Retrieve all publishers from Dream Central Storage. Admin only.
+     * @returns PublisherPublic Successful Response
      * @throws ApiError
      */
-    public static createPublisher(data: AdminCreatePublisherData): CancelablePromise<AdminCreatePublisherResponse> {
+    public static listPublishers(): CancelablePromise<AdminListPublishersResponse> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/admin/publishers',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
+            method: 'GET',
+            url: '/api/v1/admin/publishers'
         });
     }
     
     /**
-     * List all publishers
-     * Retrieve all publishers with pagination. Admin only.
-     * @param data The data for the request.
-     * @param data.skip
-     * @param data.limit
-     * @returns PublisherPublic Successful Response
+     * Create new publisher (deprecated)
+     * Publisher creation is disabled. Publishers are managed in Dream Central Storage.
      * @throws ApiError
      */
-    public static listPublishers(data: AdminListPublishersData = {}): CancelablePromise<AdminListPublishersResponse> {
+    public static createPublisher(): CancelablePromise<void> {
         return __request(OpenAPI, {
-            method: 'GET',
+            method: 'POST',
             url: '/api/v1/admin/publishers',
-            query: {
-                skip: data.skip,
-                limit: data.limit
-            },
             errors: {
-                422: 'Validation Error'
+                410: 'Successful Response'
             }
         });
     }
@@ -95,38 +80,34 @@ export class AdminService {
     }
     
     /**
-     * Update a publisher
-     * Update a publisher by ID. Admin only.
+     * Update a publisher (deprecated)
+     * Publisher updates are disabled. Publishers are managed in Dream Central Storage.
      * @param data The data for the request.
      * @param data.publisherId
-     * @param data.requestBody
-     * @returns PublisherPublic Successful Response
      * @throws ApiError
      */
-    public static updatePublisher(data: AdminUpdatePublisherData): CancelablePromise<AdminUpdatePublisherResponse> {
+    public static updatePublisher(data: AdminUpdatePublisherData): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/v1/admin/publishers/{publisher_id}',
             path: {
                 publisher_id: data.publisherId
             },
-            body: data.requestBody,
-            mediaType: 'application/json',
             errors: {
+                410: 'Successful Response',
                 422: 'Validation Error'
             }
         });
     }
     
     /**
-     * Delete a publisher
-     * Delete a publisher by ID. Admin only.
+     * Delete a publisher (deprecated)
+     * Publisher deletion is disabled. Publishers are managed in Dream Central Storage.
      * @param data The data for the request.
      * @param data.publisherId
-     * @returns void Successful Response
      * @throws ApiError
      */
-    public static deletePublisher(data: AdminDeletePublisherData): CancelablePromise<AdminDeletePublisherResponse> {
+    public static deletePublisher(data: AdminDeletePublisherData): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/v1/admin/publishers/{publisher_id}',
@@ -134,6 +115,7 @@ export class AdminService {
                 publisher_id: data.publisherId
             },
             errors: {
+                410: 'Successful Response',
                 422: 'Validation Error'
             }
         });
@@ -300,7 +282,7 @@ export class AdminService {
     
     /**
      * Delete a teacher
-     * Delete a teacher by ID. Admin only.
+     * Delete a teacher by ID. Admin/Supervisor/Publisher.
      * @param data The data for the request.
      * @param data.teacherId
      * @returns void Successful Response
@@ -547,6 +529,32 @@ export class AdminService {
     }
     
     /**
+     * Get DCS cache statistics
+     * Returns cache hit/miss statistics for monitoring. Admin only.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getCacheStats(): CancelablePromise<AdminGetCacheStatsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/cache/stats'
+        });
+    }
+    
+    /**
+     * Clear DCS cache
+     * Clears all cached DCS data. Admin only. Use with caution.
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static clearCache(): CancelablePromise<AdminClearCacheResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/cache/clear'
+        });
+    }
+    
+    /**
      * Test Dream Storage Connection
      * Test connection to Dream Central Storage API (admin only).
      *
@@ -592,7 +600,7 @@ export class AdminService {
     
     /**
      * Get system-wide benchmark overview
-     * Returns aggregated benchmark statistics across all schools (admin only).
+     * Returns aggregated benchmark statistics across all schools (admin/supervisor).
      * @returns AdminBenchmarkOverview Successful Response
      * @throws ApiError
      */
@@ -605,7 +613,7 @@ export class AdminService {
     
     /**
      * Update school benchmark settings
-     * Toggle benchmarking for a specific school (admin only).
+     * Toggle benchmarking for a specific school (admin/supervisor).
      * @param data The data for the request.
      * @param data.schoolId
      * @param data.requestBody
@@ -629,7 +637,7 @@ export class AdminService {
     
     /**
      * Update publisher benchmark settings
-     * Toggle benchmarking for a specific publisher (admin only).
+     * Toggle benchmarking for a specific publisher (admin/supervisor).
      * @param data The data for the request.
      * @param data.publisherId
      * @param data.requestBody
@@ -645,6 +653,165 @@ export class AdminService {
             },
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create publisher user account
+     * Creates a new user account with publisher role linked to a DCS publisher.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns PublisherAccountCreationResponse Successful Response
+     * @throws ApiError
+     */
+    public static createPublisherAccount(data: AdminCreatePublisherAccountData): CancelablePromise<AdminCreatePublisherAccountResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/publisher-accounts',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List all publisher user accounts
+     * Returns all user accounts with role=publisher, enriched with DCS publisher names.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns PublisherAccountListResponse Successful Response
+     * @throws ApiError
+     */
+    public static listPublisherAccounts(data: AdminListPublisherAccountsData = {}): CancelablePromise<AdminListPublisherAccountsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/publisher-accounts',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get publisher user account
+     * Returns a single publisher user account by ID.
+     * @param data The data for the request.
+     * @param data.userId
+     * @returns PublisherAccountPublic Successful Response
+     * @throws ApiError
+     */
+    public static getPublisherAccount(data: AdminGetPublisherAccountData): CancelablePromise<AdminGetPublisherAccountResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/publisher-accounts/{user_id}',
+            path: {
+                user_id: data.userId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update publisher user account
+     * Updates a publisher user account's details or DCS link.
+     * @param data The data for the request.
+     * @param data.userId
+     * @param data.requestBody
+     * @returns PublisherAccountPublic Successful Response
+     * @throws ApiError
+     */
+    public static updatePublisherAccount(data: AdminUpdatePublisherAccountData): CancelablePromise<AdminUpdatePublisherAccountResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/admin/publisher-accounts/{user_id}',
+            path: {
+                user_id: data.userId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete publisher user account
+     * Deletes a publisher user account.
+     * @param data The data for the request.
+     * @param data.userId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deletePublisherAccount(data: AdminDeletePublisherAccountData): CancelablePromise<AdminDeletePublisherAccountResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/admin/publisher-accounts/{user_id}',
+            path: {
+                user_id: data.userId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List all assignments (Admin only)
+     * List all assignments across all teachers with filtering and pagination.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.teacherId
+     * @param data.status
+     * @param data.search
+     * @returns AssignmentListResponse Successful Response
+     * @throws ApiError
+     */
+    public static listAllAssignments(data: AdminListAllAssignmentsData = {}): CancelablePromise<AdminListAllAssignmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/assignments',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                teacher_id: data.teacherId,
+                status: data.status,
+                search: data.search
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete assignment (Admin only)
+     * Delete an assignment and all related data including student submissions.
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteAssignment(data: AdminDeleteAssignmentData): CancelablePromise<AdminDeleteAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/admin/assignments/{assignment_id}',
+            path: {
+                assignment_id: data.assignmentId
+            },
             errors: {
                 422: 'Validation Error'
             }
@@ -687,8 +854,8 @@ export class AssignmentsService {
     }
     
     /**
-     * List all assignments (Admin only)
-     * Get all assignments in the system with enriched data - admin access only
+     * List all assignments (Admin/Supervisor)
+     * Get all assignments in the system with enriched data - admin/supervisor access
      * @returns AssignmentListItem Successful Response
      * @throws ApiError
      */
@@ -707,7 +874,7 @@ export class AssignmentsService {
      * @param data.endDate End date for range (inclusive)
      * @param data.classId Filter by class ID
      * @param data.status Filter by status
-     * @param data.bookId Filter by book ID
+     * @param data.bookId Filter by book ID (DCS book ID)
      * @returns CalendarAssignmentsResponse Successful Response
      * @throws ApiError
      */
@@ -828,6 +995,37 @@ export class AssignmentsService {
             url: '/api/v1/assignments/{assignment_id}/start-multi',
             path: {
                 assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Stream teacher material for viewing
+     * Stream a teacher material attached to an assignment. Students can access materials attached to assignments they're assigned to. Teachers can access materials on their own assignments.
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.materialId
+     * @param data.token
+     * @param data.range
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static downloadAssignmentMaterial(data: AssignmentsDownloadAssignmentMaterialData): CancelablePromise<AssignmentsDownloadAssignmentMaterialResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/materials/{material_id}/download',
+            path: {
+                assignment_id: data.assignmentId,
+                material_id: data.materialId
+            },
+            headers: {
+                Range: data.range
+            },
+            query: {
+                token: data.token
             },
             errors: {
                 422: 'Validation Error'
@@ -1315,7 +1513,7 @@ export class BookAssetsService {
 export class BookAssignmentsService {
     /**
      * Create book assignment
-     * Assign a book to a school or teacher. Publisher only.
+     * DEPRECATED: Assign a book to a school or teacher. Publisher only.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns BookAssignmentPublic Successful Response
@@ -1335,7 +1533,7 @@ export class BookAssignmentsService {
     
     /**
      * List book assignments
-     * List all book assignments for the publisher's books. Publisher only.
+     * DEPRECATED: List all book assignments for the publisher's books. Publisher only.
      * @param data The data for the request.
      * @param data.bookId
      * @param data.schoolId
@@ -1362,7 +1560,7 @@ export class BookAssignmentsService {
     
     /**
      * Create bulk book assignments
-     * Assign a book to multiple teachers or entire school. Publisher only.
+     * Assign a book to multiple teachers. Admin/Supervisor/Publisher.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns BookAssignmentPublic Successful Response
@@ -1382,7 +1580,7 @@ export class BookAssignmentsService {
     
     /**
      * Delete book assignment
-     * Remove a book assignment. Publisher only.
+     * Remove a book assignment. Admin/Supervisor/Publisher.
      * @param data The data for the request.
      * @param data.assignmentId
      * @returns void Successful Response
@@ -1403,7 +1601,7 @@ export class BookAssignmentsService {
     
     /**
      * Get assignments for a book
-     * Get all assignments for a specific book. Publisher only.
+     * Get all assignments for a book. Admin/Supervisor see all, Publishers see their schools only.
      * @param data The data for the request.
      * @param data.bookId
      * @returns BookAssignmentResponse Successful Response
@@ -1458,21 +1656,57 @@ export class BookMediaService {
 
 export class BooksService {
     /**
-     * Sync books from Dream Central Storage
-     * Triggers synchronization of book catalog from Dream Central Storage (admin only)
-     * @returns BookSyncResponse Successful Response
+     * @deprecated
+     * [DEPRECATED] Sync books from Dream Central Storage
+     * This endpoint is deprecated. Books are now fetched on-demand from DCS without sync.
      * @throws ApiError
      */
-    public static triggerBookSync(): CancelablePromise<BooksTriggerBookSyncResponse> {
+    public static triggerBookSync(): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/v1/books/sync'
+            url: '/api/v1/books/sync',
+            errors: {
+                410: 'Successful Response'
+            }
+        });
+    }
+    
+    /**
+     * Get Book Cover
+     * Get book cover image from DCS.
+     *
+     * Fetches the cover image directly from the fixed location:
+     * /storage/books/{publisher}/{book_name}/object?path=images/book_cover.png
+     *
+     * Args:
+     * book_id: DCS book ID
+     *
+     * Returns:
+     * Image response with cover content
+     *
+     * Raises:
+     * HTTPException: 404 if cover not found
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getBookCover(data: BooksGetBookCoverData): CancelablePromise<BooksGetBookCoverResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/books/{book_id}/cover',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
     
     /**
      * List accessible books
-     * Returns books accessible to the authenticated user (admin sees all, publisher/teacher see their publisher's books).
+     * Returns books accessible to the authenticated user from DCS (admin/supervisor/publisher see all, teacher sees assigned books).
      * @param data The data for the request.
      * @param data.skip
      * @param data.limit
@@ -1499,7 +1733,7 @@ export class BooksService {
     
     /**
      * Get book activities
-     * Returns all activities for a specific book (admin sees all, publisher/teacher must have access).
+     * Returns all activities for a specific book (admin/supervisor/publisher see all, teacher must have access).
      * @param data The data for the request.
      * @param data.bookId
      * @returns ActivityResponse Successful Response
@@ -1846,17 +2080,11 @@ export class DevService {
      * Returns users grouped by role, limited to 5 per role.
      * Only accessible when ENVIRONMENT != "production".
      *
-     * Note: Since initial_password is no longer stored in the database for security reasons,
-     * quick login only works for:
-     * - Admin user (uses FIRST_SUPERUSER_PASSWORD)
-     * - Users with must_change_password=False (their password is likely "changethis" from dev seeding)
-     *
-     * Users with must_change_password=True have random temporary passwords that we don't know,
-     * so they are excluded from quick login.
+     * Use with /dev/instant-login/{username} endpoint which bypasses password.
      *
      * Returns:
      * Dictionary with role names as keys and lists of user dicts as values.
-     * Each user dict contains: username, email, password, must_change_password
+     * Each user dict contains: username, email
      * @returns unknown Successful Response
      * @throws ApiError
      */
@@ -1882,6 +2110,38 @@ export class DevService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/dev/reset-quick-login-passwords'
+        });
+    }
+    
+    /**
+     * Instant Login
+     * Instant login for development - bypasses password completely.
+     *
+     * Returns an access token for the specified user without requiring password.
+     * Only accessible when ENVIRONMENT != "production".
+     *
+     * This is MUCH simpler than quick-login and avoids all password issues.
+     *
+     * Args:
+     * username: Username to login as
+     *
+     * Returns:
+     * Dictionary with access_token and token_type
+     * @param data The data for the request.
+     * @param data.username
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static instantLogin(data: DevInstantLoginData): CancelablePromise<DevInstantLoginResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/dev/instant-login/{username}',
+            path: {
+                username: data.username
+            },
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
 }
@@ -2365,9 +2625,44 @@ export class PrivateService {
 
 export class PublishersService {
     /**
-     * Get my publisher profile
-     * Retrieve the authenticated publisher's profile including organization details and logo. Publisher only.
-     * @returns PublisherPublic Successful Response
+     * Get Publisher Logo
+     * Get publisher logo from DCS.
+     *
+     * Proxies the logo from Dream Central Storage. No authentication required
+     * since logos are public assets.
+     *
+     * Args:
+     * publisher_id: DCS publisher ID
+     *
+     * Returns:
+     * Image response with logo content
+     *
+     * Raises:
+     * HTTPException: 404 if logo not found
+     * @param data The data for the request.
+     * @param data.publisherId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getPublisherLogo(data: PublishersGetPublisherLogoData): CancelablePromise<PublishersGetPublisherLogoResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/publishers/{publisher_id}/logo',
+            path: {
+                publisher_id: data.publisherId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get My Profile
+     * Get current publisher's profile from DCS.
+     *
+     * Returns combined DCS publisher data and LMS user data.
+     * @returns PublisherProfile Successful Response
      * @throws ApiError
      */
     public static getMyProfile(): CancelablePromise<PublishersGetMyProfileResponse> {
@@ -2378,9 +2673,24 @@ export class PublishersService {
     }
     
     /**
-     * List my schools
-     * Retrieve schools assigned to authenticated publisher. Publisher only.
-     * @returns SchoolPublic Successful Response
+     * Get My Stats
+     * Get organization statistics.
+     *
+     * Returns counts of schools, teachers, and books.
+     * @returns PublisherStats Successful Response
+     * @throws ApiError
+     */
+    public static getMyStats(): CancelablePromise<PublishersGetMyStatsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/publishers/me/stats'
+        });
+    }
+    
+    /**
+     * List My Schools
+     * List schools belonging to publisher with aggregated counts.
+     * @returns SchoolWithCounts Successful Response
      * @throws ApiError
      */
     public static listMySchools(): CancelablePromise<PublishersListMySchoolsResponse> {
@@ -2391,14 +2701,14 @@ export class PublishersService {
     }
     
     /**
-     * Create new school
-     * Creates a new school for the publisher's organization. Publisher only.
+     * Create My School
+     * Create school with auto-set publisher ID.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns SchoolPublic Successful Response
      * @throws ApiError
      */
-    public static createSchool(data: PublishersCreateSchoolData): CancelablePromise<PublishersCreateSchoolResponse> {
+    public static createMySchool(data: PublishersCreateMySchoolData): CancelablePromise<PublishersCreateMySchoolResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/publishers/me/schools',
@@ -2411,9 +2721,9 @@ export class PublishersService {
     }
     
     /**
-     * List my organization's teachers
-     * Retrieve all teachers from schools belonging to the publisher's organization. Publisher only.
-     * @returns TeacherPublic Successful Response
+     * List My Teachers
+     * List teachers in publisher's schools with aggregated counts.
+     * @returns TeacherWithCounts Successful Response
      * @throws ApiError
      */
     public static listMyTeachers(): CancelablePromise<PublishersListMyTeachersResponse> {
@@ -2424,14 +2734,14 @@ export class PublishersService {
     }
     
     /**
-     * Create new teacher
-     * Creates a new teacher user linked to publisher's school. Publisher only.
+     * Create My Teacher
+     * Create teacher in publisher's school.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserCreationResponse Successful Response
      * @throws ApiError
      */
-    public static createTeacher(data: PublishersCreateTeacherData): CancelablePromise<PublishersCreateTeacherResponse> {
+    public static createMyTeacher(data: PublishersCreateMyTeacherData): CancelablePromise<PublishersCreateMyTeacherResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/publishers/me/teachers',
@@ -2444,15 +2754,15 @@ export class PublishersService {
     }
     
     /**
-     * Get my organization's dashboard stats
-     * Retrieve statistics for the publisher's organization. Publisher only.
-     * @returns DashboardStats Successful Response
+     * List My Books
+     * List books from DCS for publisher.
+     * @returns BookPublic Successful Response
      * @throws ApiError
      */
-    public static getMyStats(): CancelablePromise<PublishersGetMyStatsResponse> {
+    public static listMyBooks(): CancelablePromise<PublishersListMyBooksResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/publishers/me/stats'
+            url: '/api/v1/publishers/me/books'
         });
     }
 }
@@ -2936,6 +3246,410 @@ export class StudentsService {
             url: '/api/v1/students/import/credentials',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class SupervisorsService {
+    /**
+     * List all supervisors
+     * Retrieve all supervisors with optional search and pagination. Admin or Supervisor.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.search
+     * @returns SupervisorPublic Successful Response
+     * @throws ApiError
+     */
+    public static listSupervisors(data: SupervisorsListSupervisorsData = {}): CancelablePromise<SupervisorsListSupervisorsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/supervisors',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                search: data.search
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create new supervisor
+     * Creates a new supervisor user. Admin only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns SupervisorCreateResponse Successful Response
+     * @throws ApiError
+     */
+    public static createSupervisor(data: SupervisorsCreateSupervisorData): CancelablePromise<SupervisorsCreateSupervisorResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/supervisors',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get supervisor by ID
+     * Retrieve a single supervisor by ID. Admin or Supervisor.
+     * @param data The data for the request.
+     * @param data.supervisorId
+     * @returns SupervisorPublic Successful Response
+     * @throws ApiError
+     */
+    public static getSupervisor(data: SupervisorsGetSupervisorData): CancelablePromise<SupervisorsGetSupervisorResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/supervisors/{supervisor_id}',
+            path: {
+                supervisor_id: data.supervisorId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update a supervisor
+     * Update a supervisor by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.supervisorId
+     * @param data.requestBody
+     * @returns SupervisorPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateSupervisor(data: SupervisorsUpdateSupervisorData): CancelablePromise<SupervisorsUpdateSupervisorResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/admin/supervisors/{supervisor_id}',
+            path: {
+                supervisor_id: data.supervisorId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete a supervisor
+     * Delete a supervisor by ID. Admin only.
+     * @param data The data for the request.
+     * @param data.supervisorId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteSupervisor(data: SupervisorsDeleteSupervisorData): CancelablePromise<SupervisorsDeleteSupervisorResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/admin/supervisors/{supervisor_id}',
+            path: {
+                supervisor_id: data.supervisorId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Reset supervisor password
+     * Reset a supervisor's password. Admin only.
+     * @param data The data for the request.
+     * @param data.supervisorId
+     * @returns PasswordResetResponse Successful Response
+     * @throws ApiError
+     */
+    public static resetSupervisorPassword(data: SupervisorsResetSupervisorPasswordData): CancelablePromise<SupervisorsResetSupervisorPasswordResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/supervisors/{supervisor_id}/reset-password',
+            path: {
+                supervisor_id: data.supervisorId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class TeacherMaterialsService {
+    /**
+     * Upload a file
+     * Upload a file to teacher's personal storage (Rate limited: 30 uploads/hour)
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns UploadResponse Successful Response
+     * @throws ApiError
+     */
+    public static uploadMaterial(data: TeacherMaterialsUploadMaterialData): CancelablePromise<TeacherMaterialsUploadMaterialResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/materials/upload',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create a text note
+     * Create a text note material (stored in database, no DCS upload).
+     *
+     * Text notes have a 50KB limit for content.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns MaterialResponse Successful Response
+     * @throws ApiError
+     */
+    public static createTextNote(data: TeacherMaterialsCreateTextNoteData): CancelablePromise<TeacherMaterialsCreateTextNoteResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/materials/notes',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update a text note
+     * Update text note name and/or content.
+     * @param data The data for the request.
+     * @param data.materialId
+     * @param data.requestBody
+     * @returns MaterialResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateTextNote(data: TeacherMaterialsUpdateTextNoteData): CancelablePromise<TeacherMaterialsUpdateTextNoteResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/teachers/materials/notes/{material_id}',
+            path: {
+                material_id: data.materialId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create a URL link
+     * Create a URL link material (stored in database, no DCS upload).
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns MaterialResponse Successful Response
+     * @throws ApiError
+     */
+    public static createUrlLink(data: TeacherMaterialsCreateUrlLinkData): CancelablePromise<TeacherMaterialsCreateUrlLinkResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/materials/urls',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List teacher's materials
+     * List all materials for the current teacher.
+     *
+     * Optionally filter by type (document, image, audio, video, url, text_note).
+     * @param data The data for the request.
+     * @param data.type
+     * @returns MaterialListResponse Successful Response
+     * @throws ApiError
+     */
+    public static listMaterials(data: TeacherMaterialsListMaterialsData = {}): CancelablePromise<TeacherMaterialsListMaterialsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials',
+            query: {
+                type: data.type
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get storage quota
+     * Get current storage quota information.
+     * @returns StorageQuotaResponse Successful Response
+     * @throws ApiError
+     */
+    public static getQuota(): CancelablePromise<TeacherMaterialsGetQuotaResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials/quota'
+        });
+    }
+    
+    /**
+     * Get material details
+     * Get details for a specific material.
+     * @param data The data for the request.
+     * @param data.materialId
+     * @returns MaterialResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMaterial(data: TeacherMaterialsGetMaterialData): CancelablePromise<TeacherMaterialsGetMaterialResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials/{material_id}',
+            path: {
+                material_id: data.materialId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update material name
+     * Update material metadata (currently only name).
+     * @param data The data for the request.
+     * @param data.materialId
+     * @param data.requestBody
+     * @returns MaterialResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateMaterial(data: TeacherMaterialsUpdateMaterialData): CancelablePromise<TeacherMaterialsUpdateMaterialResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/teachers/materials/{material_id}',
+            path: {
+                material_id: data.materialId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete a material
+     * Delete a material and its stored file (if any).
+     *
+     * Updates quota usage after deletion.
+     * @param data The data for the request.
+     * @param data.materialId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteMaterial(data: TeacherMaterialsDeleteMaterialData): CancelablePromise<TeacherMaterialsDeleteMaterialResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/teachers/materials/{material_id}',
+            path: {
+                material_id: data.materialId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get URL for file access
+     * Get a URL for accessing a material file.
+     *
+     * Note: Since DCS no longer provides presigned URLs, this returns the
+     * authenticated streaming endpoint URL. The frontend must include the
+     * Authorization header when accessing this URL.
+     *
+     * The expires_in_seconds is provided for API compatibility but the URL
+     * remains valid as long as the user is authenticated.
+     * @param data The data for the request.
+     * @param data.materialId
+     * @param data.expiresMinutes
+     * @returns PresignedUrlResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPresignedUrl(data: TeacherMaterialsGetPresignedUrlData): CancelablePromise<TeacherMaterialsGetPresignedUrlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials/{material_id}/presigned-url',
+            path: {
+                material_id: data.materialId
+            },
+            query: {
+                expires_minutes: data.expiresMinutes
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Download a material file
+     * Download the file for a material.
+     *
+     * Only works for file-based materials (document, image, audio, video).
+     * @param data The data for the request.
+     * @param data.materialId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static downloadMaterial(data: TeacherMaterialsDownloadMaterialData): CancelablePromise<TeacherMaterialsDownloadMaterialResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials/{material_id}/download',
+            path: {
+                material_id: data.materialId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Stream a media file
+     * Stream audio/video file with range request support.
+     *
+     * Supports HTTP Range headers for seeking in media players.
+     * @param data The data for the request.
+     * @param data.materialId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static streamMaterial(data: TeacherMaterialsStreamMaterialData): CancelablePromise<TeacherMaterialsStreamMaterialResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials/{material_id}/stream',
+            path: {
+                material_id: data.materialId
+            },
             errors: {
                 422: 'Validation Error'
             }

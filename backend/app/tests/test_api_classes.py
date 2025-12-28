@@ -3,7 +3,6 @@ Tests for class management API endpoints
 """
 import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 

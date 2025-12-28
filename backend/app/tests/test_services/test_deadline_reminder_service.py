@@ -25,7 +25,6 @@ from app.models import (
     AssignmentStudentActivity,
     AssignmentStudentActivityStatus,
     Book,
-    BookAccess,
     Notification,
     NotificationType,
     Publisher,

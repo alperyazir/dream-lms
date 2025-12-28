@@ -209,7 +209,7 @@ export function BookListView({ books }: BookListViewProps) {
               <TableCell className="py-2">
                 <Link
                   to="/teacher/books/$bookId"
-                  params={{ bookId: book.id }}
+                  params={{ bookId: String(book.id) }}
                 >
                   <BookCoverThumbnail book={book} />
                 </Link>
@@ -217,7 +217,7 @@ export function BookListView({ books }: BookListViewProps) {
               <TableCell>
                 <Link
                   to="/teacher/books/$bookId"
-                  params={{ bookId: book.id }}
+                  params={{ bookId: String(book.id) }}
                   className="block"
                 >
                   <div className="font-medium hover:text-primary transition-colors">
@@ -233,7 +233,7 @@ export function BookListView({ books }: BookListViewProps) {
               <TableCell>
                 <Link
                   to="/teacher/books/$bookId"
-                  params={{ bookId: book.id }}
+                  params={{ bookId: String(book.id) }}
                   className="block"
                 >
                   <Badge
@@ -247,12 +247,10 @@ export function BookListView({ books }: BookListViewProps) {
               <TableCell className="text-center">
                 <Link
                   to="/teacher/books/$bookId"
-                  params={{ bookId: book.id }}
+                  params={{ bookId: String(book.id) }}
                   className="block"
                 >
-                  <Badge variant="outline">
-                    {book.activity_count}
-                  </Badge>
+                  <Badge variant="outline">{book.activity_count}</Badge>
                 </Link>
               </TableCell>
             </TableRow>

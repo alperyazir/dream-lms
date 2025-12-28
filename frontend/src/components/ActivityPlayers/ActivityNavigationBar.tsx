@@ -38,7 +38,7 @@ export function ActivityNavigationBar({
         inline: "center",
       })
     }
-  }, [currentIndex])
+  }, [])
 
   // Size modes based on activity count
   const sizeMode =

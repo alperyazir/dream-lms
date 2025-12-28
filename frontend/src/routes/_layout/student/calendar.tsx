@@ -153,7 +153,6 @@ function StudentCalendarPage() {
           label: "In Progress",
           Icon: PlayCircle,
         }
-      case "not_started":
       default:
         return {
           className:
@@ -256,11 +255,7 @@ function StudentCalendarPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Month Navigation */}
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={goToPreviousMonth}
-              >
+              <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
               <h2 className="text-lg font-semibold min-w-[180px] text-center">
@@ -351,9 +346,11 @@ function StudentCalendarPage() {
 
                     {/* Assignments */}
                     <div className="space-y-0.5">
-                      {dayAssignments.slice(0, 3).map((assignment) =>
-                        renderAssignmentItem(assignment, true),
-                      )}
+                      {dayAssignments
+                        .slice(0, 3)
+                        .map((assignment) =>
+                          renderAssignmentItem(assignment, true),
+                        )}
                       {dayAssignments.length > 3 && (
                         <Popover>
                           <PopoverTrigger asChild>
@@ -531,7 +528,6 @@ function getStatusBadgeHelper(status: AssignmentStatus) {
         label: "In Progress",
         Icon: PlayCircle,
       }
-    case "not_started":
     default:
       return {
         className:

@@ -110,7 +110,7 @@ export function restoreProgressFromJson(
     ) {
       // Convert object back to Map<string, string>
       const map = new Map<string, string>(
-        Object.entries(rawAnswers).map(([k, v]) => [k, String(v)])
+        Object.entries(rawAnswers).map(([k, v]) => [k, String(v)]),
       )
       console.log("[restoreProgress] Restored Map with", map.size, "entries")
       return map
@@ -153,6 +153,11 @@ export function ActivityPlayer({
   showCorrectAnswers = false,
   resetTrigger = 0,
 }: ActivityPlayerProps) {
+  // Guard clause: activityConfig is required
+  if (!activityConfig) {
+    throw new Error("ActivityPlayer: activityConfig is required")
+  }
+
   // Story 4.8: Initialize answers from saved progress (must happen before first render)
   const [answers, setAnswers] = useState<ActivityAnswers>(() =>
     restoreProgressFromJson(initialProgress, activityConfig.type),
@@ -273,7 +278,9 @@ export function ActivityPlayer({
     if (answers instanceof Map) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const entries = [...(answers as Map<any, any>).entries()]
-      answersHash = JSON.stringify(entries.sort((a, b) => String(a[0]).localeCompare(String(b[0]))))
+      answersHash = JSON.stringify(
+        entries.sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+      )
     } else if (answers instanceof Set) {
       answersHash = JSON.stringify(Array.from(answers).sort())
     } else {

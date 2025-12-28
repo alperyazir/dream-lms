@@ -10,14 +10,21 @@ Provides endpoints for teachers to manage their personal materials:
 
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+import jwt
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlmodel import select
+from fastapi.security import OAuth2PasswordBearer
+from jwt.exceptions import InvalidTokenError
+from pydantic import ValidationError
+from sqlmodel import Session, select
 
-from app.api.deps import CurrentUser, SessionDep
+from app.api.deps import CurrentUser, SessionDep, get_db
+from app.core import security
+from app.core.config import settings
 from app.core.rate_limit import limiter
-from app.models import MaterialType, Teacher, TeacherMaterial
+from app.models import MaterialType, Teacher, TeacherMaterial, TokenPayload, User
 from app.schemas.material import (
     MaterialListResponse,
     MaterialResponse,
@@ -42,12 +49,19 @@ from app.services.material_service import (
     material_to_response,
     quota_to_response,
     sanitize_filename,
+    sanitize_filename_for_storage,
     update_quota_usage,
     validate_and_categorize_file,
     validate_file_content,
 )
 
 router = APIRouter(prefix="/teachers/materials", tags=["teacher-materials"])
+
+# OAuth2 scheme with auto_error=False to allow fallback to query param for media streaming
+_media_oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/login/access-token",
+    auto_error=False,
+)
 
 
 # =============================================================================
@@ -69,6 +83,60 @@ def get_teacher_id(session: SessionDep, current_user: CurrentUser) -> uuid.UUID:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only teachers can manage materials",
+        )
+
+    return teacher.id
+
+
+def get_media_teacher_id(
+    session: Annotated[Session, Depends(get_db)],
+    header_token: Annotated[str | None, Depends(_media_oauth2_scheme)] = None,
+    query_token: Annotated[str | None, Query(alias="token")] = None,
+) -> uuid.UUID:
+    """
+    Get teacher ID for media streaming with support for query param auth.
+
+    Supports both header-based auth (Authorization: Bearer xxx) and
+    query param auth (?token=xxx) for HTML5 media elements.
+    """
+    # Try header token first, then query param
+    token = header_token or query_token
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+    except (InvalidTokenError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        )
+
+    # Convert string UUID to UUID object
+    user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    # Get teacher ID
+    teacher = session.exec(
+        select(Teacher).where(Teacher.user_id == user.id)
+    ).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can access materials",
         )
 
     return teacher.id
@@ -122,12 +190,13 @@ async def upload_material(
     # Check quota
     quota = check_quota(session, teacher_id, file_size)
 
-    # Upload to DCS
+    # Upload to DCS with sanitized filename (ASCII-safe for URL paths)
+    storage_filename = sanitize_filename_for_storage(file.filename)
     try:
         storage_path = await dcs_client.upload_teacher_material(
             teacher_id=str(teacher_id),
             file_content=file_content,
-            filename=file.filename or "untitled",
+            filename=storage_filename,
             content_type=file.content_type or "application/octet-stream",
             material_type=material_type.value,
         )
@@ -349,7 +418,7 @@ async def get_material(
 @router.get(
     "/{material_id}/presigned-url",
     response_model=PresignedUrlResponse,
-    summary="Get presigned URL for direct file access",
+    summary="Get URL for file access",
 )
 async def get_presigned_url(
     *,
@@ -360,12 +429,14 @@ async def get_presigned_url(
     expires_minutes: int = 60,
 ) -> PresignedUrlResponse:
     """
-    Get a presigned URL for direct browser access to a material file.
+    Get a URL for accessing a material file.
 
-    This URL can be used in iframes, img tags, audio/video elements, etc.
-    without requiring authentication headers.
+    Note: Since DCS no longer provides presigned URLs, this returns the
+    authenticated streaming endpoint URL. The frontend must include the
+    Authorization header when accessing this URL.
 
-    The URL expires after the specified minutes (default 60, max 1440).
+    The expires_in_seconds is provided for API compatibility but the URL
+    remains valid as long as the user is authenticated.
     """
     teacher_id = get_teacher_id(session, current_user)
     material = get_teacher_material(session, material_id, teacher_id)
@@ -373,7 +444,7 @@ async def get_presigned_url(
     if material.type in [MaterialType.url, MaterialType.text_note]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="URLs and text notes do not have presigned URLs",
+            detail="URLs and text notes do not have file URLs",
         )
 
     if not material.storage_path:
@@ -383,15 +454,20 @@ async def get_presigned_url(
         )
 
     try:
+        # Verify file exists in DCS
         result = await dcs_client.get_teacher_material_presigned_url(
             teacher_id=str(teacher_id),
             storage_path=material.storage_path,
             expires_minutes=min(expires_minutes, 1440),
         )
+
+        # Return URL to our own streaming endpoint (requires auth header)
+        stream_url = f"/api/v1/teachers/materials/{material_id}/stream"
+
         return PresignedUrlResponse(
-            url=result["url"],
+            url=stream_url,
             expires_in_seconds=result.get("expires_in_seconds", expires_minutes * 60),
-            content_type=material.mime_type,
+            content_type=material.mime_type or result.get("content_type", "application/octet-stream"),
         )
     except DreamStorageNotFoundError:
         raise HTTPException(
@@ -401,7 +477,7 @@ async def get_presigned_url(
     except DreamStorageError as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to get presigned URL: {str(e)}",
+            detail=f"Failed to verify file: {str(e)}",
         )
 
 
@@ -493,17 +569,55 @@ async def delete_material(
 )
 async def download_material(
     *,
-    session: SessionDep,
-    current_user: CurrentUser,
+    session: Annotated[Session, Depends(get_db)],
     dcs_client: DreamCentralStorageClient = Depends(get_dream_storage_client),
     material_id: uuid.UUID,
+    header_token: Annotated[str | None, Depends(_media_oauth2_scheme)] = None,
+    query_token: Annotated[str | None, Query(alias="token")] = None,
 ) -> StreamingResponse:
     """
     Download the file for a material.
 
     Only works for file-based materials (document, image, audio, video).
+
+    **Authentication:**
+    - Header: `Authorization: Bearer <token>` (for fetch/axios requests)
+    - Query param: `?token=<token>` (for HTML5 video/audio elements)
     """
-    teacher_id = get_teacher_id(session, current_user)
+    # Authenticate user from header or query token
+    token = header_token or query_token
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+    except (InvalidTokenError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        )
+
+    # Get user and verify teacher
+    user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    teacher = session.exec(select(Teacher).where(Teacher.user_id == user.id)).first()
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can access materials",
+        )
+
+    teacher_id = teacher.id
     material = get_teacher_material(session, material_id, teacher_id)
 
     if material.type in [MaterialType.url, MaterialType.text_note]:
@@ -534,15 +648,23 @@ async def download_material(
             detail=f"Failed to download file: {str(e)}",
         )
 
-    # Prepare filename for Content-Disposition
+    # Prepare filename for Content-Disposition (RFC 5987 encoding for non-ASCII)
     filename = material.original_filename or material.name
-    safe_filename = filename.replace('"', "'").replace("\n", " ")
+    # For ASCII filenames, use simple quoting; for non-ASCII, use RFC 5987 encoding
+    try:
+        filename.encode('ascii')
+        content_disposition = f'attachment; filename="{filename.replace(chr(34), chr(39))}"'
+    except UnicodeEncodeError:
+        # Use RFC 5987 encoding for non-ASCII filenames
+        from urllib.parse import quote
+        encoded_filename = quote(filename, safe='')
+        content_disposition = f"attachment; filename*=UTF-8''{encoded_filename}"
 
     return StreamingResponse(
         iter([content]),
         media_type=material.mime_type or "application/octet-stream",
         headers={
-            "Content-Disposition": f'attachment; filename="{safe_filename}"',
+            "Content-Disposition": content_disposition,
             "Content-Length": str(len(content)),
         },
     )
@@ -554,8 +676,8 @@ async def download_material(
 )
 async def stream_material(
     *,
-    session: SessionDep,
-    current_user: CurrentUser,
+    session: Annotated[Session, Depends(get_db)],
+    teacher_id: Annotated[uuid.UUID, Depends(get_media_teacher_id)],
     request: Request,
     dcs_client: DreamCentralStorageClient = Depends(get_dream_storage_client),
     material_id: uuid.UUID,
@@ -564,8 +686,11 @@ async def stream_material(
     Stream audio/video file with range request support.
 
     Supports HTTP Range headers for seeking in media players.
+
+    **Authentication:**
+    - Header: `Authorization: Bearer <token>` (for fetch/axios requests)
+    - Query param: `?token=<token>` (for HTML5 video/audio elements)
     """
-    teacher_id = get_teacher_id(session, current_user)
     material = get_teacher_material(session, material_id, teacher_id)
 
     if material.type not in [MaterialType.audio, MaterialType.video]:

@@ -6,13 +6,25 @@
  */
 
 import { format } from "date-fns"
-import { BookOpen, Calendar, Clock, FileBox, FileText, FolderOpen, Users, Video } from "lucide-react"
+import {
+  BookOpen,
+  Calendar,
+  Clock,
+  FileBox,
+  FileText,
+  FolderOpen,
+  Users,
+  Video,
+} from "lucide-react"
+import {
+  getMaterialTypeLabel,
+  MaterialTypeIcon,
+} from "@/components/materials/MaterialTypeIcon"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MaterialTypeIcon, getMaterialTypeLabel } from "@/components/materials/MaterialTypeIcon"
 import type { AssignmentFormData } from "@/types/assignment"
-import type { MaterialType } from "@/types/material"
 import { ACTIVITY_TYPE_CONFIG, type Activity, type Book } from "@/types/book"
+import type { MaterialType } from "@/types/material"
 
 interface StepReviewCreateProps {
   activity: Activity
@@ -207,7 +219,11 @@ export function StepReviewCreate({
                       />
                       <span className="truncate">{material.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        ({getMaterialTypeLabel(material.material_type as MaterialType)})
+                        (
+                        {getMaterialTypeLabel(
+                          material.material_type as MaterialType,
+                        )}
+                        )
                       </span>
                     </div>
                   ))}

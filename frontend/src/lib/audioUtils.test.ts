@@ -3,8 +3,8 @@
  * Story 10.2: Frontend Audio Player Component
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { getAudioUrl, hasAudio, getAudioPath } from "./audioUtils"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { getAudioPath, getAudioUrl, hasAudio } from "./audioUtils"
 
 // Mock import.meta.env
 vi.stubGlobal("import.meta", {
@@ -30,51 +30,67 @@ describe("getAudioUrl", () => {
   it("transforms path with ./ prefix and books folder correctly", () => {
     const audioPath = "./books/SwitchtoCLIL/audio/08.mp3"
     const result = getAudioUrl(bookId, audioPath)
-    expect(result).toBe(`${baseUrl}/api/v1/books/book-uuid-123/media/audio/08.mp3?token=${testToken}`)
+    expect(result).toBe(
+      `${baseUrl}/api/v1/books/book-uuid-123/media/audio/08.mp3?token=${testToken}`,
+    )
   })
 
   it("transforms path without ./ prefix", () => {
     const audioPath = "books/SwitchtoCLIL/audio/track01.mp3"
     const result = getAudioUrl(bookId, audioPath)
-    expect(result).toBe(`${baseUrl}/api/v1/books/book-uuid-123/media/audio/track01.mp3?token=${testToken}`)
+    expect(result).toBe(
+      `${baseUrl}/api/v1/books/book-uuid-123/media/audio/track01.mp3?token=${testToken}`,
+    )
   })
 
   it("handles path with only ./ prefix (no books folder)", () => {
     const audioPath = "./audio/lesson.mp3"
     const result = getAudioUrl(bookId, audioPath)
-    expect(result).toBe(`${baseUrl}/api/v1/books/book-uuid-123/media/audio/lesson.mp3?token=${testToken}`)
+    expect(result).toBe(
+      `${baseUrl}/api/v1/books/book-uuid-123/media/audio/lesson.mp3?token=${testToken}`,
+    )
   })
 
   it("handles simple relative path", () => {
     const audioPath = "audio/chapter1.mp3"
     const result = getAudioUrl(bookId, audioPath)
-    expect(result).toBe(`${baseUrl}/api/v1/books/book-uuid-123/media/audio/chapter1.mp3?token=${testToken}`)
+    expect(result).toBe(
+      `${baseUrl}/api/v1/books/book-uuid-123/media/audio/chapter1.mp3?token=${testToken}`,
+    )
   })
 
   it("handles nested audio paths", () => {
     const audioPath = "./books/MyBook/audio/unit1/lesson1.mp3"
     const result = getAudioUrl(bookId, audioPath)
-    expect(result).toBe(`${baseUrl}/api/v1/books/book-uuid-123/media/audio/unit1/lesson1.mp3?token=${testToken}`)
+    expect(result).toBe(
+      `${baseUrl}/api/v1/books/book-uuid-123/media/audio/unit1/lesson1.mp3?token=${testToken}`,
+    )
   })
 
   it("handles paths with special characters in filename", () => {
     const audioPath = "./books/TestBook/audio/track 01.mp3"
     const result = getAudioUrl(bookId, audioPath)
     // Note: Path is not URL-encoded (space remains as space), only the token param is encoded
-    expect(result).toBe(`${baseUrl}/api/v1/books/book-uuid-123/media/audio/track 01.mp3?token=${testToken}`)
+    expect(result).toBe(
+      `${baseUrl}/api/v1/books/book-uuid-123/media/audio/track 01.mp3?token=${testToken}`,
+    )
   })
 
   it("preserves file extension", () => {
     const audioPath = "./books/Book/audio/file.wav"
     const result = getAudioUrl(bookId, audioPath)
-    expect(result).toBe(`${baseUrl}/api/v1/books/book-uuid-123/media/audio/file.wav?token=${testToken}`)
+    expect(result).toBe(
+      `${baseUrl}/api/v1/books/book-uuid-123/media/audio/file.wav?token=${testToken}`,
+    )
   })
 
   it("returns URL without token param when no token in localStorage", () => {
     vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null)
     const audioPath = "./books/SwitchtoCLIL/audio/08.mp3"
     const result = getAudioUrl(bookId, audioPath)
-    expect(result).toBe(`${baseUrl}/api/v1/books/book-uuid-123/media/audio/08.mp3`)
+    expect(result).toBe(
+      `${baseUrl}/api/v1/books/book-uuid-123/media/audio/08.mp3`,
+    )
   })
 })
 

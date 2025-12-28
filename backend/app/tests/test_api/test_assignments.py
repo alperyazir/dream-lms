@@ -20,24 +20,9 @@ These integration tests verify end-to-end workflow and authorization.
 import uuid
 from datetime import UTC, datetime, timedelta
 
-import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session
 
 from app.core.config import settings
-from app.models import (
-    Activity,
-    Book,
-    BookAccess,
-    Class,
-    ClassStudent,
-    Publisher,
-    School,
-    Student,
-    Teacher,
-    User,
-    UserRole,
-)
 
 
 class TestCreateAssignment:

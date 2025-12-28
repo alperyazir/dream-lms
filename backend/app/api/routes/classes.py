@@ -11,7 +11,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select, func
+from sqlmodel import func, select
 
 from app.api.deps import AsyncSessionDep, require_role
 from app.models import (
@@ -137,7 +137,7 @@ async def _verify_student_ownership(
     if not student_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Student user record not found"
+            detail="Student user record not found"
         )
 
     # Verify teacher has access to this student by checking school relationship

@@ -6,8 +6,6 @@ from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
 from app.models import (
-    Publisher,
-    PublisherCreate,
     Student,
     StudentCreate,
     Teacher,
@@ -108,69 +106,6 @@ def authenticate_with_username_or_email(
     if not verify_password(password, db_user.hashed_password):
         return None
     return db_user
-
-
-def create_publisher(
-    *, session: Session, email: str, username: str, password: str, full_name: str, publisher_create: PublisherCreate
-) -> tuple[User, Publisher]:
-    """
-    Create a new publisher user and associated publisher record atomically.
-
-    Args:
-        session: Database session
-        email: User email address
-        username: User username
-        password: User password (will be hashed)
-        full_name: User full name
-        publisher_create: Publisher-specific data
-
-    Returns:
-        Tuple of (User, Publisher) records
-
-    Raises:
-        Exception: If transaction fails (rolls back automatically)
-    """
-    # Check email uniqueness
-    existing_user_email = get_user_by_email(session=session, email=email)
-    if existing_user_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    # Check username uniqueness
-    existing_user_username = get_user_by_username(session=session, username=username)
-    if existing_user_username:
-        raise HTTPException(status_code=400, detail="Username already taken")
-
-    # Create User with publisher role
-    user_create = UserCreate(
-        email=email,
-        username=username,
-        password=password,
-        full_name=full_name,
-        role=UserRole.publisher,
-        is_active=True,
-        is_superuser=False
-    )
-    db_user = User.model_validate(
-        user_create, update={
-            "hashed_password": get_password_hash(password),
-            "must_change_password": True  # New users must change password on first login
-        }
-    )
-    session.add(db_user)
-    session.flush()  # Get user.id without committing
-
-    # Create Publisher record
-    publisher_data = publisher_create.model_dump()
-    publisher_data["user_id"] = db_user.id
-    db_publisher = Publisher.model_validate(publisher_data)
-    session.add(db_publisher)
-
-    # Commit transaction
-    session.commit()
-    session.refresh(db_user)
-    session.refresh(db_publisher)
-
-    return db_user, db_publisher
 
 
 def create_teacher(

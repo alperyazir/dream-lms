@@ -1,12 +1,12 @@
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
 import { useMemo } from "react"
-import { LuShieldCheck, LuCheck, LuX } from "react-icons/lu"
+import { useForm } from "react-hook-form"
+import { LuCheck, LuShieldCheck, LuX } from "react-icons/lu"
+import { z } from "zod"
 
-import { UsersService, type UserPublic } from "@/client"
+import { type UserPublic, UsersService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -18,8 +18,8 @@ import {
 import { Label } from "@/components/ui/label"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Progress } from "@/components/ui/progress"
+import { getMustChangePassword, isLoggedIn } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
-import { isLoggedIn, getMustChangePassword } from "@/hooks/useAuth"
 
 // Password strength calculation
 interface PasswordStrength {
@@ -128,7 +128,7 @@ function ChangePasswordPage() {
   const newPassword = watch("newPassword")
   const passwordStrength = useMemo(
     () => calculatePasswordStrength(newPassword || ""),
-    [newPassword]
+    [newPassword],
   )
 
   const changePasswordMutation = useMutation({

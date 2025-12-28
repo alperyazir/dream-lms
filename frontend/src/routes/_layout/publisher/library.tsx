@@ -1,16 +1,20 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, RefreshCw, Search } from "lucide-react"
+import { BookOpen, RefreshCw, UserPlus } from "lucide-react"
 import { useEffect, useState } from "react"
-import { OpenAPI } from "@/client"
-import { BookDetailsDialog } from "@/components/books/BookDetailsDialog"
+import { PublishersService } from "@/client"
+import { BookTableView } from "@/components/books/BookTableView"
+import { QuickAssignDialog } from "@/components/books/QuickAssignDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { LibraryFilters } from "@/components/library/LibraryFilters"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { booksApi, getAuthenticatedCoverUrl } from "@/services/booksApi"
-import { getMyProfile } from "@/services/publishersApi"
+import { PublisherLogo } from "@/components/ui/publisher-logo"
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
+import { useLibraryFilters } from "@/hooks/useLibraryFilters"
+import { useViewPreference } from "@/hooks/useViewPreference"
+import { getAuthenticatedCoverUrl } from "@/services/booksApi"
 import type { Book } from "@/types/book"
 
 export const Route = createFileRoute("/_layout/publisher/library")({
@@ -19,37 +23,24 @@ export const Route = createFileRoute("/_layout/publisher/library")({
       <PublisherLibraryPage />
     </ErrorBoundary>
   ),
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: (search.q as string) || "",
+    publisher: (search.publisher as string) || "",
+    activity: (search.activity as string) || "",
+  }),
 })
 
 /**
- * Custom hook for debouncing values
- */
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value)
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value)
-    }, delay)
-
-    return () => {
-      clearTimeout(handler)
-    }
-  }, [value, delay])
-
-  return debouncedValue
-}
-
-/**
- * Publisher Book Card - Story 9.4
- * Custom book card for publishers with Details button
+ * Publisher Book Card - Story 19.6
+ * Custom book card for publishers with Assign button
+ * Note: Restored assign functionality using QuickAssignDialog pattern
  */
 interface PublisherBookCardProps {
   book: Book
-  onDetailsClick: () => void
+  onAssignClick: () => void
 }
 
-function PublisherBookCard({ book, onDetailsClick }: PublisherBookCardProps) {
+function PublisherBookCard({ book, onAssignClick }: PublisherBookCardProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [isLoadingCover, setIsLoadingCover] = useState(true)
   const [imageError, setImageError] = useState(false)
@@ -137,9 +128,10 @@ function PublisherBookCard({ book, onDetailsClick }: PublisherBookCardProps) {
       <CardFooter className="p-4 pt-0">
         <Button
           className="w-full bg-teal-600 hover:bg-teal-700"
-          onClick={onDetailsClick}
+          onClick={onAssignClick}
         >
-          Details
+          <UserPlus className="h-4 w-4 mr-2" />
+          Assign to Teachers
         </Button>
       </CardFooter>
     </Card>
@@ -147,111 +139,76 @@ function PublisherBookCard({ book, onDetailsClick }: PublisherBookCardProps) {
 }
 
 function PublisherLibraryPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null)
+  const [assignBook, setAssignBook] = useState<Book | null>(null)
+  const [viewMode, setViewMode] = useViewPreference("publisher-library", "grid")
 
-  // Handle opening the details dialog
-  const handleDetailsClick = (book: Book) => {
-    setSelectedBook(book)
-    setDetailsDialogOpen(true)
+  // Handle opening the assign dialog
+  const handleAssignClick = (book: Book) => {
+    setAssignBook(book)
   }
 
-  // Handle closing the details dialog
-  const handleDetailsDialogClose = () => {
-    setDetailsDialogOpen(false)
-    setSelectedBook(null)
-  }
-
-  // Fetch publisher profile for logo display
+  // Fetch publisher profile for header display
   const { data: profile } = useQuery({
     queryKey: ["publisherProfile"],
-    queryFn: () => getMyProfile(),
+    queryFn: () => PublishersService.getMyProfile(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   })
 
-  // Fetch books using useQuery
-  const { data: booksData, isLoading: loading } = useQuery({
-    queryKey: ["publisherBooks"],
-    queryFn: () => booksApi.getBooks({ limit: 100 }),
+  // Fetch books for this publisher only (much faster than fetching all books)
+  const { data: booksData = [], isLoading: loading } = useQuery({
+    queryKey: ["publisherMyBooks"],
+    queryFn: () => PublishersService.listMyBooks(),
     staleTime: 30000, // Cache for 30 seconds
   })
 
-  const books = booksData?.items ?? []
+  // Map BookPublic to Book type expected by the card
+  const books: Book[] = booksData.map((book) => ({
+    id: book.id,
+    dream_storage_id: book.name, // Using book name as a fallback
+    title: book.title || book.name,
+    publisher_name: book.publisher_name,
+    description: null, // Not available in BookPublic
+    cover_image_url: book.cover_url || null,
+    activity_count: book.activity_count || 0,
+  }))
 
-  // Get publisher initials for fallback
-  const getPublisherInitials = (name: string): string => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
-  // Debounce search term
-  const debouncedSearch = useDebounce(searchTerm, 300)
-
-  // Filter books based on search
-  const filteredBooks = books.filter((book) => {
-    if (!debouncedSearch) return true
-    const searchLower = debouncedSearch.toLowerCase()
-    return (
-      book.title.toLowerCase().includes(searchLower) ||
-      book.publisher_name.toLowerCase().includes(searchLower) ||
-      book.description?.toLowerCase().includes(searchLower)
-    )
-  })
+  // Use library filters hook
+  const { filters, setFilters, filteredBooks, resultCount, totalCount } =
+    useLibraryFilters(books)
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header with Logo */}
       <div className="mb-8 flex items-center gap-6">
-        {/* Publisher Logo */}
+        {/* Publisher Logo from DCS */}
         {profile && (
           <div className="flex-shrink-0">
-            {profile.logo_url ? (
-              <img
-                src={`${OpenAPI.BASE}${profile.logo_url}`}
-                alt={`${profile.name} logo`}
-                className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-lg"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                {getPublisherInitials(profile.name)}
-              </div>
-            )}
+            <PublisherLogo
+              publisherId={profile.id}
+              size="lg"
+              alt={`${profile.name} logo`}
+              className="shadow-lg"
+            />
           </div>
         )}
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold mb-2">My Library</h1>
           <p className="text-muted-foreground">
             View your published books and learning materials
           </p>
         </div>
+        {/* View Mode Toggle */}
+        <ViewModeToggle value={viewMode} onChange={setViewMode} />
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search by title, publisher, or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full"
-          />
-        </div>
-        {/* Results count */}
-        {!loading && books.length > 0 && (
-          <p className="text-sm text-muted-foreground mt-2">
-            {filteredBooks.length === books.length
-              ? `Showing all ${books.length} books`
-              : `Found ${filteredBooks.length} of ${books.length} books`}
-          </p>
-        )}
-      </div>
+      {/* Filters - hide publisher filter for publishers */}
+      <LibraryFilters
+        filters={filters}
+        onChange={setFilters}
+        showPublisherFilter={false}
+        resultCount={resultCount}
+        totalCount={totalCount}
+      />
 
       {/* Loading State */}
       {loading ? (
@@ -264,33 +221,44 @@ function PublisherLibraryPage() {
         <div className="text-center py-12">
           <BookOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <p className="text-lg text-muted-foreground mb-2">
-            {searchTerm ? "No books found" : "No books yet"}
+            {filters.search || filters.activityType
+              ? "No books found"
+              : "No books yet"}
           </p>
           <p className="text-sm text-muted-foreground">
-            {searchTerm
-              ? "Try adjusting your search terms"
-              : "Books will appear here when they're available in the system"}
+            {filters.search || filters.activityType
+              ? "Try adjusting your filter criteria"
+              : "Your books will appear here once they're added to Dream Central Storage"}
           </p>
         </div>
-      ) : (
+      ) : viewMode === "grid" ? (
         /* Books Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredBooks.map((book) => (
             <PublisherBookCard
               key={book.id}
               book={book}
-              onDetailsClick={() => handleDetailsClick(book)}
+              onAssignClick={() => handleAssignClick(book)}
             />
           ))}
         </div>
+      ) : (
+        /* Books Table */
+        <BookTableView
+          books={filteredBooks}
+          onAssign={handleAssignClick}
+          showAssignButton={true}
+          showViewDetails={false}
+        />
       )}
 
-      {/* Book Details Dialog - Story 9.4 */}
-      {selectedBook && (
-        <BookDetailsDialog
-          isOpen={detailsDialogOpen}
-          onClose={handleDetailsDialogClose}
-          book={selectedBook}
+      {/* Quick Assign Dialog - Story 19.6 */}
+      {assignBook && (
+        <QuickAssignDialog
+          open={!!assignBook}
+          onOpenChange={(open) => !open && setAssignBook(null)}
+          book={assignBook}
+          isAdmin={false}
         />
       )}
     </div>

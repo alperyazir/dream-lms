@@ -1,67 +1,47 @@
 """Development-only API endpoints for testing and debugging."""
 
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.api.deps import get_db
 from app.core.config import settings
-from app.core.security import get_password_hash
+from app.core.security import create_access_token, get_password_hash
 from app.models import User, UserRole
 
 router = APIRouter()
 
 
 @router.get("/quick-login-users")
-def get_quick_login_users(db: Session = Depends(get_db)) -> dict[str, list[dict[str, str | bool | None]]]:
+def get_quick_login_users(db: Session = Depends(get_db)) -> dict[str, list[dict[str, str | None]]]:
     """
     Get users for quick test login (development only).
 
     Returns users grouped by role, limited to 5 per role.
     Only accessible when ENVIRONMENT != "production".
 
-    Note: Since initial_password is no longer stored in the database for security reasons,
-    quick login only works for:
-    - Admin user (uses FIRST_SUPERUSER_PASSWORD)
-    - Users with must_change_password=False (their password is likely "changethis" from dev seeding)
-
-    Users with must_change_password=True have random temporary passwords that we don't know,
-    so they are excluded from quick login.
+    Use with /dev/instant-login/{username} endpoint which bypasses password.
 
     Returns:
         Dictionary with role names as keys and lists of user dicts as values.
-        Each user dict contains: username, email, password, must_change_password
+        Each user dict contains: username, email
     """
     if settings.ENVIRONMENT == "production":
         raise HTTPException(status_code=404, detail="Not found")
 
-    # Query up to 5 users per role, excluding those with must_change_password=True
-    # (except admin who always uses FIRST_SUPERUSER_PASSWORD)
-    result: dict[str, list[dict[str, str | bool | None]]] = {}
+    result: dict[str, list[dict[str, str | None]]] = {}
     for role in UserRole:
-        if role == UserRole.admin:
-            # Admin can always login with FIRST_SUPERUSER_PASSWORD
-            users = db.exec(
-                select(User)
-                .where(User.role == role)
-                .limit(5)
-            ).all()
-        else:
-            # For other roles, only include users without must_change_password
-            # These users have "changethis" as their password from dev seeding
-            users = db.exec(
-                select(User)
-                .where(User.role == role)
-                .where(User.must_change_password == False)  # noqa: E712
-                .limit(5)
-            ).all()
+        users = db.exec(
+            select(User)
+            .where(User.role == role)
+            .limit(5)
+        ).all()
 
         result[role.value] = [
             {
                 "username": u.username,
-                "email": u.email,  # Can be None for students
-                # For admin, use settings password; for others, use the default dev password
-                "password": settings.FIRST_SUPERUSER_PASSWORD if role == UserRole.admin else "changethis",
-                "must_change_password": u.must_change_password,
+                "email": u.email,
             }
             for u in users
         ]
@@ -99,4 +79,38 @@ def reset_quick_login_passwords(db: Session = Depends(get_db)) -> dict[str, str 
     return {
         "message": f"Reset {count} users' passwords to 'changethis'",
         "count": count,
+    }
+
+
+@router.post("/instant-login/{username}")
+def instant_login(username: str, db: Session = Depends(get_db)) -> dict[str, str]:
+    """
+    Instant login for development - bypasses password completely.
+
+    Returns an access token for the specified user without requiring password.
+    Only accessible when ENVIRONMENT != "production".
+
+    This is MUCH simpler than quick-login and avoids all password issues.
+
+    Args:
+        username: Username to login as
+
+    Returns:
+        Dictionary with access_token and token_type
+    """
+    if settings.ENVIRONMENT == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    # Find user by username
+    user = db.exec(select(User).where(User.username == username)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User '{username}' not found")
+
+    # Generate access token
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(user.id, expires_delta=access_token_expires)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
     }

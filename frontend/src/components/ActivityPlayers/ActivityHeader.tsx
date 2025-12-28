@@ -6,9 +6,9 @@
 
 import { memo, useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
+import { getAudioUrl, hasAudio } from "@/lib/audioUtils"
 import { AudioButton } from "./AudioButton"
 import { AudioPlayer } from "./AudioPlayer"
-import { getAudioUrl, hasAudio } from "@/lib/audioUtils"
 
 interface ActivityHeaderProps {
   bookTitle: string
@@ -41,7 +41,9 @@ export const ActivityHeader = memo(function ActivityHeader({
   const [showAudio, setShowAudio] = useState(false)
 
   // Check if activity has audio
-  const audioPath = hasAudio(activityConfig) ? activityConfig.audio_extra.path : null
+  const audioPath = hasAudio(activityConfig)
+    ? activityConfig.audio_extra.path
+    : null
   const audioUrl = audioPath && bookId ? getAudioUrl(bookId, audioPath) : null
 
   // Countdown timer

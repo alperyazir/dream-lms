@@ -24,7 +24,6 @@ import type {
  * Create axios instance with OpenAPI config
  */
 const apiClient = axios.create({
-  baseURL: OpenAPI.BASE,
   headers: {
     "Content-Type": "application/json",
   },
@@ -32,6 +31,10 @@ const apiClient = axios.create({
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
+  // In development, don't set baseURL - let Vite proxy handle /api requests
+  // In production, the frontend is served from the same origin as the backend
+  // so relative URLs work correctly
+
   const token = OpenAPI.TOKEN
   if (token) {
     // Handle both sync and async token functions
@@ -99,10 +102,10 @@ export async function getBookActivities(bookId: string): Promise<Activity[]> {
  * Note: This uses the list endpoint to find the specific book
  * In a future story, we could add a dedicated GET /books/{id} endpoint
  *
- * @param bookId - UUID of the book
+ * @param bookId - DCS book ID (numeric)
  * @returns Promise with book data or null if not found
  */
-export async function getBookById(bookId: string): Promise<Book | null> {
+export async function getBookById(bookId: number): Promise<Book | null> {
   // For now, fetch with high limit and filter client-side
   // This is not ideal for production but works for MVP
   const response = await getBooks({ limit: 100 })
@@ -311,7 +314,9 @@ export interface BookVideosResponse {
  * @param bookId - UUID of the book
  * @returns Promise with list of videos
  */
-export async function getBookVideos(bookId: string): Promise<BookVideosResponse> {
+export async function getBookVideos(
+  bookId: string | number,
+): Promise<BookVideosResponse> {
   const url = `/api/v1/books/${bookId}/videos`
   const response = await apiClient.get<BookVideosResponse>(url)
   return response.data
@@ -491,7 +496,7 @@ export async function getPageImageUrl(
  * @returns Promise with book structure including activity IDs
  */
 export async function getBookStructure(
-  bookId: string,
+  bookId: string | number,
 ): Promise<BookStructureResponse> {
   const url = `/api/v1/books/${bookId}/structure`
   const response = await apiClient.get<BookStructureResponse>(url)

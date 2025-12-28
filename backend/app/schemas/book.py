@@ -1,30 +1,60 @@
 """Pydantic schemas for Book API responses."""
 
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
 
-class BookResponse(BaseModel):
-    """Book response schema for API."""
+class BookPublic(BaseModel):
+    """
+    Book data for API responses - sourced from DCS.
+
+    This schema represents books fetched from DCS without local sync.
+    The ID is the DCS book ID (integer).
+    """
+
+    id: int  # DCS book ID
+    name: str  # book_name in DCS
+    title: str | None = None  # book_title in DCS
+    publisher_id: int
+    publisher_name: str
+    cover_url: str | None = None
+    activity_count: int = 0
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: uuid.UUID
-    title: str
-    book_name: str
+
+class BookResponse(BaseModel):
+    """
+    Book response schema for API.
+
+    DEPRECATED: Use BookPublic instead. This schema is kept for backwards compatibility
+    but will be removed in a future version.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int  # Changed from UUID to int (DCS book ID)
+    title: str | None = None
+    book_name: str | None = None  # DCS book_name
     publisher_name: str
-    language: str | None
-    category: str | None
-    cover_image_url: str | None
+    language: str | None = None
+    category: str | None = None
+    cover_image_url: str | None = None
     activity_count: int = 0
+    dream_storage_id: str | None = None  # For backwards compatibility
 
 
 class BookListResponse(BaseModel):
     """List of books response schema."""
 
-    books: list[BookResponse]
-    total_count: int
+    items: list[BookResponse]
+    total: int
+    skip: int = 0
+    limit: int = 20
 
 
 class ActivityResponse(BaseModel):
@@ -33,11 +63,13 @@ class ActivityResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    book_id: uuid.UUID
-    module_name: str
-    page_number: int
+    book_id: int  # DCS book ID (int) - named book_id for frontend compatibility
+    module_name: str | None = None
+    page_number: int | None = None
     activity_type: str
-    title: str | None
+    title: str | None = None
+    config_json: dict = {}
+    order_index: int = 0
 
 
 class ActivityDetailResponse(ActivityResponse):
@@ -85,7 +117,7 @@ class ModulePages(BaseModel):
 class BookPagesResponse(BaseModel):
     """Response for book pages endpoint."""
 
-    book_id: uuid.UUID
+    book_id: int  # Changed from UUID to int (DCS book ID)
     modules: list[ModulePages]
     total_pages: int
     total_activities: int
@@ -152,7 +184,7 @@ class ModulePagesDetail(BaseModel):
 class BookPagesDetailResponse(BaseModel):
     """Enhanced book pages response with activity coordinates for page viewer."""
 
-    book_id: uuid.UUID
+    book_id: int  # Changed from UUID to int (DCS book ID)
     modules: list[ModuleInfo]  # Module shortcuts for navigation
     pages: list[PageDetail]  # Flat list of ALL pages in order
     total_pages: int
@@ -185,7 +217,7 @@ class ModuleWithActivities(BaseModel):
 class BookStructureResponse(BaseModel):
     """Book structure response with modules and pages for activity selection tabs."""
 
-    book_id: uuid.UUID
+    book_id: int  # Changed from UUID to int (DCS book ID)
     modules: list[ModuleWithActivities]
     total_pages: int
     total_activities: int
@@ -206,6 +238,6 @@ class VideoInfo(BaseModel):
 class BookVideosResponse(BaseModel):
     """Response for book videos endpoint."""
 
-    book_id: uuid.UUID
+    book_id: int  # Changed from UUID to int (DCS book ID)
     videos: list[VideoInfo]
     total_count: int

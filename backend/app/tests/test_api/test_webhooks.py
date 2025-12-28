@@ -1,48 +1,36 @@
 """
 Tests for webhook endpoints.
+
+NOTE: Webhooks now ONLY invalidate cache, they don't sync books/publishers.
+Books are fetched on-demand from DCS, not stored in local database.
 """
 
-import hmac
 import hashlib
+import hmac
 import json
 import uuid
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import Session, select
 
-from app.models import Book, BookStatus, WebhookEventLog, WebhookEventStatus, WebhookEventType
 from app.core.config import settings
-
+from app.models import WebhookEventLog, WebhookEventStatus, WebhookEventType
 
 # Test Fixtures
 
 
 @pytest.fixture
-def mock_book_service():
-    """Mock book service functions to avoid external API calls."""
-    async def mock_sync_book(*args, **kwargs):
-        # Create a mock book object
-        return Book(
-            id=1,
-            dream_storage_id=str(kwargs.get("dream_storage_id", "123")),
-            title="Test Book",
-            book_name="TEST_BOOK",
-            publisher_name="Test Publisher",
-            publisher_id=uuid.uuid4(),
-            status=BookStatus.published,
-            config_json={"books": [{}]},
-        )
+def mock_dcs_cache():
+    """Mock DCS cache for testing cache invalidation."""
+    cache_mock = MagicMock()
+    cache_mock.invalidate = AsyncMock(return_value=True)
+    cache_mock.invalidate_pattern = AsyncMock(return_value=5)  # Mock number of invalidated entries
 
-    async def mock_soft_delete(*args, **kwargs):
-        return True
-
-    with patch("app.api.routes.webhooks.sync_book", new=AsyncMock(side_effect=mock_sync_book)):
-        with patch("app.api.routes.webhooks.soft_delete_book", new=AsyncMock(side_effect=mock_soft_delete)):
-            yield
+    with patch("app.api.routes.webhooks.get_dcs_cache", return_value=cache_mock):
+        yield cache_mock
 
 
 @pytest.fixture
@@ -141,9 +129,9 @@ async def test_webhook_event_created(
     async_session: AsyncSession,
     webhook_secret: str,
     monkeypatch,
-    mock_book_service,
+    mock_dcs_cache,
 ):
-    """Test that book.created events are logged correctly."""
+    """Test that book.created events are logged correctly and invalidate cache."""
     monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
 
     payload = {
@@ -187,9 +175,9 @@ async def test_webhook_event_updated(
     async_session: AsyncSession,
     webhook_secret: str,
     monkeypatch,
-    mock_book_service,
+    mock_dcs_cache,
 ):
-    """Test that book.updated events are logged correctly."""
+    """Test that book.updated events are logged correctly and invalidate cache."""
     monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
 
     payload = {
@@ -231,9 +219,9 @@ async def test_webhook_event_deleted(
     async_session: AsyncSession,
     webhook_secret: str,
     monkeypatch,
-    mock_book_service,
+    mock_dcs_cache,
 ):
-    """Test that book.deleted events are logged correctly."""
+    """Test that book.deleted events are logged correctly and invalidate cache."""
     monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
 
     payload = {
@@ -279,7 +267,7 @@ async def test_webhook_event_logged(
     valid_webhook_payload: dict,
     webhook_secret: str,
     monkeypatch,
-    mock_book_service,
+    mock_dcs_cache,
 ):
     """Test that webhook events are properly logged to database."""
     monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
@@ -309,6 +297,159 @@ async def test_webhook_event_logged(
     assert event_log.retry_count == 0
     assert event_log.payload_json == valid_webhook_payload
     assert event_log.created_at is not None
+
+
+# Cache Invalidation Tests
+
+
+@pytest.mark.asyncio
+async def test_webhook_book_created_cache_invalidation(
+    client: TestClient,
+    async_session: AsyncSession,
+    webhook_secret: str,
+    monkeypatch,
+):
+    """Test that book.created webhooks trigger correct cache invalidations."""
+    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+
+    cache_mock = MagicMock()
+    cache_mock.invalidate = AsyncMock(return_value=True)
+    cache_mock.invalidate_pattern = AsyncMock(return_value=3)
+
+    with patch("app.api.routes.webhooks.get_dcs_cache", return_value=cache_mock):
+        payload = {
+            "event": "book.created",
+            "timestamp": "2025-11-15T18:30:00Z",
+            "data": {
+                "id": 123,
+                "book_name": "NEW_BOOK",
+                "publisher": "Test Publisher",
+                "version": "1.0.0",
+            },
+        }
+
+        payload_bytes = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        signature = hmac.new(
+            webhook_secret.encode("utf-8"), payload_bytes, hashlib.sha256
+        ).hexdigest()
+
+        response = client.post(
+            "/api/v1/webhooks/dream-storage",
+            json=payload,
+            headers={"X-Webhook-Signature": f"sha256={signature}"},
+        )
+
+        assert response.status_code == 200
+
+        # Wait for background processing
+        import asyncio
+        await asyncio.sleep(0.5)
+
+        # Verify correct cache invalidations for book.created
+        from app.services.dcs_cache import CacheKeys
+        cache_mock.invalidate.assert_any_call(CacheKeys.BOOK_LIST)
+        cache_mock.invalidate_pattern.assert_any_call("dcs:books:publisher:")
+
+
+@pytest.mark.asyncio
+async def test_webhook_book_updated_cache_invalidation(
+    client: TestClient,
+    async_session: AsyncSession,
+    webhook_secret: str,
+    monkeypatch,
+):
+    """Test that book.updated webhooks trigger correct cache invalidations."""
+    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+
+    cache_mock = MagicMock()
+    cache_mock.invalidate = AsyncMock(return_value=True)
+    cache_mock.invalidate_pattern = AsyncMock(return_value=3)
+
+    with patch("app.api.routes.webhooks.get_dcs_cache", return_value=cache_mock):
+        payload = {
+            "event": "book.updated",
+            "timestamp": "2025-11-15T18:30:00Z",
+            "data": {
+                "id": 456,
+                "book_name": "UPDATED_BOOK",
+                "publisher": "Test Publisher",
+                "version": "2.0.0",
+            },
+        }
+
+        payload_bytes = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        signature = hmac.new(
+            webhook_secret.encode("utf-8"), payload_bytes, hashlib.sha256
+        ).hexdigest()
+
+        response = client.post(
+            "/api/v1/webhooks/dream-storage",
+            json=payload,
+            headers={"X-Webhook-Signature": f"sha256={signature}"},
+        )
+
+        assert response.status_code == 200
+
+        # Wait for background processing
+        import asyncio
+        await asyncio.sleep(0.5)
+
+        # Verify correct cache invalidations for book.updated
+        from app.services.dcs_cache import CacheKeys
+        book_id = str(payload["data"]["id"])
+        cache_mock.invalidate.assert_any_call(CacheKeys.book_by_id(book_id))
+        cache_mock.invalidate.assert_any_call(CacheKeys.book_config(book_id))
+        cache_mock.invalidate.assert_any_call(CacheKeys.BOOK_LIST)
+
+
+@pytest.mark.asyncio
+async def test_webhook_book_deleted_cache_invalidation(
+    client: TestClient,
+    async_session: AsyncSession,
+    webhook_secret: str,
+    monkeypatch,
+):
+    """Test that book.deleted webhooks trigger correct cache invalidations."""
+    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+
+    cache_mock = MagicMock()
+    cache_mock.invalidate = AsyncMock(return_value=True)
+    cache_mock.invalidate_pattern = AsyncMock(return_value=3)
+
+    with patch("app.api.routes.webhooks.get_dcs_cache", return_value=cache_mock):
+        payload = {
+            "event": "book.deleted",
+            "timestamp": "2025-11-15T18:30:00Z",
+            "data": {
+                "id": 789,
+                "book_name": "DELETED_BOOK",
+                "publisher": "Test Publisher",
+                "version": "1.0.0",
+            },
+        }
+
+        payload_bytes = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        signature = hmac.new(
+            webhook_secret.encode("utf-8"), payload_bytes, hashlib.sha256
+        ).hexdigest()
+
+        response = client.post(
+            "/api/v1/webhooks/dream-storage",
+            json=payload,
+            headers={"X-Webhook-Signature": f"sha256={signature}"},
+        )
+
+        assert response.status_code == 200
+
+        # Wait for background processing
+        import asyncio
+        await asyncio.sleep(0.5)
+
+        # Verify correct cache invalidations for book.deleted
+        from app.services.dcs_cache import CacheKeys
+        book_id = str(payload["data"]["id"])
+        cache_mock.invalidate_pattern.assert_any_call(f"dcs:books:id:{book_id}")
+        cache_mock.invalidate.assert_any_call(CacheKeys.BOOK_LIST)
 
 
 # Invalid Payload Tests
@@ -358,76 +499,17 @@ async def test_webhook_end_to_end_book_created(
     1. Webhook received with valid signature
     2. Event logged to database
     3. Background task processes event
-    4. BookService.sync_book called with correct parameters
+    4. Cache invalidation is triggered
     5. Event status updated to success
     """
     monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
 
-    # Mock the Dream Central Storage client and BookService
-    from app.models import Book, BookStatus, Publisher, User, UserRole
-    from app.core.security import get_password_hash
+    # Mock DCS cache
+    cache_mock = MagicMock()
+    cache_mock.invalidate = AsyncMock(return_value=True)
+    cache_mock.invalidate_pattern = AsyncMock(return_value=3)
 
-    # Create a test user first (required for Publisher foreign key)
-    user = User(
-        id=uuid.uuid4(),
-        email="publisher@test.com",
-        username="testpublisher",
-        hashed_password=get_password_hash("testpassword"),
-        role=UserRole.publisher,
-        is_active=True,
-        is_superuser=False,
-    )
-    async_session.add(user)
-    await async_session.flush()
-
-    # Create a test publisher
-    publisher = Publisher(
-        id=uuid.uuid4(),
-        user_id=user.id,
-        name="Test Publisher",
-        contact_email="test@publisher.com"
-    )
-    async_session.add(publisher)
-    await async_session.commit()
-
-    # Mock book data that would come from Dream Central Storage
-    mock_book_data = Book(
-        id=1,
-        dream_storage_id="456",
-        title="New Book",
-        book_name="NEW_BOOK",
-        publisher_name="Test Publisher",
-        publisher_id=publisher.id,
-        status=BookStatus.published,
-        config_json={"books": [{}]},
-    )
-
-    async def mock_sync_book_integration(dream_storage_id: str, db: AsyncSession, **kwargs):
-        """Mock sync_book that actually creates a book."""
-        # Check if book already exists
-        result = await db.execute(
-            select(Book).where(Book.dream_storage_id == dream_storage_id)
-        )
-        existing_book = result.scalar_one_or_none()
-
-        if existing_book:
-            return existing_book
-
-        # Create new book
-        new_book = Book(
-            dream_storage_id=dream_storage_id,
-            title="New Book",
-            book_name="NEW_BOOK",
-            publisher_name="Test Publisher",
-            publisher_id=publisher.id,
-            status=BookStatus.published,
-            config_json={"books": [{}]},
-        )
-        db.add(new_book)
-        await db.flush()
-        return new_book
-
-    with patch("app.api.routes.webhooks.sync_book", new=AsyncMock(side_effect=mock_sync_book_integration)):
+    with patch("app.api.routes.webhooks.get_dcs_cache", return_value=cache_mock):
         payload = {
             "event": "book.created",
             "timestamp": "2025-11-15T18:30:00Z",
@@ -470,6 +552,11 @@ async def test_webhook_end_to_end_book_created(
         # Event should be processed (either success or still pending in fast test environment)
         assert event_log.status in [WebhookEventStatus.pending, WebhookEventStatus.success]
 
+        # Verify cache invalidation was called for book.created
+        from app.services.dcs_cache import CacheKeys
+        cache_mock.invalidate.assert_any_call(CacheKeys.BOOK_LIST)
+        cache_mock.invalidate_pattern.assert_any_call("dcs:books:publisher:")
+
 
 @pytest.mark.asyncio
 async def test_webhook_retry_on_failure(
@@ -481,7 +568,7 @@ async def test_webhook_retry_on_failure(
     """Integration test: Verify retry logic with exponential backoff.
 
     This test validates:
-    1. Webhook processing fails on first attempt
+    1. Cache invalidation fails on first attempts
     2. Retry logic kicks in
     3. Exponential backoff delays are applied
     4. Retry count is incremented
@@ -489,59 +576,25 @@ async def test_webhook_retry_on_failure(
     """
     monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
 
-    # Import required models
-    from app.models import Book, BookStatus, Publisher, User, UserRole
-    from app.core.security import get_password_hash
-
-    # Create a test user first (required for Publisher foreign key)
-    user = User(
-        id=uuid.uuid4(),
-        email="publisher2@test.com",
-        username="testpublisher2",
-        hashed_password=get_password_hash("testpassword"),
-        role=UserRole.publisher,
-        is_active=True,
-        is_superuser=False,
-    )
-    async_session.add(user)
-    await async_session.flush()
-
-    # Create a publisher for the book
-    publisher = Publisher(
-        id=uuid.uuid4(),
-        user_id=user.id,
-        name="Test Publisher",
-        contact_email="test@publisher.com"
-    )
-    async_session.add(publisher)
-    await async_session.commit()
-
-    # Mock sync_book to fail twice, then succeed
+    # Mock cache invalidation to fail twice, then succeed
     call_count = 0
 
-    async def mock_sync_book_with_retries(dream_storage_id: str, db: AsyncSession, **kwargs):
+    async def mock_invalidate_with_retries(*args, **kwargs):
         nonlocal call_count
         call_count += 1
 
         if call_count <= 2:
             # Fail first two attempts
-            raise Exception(f"Temporary failure (attempt {call_count})")
+            raise Exception(f"Cache invalidation temporary failure (attempt {call_count})")
 
         # Succeed on third attempt
-        new_book = Book(
-            dream_storage_id=dream_storage_id,
-            title="Retried Book",
-            book_name="RETRIED_BOOK",
-            publisher_name="Test Publisher",
-            publisher_id=publisher.id,
-            status=BookStatus.published,
-            config_json={"books": [{}]},
-        )
-        db.add(new_book)
-        await db.flush()
-        return new_book
+        return True
 
-    with patch("app.api.routes.webhooks.sync_book", new=AsyncMock(side_effect=mock_sync_book_with_retries)):
+    cache_mock = MagicMock()
+    cache_mock.invalidate = AsyncMock(side_effect=mock_invalidate_with_retries)
+    cache_mock.invalidate_pattern = AsyncMock(return_value=3)
+
+    with patch("app.api.routes.webhooks.get_dcs_cache", return_value=cache_mock):
         payload = {
             "event": "book.updated",
             "timestamp": "2025-11-15T18:30:00Z",
@@ -582,7 +635,11 @@ async def test_webhook_retry_on_failure(
         # Should have retried and eventually succeeded
         assert event_log.retry_count >= 2  # At least 2 retries
         assert event_log.status == WebhookEventStatus.success
-        assert call_count == 3  # Called 3 times total
+        # book_updated calls invalidate 3 times per attempt:
+        # - Attempt 1: book_by_id (fail, count=1) → retry
+        # - Attempt 2: book_by_id (fail, count=2) → retry
+        # - Attempt 3: book_by_id, book_config, BOOK_LIST (success, count=3,4,5)
+        assert call_count == 5  # Called 5 times total (2 failed attempts + 3 successful invalidations)
 
 
 @pytest.mark.asyncio
@@ -595,7 +652,7 @@ async def test_webhook_max_retries_exhausted(
     """Integration test: Verify max retries exhausted results in permanent failure.
 
     This test validates:
-    1. Webhook processing fails repeatedly
+    1. Cache invalidation fails repeatedly
     2. Retry logic attempts max 3 times
     3. After 3 failures, event is marked as permanently failed
     4. Error message is logged
@@ -603,11 +660,15 @@ async def test_webhook_max_retries_exhausted(
     """
     monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
 
-    # Mock sync_book to always fail
-    async def mock_sync_book_always_fails(dream_storage_id: str, db: AsyncSession, **kwargs):
-        raise Exception("Persistent failure - cannot sync book")
+    # Mock cache invalidation to always fail
+    async def mock_invalidate_always_fails(*args, **kwargs):
+        raise Exception("Persistent failure - cache invalidation unavailable")
 
-    with patch("app.api.routes.webhooks.sync_book", new=AsyncMock(side_effect=mock_sync_book_always_fails)):
+    cache_mock = MagicMock()
+    cache_mock.invalidate = AsyncMock(side_effect=mock_invalidate_always_fails)
+    cache_mock.invalidate_pattern = AsyncMock(side_effect=mock_invalidate_always_fails)
+
+    with patch("app.api.routes.webhooks.get_dcs_cache", return_value=cache_mock):
         payload = {
             "event": "book.updated",
             "timestamp": "2025-11-15T18:30:00Z",

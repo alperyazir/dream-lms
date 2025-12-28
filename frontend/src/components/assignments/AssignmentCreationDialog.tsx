@@ -35,10 +35,16 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import useCustomToast from "@/hooks/useCustomToast"
 import { useQuickActivityPreview } from "@/hooks/usePreviewMode"
+import { mapAssignmentForEditToFormData } from "@/lib/assignment-utils"
 import { assignmentsApi } from "@/services/assignmentsApi"
+import { getDownloadUrl as getMaterialDownloadUrl } from "@/services/materialsApi"
 import type {
+  AdditionalResources,
+  AdditionalResourcesResponse,
   AssignmentCreateRequest,
+  AssignmentForEditResponse,
   AssignmentFormData,
+  TeacherMaterialResourceResponse,
 } from "@/types/assignment"
 import type { Book } from "@/types/book"
 import { ActivityPreviewModal } from "../preview"
@@ -47,12 +53,16 @@ import { StepConfigureSettings } from "./StepConfigureSettings"
 import { StepSelectActivities } from "./StepSelectActivities"
 import { StepSelectBook } from "./StepSelectBook"
 import { StepSelectRecipients } from "./StepSelectRecipients"
+import { TimePlanningWarningDialog } from "./TimePlanningWarningDialog"
 
 interface AssignmentCreationDialogProps {
   isOpen: boolean
   onClose: () => void
   book?: Book // Optional pre-selected book
   prefilledPublishDate?: Date | null // Optional pre-filled publish date (from calendar click)
+  // Story 20.2: Edit mode support
+  mode?: "create" | "edit"
+  existingAssignment?: AssignmentForEditResponse // Story 20.2: Use for-edit response with recipients
 }
 
 const STEPS = [
@@ -69,10 +79,15 @@ export function AssignmentCreationDialog({
   onClose,
   book: initialBook,
   prefilledPublishDate,
+  mode = "create",
+  existingAssignment,
 }: AssignmentCreationDialogProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+
+  // Story 20.2: Determine if in edit mode
+  const isEditMode = mode === "edit"
 
   // State for selected book
   const [selectedBook, setSelectedBook] = useState<Book | null>(
@@ -86,11 +101,13 @@ export function AssignmentCreationDialog({
   const [validationError, setValidationError] = useState<string | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
+  // Story 20.4: Time Planning warning state
+  const [showTimePlanningWarning, setShowTimePlanningWarning] = useState(false)
+
   // Story 9.7: Activity preview
   const {
     previewActivity,
     isModalOpen: isPreviewModalOpen,
-    openPreview,
     closePreview,
   } = useQuickActivityPreview()
   const [formData, setFormData] = useState<AssignmentFormData>({
@@ -111,32 +128,64 @@ export function AssignmentCreationDialog({
   // Reset state when dialog opens
   useEffect(() => {
     if (isOpen) {
-      setCurrentStep(initialBook ? 1 : 0)
+      // Story 20.2: Handle edit mode initialization
+      if (isEditMode && existingAssignment) {
+        // Edit mode: pre-populate with existing data (Story 20.2 CRITICAL FIX)
+        const mappedData = mapAssignmentForEditToFormData(existingAssignment)
+        setFormData(mappedData)
+        setSelectedActivityIds(mappedData.activity_ids)
+
+        // Construct Book object from edit response data
+        const bookFromPreview: Book = {
+          id: Number(existingAssignment.book_id),
+          dream_storage_id: existingAssignment.book_name,
+          title: existingAssignment.book_title,
+          publisher_name: existingAssignment.publisher_name,
+          description: null,
+          cover_image_url: existingAssignment.book_cover_url,
+          activity_count: existingAssignment.total_activities,
+        }
+        setSelectedBook(bookFromPreview)
+
+        // Start at activities step (step 1) in edit mode
+        setCurrentStep(1)
+      } else {
+        // Create mode: reset to defaults
+        setCurrentStep(initialBook ? 1 : 0)
+        setSelectedBook(initialBook || null)
+        setSelectedActivityIds([])
+        setFormData({
+          name: "",
+          instructions: "",
+          due_date: null,
+          time_limit_minutes: null,
+          student_ids: [],
+          class_ids: [],
+          activity_ids: [],
+          // If prefilledPublishDate is provided (from calendar click), use it
+          scheduled_publish_date: prefilledPublishDate || null,
+          time_planning_enabled: false,
+          date_groups: [],
+          video_path: null, // Story 10.3: Video attachment (deprecated)
+          resources: null, // Story 10.3+: Additional resources
+        })
+      }
+
       setValidationError(null)
-      setSelectedBook(initialBook || null)
-      setSelectedActivityIds([])
-      setFormData({
-        name: "",
-        instructions: "",
-        due_date: null,
-        time_limit_minutes: null,
-        student_ids: [],
-        class_ids: [],
-        activity_ids: [],
-        // If prefilledPublishDate is provided (from calendar click), use it
-        scheduled_publish_date: prefilledPublishDate || null,
-        time_planning_enabled: false,
-        date_groups: [],
-        video_path: null, // Story 10.3: Video attachment (deprecated)
-        resources: null, // Story 10.3+: Additional resources
-      })
       setShowCancelConfirm(false)
     }
-  }, [isOpen, initialBook, prefilledPublishDate])
+  }, [
+    isOpen,
+    initialBook,
+    prefilledPublishDate,
+    isEditMode,
+    existingAssignment,
+  ])
 
-  // Update form name when activities are selected
+  // Update form name when activities are selected (only in create mode)
   useEffect(() => {
-    if (selectedActivityIds.length > 0 && selectedBook) {
+    // Story 20.2: Don't auto-generate name in edit mode
+    if (!isEditMode && selectedActivityIds.length > 0 && selectedBook) {
       const activityCount = selectedActivityIds.length
       const dateStr = format(new Date(), "MMM dd, yyyy")
       const newName =
@@ -148,8 +197,14 @@ export function AssignmentCreationDialog({
         name: newName,
         activity_ids: selectedActivityIds,
       }))
+    } else if (isEditMode) {
+      // In edit mode, just update activity_ids
+      setFormData((prev) => ({
+        ...prev,
+        activity_ids: selectedActivityIds,
+      }))
     }
-  }, [selectedActivityIds, selectedBook])
+  }, [selectedActivityIds, selectedBook, isEditMode])
 
   // Mutation for creating single assignment
   const createAssignmentMutation = useMutation({
@@ -208,6 +263,34 @@ export function AssignmentCreationDialog({
     },
   })
 
+  // Story 20.2: Mutation for updating assignment
+  const updateAssignmentMutation = useMutation({
+    mutationFn: (data: { id: string; data: any }) =>
+      assignmentsApi.updateAssignment(data.id, data.data),
+    onSuccess: () => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
+      if (existingAssignment) {
+        queryClient.invalidateQueries({
+          queryKey: ["assignment-preview", existingAssignment.assignment_id],
+        })
+      }
+
+      showSuccessToast("Assignment updated successfully")
+
+      // Close dialog
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error("Failed to update assignment:", error)
+      const errorMessage =
+        error?.response?.data?.detail || "Failed to update assignment"
+      showErrorToast(errorMessage)
+    },
+  })
+
   // Handler to update form data
   const handleFormDataChange = (updates: Partial<AssignmentFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }))
@@ -215,6 +298,33 @@ export function AssignmentCreationDialog({
     if (validationError) {
       setValidationError(null)
     }
+  }
+
+  // Story 20.4: Time Planning toggle handler with warning
+  const handleTimePlanningToggle = (enabled: boolean) => {
+    if (enabled && selectedActivityIds.length > 0) {
+      // Show warning dialog if activities are selected
+      setShowTimePlanningWarning(true)
+    } else {
+      // No activities selected, safe to enable
+      handleFormDataChange({ time_planning_enabled: enabled })
+    }
+  }
+
+  // Story 20.4: Confirm enabling Time Planning (clears activities)
+  const handleTimePlanningWarningConfirm = () => {
+    setSelectedActivityIds([])
+    handleFormDataChange({
+      time_planning_enabled: true,
+      activity_ids: [],
+    })
+    setShowTimePlanningWarning(false)
+  }
+
+  // Story 20.4: Cancel enabling Time Planning (keep activities)
+  const handleTimePlanningWarningCancel = () => {
+    setShowTimePlanningWarning(false)
+    // Don't change anything - keep Time Planning off and activities selected
   }
 
   // Handler for activity IDs change from StepSelectActivities
@@ -249,10 +359,14 @@ export function AssignmentCreationDialog({
       // Time Planning mode validation
       if (formData.time_planning_enabled) {
         if (formData.date_groups.length === 0) {
-          showErrorToast("Please add at least one date when Time Planning is enabled")
+          showErrorToast(
+            "Please add at least one date when Time Planning is enabled",
+          )
           return
         }
-        const hasEmptyGroup = formData.date_groups.some(g => g.activityIds.length === 0)
+        const hasEmptyGroup = formData.date_groups.some(
+          (g) => g.activityIds.length === 0,
+        )
         if (hasEmptyGroup) {
           showErrorToast("Each date must have at least one activity assigned")
           return
@@ -294,7 +408,10 @@ export function AssignmentCreationDialog({
           return
         }
         // Scheduled publish date must be before or equal to due date (if set)
-        if (formData.due_date && formData.scheduled_publish_date > formData.due_date) {
+        if (
+          formData.due_date &&
+          formData.scheduled_publish_date > formData.due_date
+        ) {
           showErrorToast("Publish date must be before or equal to the due date")
           return
         }
@@ -388,12 +505,56 @@ export function AssignmentCreationDialog({
     onClose()
   }
 
+  /**
+   * Transform AdditionalResources (form data) to AdditionalResourcesResponse (preview format)
+   * This enables preview mode to display materials without needing server-side data
+   */
+  const transformResourcesForPreview = useCallback(
+    (
+      resources: AdditionalResources | null,
+    ): AdditionalResourcesResponse | null => {
+      if (!resources) return null
+
+      // Get auth token for video/audio streaming (needs token in URL query param)
+      const token = localStorage.getItem("access_token")
+      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
+
+      // Transform teacher_materials to include is_available and download_url
+      const transformedMaterials: TeacherMaterialResourceResponse[] = (
+        resources.teacher_materials ?? []
+      ).map((mat) => {
+        const downloadUrl =
+          mat.material_type !== "url" && mat.material_type !== "text_note"
+            ? `${getMaterialDownloadUrl(mat.material_id)}${tokenParam}`
+            : null
+        return {
+          ...mat,
+          is_available: true, // Materials are available in preview mode
+          file_size: mat.file_size ?? null,
+          mime_type: mat.mime_type ?? null,
+          url: mat.url ?? null,
+          text_content: mat.text_content ?? null,
+          download_url: downloadUrl,
+        }
+      })
+
+      return {
+        videos: resources.videos,
+        teacher_materials: transformedMaterials,
+      }
+    },
+    [],
+  )
+
   // Story 9.7: Open preview in new tab
   const handlePreviewInNewTab = useCallback(() => {
     if (!selectedBook || selectedActivityIds.length === 0) {
       showErrorToast("Please select a book and activities first")
       return
     }
+
+    // Transform resources for preview mode (sets is_available=true and provides download URLs)
+    const previewResources = transformResourcesForPreview(formData.resources)
 
     // Store preview data in sessionStorage
     const previewData = {
@@ -404,14 +565,46 @@ export function AssignmentCreationDialog({
       activityIds: selectedActivityIds,
       assignmentName: formData.name || `${selectedBook.title} Preview`,
       timeLimitMinutes: formData.time_limit_minutes,
+      resources: previewResources, // Include transformed resources for preview
     }
-    sessionStorage.setItem("assignment-preview-data", JSON.stringify(previewData))
+    sessionStorage.setItem(
+      "assignment-preview-data",
+      JSON.stringify(previewData),
+    )
 
     // Open preview in new tab
     window.open("/teacher/assignments/preview", "_blank")
-  }, [selectedBook, selectedActivityIds, formData.name, formData.time_limit_minutes, showErrorToast])
+  }, [
+    selectedBook,
+    selectedActivityIds,
+    formData.name,
+    formData.time_limit_minutes,
+    formData.resources,
+    showErrorToast,
+    transformResourcesForPreview,
+  ])
 
   const handleCreateAssignment = async () => {
+    // Story 20.2: Handle both create and edit modes
+    if (isEditMode && existingAssignment) {
+      // Edit mode: update existing assignment
+      const updateData = {
+        name: formData.name,
+        instructions: formData.instructions || null,
+        due_date: formData.due_date ? formData.due_date.toISOString() : null,
+        time_limit_minutes: formData.time_limit_minutes || null,
+        activity_ids: selectedActivityIds,
+        resources: formData.resources,
+      }
+
+      updateAssignmentMutation.mutate({
+        id: existingAssignment.assignment_id,
+        data: updateData,
+      })
+      return
+    }
+
+    // Create mode validations
     if (!selectedBook) {
       showErrorToast("Please select a book")
       return
@@ -430,7 +623,8 @@ export function AssignmentCreationDialog({
         instructions: formData.instructions || null,
         student_ids:
           formData.student_ids.length > 0 ? formData.student_ids : undefined,
-        class_ids: formData.class_ids.length > 0 ? formData.class_ids : undefined,
+        class_ids:
+          formData.class_ids.length > 0 ? formData.class_ids : undefined,
         // Convert date groups to API format
         date_groups: formData.date_groups.map((group) => ({
           scheduled_publish_date: group.date.toISOString(),
@@ -472,14 +666,19 @@ export function AssignmentCreationDialog({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && setShowCancelConfirm(true)}>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => !open && setShowCancelConfirm(true)}
+      >
         <DialogContent
           className="max-w-[95vw] w-[1400px] h-[85vh] max-h-[850px] overflow-hidden flex flex-col"
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>Create Assignment</DialogTitle>
+            <DialogTitle>
+              {isEditMode ? "Edit Assignment" : "Create Assignment"}
+            </DialogTitle>
           </DialogHeader>
 
           {/* Step Indicator - Compact Design */}
@@ -560,14 +759,11 @@ export function AssignmentCreationDialog({
                 selectedActivityIds={selectedActivityIds}
                 onActivityIdsChange={handleActivityIdsChange}
                 timePlanningEnabled={formData.time_planning_enabled}
-                onTimePlanningChange={(enabled) =>
-                  handleFormDataChange({ time_planning_enabled: enabled })
-                }
+                onTimePlanningChange={handleTimePlanningToggle}
                 dateGroups={formData.date_groups}
                 onDateGroupsChange={(groups) =>
                   handleFormDataChange({ date_groups: groups })
                 }
-                onPreviewActivity={openPreview}
               />
             )}
 
@@ -638,14 +834,24 @@ export function AssignmentCreationDialog({
                   </Button>
                   <Button
                     onClick={handleCreateAssignment}
-                    disabled={createAssignmentMutation.isPending || createBulkAssignmentsMutation.isPending}
+                    disabled={
+                      createAssignmentMutation.isPending ||
+                      createBulkAssignmentsMutation.isPending ||
+                      updateAssignmentMutation.isPending
+                    }
                     className="bg-teal-600 hover:bg-teal-700"
                   >
-                    {createAssignmentMutation.isPending || createBulkAssignmentsMutation.isPending
-                      ? "Creating..."
-                      : formData.time_planning_enabled
-                        ? `Create ${formData.date_groups.length} Assignments`
-                        : "Create Assignment"}
+                    {createAssignmentMutation.isPending ||
+                    createBulkAssignmentsMutation.isPending ||
+                    updateAssignmentMutation.isPending
+                      ? isEditMode
+                        ? "Updating..."
+                        : "Creating..."
+                      : isEditMode
+                        ? "Update Assignment"
+                        : formData.time_planning_enabled
+                          ? `Create ${formData.date_groups.length} Assignments`
+                          : "Create Assignment"}
                   </Button>
                 </>
               )}
@@ -681,6 +887,14 @@ export function AssignmentCreationDialog({
         onClose={closePreview}
         activity={previewActivity}
       />
+
+      {/* Story 20.4: Time Planning Warning Dialog */}
+      <TimePlanningWarningDialog
+        open={showTimePlanningWarning}
+        onConfirm={handleTimePlanningWarningConfirm}
+        onCancel={handleTimePlanningWarningCancel}
+        activityCount={selectedActivityIds.length}
+      />
     </>
   )
 }
@@ -709,113 +923,123 @@ function StepReviewCreateMulti({
       </h3>
 
       <ScrollArea className="flex-1 pr-4">
-      <div className="grid gap-4">
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h4 className="font-medium text-foreground mb-2">Assignment Name</h4>
-          <p className="text-muted-foreground">{formData.name}</p>
-        </div>
-
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h4 className="font-medium text-foreground mb-2">Book</h4>
-          <p className="text-muted-foreground">{book.title}</p>
-          <p className="text-sm text-muted-foreground">
-            by {book.publisher_name}
-          </p>
-        </div>
-
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h4 className="font-medium text-foreground mb-2">Activities</h4>
-          {formData.time_planning_enabled && formData.date_groups.length > 0 ? (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground mb-2">
-                Grouped by due date ({formData.date_groups.length} dates):
-              </p>
-              {formData.date_groups.map((group, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-sm">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
-                    {format(group.date, "MMM dd, yyyy")}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {group.activityIds.length} {group.activityIds.length === 1 ? "activity" : "activities"}
-                  </span>
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground mt-2 italic">
-                Each date group will create a separate assignment
-              </p>
-            </div>
-          ) : (
-            <p className="text-muted-foreground">
-              {activityCount} {activityCount === 1 ? "activity" : "activities"}{" "}
-              selected
-            </p>
-          )}
-        </div>
-
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h4 className="font-medium text-foreground mb-2">Recipients</h4>
-          <p className="text-muted-foreground">{recipientCount}</p>
-        </div>
-
-        {formData.instructions && (
+        <div className="grid gap-4">
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <h4 className="font-medium text-foreground mb-2">Instructions</h4>
-            <p className="text-muted-foreground">{formData.instructions}</p>
+            <h4 className="font-medium text-foreground mb-2">
+              Assignment Name
+            </h4>
+            <p className="text-muted-foreground">{formData.name}</p>
           </div>
-        )}
 
-        {/* Story 9.6: Show publishing schedule */}
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h4 className="font-medium text-foreground mb-2">Publishing</h4>
-          {formData.scheduled_publish_date ? (
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                Scheduled
-              </span>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h4 className="font-medium text-foreground mb-2">Book</h4>
+            <p className="text-muted-foreground">{book.title}</p>
+            <p className="text-sm text-muted-foreground">
+              by {book.publisher_name}
+            </p>
+          </div>
+
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h4 className="font-medium text-foreground mb-2">Activities</h4>
+            {formData.time_planning_enabled &&
+            formData.date_groups.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Grouped by due date ({formData.date_groups.length} dates):
+                </p>
+                {formData.date_groups.map((group, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
+                      {format(group.date, "MMM dd, yyyy")}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {group.activityIds.length}{" "}
+                      {group.activityIds.length === 1
+                        ? "activity"
+                        : "activities"}
+                    </span>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  Each date group will create a separate assignment
+                </p>
+              </div>
+            ) : (
               <p className="text-muted-foreground">
-                Will publish on {format(formData.scheduled_publish_date, "PPP 'at' p")}
+                {activityCount}{" "}
+                {activityCount === 1 ? "activity" : "activities"} selected
               </p>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                Immediate
-              </span>
-              <p className="text-muted-foreground">
-                Will be published immediately upon creation
-              </p>
+            )}
+          </div>
+
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h4 className="font-medium text-foreground mb-2">Recipients</h4>
+            <p className="text-muted-foreground">{recipientCount}</p>
+          </div>
+
+          {formData.instructions && (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h4 className="font-medium text-foreground mb-2">Instructions</h4>
+              <p className="text-muted-foreground">{formData.instructions}</p>
             </div>
           )}
+
+          {/* Story 9.6: Show publishing schedule */}
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h4 className="font-medium text-foreground mb-2">Publishing</h4>
+            {formData.scheduled_publish_date ? (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                  Scheduled
+                </span>
+                <p className="text-muted-foreground">
+                  Will publish on{" "}
+                  {format(formData.scheduled_publish_date, "PPP 'at' p")}
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  Immediate
+                </span>
+                <p className="text-muted-foreground">
+                  Will be published immediately upon creation
+                </p>
+              </div>
+            )}
+          </div>
+
+          {formData.due_date && (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h4 className="font-medium text-foreground mb-2">Due Date</h4>
+              <p className="text-muted-foreground">
+                {format(formData.due_date, "PPP 'at' p")}
+              </p>
+            </div>
+          )}
+
+          {formData.time_limit_minutes && (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h4 className="font-medium text-foreground mb-2">Time Limit</h4>
+              <p className="text-muted-foreground">
+                {formData.time_limit_minutes} minutes
+              </p>
+            </div>
+          )}
+
+          {/* Show resources if any */}
+          {formData.resources && formData.resources.videos.length > 0 && (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h4 className="font-medium text-foreground mb-2">
+                Additional Resources
+              </h4>
+              <p className="text-muted-foreground">
+                {formData.resources.videos.length} video
+                {formData.resources.videos.length > 1 ? "s" : ""} attached
+              </p>
+            </div>
+          )}
         </div>
-
-        {formData.due_date && (
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <h4 className="font-medium text-foreground mb-2">Due Date</h4>
-            <p className="text-muted-foreground">
-              {format(formData.due_date, "PPP 'at' p")}
-            </p>
-          </div>
-        )}
-
-        {formData.time_limit_minutes && (
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <h4 className="font-medium text-foreground mb-2">Time Limit</h4>
-            <p className="text-muted-foreground">
-              {formData.time_limit_minutes} minutes
-            </p>
-          </div>
-        )}
-
-        {/* Show resources if any */}
-        {formData.resources && formData.resources.videos.length > 0 && (
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <h4 className="font-medium text-foreground mb-2">Additional Resources</h4>
-            <p className="text-muted-foreground">
-              {formData.resources.videos.length} video{formData.resources.videos.length > 1 ? "s" : ""} attached
-            </p>
-          </div>
-        )}
-      </div>
       </ScrollArea>
     </div>
   )

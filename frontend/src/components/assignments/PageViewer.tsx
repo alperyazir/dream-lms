@@ -18,7 +18,7 @@ import type { ActivityMarker, ModuleInfo, PageDetail } from "@/types/book"
 import { SUPPORTED_ACTIVITY_TYPES } from "@/types/book"
 
 interface PageViewerProps {
-  bookId: string
+  bookId: string | number
   selectedActivityIds: Set<string>
   onActivityToggle: (activityId: string, activity: ActivityMarker) => void
 }
@@ -37,7 +37,7 @@ export function PageViewer({
   // Fetch book pages with activity coordinates
   const { data, isLoading, error } = useQuery({
     queryKey: ["book-pages-detail", bookId],
-    queryFn: () => booksApi.getBookPagesDetail(bookId),
+    queryFn: () => booksApi.getBookPagesDetail(String(bookId)),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -223,7 +223,10 @@ export function PageViewer({
 
         {/* Pages Container */}
         <div className="flex-1 h-full min-w-0 min-h-0 px-1 py-1 overflow-hidden flex items-center justify-center">
-          <div className="flex gap-3 h-full max-h-full justify-center items-center" style={{ maxHeight: '100%' }}>
+          <div
+            className="flex gap-3 h-full max-h-full justify-center items-center"
+            style={{ maxHeight: "100%" }}
+          >
             {visiblePages.map((page) => (
               <PageWithMarkers
                 key={page.page_number}

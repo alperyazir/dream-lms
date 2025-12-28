@@ -123,7 +123,7 @@ class AssignmentCreate(BaseModel):
     Provide either activity_id (single) OR activity_ids (multi) OR date_groups (Time Planning).
     """
 
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID (changed from UUID in Epic 24)
     name: str
     instructions: str | None = None
     due_date: datetime | None = None
@@ -350,7 +350,7 @@ class AssignmentResponse(BaseModel):
 
     id: uuid.UUID
     teacher_id: uuid.UUID
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID (changed from UUID in Epic 24)
     name: str
     instructions: str | None
     due_date: datetime | None
@@ -383,7 +383,7 @@ class AssignmentListItem(BaseModel):
     created_at: datetime
 
     # Enriched data
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     book_title: str
     activity_id: uuid.UUID
     activity_title: str
@@ -417,7 +417,7 @@ class StudentAssignmentResponse(BaseModel):
     created_at: datetime
 
     # Book fields
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     book_title: str
     book_cover_url: str | None
 
@@ -482,7 +482,7 @@ class ActivityStartResponse(BaseModel):
     time_limit_minutes: int | None
 
     # Book info
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     book_title: str
     book_name: str  # Story 4.2: For Dream Central Storage image URLs
     publisher_name: str  # Story 4.2: For Dream Central Storage image URLs
@@ -650,7 +650,7 @@ class MultiActivityStartResponse(BaseModel):
     time_limit_minutes: int | None
 
     # Book info
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     book_title: str
     book_name: str
     publisher_name: str
@@ -856,6 +856,32 @@ class StudentAssignmentResultResponse(BaseModel):
     completed_activities: int
 
 
+class AssignmentResultDetailResponse(BaseModel):
+    """
+    Detailed assignment result with answers for review.
+
+    Story 23.4: Used when students want to review their submitted answers
+    with correct/incorrect marking.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    assignment_id: uuid.UUID
+    assignment_name: str
+    activity_id: uuid.UUID
+    activity_title: str | None
+    activity_type: str
+    book_id: int  # DCS book ID
+    book_name: str
+    publisher_name: str
+    config_json: dict  # Activity configuration (includes correct answers)
+    answers_json: dict  # Student's submitted answers
+    score: float
+    total_points: float
+    completed_at: datetime
+    time_spent_minutes: int
+
+
 # --- Calendar Schemas (Story 9.6) ---
 
 
@@ -871,7 +897,7 @@ class CalendarAssignmentItem(BaseModel):
     status: AssignmentPublishStatus
     activity_count: int
     class_names: list[str] = []
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     book_title: str
 
 
@@ -927,7 +953,7 @@ class StudentCalendarAssignmentItem(BaseModel):
     id: uuid.UUID
     name: str
     due_date: datetime | None
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     book_title: str
     book_cover_url: str | None
     activity_count: int
@@ -966,7 +992,7 @@ class AssignmentPreviewResponse(BaseModel):
     status: AssignmentPublishStatus
 
     # Book info
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     book_title: str
     book_name: str
     publisher_name: str
@@ -985,6 +1011,49 @@ class AssignmentPreviewResponse(BaseModel):
     resources: AdditionalResourcesResponse | None = None
 
 
+class AssignmentForEditResponse(BaseModel):
+    """Response schema for editing an existing assignment.
+
+    Extends preview response with recipient information needed for edit mode.
+    Used when a teacher wants to edit an existing assignment.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    # Assignment info
+    assignment_id: uuid.UUID
+    assignment_name: str
+    instructions: str | None
+    due_date: datetime | None
+    time_limit_minutes: int | None
+    status: AssignmentPublishStatus
+
+    # Book info
+    book_id: int  # DCS book ID
+    book_title: str
+    book_name: str
+    publisher_name: str
+    book_cover_url: str | None
+
+    # Multi-activity data
+    activities: list[ActivityWithConfig]
+    total_activities: int
+
+    # Video attachment (legacy, use resources instead)
+    video_path: str | None = None
+    # Additional Resources with subtitle control and teacher materials
+    resources: AdditionalResourcesResponse | None = None
+
+    # Recipients (for edit mode) - Story 20.2
+    class_ids: list[uuid.UUID]
+    student_ids: list[uuid.UUID]
+
+    # Time planning (for edit mode) - Story 20.2
+    time_planning_enabled: bool = False
+    scheduled_publish_date: datetime | None = None
+    date_groups: list[dict] | None = None
+
+
 class ActivityPreviewResponse(BaseModel):
     """Response schema for single activity preview.
 
@@ -1000,9 +1069,40 @@ class ActivityPreviewResponse(BaseModel):
     config_json: dict
 
     # Book info (for image URL construction)
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     book_name: str
     publisher_name: str
 
     # Preview mode indicator
     is_preview: bool = True
+
+
+# =============================================================================
+# Admin Assignment Management Schemas (Story 20.1)
+# =============================================================================
+
+
+class AssignmentWithTeacher(BaseModel):
+    """Assignment response with teacher information for admin view."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str
+    teacher_id: uuid.UUID
+    teacher_name: str
+    teacher_email: str
+    recipient_count: int = 0
+    completed_count: int = 0
+    due_date: datetime | None
+    status: AssignmentPublishStatus
+    created_at: datetime
+
+
+class AssignmentListResponse(BaseModel):
+    """Paginated response for assignment lists."""
+
+    items: list[AssignmentWithTeacher]
+    total: int
+    skip: int
+    limit: int

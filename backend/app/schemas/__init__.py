@@ -2,8 +2,24 @@
 
 from app.schemas.assignment import (
     AssignmentCreate,
+    AssignmentListResponse,
     AssignmentResponse,
     AssignmentStudentResponse,
+    AssignmentWithTeacher,
+)
+from app.schemas.benchmarks import (
+    ActivityTypeBenchmark,
+    ActivityTypeStat,
+    AdminBenchmarkOverview,
+    BenchmarkData,
+    BenchmarkMessage,
+    BenchmarkSettings,
+    BenchmarkSettingsResponse,
+    BenchmarkSettingsUpdate,
+    BenchmarkTrendPoint,
+    ClassBenchmarkResponse,
+    ClassMetrics,
+    SchoolBenchmarkSummary,
 )
 from app.schemas.book import (
     ActivityDetailResponse,
@@ -27,26 +43,14 @@ from app.schemas.reports import (
     SavedReportTemplate,
     SavedReportTemplateCreate,
 )
-from app.schemas.benchmarks import (
-    ActivityTypeBenchmark,
-    AdminBenchmarkOverview,
-    BenchmarkData,
-    BenchmarkMessage,
-    BenchmarkSettings,
-    BenchmarkSettingsResponse,
-    BenchmarkSettingsUpdate,
-    BenchmarkTrendPoint,
-    ClassBenchmarkResponse,
-    ClassMetrics,
-    SchoolBenchmarkSummary,
-    ActivityTypeStat,
-)
 
 __all__ = [
     # Assignment schemas
     "AssignmentCreate",
+    "AssignmentListResponse",
     "AssignmentResponse",
     "AssignmentStudentResponse",
+    "AssignmentWithTeacher",
     # Book schemas
     "ActivityDetailResponse",
     "ActivityResponse",

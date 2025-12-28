@@ -20,13 +20,12 @@ import { passwordRules } from "../utils"
 // Type for quick login users response
 interface QuickLoginUser {
   username: string
-  email: string
-  password: string
-  must_change_password: boolean
+  email: string | null
 }
 
 interface QuickLoginUsers {
   admin: QuickLoginUser[]
+  supervisor: QuickLoginUser[]
   publisher: QuickLoginUser[]
   teacher: QuickLoginUser[]
   student: QuickLoginUser[]
@@ -79,7 +78,7 @@ function Login() {
     },
     enabled: import.meta.env.DEV, // Only in development
     retry: false, // Don't retry on failure
-    staleTime: Infinity, // Cache forever (session-scoped)
+    staleTime: 0, // Always refetch on mount to get latest data
   })
 
   const onSubmit: SubmitHandler<AccessToken> = async (data) => {
@@ -95,14 +94,30 @@ function Login() {
     }
   }
 
-  // Test login helper - now accepts username
-  const testLogin = async (username: string, password: string) => {
+  // Instant login helper - uses dev endpoint that bypasses password
+  const instantLogin = async (username: string) => {
     setLoginError(null)
     try {
-      await loginMutation.mutateAsync({ username, password })
+      const response = await fetch(
+        `${OpenAPI.BASE}/api/v1/dev/instant-login/${username}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      )
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || "Login failed")
+      }
+      const data = await response.json()
+      // Store token and redirect
+      localStorage.setItem("access_token", data.access_token)
+      window.location.href = "/"
     } catch (err: unknown) {
-      const error = err as { body?: { detail?: string } }
-      setLoginError(error.body?.detail || "Invalid credentials")
+      const error = err as Error
+      setLoginError(error.message || "Login failed")
     }
   }
 
@@ -134,7 +149,9 @@ function Login() {
         placeholder="Password"
       />
       {errors.password && (
-        <p className="text-sm text-destructive -mt-2">{errors.password.message}</p>
+        <p className="text-sm text-destructive -mt-2">
+          {errors.password.message}
+        </p>
       )}
 
       {/* Inline error message */}
@@ -147,18 +164,19 @@ function Login() {
       <RouterLink to="/recover-password" className="main-link">
         Forgot Password?
       </RouterLink>
-      <Button variant="default" type="submit" disabled={isSubmitting || loginMutation.isPending}>
+      <Button
+        variant="default"
+        type="submit"
+        disabled={isSubmitting || loginMutation.isPending}
+      >
         {loginMutation.isPending ? "Logging in..." : "Log In"}
       </Button>
 
       {/* Test Login Buttons - Only in Development */}
       {import.meta.env.DEV && (
         <div className="mt-6 pt-6 border-t border-gray-300 dark:border-gray-700">
-          <p className="text-xs text-center text-muted-foreground mb-1 font-semibold">
+          <p className="text-xs text-center text-muted-foreground mb-3 font-semibold">
             🧪 Quick Test Login
-          </p>
-          <p className="text-[10px] text-center text-muted-foreground mb-3">
-            <span className="text-orange-500">🔑</span> = requires password change after login
           </p>
           {isError && (
             <p className="text-xs text-center text-red-500">
@@ -173,6 +191,12 @@ function Login() {
                   emoji: "👑",
                   label: "Admin",
                   color: "text-yellow-600",
+                },
+                {
+                  key: "supervisor" as const,
+                  emoji: "🛡️",
+                  label: "Supervisor",
+                  color: "text-teal-600",
                 },
                 {
                   key: "publisher" as const,
@@ -207,17 +231,12 @@ function Login() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            testLogin(user.username, user.password)
-                          }
+                          onClick={() => instantLogin(user.username)}
                           disabled={isSubmitting}
-                          className={`text-xs h-7 ${user.must_change_password ? "border-orange-400 dark:border-orange-600" : ""}`}
-                          title={`${user.email}${user.must_change_password ? " (requires password change)" : ""}`}
+                          className="text-xs h-7"
+                          title={user.email || user.username}
                         >
                           {user.username}
-                          {user.must_change_password && (
-                            <span className="ml-1 text-orange-500">🔑</span>
-                          )}
                         </Button>
                       ))}
                     </div>

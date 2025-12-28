@@ -35,12 +35,12 @@ export function parseSRT(srtText: string): Subtitle[] {
 
     // First line should be the subtitle number
     const id = parseInt(lines[0], 10)
-    if (isNaN(id)) continue
+    if (Number.isNaN(id)) continue
 
     // Second line should be the timestamp
     const timestampLine = lines[1]
     const timestampMatch = timestampLine.match(
-      /(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})/
+      /(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})/,
     )
 
     if (!timestampMatch) continue
@@ -83,7 +83,7 @@ function parseTimestamp(timestamp: string): number {
  */
 export function getCurrentSubtitle(
   subtitles: Subtitle[],
-  currentTime: number
+  currentTime: number,
 ): Subtitle | null {
   for (const subtitle of subtitles) {
     if (currentTime >= subtitle.startTime && currentTime <= subtitle.endTime) {
@@ -97,7 +97,7 @@ export function getCurrentSubtitle(
  * Format seconds to MM:SS or HH:MM:SS
  */
 export function formatVideoTime(seconds: number): string {
-  if (!isFinite(seconds) || seconds < 0) return "0:00"
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00"
 
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
@@ -140,14 +140,14 @@ export function parseVTT(vttText: string): Subtitle[] {
     // Find the timestamp line (could be first or second line)
     let timestampLineIndex = 0
     let timestampMatch = lines[0].match(
-      /(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})/
+      /(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})/,
     )
 
     // If first line doesn't have timestamp, it might be an optional cue identifier
     if (!timestampMatch && lines.length > 1) {
       timestampLineIndex = 1
       timestampMatch = lines[1].match(
-        /(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})/
+        /(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]?\d{0,3})/,
       )
     }
 

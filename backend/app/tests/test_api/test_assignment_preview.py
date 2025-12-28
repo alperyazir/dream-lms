@@ -9,9 +9,8 @@ Tests cover:
 """
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -26,7 +25,6 @@ from app.models import (
     BookAccess,
     Publisher,
     School,
-    Student,
     Teacher,
     User,
     UserRole,

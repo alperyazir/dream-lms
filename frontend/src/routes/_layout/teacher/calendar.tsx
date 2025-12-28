@@ -548,7 +548,7 @@ function TeacherCalendarPage() {
                 <SelectContent>
                   <SelectItem value="all">All Books</SelectItem>
                   {books.map((book) => (
-                    <SelectItem key={book.id} value={book.id}>
+                    <SelectItem key={book.id} value={String(book.id)}>
                       {book.title}
                     </SelectItem>
                   ))}
@@ -644,7 +644,12 @@ function TeacherCalendarPage() {
                     } ${isDayToday ? "ring-2 ring-teal-500" : ""} cursor-pointer transition-colors`}
                     onClick={(e) => {
                       // Only trigger if clicking on empty area (not on assignment pills)
-                      if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('day-number')) {
+                      if (
+                        e.target === e.currentTarget ||
+                        (e.target as HTMLElement).classList.contains(
+                          "day-number",
+                        )
+                      ) {
                         handleDateClick(day)
                       }
                     }}
@@ -661,10 +666,15 @@ function TeacherCalendarPage() {
                     </div>
 
                     {/* Assignments */}
-                    <div className="space-y-0.5" onClick={(e) => e.stopPropagation()}>
-                      {dayAssignments.slice(0, 3).map((assignment) =>
-                        renderAssignmentItem(assignment, true),
-                      )}
+                    <div
+                      className="space-y-0.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {dayAssignments
+                        .slice(0, 3)
+                        .map((assignment) =>
+                          renderAssignmentItem(assignment, true),
+                        )}
                       {dayAssignments.length > 3 && (
                         <Popover>
                           <PopoverTrigger asChild>
@@ -753,7 +763,10 @@ function TeacherCalendarPage() {
                       }
                     }}
                   >
-                    <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                    <div
+                      className="space-y-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {dayAssignments.map((assignment) =>
                         renderAssignmentItem(assignment, true),
                       )}
@@ -879,8 +892,8 @@ function TeacherCalendarPage() {
                   ?
                 </p>
                 <p className="text-red-600 dark:text-red-400 font-medium">
-                  This action cannot be undone. Students will lose access to this
-                  assignment and all their progress.
+                  This action cannot be undone. Students will lose access to
+                  this assignment and all their progress.
                 </p>
               </div>
             </AlertDialogDescription>

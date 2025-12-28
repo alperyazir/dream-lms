@@ -7,7 +7,6 @@
  * Panel pushes/shrinks the main content area instead of overlaying.
  */
 
-import { useState, useEffect } from "react"
 import {
   AlertTriangle,
   ChevronRight,
@@ -23,20 +22,24 @@ import {
   Video,
   X,
 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { OpenAPI } from "@/client"
+import {
+  getMaterialTypeLabel,
+  MaterialTypeIcon,
+} from "@/components/materials/MaterialTypeIcon"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { MaterialTypeIcon, getMaterialTypeLabel } from "@/components/materials/MaterialTypeIcon"
-import { AudioPlayer } from "./AudioPlayer"
-import { VideoPlayer } from "./VideoPlayer"
 import type {
   AdditionalResourcesResponse,
   TeacherMaterialResourceResponse,
   VideoResource,
 } from "@/types/assignment"
 import type { MaterialType } from "@/types/material"
-import { OpenAPI } from "@/client"
+import { AudioPlayer } from "./AudioPlayer"
+import { VideoPlayer } from "./VideoPlayer"
 
 /**
  * Get auth token from localStorage
@@ -47,14 +50,22 @@ function getAuthToken(): string | null {
 
 /**
  * Fetch material content as blob URL via authenticated API
+ * In preview mode, uses directDownloadUrl to bypass assignment lookup
  */
-async function fetchMaterialBlobUrl(assignmentId: string, materialId: string): Promise<string> {
+async function fetchMaterialBlobUrl(
+  assignmentId: string,
+  materialId: string,
+  directDownloadUrl?: string | null,
+): Promise<string> {
   const token = getAuthToken()
-  const url = `${OpenAPI.BASE}/api/v1/assignments/${assignmentId}/materials/${materialId}/download`
+  // Use direct download URL if available (preview mode uses teacher materials API directly)
+  const url =
+    directDownloadUrl ??
+    `${OpenAPI.BASE}/api/v1/assignments/${assignmentId}/materials/${materialId}/download`
 
   const response = await fetch(url, {
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   })
 
@@ -89,8 +100,17 @@ export interface ResourceSidebarProps {
 
 /**
  * Get material streaming/viewing URL with auth token
+ * In preview mode, materials have a direct download_url that bypasses assignment lookup
  */
-function getMaterialStreamUrl(assignmentId: string, materialId: string): string {
+function getMaterialStreamUrl(
+  assignmentId: string,
+  materialId: string,
+  directDownloadUrl?: string | null,
+): string {
+  // Use direct download URL if available (preview mode uses teacher materials API directly)
+  if (directDownloadUrl) {
+    return directDownloadUrl
+  }
   const token = getAuthToken()
   const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
   return `${OpenAPI.BASE}/api/v1/assignments/${assignmentId}/materials/${materialId}/download${tokenParam}`
@@ -108,7 +128,8 @@ export function ResourceSidebar({
   onSelectVideo,
 }: ResourceSidebarProps) {
   // State for viewing teacher materials in fullscreen modal
-  const [selectedMaterial, setSelectedMaterial] = useState<TeacherMaterialResourceResponse | null>(null)
+  const [selectedMaterial, setSelectedMaterial] =
+    useState<TeacherMaterialResourceResponse | null>(null)
   // State for blob URL loading
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const [isLoadingBlob, setIsLoadingBlob] = useState(false)
@@ -116,19 +137,24 @@ export function ResourceSidebar({
 
   // Fetch blob URL when material is selected (only for non-streaming types)
   useEffect(() => {
+    // Track the current blob URL for cleanup
+    let currentBlobUrl: string | null = null
+
     if (!selectedMaterial) {
-      // Cleanup previous blob URL
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
-        setBlobUrl(null)
-      }
+      // Cleanup previous blob URL when material is deselected
+      setBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
       setBlobError(null)
       return
     }
 
     // Video/audio use direct streaming URLs - no blob needed
     // Only fetch blob for documents and images
-    const needsBlob = ["document", "image"].includes(selectedMaterial.material_type)
+    const needsBlob = ["document", "image"].includes(
+      selectedMaterial.material_type,
+    )
     if (!needsBlob) {
       return
     }
@@ -136,8 +162,19 @@ export function ResourceSidebar({
     const loadBlob = async () => {
       setIsLoadingBlob(true)
       setBlobError(null)
+      // Clear previous blob URL before loading new one
+      setBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+
       try {
-        const url = await fetchMaterialBlobUrl(assignmentId, selectedMaterial.material_id)
+        const url = await fetchMaterialBlobUrl(
+          assignmentId,
+          selectedMaterial.material_id,
+          selectedMaterial.download_url,
+        )
+        currentBlobUrl = url
         setBlobUrl(url)
       } catch (err) {
         console.error("Failed to load material:", err)
@@ -151,17 +188,25 @@ export function ResourceSidebar({
 
     // Cleanup on unmount or when material changes
     return () => {
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+      if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl)
       }
     }
-  }, [selectedMaterial?.material_id, assignmentId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    selectedMaterial?.material_id,
+    assignmentId,
+    selectedMaterial?.download_url,
+    selectedMaterial,
+  ])
 
   // Check if there are any resources
   const hasVideos = resources && resources.videos.length > 0
-  const hasMaterials = resources && (resources.teacher_materials?.length ?? 0) > 0
+  const hasMaterials =
+    resources && (resources.teacher_materials?.length ?? 0) > 0
   const hasResources = hasVideos || hasMaterials
-  const totalCount = (resources?.videos.length ?? 0) + (resources?.teacher_materials?.length ?? 0)
+  const totalCount =
+    (resources?.videos.length ?? 0) +
+    (resources?.teacher_materials?.length ?? 0)
 
   if (!hasResources || !isOpen) {
     return null
@@ -217,7 +262,11 @@ export function ResourceSidebar({
   /**
    * Get action icon based on material type
    */
-  const ActionIcon = ({ material }: { material: TeacherMaterialResourceResponse }) => {
+  const ActionIcon = ({
+    material,
+  }: {
+    material: TeacherMaterialResourceResponse
+  }) => {
     switch (material.material_type) {
       case "url":
         return <ExternalLink className="h-4 w-4 mr-2" />
@@ -248,7 +297,12 @@ export function ResourceSidebar({
    */
   const renderMaterialContent = (material: TeacherMaterialResourceResponse) => {
     // Video and audio use direct streaming URLs (supports Range requests)
-    const streamUrl = getMaterialStreamUrl(assignmentId, material.material_id)
+    // Use download_url if available (preview mode uses teacher materials API directly)
+    const streamUrl = getMaterialStreamUrl(
+      assignmentId,
+      material.material_id,
+      material.download_url,
+    )
 
     // For documents/images, we need blob URLs (show loading state)
     const needsBlob = ["document", "image"].includes(material.material_type)
@@ -274,9 +328,15 @@ export function ResourceSidebar({
                   // Retry loading
                   setIsLoadingBlob(true)
                   setBlobError(null)
-                  fetchMaterialBlobUrl(assignmentId, material.material_id)
+                  fetchMaterialBlobUrl(
+                    assignmentId,
+                    material.material_id,
+                    material.download_url,
+                  )
                     .then((url) => setBlobUrl(url))
-                    .catch(() => setBlobError("Failed to load file. Please try again."))
+                    .catch(() =>
+                      setBlobError("Failed to load file. Please try again."),
+                    )
                     .finally(() => setIsLoadingBlob(false))
                 }}
               >
@@ -301,7 +361,9 @@ export function ResourceSidebar({
         return (
           <div className="flex flex-col items-center justify-center gap-4 p-8">
             <Loader2 className="h-12 w-12 animate-spin text-teal-400" />
-            <p className="text-white/80">Preparing {material.material_type}...</p>
+            <p className="text-white/80">
+              Preparing {material.material_type}...
+            </p>
           </div>
         )
       }
@@ -374,7 +436,11 @@ export function ResourceSidebar({
               variant="outline"
               className="mt-4"
               onClick={() => {
-                const downloadUrl = getMaterialStreamUrl(assignmentId, material.material_id)
+                const downloadUrl = getMaterialStreamUrl(
+                  assignmentId,
+                  material.material_id,
+                  material.download_url,
+                )
                 window.open(downloadUrl, "_blank")
               }}
             >
@@ -480,11 +546,13 @@ export function ResourceSidebar({
                   >
                     <div className="flex items-start gap-3">
                       {/* Material icon */}
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                        material.is_available
-                          ? "bg-gray-100 dark:bg-gray-700"
-                          : "bg-amber-100 dark:bg-amber-900"
-                      }`}>
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                          material.is_available
+                            ? "bg-gray-100 dark:bg-gray-700"
+                            : "bg-amber-100 dark:bg-amber-900"
+                        }`}
+                      >
                         <MaterialTypeIcon
                           type={material.material_type as MaterialType}
                           size="md"
@@ -497,10 +565,15 @@ export function ResourceSidebar({
                           {material.name}
                         </p>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {getMaterialTypeLabel(material.material_type as MaterialType)}
+                          {getMaterialTypeLabel(
+                            material.material_type as MaterialType,
+                          )}
                         </span>
                         {!material.is_available && (
-                          <Badge variant="outline" className="mt-1 text-amber-600 border-amber-300">
+                          <Badge
+                            variant="outline"
+                            className="mt-1 text-amber-600 border-amber-300"
+                          >
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             Unavailable
                           </Badge>
@@ -554,12 +627,13 @@ export function ResourceSidebar({
               <h3 className="text-lg font-medium text-white">
                 {selectedVideo.name}
               </h3>
-              {selectedVideo.has_subtitles && selectedVideo.subtitles_enabled && (
-                <p className="text-sm text-gray-300 flex items-center justify-center gap-1 mt-1">
-                  <Subtitles className="h-4 w-4" />
-                  Subtitles enabled
-                </p>
-              )}
+              {selectedVideo.has_subtitles &&
+                selectedVideo.subtitles_enabled && (
+                  <p className="text-sm text-gray-300 flex items-center justify-center gap-1 mt-1">
+                    <Subtitles className="h-4 w-4" />
+                    Subtitles enabled
+                  </p>
+                )}
             </div>
 
             {/* Video Player */}
@@ -609,7 +683,9 @@ export function ResourceSidebar({
                 {selectedMaterial.name}
               </h3>
               <p className="text-sm text-gray-300 mt-1">
-                {getMaterialTypeLabel(selectedMaterial.material_type as MaterialType)}
+                {getMaterialTypeLabel(
+                  selectedMaterial.material_type as MaterialType,
+                )}
               </p>
             </div>
 
@@ -631,7 +707,11 @@ export interface ResourcesButtonProps {
   onClick: () => void
 }
 
-export function ResourcesButton({ resourceCount, isOpen, onClick }: ResourcesButtonProps) {
+export function ResourcesButton({
+  resourceCount,
+  isOpen,
+  onClick,
+}: ResourcesButtonProps) {
   if (resourceCount === 0) return null
 
   return (

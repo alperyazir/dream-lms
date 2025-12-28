@@ -68,7 +68,11 @@ def generate_test_email(email_to: str) -> EmailData:
     subject = f"{project_name} - Test email"
     html_content = render_email_template(
         template_name="test_email.html",
-        context={"project_name": settings.PROJECT_NAME, "email": email_to},
+        context={
+            "project_name": settings.PROJECT_NAME,
+            "email": email_to,
+            "link": settings.FRONTEND_HOST,
+        },
     )
     return EmailData(html_content=html_content, subject=subject)
 
@@ -91,10 +95,10 @@ def generate_reset_password_email(email_to: str, email: str, token: str) -> Emai
 
 
 def generate_new_account_email(
-    email_to: str, username: str, password: str
+    email_to: str, username: str, password: str, full_name: str = ""
 ) -> EmailData:
     project_name = settings.PROJECT_NAME
-    subject = f"{project_name} - New account for user {username}"
+    subject = f"Welcome to {project_name} - Your Account"
     html_content = render_email_template(
         template_name="new_account.html",
         context={
@@ -102,6 +106,7 @@ def generate_new_account_email(
             "username": username,
             "password": password,
             "email": email_to,
+            "full_name": full_name or username,  # Fallback to username if no full_name
             "link": settings.FRONTEND_HOST,
         },
     )
@@ -180,6 +185,75 @@ def generate_temp_password(length: int = 12) -> str:
     """
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
     return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+
+def generate_username_from_name(
+    full_name: str,
+    session: Session,
+    max_length: int = 50
+) -> str:
+    """
+    Generate a unique username from a person's full name.
+
+    Converts full name to a valid username format:
+    - Converts to lowercase
+    - Removes accents/special characters (using unidecode)
+    - Replaces spaces with dots
+    - Removes any remaining non-alphanumeric characters except dots
+    - Ensures uniqueness by appending number if needed
+
+    Args:
+        full_name: Person's full name
+        session: Database session for uniqueness checking
+        max_length: Maximum username length (default: 50)
+
+    Returns:
+        Unique username string
+
+    Example:
+        >>> generate_username_from_name("John Doe", session)
+        'john.doe'
+        >>> generate_username_from_name("José García", session)
+        'jose.garcia'
+        >>> generate_username_from_name("John Doe", session)  # If john.doe exists
+        'john.doe.2'
+    """
+    from app import crud
+
+    # Convert to lowercase and remove accents
+    base_username = unidecode(full_name).lower()
+
+    # Replace spaces with dots
+    base_username = base_username.replace(" ", ".")
+
+    # Remove all characters except alphanumeric and dots
+    base_username = re.sub(r"[^a-z0-9.]", "", base_username)
+
+    # Remove consecutive dots
+    base_username = re.sub(r"\.+", ".", base_username)
+
+    # Remove leading/trailing dots
+    base_username = base_username.strip(".")
+
+    # Ensure minimum length of 3
+    if len(base_username) < 3:
+        base_username = base_username + "user"
+
+    # Truncate to max length minus space for potential suffix
+    base_username = base_username[:max_length - 3]
+
+    # Check for uniqueness and append number if needed
+    username = base_username
+    counter = 2
+
+    while crud.get_user_by_username(session=session, username=username):
+        # Add counter suffix
+        suffix = f".{counter}"
+        username = base_username[:max_length - len(suffix)] + suffix
+        counter += 1
+
+    return username
 
 
 # Turkish character mapping for username generation (Story 9.9)

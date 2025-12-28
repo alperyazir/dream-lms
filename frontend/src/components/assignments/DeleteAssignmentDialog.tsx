@@ -79,7 +79,8 @@ export function DeleteAssignmentDialog({
                 ?
               </p>
               <p className="text-red-600 dark:text-red-400 font-medium">
-                This action cannot be undone. {assignment.total_students} student
+                This action cannot be undone. {assignment.total_students}{" "}
+                student
                 {assignment.total_students !== 1 ? "s" : ""} will lose access to
                 this assignment.
               </p>

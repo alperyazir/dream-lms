@@ -8,6 +8,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react"
@@ -55,6 +56,7 @@ export function MatchTheWordsPlayer({
     x: number
     y: number
   } | null>(null)
+  const [isReturning, setIsReturning] = useState(false)
 
   // Image loading state
   const [imageUrls, setImageUrls] = useState<Map<number, string>>(new Map())
@@ -62,6 +64,7 @@ export function MatchTheWordsPlayer({
   const containerRef = useRef<HTMLDivElement>(null)
   const dragCircleRefs = useRef<(HTMLDivElement | null)[]>([])
   const dropCircleRefs = useRef<(HTMLDivElement | null)[]>([])
+  const validDropOccurred = useRef(false)
 
   // Create invisible drag image once
   const invisibleDragImage = useRef<HTMLImageElement | null>(null)
@@ -72,22 +75,28 @@ export function MatchTheWordsPlayer({
     invisibleDragImage.current = img
   }, [])
 
-  // Story 9.7: Generate correct matches for preview mode
-  const correctMatchesForPreview = useCallback(() => {
+  // Story 9.7: Generate correct matches for preview mode (memoized to prevent infinite loops)
+  const correctMatchesForPreview = useMemo(() => {
     const correctMatches = new Map<string, string>()
     activity.sentences.forEach((sentence, sentenceIndex) => {
-      // Find the word index that matches this sentence's correct word
-      const wordIndex = activity.sentences.findIndex((s) => s.word === sentence.word)
+      // Find the word index in match_words that matches this sentence's correct word
+      const wordIndex = activity.match_words.findIndex(
+        (w) => w.word === sentence.word,
+      )
       if (wordIndex !== -1) {
         const matchKey = `${wordIndex}-${sentenceIndex}`
         correctMatches.set(matchKey, sentence.word)
       }
     })
     return correctMatches
-  }, [activity.sentences])
+  }, [activity.sentences, activity.match_words])
 
   // Use correct matches when showing answers, otherwise use user matches
-  const displayMatches = showCorrectAnswers ? correctMatchesForPreview() : matches
+  // Memoized to prevent infinite re-renders when showCorrectAnswers changes
+  const displayMatches = useMemo(
+    () => (showCorrectAnswers ? correctMatchesForPreview : matches),
+    [showCorrectAnswers, correctMatchesForPreview, matches],
+  )
 
   // Get matched items
   const matchedSentences = new Set(
@@ -211,6 +220,7 @@ export function MatchTheWordsPlayer({
   const handleDragStart = (e: React.DragEvent, word: string, index: number) => {
     setDraggedWord(word)
     setDraggedIndex(index)
+    validDropOccurred.current = false // Reset flag for new drag
     e.dataTransfer.effectAllowed = "move"
     e.dataTransfer.setData("text/plain", word)
 
@@ -271,6 +281,8 @@ export function MatchTheWordsPlayer({
     // Check if this drop circle is already occupied
     if (matchedSentences.has(sentenceIndex)) return
 
+    validDropOccurred.current = true // Mark that a valid drop happened
+
     const newMatches = new Map(matches)
 
     // Remove word from any previous match
@@ -294,11 +306,67 @@ export function MatchTheWordsPlayer({
 
   // Handle drag end
   const handleDragEnd = () => {
-    setDraggedWord(null)
-    setDraggedIndex(null)
-    setHoveredDropIndex(null)
-    setDragLine(null)
-    setDragPosition(null)
+    // If valid drop occurred, just clear state immediately
+    if (validDropOccurred.current) {
+      setDraggedWord(null)
+      setDraggedIndex(null)
+      setHoveredDropIndex(null)
+      setDragLine(null)
+      setDragPosition(null)
+      return
+    }
+
+    // Invalid drop - trigger return animation
+    if (draggedIndex !== null && containerRef.current) {
+      const dragCircle = dragCircleRefs.current[draggedIndex]
+      if (dragCircle) {
+        const dragRect = dragCircle.getBoundingClientRect()
+        const containerRect = containerRef.current.getBoundingClientRect()
+
+        const sx = dragRect.left + dragRect.width / 2 - containerRect.left
+        const sy = dragRect.top + dragRect.height / 2 - containerRect.top
+
+        // Set return animation state
+        setIsReturning(true)
+
+        // Animate drag line back to source
+        setDragLine({
+          sx,
+          sy,
+          ex: sx, // Return to source position
+          ey: sy,
+          color: "rgb(156, 163, 175)",
+          sentenceIndex: -1,
+        })
+
+        // Animate ghost circle back to source
+        setDragPosition({ x: sx, y: sy })
+
+        // Clear state after animation completes (250ms)
+        setTimeout(() => {
+          setDraggedWord(null)
+          setDraggedIndex(null)
+          setHoveredDropIndex(null)
+          setDragLine(null)
+          setDragPosition(null)
+          setIsReturning(false)
+        }, 250)
+      } else {
+        // Fallback if circle ref not available
+        setDraggedWord(null)
+        setDraggedIndex(null)
+        setHoveredDropIndex(null)
+        setDragLine(null)
+        setDragPosition(null)
+      }
+    } else {
+      // Fallback if no drag in progress
+      setDraggedWord(null)
+      setDraggedIndex(null)
+      setHoveredDropIndex(null)
+      setDragLine(null)
+      setDragPosition(null)
+    }
   }
 
   // Remove match
@@ -343,7 +411,6 @@ export function MatchTheWordsPlayer({
 
   return (
     <div className="flex h-full flex-col p-2">
-
       {/* Three-column layout with canvas overlay - fills remaining space */}
       <div
         ref={containerRef}
@@ -379,6 +446,11 @@ export function MatchTheWordsPlayer({
               strokeWidth="3"
               strokeLinecap="round"
               strokeDasharray="5,5"
+              style={{
+                transition: isReturning
+                  ? "x1 0.2s ease-out, y1 0.2s ease-out, x2 0.2s ease-out, y2 0.2s ease-out"
+                  : "none",
+              }}
             />
           )}
         </svg>
@@ -389,12 +461,14 @@ export function MatchTheWordsPlayer({
           dragPosition.x > 24 &&
           dragPosition.y > 24 && (
             <div
-              className="pointer-events-none absolute flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 transition-none dark:bg-gray-500 sm:h-12 sm:w-12"
+              className="pointer-events-none absolute flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 dark:bg-gray-500 sm:h-12 sm:w-12"
               style={{
                 left: `${dragPosition.x - 20}px`,
                 top: `${dragPosition.y - 20}px`,
                 zIndex: 10,
-                willChange: "transform",
+                transition: isReturning
+                  ? "left 0.2s ease-out, top 0.2s ease-out"
+                  : "none",
               }}
             >
               <svg
@@ -546,14 +620,19 @@ export function MatchTheWordsPlayer({
                   {/* Image or Text - responsive image sizing */}
                   <div className="flex min-w-0 flex-1 items-center gap-2">
                     {item.image_path && imageUrls.has(index) ? (
-                      <img
-                        src={imageUrls.get(index)}
-                        alt={`Match option ${index + 1}`}
-                        className="h-16 w-16 flex-shrink-0 rounded-lg border-2 border-gray-300 object-cover dark:border-gray-600 sm:h-20 sm:w-20"
-                      />
+                      <div className="relative aspect-square w-full max-w-[200px] flex-shrink-0">
+                        <img
+                          src={imageUrls.get(index)}
+                          alt={`Match option ${index + 1}`}
+                          className="h-full w-full rounded-lg border-2 border-gray-300 object-contain dark:border-gray-600"
+                          loading="lazy"
+                        />
+                      </div>
                     ) : item.image_path ? (
-                      <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg border-2 border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800 sm:h-20 sm:w-20">
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
+                      <div className="relative aspect-square w-full max-w-[200px] flex-shrink-0">
+                        <div className="flex h-full w-full items-center justify-center rounded-lg border-2 border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800">
+                          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
+                        </div>
                       </div>
                     ) : null}
 

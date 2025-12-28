@@ -65,11 +65,21 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
     isMarkingAllRead,
   } = useNotificationPanel()
 
-  const handleNotificationClick = async (notification: Notification) => {
-    await onNotificationClick(notification)
-    onClose?.()
+  const handleNotificationClick = (notification: Notification) => {
+    // 1. Navigate immediately (synchronous) - Story 16.1
     if (notification.link) {
       navigate({ to: notification.link })
+    } else {
+      // Fallback: go to notifications page if no link
+      navigate({ to: "/notifications" })
+    }
+
+    // 2. Close dropdown (synchronous)
+    onClose?.()
+
+    // 3. Mark as read in background (non-blocking)
+    if (!notification.is_read) {
+      onNotificationClick(notification) // No await - fire and forget
     }
   }
 

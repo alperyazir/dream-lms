@@ -9,34 +9,34 @@
  * - Calls onCancel when cancel button clicked
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { SkipTourDialog } from "./SkipTourDialog"
 
 describe("SkipTourDialog", () => {
   it("renders dialog when open is true", () => {
     render(
-      <SkipTourDialog open={true} onConfirm={vi.fn()} onCancel={vi.fn()} />
+      <SkipTourDialog open={true} onConfirm={vi.fn()} onCancel={vi.fn()} />,
     )
 
     expect(screen.getByText("Skip Tour?")).toBeInTheDocument()
     expect(
-      screen.getByText(/Are you sure you want to skip the tour\?/)
+      screen.getByText(/Are you sure you want to skip the tour\?/),
     ).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /skip/i })).toBeInTheDocument()
     expect(
-      screen.getByRole("button", { name: /continue tour/i })
+      screen.getByRole("button", { name: /continue tour/i }),
     ).toBeInTheDocument()
   })
 
   it("does not render when open is false", () => {
     render(
-      <SkipTourDialog open={false} onConfirm={vi.fn()} onCancel={vi.fn()} />
+      <SkipTourDialog open={false} onConfirm={vi.fn()} onCancel={vi.fn()} />,
     )
 
     expect(screen.queryByText("Skip Tour?")).not.toBeInTheDocument()
     expect(
-      screen.queryByText(/Are you sure you want to skip the tour\?/)
+      screen.queryByText(/Are you sure you want to skip the tour\?/),
     ).not.toBeInTheDocument()
   })
 
@@ -45,7 +45,7 @@ describe("SkipTourDialog", () => {
     const onCancel = vi.fn()
 
     render(
-      <SkipTourDialog open={true} onConfirm={onConfirm} onCancel={onCancel} />
+      <SkipTourDialog open={true} onConfirm={onConfirm} onCancel={onCancel} />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: /skip/i }))
@@ -59,7 +59,7 @@ describe("SkipTourDialog", () => {
     const onCancel = vi.fn()
 
     render(
-      <SkipTourDialog open={true} onConfirm={onConfirm} onCancel={onCancel} />
+      <SkipTourDialog open={true} onConfirm={onConfirm} onCancel={onCancel} />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: /continue tour/i }))
@@ -71,11 +71,9 @@ describe("SkipTourDialog", () => {
 
   it("displays correct warning message", () => {
     render(
-      <SkipTourDialog open={true} onConfirm={vi.fn()} onCancel={vi.fn()} />
+      <SkipTourDialog open={true} onConfirm={vi.fn()} onCancel={vi.fn()} />,
     )
 
-    expect(
-      screen.getByText(/You won't see it again/)
-    ).toBeInTheDocument()
+    expect(screen.getByText(/You won't see it again/)).toBeInTheDocument()
   })
 })

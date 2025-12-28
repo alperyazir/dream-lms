@@ -9,13 +9,14 @@ import {
   FiFolder,
   FiHome,
   FiSettings,
+  FiShield,
   FiTrendingUp,
   FiUsers,
-  FiZap,
 } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
-import { OpenAPI, type UserPublic, type UserRole } from "@/client"
+import type { UserPublic, UserRole } from "@/client"
+import { PublisherLogo } from "@/components/ui/publisher-logo"
 import { getStudentAssignments } from "@/services/assignmentsApi"
 import { getMyProfile } from "@/services/publishersApi"
 
@@ -42,17 +43,44 @@ interface AdminStats {
 // Role-specific menu items
 const roleMenuItems: Record<UserRole, Item[]> = {
   admin: [
-    { icon: FiHome, title: "Dashboard", path: "/admin/dashboard", dataTour: "sidebar-dashboard" },
+    {
+      icon: FiHome,
+      title: "Dashboard",
+      path: "/admin/dashboard",
+      dataTour: "sidebar-dashboard",
+    },
+    { icon: FiShield, title: "Supervisors", path: "/admin/supervisors" },
     { icon: FiBriefcase, title: "Publishers", path: "/admin/publishers" },
     { icon: FiTrendingUp, title: "Schools", path: "/admin/schools" },
     { icon: FiUsers, title: "Teachers", path: "/admin/teachers" },
-    { icon: FiBook, title: "Books", path: "/admin/books" },
+    { icon: FiBook, title: "Library", path: "/admin/books" },
+    { icon: FiUsers, title: "Students", path: "/admin/students" },
+    { icon: FiClipboard, title: "Assignments", path: "/admin/assignments" },
+    { icon: FiBarChart2, title: "Benchmarks", path: "/admin/benchmarks" },
+  ],
+  supervisor: [
+    {
+      icon: FiHome,
+      title: "Dashboard",
+      path: "/admin/dashboard",
+      dataTour: "sidebar-dashboard",
+    },
+    // Supervisors cannot manage other supervisors, so no Supervisors menu item
+    { icon: FiBriefcase, title: "Publishers", path: "/admin/publishers" },
+    { icon: FiTrendingUp, title: "Schools", path: "/admin/schools" },
+    { icon: FiUsers, title: "Teachers", path: "/admin/teachers" },
+    { icon: FiBook, title: "Library", path: "/admin/books" },
     { icon: FiUsers, title: "Students", path: "/admin/students" },
     { icon: FiClipboard, title: "Assignments", path: "/admin/assignments" },
     { icon: FiBarChart2, title: "Benchmarks", path: "/admin/benchmarks" },
   ],
   publisher: [
-    { icon: FiHome, title: "Dashboard", path: "/publisher/dashboard", dataTour: "sidebar-dashboard" },
+    {
+      icon: FiHome,
+      title: "Dashboard",
+      path: "/publisher/dashboard",
+      dataTour: "sidebar-dashboard",
+    },
     {
       icon: FiBook,
       title: "Library",
@@ -73,13 +101,23 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     },
   ],
   teacher: [
-    { icon: FiHome, title: "Dashboard", path: "/teacher/dashboard", dataTour: "sidebar-dashboard" },
+    {
+      icon: FiHome,
+      title: "Dashboard",
+      path: "/teacher/dashboard",
+      dataTour: "sidebar-dashboard",
+    },
     {
       icon: FiCalendar,
       title: "Calendar",
       path: "/teacher/calendar",
     },
-    { icon: FiBook, title: "Library", path: "/teacher/books", dataTour: "sidebar-library" },
+    {
+      icon: FiBook,
+      title: "Library",
+      path: "/teacher/books",
+      dataTour: "sidebar-library",
+    },
     {
       icon: FiFolder,
       title: "My Materials",
@@ -97,8 +135,12 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       path: "/teacher/students",
       dataTour: "sidebar-students",
     },
-    { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments", dataTour: "sidebar-assignments" },
-    { icon: FiZap, title: "Insights", path: "/teacher/insights", dataTour: "sidebar-insights" },
+    {
+      icon: FiClipboard,
+      title: "Assignments",
+      path: "/teacher/assignments",
+      dataTour: "sidebar-assignments",
+    },
     {
       icon: FiBarChart2,
       title: "Reports",
@@ -106,14 +148,29 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     },
   ],
   student: [
-    { icon: FiHome, title: "Dashboard", path: "/student/dashboard", dataTour: "sidebar-dashboard" },
+    {
+      icon: FiHome,
+      title: "Dashboard",
+      path: "/student/dashboard",
+      dataTour: "sidebar-dashboard",
+    },
     {
       icon: FiCalendar,
       title: "Calendar",
       path: "/student/calendar",
     },
-    { icon: FiClipboard, title: "Assignments", path: "/student/assignments", dataTour: "sidebar-assignments" },
-    { icon: FiTrendingUp, title: "My Progress", path: "/student/progress", dataTour: "sidebar-progress" },
+    {
+      icon: FiClipboard,
+      title: "Assignments",
+      path: "/student/assignments",
+      dataTour: "sidebar-assignments",
+    },
+    {
+      icon: FiTrendingUp,
+      title: "My Progress",
+      path: "/student/progress",
+      dataTour: "sidebar-progress",
+    },
     {
       icon: FiBarChart2,
       title: "Reports",
@@ -153,16 +210,6 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     enabled: userRole === "publisher",
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   })
-
-  // Get publisher initials for fallback
-  const getPublisherInitials = (name: string): string => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   // Count incomplete student assignments (not_started + in_progress + past_due)
   const incompleteAssignmentsCount = Array.isArray(studentAssignments)
@@ -269,7 +316,12 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   }
 
   const bottomItems: Item[] = [
-    { icon: FiSettings, title: "Settings", path: "/settings", dataTour: "sidebar-settings" },
+    {
+      icon: FiSettings,
+      title: "Settings",
+      path: "/settings",
+      dataTour: "sidebar-settings",
+    },
   ]
 
   // Add User Management for admins only
@@ -288,40 +340,13 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
         <div
           className={`border-b border-gray-200 dark:border-gray-700 ${
             isCollapsed ? "py-3 px-2" : "p-4"
-          }`}
+          } flex justify-center`}
         >
-          <div
-            className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}
-          >
-            {publisherProfile.logo_url ? (
-              <img
-                src={`${OpenAPI.BASE}${publisherProfile.logo_url}`}
-                alt={`${publisherProfile.name} logo`}
-                className={`rounded-full object-cover border border-gray-200 dark:border-gray-600 ${
-                  isCollapsed ? "w-10 h-10" : "w-10 h-10"
-                }`}
-              />
-            ) : (
-              <div
-                className={`rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white font-semibold ${
-                  isCollapsed ? "w-10 h-10 text-sm" : "w-10 h-10 text-sm"
-                }`}
-                title={publisherProfile.name}
-              >
-                {getPublisherInitials(publisherProfile.name)}
-              </div>
-            )}
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                  {publisherProfile.name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Publisher
-                </p>
-              </div>
-            )}
-          </div>
+          <PublisherLogo
+            publisherId={publisherProfile.id}
+            size="md"
+            alt={`${publisherProfile.name} logo`}
+          />
         </div>
       )}
 

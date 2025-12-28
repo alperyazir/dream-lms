@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
 import {
-  parseSRT,
-  parseVTT,
-  parseSubtitles,
-  getCurrentSubtitle,
   formatVideoTime,
+  getCurrentSubtitle,
+  parseSRT,
+  parseSubtitles,
+  parseVTT,
   type Subtitle,
 } from "./videoUtils"
 

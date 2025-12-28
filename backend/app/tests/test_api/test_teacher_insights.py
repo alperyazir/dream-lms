@@ -20,7 +20,6 @@ from app.models import (
     Book,
     Class,
     ClassStudent,
-    DismissedInsight,
     Publisher,
     School,
     Student,

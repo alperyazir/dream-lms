@@ -5,9 +5,8 @@
  * Modal dialog for composing and sending new messages to allowed recipients.
  */
 
-import { Loader2, Send, User } from "lucide-react"
+import { Loader2, Send } from "lucide-react"
 import React, { useState } from "react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,8 +20,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useComposeMessage } from "@/hooks/useMessages"
-import { cn } from "@/lib/utils"
 import type { Recipient } from "@/types/message"
+import { RecipientItem } from "./RecipientItem"
 
 export interface ComposeMessageModalProps {
   isOpen: boolean
@@ -52,19 +51,10 @@ export const ComposeMessageModal = React.memo(
       return recipients.filter(
         (r) =>
           r.name.toLowerCase().includes(searchLower) ||
-          r.email.toLowerCase().includes(searchLower),
+          r.email.toLowerCase().includes(searchLower) ||
+          r.organization_name?.toLowerCase().includes(searchLower),
       )
     }, [recipients, searchTerm])
-
-    // Get initials from name
-    const getInitials = (name: string): string => {
-      return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    }
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
@@ -126,24 +116,19 @@ export const ComposeMessageModal = React.memo(
             <div className="space-y-4 py-4">
               {/* Recipient Selection */}
               <div className="space-y-2">
-                <Label htmlFor="recipient">To</Label>
+                <Label htmlFor="recipient">
+                  To{" "}
+                  <span className="text-destructive ml-1" aria-hidden="true">
+                    *
+                  </span>
+                </Label>
                 {selectedRecipient ? (
-                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-teal-600 text-white text-sm">
-                          {getInitials(selectedRecipient.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {selectedRecipient.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {selectedRecipient.role.charAt(0).toUpperCase() +
-                            selectedRecipient.role.slice(1)}
-                        </p>
-                      </div>
+                  <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="flex-1">
+                      <RecipientItem
+                        recipient={selectedRecipient}
+                        selected={true}
+                      />
                     </div>
                     <Button
                       type="button"
@@ -175,35 +160,15 @@ export const ComposeMessageModal = React.memo(
                             : "No recipients found"}
                         </div>
                       ) : (
-                        filteredRecipients.map((recipient) => (
-                          <button
-                            key={recipient.user_id}
-                            type="button"
-                            onClick={() => handleSelectRecipient(recipient)}
-                            className={cn(
-                              "w-full p-3 flex items-center gap-3 text-left",
-                              "hover:bg-gray-100 dark:hover:bg-gray-800",
-                              "focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800",
-                              "border-b last:border-b-0",
-                            )}
-                          >
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-teal-600 text-white text-sm">
-                                {getInitials(recipient.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">
-                                {recipient.name}
-                              </p>
-                              <p className="text-xs text-gray-500 flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {recipient.role.charAt(0).toUpperCase() +
-                                  recipient.role.slice(1)}
-                              </p>
-                            </div>
-                          </button>
-                        ))
+                        <div className="p-2 space-y-1">
+                          {filteredRecipients.map((recipient) => (
+                            <RecipientItem
+                              key={recipient.user_id}
+                              recipient={recipient}
+                              onClick={() => handleSelectRecipient(recipient)}
+                            />
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -212,7 +177,7 @@ export const ComposeMessageModal = React.memo(
 
               {/* Subject (Optional) */}
               <div className="space-y-2">
-                <Label htmlFor="subject">Subject (Optional)</Label>
+                <Label htmlFor="subject">Subject</Label>
                 <Input
                   id="subject"
                   type="text"
@@ -225,7 +190,12 @@ export const ComposeMessageModal = React.memo(
 
               {/* Message Body */}
               <div className="space-y-2">
-                <Label htmlFor="body">Message</Label>
+                <Label htmlFor="body">
+                  Message{" "}
+                  <span className="text-destructive ml-1" aria-hidden="true">
+                    *
+                  </span>
+                </Label>
                 <Textarea
                   id="body"
                   placeholder="Type your message..."

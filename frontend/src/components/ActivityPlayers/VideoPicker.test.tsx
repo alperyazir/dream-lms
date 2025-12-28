@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest"
-import { render, screen, waitFor, fireEvent } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { VideoPicker } from "./VideoPicker"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as booksApi from "@/services/booksApi"
+import { VideoPicker } from "./VideoPicker"
 
 // Mock ResizeObserver for Radix UI components
 class MockResizeObserver {
@@ -54,7 +54,7 @@ function createTestQueryClient() {
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = createTestQueryClient()
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
   )
 }
 
@@ -71,7 +71,7 @@ describe("VideoPicker", () => {
 
   it("shows loading state while fetching videos", () => {
     vi.mocked(booksApi.getBookVideos).mockImplementation(
-      () => new Promise(() => {}) // Never resolves - keeps loading
+      () => new Promise(() => {}), // Never resolves - keeps loading
     )
 
     renderWithProviders(<VideoPicker {...defaultProps} />)
@@ -100,7 +100,7 @@ describe("VideoPicker", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("No videos available in this book")
+        screen.getByText("No videos available in this book"),
       ).toBeInTheDocument()
     })
   })
@@ -129,7 +129,7 @@ describe("VideoPicker", () => {
     })
 
     renderWithProviders(
-      <VideoPicker {...defaultProps} value="videos/chapter1.mp4" />
+      <VideoPicker {...defaultProps} value="videos/chapter1.mp4" />,
     )
 
     await waitFor(() => {
@@ -150,12 +150,12 @@ describe("VideoPicker", () => {
         {...defaultProps}
         value="videos/chapter1.mp4"
         onPreview={onPreview}
-      />
+      />,
     )
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /preview video/i })
+        screen.getByRole("button", { name: /preview video/i }),
       ).toBeInTheDocument()
     })
   })
@@ -173,12 +173,12 @@ describe("VideoPicker", () => {
         {...defaultProps}
         value="videos/chapter1.mp4"
         onPreview={onPreview}
-      />
+      />,
     )
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /preview video/i })
+        screen.getByRole("button", { name: /preview video/i }),
       ).toBeInTheDocument()
     })
 
@@ -195,12 +195,12 @@ describe("VideoPicker", () => {
     })
 
     renderWithProviders(
-      <VideoPicker {...defaultProps} value="videos/chapter1.mp4" />
+      <VideoPicker {...defaultProps} value="videos/chapter1.mp4" />,
     )
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /clear video selection/i })
+        screen.getByRole("button", { name: /clear video selection/i }),
       ).toBeInTheDocument()
     })
   })
@@ -218,17 +218,17 @@ describe("VideoPicker", () => {
         {...defaultProps}
         value="videos/chapter1.mp4"
         onChange={onChange}
-      />
+      />,
     )
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /clear video selection/i })
+        screen.getByRole("button", { name: /clear video selection/i }),
       ).toBeInTheDocument()
     })
 
     fireEvent.click(
-      screen.getByRole("button", { name: /clear video selection/i })
+      screen.getByRole("button", { name: /clear video selection/i }),
     )
 
     expect(onChange).toHaveBeenCalledWith(null)
@@ -242,7 +242,7 @@ describe("VideoPicker", () => {
     })
 
     const { container } = renderWithProviders(
-      <VideoPicker {...defaultProps} className="custom-class" />
+      <VideoPicker {...defaultProps} className="custom-class" />,
     )
 
     await waitFor(() => {
@@ -272,7 +272,7 @@ describe("VideoPicker", () => {
     })
 
     renderWithProviders(
-      <VideoPicker {...defaultProps} placeholder="Choose a video..." />
+      <VideoPicker {...defaultProps} placeholder="Choose a video..." />,
     )
 
     await waitFor(() => {

@@ -133,6 +133,11 @@ export function useMarkAsRead() {
         (old) => (old ? { count: Math.max(0, old.count - 1) } : { count: 0 }),
       )
     },
+    // Story 16.1: Silent fail for background mark-as-read calls
+    // Log for debugging but don't bother user - navigation already succeeded
+    onError: (error) => {
+      console.debug("Failed to mark notification as read:", error)
+    },
     onSettled: () => {
       // Invalidate to ensure consistency
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY })
@@ -206,9 +211,10 @@ export function useNotificationPanel() {
   const markRead = useMarkAsRead()
   const markAllRead = useMarkAllAsRead()
 
-  const handleNotificationClick = async (notification: Notification) => {
+  // Story 16.1: Fire-and-forget pattern - no awaiting, navigation happens first in UI
+  const handleNotificationClick = (notification: Notification): void => {
     if (!notification.is_read) {
-      await markRead.markAsReadAsync(notification.id)
+      markRead.markAsRead(notification.id) // mutate, not mutateAsync - fire and forget
     }
   }
 
@@ -256,9 +262,10 @@ export function useNotificationsPage(
   const markRead = useMarkAsRead()
   const markAllRead = useMarkAllAsRead()
 
-  const handleNotificationClick = async (notification: Notification) => {
+  // Story 16.1: Fire-and-forget pattern - no awaiting, navigation happens first in UI
+  const handleNotificationClick = (notification: Notification): void => {
     if (!notification.is_read) {
-      await markRead.markAsReadAsync(notification.id)
+      markRead.markAsRead(notification.id) // mutate, not mutateAsync - fire and forget
     }
   }
 

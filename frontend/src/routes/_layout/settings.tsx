@@ -2,12 +2,13 @@ import { createFileRoute } from "@tanstack/react-router"
 import Appearance from "@/components/UserSettings/Appearance"
 import AvatarSelection from "@/components/UserSettings/AvatarSelection"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
-import DeleteAccount from "@/components/UserSettings/DeleteAccount"
 import NotificationSettings from "@/components/UserSettings/NotificationSettings"
 import UserInformation from "@/components/UserSettings/UserInformation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useAuth from "@/hooks/useAuth"
 
+// Story 14.3 AC 34-39: Removed Danger Zone / Delete Account from all profiles
+// No user can self-delete through UI - account deletion is handled by admins only
 const tabsConfig = [
   { value: "my-profile", title: "My profile", component: UserInformation },
   { value: "avatar", title: "Avatar", component: AvatarSelection },
@@ -18,7 +19,6 @@ const tabsConfig = [
     component: NotificationSettings,
   },
   { value: "appearance", title: "Appearance", component: Appearance },
-  { value: "danger-zone", title: "Danger zone", component: DeleteAccount },
 ]
 
 export const Route = createFileRoute("/_layout/settings")({
@@ -27,9 +27,6 @@ export const Route = createFileRoute("/_layout/settings")({
 
 function UserSettings() {
   const { user: currentUser } = useAuth()
-  const finalTabs = currentUser?.is_superuser
-    ? tabsConfig.slice(0, 3)
-    : tabsConfig
 
   if (!currentUser) {
     return null
@@ -43,13 +40,13 @@ function UserSettings() {
 
       <Tabs defaultValue="my-profile">
         <TabsList>
-          {finalTabs.map((tab) => (
+          {tabsConfig.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.title}
             </TabsTrigger>
           ))}
         </TabsList>
-        {finalTabs.map((tab) => (
+        {tabsConfig.map((tab) => (
           <TabsContent key={tab.value} value={tab.value}>
             <tab.component />
           </TabsContent>

@@ -1,0 +1,95 @@
+# Quality Gate Decision for Story 20.1
+# Generated: 2025-12-26
+# Reviewer: Quinn (Test Architect)
+
+schema: 1
+story: "20.1"
+story_title: "Admin Assignment Management"
+gate: CONCERNS
+status_reason: "N+1 query performance issue in list endpoint needs resolution before production; missing teacher filter UI component (backend ready)"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-12-26T00:00:00Z"
+
+waiver:
+  active: false
+
+top_issues:
+  - id: "PERF-001"
+    severity: medium
+    finding: "N+1 query problem in list_all_assignments endpoint - executes 2 queries per assignment for counts"
+    suggested_action: "Use subqueries to fetch recipient and completed counts in single query (see QA Results for code example)"
+    suggested_owner: dev
+    refs: ["backend/app/api/routes/admin.py:2603-2693"]
+
+  - id: "UI-001"
+    severity: low
+    finding: "Teacher filter dropdown missing from frontend UI (AC 6)"
+    suggested_action: "Add teacher filter select component to match backend API capability"
+    suggested_owner: dev
+    refs: ["frontend/src/routes/_layout/admin/assignments.tsx"]
+
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 1  # Performance issue
+    low: 1     # Missing UI component
+  highest: medium
+  recommendations:
+    must_fix:
+      - "Fix N+1 query problem to prevent performance degradation with scale"
+    monitor:
+      - "Missing teacher filter UI - low impact but completes AC coverage"
+
+quality_score: 90
+expires: "2026-01-09T00:00:00Z"
+
+evidence:
+  tests_reviewed: 13
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 7, 8, 9, 10, 15, 16, 17, 18, 19, 23, 24, 25]
+    ac_gaps: [6, 11, 12, 13, 14, 20, 21, 22]
+    ac_gaps_notes: |
+      AC 6: Teacher filter - backend ready, UI missing
+      AC 11-14: View details - placeholder only (noted as future enhancement)
+      AC 20-22: Edit assignment - marked optional, not implemented
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Proper RBAC with AdminOrSupervisor dependency; 403 tests passing; audit logging present"
+  performance:
+    status: CONCERNS
+    notes: "N+1 query problem: 101 queries for 50 assignments instead of 1-2; needs subquery optimization"
+  reliability:
+    status: PASS
+    notes: "Proper error handling; cascade delete configured; 404 handling correct"
+  maintainability:
+    status: PASS
+    notes: "Clean code structure; good separation of concerns; comprehensive tests"
+
+recommendations:
+  immediate:
+    - action: "Refactor list_all_assignments to use subqueries for recipient/completed counts"
+      refs: ["backend/app/api/routes/admin.py:2603-2693"]
+      estimated_effort: "1-2 hours"
+
+    - action: "Add teacher filter dropdown component to frontend"
+      refs: ["frontend/src/routes/_layout/admin/assignments.tsx:141-174"]
+      estimated_effort: "30 minutes"
+
+  future:
+    - action: "Implement view assignment details modal functionality"
+      refs: ["frontend/src/routes/_layout/admin/assignments.tsx:212-214"]
+
+    - action: "Add frontend tests for admin assignments page"
+      refs: ["frontend/src/routes/_layout/admin/__tests__/"]
+
+    - action: "Consider edit assignment functionality (currently optional)"
+      refs: ["Story AC 20-22"]
+
+history:
+  - at: "2025-12-26T00:00:00Z"
+    gate: CONCERNS
+    note: "Initial QA review - performance issue and missing UI component identified"

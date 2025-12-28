@@ -130,9 +130,12 @@ export function useQuickActivityPreview() {
     },
   })
 
-  const openPreview = useCallback((activityId: string) => {
-    mutation.mutate(activityId)
-  }, [mutation])
+  const openPreview = useCallback(
+    (activityId: string) => {
+      mutation.mutate(activityId)
+    },
+    [mutation],
+  )
 
   const closePreview = useCallback(() => {
     setIsModalOpen(false)
@@ -169,9 +172,12 @@ export function useQuickAssignmentTest() {
     },
   })
 
-  const startTestMode = useCallback((assignmentId: string) => {
-    mutation.mutate(assignmentId)
-  }, [mutation])
+  const startTestMode = useCallback(
+    (assignmentId: string) => {
+      mutation.mutate(assignmentId)
+    },
+    [mutation],
+  )
 
   const exitTestMode = useCallback(() => {
     setIsTestModeActive(false)

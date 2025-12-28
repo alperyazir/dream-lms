@@ -127,6 +127,7 @@ export function useMessageThread(
           name: query.data.participant_name,
           email: query.data.participant_email,
           role: query.data.participant_role,
+          organization_name: query.data.participant_organization_name,
         }
       : null,
     totalMessages: query.data?.total_messages ?? 0,

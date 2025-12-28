@@ -9,14 +9,13 @@ import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlmodel import Session, create_engine, delete
+from sqlmodel import Session, create_engine
 from sqlmodel.pool import StaticPool
 
 from app.core.config import settings
-from app.core.db import init_db
 from app.core.security import get_password_hash
 from app.main import app
-from app.models import Publisher, School, Student, Teacher, User, UserRole
+from app.models import School, Teacher, User, UserRole
 
 
 # Test database with file-based SQLite (shared between sync and async sessions)
@@ -164,6 +163,25 @@ def admin_user_fixture(session: Session) -> User:
     return user
 
 
+@pytest.fixture(name="supervisor_user")
+def supervisor_user_fixture(session: Session) -> User:
+    """Create a supervisor user for testing"""
+    user = User(
+        id=uuid.uuid4(),
+        email="supervisor@example.com",
+        username="testsupervisor",
+        hashed_password=get_password_hash("supervisorpassword"),
+        role=UserRole.supervisor,
+        is_active=True,
+        is_superuser=False,
+        full_name="Supervisor User"
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
 @pytest.fixture(name="publisher_user")
 def publisher_user_fixture(session: Session) -> User:
     """Create a publisher user for testing"""
@@ -232,6 +250,17 @@ def admin_token_fixture(client: TestClient, admin_user: User) -> str:
     return response.json()["access_token"]
 
 
+@pytest.fixture(name="supervisor_token")
+def supervisor_token_fixture(client: TestClient, supervisor_user: User) -> str:
+    """Get access token for supervisor user"""
+    response = client.post(
+        f"{settings.API_V1_STR}/login/access-token",
+        data={"username": supervisor_user.email, "password": "supervisorpassword"}
+    )
+    assert response.status_code == 200
+    return response.json()["access_token"]
+
+
 @pytest.fixture(name="publisher_token")
 def publisher_token_fixture(client: TestClient, publisher_user: User) -> str:
     """Get access token for publisher user"""
@@ -268,58 +297,20 @@ def student_token_fixture(client: TestClient, student_user: User) -> str:
 # Bulk import specific fixtures with complete role records
 
 
-@pytest.fixture(name="publisher_user_with_record")
-def publisher_user_with_record_fixture(session: Session) -> User:
-    """Create a publisher user WITH Publisher record for bulk import testing"""
-    user = User(
-        id=uuid.uuid4(),
-        email="publisher_bulk@example.com",
-        username="publisherbulk",
-        hashed_password=get_password_hash("publisherpassword"),
-        role=UserRole.publisher,
-        is_active=True,
-        is_superuser=False,
-        full_name="Publisher Bulk User"
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-
-    publisher = Publisher(
-        id=uuid.uuid4(),
-        user_id=user.id,
-        name="Bulk Test Publisher",
-        contact_email="contact@bulkpublisher.com"
-    )
-    session.add(publisher)
-    session.commit()
-    session.refresh(publisher)
-    session.refresh(user)
-
-    return user
+# DEPRECATED: Publisher model removed - publishers managed in DCS
+# @pytest.fixture(name="publisher_user_with_record")
+# def publisher_user_with_record_fixture(session: Session) -> User:
+#     """Create a publisher user WITH Publisher record for bulk import testing"""
+#     # NOTE: Tests using this fixture need to be updated to use DCS publisher IDs
+#     pass
 
 
 @pytest.fixture(name="teacher_user_with_record")
 def teacher_user_with_record_fixture(session: Session) -> User:
     """Create a teacher user WITH Teacher record for bulk import testing"""
-    # Create publisher for school
-    pub_user = User(
-        id=uuid.uuid4(),
-        email="pub_for_teacher_bulk@example.com",
-        username="pubforteacherbulk",
-        hashed_password=get_password_hash("password"),
-        role=UserRole.publisher
-    )
-    session.add(pub_user)
-    session.commit()
-
-    publisher = Publisher(
-        id=uuid.uuid4(),
-        user_id=pub_user.id,
-        name="Publisher for Bulk Teacher"
-    )
-    session.add(publisher)
-    session.commit()
+    # NOTE: Using mock DCS publisher ID (publishers now managed in Dream Central Storage)
+    # DCS publisher IDs are integers (sequence IDs in DCS database)
+    mock_dcs_publisher_id = 999
 
     user = User(
         id=uuid.uuid4(),
@@ -337,7 +328,7 @@ def teacher_user_with_record_fixture(session: Session) -> User:
     school = School(
         id=uuid.uuid4(),
         name="Bulk Test School",
-        publisher_id=publisher.id
+        dcs_publisher_id=mock_dcs_publisher_id  # DCS publisher ID (integer, not UUID)
     )
     session.add(school)
     session.commit()

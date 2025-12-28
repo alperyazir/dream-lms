@@ -8,8 +8,8 @@
 
 import { format } from "date-fns"
 import {
-  Calendar as CalendarIcon,
   CalendarDays,
+  Calendar as CalendarIcon,
   Check,
   Clock,
   FileText,
@@ -146,8 +146,11 @@ export function StepConfigureSettings({
     return formData.scheduled_publish_date <= formData.due_date
   }
 
-  const isTimePlanningMode = formData.time_planning_enabled && formData.date_groups.length > 0
-  const currentGroup = isTimePlanningMode ? formData.date_groups[selectedDateIndex] : null
+  const isTimePlanningMode =
+    formData.time_planning_enabled && formData.date_groups.length > 0
+  const currentGroup = isTimePlanningMode
+    ? formData.date_groups[selectedDateIndex]
+    : null
 
   // Time Planning Mode Layout
   if (isTimePlanningMode) {
@@ -171,7 +174,7 @@ export function StepConfigureSettings({
                       "p-2 rounded-lg cursor-pointer transition-all border",
                       selectedDateIndex === index
                         ? "bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-700"
-                        : "bg-white dark:bg-gray-800 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                        : "bg-white dark:bg-gray-800 border-transparent hover:border-gray-300 dark:hover:border-gray-600",
                     )}
                     onClick={() => setSelectedDateIndex(index)}
                   >
@@ -182,22 +185,33 @@ export function StepConfigureSettings({
                             "h-4 w-4",
                             selectedDateIndex === index
                               ? "text-blue-600 dark:text-blue-400"
-                              : "text-muted-foreground"
+                              : "text-muted-foreground",
                           )}
                         />
                         {editingDateIndex === index ? (
-                          <Popover open onOpenChange={() => setEditingDateIndex(null)}>
+                          <Popover
+                            open
+                            onOpenChange={() => setEditingDateIndex(null)}
+                          >
                             <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-6 px-1 text-xs">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-1 text-xs"
+                              >
                                 {format(group.date, "dd MMM yyyy")}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
                               <Calendar
                                 mode="single"
                                 selected={group.date}
                                 onSelect={(date) => {
-                                  if (date) handleDateGroupDateChange(index, date)
+                                  if (date)
+                                    handleDateGroupDateChange(index, date)
                                 }}
                                 initialFocus
                               />
@@ -209,7 +223,7 @@ export function StepConfigureSettings({
                               "text-sm font-medium",
                               selectedDateIndex === index
                                 ? "text-blue-700 dark:text-blue-300"
-                                : "text-foreground"
+                                : "text-foreground",
                             )}
                           >
                             {format(group.date, "dd MMM")}
@@ -254,7 +268,8 @@ export function StepConfigureSettings({
                   </div>
                   <div>
                     <div className="font-medium text-lg">
-                      {currentGroup && format(currentGroup.date, "EEEE, dd MMMM yyyy")}
+                      {currentGroup &&
+                        format(currentGroup.date, "EEEE, dd MMMM yyyy")}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {currentGroup?.activityIds.length} activities assigned
@@ -271,12 +286,22 @@ export function StepConfigureSettings({
                   <Input
                     type="date"
                     value={formatDateForInput(currentGroup?.dueDate)}
-                    onChange={(e) => handleDateGroupDueDateChange(selectedDateIndex, e.target.value)}
-                    min={currentGroup ? formatDateForInput(currentGroup.date) : undefined}
+                    onChange={(e) =>
+                      handleDateGroupDueDateChange(
+                        selectedDateIndex,
+                        e.target.value,
+                      )
+                    }
+                    min={
+                      currentGroup
+                        ? formatDateForInput(currentGroup.date)
+                        : undefined
+                    }
                     className="w-full"
                   />
                   <p className="text-xs text-muted-foreground">
-                    When should students complete activities for {currentGroup && format(currentGroup.date, "dd MMM")}?
+                    When should students complete activities for{" "}
+                    {currentGroup && format(currentGroup.date, "dd MMM")}?
                   </p>
                 </div>
 
@@ -284,18 +309,25 @@ export function StepConfigureSettings({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     <Clock className="w-4 h-4 inline mr-1" />
-                    Time Limit <span className="text-muted-foreground">(Optional)</span>
+                    Time Limit
                   </Label>
                   <div className="flex items-center gap-2">
                     <Input
                       type="number"
                       placeholder="No limit"
                       value={currentGroup?.timeLimit || ""}
-                      onChange={(e) => handleDateGroupTimeLimitChange(selectedDateIndex, e.target.value)}
+                      onChange={(e) =>
+                        handleDateGroupTimeLimitChange(
+                          selectedDateIndex,
+                          e.target.value,
+                        )
+                      }
                       min="1"
                       className="w-32"
                     />
-                    <span className="text-sm text-muted-foreground">minutes</span>
+                    <span className="text-sm text-muted-foreground">
+                      minutes
+                    </span>
                   </div>
                 </div>
 
@@ -308,7 +340,10 @@ export function StepConfigureSettings({
 
                 {/* Assignment Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="assignment-name" className="text-sm font-medium">
+                  <Label
+                    htmlFor="assignment-name"
+                    className="text-sm font-medium"
+                  >
                     Assignment Name <span className="text-destructive">*</span>
                   </Label>
                   <Input
@@ -328,7 +363,7 @@ export function StepConfigureSettings({
                 {/* Instructions */}
                 <div className="space-y-2">
                   <Label htmlFor="instructions" className="text-sm font-medium">
-                    Instructions <span className="text-muted-foreground">(Optional)</span>
+                    Instructions
                   </Label>
                   <Textarea
                     id="instructions"
@@ -349,12 +384,11 @@ export function StepConfigureSettings({
           <div className="flex items-center gap-2 text-sm">
             <FileText className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">
-              Creating {formData.date_groups.length} assignments with {activityCount} total activities
+              Creating {formData.date_groups.length} assignments with{" "}
+              {activityCount} total activities
             </span>
           </div>
-          <Badge variant="secondary">
-            Time Planning Mode
-          </Badge>
+          <Badge variant="secondary">Time Planning Mode</Badge>
         </div>
       </div>
     )
@@ -363,7 +397,9 @@ export function StepConfigureSettings({
   // Normal Mode Layout (existing)
   return (
     <div className="flex flex-col h-full">
-      <h3 className="text-lg font-semibold mb-4 shrink-0">Configure Assignment Settings</h3>
+      <h3 className="text-lg font-semibold mb-4 shrink-0">
+        Configure Assignment Settings
+      </h3>
 
       <ScrollArea className="flex-1 pr-4">
         <div className="space-y-6 pb-4">
@@ -376,7 +412,8 @@ export function StepConfigureSettings({
                 </div>
                 <div className="flex-1">
                   <div className="font-medium text-foreground">
-                    {activityCount} {activityCount === 1 ? "Activity" : "Activities"} Selected
+                    {activityCount}{" "}
+                    {activityCount === 1 ? "Activity" : "Activities"} Selected
                   </div>
                   <div className="text-sm text-muted-foreground">
                     All activities will have the same due date
@@ -388,136 +425,158 @@ export function StepConfigureSettings({
 
           <Card>
             <CardContent className="pt-6 space-y-6">
-          {/* Assignment Name */}
-          <div className="space-y-2">
-            <Label htmlFor="assignment-name" className="text-sm font-medium">
-              Assignment Name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="assignment-name"
-              type="text"
-              placeholder="Enter assignment name..."
-              value={formData.name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              required
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground">
-              Give your assignment a clear, descriptive name
-            </p>
-          </div>
-
-          {/* Instructions */}
-          <div className="space-y-2">
-            <Label htmlFor="instructions" className="text-sm font-medium">
-              Instructions <span className="text-muted-foreground">(Optional)</span>
-            </Label>
-            <Textarea
-              id="instructions"
-              placeholder="Add any special instructions for students..."
-              value={formData.instructions}
-              onChange={(e) => handleInstructionsChange(e.target.value)}
-              rows={4}
-              className="w-full resize-none"
-            />
-            <p className="text-xs text-muted-foreground">
-              Provide additional context or instructions for completing this assignment
-            </p>
-          </div>
-
-          {/* Publishing Schedule */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">
-              <Timer className="w-4 h-4 inline mr-1" />
-              When to Publish
-            </Label>
-            <RadioGroup
-              value={publishMode}
-              onValueChange={(value) => handlePublishModeChange(value as "immediate" | "scheduled")}
-              className="flex flex-col space-y-2"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="immediate" id="publish-immediate" />
-                <Label htmlFor="publish-immediate" className="font-normal cursor-pointer flex items-center gap-2">
-                  <Send className="w-4 h-4 text-green-500" />
-                  Publish immediately
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="scheduled" id="publish-scheduled" />
-                <Label htmlFor="publish-scheduled" className="font-normal cursor-pointer flex items-center gap-2">
-                  <CalendarIcon className="w-4 h-4 text-amber-500" />
-                  Schedule for later
-                </Label>
-              </div>
-            </RadioGroup>
-
-            {publishMode === "scheduled" && (
-              <div className="ml-6 mt-3 space-y-2">
-                <Label htmlFor="scheduled-publish-date" className="text-sm font-medium">
-                  Publish Date & Time <span className="text-destructive">*</span>
+              {/* Assignment Name */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="assignment-name"
+                  className="text-sm font-medium"
+                >
+                  Assignment Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  id="scheduled-publish-date"
-                  type="datetime-local"
-                  value={formatDateTimeForInput(formData.scheduled_publish_date)}
-                  onChange={(e) => handleScheduledPublishDateChange(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
-                  className="w-64"
+                  id="assignment-name"
+                  type="text"
+                  placeholder="Enter assignment name..."
+                  value={formData.name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  required
+                  className="w-full"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Assignment will become visible to students at this date and time
+                  Give your assignment a clear, descriptive name
                 </p>
-                {!isScheduledDateValid() && (
-                  <p className="text-xs text-destructive">
-                    Publish date must be before or equal to the due date
-                  </p>
+              </div>
+
+              {/* Instructions */}
+              <div className="space-y-2">
+                <Label htmlFor="instructions" className="text-sm font-medium">
+                  Instructions
+                </Label>
+                <Textarea
+                  id="instructions"
+                  placeholder="Add any special instructions for students..."
+                  value={formData.instructions}
+                  onChange={(e) => handleInstructionsChange(e.target.value)}
+                  rows={4}
+                  className="w-full resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Provide additional context or instructions for completing this
+                  assignment
+                </p>
+              </div>
+
+              {/* Publishing Schedule */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">
+                  <Timer className="w-4 h-4 inline mr-1" />
+                  When to Publish
+                </Label>
+                <RadioGroup
+                  value={publishMode}
+                  onValueChange={(value) =>
+                    handlePublishModeChange(value as "immediate" | "scheduled")
+                  }
+                  className="flex flex-col space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="immediate" id="publish-immediate" />
+                    <Label
+                      htmlFor="publish-immediate"
+                      className="font-normal cursor-pointer flex items-center gap-2"
+                    >
+                      <Send className="w-4 h-4 text-green-500" />
+                      Publish immediately
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="scheduled" id="publish-scheduled" />
+                    <Label
+                      htmlFor="publish-scheduled"
+                      className="font-normal cursor-pointer flex items-center gap-2"
+                    >
+                      <CalendarIcon className="w-4 h-4 text-amber-500" />
+                      Schedule for later
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {publishMode === "scheduled" && (
+                  <div className="ml-6 mt-3 space-y-2">
+                    <Label
+                      htmlFor="scheduled-publish-date"
+                      className="text-sm font-medium"
+                    >
+                      Publish Date & Time{" "}
+                      <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="scheduled-publish-date"
+                      type="datetime-local"
+                      value={formatDateTimeForInput(
+                        formData.scheduled_publish_date,
+                      )}
+                      onChange={(e) =>
+                        handleScheduledPublishDateChange(e.target.value)
+                      }
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="w-64"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Assignment will become visible to students at this date
+                      and time
+                    </p>
+                    {!isScheduledDateValid() && (
+                      <p className="text-xs text-destructive">
+                        Publish date must be before or equal to the due date
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* Due Date */}
-          <div className="space-y-2">
-            <Label htmlFor="due-date" className="text-sm font-medium">
-              <CalendarIcon className="w-4 h-4 inline mr-1" />
-              Due Date <span className="text-muted-foreground">(Optional)</span>
-            </Label>
-            <Input
-              id="due-date"
-              type="date"
-              value={formatDateForInput(formData.due_date)}
-              onChange={(e) => handleDueDateChange(e.target.value)}
-              min={new Date().toISOString().split("T")[0]}
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground">
-              Set a deadline for students to complete this assignment
-            </p>
-          </div>
+              {/* Due Date */}
+              <div className="space-y-2">
+                <Label htmlFor="due-date" className="text-sm font-medium">
+                  <CalendarIcon className="w-4 h-4 inline mr-1" />
+                  Due Date
+                </Label>
+                <Input
+                  id="due-date"
+                  type="date"
+                  value={formatDateForInput(formData.due_date)}
+                  onChange={(e) => handleDueDateChange(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Set a deadline for students to complete this assignment
+                </p>
+              </div>
 
-          {/* Time Limit */}
-          <div className="space-y-2">
-            <Label htmlFor="time-limit" className="text-sm font-medium">
-              <Clock className="w-4 h-4 inline mr-1" />
-              Time Limit <span className="text-muted-foreground">(Optional)</span>
-            </Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="time-limit"
-                type="number"
-                placeholder="60"
-                value={formData.time_limit_minutes || ""}
-                onChange={(e) => handleTimeLimitChange(e.target.value)}
-                min="1"
-                className="w-32"
-              />
-              <span className="text-sm text-muted-foreground">minutes</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Restrict how long students have to complete the assignment once started
-            </p>
-          </div>
+              {/* Time Limit */}
+              <div className="space-y-2">
+                <Label htmlFor="time-limit" className="text-sm font-medium">
+                  <Clock className="w-4 h-4 inline mr-1" />
+                  Time Limit
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="time-limit"
+                    type="number"
+                    placeholder="60"
+                    value={formData.time_limit_minutes || ""}
+                    onChange={(e) => handleTimeLimitChange(e.target.value)}
+                    min="1"
+                    className="w-32"
+                  />
+                  <span className="text-sm text-muted-foreground">minutes</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Restrict how long students have to complete the assignment
+                  once started
+                </p>
+              </div>
             </CardContent>
           </Card>
 

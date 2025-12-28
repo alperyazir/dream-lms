@@ -174,7 +174,7 @@ function BookAssignmentsPage() {
               <SelectContent>
                 <SelectItem value="all">All Books</SelectItem>
                 {books.map((book) => (
-                  <SelectItem key={book.id} value={book.id}>
+                  <SelectItem key={book.id} value={String(book.id)}>
                     {book.title}
                   </SelectItem>
                 ))}

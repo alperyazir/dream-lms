@@ -9,7 +9,6 @@ Tests cover:
 
 import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 

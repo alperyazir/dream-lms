@@ -16,15 +16,12 @@ if TYPE_CHECKING:
         AssignmentActivity,
         AssignmentStudent,
         AssignmentStudentActivity,
-        Book,
-        BookAccess,
         BookAssignment,
         Class,
         ClassStudent,
         DirectMessage,
         Feedback,
         Notification,
-        Publisher,
         School,
         Student,
         Teacher,
@@ -36,6 +33,7 @@ if TYPE_CHECKING:
 class UserRole(str, Enum):
     """User role enumeration for RBAC"""
     admin = "admin"
+    supervisor = "supervisor"
     publisher = "publisher"
     teacher = "teacher"
     student = "student"
@@ -80,6 +78,11 @@ class UserBase(SQLModel):
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
     role: UserRole = Field(default=UserRole.student)
+    dcs_publisher_id: int | None = Field(
+        default=None,
+        index=True,
+        description="DCS Publisher ID - only set for publisher role users"
+    )
 
     @field_validator('username')
     @classmethod
@@ -98,6 +101,7 @@ class UserUpdate(UserBase):
     email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
     username: str | None = Field(default=None, min_length=3, max_length=50)  # type: ignore
     password: str | None = Field(default=None, min_length=8, max_length=40)
+    dcs_publisher_id: int | None = Field(default=None)  # type: ignore
 
     @field_validator('username')
     @classmethod
@@ -147,7 +151,6 @@ class User(UserBase, table=True):
     avatar_type: AvatarType | None = Field(default=None, sa_column=Column(SAEnum(AvatarType)))  # Type of avatar
 
     # Relationships to role-specific tables (one-to-one, optional)
-    publisher: Optional["Publisher"] = Relationship(back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     teacher: Optional["Teacher"] = Relationship(back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     student: Optional["Student"] = Relationship(back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
@@ -194,66 +197,6 @@ class NewPassword(SQLModel):
 # LMS Domain Models - Publishers, Schools, Teachers, Students
 # ============================================================================
 
-# --- Publisher Models ---
-
-class PublisherBase(SQLModel):
-    """Shared Publisher properties"""
-    name: str = Field(max_length=255)
-    contact_email: str | None = Field(default=None, max_length=255)
-    logo_url: str | None = Field(default=None, max_length=500, description="URL to publisher logo image")
-    benchmarking_enabled: bool = Field(default=True, description="Enable performance benchmarking for publisher's content")
-
-
-class PublisherCreate(PublisherBase):
-    """Properties to receive via API on Publisher creation"""
-    user_id: uuid.UUID
-
-
-class PublisherUpdate(SQLModel):
-    """Properties to receive via API on Publisher update"""
-    name: str | None = Field(default=None, max_length=255)
-    contact_email: str | None = Field(default=None, max_length=255)
-    user_email: str | None = Field(default=None, max_length=255)
-    user_username: str | None = Field(default=None, min_length=3, max_length=50)
-    user_full_name: str | None = Field(default=None, max_length=255)
-    benchmarking_enabled: bool | None = Field(default=None)
-
-
-class Publisher(PublisherBase, table=True):
-    """Publisher database model"""
-    __tablename__ = "publishers"
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", unique=True, index=True, ondelete="CASCADE")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    # Relationships
-    user: User = Relationship(back_populates="publisher", sa_relationship_kwargs={"passive_deletes": True})
-    schools: list["School"] = Relationship(back_populates="publisher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    books: list["Book"] = Relationship(back_populates="publisher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-
-
-class PublisherPublic(PublisherBase):
-    """Properties to return via API"""
-    id: uuid.UUID
-    user_id: uuid.UUID
-    user_email: str
-    user_username: str
-    user_full_name: str
-    created_at: datetime
-    updated_at: datetime
-
-
-class PublisherCreateAPI(SQLModel):
-    """Properties for API endpoint publisher creation (includes user creation)"""
-    name: str = Field(max_length=255)
-    contact_email: EmailStr = Field(max_length=255)
-    username: str = Field(min_length=3, max_length=50)
-    user_email: EmailStr = Field(max_length=255)
-    full_name: str = Field(max_length=255)
-
-
 # --- School Models ---
 
 class SchoolBase(SQLModel):
@@ -266,7 +209,7 @@ class SchoolBase(SQLModel):
 
 class SchoolCreate(SchoolBase):
     """Properties to receive via API on School creation"""
-    publisher_id: uuid.UUID
+    dcs_publisher_id: int
 
 
 class SchoolCreateByPublisher(SchoolBase):
@@ -279,7 +222,7 @@ class SchoolUpdate(SQLModel):
     name: str | None = Field(default=None, max_length=255)
     address: str | None = Field(default=None)
     contact_info: str | None = Field(default=None)
-    publisher_id: uuid.UUID | None = Field(default=None)
+    dcs_publisher_id: int | None = Field(default=None)
     benchmarking_enabled: bool | None = Field(default=None)
 
 
@@ -288,12 +231,11 @@ class School(SchoolBase, table=True):
     __tablename__ = "schools"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    publisher_id: uuid.UUID = Field(foreign_key="publishers.id", index=True, ondelete="CASCADE")
+    dcs_publisher_id: int = Field(index=True, description="Publisher ID in Dream Central Storage")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    publisher: Publisher = Relationship(back_populates="schools", sa_relationship_kwargs={"passive_deletes": True})
     teachers: list["Teacher"] = Relationship(back_populates="school", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     classes: list["Class"] = Relationship(back_populates="school", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
@@ -301,7 +243,7 @@ class School(SchoolBase, table=True):
 class SchoolPublic(SchoolBase):
     """Properties to return via API"""
     id: uuid.UUID
-    publisher_id: uuid.UUID
+    dcs_publisher_id: int
     created_at: datetime
     updated_at: datetime
 
@@ -435,7 +377,7 @@ class UserCreationResponse(SQLModel):
     When user has email, password_emailed=True and temporary_password is None.
     """
     user: UserPublic
-    role_record: PublisherPublic | TeacherPublic | StudentPublic
+    role_record: TeacherPublic | StudentPublic  # Publishers managed in DCS, not created via API
     temporary_password: str | None = None  # Only set if user has no email
     password_emailed: bool = False  # True if email was sent
     message: str = ""  # Status message
@@ -450,6 +392,42 @@ class PasswordResetResponse(SQLModel):
     message: str
     password_emailed: bool  # True if password was sent via email
     temporary_password: str | None = None  # Only set if user has NO email (fallback)
+
+
+# --- Supervisor Models (Story 14.2) ---
+
+class SupervisorCreateAPI(SQLModel):
+    """Properties for API endpoint supervisor creation"""
+    username: str = Field(min_length=3, max_length=50)
+    user_email: EmailStr | None = Field(default=None, max_length=255)
+    full_name: str = Field(max_length=255)
+
+
+class SupervisorUpdate(SQLModel):
+    """Properties for updating a supervisor"""
+    full_name: str | None = Field(default=None, max_length=255)
+    email: EmailStr | None = Field(default=None, max_length=255)
+    username: str | None = Field(default=None, min_length=3, max_length=50)
+    is_active: bool | None = None
+
+
+class SupervisorPublic(SQLModel):
+    """Public supervisor response schema"""
+    id: uuid.UUID
+    full_name: str | None
+    email: str | None
+    username: str
+    is_active: bool
+    created_at: datetime | None
+    must_change_password: bool
+
+
+class SupervisorCreateResponse(SQLModel):
+    """Response schema for supervisor creation"""
+    user: UserPublic
+    temporary_password: str | None = None
+    password_emailed: bool = False
+    message: str = ""
 
 
 # Dashboard statistics
@@ -587,85 +565,72 @@ class ClassStudentAdd(SQLModel):
 
 # --- Book Models ---
 
-class BookStatus(str, Enum):
-    """Book status enumeration"""
-    published = "published"
-    draft = "draft"
-    archived = "archived"
+# DEPRECATED: Book models removed in Story 24.3 - Books now fetched from DCS
+# These classes are kept temporarily for backward compatibility during migration
+# TODO: Remove after migration is complete and all tests are updated
+
+# class BookStatus(str, Enum):
+#     """Book status enumeration"""
+#     published = "published"
+#     draft = "draft"
+#     archived = "archived"
 
 
-class BookBase(SQLModel):
-    """Shared Book properties"""
-    dream_storage_id: str = Field(unique=True, index=True, max_length=255)
-    title: str = Field(max_length=500)
-    book_name: str = Field(max_length=255)
-    publisher_name: str = Field(max_length=255)
-    language: str | None = Field(default=None, max_length=50)
-    category: str | None = Field(default=None, max_length=100)
-    status: BookStatus = Field(default=BookStatus.published)
-    description: str | None = Field(default=None)
-    cover_image_url: str | None = Field(default=None)
-    config_json: dict = Field(default_factory=dict, sa_column=Column(JSON))
-    # Activity metadata from Dream Central Storage (source of truth for counts)
-    dcs_activity_count: int | None = Field(default=None)  # Total activity count from DCS
-    dcs_activity_details: dict | None = Field(default=None, sa_column=Column(JSON))  # Activity breakdown by type
+# class BookBase(SQLModel):
+#     """Shared Book properties"""
+#     dream_storage_id: str = Field(unique=True, index=True, max_length=255)
+#     title: str = Field(max_length=500)
+#     book_name: str = Field(max_length=255)
+#     publisher_name: str = Field(max_length=255)
+#     language: str | None = Field(default=None, max_length=50)
+#     category: str | None = Field(default=None, max_length=100)
+#     status: BookStatus = Field(default=BookStatus.published)
+#     description: str | None = Field(default=None)
+#     cover_image_url: str | None = Field(default=None)
+#     config_json: dict = Field(default_factory=dict, sa_column=Column(JSON))
+#     # Activity metadata from Dream Central Storage (source of truth for counts)
+#     dcs_activity_count: int | None = Field(default=None)  # Total activity count from DCS
+#     dcs_activity_details: dict | None = Field(default=None, sa_column=Column(JSON))  # Activity breakdown by type
 
 
-class BookCreate(BookBase):
-    """Properties to receive via API on Book creation"""
-    publisher_id: uuid.UUID
+# class BookCreate(BookBase):
+#     """Properties to receive via API on Book creation"""
+#     dcs_publisher_id: int
 
 
-class BookUpdate(SQLModel):
-    """Properties to receive via API on Book update"""
-    title: str | None = Field(default=None, max_length=500)
-    description: str | None = Field(default=None)
-    cover_image_url: str | None = Field(default=None)
+# class BookUpdate(SQLModel):
+#     """Properties to receive via API on Book update"""
+#     title: str | None = Field(default=None, max_length=500)
+#     description: str | None = Field(default=None)
+#     cover_image_url: str | None = Field(default=None)
 
 
-class Book(BookBase, table=True):
-    """Book database model"""
-    __tablename__ = "books"
+# class Book(BookBase, table=True):
+#     """Book database model"""
+#     __tablename__ = "books"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    publisher_id: uuid.UUID = Field(foreign_key="publishers.id", index=True, ondelete="CASCADE")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    synced_at: datetime | None = Field(default=None)
+#     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+#     dcs_publisher_id: int = Field(index=True, description="Publisher ID in Dream Central Storage")
+#     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+#     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+#     synced_at: datetime | None = Field(default=None)
 
-    # Relationships
-    publisher: Publisher = Relationship(back_populates="books", sa_relationship_kwargs={"passive_deletes": True})
-    activities: list["Activity"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    assignments: list["Assignment"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    book_access: list["BookAccess"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+#     # Relationships
+#     activities: list["Activity"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+#     assignments: list["Assignment"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
-class BookPublic(BookBase):
-    """Properties to return via API"""
-    id: uuid.UUID
-    publisher_id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    synced_at: datetime | None
+# class BookPublic(BookBase):
+#     """Properties to return via API"""
+#     id: uuid.UUID
+#     dcs_publisher_id: int
+#     created_at: datetime
+#     updated_at: datetime
+#     synced_at: datetime | None
+
+# Use BookPublic from schemas.book instead (DCS-based, with integer IDs)
 
 
-# --- BookAccess Model ---
-
-class BookAccess(SQLModel, table=True):
-    """Book access permissions for publishers"""
-    __tablename__ = "book_access"
-    __table_args__ = (
-        UniqueConstraint("book_id", "publisher_id", name="uq_book_access_book_publisher"),
-    )
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    book_id: uuid.UUID = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
-    publisher_id: uuid.UUID = Field(foreign_key="publishers.id", index=True, ondelete="CASCADE")
-    granted_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    # Relationships
-    book: Book = Relationship(back_populates="book_access", sa_relationship_kwargs={"passive_deletes": True})
-    publisher: Publisher = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 # --- BookAssignment Model (Story 9.4) ---
@@ -677,7 +642,7 @@ class BookAssignmentBase(SQLModel):
 
 class BookAssignmentCreate(SQLModel):
     """Properties to receive via API on BookAssignment creation"""
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     school_id: uuid.UUID | None = None
     teacher_id: uuid.UUID | None = None
 
@@ -691,7 +656,7 @@ class BookAssignmentCreate(SQLModel):
 
 class BulkBookAssignmentCreate(SQLModel):
     """Properties for bulk book assignment creation"""
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     school_id: uuid.UUID
     teacher_ids: list[uuid.UUID] | None = None  # If None/empty, assigns to entire school
     assign_to_all_teachers: bool = False  # If True, assigns to school level (all teachers)
@@ -702,7 +667,7 @@ class BookAssignment(SQLModel, table=True):
     __tablename__ = "book_assignments"
     __table_args__ = (
         # Prevent duplicate assignments
-        UniqueConstraint("book_id", "school_id", "teacher_id", name="uq_book_assignment"),
+        UniqueConstraint("dcs_book_id", "school_id", "teacher_id", name="uq_book_assignment"),
         # Ensure at least one of school_id or teacher_id is set
         CheckConstraint(
             "school_id IS NOT NULL OR teacher_id IS NOT NULL",
@@ -711,14 +676,15 @@ class BookAssignment(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    book_id: uuid.UUID = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
+    # DCS book reference (no foreign key - books table removed)
+    dcs_book_id: int = Field(index=True)
     school_id: uuid.UUID | None = Field(default=None, foreign_key="schools.id", index=True, ondelete="CASCADE")
     teacher_id: uuid.UUID | None = Field(default=None, foreign_key="teachers.id", index=True, ondelete="CASCADE")
     assigned_by: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
     assigned_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    book: Book = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+    # book relationship removed - use BookService to fetch book data by dcs_book_id
     school: Optional["School"] = Relationship(sa_relationship_kwargs={"passive_deletes": True})
     teacher: Optional["Teacher"] = Relationship(sa_relationship_kwargs={"passive_deletes": True})
     assigner: User = Relationship(sa_relationship_kwargs={"passive_deletes": True, "foreign_keys": "[BookAssignment.assigned_by]"})
@@ -727,7 +693,7 @@ class BookAssignment(SQLModel, table=True):
 class BookAssignmentPublic(SQLModel):
     """Properties to return via API"""
     id: uuid.UUID
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     school_id: uuid.UUID | None
     teacher_id: uuid.UUID | None
     assigned_by: uuid.UUID
@@ -737,7 +703,7 @@ class BookAssignmentPublic(SQLModel):
 class BookAssignmentResponse(SQLModel):
     """Full book assignment response with related entity info"""
     id: uuid.UUID
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     book_title: str
     book_cover_url: str | None = None
     school_id: uuid.UUID | None
@@ -786,7 +752,7 @@ class ActivityBase(SQLModel):
 
 class ActivityCreate(ActivityBase):
     """Properties to receive via API on Activity creation"""
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
 
 
 class ActivityUpdate(SQLModel):
@@ -803,12 +769,13 @@ class Activity(ActivityBase, table=True):
     __tablename__ = "activities"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    book_id: uuid.UUID = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
+    # DCS book reference (no foreign key - books table removed)
+    dcs_book_id: int = Field(index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    book: Book = Relationship(back_populates="activities", sa_relationship_kwargs={"passive_deletes": True})
+    # book relationship removed - use BookService to fetch book data by dcs_book_id
     assignments: list["Assignment"] = Relationship(back_populates="activity", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     # New relationships for multi-activity support
     assignment_activities: list["AssignmentActivity"] = Relationship(back_populates="activity", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
@@ -818,40 +785,45 @@ class Activity(ActivityBase, table=True):
 class ActivityPublic(ActivityBase):
     """Properties to return via API"""
     id: uuid.UUID
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     created_at: datetime
     updated_at: datetime
 
 
 # --- Book Catalog Response Schemas (Story 3.6) ---
 
-class BookResponse(SQLModel):
-    """Book response schema for catalog listings"""
-    id: uuid.UUID
-    dream_storage_id: str
-    title: str
-    publisher_name: str
-    description: str | None = None
-    cover_image_url: str | None = None
-    activity_count: int = Field(default=0, description="Number of activities in book")
+# DEPRECATED: BookResponse/BookListResponse moved to schemas/book.py in Story 24.3
+# Use BookPublic from schemas.book for DCS-based book data
+
+# class BookResponse(SQLModel):
+#     """Book response schema for catalog listings"""
+#     id: uuid.UUID
+#     dream_storage_id: str
+#     title: str
+#     publisher_name: str
+#     description: str | None = None
+#     cover_image_url: str | None = None
+#     activity_count: int = Field(default=0, description="Number of activities in book")
 
 
 class ActivityResponse(SQLModel):
     """Activity response schema for book detail"""
     id: uuid.UUID
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     activity_type: ActivityType
     title: str | None = None
     config_json: dict
     order_index: int
+    module_name: str | None = None
+    page_number: int | None = None
 
 
-class BookListResponse(SQLModel):
-    """Paginated book list response"""
-    items: list[BookResponse]
-    total: int
-    skip: int
-    limit: int
+# class BookListResponse(SQLModel):
+#     """Paginated book list response"""
+#     items: list[BookResponse]
+#     total: int
+#     skip: int
+#     limit: int
 
 
 # --- Assignment Models ---
@@ -884,7 +856,7 @@ class AssignmentBase(SQLModel):
 class AssignmentCreate(AssignmentBase):
     """Properties to receive via API on Assignment creation"""
     teacher_id: uuid.UUID
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     # Backward compatible: either activity_id OR activity_ids must be provided
     activity_id: uuid.UUID | None = None
     activity_ids: list[uuid.UUID] | None = None
@@ -917,14 +889,15 @@ class Assignment(AssignmentBase, table=True):
     teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
     # Keep activity_id for backward compatibility during migration
     activity_id: uuid.UUID | None = Field(default=None, foreign_key="activities.id", index=True, ondelete="CASCADE")
-    book_id: uuid.UUID = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
+    # DCS book reference (no foreign key - books table removed)
+    dcs_book_id: int = Field(index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
     teacher: Teacher = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
     activity: Optional["Activity"] = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
-    book: Book = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
+    # book relationship removed - use BookService to fetch book data by dcs_book_id
     assignment_students: list["AssignmentStudent"] = Relationship(back_populates="assignment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     # New relationship for multi-activity support
     assignment_activities: list["AssignmentActivity"] = Relationship(back_populates="assignment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
@@ -952,7 +925,7 @@ class AssignmentPublic(AssignmentBase):
     """Properties to return via API"""
     id: uuid.UUID
     teacher_id: uuid.UUID
-    book_id: uuid.UUID
+    book_id: int  # DCS book ID
     created_at: datetime
     updated_at: datetime
     # Backward compatible: keep activity_id for single-activity assignments
@@ -1238,6 +1211,9 @@ class WebhookEventType(str, Enum):
     book_created = "book.created"
     book_updated = "book.updated"
     book_deleted = "book.deleted"
+    publisher_created = "publisher.created"
+    publisher_updated = "publisher.updated"
+    publisher_deleted = "publisher.deleted"
 
 
 class WebhookEventStatus(str, Enum):
@@ -1255,17 +1231,44 @@ class WebhookBookData(SQLModel):
     book_name: str
     book_title: str
     publisher: str
+    publisher_id: int | None = None  # Publisher ID for dcs_id mapping
     language: str
     category: str
     status: str
     version: str | None = None  # Optional - not always sent by Dream Central Storage
 
 
+class WebhookPublisherData(SQLModel):
+    """Publisher data from webhook payload"""
+    id: int
+    name: str
+    contact_email: str | None = None
+    logo_url: str | None = None
+
+
 class WebhookPayload(SQLModel):
-    """Webhook payload schema from Dream Central Storage"""
+    """Webhook payload schema from Dream Central Storage.
+
+    Supports both book and publisher events. The data field structure
+    depends on the event type:
+    - book.* events: data contains WebhookBookData fields
+    - publisher.* events: data contains WebhookPublisherData fields
+    """
     event: WebhookEventType
     timestamp: datetime
-    data: WebhookBookData
+    data: dict  # Raw dict to handle both book and publisher payloads
+
+    def get_book_data(self) -> WebhookBookData | None:
+        """Parse data as book data (for book.* events)."""
+        if self.event.value.startswith("book."):
+            return WebhookBookData(**self.data)
+        return None
+
+    def get_publisher_data(self) -> WebhookPublisherData | None:
+        """Parse data as publisher data (for publisher.* events)."""
+        if self.event.value.startswith("publisher."):
+            return WebhookPublisherData(**self.data)
+        return None
 
 
 class WebhookEventLog(SQLModel, table=True):
@@ -1274,7 +1277,8 @@ class WebhookEventLog(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     event_type: WebhookEventType = Field(index=True)
-    book_id: int | None = Field(default=None, index=True)  # dream_storage_id from payload
+    book_id: int | None = Field(default=None, index=True)  # dream_storage_id from book payload
+    publisher_id: int | None = Field(default=None, index=True)  # dcs_id from publisher payload
     payload_json: dict = Field(sa_column=Column(JSON))  # Full webhook payload for debugging
     status: WebhookEventStatus = Field(default=WebhookEventStatus.pending, index=True)
     retry_count: int = Field(default=0)

@@ -21,6 +21,7 @@ describe("ReportProgress", () => {
       <ReportProgress
         status="pending"
         progress={0}
+        jobId={null}
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
@@ -37,6 +38,7 @@ describe("ReportProgress", () => {
       <ReportProgress
         status="processing"
         progress={50}
+        jobId={null}
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
@@ -47,20 +49,21 @@ describe("ReportProgress", () => {
     expect(screen.getByText("50% complete")).toBeInTheDocument()
   })
 
-  it("renders completed state with download button", () => {
+  it("renders completed state with PDF viewer when jobId is present", () => {
     render(
       <ReportProgress
         status="completed"
         progress={100}
+        jobId="test-job-id"
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
     )
 
-    expect(screen.getByText("Report ready!")).toBeInTheDocument()
+    expect(screen.getByText("Report Ready")).toBeInTheDocument()
     expect(
-      screen.getByRole("button", { name: "Download Report" }),
+      screen.getByRole("button", { name: /Download/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: "New Report" }),
@@ -72,6 +75,7 @@ describe("ReportProgress", () => {
       <ReportProgress
         status="failed"
         progress={25}
+        jobId={null}
         errorMessage="Server error occurred"
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
@@ -90,13 +94,14 @@ describe("ReportProgress", () => {
       <ReportProgress
         status="completed"
         progress={100}
+        jobId="test-job-id"
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "Download Report" }))
+    fireEvent.click(screen.getByRole("button", { name: /Download/i }))
     expect(mockOnDownload).toHaveBeenCalledTimes(1)
   })
 
@@ -105,6 +110,7 @@ describe("ReportProgress", () => {
       <ReportProgress
         status="failed"
         progress={25}
+        jobId={null}
         errorMessage="Failed"
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
@@ -121,6 +127,7 @@ describe("ReportProgress", () => {
       <ReportProgress
         status="processing"
         progress={50}
+        jobId={null}
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
@@ -136,6 +143,7 @@ describe("ReportProgress", () => {
       <ReportProgress
         status="completed"
         progress={100}
+        jobId="test-job-id"
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
@@ -151,6 +159,7 @@ describe("ReportProgress", () => {
       <ReportProgress
         status="completed"
         progress={100}
+        jobId="test-job-id"
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
@@ -158,9 +167,7 @@ describe("ReportProgress", () => {
       />,
     )
 
-    expect(
-      screen.getByRole("button", { name: /Download Report/i }),
-    ).toBeDisabled()
+    expect(screen.getByRole("button", { name: /Download/i })).toBeDisabled()
   })
 
   it("handles null status gracefully", () => {
@@ -168,6 +175,7 @@ describe("ReportProgress", () => {
       <ReportProgress
         status={null}
         progress={0}
+        jobId={null}
         onDownload={mockOnDownload}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}

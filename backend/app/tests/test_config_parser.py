@@ -1,10 +1,7 @@
 """Unit tests for config.json parser."""
 
-import pytest
 
 from app.services.config_parser import (
-    ActivityData,
-    ConfigParseError,
     parse_book_config,
     validate_activity_type,
 )

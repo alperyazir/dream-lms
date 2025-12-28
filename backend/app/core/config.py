@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     SMTP_USER: str | None = None
     SMTP_PASSWORD: str | None = None
     EMAILS_FROM_EMAIL: EmailStr | None = None
-    EMAILS_FROM_NAME: EmailStr | None = None
+    EMAILS_FROM_NAME: str | None = None
 
     @model_validator(mode="after")
     def _set_default_emails_from(self) -> Self:
@@ -107,6 +107,13 @@ class Settings(BaseSettings):
 
     # Scheduled task API key for external schedulers (cron, Lambda, etc.)
     SCHEDULER_API_KEY: str | None = None
+
+    # DCS Cache settings (in seconds)
+    DCS_CACHE_DEFAULT_TTL: int = 300  # 5 minutes
+    DCS_CACHE_PUBLISHER_TTL: int = 600  # 10 minutes (publishers change rarely)
+    DCS_CACHE_BOOK_TTL: int = 600  # 10 minutes (books change rarely)
+    DCS_CACHE_LOGO_TTL: int = 3600  # 1 hour (logos rarely change)
+    DCS_CACHE_WARMUP_ENABLED: bool = False  # Optional: pre-fetch data at startup
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

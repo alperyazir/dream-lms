@@ -6,8 +6,8 @@
  * Shows a searchable, filterable list of the teacher's materials.
  */
 
-import { useState, useMemo } from "react"
 import { Check, FolderOpen, Plus, Search } from "lucide-react"
+import { useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select"
 import { useMaterials } from "@/hooks/useMaterials"
 import type { Material, MaterialType } from "@/types/material"
-import { MaterialTypeIcon, getMaterialTypeLabel } from "./MaterialTypeIcon"
+import { getMaterialTypeLabel, MaterialTypeIcon } from "./MaterialTypeIcon"
 
 interface TeacherMaterialPickerProps {
   /** Whether the dialog is open */
@@ -62,7 +62,9 @@ export function TeacherMaterialPicker({
   onSelect,
 }: TeacherMaterialPickerProps) {
   // Local state for selections before confirming
-  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set(selectedIds))
+  const [pendingIds, setPendingIds] = useState<Set<string>>(
+    new Set(selectedIds),
+  )
   const [searchQuery, setSearchQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState<MaterialType | "all">("all")
 

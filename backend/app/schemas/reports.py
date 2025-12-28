@@ -5,7 +5,6 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-
 # --- Enums (Task 1.1 - 1.5) ---
 
 

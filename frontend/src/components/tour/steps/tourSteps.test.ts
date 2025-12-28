@@ -30,7 +30,7 @@ describe("Tour Step Definitions", () => {
 
     it("includes dashboard step", () => {
       const dashboardStep = teacherTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-dashboard"]'
+        (step) => step.target === '[data-tour="sidebar-dashboard"]',
       )
       expect(dashboardStep).toBeDefined()
       expect(dashboardStep?.title).toContain("Dashboard")
@@ -38,35 +38,35 @@ describe("Tour Step Definitions", () => {
 
     it("includes library step", () => {
       const libraryStep = teacherTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-library"]'
+        (step) => step.target === '[data-tour="sidebar-library"]',
       )
       expect(libraryStep).toBeDefined()
     })
 
     it("includes assignments step", () => {
       const assignmentsStep = teacherTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-assignments"]'
+        (step) => step.target === '[data-tour="sidebar-assignments"]',
       )
       expect(assignmentsStep).toBeDefined()
     })
 
     it("includes insights step", () => {
       const insightsStep = teacherTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-insights"]'
+        (step) => step.target === '[data-tour="sidebar-insights"]',
       )
       expect(insightsStep).toBeDefined()
     })
 
     it("includes messages step", () => {
       const messagesStep = teacherTourSteps.find(
-        (step) => step.target === '[data-tour="navbar-messages"]'
+        (step) => step.target === '[data-tour="navbar-messages"]',
       )
       expect(messagesStep).toBeDefined()
     })
 
     it("includes settings step", () => {
       const settingsStep = teacherTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-settings"]'
+        (step) => step.target === '[data-tour="sidebar-settings"]',
       )
       expect(settingsStep).toBeDefined()
     })
@@ -93,28 +93,28 @@ describe("Tour Step Definitions", () => {
 
     it("includes dashboard step", () => {
       const dashboardStep = studentTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-dashboard"]'
+        (step) => step.target === '[data-tour="sidebar-dashboard"]',
       )
       expect(dashboardStep).toBeDefined()
     })
 
     it("includes assignments step", () => {
       const assignmentsStep = studentTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-assignments"]'
+        (step) => step.target === '[data-tour="sidebar-assignments"]',
       )
       expect(assignmentsStep).toBeDefined()
     })
 
     it("includes progress step", () => {
       const progressStep = studentTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-progress"]'
+        (step) => step.target === '[data-tour="sidebar-progress"]',
       )
       expect(progressStep).toBeDefined()
     })
 
     it("includes messages step", () => {
       const messagesStep = studentTourSteps.find(
-        (step) => step.target === '[data-tour="navbar-messages"]'
+        (step) => step.target === '[data-tour="navbar-messages"]',
       )
       expect(messagesStep).toBeDefined()
     })
@@ -141,28 +141,28 @@ describe("Tour Step Definitions", () => {
 
     it("includes dashboard step", () => {
       const dashboardStep = publisherTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-dashboard"]'
+        (step) => step.target === '[data-tour="sidebar-dashboard"]',
       )
       expect(dashboardStep).toBeDefined()
     })
 
     it("includes library step", () => {
       const libraryStep = publisherTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-library"]'
+        (step) => step.target === '[data-tour="sidebar-library"]',
       )
       expect(libraryStep).toBeDefined()
     })
 
     it("includes schools step", () => {
       const schoolsStep = publisherTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-schools"]'
+        (step) => step.target === '[data-tour="sidebar-schools"]',
       )
       expect(schoolsStep).toBeDefined()
     })
 
     it("includes teachers step", () => {
       const teachersStep = publisherTourSteps.find(
-        (step) => step.target === '[data-tour="sidebar-teachers"]'
+        (step) => step.target === '[data-tour="sidebar-teachers"]',
       )
       expect(teachersStep).toBeDefined()
     })
@@ -199,7 +199,7 @@ describe("Tour Step Definitions", () => {
 
     it("sidebar steps have right placement", () => {
       const sidebarSteps = allSteps.filter((step) =>
-        step.target.includes("sidebar")
+        step.target.includes("sidebar"),
       )
       sidebarSteps.forEach((step) => {
         expect(step.placement).toBe("right")
@@ -208,7 +208,7 @@ describe("Tour Step Definitions", () => {
 
     it("navbar steps have bottom placement", () => {
       const navbarSteps = allSteps.filter((step) =>
-        step.target.includes("navbar")
+        step.target.includes("navbar"),
       )
       navbarSteps.forEach((step) => {
         expect(step.placement).toBe("bottom")

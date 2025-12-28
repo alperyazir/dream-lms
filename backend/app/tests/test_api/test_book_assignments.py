@@ -2,10 +2,8 @@
 
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 

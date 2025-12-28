@@ -466,6 +466,7 @@ async def get_student_badge_counts(
         Dictionary with badge counts by type, total, and this_month counts
     """
     from collections import Counter
+
     from app.core.feedback_constants import VALID_BADGE_SLUGS
 
     # Get all assignment_student records for this student

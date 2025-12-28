@@ -60,8 +60,7 @@ function BookCoverThumbnail({
     }
   }, [book.cover_image_url])
 
-  const sizeClasses =
-    size === "small" ? "w-12 h-16" : "w-20 h-28"
+  const sizeClasses = size === "small" ? "w-12 h-16" : "w-20 h-28"
   const iconSize = size === "small" ? "w-6 h-6" : "w-10 h-10"
 
   if (isLoading) {

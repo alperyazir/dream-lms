@@ -1,11 +1,12 @@
 /**
  * Student Progress Page
  * Story 5.5: Student Progress Tracking & Personal Analytics
+ * Story 22.2: My Progress Page Enhancement (added breadcrumb)
  *
  * Comprehensive student-facing progress dashboard
  */
 
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { BarChart3 } from "lucide-react"
 import { useState } from "react"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
@@ -16,8 +17,17 @@ import {
   ProgressScoreChart,
   ProgressStatsCard,
   RecentAssignments,
+  RecentFeedbackSection,
   StudyTimeCard,
 } from "@/components/progress"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import {
   Select,
   SelectContent,
@@ -55,6 +65,21 @@ function StudentProgressPage() {
 
   return (
     <div className="max-w-full p-6 space-y-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/student/dashboard">Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>My Progress</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -104,6 +129,11 @@ function StudentProgressPage() {
             />
             <ActivityBreakdown data={progress.activity_breakdown} />
           </div>
+
+          {/* Recent Feedback */}
+          <RecentFeedbackSection
+            recentAssignments={progress.recent_assignments}
+          />
 
           {/* Bottom Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

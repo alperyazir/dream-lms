@@ -7,7 +7,6 @@ Provides authenticated access to book assets (images, audio) from Dream Central 
 import logging
 import mimetypes
 import re
-import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
@@ -17,14 +16,13 @@ from app.api.deps import get_current_user, get_db
 from app.models import (
     Assignment,
     AssignmentStudent,
-    Book,
-    BookAccess,
-    Publisher,
     Student,
     Teacher,
     User,
     UserRole,
 )
+from app.schemas.book import BookPublic
+from app.services.book_service_v2 import get_book_service
 from app.services.dream_storage_client import (
     DreamStorageError,
     DreamStorageNotFoundError,
@@ -86,11 +84,14 @@ def _get_content_type_from_path(asset_path: str) -> str:
     return content_type or "application/octet-stream"
 
 
-def _check_book_access(
-    book_id: uuid.UUID, current_user: User, db: Session
-) -> Book:
+async def _check_book_access(
+    book_id: int, current_user: User, db: Session
+) -> BookPublic:
     """
-    Verify user has access to book through publisher permissions.
+    Verify user has access to book.
+
+    Note: Publisher role deprecated - publishers managed in Dream Central Storage.
+    Book access for teachers/students is now managed through BookAssignment table.
 
     Args:
         book_id: Book ID to check access for
@@ -103,41 +104,45 @@ def _check_book_access(
     Raises:
         HTTPException(404): Book not found
         HTTPException(403): User doesn't have access to book
+        HTTPException(410): Publisher role deprecated
     """
-    # Fetch book
-    book = db.exec(select(Book).where(Book.id == book_id)).first()
+    # Fetch book from DCS
+    book_service = get_book_service()
+    book = await book_service.get_book(book_id)
 
     if not book:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found in DCS"
         )
 
     # Admin users can access any book
     if current_user.role == UserRole.admin:
         return book
 
-    # Determine publisher_id based on user role
-    publisher_id = None
+    # Supervisor can access any book
+    if current_user.role == UserRole.supervisor:
+        return book
 
     if current_user.role == UserRole.publisher:
-        # Publisher user - direct relationship
-        publisher = db.exec(
-            select(Publisher).where(Publisher.user_id == current_user.id)
-        ).first()
-        if publisher:
-            publisher_id = publisher.id
+        # Publisher role deprecated
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Publisher role is deprecated. Publishers are now managed in Dream Central Storage."
+        )
 
     elif current_user.role == UserRole.teacher:
-        # Teacher user - get publisher through school
+        # Teacher - allow access to book assets if teacher exists
+        # (BookAssignment access control handled at assignment endpoints)
         teacher = db.exec(
             select(Teacher).where(Teacher.user_id == current_user.id)
         ).first()
-        if teacher and teacher.school_id:
-            # Get publisher_id from school
-            from app.models import School
-            school = db.get(School, teacher.school_id)
-            if school:
-                publisher_id = school.publisher_id
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Teacher record not found",
+            )
+        # Allow asset access for teachers (assignment validation happens elsewhere)
+        return book
 
     elif current_user.role == UserRole.student:
         # Student user - check if they have an assignment for this book
@@ -157,7 +162,7 @@ def _check_book_access(
             .join(Assignment, Assignment.id == AssignmentStudent.assignment_id)
             .where(
                 AssignmentStudent.student_id == student.id,
-                Assignment.book_id == book_id,
+                Assignment.dcs_book_id == book_id,
             )
         ).first()
 
@@ -170,27 +175,10 @@ def _check_book_access(
         # Student has valid assignment, allow access
         return book
 
-    if not publisher_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User does not have publisher access",
-        )
-
-    # Check BookAccess table
-    book_access = db.exec(
-        select(BookAccess).where(
-            BookAccess.book_id == book_id,
-            BookAccess.publisher_id == publisher_id,
-        )
-    ).first()
-
-    if not book_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have access to this book",
-        )
-
-    return book
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="User does not have access to this book",
+    )
 
 
 @router.get(
@@ -200,7 +188,7 @@ def _check_book_access(
     description="Proxy authenticated access to book assets from Dream Central Storage",
 )
 async def serve_book_asset(
-    book_id: Annotated[uuid.UUID, Path(description="Book ID")],
+    book_id: Annotated[int, Path(description="Book ID")],
     asset_path: Annotated[
         str,
         Path(
@@ -229,7 +217,7 @@ async def serve_book_asset(
     _validate_asset_path(asset_path)
 
     # Check book access
-    book = _check_book_access(book_id, current_user, db)
+    book = await _check_book_access(book_id, current_user, db)
 
     # Fetch asset from Dream Central Storage
     client = await get_dream_storage_client()
@@ -237,7 +225,7 @@ async def serve_book_asset(
     try:
         asset_data = await client.download_asset(
             publisher=book.publisher_name,
-            book_name=book.book_name,
+            book_name=book.name,
             asset_path=asset_path,
         )
     except DreamStorageNotFoundError:
@@ -281,7 +269,7 @@ async def serve_book_asset(
     description="Convenience endpoint for serving page images",
 )
 async def serve_page_image(
-    book_id: Annotated[uuid.UUID, Path(description="Book ID")],
+    book_id: Annotated[int, Path(description="Book ID")],
     page_number: Annotated[int, Path(description="Page number", ge=1)],
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],

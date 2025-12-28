@@ -2,11 +2,11 @@
 
 import logging
 import uuid
+from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from typing import Annotated
 
 import jwt
-from collections.abc import AsyncGenerator
 from fastapi import Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from fastapi.routing import APIRouter
@@ -29,8 +29,6 @@ from app.models import (
     AssignmentStudent,
     AssignmentStudentActivity,
     AssignmentStudentActivityStatus,
-    Book,
-    BookAccess,
     Class,
     ClassStudent,
     NotificationType,
@@ -58,9 +56,11 @@ from app.schemas.assignment import (
     AdditionalResources,
     AdditionalResourcesResponse,
     AssignmentCreate,
+    AssignmentForEditResponse,
     AssignmentListItem,
     AssignmentPreviewResponse,
     AssignmentResponse,
+    AssignmentResultDetailResponse,
     AssignmentSaveProgressRequest,
     AssignmentSaveProgressResponse,
     AssignmentSubmissionResponse,
@@ -86,15 +86,16 @@ from app.schemas.feedback import (
     FeedbackUpdate,
 )
 from app.services import book_assignment_service, feedback_service, notification_service
+from app.services.analytics_service import (
+    get_assignment_detailed_results,
+    get_student_assignment_answers,
+)
+from app.services.book_service_v2 import get_book_service
 from app.services.dream_storage_client import (
     DreamCentralStorageClient,
     DreamStorageError,
     DreamStorageNotFoundError,
     get_dream_storage_client,
-)
-from app.services.analytics_service import (
-    get_assignment_detailed_results,
-    get_student_assignment_answers,
 )
 
 router = APIRouter(prefix="/assignments", tags=["assignments"])
@@ -105,45 +106,6 @@ _media_oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token",
     auto_error=False,
 )
-
-
-async def _verify_activity_access(
-    session: AsyncSessionDep, activity_id: uuid.UUID, teacher: Teacher
-) -> Activity:
-    """
-    Verify teacher has access to activity through BookAccess.
-
-    Args:
-        session: Database session
-        activity_id: Activity ID to verify access for
-        teacher: Teacher object (with school relationship loaded)
-
-    Returns:
-        Activity object if access verified
-
-    Raises:
-        HTTPException(404): Activity not found or no access
-    """
-    # Query Activity → Book → BookAccess
-    result = await session.execute(
-        select(Activity)
-        .join(Book, Activity.book_id == Book.id)
-        .join(BookAccess, Book.id == BookAccess.book_id)
-        .where(
-            Activity.id == activity_id,
-            BookAccess.publisher_id == teacher.school.publisher_id,
-        )
-    )
-    activity = result.scalar_one_or_none()
-
-    if not activity:
-        # Don't expose whether activity exists - security best practice
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
-        )
-
-    return activity
 
 
 async def _verify_activities_access(
@@ -187,7 +149,7 @@ async def _verify_activities_access(
         )
 
     # Get unique book IDs from activities and verify teacher has access to each
-    book_ids = {activity.book_id for activity in activities}
+    book_ids = {activity.dcs_book_id for activity in activities}
     for book_id in book_ids:
         has_access = await book_assignment_service.check_teacher_book_access(
             db=session,
@@ -256,15 +218,20 @@ async def _get_target_students(
         class_student_ids = result.scalars().all()
         all_student_ids.update(class_student_ids)
 
-    # Verify all students belong to teacher (through their class enrollments)
+    # Verify all students belong to teacher
+    # Story 20.5: Support both students in classes AND unassigned students created by teacher
     if all_student_ids:
+        # Get students either in teacher's classes OR created by teacher
         result = await session.execute(
             select(Student)
-            .join(ClassStudent, Student.id == ClassStudent.student_id)
-            .join(Class, ClassStudent.class_id == Class.id)
+            .outerjoin(ClassStudent, Student.id == ClassStudent.student_id)
+            .outerjoin(Class, ClassStudent.class_id == Class.id)
             .where(
                 Student.id.in_(all_student_ids),
-                Class.teacher_id == teacher_id,
+                # Student belongs to teacher if:
+                # 1. They are in one of teacher's classes OR
+                # 2. They were created by this teacher (unassigned students)
+                (Class.teacher_id == teacher_id) | (Student.created_by_teacher_id == teacher_id)
             )
             .distinct()
         )
@@ -273,7 +240,7 @@ async def _get_target_students(
         if len(students) != len(all_student_ids):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Some students do not belong to your classes",
+                detail="Some students do not belong to you",
             )
 
         return list(students)
@@ -446,10 +413,9 @@ async def list_assignments(
             detail="Teacher record not found for this user",
         )
 
-    # Get all assignments for this teacher with joins to get book and activity info
+    # Get all assignments for this teacher with activity info
     result = await session.execute(
-        select(Assignment, Book, Activity)
-        .join(Book, Assignment.book_id == Book.id)
+        select(Assignment, Activity)
         .join(Activity, Assignment.activity_id == Activity.id)
         .options(selectinload(Assignment.assignment_students))
         .where(Assignment.teacher_id == teacher.id)
@@ -457,9 +423,20 @@ async def list_assignments(
     )
     assignments_data = result.all()
 
+    # Get BookService to fetch book data from DCS
+    book_service = get_book_service()
+
     # Build response with enriched data
     assignment_list = []
-    for assignment, book, activity in assignments_data:
+    for assignment, activity in assignments_data:
+        # Fetch book data from DCS
+        book = await book_service.get_book(assignment.dcs_book_id)
+        if not book:
+            logger.warning(
+                f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
+            )
+            continue
+
         # Use pre-loaded assignment_students relationship (no N+1 query)
         assignment_students = assignment.assignment_students
 
@@ -484,7 +461,7 @@ async def list_assignments(
                 time_limit_minutes=assignment.time_limit_minutes,
                 created_at=assignment.created_at,
                 book_id=book.id,
-                book_title=book.title,
+                book_title=book.title or book.name,
                 activity_id=activity.id,
                 activity_title=activity.title,
                 activity_type=activity.activity_type,
@@ -503,16 +480,16 @@ async def list_assignments(
 @router.get(
     "/admin/all",
     response_model=list[AssignmentListItem],
-    summary="List all assignments (Admin only)",
-    description="Get all assignments in the system with enriched data - admin access only",
+    summary="List all assignments (Admin/Supervisor)",
+    description="Get all assignments in the system with enriched data - admin/supervisor access",
 )
 async def list_all_assignments_admin(
     *,
     session: AsyncSessionDep,
-    current_user: User = require_role(UserRole.admin),
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor),
 ) -> list[AssignmentListItem]:
     """
-    List all assignments in the system (admin only) with enriched data.
+    List all assignments in the system (admin/supervisor) with enriched data.
 
     Returns assignments with:
     - Book and activity information
@@ -520,10 +497,9 @@ async def list_all_assignments_admin(
     - Teacher information
     - Sorted by created_at descending (newest first)
     """
-    # Get all assignments with joins to get book, activity, and teacher info
+    # Get all assignments with joins to get activity and teacher info
     result = await session.execute(
-        select(Assignment, Book, Activity, Teacher, User)
-        .join(Book, Assignment.book_id == Book.id)
+        select(Assignment, Activity, Teacher, User)
         .join(Activity, Assignment.activity_id == Activity.id)
         .join(Teacher, Assignment.teacher_id == Teacher.id)
         .join(User, Teacher.user_id == User.id)
@@ -532,9 +508,20 @@ async def list_all_assignments_admin(
     )
     assignments_data = result.all()
 
+    # Get BookService to fetch book data from DCS
+    book_service = get_book_service()
+
     # Build response with enriched data
     assignment_list = []
-    for assignment, book, activity, teacher, teacher_user in assignments_data:
+    for assignment, activity, teacher, teacher_user in assignments_data:
+        # Fetch book data from DCS
+        book = await book_service.get_book(assignment.dcs_book_id)
+        if not book:
+            logger.warning(
+                f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
+            )
+            continue
+
         # Use pre-loaded assignment_students relationship (no N+1 query)
         assignment_students = assignment.assignment_students
 
@@ -559,7 +546,7 @@ async def list_all_assignments_admin(
                 time_limit_minutes=assignment.time_limit_minutes,
                 created_at=assignment.created_at,
                 book_id=book.id,
-                book_title=book.title,
+                book_title=book.title or book.name,
                 activity_id=activity.id,
                 activity_title=activity.title,
                 activity_type=activity.activity_type,
@@ -589,7 +576,7 @@ async def get_calendar_assignments(
     end_date: datetime = Query(..., description="End date for range (inclusive)"),
     class_id: uuid.UUID | None = Query(None, description="Filter by class ID"),
     status_filter: AssignmentPublishStatus | None = Query(None, alias="status", description="Filter by status"),
-    book_id: uuid.UUID | None = Query(None, description="Filter by book ID"),
+    book_id: int | None = Query(None, description="Filter by book ID (DCS book ID)"),
     current_user: User = require_role(UserRole.teacher),
 ) -> CalendarAssignmentsResponse:
     """
@@ -638,10 +625,8 @@ async def get_calendar_assignments(
     query = (
         select(
             Assignment,
-            Book,
             sql_func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
         )
-        .join(Book, Assignment.book_id == Book.id)
         .outerjoin(
             activity_count_subq,
             activity_count_subq.c.assignment_id == Assignment.id
@@ -664,11 +649,14 @@ async def get_calendar_assignments(
         query = query.where(Assignment.status == status_filter)
 
     if book_id:
-        query = query.where(Assignment.book_id == book_id)
+        query = query.where(Assignment.dcs_book_id == book_id)
 
     # Execute query
     result = await session.execute(query)
     rows = result.all()
+
+    # Get BookService to fetch book data from DCS
+    book_service = get_book_service()
 
     # Get class names for each assignment
     assignment_class_map: dict[uuid.UUID, list[str]] = defaultdict(list)
@@ -717,8 +705,15 @@ async def get_calendar_assignments(
 
     for row in rows:
         assignment = row[0]
-        book = row[1]
-        activity_count = row[2]
+        activity_count = row[1]
+
+        # Fetch book data from DCS
+        book = await book_service.get_book(assignment.dcs_book_id)
+        if not book:
+            logger.warning(
+                f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
+            )
+            continue
 
         # Use due_date as primary, scheduled_publish_date as secondary, created_at as fallback
         calendar_date = assignment.due_date or assignment.scheduled_publish_date or assignment.created_at
@@ -733,7 +728,7 @@ async def get_calendar_assignments(
             activity_count=activity_count,
             class_names=assignment_class_map.get(assignment.id, []),
             book_id=book.id,
-            book_title=book.title,
+            book_title=book.title or book.name,
         )
         assignments_by_date[date_key].append(calendar_item)
 
@@ -856,7 +851,7 @@ async def create_assignment(
     assignment = Assignment(
         teacher_id=teacher.id,
         activity_id=first_activity_id,  # Backward compatible - first activity
-        book_id=assignment_in.book_id,
+        dcs_book_id=assignment_in.book_id,
         name=assignment_in.name,
         instructions=assignment_in.instructions,
         due_date=assignment_in.due_date,
@@ -945,7 +940,7 @@ async def create_assignment(
     assignment_response = AssignmentResponse(
         id=assignment.id,
         teacher_id=assignment.teacher_id,
-        book_id=assignment.book_id,
+        book_id=assignment.dcs_book_id,
         name=assignment.name,
         instructions=assignment.instructions,
         due_date=assignment.due_date,
@@ -1083,7 +1078,7 @@ async def create_bulk_assignments(
         assignment = Assignment(
             teacher_id=teacher.id,
             activity_id=first_activity_id,  # Backward compatible - first activity
-            book_id=assignment_in.book_id,
+            dcs_book_id=assignment_in.book_id,
             name=assignment_name,
             instructions=assignment_in.instructions,
             due_date=group.due_date,
@@ -1291,7 +1286,7 @@ async def update_assignment(
 
         # Verify all activities belong to the same book as the assignment
         for activity in new_activities:
-            if activity.book_id != assignment.book_id:
+            if activity.dcs_book_id != assignment.dcs_book_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="All activities must be from the same book as the assignment",
@@ -1419,7 +1414,106 @@ async def delete_assignment(
         f"Assignment deleted: id={assignment_id}, teacher_id={teacher.id}"
     )
 
-    # Return 204 No Content (FastAPI handles this automatically)
+
+@router.post(
+    "/{assignment_id}/materials/{material_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Attach teacher material to assignment",
+    description="Attach a teacher material to an assignment's resources",
+)
+async def attach_material_to_assignment(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    material_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher),
+) -> dict[str, str]:
+    """
+    Attach a teacher material to an assignment.
+
+    **Story 21.3:** Upload Materials in Resources Context
+
+    **Authorization:**
+    - Teacher must own both the assignment and the material
+
+    **Returns:**
+    Success message
+    """
+    # Get teacher record
+    result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = result.scalar_one_or_none()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found",
+        )
+
+    # Verify assignment ownership
+    result = await session.execute(
+        select(Assignment).where(
+            Assignment.id == assignment_id,
+            Assignment.teacher_id == teacher.id,
+        )
+    )
+    assignment = result.scalar_one_or_none()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    # Verify material ownership
+    result = await session.execute(
+        select(TeacherMaterial).where(
+            TeacherMaterial.id == material_id,
+            TeacherMaterial.teacher_id == teacher.id,
+        )
+    )
+    material = result.scalar_one_or_none()
+
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found",
+        )
+
+    # Get current resources or create empty structure
+    current_resources = assignment.resources or {}
+    teacher_materials = current_resources.get("teacher_materials", [])
+
+    # Check if already attached
+    material_ids = [m.get("material_id") for m in teacher_materials]
+    if str(material_id) in material_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Material already attached to this assignment",
+        )
+
+    # Add new material
+    teacher_materials.append({
+        "material_id": str(material_id),
+        "name": material.name,
+        "material_type": material.type.value,
+    })
+
+    # Update assignment resources
+    current_resources["teacher_materials"] = teacher_materials
+    assignment.resources = current_resources
+    assignment.updated_at = datetime.now(UTC)
+
+    await session.commit()
+
+    logger.info(
+        f"Material attached: assignment_id={assignment_id}, "
+        f"material_id={material_id}, teacher_id={teacher.id}"
+    )
+
+    return {"status": "attached"}
+
 
 
 @router.get(
@@ -1466,11 +1560,10 @@ async def start_assignment(
             detail="Student record not found for this user",
         )
 
-    # Query AssignmentStudent with joins to Assignment, Book, Activity
+    # Query AssignmentStudent with joins to Assignment and Activity
     result = await session.execute(
-        select(AssignmentStudent, Assignment, Book, Activity)
+        select(AssignmentStudent, Assignment, Activity)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Book, Assignment.book_id == Book.id)
         .join(Activity, Assignment.activity_id == Activity.id)
         .where(
             AssignmentStudent.assignment_id == assignment_id,
@@ -1486,7 +1579,16 @@ async def start_assignment(
             detail="Assignment not found",
         )
 
-    assignment_student, assignment, book, activity = assignment_data
+    assignment_student, assignment, activity = assignment_data
+
+    # Fetch book data from DCS
+    book_service = get_book_service()
+    book = await book_service.get_book(assignment.dcs_book_id)
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Book data not available",
+        )
 
     # Check if assignment is published (students can't access scheduled assignments)
     if assignment.status != AssignmentPublishStatus.published:
@@ -1517,10 +1619,10 @@ async def start_assignment(
         due_date=assignment.due_date,
         time_limit_minutes=assignment.time_limit_minutes,
         book_id=book.id,
-        book_title=book.title,
-        book_name=book.book_name,  # Story 4.2: For Dream Central Storage image URLs
+        book_title=book.title or book.name,
+        book_name=book.name,  # Story 4.2: For Dream Central Storage image URLs
         publisher_name=book.publisher_name,  # Story 4.2: For Dream Central Storage image URLs
-        book_cover_url=book.cover_image_url,
+        book_cover_url=book.cover_url,
         activity_id=activity.id,
         activity_title=activity.title,
         activity_type=activity.activity_type.value,
@@ -1584,11 +1686,10 @@ async def start_multi_activity_assignment(
             detail="Student record not found for this user",
         )
 
-    # Get AssignmentStudent with Assignment and Book
+    # Get AssignmentStudent with Assignment
     result = await session.execute(
-        select(AssignmentStudent, Assignment, Book)
+        select(AssignmentStudent, Assignment)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Book, Assignment.book_id == Book.id)
         .where(
             AssignmentStudent.assignment_id == assignment_id,
             AssignmentStudent.student_id == student.id,
@@ -1602,7 +1703,16 @@ async def start_multi_activity_assignment(
             detail="Assignment not found",
         )
 
-    assignment_student, assignment, book = assignment_data
+    assignment_student, assignment = assignment_data
+
+    # Fetch book data from DCS
+    book_service = get_book_service()
+    book = await book_service.get_book(assignment.dcs_book_id)
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Book data not available",
+        )
 
     # Check if assignment is published (students can't access scheduled assignments)
     if assignment.status != AssignmentPublishStatus.published:
@@ -1718,10 +1828,10 @@ async def start_multi_activity_assignment(
         due_date=assignment.due_date,
         time_limit_minutes=assignment.time_limit_minutes,
         book_id=book.id,
-        book_title=book.title,
-        book_name=book.book_name,
+        book_title=book.title or book.name,
+        book_name=book.name,
         publisher_name=book.publisher_name,
-        book_cover_url=book.cover_image_url,
+        book_cover_url=book.cover_url,
         activities=activities,
         activity_progress=activity_progress,
         total_activities=len(activities),
@@ -2680,6 +2790,114 @@ async def submit_assignment(
     )
 
 
+@router.get(
+    "/{assignment_id}/result",
+    response_model=AssignmentResultDetailResponse,
+    summary="Get assignment submission result for review",
+    description="Retrieve submitted answers and activity config for result review (Story 23.4)",
+)
+async def get_assignment_result(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    current_user: User = require_role(UserRole.student),
+) -> AssignmentResultDetailResponse:
+    """
+    Get detailed assignment result for review.
+
+    Story 23.4: Returns submitted answers with activity configuration
+    so students can review their work with correct/incorrect marking.
+
+    **Workflow:**
+    1. Verify assignment exists and is assigned to student
+    2. Check assignment is completed
+    3. Return submission data with activity config
+
+    **Authorization:**
+    Only students can view their own submission results.
+
+    **Returns:**
+    AssignmentResultDetailResponse with answers, config, and score.
+
+    **Status Codes:**
+    - 200: Result retrieved successfully
+    - 404: Assignment not found or not completed
+    - 403: Not authorized to view this result
+    """
+    # Get Student record for current user
+    result = await session.execute(
+        select(Student).where(Student.user_id == current_user.id)
+    )
+    student = result.scalar_one_or_none()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found for this user",
+        )
+
+    # Get AssignmentStudent record with joins to Assignment and Activity
+    result = await session.execute(
+        select(AssignmentStudent, Assignment, Activity)
+        .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+        .join(Activity, Assignment.activity_id == Activity.id)
+        .where(
+            AssignmentStudent.assignment_id == assignment_id,
+            AssignmentStudent.student_id == student.id,
+        )
+    )
+    assignment_data = result.one_or_none()
+
+    if not assignment_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found or not assigned to you",
+        )
+
+    assignment_student, assignment, activity = assignment_data
+
+    # Check if assignment is completed
+    if assignment_student.status != AssignmentStatus.completed:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment has not been completed yet",
+        )
+
+    # Check if answers_json exists
+    if not assignment_student.answers_json:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No submission data found for this assignment",
+        )
+
+    # Fetch book data from DCS for metadata
+    book_service = get_book_service()
+    book = await book_service.get_book(assignment.dcs_book_id)
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Book data not available",
+        )
+
+    # Build response with all data needed for result review
+    return AssignmentResultDetailResponse(
+        assignment_id=assignment.id,
+        assignment_name=assignment.name,
+        activity_id=activity.id,
+        activity_title=activity.title,
+        activity_type=activity.activity_type.value,
+        book_id=book.id,
+        book_name=book.name,
+        publisher_name=book.publisher_name,
+        config_json=activity.config_json,
+        answers_json=assignment_student.answers_json,
+        score=assignment_student.score or 0.0,
+        total_points=100.0,  # Standard total for percentage-based scoring
+        completed_at=assignment_student.completed_at,
+        time_spent_minutes=assignment_student.time_spent_minutes,
+    )
+
+
 # --- Assignment Analytics Endpoints (Story 5.3) ---
 
 
@@ -3520,21 +3738,27 @@ async def preview_assignment(
     - 403: Not authorized to preview this assignment
     - 404: Assignment not found
     """
-    # Get assignment with book
+    # Get assignment
     result = await session.execute(
-        select(Assignment, Book)
-        .join(Book, Assignment.book_id == Book.id)
+        select(Assignment)
         .where(Assignment.id == assignment_id)
     )
-    assignment_data = result.one_or_none()
+    assignment = result.scalar_one_or_none()
 
-    if not assignment_data:
+    if not assignment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Assignment not found",
         )
 
-    assignment, book = assignment_data
+    # Fetch book data from DCS
+    book_service = get_book_service()
+    book = await book_service.get_book(assignment.dcs_book_id)
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Book data not available",
+        )
 
     # Authorization check based on role
     if current_user.role == UserRole.teacher:
@@ -3598,10 +3822,10 @@ async def preview_assignment(
         time_limit_minutes=assignment.time_limit_minutes,
         status=assignment.status,
         book_id=book.id,
-        book_title=book.title,
-        book_name=book.book_name,
+        book_title=book.title or book.name,
+        book_name=book.name,
         publisher_name=book.publisher_name,
-        book_cover_url=book.cover_image_url,
+        book_cover_url=book.cover_url,
         activities=activities,
         total_activities=len(activities),
         is_preview=True,
@@ -3612,6 +3836,164 @@ async def preview_assignment(
     logger.info(
         f"Assignment preview requested: id={assignment.id}, "
         f"user_id={current_user.id}, activities={len(activities)}"
+    )
+
+    return response
+
+
+@router.get(
+    "/{assignment_id}/for-edit",
+    response_model=AssignmentForEditResponse,
+    summary="Get assignment for editing",
+    description="Get assignment data for editing, including recipients and time planning info.",
+)
+async def get_assignment_for_edit(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher, UserRole.publisher, UserRole.admin),
+) -> AssignmentForEditResponse:
+    """
+    Get assignment data for editing (Story 20.2).
+
+    **Purpose:**
+    Returns assignment data with recipient information preserved, allowing
+    teachers to edit assignments without losing recipient selections.
+
+    **Workflow:**
+    1. Verify assignment exists
+    2. Verify teacher owns the assignment OR is admin/publisher with book access
+    3. Get all activities linked to this assignment
+    4. Get all students assigned to this assignment
+    5. Return assignment data in edit format with recipients
+
+    **Authorization:**
+    - Teachers: Can edit their own assignments
+    - Publishers: Can edit assignments for books they published
+    - Admins: Can edit any assignment
+
+    **Returns:**
+    AssignmentForEditResponse with recipients (student_ids) for edit mode.
+
+    **Note:**
+    - class_ids is always empty (recipients are expanded to individual students)
+    - student_ids contains all students currently assigned
+    - This preserves the exact assignment scope during edits
+
+    **Status Codes:**
+    - 200: Edit data returned successfully
+    - 403: Not authorized to edit this assignment
+    - 404: Assignment not found
+    """
+    # Get assignment with relationships
+    result = await session.execute(
+        select(Assignment)
+        .options(selectinload(Assignment.assignment_students))
+        .where(Assignment.id == assignment_id)
+    )
+    assignment = result.scalar_one_or_none()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    # Fetch book data from DCS
+    book_service = get_book_service()
+    book = await book_service.get_book(assignment.dcs_book_id)
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Book data not available",
+        )
+
+    # Authorization check based on role
+    if current_user.role == UserRole.teacher:
+        # Teacher must own the assignment
+        result = await session.execute(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        )
+        teacher = result.scalar_one_or_none()
+
+        if not teacher or assignment.teacher_id != teacher.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only edit your own assignments",
+            )
+    elif current_user.role == UserRole.publisher:
+        # Publisher must have published the book
+        if book.publisher_id != current_user.publisher_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only edit assignments for your books",
+            )
+    # Admin can edit any assignment - no additional check needed
+
+    # Get all activities linked to this assignment via AssignmentActivity junction table
+    result = await session.execute(
+        select(AssignmentActivity, Activity)
+        .join(Activity, AssignmentActivity.activity_id == Activity.id)
+        .where(AssignmentActivity.assignment_id == assignment_id)
+        .order_by(AssignmentActivity.order_index)
+    )
+    assignment_activities = result.all()
+
+    if not assignment_activities:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No activities found for this assignment",
+        )
+
+    # Build activities list with configs
+    activities: list[ActivityWithConfig] = []
+    for aa, activity in assignment_activities:
+        activities.append(
+            ActivityWithConfig(
+                id=activity.id,
+                title=activity.title,
+                activity_type=activity.activity_type.value,
+                config_json=activity.config_json or {},
+                order_index=aa.order_index,
+            )
+        )
+
+    # Get all student IDs assigned to this assignment (Story 20.2)
+    student_ids = [ast.student_id for ast in assignment.assignment_students]
+
+    # Story 13.3: Enrich resources with availability status
+    enriched_resources = await _enrich_resources(session, assignment.resources)
+
+    # Build response with recipient data (Story 20.2)
+    response = AssignmentForEditResponse(
+        assignment_id=assignment.id,
+        assignment_name=assignment.name,
+        instructions=assignment.instructions,
+        due_date=assignment.due_date,
+        time_limit_minutes=assignment.time_limit_minutes,
+        status=assignment.status,
+        book_id=book.id,
+        book_title=book.title or book.name,
+        book_name=book.name,
+        publisher_name=book.publisher_name,
+        book_cover_url=book.cover_url,
+        activities=activities,
+        total_activities=len(activities),
+        video_path=assignment.video_path,
+        resources=enriched_resources,
+        # Recipient data (Story 20.2)
+        class_ids=[],  # Always empty - recipients are stored as individual students
+        student_ids=student_ids,
+        # Time planning data (Story 20.2)
+        time_planning_enabled=assignment.scheduled_publish_date is not None,
+        scheduled_publish_date=assignment.scheduled_publish_date,
+        date_groups=None,  # Not stored - would need to be reconstructed if needed
+    )
+
+    logger.info(
+        f"Assignment edit data requested: id={assignment.id}, "
+        f"user_id={current_user.id}, activities={len(activities)}, "
+        f"recipients={len(student_ids)}"
     )
 
     return response
@@ -3655,21 +4037,27 @@ async def preview_activity(
     - 403: Not authorized to preview this activity
     - 404: Activity not found
     """
-    # Get activity with book
+    # Get activity
     result = await session.execute(
-        select(Activity, Book)
-        .join(Book, Activity.book_id == Book.id)
+        select(Activity)
         .where(Activity.id == activity_id)
     )
-    activity_data = result.one_or_none()
+    activity = result.scalar_one_or_none()
 
-    if not activity_data:
+    if not activity:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Activity not found",
         )
 
-    activity, book = activity_data
+    # Fetch book data from DCS
+    book_service = get_book_service()
+    book = await book_service.get_book(activity.dcs_book_id)
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Book data not available",
+        )
 
     # Authorization check based on role
     if current_user.role == UserRole.teacher:
@@ -3685,16 +4073,14 @@ async def preview_activity(
                 detail="Teacher record not found",
             )
 
-        # Check book access
-        result = await session.execute(
-            select(BookAccess).where(
-                BookAccess.book_id == book.id,
-                BookAccess.school_id == teacher.school_id,
-            )
+        # Check book access using book_assignment_service (which handles DCS book IDs)
+        has_access = await book_assignment_service.check_teacher_book_access(
+            db=session,
+            teacher_id=teacher.id,
+            book_id=activity.dcs_book_id,
         )
-        book_access = result.scalar_one_or_none()
 
-        if not book_access:
+        if not has_access:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have access to this book",
@@ -3715,7 +4101,7 @@ async def preview_activity(
         activity_type=activity.activity_type.value,
         config_json=activity.config_json or {},
         book_id=book.id,
-        book_name=book.book_name,
+        book_name=book.name,
         publisher_name=book.publisher_name,
         is_preview=True,
     )

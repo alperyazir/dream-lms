@@ -5,7 +5,6 @@ This module parses nested book configuration structures and extracts activity da
 """
 
 import logging
-from typing import Any
 
 from pydantic import BaseModel
 

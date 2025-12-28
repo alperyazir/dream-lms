@@ -12,6 +12,7 @@ import logging
 from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import quote as url_quote
 
 import httpx
 from pydantic import BaseModel
@@ -74,6 +75,7 @@ class BookRead(BaseModel):
     id: int
     book_name: str
     publisher: str
+    publisher_id: int | None = None  # Publisher ID for dcs_id mapping
     book_title: str | None = None  # DCS uses 'book_title' not 'title'
     book_cover: str | None = None
     description: str | None = None
@@ -87,6 +89,22 @@ class BookRead(BaseModel):
     def title(self) -> str:
         """Get display title (book_title if available, otherwise book_name)."""
         return self.book_title or self.book_name
+
+
+class PublisherRead(BaseModel):
+    """Publisher data model from Dream Central Storage API."""
+
+    id: int
+    name: str
+    contact_email: str | None = None
+    logo_url: str | None = None
+
+
+class PublisherListResponse(BaseModel):
+    """Response model for listing publishers from DCS."""
+
+    items: list[PublisherRead]
+    total: int
 
 
 # ============================================================================
@@ -441,6 +459,42 @@ class DreamCentralStorageClient:
 
         # Make request
         response = await self._make_request("GET", "/books/")
+        books_data = response.json()
+        books = [BookRead(**book) for book in books_data]
+
+        # Cache for 15 minutes
+        self._set_cached(cache_key, books, ttl_seconds=15 * 60)
+
+        return books
+
+    async def list_books(self, publisher_id: int | None = None) -> list[BookRead]:
+        """
+        Fetch books from Dream Central Storage, optionally filtered by publisher.
+
+        Args:
+            publisher_id: Optional publisher ID to filter by
+
+        Returns:
+            List[BookRead]: List of books (all or filtered by publisher)
+
+        Raises:
+            DreamStorageError: If request fails
+        """
+        # Build query parameters
+        params = {}
+        if publisher_id is not None:
+            params["publisher_id"] = publisher_id
+
+        # Generate cache key
+        cache_key = f"list_books:{publisher_id}" if publisher_id else "list_books:all"
+
+        # Check cache
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
+        # Make request
+        response = await self._make_request("GET", "/books/", params=params)
         books_data = response.json()
         books = [BookRead(**book) for book in books_data]
 
@@ -852,9 +906,12 @@ class DreamCentralStorageClient:
 
             # Parse response to get the storage path
             result = response.json()
-            # DCS returns: {category, filename, path, ...}
-            # path format: "{category}/{filename}"
-            storage_path = result.get("path", f"{result['category']}/{result['filename']}")
+            # DCS returns: {teacher_id, filename, path, size, content_type}
+            # path format: "{teacher_id}/materials/{filename}"
+            storage_path = result.get("path")
+            if not storage_path:
+                # Fallback for older API versions
+                storage_path = f"{teacher_id}/materials/{result.get('filename', 'unknown')}"
 
             logger.info(f"Uploaded teacher material: {storage_path}")
             return storage_path
@@ -867,12 +924,12 @@ class DreamCentralStorageClient:
         """
         Download a file from teacher's storage.
 
-        Uses DCS /teachers/{teacher_uuid}/files/{category}/{filename}/download
-        to get a presigned URL, then fetches the file content.
+        Uses DCS /teachers/{teacher_id}/materials/{path} endpoint which directly
+        streams the file content.
 
         Args:
             teacher_id: Teacher UUID string
-            storage_path: Storage path in format "{teacher_uuid}/{category}/{filename}"
+            storage_path: Storage path in format "{teacher_uuid}/materials/{filename}"
 
         Returns:
             File bytes
@@ -881,17 +938,22 @@ class DreamCentralStorageClient:
             ValueError: If path format is invalid
             DreamStorageError: If download fails
         """
-        # Parse storage path: {teacher_uuid}/{category}/{filename}
+        # Parse storage path: {teacher_uuid}/materials/{filename}
         parts = storage_path.split("/", 2)
         if len(parts) != 3:
             raise ValueError(f"Invalid storage path format: {storage_path}")
-        _teacher_uuid, category, filename = parts
+        _teacher_uuid, _materials, filename = parts
 
-        # Get presigned download URL from DCS
+        # Get valid token
         token = await self._get_valid_token()
-        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}/download"
 
-        timeout = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+        # URL-encode filename for Unicode support (e.g., Turkish characters)
+        encoded_filename = url_quote(filename, safe="")
+
+        # New DCS endpoint directly streams file content
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/materials/{encoded_filename}"
+
+        timeout = httpx.Timeout(connect=5.0, read=60.0, write=10.0, pool=5.0)
 
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(
@@ -902,36 +964,12 @@ class DreamCentralStorageClient:
             if response.status_code == 404:
                 raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
 
-            if response.status_code != 200:
+            if response.status_code not in (200, 206):
                 raise DreamStorageError(
-                    f"Failed to get download URL: {response.status_code}"
+                    f"Failed to download file: {response.status_code}"
                 )
 
-            result = response.json()
-            download_url = result.get("url")
-
-            if not download_url:
-                raise DreamStorageError("No download URL returned from DCS")
-
-            # Presigned URLs from DCS contain 'minio:9000' (internal Docker hostname).
-            # We need to rewrite to localhost:9000 but preserve the Host header for signature validation.
-            original_host = None
-            if "minio:9000" in download_url:
-                original_host = "minio:9000"
-                download_url = download_url.replace("http://minio:9000", "http://localhost:9000")
-
-            # Fetch the actual file content from the presigned URL
-            headers = {}
-            if original_host:
-                headers["Host"] = original_host
-            file_response = await client.get(download_url, headers=headers)
-
-            if file_response.status_code != 200:
-                raise DreamStorageError(
-                    f"Failed to download file: {file_response.status_code}"
-                )
-
-            return file_response.content
+            return response.content
 
     async def stream_teacher_material(
         self,
@@ -944,11 +982,12 @@ class DreamCentralStorageClient:
         """
         Stream a file from teacher's storage with optional byte range.
 
-        Gets a presigned URL from DCS and streams the file content.
+        Uses DCS /teachers/{teacher_id}/materials/{path} endpoint which directly
+        streams the file content with Range header support.
 
         Args:
             teacher_id: Teacher UUID string
-            storage_path: Storage path in format "{teacher_uuid}/{category}/{filename}"
+            storage_path: Storage path in format "{teacher_uuid}/materials/{filename}"
             start: Start byte position
             end: End byte position (None for end of file)
             chunk_size: Size of chunks to yield (default 32KB)
@@ -960,57 +999,32 @@ class DreamCentralStorageClient:
             ValueError: If path format is invalid
             DreamStorageError: If streaming fails
         """
-        # Parse storage path: {teacher_uuid}/{category}/{filename}
+        # Parse storage path: {teacher_uuid}/materials/{filename}
         parts = storage_path.split("/", 2)
         if len(parts) != 3:
             raise ValueError(f"Invalid storage path format: {storage_path}")
-        _teacher_uuid, category, filename = parts
+        _teacher_uuid, _materials, filename = parts
 
-        # Get presigned download URL from DCS
+        # Get valid token
         token = await self._get_valid_token()
-        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}/download"
+
+        # URL-encode filename for Unicode support (e.g., Turkish characters)
+        encoded_filename = url_quote(filename, safe="")
+
+        # New DCS endpoint directly streams file content with Range support
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/materials/{encoded_filename}"
 
         timeout = httpx.Timeout(connect=5.0, read=120.0, write=10.0, pool=5.0)
 
+        # Prepare headers for streaming with range support
+        headers = {"Authorization": f"Bearer {token}"}
+        if end is not None:
+            headers["Range"] = f"bytes={start}-{end}"
+        elif start > 0:
+            headers["Range"] = f"bytes={start}-"
+
         async with httpx.AsyncClient(timeout=timeout) as client:
-            # First, get the presigned URL
-            response = await client.get(
-                url,
-                headers={"Authorization": f"Bearer {token}"},
-            )
-
-            if response.status_code == 404:
-                raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
-
-            if response.status_code != 200:
-                raise DreamStorageError(
-                    f"Failed to get download URL: {response.status_code}"
-                )
-
-            result = response.json()
-            download_url = result.get("url")
-
-            if not download_url:
-                raise DreamStorageError("No download URL returned from DCS")
-
-            # Presigned URLs from DCS contain 'minio:9000' (internal Docker hostname).
-            # We need to rewrite to localhost:9000 but preserve the Host header for signature validation.
-            original_host = None
-            if "minio:9000" in download_url:
-                original_host = "minio:9000"
-                download_url = download_url.replace("http://minio:9000", "http://localhost:9000")
-
-            # Prepare headers for streaming with range support
-            stream_headers = {}
-            if original_host:
-                stream_headers["Host"] = original_host
-            if end is not None:
-                stream_headers["Range"] = f"bytes={start}-{end}"
-            elif start > 0:
-                stream_headers["Range"] = f"bytes={start}-"
-
-            # Stream from the presigned URL
-            async with client.stream("GET", download_url, headers=stream_headers) as stream_response:
+            async with client.stream("GET", url, headers=headers) as stream_response:
                 if stream_response.status_code == 404:
                     raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
 
@@ -1031,26 +1045,30 @@ class DreamCentralStorageClient:
         """
         Delete a file from teacher's storage.
 
-        Uses DCS /teachers/{teacher_uuid}/files/{category}/{filename} DELETE endpoint.
+        Uses DCS /teachers/{teacher_id}/materials/{path} DELETE endpoint.
 
         Args:
             teacher_id: Teacher UUID string
-            storage_path: Storage path in format "{category}/{filename}"
+            storage_path: Storage path in format "{teacher_uuid}/materials/{filename}"
 
         Raises:
             ValueError: If path format is invalid
             DreamStorageError: If deletion fails
         """
-        # Parse storage path to get category and filename
-        parts = storage_path.split("/", 1)
-        if len(parts) != 2:
+        # Parse storage path: {teacher_uuid}/materials/{filename}
+        parts = storage_path.split("/", 2)
+        if len(parts) != 3:
             raise ValueError(f"Invalid storage path format: {storage_path}")
-        category, filename = parts
+        _teacher_uuid, _materials, filename = parts
 
         # Get valid token
         token = await self._get_valid_token()
 
-        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}"
+        # URL-encode filename for Unicode support (e.g., Turkish characters)
+        encoded_filename = url_quote(filename, safe="")
+
+        # New DCS endpoint for deleting materials
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/materials/{encoded_filename}"
 
         timeout = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
 
@@ -1079,55 +1097,73 @@ class DreamCentralStorageClient:
         expires_minutes: int = 60,
     ) -> dict:
         """
-        Get a presigned URL for direct browser access to a teacher material.
+        Get URL info for browser access to a teacher material.
+
+        Note: The new DCS API no longer provides presigned URLs. This function
+        now verifies the file exists and returns metadata. The frontend should
+        use the authenticated streaming endpoint instead.
 
         Args:
             teacher_id: Teacher UUID string
-            storage_path: Storage path in format "{teacher_uuid}/{category}/{filename}"
-            expires_minutes: URL expiry in minutes (default 60, max 1440)
+            storage_path: Storage path in format "{teacher_uuid}/materials/{filename}"
+            expires_minutes: URL expiry in minutes (for compatibility, not used)
 
         Returns:
-            Dict with url, expires_in_seconds, path
+            Dict with path, size, content_type
 
         Raises:
             ValueError: If path format is invalid
             DreamStorageError: If request fails
         """
-        # Parse storage path: {teacher_uuid}/{category}/{filename}
+        # Parse storage path: {teacher_uuid}/materials/{filename}
         parts = storage_path.split("/", 2)
         if len(parts) != 3:
             raise ValueError(f"Invalid storage path format: {storage_path}")
-        _teacher_uuid, category, filename = parts
+        _teacher_uuid, _materials, filename = parts
 
-        # Get presigned URL from DCS
+        # Verify file exists with Range request (HEAD not supported by DCS)
         token = await self._get_valid_token()
-        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}/download"
-        params = {"expires_minutes": min(expires_minutes, 1440)}
+
+        # URL-encode filename for Unicode support (e.g., Turkish characters)
+        encoded_filename = url_quote(filename, safe="")
+
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/materials/{encoded_filename}"
 
         timeout = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
 
         async with httpx.AsyncClient(timeout=timeout) as client:
+            # Use Range request to get first byte - this verifies file exists and gets metadata
             response = await client.get(
                 url,
-                params=params,
-                headers={"Authorization": f"Bearer {token}"},
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Range": "bytes=0-0",
+                },
             )
 
             if response.status_code == 404:
                 raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
 
-            if response.status_code != 200:
+            if response.status_code not in (200, 206):
                 raise DreamStorageError(
-                    f"Failed to get presigned URL: {response.status_code}"
+                    f"Failed to verify material: {response.status_code}"
                 )
 
-            result = response.json()
+            # Parse size from Content-Range header (format: "bytes 0-0/total_size")
+            content_range = response.headers.get("content-range", "")
+            size = 0
+            if "/" in content_range:
+                try:
+                    size = int(content_range.split("/")[1])
+                except (IndexError, ValueError):
+                    pass
 
-            # Note: For browser access, presigned URLs contain 'minio:9000' which
-            # browsers can't resolve. The frontend should use backend proxy endpoints
-            # (/stream, /download) instead of presigned URLs directly.
-
-            return result
+            return {
+                "path": storage_path,
+                "size": size,
+                "content_type": response.headers.get("content-type", "application/octet-stream"),
+                "expires_in_seconds": expires_minutes * 60,
+            }
 
     async def get_teacher_material_size(
         self,
@@ -1137,11 +1173,11 @@ class DreamCentralStorageClient:
         """
         Get the size of a teacher material file without downloading it.
 
-        Uses the presigned URL with a HEAD request to get Content-Length.
+        Uses Range request to get Content-Range header (HEAD not supported by DCS).
 
         Args:
             teacher_id: Teacher UUID string
-            storage_path: Storage path in format "{teacher_uuid}/{category}/{filename}"
+            storage_path: Storage path in format "{teacher_uuid}/materials/{filename}"
 
         Returns:
             File size in bytes
@@ -1150,82 +1186,138 @@ class DreamCentralStorageClient:
             ValueError: If path format is invalid
             DreamStorageError: If request fails
         """
-        # Parse storage path: {teacher_uuid}/{category}/{filename}
+        # Parse storage path: {teacher_uuid}/materials/{filename}
         parts = storage_path.split("/", 2)
         if len(parts) != 3:
             raise ValueError(f"Invalid storage path format: {storage_path}")
-        _teacher_uuid, category, filename = parts
+        _teacher_uuid, _materials, filename = parts
 
-        # Get presigned download URL from DCS
+        # Get valid token
         token = await self._get_valid_token()
-        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/files/{category}/{filename}/download"
+
+        # URL-encode filename for Unicode support (e.g., Turkish characters)
+        encoded_filename = url_quote(filename, safe="")
+
+        # New DCS endpoint for materials
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/materials/{encoded_filename}"
 
         timeout = httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
 
         async with httpx.AsyncClient(timeout=timeout) as client:
+            # Use Range request to get first byte - Content-Range header contains total size
             response = await client.get(
                 url,
-                headers={"Authorization": f"Bearer {token}"},
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Range": "bytes=0-0",
+                },
             )
 
             if response.status_code == 404:
                 raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
 
-            if response.status_code != 200:
+            if response.status_code not in (200, 206):
                 raise DreamStorageError(
-                    f"Failed to get download URL: {response.status_code}"
+                    f"Failed to get file size: {response.status_code}"
                 )
 
-            result = response.json()
-            download_url = result.get("url")
-
-            if not download_url:
-                raise DreamStorageError("No download URL returned from DCS")
-
-            # Presigned URLs from DCS contain 'minio:9000' (internal Docker hostname).
-            # We need to rewrite to localhost:9000 but preserve the Host header for signature validation.
-            original_host = None
-            if "minio:9000" in download_url:
-                original_host = "minio:9000"
-                download_url = download_url.replace("http://minio:9000", "http://localhost:9000")
-
-            # Prepare headers for HEAD request
-            head_headers = {}
-            if original_host:
-                head_headers["Host"] = original_host
-
-            # Make a HEAD request to the presigned URL to get size
-            head_response = await client.head(download_url, headers=head_headers)
-
-            if head_response.status_code == 404:
-                raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
-
-            if head_response.status_code != 200:
-                # Fallback: try Range request
-                range_headers = {"Range": "bytes=0-0"}
-                if original_host:
-                    range_headers["Host"] = original_host
-                range_response = await client.get(
-                    download_url,
-                    headers=range_headers,
-                )
-
-                content_range = range_response.headers.get("Content-Range")
-                if content_range:
-                    try:
-                        total_size = int(content_range.split("/")[1])
-                        return total_size
-                    except (IndexError, ValueError):
-                        pass
-
-                raise DreamStorageError(f"Unable to get file size: {head_response.status_code}")
-
-            # Get Content-Length from HEAD response
-            content_length = head_response.headers.get("Content-Length")
-            if content_length:
-                return int(content_length)
+            # Parse size from Content-Range header (format: "bytes 0-0/total_size")
+            content_range = response.headers.get("content-range", "")
+            if "/" in content_range:
+                try:
+                    return int(content_range.split("/")[1])
+                except (IndexError, ValueError):
+                    pass
 
             raise DreamStorageError("Unable to determine file size")
+
+    async def get_publisher_logo(self, dcs_id: int) -> tuple[bytes, str] | None:
+        """
+        Fetch publisher logo from DCS.
+
+        Uses DCS REST API endpoint to fetch publisher logo.
+
+        Args:
+            dcs_id: Publisher ID in Dream Central Storage
+
+        Returns:
+            Tuple of (content_bytes, mime_type) or None if not found
+
+        Raises:
+            DreamStorageError: If DCS request fails (except 404)
+        """
+        try:
+            # Use DCS REST API endpoint for publisher logos
+            url = f"/publishers/{dcs_id}/logo"
+            response = await self._make_request("GET", url)
+
+            # Detect MIME type from response headers or content
+            content_type = response.headers.get("content-type", "image/png")
+
+            return (response.content, content_type)
+        except DreamStorageNotFoundError:
+            # Logo not found in DCS
+            return None
+        except DreamStorageError:
+            # Re-raise DCS errors (auth, server errors, etc.)
+            raise
+        except Exception as e:
+            logger.warning(f"Error fetching logo for DCS publisher {dcs_id}: {e}")
+            return None
+
+    async def list_publishers(self) -> list[PublisherRead]:
+        """
+        Fetch all publishers from DCS.
+
+        Used for initial/bulk sync on LMS startup.
+
+        Returns:
+            List of PublisherRead objects
+
+        Raises:
+            DreamStorageError: If DCS request fails
+        """
+        try:
+            response = await self._make_request("GET", "/publishers/")
+            data = response.json()
+
+            # Handle both list and paginated response formats
+            if isinstance(data, list):
+                return [PublisherRead(**p) for p in data]
+            elif isinstance(data, dict) and "items" in data:
+                return [PublisherRead(**p) for p in data["items"]]
+            else:
+                logger.warning(f"Unexpected publishers response format: {type(data)}")
+                return []
+        except DreamStorageError:
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching publishers list: {e}")
+            raise DreamStorageError(f"Failed to fetch publishers: {e}") from e
+
+    async def get_publisher_by_id(self, publisher_id: int) -> PublisherRead | None:
+        """
+        Fetch single publisher by DCS ID.
+
+        Args:
+            publisher_id: Publisher ID in Dream Central Storage
+
+        Returns:
+            PublisherRead object or None if not found
+
+        Raises:
+            DreamStorageError: If DCS request fails (except 404)
+        """
+        try:
+            response = await self._make_request("GET", f"/publishers/{publisher_id}")
+            return PublisherRead(**response.json())
+        except DreamStorageNotFoundError:
+            return None
+        except DreamStorageError:
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching publisher {publisher_id}: {e}")
+            raise DreamStorageError(f"Failed to fetch publisher: {e}") from e
 
     def _sanitize_filename(self, filename: str) -> str:
         """

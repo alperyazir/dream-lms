@@ -56,7 +56,7 @@ export async function listBookAssignments(params: {
  * Get all assignments for a specific book
  */
 export async function getBookAssignments(
-  bookId: string,
+  bookId: number,
 ): Promise<BookAssignmentResponse[]> {
   return BookAssignmentsService.getBookAssignments({
     bookId,

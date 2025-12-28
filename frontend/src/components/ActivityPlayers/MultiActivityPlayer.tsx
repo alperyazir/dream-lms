@@ -6,9 +6,11 @@
  * shared timer, and per-activity progress tracking.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react"
 import { Eye, EyeOff, FolderOpen, LogOut, RotateCcw } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
+import { hasAudio } from "@/lib/audioUtils"
 import type {
   ActivityConfig,
   MatchTheWordsActivity,
@@ -18,19 +20,20 @@ import {
   saveActivityProgress,
   submitMultiActivityAssignment,
 } from "@/services/assignmentsApi"
+import {
+  getActivityAudioUrl,
+  getSubtitleUrl,
+  getVideoStreamUrl,
+} from "@/services/booksApi"
 import type {
   ActivityProgressInfo,
   ActivityState,
   ActivityWithConfig,
+  AdditionalResourcesResponse,
   AssignmentStudentActivityStatus,
   MultiActivitySubmitResponse,
   VideoResource,
 } from "@/types/assignment"
-import { hasAudio } from "@/lib/audioUtils"
-import { getActivityAudioUrl } from "@/services/booksApi"
-import { getSubtitleUrl, getVideoStreamUrl } from "@/services/booksApi"
-import type { AdditionalResourcesResponse } from "@/types/assignment"
-import { Button } from "@/components/ui/button"
 import { ActivityNavigationBar } from "./ActivityNavigationBar"
 import { ActivityPlayer } from "./ActivityPlayer"
 import { AudioPlayer } from "./AudioPlayer"
@@ -66,13 +69,11 @@ function getDefaultActivityHeader(activityType: string): string {
  * Get the question/header text for an activity
  * Checks config.headerText first, then falls back to activity-type-specific defaults
  */
-function getActivityHeaderText(
-  activity: ActivityWithConfig,
-): string {
+function getActivityHeaderText(activity: ActivityWithConfig): string {
   const config = activity.config_json as ActivityConfig
 
-  // Check if config has headerText (MatchTheWords, PuzzleFindWords)
-  if ("headerText" in config && config.headerText) {
+  // Check if config exists and has headerText (MatchTheWords, PuzzleFindWords)
+  if (config && "headerText" in config && config.headerText) {
     return (config as MatchTheWordsActivity | PuzzleFindWordsActivity)
       .headerText
   }
@@ -214,8 +215,11 @@ export function MultiActivityPlayer({
 
   // Story 10.3+/13.3: Resource sidebar state
   const [resourceSidebarOpen, setResourceSidebarOpen] = useState(false)
-  const [selectedResourceVideo, setSelectedResourceVideo] = useState<VideoResource | null>(null)
-  const resourceCount = (resources?.videos?.length ?? 0) + (resources?.teacher_materials?.length ?? 0)
+  const [selectedResourceVideo, setSelectedResourceVideo] =
+    useState<VideoResource | null>(null)
+  const resourceCount =
+    (resources?.videos?.length ?? 0) +
+    (resources?.teacher_materials?.length ?? 0)
 
   // Story 10.3: Reset trigger and confirmation dialog
   const [resetTrigger, setResetTrigger] = useState(0)
@@ -263,8 +267,16 @@ export function MultiActivityPlayer({
   // Story 10.2: Fetch authenticated audio blob URL
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [audioLoading, setAudioLoading] = useState(false)
+  // Use ref to track blob URL for cleanup without causing re-renders
+  const audioUrlRef = useRef<string | null>(null)
 
   useEffect(() => {
+    // Revoke previous blob URL before fetching new one
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current)
+      audioUrlRef.current = null
+    }
+
     // Reset audio URL when activity changes
     setAudioUrl(null)
 
@@ -275,7 +287,8 @@ export function MultiActivityPlayer({
 
     getActivityAudioUrl(bookId, audioPath)
       .then((url) => {
-        if (!cancelled) {
+        if (!cancelled && url) {
+          audioUrlRef.current = url
           setAudioUrl(url)
           setAudioLoading(false)
         }
@@ -288,13 +301,17 @@ export function MultiActivityPlayer({
 
     return () => {
       cancelled = true
-      // Revoke old blob URL to prevent memory leak
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl)
+    }
+  }, [audioPath, bookId])
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioPath, bookId, currentIndex])
+  }, [])
 
   // Computed: all activities completed?
   const completedCount = useMemo(() => {
@@ -659,12 +676,16 @@ export function MultiActivityPlayer({
                 </Button>
               )}
 
-              <SharedAssignmentTimer
-                totalTimeLimit={timeLimit}
-                elapsedMinutes={initialTimeSpent}
-                onTimeExpired={timeLimit ? handleTimeExpired : undefined}
-                onElapsedChange={!timeLimit ? handleElapsedChange : undefined}
-              />
+              {/* Only render timer if timeLimit is set or we need to track elapsed time */}
+              {(timeLimit !== null && timeLimit !== undefined) ||
+              initialTimeSpent > 0 ? (
+                <SharedAssignmentTimer
+                  totalTimeLimit={timeLimit}
+                  elapsedMinutes={initialTimeSpent}
+                  onTimeExpired={timeLimit ? handleTimeExpired : undefined}
+                  onElapsedChange={!timeLimit ? handleElapsedChange : undefined}
+                />
+              ) : null}
             </div>
           </div>
 
@@ -696,27 +717,50 @@ export function MultiActivityPlayer({
       {/* Main content area with optional sidebar */}
       <div className="min-h-0 flex-1 flex overflow-hidden">
         {/* Activity Player - takes remaining width with smooth transition */}
-        <main className="flex-1 min-w-0 overflow-hidden transition-all duration-300 ease-in-out">
+        <main className="flex-1 min-w-0 overflow-auto transition-all duration-300 ease-in-out">
           <div className="h-full">
-            <ActivityPlayer
-              key={`${currentActivity.id}-${showAnswers}`} // Re-mount on activity change or show answers toggle
-              activityConfig={currentActivity.config_json as ActivityConfig}
-              assignmentId={assignmentId}
-              bookId={bookId}
-              bookName={bookName}
-              publisherName={publisherName}
-              bookTitle={bookTitle}
-              activityType={normalizeActivityType(currentActivity.activity_type)}
-              // No per-activity time limit - shared timer handles it
-              timeLimit={undefined}
-              onExit={handleSaveAndExit}
-              initialProgress={currentState?.responseData}
-              initialTimeSpent={0} // Time tracked at assignment level
-              embedded={true} // Fully embedded - hide header and footer
-              onActivityComplete={handleActivityComplete} // Story 8.3: Notify parent when activity completed with score
-              showCorrectAnswers={previewMode && showAnswers} // Story 9.7: Show correct answers in preview mode
-              resetTrigger={resetTrigger} // Story 10.3: External reset trigger from footer
-            />
+            {currentActivity?.config_json ? (
+              <ActivityPlayer
+                key={`${currentActivity.id}-${resetTrigger}`} // Re-mount on activity change or reset
+                activityConfig={currentActivity.config_json as ActivityConfig}
+                assignmentId={assignmentId}
+                bookId={bookId}
+                bookName={bookName}
+                publisherName={publisherName}
+                bookTitle={bookTitle}
+                activityType={normalizeActivityType(
+                  currentActivity.activity_type,
+                )}
+                // No per-activity time limit - shared timer handles it
+                timeLimit={undefined}
+                onExit={handleSaveAndExit}
+                initialProgress={currentState?.responseData}
+                initialTimeSpent={0} // Time tracked at assignment level
+                embedded={true} // Fully embedded - hide header and footer
+                onActivityComplete={handleActivityComplete} // Story 8.3: Notify parent when activity completed with score
+                showCorrectAnswers={previewMode && showAnswers} // Story 9.7: Show correct answers in preview mode
+                resetTrigger={resetTrigger} // Story 10.3: External reset trigger from footer
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2">
+                    Activity Configuration Missing
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    This activity is missing its configuration data and cannot
+                    be displayed.
+                  </p>
+                  {currentActivity && (
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>Activity ID: {currentActivity.id}</p>
+                      <p>Title: {currentActivity.title || "No title"}</p>
+                      <p>Type: {currentActivity.activity_type}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </main>
 
@@ -746,10 +790,7 @@ export function MultiActivityPlayer({
                   <span>Loading audio...</span>
                 </div>
               ) : audioUrl ? (
-                <AudioPlayer
-                  src={audioUrl}
-                  isExpanded={true}
-                />
+                <AudioPlayer src={audioUrl} isExpanded={true} />
               ) : (
                 <div className="py-1 text-center text-sm text-red-500">
                   Failed to load audio
@@ -913,7 +954,8 @@ export function MultiActivityPlayer({
               </h3>
             </div>
             <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
-              This will clear all your answers for the current activity. Are you sure you want to start over?
+              This will clear all your answers for the current activity. Are you
+              sure you want to start over?
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -928,6 +970,8 @@ export function MultiActivityPlayer({
                 onClick={() => {
                   setResetTrigger((prev) => prev + 1)
                   setShowResetDialog(false)
+                  // Turn off Show Answers so user can interact
+                  setShowAnswers(false)
                   // Also reset the activity state in the parent
                   if (currentActivity) {
                     setActivityStates((prev) => {

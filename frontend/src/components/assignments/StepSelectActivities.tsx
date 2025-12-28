@@ -17,7 +17,7 @@ import type { Book } from "@/types/book"
 import { ActivitySelectionTabs } from "./ActivitySelectionTabs"
 
 interface StepSelectActivitiesProps {
-  bookId: string
+  bookId: string | number
   book: Book
   selectedActivityIds: string[]
   onActivityIdsChange: (activityIds: string[]) => void
@@ -26,8 +26,6 @@ interface StepSelectActivitiesProps {
   onTimePlanningChange?: (enabled: boolean) => void
   dateGroups?: DateActivityGroup[]
   onDateGroupsChange?: (groups: DateActivityGroup[]) => void
-  // Story 9.7: Activity preview callback
-  onPreviewActivity?: (activityId: string) => void
 }
 
 export function StepSelectActivities({
@@ -39,7 +37,6 @@ export function StepSelectActivities({
   onTimePlanningChange,
   dateGroups = [],
   onDateGroupsChange,
-  onPreviewActivity,
 }: StepSelectActivitiesProps) {
   return (
     <ActivitySelectionTabs
@@ -51,7 +48,6 @@ export function StepSelectActivities({
       onTimePlanningChange={onTimePlanningChange}
       dateGroups={dateGroups}
       onDateGroupsChange={onDateGroupsChange}
-      onPreviewActivity={onPreviewActivity}
     />
   )
 }

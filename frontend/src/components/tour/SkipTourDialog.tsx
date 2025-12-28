@@ -22,7 +22,11 @@ export interface SkipTourDialogProps {
   onCancel: () => void
 }
 
-export function SkipTourDialog({ open, onConfirm, onCancel }: SkipTourDialogProps) {
+export function SkipTourDialog({
+  open,
+  onConfirm,
+  onCancel,
+}: SkipTourDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <AlertDialogContent>
@@ -33,7 +37,9 @@ export function SkipTourDialog({ open, onConfirm, onCancel }: SkipTourDialogProp
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>Continue Tour</AlertDialogCancel>
+          <AlertDialogCancel onClick={onCancel}>
+            Continue Tour
+          </AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>Skip</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

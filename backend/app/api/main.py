@@ -19,6 +19,7 @@ from app.api.routes import (
     reports,
     scheduled_tasks,
     students,
+    supervisors,
     teacher_materials,
     teachers,
     users,
@@ -32,6 +33,7 @@ api_router.include_router(login.router)
 api_router.include_router(users.router)
 api_router.include_router(utils.router)
 api_router.include_router(admin.router)
+api_router.include_router(supervisors.router)
 api_router.include_router(publishers.router)
 api_router.include_router(teachers.router)
 api_router.include_router(students.router)

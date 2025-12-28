@@ -1,14 +1,10 @@
 """API tests for student bulk import (Story 9.9)."""
 import io
-import uuid
 
-import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from openpyxl import Workbook, load_workbook
 from sqlmodel import Session
-
-from app.models import School, Teacher, User, UserRole
 
 
 def auth_headers(token: str) -> dict[str, str]:

@@ -5,7 +5,11 @@ export const Route = createFileRoute("/_layout/admin")({
   beforeLoad: async ({ context }) => {
     const currentUser = context.currentUser
 
-    if (!currentUser || currentUser.role !== "admin") {
+    // Allow both admin and supervisor roles to access admin routes
+    if (
+      !currentUser ||
+      (currentUser.role !== "admin" && currentUser.role !== "supervisor")
+    ) {
       throw redirect({
         to: "/",
       })

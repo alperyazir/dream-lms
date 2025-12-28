@@ -3,26 +3,27 @@ import uuid
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from sqlmodel import func, select, SQLModel
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from sqlmodel import SQLModel, func, select
 
 from app import crud
-from app.api.deps import AsyncSessionDep, SessionDep, require_role
+from app.api.deps import (
+    AdminOrSupervisor,
+    AsyncSessionDep,
+    SessionDep,
+    can_delete_user,
+    require_role,
+)
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models import (
+    Assignment,
+    AssignmentStudent,
     BulkImportErrorDetail,
     BulkImportResponse,
-    Class,
-    ClassStudent,
     DashboardStats,
     NotificationType,
     PasswordResetResponse,
-    Publisher,
-    PublisherCreate,
-    PublisherCreateAPI,
-    PublisherPublic,
-    PublisherUpdate,
     School,
     SchoolCreate,
     SchoolPublic,
@@ -43,15 +44,29 @@ from app.models import (
     UserRole,
     UserUpdate,
 )
-from app.services.bulk_import import validate_bulk_import
-from app.services.webhook_registration import webhook_registration_service
-from app.services.benchmark_service import get_admin_benchmark_overview
-from app.services import notification_service
+from app.schemas import (
+    AssignmentListResponse,
+    AssignmentWithTeacher,
+)
 from app.schemas.benchmarks import (
     AdminBenchmarkOverview,
     BenchmarkSettingsResponse,
     BenchmarkSettingsUpdate,
 )
+from app.schemas.publisher import (
+    PublisherAccountCreate,
+    PublisherAccountCreationResponse,
+    PublisherAccountListResponse,
+    PublisherAccountPublic,
+    PublisherAccountUpdate,
+    PublisherPublic,
+)
+from app.services import notification_service
+from app.services.benchmark_service import get_admin_benchmark_overview
+from app.services.bulk_import import validate_bulk_import
+from app.services.dcs_cache import get_dcs_cache
+from app.services.publisher_service_v2 import get_publisher_service
+from app.services.webhook_registration import webhook_registration_service
 from app.utils import (
     generate_new_account_email,
     generate_password_reset_by_admin_email,
@@ -70,114 +85,20 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.post(
     "/publishers",
-    response_model=UserCreationResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Create new publisher",
-    description="Creates a new publisher user and Publisher record. Admin only.",
+    status_code=status.HTTP_410_GONE,
+    summary="Create new publisher (deprecated)",
+    description="Publisher creation is disabled. Publishers are managed in Dream Central Storage.",
 )
 def create_publisher(
     *,
-    session: SessionDep,
-    publisher_in: PublisherCreateAPI,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
-    Create a new publisher with user account.
-
-    - **name**: Publisher name
-    - **contact_email**: Publisher contact email
-    - **username**: Username for user account
-    - **user_email**: Email for user account
-    - **full_name**: Full name for user account
-
-    Returns user, temp_password, and publisher record.
+    Publisher creation disabled - publishers are managed in Dream Central Storage.
     """
-    # Check if user email already exists
-    existing_user = crud.get_user_by_email(session=session, email=publisher_in.user_email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
-        )
-
-    # Check if username already exists
-    existing_username = crud.get_user_by_username(session=session, username=publisher_in.username)
-    if existing_username:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username already exists"
-        )
-
-    # Generate secure temporary password
-    temp_password = generate_temp_password()
-
-    # Check if there's an existing publisher with the same name to copy logo
-    existing_publisher = session.exec(
-        select(Publisher).where(Publisher.name == publisher_in.name)
-    ).first()
-    logo_url = existing_publisher.logo_url if existing_publisher else None
-
-    # Create Publisher record data
-    publisher_create = PublisherCreate(
-        name=publisher_in.name,
-        contact_email=publisher_in.contact_email,
-        logo_url=logo_url,  # Copy logo from existing publisher with same name
-        user_id=uuid.uuid4()  # Placeholder, will be replaced in crud
-    )
-
-    # Create user and publisher atomically
-    user, publisher = crud.create_publisher(
-        session=session,
-        email=publisher_in.user_email,
-        username=publisher_in.username,
-        password=temp_password,
-        full_name=publisher_in.full_name,
-        publisher_create=publisher_create
-    )
-
-    # Handle password delivery based on email availability
-    password_emailed = False
-    temp_password_for_response = None
-
-    if user.email and settings.emails_enabled:
-        # Send password via email - secure path
-        email_data = generate_new_account_email(
-            email_to=user.email,
-            username=user.username,
-            password=temp_password
-        )
-        send_email(
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content
-        )
-        password_emailed = True
-        message = "Password sent via email"
-    else:
-        # No email or emails disabled - return password once for manual communication
-        temp_password_for_response = temp_password
-        message = "Please share the temporary password securely with the user"
-
-    # Build publisher response with user information
-    publisher_data = PublisherPublic(
-        id=publisher.id,
-        name=publisher.name,
-        contact_email=publisher.contact_email,
-        logo_url=publisher.logo_url,
-        user_id=publisher.user_id,
-        user_email=user.email,
-        user_username=user.username,
-        user_full_name=user.full_name or "",
-        created_at=publisher.created_at,
-        updated_at=publisher.updated_at
-    )
-
-    return UserCreationResponse(
-        user=UserPublic.model_validate(user),
-        role_record=publisher_data,
-        temporary_password=temp_password_for_response,
-        password_emailed=password_emailed,
-        message=message
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Publisher creation is disabled. Publishers are managed in Dream Central Storage."
     )
 
 
@@ -188,28 +109,29 @@ def create_publisher(
     summary="Create new school",
     description="Creates a new school linked to a publisher. Admin only.",
 )
-def create_school(
+async def create_school(
     *,
     session: SessionDep,
     school_in: SchoolCreate,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     Create a new school.
 
     - **name**: School name
-    - **publisher_id**: ID of the publisher this school belongs to
+    - **dcs_publisher_id**: ID of the publisher in Dream Central Storage
     - **address**: Optional school address
     - **contact_info**: Optional contact information
 
     Returns the created school record.
     """
-    # Validate publisher exists
-    publisher = session.get(Publisher, school_in.publisher_id)
+    # Validate publisher exists in DCS
+    publisher_service = get_publisher_service()
+    publisher = await publisher_service.get_publisher(school_in.dcs_publisher_id)
     if not publisher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher not found"
+            detail=f"Publisher {school_in.dcs_publisher_id} not found in Dream Central Storage"
         )
 
     # Create school
@@ -225,155 +147,39 @@ def create_school(
     "/publishers",
     response_model=list[PublisherPublic],
     summary="List all publishers",
-    description="Retrieve all publishers with pagination. Admin only.",
+    description="Retrieve all publishers from Dream Central Storage. Admin only.",
 )
-def list_publishers(
+async def list_publishers(
     *,
-    session: SessionDep,
-    current_user: User = require_role(UserRole.admin),
-    skip: int = 0,
-    limit: int = 100
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
-    List all publishers with pagination.
+    List all publishers from Dream Central Storage.
 
-    - **skip**: Number of records to skip (default: 0)
-    - **limit**: Maximum number of records to return (default: 100)
-
+    Publishers are fetched directly from DCS and cached.
     Returns list of publishers.
     """
-    statement = select(Publisher).offset(skip).limit(limit)
-    publishers = session.exec(statement).all()
-
-    # Build response with user information
-    result = []
-    for p in publishers:
-        user = session.get(User, p.user_id)
-        publisher_data = PublisherPublic(
-            id=p.id,
-            name=p.name,
-            contact_email=p.contact_email,
-            logo_url=p.logo_url,
-            user_id=p.user_id,
-            user_email=user.email if user else "",
-            user_username=user.username if user else "",
-            user_full_name=(user.full_name or "") if user else "",
-            created_at=p.created_at,
-            updated_at=p.updated_at
-        )
-        result.append(publisher_data)
-    return result
+    service = get_publisher_service()
+    return await service.list_publishers()
 
 
 @router.put(
     "/publishers/{publisher_id}",
-    response_model=PublisherPublic,
-    summary="Update a publisher",
-    description="Update a publisher by ID. Admin only.",
+    status_code=status.HTTP_410_GONE,
+    summary="Update a publisher (deprecated)",
+    description="Publisher updates are disabled. Publishers are managed in Dream Central Storage.",
 )
 def update_publisher(
     *,
-    session: SessionDep,
-    publisher_id: uuid.UUID,
-    publisher_in: PublisherUpdate,
-    current_user: User = require_role(UserRole.admin)
+    publisher_id: int,
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
-    Update a publisher by ID.
-
-    - **publisher_id**: ID of the publisher to update
-    - **name**: Optional new publisher name
-    - **contact_email**: Optional new contact email
-    - **user_email**: Optional new user email
-    - **user_full_name**: Optional new user full name
-
-    Returns the updated publisher record.
+    Publisher updates disabled - publishers are managed in Dream Central Storage.
     """
-    # Get the publisher
-    publisher = session.get(Publisher, publisher_id)
-    if not publisher:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher not found"
-        )
-
-    # Get the associated user
-    user = session.get(User, publisher.user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Associated user not found"
-        )
-
-    # Update data
-    update_data = publisher_in.model_dump(exclude_unset=True)
-
-    # Separate user fields from publisher fields
-    user_fields = {}
-    publisher_fields = {}
-
-    for field, value in update_data.items():
-        if field in ['user_email', 'user_full_name', 'user_username']:
-            # Map to user model field names
-            if field == 'user_email':
-                user_fields['email'] = value
-            elif field == 'user_full_name':
-                user_fields['full_name'] = value
-            elif field == 'user_username':
-                user_fields['username'] = value
-        else:
-            publisher_fields[field] = value
-
-    # Check if new email already exists for another user
-    if 'email' in user_fields and user_fields['email'] != user.email:
-        existing_user = crud.get_user_by_email(session=session, email=user_fields['email'])
-        if existing_user and existing_user.id != user.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists"
-            )
-
-    # Check if new username already exists for another user [Story 9.2 AC: 14]
-    if 'username' in user_fields and user_fields['username'] != user.username:
-        existing_user = session.exec(
-            select(User).where(User.username == user_fields['username'])
-        ).first()
-        if existing_user and existing_user.id != user.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already exists"
-            )
-
-    # Update user fields
-    for field, value in user_fields.items():
-        setattr(user, field, value)
-
-    # Update publisher fields
-    for field, value in publisher_fields.items():
-        setattr(publisher, field, value)
-
-    # Update timestamp
-    from datetime import UTC, datetime
-    publisher.updated_at = datetime.now(UTC)
-
-    session.add(user)
-    session.add(publisher)
-    session.commit()
-    session.refresh(publisher)
-    session.refresh(user)
-
-    # Build response with user information
-    return PublisherPublic(
-        id=publisher.id,
-        name=publisher.name,
-        contact_email=publisher.contact_email,
-        user_id=publisher.user_id,
-        user_email=user.email,
-        user_username=user.username,
-        user_full_name=user.full_name or "",
-        created_at=publisher.created_at,
-        updated_at=publisher.updated_at,
-        logo_url=publisher.logo_url,
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Publisher updates are disabled. Publishers are managed in Dream Central Storage."
     )
 
 
@@ -385,6 +191,7 @@ class LogoUploadResponse(SQLModel):
 
 # Create static logos directory if it doesn't exist
 import os
+
 LOGOS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "logos")
 os.makedirs(LOGOS_DIR, exist_ok=True)
 
@@ -403,25 +210,17 @@ async def upload_publisher_logo(
     session: SessionDep,
     publisher_id: uuid.UUID,
     file: UploadFile = File(...),
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> LogoUploadResponse:
     """
-    Upload a logo for a publisher.
+    Upload a logo for a publisher (deprecated).
 
-    [Source: Story 9.2 AC: 15, 16, 17]
-
-    - **publisher_id**: ID of the publisher
-    - **file**: Logo image file (PNG or JPEG, max 2MB)
-
-    Returns the URL of the uploaded logo.
+    Publisher logos are now managed in Dream Central Storage.
     """
-    # Get the publisher
-    publisher = session.get(Publisher, publisher_id)
-    if not publisher:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher not found"
-        )
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Publisher logo uploads are disabled. Publishers are managed in Dream Central Storage."
+    )
 
     # Validate content type [AC: 17]
     if file.content_type not in ALLOWED_IMAGE_TYPES:
@@ -479,15 +278,13 @@ def delete_publisher_logo(
     *,
     session: SessionDep,
     publisher_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> None:
-    """Delete a publisher's logo."""
-    publisher = session.get(Publisher, publisher_id)
-    if not publisher:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher not found"
-        )
+    """Delete a publisher's logo (deprecated)."""
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Publisher logo management is disabled. Publishers are managed in Dream Central Storage."
+    )
 
     if publisher.logo_url:
         # Try to delete the file
@@ -506,42 +303,22 @@ def delete_publisher_logo(
 
 @router.delete(
     "/publishers/{publisher_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a publisher",
-    description="Delete a publisher by ID. Admin only.",
+    status_code=status.HTTP_410_GONE,
+    summary="Delete a publisher (deprecated)",
+    description="Publisher deletion is disabled. Publishers are managed in Dream Central Storage.",
 )
 def delete_publisher(
     *,
-    session: SessionDep,
-    publisher_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin)
+    publisher_id: int,
+    current_user: User = AdminOrSupervisor
 ) -> None:
     """
-    Delete a publisher by ID.
-
-    - **publisher_id**: ID of the publisher to delete
-
-    Returns 204 No Content on success.
+    Publisher deletion disabled - publishers are managed in Dream Central Storage.
     """
-    # Get the publisher
-    publisher = session.get(Publisher, publisher_id)
-    if not publisher:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher not found"
-        )
-
-    # Get the associated user
-    user = session.get(User, publisher.user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Associated user not found"
-        )
-
-    # Delete the user (will cascade to publisher via database ondelete CASCADE)
-    session.delete(user)
-    session.commit()
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Publisher deletion is disabled. Publishers are managed in Dream Central Storage."
+    )
 
 
 @router.get(
@@ -553,7 +330,7 @@ def delete_publisher(
 def list_schools(
     *,
     session: SessionDep,
-    current_user: User = require_role(UserRole.admin),
+    current_user: User = AdminOrSupervisor,
     publisher_id: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100
@@ -581,12 +358,12 @@ def list_schools(
     summary="Update a school",
     description="Update a school by ID. Admin only.",
 )
-def update_school(
+async def update_school(
     *,
     session: SessionDep,
     school_id: uuid.UUID,
     school_in: SchoolUpdate,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     Update a school by ID.
@@ -595,7 +372,7 @@ def update_school(
     - **name**: Optional new school name
     - **address**: Optional new school address
     - **contact_info**: Optional new contact information
-    - **publisher_id**: Optional new publisher ID
+    - **dcs_publisher_id**: Optional new publisher ID (from Dream Central Storage)
 
     Returns the updated school record.
     """
@@ -610,13 +387,14 @@ def update_school(
     # Update school fields
     update_data = school_in.model_dump(exclude_unset=True)
 
-    # If publisher_id is being updated, validate it exists
-    if 'publisher_id' in update_data:
-        publisher = session.get(Publisher, update_data['publisher_id'])
+    # If dcs_publisher_id is being updated, validate it exists in DCS
+    if 'dcs_publisher_id' in update_data:
+        publisher_service = get_publisher_service()
+        publisher = await publisher_service.get_publisher(update_data['dcs_publisher_id'])
         if not publisher:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Publisher not found"
+                detail=f"Publisher {update_data['dcs_publisher_id']} not found in Dream Central Storage"
             )
 
     for field, value in update_data.items():
@@ -643,7 +421,7 @@ def delete_school(
     *,
     session: SessionDep,
     school_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> None:
     """
     Delete a school by ID.
@@ -651,6 +429,10 @@ def delete_school(
     - **school_id**: ID of the school to delete
 
     Returns 204 No Content on success.
+
+    **Permissions:**
+    - Admin: can delete any school
+    - Supervisor: can delete any school
     """
     # Get the school
     school = session.get(School, school_id)
@@ -659,6 +441,11 @@ def delete_school(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="School not found"
         )
+
+    logger.info(
+        f"School deletion: {current_user.role.value} {current_user.username} "
+        f"deleted school {school.name} (ID: {school.id})"
+    )
 
     # Delete the school
     session.delete(school)
@@ -676,7 +463,7 @@ def create_teacher(
     *,
     session: SessionDep,
     teacher_in: TeacherCreateAPI,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher)
 ) -> Any:
     """
     Create a new teacher with user account.
@@ -715,22 +502,12 @@ def create_teacher(
             detail="School not found"
         )
 
-    # If current user is Publisher, verify school ownership
+    # Publisher role is deprecated
     if current_user.role == UserRole.publisher:
-        publisher_statement = select(Publisher).where(Publisher.user_id == current_user.id)
-        publisher = session.exec(publisher_statement).first()
-
-        if not publisher:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Publisher record not found for this user"
-            )
-
-        if school.publisher_id != publisher.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot create teacher in another publisher's school"
-            )
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Publisher role is deprecated. Publishers are managed in Dream Central Storage."
+        )
 
     # Generate secure temporary password
     temp_password = generate_temp_password()
@@ -755,21 +532,28 @@ def create_teacher(
     # Handle password delivery based on email availability
     password_emailed = False
     temp_password_for_response = None
+    message = ""
 
     if user.email and settings.emails_enabled:
-        # Send password via email - secure path
-        email_data = generate_new_account_email(
-            email_to=user.email,
-            username=user.username,
-            password=temp_password
-        )
-        send_email(
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content
-        )
-        password_emailed = True
-        message = "Password sent via email"
+        try:
+            # Send password via email - secure path
+            email_data = generate_new_account_email(
+                email_to=user.email,
+                username=user.username,
+                password=temp_password,
+                full_name=teacher_in.full_name
+            )
+            send_email(
+                email_to=user.email,
+                subject=email_data.subject,
+                html_content=email_data.html_content
+            )
+            password_emailed = True
+            message = "Password sent via email"
+        except Exception as e:
+            logger.error(f"Failed to send welcome email to {user.email}: {e}")
+            temp_password_for_response = temp_password
+            message = "Email delivery failed. Please share the temporary password securely."
     else:
         # No email or emails disabled - return password once for manual communication
         temp_password_for_response = temp_password
@@ -806,7 +590,7 @@ def create_teacher(
 def list_teachers(
     *,
     session: SessionDep,
-    current_user: User = require_role(UserRole.admin),
+    current_user: User = AdminOrSupervisor,
     school_id: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100
@@ -856,7 +640,7 @@ def update_teacher(
     session: SessionDep,
     teacher_id: uuid.UUID,
     teacher_in: TeacherUpdate,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     Update a teacher by ID.
@@ -969,13 +753,13 @@ def update_teacher(
     "/teachers/{teacher_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a teacher",
-    description="Delete a teacher by ID. Admin only.",
+    description="Delete a teacher by ID. Admin/Supervisor/Publisher.",
 )
 def delete_teacher(
     *,
     session: SessionDep,
     teacher_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher)
 ) -> None:
     """
     Delete a teacher by ID.
@@ -983,6 +767,11 @@ def delete_teacher(
     - **teacher_id**: ID of the teacher to delete
 
     Returns 204 No Content on success.
+
+    **Permissions:**
+    - Admin: can delete any teacher
+    - Supervisor: can delete teachers
+    - Publisher: can delete teachers in their schools only
     """
     # Get the teacher
     teacher = session.get(Teacher, teacher_id)
@@ -1000,6 +789,60 @@ def delete_teacher(
             detail="Associated user not found"
         )
 
+    # Check self-deletion
+    if user.id == current_user.id:
+        logger.warning(
+            f"Deletion blocked (self-deletion): {current_user.role.value} {current_user.username} "
+            f"attempted to delete themselves (teacher ID: {teacher_id})"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot delete your own account"
+        )
+
+    # Publisher-specific validation
+    if current_user.role == UserRole.publisher:
+        if current_user.dcs_publisher_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Publisher account not linked to DCS publisher"
+            )
+
+        # Verify the teacher's school belongs to this publisher
+        if not teacher.school_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot delete teacher without school assignment"
+            )
+
+        school = session.get(School, teacher.school_id)
+        if not school or school.dcs_publisher_id != current_user.dcs_publisher_id:
+            logger.warning(
+                f"Deletion blocked (publisher permission): {current_user.username} "
+                f"attempted to delete teacher {user.username} from school not in their publisher"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot delete teachers from schools not managed by your publisher"
+            )
+
+    # Check hierarchical permission (for admin/supervisor)
+    if current_user.role in [UserRole.admin, UserRole.supervisor]:
+        if not can_delete_user(current_user, user):
+            logger.warning(
+                f"Deletion blocked (permission): {current_user.role.value} {current_user.username} "
+                f"attempted to delete {user.role.value} {user.username} (ID: {user.id})"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Supervisors cannot delete {user.role.value} users"
+            )
+
+    logger.info(
+        f"User deletion: {current_user.role.value} {current_user.username} "
+        f"deleted teacher {user.username} (ID: {user.id})"
+    )
+
     # Delete the user (will cascade to teacher via database ondelete CASCADE)
     session.delete(user)
     session.commit()
@@ -1016,7 +859,7 @@ def create_student(
     *,
     session: SessionDep,
     student_in: StudentCreateAPI,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
 ) -> Any:
     """
     Create a new student with user account.
@@ -1070,21 +913,28 @@ def create_student(
     # Handle password delivery based on email availability
     password_emailed = False
     temp_password_for_response = None
+    message = ""
 
     if user.email and settings.emails_enabled:
-        # Send password via email - secure path
-        email_data = generate_new_account_email(
-            email_to=user.email,
-            username=user.username,
-            password=temp_password
-        )
-        send_email(
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content
-        )
-        password_emailed = True
-        message = "Password sent via email"
+        try:
+            # Send password via email - secure path
+            email_data = generate_new_account_email(
+                email_to=user.email,
+                username=user.username,
+                password=temp_password,
+                full_name=student_in.full_name
+            )
+            send_email(
+                email_to=user.email,
+                subject=email_data.subject,
+                html_content=email_data.html_content
+            )
+            password_emailed = True
+            message = "Password sent via email"
+        except Exception as e:
+            logger.error(f"Failed to send welcome email to {user.email}: {e}")
+            temp_password_for_response = temp_password
+            message = "Email delivery failed. Please share the temporary password securely."
     else:
         # No email or emails disabled - return password once for manual communication
         temp_password_for_response = temp_password
@@ -1121,7 +971,7 @@ def create_student(
 def list_students(
     *,
     session: SessionDep,
-    current_user: User = require_role(UserRole.admin),
+    current_user: User = AdminOrSupervisor,
     skip: int = 0,
     limit: int = 100
 ) -> Any:
@@ -1140,7 +990,7 @@ def list_students(
     result = []
     for s in students:
         user = session.get(User, s.user_id)
-        
+
         # Get teacher name if student is bound to a teacher
         teacher_name = None
         if s.created_by_teacher_id:
@@ -1148,7 +998,7 @@ def list_students(
             if created_by_teacher:
                 teacher_user = session.get(User, created_by_teacher.user_id)
                 teacher_name = teacher_user.full_name if teacher_user else None
-        
+
         student_data = StudentPublic(
             grade_level=s.grade_level,
             parent_email=s.parent_email,
@@ -1177,7 +1027,7 @@ def update_student(
     session: SessionDep,
     student_id: uuid.UUID,
     student_in: StudentUpdate,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     Update a student by ID.
@@ -1287,7 +1137,7 @@ def delete_student(
     *,
     session: SessionDep,
     student_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> None:
     """
     Delete a student by ID.
@@ -1295,6 +1145,10 @@ def delete_student(
     - **student_id**: ID of the student to delete
 
     Returns 204 No Content on success.
+
+    **Permissions:**
+    - Admin: can delete any student
+    - Supervisor: can delete students
     """
     # Get the student
     student = session.get(Student, student_id)
@@ -1311,6 +1165,33 @@ def delete_student(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Associated user not found"
         )
+
+    # Check self-deletion
+    if user.id == current_user.id:
+        logger.warning(
+            f"Deletion blocked (self-deletion): {current_user.role.value} {current_user.username} "
+            f"attempted to delete themselves (student ID: {student_id})"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot delete your own account"
+        )
+
+    # Check hierarchical permission
+    if not can_delete_user(current_user, user):
+        logger.warning(
+            f"Deletion blocked (permission): {current_user.role.value} {current_user.username} "
+            f"attempted to delete {user.role.value} {user.username} (ID: {user.id})"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Supervisors cannot delete {user.role.value} users"
+        )
+
+    logger.info(
+        f"User deletion: {current_user.role.value} {current_user.username} "
+        f"deleted student {user.username} (ID: {user.id})"
+    )
 
     # Delete the user (will cascade to student via database ondelete CASCADE)
     session.delete(user)
@@ -1339,7 +1220,7 @@ def bulk_delete_students(
     *,
     session: SessionDep,
     request: BulkDeleteRequest,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> BulkDeleteResponse:
     """
     Delete multiple students by their IDs.
@@ -1347,6 +1228,10 @@ def bulk_delete_students(
     - **ids**: List of student IDs to delete
 
     Returns count of successfully deleted and failed deletions.
+
+    **Permissions:**
+    - Admin: can delete any students
+    - Supervisor: can delete students
     """
     deleted_count = 0
     failed_count = 0
@@ -1366,8 +1251,25 @@ def bulk_delete_students(
                 errors.append(f"User for student {student_id} not found")
                 continue
 
+            # Check self-deletion
+            if user.id == current_user.id:
+                failed_count += 1
+                errors.append(f"Cannot delete your own account (student {student_id})")
+                continue
+
+            # Check hierarchical permission
+            if not can_delete_user(current_user, user):
+                failed_count += 1
+                errors.append(f"Cannot delete {user.role.value} user (student {student_id})")
+                continue
+
             session.delete(user)
             deleted_count += 1
+
+            logger.info(
+                f"Bulk deletion: {current_user.role.value} {current_user.username} "
+                f"deleted student {user.username} (ID: {user.id})"
+            )
         except Exception as e:
             failed_count += 1
             errors.append(f"Failed to delete student {student_id}: {str(e)}")
@@ -1392,7 +1294,7 @@ async def bulk_import_publishers(
     *,
     session: SessionDep,
     file: UploadFile = File(...),
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     Bulk import publishers from Excel file.
@@ -1537,7 +1439,7 @@ async def bulk_import_teachers(
     *,
     session: SessionDep,
     file: UploadFile = File(...),
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     Bulk import teachers from Excel file.
@@ -1699,7 +1601,7 @@ async def bulk_import_students(
     *,
     session: SessionDep,
     file: UploadFile = File(...),
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     Bulk import students from Excel file.
@@ -1839,9 +1741,9 @@ async def bulk_import_students(
 
 
 @router.get("/stats", response_model=DashboardStats)
-def get_stats(
+async def get_stats(
     session: SessionDep,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> DashboardStats:
     """
     Get dashboard statistics for admin.
@@ -1850,8 +1752,10 @@ def get_stats(
     # Count total users
     total_users = session.exec(select(func.count(User.id))).one()
 
-    # Count publishers
-    total_publishers = session.exec(select(func.count(Publisher.id))).one()
+    # Count publishers from DCS
+    publisher_service = get_publisher_service()
+    publishers = await publisher_service.list_publishers()
+    total_publishers = len(publishers)
 
     # Count teachers
     total_teachers = session.exec(select(func.count(Teacher.id))).one()
@@ -1887,7 +1791,7 @@ def admin_update_user(
     session: SessionDep,
     user_id: uuid.UUID,
     user_in: UserUpdate,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = AdminOrSupervisor
 ) -> UserPublic:
     """
     Update a user's information.
@@ -1954,58 +1858,18 @@ async def _is_user_under_publisher(
 
     [Source: Story 11.2 - Publisher permission helper]
 
+    **DEPRECATED:** Publisher role is deprecated. This function always returns False.
+    Publishers are now managed in Dream Central Storage.
+
     Args:
         session: Async database session
         publisher_user: The publisher's User record
         target_user: The user being checked
 
     Returns:
-        True if target_user is a teacher/student in one of the publisher's schools
+        Always False (Publisher role deprecated)
     """
-    # Get the publisher record
-    result = await session.execute(
-        select(Publisher).where(Publisher.user_id == publisher_user.id)
-    )
-    publisher = result.scalar_one_or_none()
-
-    if not publisher:
-        return False
-
-    if target_user.role == UserRole.teacher:
-        # Check if teacher is in any of publisher's schools
-        teacher_result = await session.execute(
-            select(Teacher).where(Teacher.user_id == target_user.id)
-        )
-        teacher = teacher_result.scalar_one_or_none()
-        if teacher:
-            # Get teacher's school
-            school = await session.get(School, teacher.school_id)
-            if school and school.publisher_id == publisher.id:
-                return True
-
-    elif target_user.role == UserRole.student:
-        # Check if student is enrolled in any class in publisher's schools
-        # Student → ClassStudent → Class → School → Publisher
-        student_result = await session.execute(
-            select(Student).where(Student.user_id == target_user.id)
-        )
-        student = student_result.scalar_one_or_none()
-        if student:
-            # Get all class enrollments for this student
-            enrollments_result = await session.execute(
-                select(ClassStudent).where(ClassStudent.student_id == student.id)
-            )
-            enrollments = enrollments_result.scalars().all()
-
-            for enrollment in enrollments:
-                # Get the class
-                class_obj = await session.get(Class, enrollment.class_id)
-                if class_obj:
-                    # Get the school
-                    school = await session.get(School, class_obj.school_id)
-                    if school and school.publisher_id == publisher.id:
-                        return True
-
+    # Publisher role is deprecated - publishers are managed in DCS
     return False
 
 
@@ -2022,7 +1886,7 @@ async def reset_user_password(
     *,
     session: AsyncSessionDep,
     user_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.publisher)
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher)
 ) -> PasswordResetResponse:
     """
     Reset a user's password.
@@ -2053,7 +1917,7 @@ async def reset_user_password(
             detail="User not found"
         )
 
-    # Cannot reset admin password via this endpoint (must use different mechanism)
+    # Cannot reset admin or supervisor password via this endpoint (must use different mechanism)
     if user.role == UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -2063,6 +1927,14 @@ async def reset_user_password(
     # Permission check based on current user's role
     if current_user.role == UserRole.admin:
         pass  # Admin can reset anyone (except other admins, already checked)
+    elif current_user.role == UserRole.supervisor:
+        # Supervisor cannot reset admin or other supervisor passwords
+        if user.role == UserRole.supervisor:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Supervisors cannot reset other supervisor passwords"
+            )
+        # Supervisor can reset publisher, teacher, student passwords
     elif current_user.role == UserRole.publisher:
         # Publisher can only reset their teachers/students
         if not await _is_user_under_publisher(session, current_user, user):
@@ -2073,7 +1945,7 @@ async def reset_user_password(
     else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admin or publisher can reset passwords"
+            detail="Only admin, supervisor, or publisher can reset passwords"
         )
 
     # Generate new secure password
@@ -2139,6 +2011,51 @@ async def reset_user_password(
         password_emailed=password_emailed,
         temporary_password=temp_password_for_response
     )
+
+
+@router.get(
+    "/cache/stats",
+    summary="Get DCS cache statistics",
+    description="Returns cache hit/miss statistics for monitoring. Admin only.",
+)
+def get_cache_stats(
+    _: User = require_role(UserRole.admin),
+) -> dict[str, Any]:
+    """
+    Get DCS cache statistics for monitoring.
+
+    [Source: Story 24.1 - LMS Caching Infrastructure]
+
+    Returns:
+    - entries: Current number of cached items
+    - hits: Total cache hits since startup
+    - misses: Total cache misses since startup
+    - hit_rate: Cache hit rate (0.0 to 1.0)
+    """
+    cache = get_dcs_cache()
+    return cache.stats()
+
+
+@router.post(
+    "/cache/clear",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Clear DCS cache",
+    description="Clears all cached DCS data. Admin only. Use with caution.",
+)
+async def clear_cache(
+    _: User = require_role(UserRole.admin),
+) -> None:
+    """
+    Clear all DCS cache entries.
+
+    [Source: Story 24.1 - LMS Caching Infrastructure]
+
+    This will force fresh data to be fetched from DCS on next access.
+    Use with caution as it may temporarily increase DCS API load.
+    """
+    cache = get_dcs_cache()
+    await cache.clear()
+    logger.info("DCS cache cleared by admin")
 
 
 @router.get("/test-dream-storage-connection")
@@ -2243,12 +2160,12 @@ async def register_webhooks_manually(
     "/benchmarks/overview",
     response_model=AdminBenchmarkOverview,
     summary="Get system-wide benchmark overview",
-    description="Returns aggregated benchmark statistics across all schools (admin only)."
+    description="Returns aggregated benchmark statistics across all schools (admin/supervisor)."
 )
 async def get_benchmark_overview_endpoint(
     *,
     session: AsyncSessionDep,
-    _: User = require_role(UserRole.admin)
+    _: User = require_role(UserRole.admin, UserRole.supervisor)
 ) -> AdminBenchmarkOverview:
     """
     Get system-wide benchmark overview for admin dashboard.
@@ -2270,14 +2187,14 @@ async def get_benchmark_overview_endpoint(
     "/schools/{school_id}/settings",
     response_model=BenchmarkSettingsResponse,
     summary="Update school benchmark settings",
-    description="Toggle benchmarking for a specific school (admin only)."
+    description="Toggle benchmarking for a specific school (admin/supervisor)."
 )
 def update_school_benchmark_settings(
     *,
     session: SessionDep,
     school_id: uuid.UUID,
     settings_in: BenchmarkSettingsUpdate,
-    _: User = require_role(UserRole.admin)
+    _: User = require_role(UserRole.admin, UserRole.supervisor)
 ) -> BenchmarkSettingsResponse:
     """
     Update benchmark settings for a school.
@@ -2317,44 +2234,509 @@ def update_school_benchmark_settings(
     "/publishers/{publisher_id}/settings",
     response_model=BenchmarkSettingsResponse,
     summary="Update publisher benchmark settings",
-    description="Toggle benchmarking for a specific publisher (admin only)."
+    description="Toggle benchmarking for a specific publisher (admin/supervisor)."
 )
 def update_publisher_benchmark_settings(
     *,
     session: SessionDep,
     publisher_id: uuid.UUID,
     settings_in: BenchmarkSettingsUpdate,
-    _: User = require_role(UserRole.admin)
+    _: User = require_role(UserRole.admin, UserRole.supervisor)
 ) -> BenchmarkSettingsResponse:
     """
-    Update benchmark settings for a publisher.
+    Update benchmark settings for a publisher (deprecated).
 
-    [Source: Story 5.7 AC: 9]
-
-    - **publisher_id**: UUID of the publisher
-    - **benchmarking_enabled**: Enable or disable benchmarking for this publisher's content
-
-    When disabled, publisher benchmarks are not shown to any teachers using their content.
+    Publisher benchmark settings are now managed in Dream Central Storage.
     """
-    from datetime import UTC, datetime
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Publisher benchmark settings are now managed in Dream Central Storage."
+    )
 
-    publisher = session.get(Publisher, publisher_id)
-    if not publisher:
+
+# =============================================================================
+# Publisher Account CRUD Endpoints
+# =============================================================================
+
+
+@router.post(
+    "/publisher-accounts",
+    response_model=PublisherAccountCreationResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create publisher user account",
+    description="Creates a new user account with publisher role linked to a DCS publisher.",
+)
+async def create_publisher_account(
+    *,
+    session: SessionDep,
+    account_in: PublisherAccountCreate,
+    current_user: User = AdminOrSupervisor,
+) -> PublisherAccountCreationResponse:
+    """
+    Create publisher user account.
+
+    - Validates DCS publisher exists
+    - Creates user with role=publisher
+    - Sets dcs_publisher_id on user
+    - Sends welcome email with credentials
+    """
+    # Check if user email already exists
+    existing_user = crud.get_user_by_email(session=session, email=account_in.email)
+    if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher not found"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists"
         )
 
-    publisher.benchmarking_enabled = settings_in.benchmarking_enabled
-    publisher.updated_at = datetime.now(UTC)
+    # Generate username from full_name if not provided
+    from app.utils import generate_username_from_name
+    username = account_in.username
+    if not username:
+        username = generate_username_from_name(
+            full_name=account_in.full_name,
+            session=session
+        )
+    else:
+        # Check if provided username already exists
+        existing_username = crud.get_user_by_username(session=session, username=username)
+        if existing_username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this username already exists"
+            )
 
-    session.add(publisher)
+    # Validate DCS publisher exists
+    publisher_service = get_publisher_service()
+    publisher = await publisher_service.get_publisher(account_in.dcs_publisher_id)
+    if not publisher:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"DCS Publisher ID {account_in.dcs_publisher_id} not found"
+        )
+
+    # Generate secure temporary password
+    temp_password = generate_temp_password()
+
+    # Create user with publisher role
+    from app.models import UserCreate
+    user_create = UserCreate(
+        email=account_in.email,
+        username=username,
+        password=temp_password,
+        full_name=account_in.full_name,
+        role=UserRole.publisher,
+        dcs_publisher_id=account_in.dcs_publisher_id,
+    )
+    user = crud.create_user(session=session, user_create=user_create)
+
+    # Handle password delivery based on email availability
+    password_emailed = False
+    temp_password_for_response = None
+    message = ""
+
+    if user.email and settings.emails_enabled:
+        try:
+            # Send password via email - secure path
+            email_data = generate_new_account_email(
+                email_to=user.email,
+                username=user.username,
+                password=temp_password,
+                full_name=account_in.full_name
+            )
+            send_email(
+                email_to=user.email,
+                subject=email_data.subject,
+                html_content=email_data.html_content
+            )
+            password_emailed = True
+            message = "Password sent via email"
+        except Exception as e:
+            logger.error(f"Failed to send welcome email to {user.email}: {e}")
+            temp_password_for_response = temp_password
+            message = "Email delivery failed. Please share the temporary password securely."
+    else:
+        # No email or emails disabled - return password once for manual communication
+        temp_password_for_response = temp_password
+        message = "Please share the temporary password securely with the user"
+
+    return PublisherAccountCreationResponse(
+        user=UserPublic.model_validate(user),
+        temporary_password=temp_password_for_response,
+        password_emailed=password_emailed,
+        message=message
+    )
+
+
+@router.get(
+    "/publisher-accounts",
+    response_model=PublisherAccountListResponse,
+    summary="List all publisher user accounts",
+    description="Returns all user accounts with role=publisher, enriched with DCS publisher names.",
+)
+async def list_publisher_accounts(
+    *,
+    session: SessionDep,
+    current_user: User = AdminOrSupervisor,
+    skip: int = 0,
+    limit: int = 100,
+) -> PublisherAccountListResponse:
+    """
+    List all publisher user accounts.
+
+    Returns users with role=publisher, enriched with DCS publisher name.
+    """
+    # Query users with publisher role
+    statement = (
+        select(User)
+        .where(User.role == UserRole.publisher)
+        .offset(skip)
+        .limit(limit)
+    )
+    result = session.exec(statement)
+    users = result.all()
+
+    # Count total
+    count_statement = select(func.count()).select_from(User).where(User.role == UserRole.publisher)
+    total = session.exec(count_statement).one()
+
+    # Enrich with DCS publisher names
+    publisher_service = get_publisher_service()
+    accounts = []
+    for user in users:
+        dcs_publisher_name = None
+        if user.dcs_publisher_id:
+            publisher = await publisher_service.get_publisher(user.dcs_publisher_id)
+            if publisher:
+                dcs_publisher_name = publisher.name
+
+        accounts.append(PublisherAccountPublic(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            full_name=user.full_name,
+            dcs_publisher_id=user.dcs_publisher_id,
+            dcs_publisher_name=dcs_publisher_name,
+            is_active=user.is_active,
+            created_at=None,  # User model may not have created_at
+        ))
+
+    return PublisherAccountListResponse(data=accounts, count=total)
+
+
+@router.get(
+    "/publisher-accounts/{user_id}",
+    response_model=PublisherAccountPublic,
+    summary="Get publisher user account",
+    description="Returns a single publisher user account by ID.",
+)
+async def get_publisher_account(
+    *,
+    session: SessionDep,
+    user_id: uuid.UUID,
+    current_user: User = AdminOrSupervisor,
+) -> PublisherAccountPublic:
+    """
+    Get a single publisher user account.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher account not found"
+        )
+
+    if user.role != UserRole.publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User is not a publisher account"
+        )
+
+    # Enrich with DCS publisher name
+    dcs_publisher_name = None
+    if user.dcs_publisher_id:
+        publisher_service = get_publisher_service()
+        publisher = await publisher_service.get_publisher(user.dcs_publisher_id)
+        if publisher:
+            dcs_publisher_name = publisher.name
+
+    return PublisherAccountPublic(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        full_name=user.full_name,
+        dcs_publisher_id=user.dcs_publisher_id,
+        dcs_publisher_name=dcs_publisher_name,
+        is_active=user.is_active,
+        created_at=None,
+    )
+
+
+@router.put(
+    "/publisher-accounts/{user_id}",
+    response_model=PublisherAccountPublic,
+    summary="Update publisher user account",
+    description="Updates a publisher user account's details or DCS link.",
+)
+async def update_publisher_account(
+    *,
+    session: SessionDep,
+    user_id: uuid.UUID,
+    account_in: PublisherAccountUpdate,
+    current_user: User = AdminOrSupervisor,
+) -> PublisherAccountPublic:
+    """
+    Update a publisher user account.
+
+    Can update dcs_publisher_id, username, email, full_name, is_active.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher account not found"
+        )
+
+    if user.role != UserRole.publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User is not a publisher account"
+        )
+
+    # If updating dcs_publisher_id, validate it exists
+    if account_in.dcs_publisher_id is not None:
+        publisher_service = get_publisher_service()
+        publisher = await publisher_service.get_publisher(account_in.dcs_publisher_id)
+        if not publisher:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"DCS Publisher ID {account_in.dcs_publisher_id} not found"
+            )
+
+    # Check username uniqueness if changing
+    if account_in.username and account_in.username != user.username:
+        existing = crud.get_user_by_username(session=session, username=account_in.username)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already taken"
+            )
+
+    # Check email uniqueness if changing
+    if account_in.email and account_in.email != user.email:
+        existing = crud.get_user_by_email(session=session, email=account_in.email)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+
+    # Update user
+    update_data = account_in.model_dump(exclude_unset=True)
+    user.sqlmodel_update(update_data)
+    session.add(user)
     session.commit()
-    session.refresh(publisher)
+    session.refresh(user)
 
-    return BenchmarkSettingsResponse(
-        entity_type="publisher",
-        entity_id=str(publisher.id),
-        benchmarking_enabled=publisher.benchmarking_enabled,
-        updated_at=publisher.updated_at,
+    # Enrich with DCS publisher name
+    dcs_publisher_name = None
+    if user.dcs_publisher_id:
+        publisher_service = get_publisher_service()
+        publisher = await publisher_service.get_publisher(user.dcs_publisher_id)
+        if publisher:
+            dcs_publisher_name = publisher.name
+
+    return PublisherAccountPublic(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        full_name=user.full_name,
+        dcs_publisher_id=user.dcs_publisher_id,
+        dcs_publisher_name=dcs_publisher_name,
+        is_active=user.is_active,
+        created_at=None,
+    )
+
+
+@router.delete(
+    "/publisher-accounts/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete publisher user account",
+    description="Deletes a publisher user account.",
+)
+def delete_publisher_account(
+    *,
+    session: SessionDep,
+    user_id: uuid.UUID,
+    current_user: User = AdminOrSupervisor,
+) -> None:
+    """
+    Delete a publisher user account.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher account not found"
+        )
+
+    if user.role != UserRole.publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User is not a publisher account"
+        )
+
+    # Prevent deleting yourself
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your own account"
+        )
+
+    session.delete(user)
+    session.commit()
+
+
+# =============================================================================
+# Assignment Management Endpoints (Story 20.1)
+# =============================================================================
+
+
+@router.get(
+    "/assignments",
+    response_model=AssignmentListResponse,
+    summary="List all assignments (Admin only)",
+    description="List all assignments across all teachers with filtering and pagination.",
+)
+def list_all_assignments(
+    *,
+    session: SessionDep,
+    current_user: User = AdminOrSupervisor,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    teacher_id: uuid.UUID | None = Query(None),
+    status: str | None = Query(None),
+    search: str | None = Query(None),
+) -> AssignmentListResponse:
+    """
+    List all assignments (Admin only).
+
+    Supports filtering by:
+    - teacher_id: Filter by specific teacher
+    - status: Filter by assignment status (draft, published, scheduled)
+    - search: Search by assignment name (case-insensitive)
+    """
+    # Story 20.1: Fix N+1 query problem by using subqueries for counts
+    # Create subquery for recipient count
+    recipient_count_subq = (
+        select(
+            AssignmentStudent.assignment_id,
+            func.count().label("recipient_count")
+        )
+        .group_by(AssignmentStudent.assignment_id)
+        .subquery()
+    )
+
+    # Create subquery for completed count
+    completed_count_subq = (
+        select(
+            AssignmentStudent.assignment_id,
+            func.count().label("completed_count")
+        )
+        .where(AssignmentStudent.status == "completed")
+        .group_by(AssignmentStudent.assignment_id)
+        .subquery()
+    )
+
+    # Build base query with teacher join and count subqueries
+    query = (
+        select(
+            Assignment,
+            User.full_name.label("teacher_name"),
+            User.email.label("teacher_email"),
+            func.coalesce(recipient_count_subq.c.recipient_count, 0).label("recipient_count"),
+            func.coalesce(completed_count_subq.c.completed_count, 0).label("completed_count"),
+        )
+        .join(Teacher, Teacher.id == Assignment.teacher_id)
+        .join(User, User.id == Teacher.user_id)
+        .outerjoin(recipient_count_subq, recipient_count_subq.c.assignment_id == Assignment.id)
+        .outerjoin(completed_count_subq, completed_count_subq.c.assignment_id == Assignment.id)
+    )
+
+    # Apply filters
+    if teacher_id:
+        query = query.where(Assignment.teacher_id == teacher_id)
+    if status:
+        query = query.where(Assignment.status == status)
+    if search:
+        query = query.where(Assignment.name.ilike(f"%{search}%"))
+
+    # Get total count for pagination
+    count_query = select(func.count()).select_from(query.subquery())
+    total = session.exec(count_query).one()
+
+    # Get paginated results ordered by created_at desc
+    results = session.exec(
+        query.order_by(Assignment.created_at.desc()).offset(skip).limit(limit)
+    ).all()
+
+    # Build response items with enriched data (Story 20.1: counts now from query)
+    items = []
+    for assignment, teacher_name, teacher_email, recipient_count, completed_count in results:
+        items.append(
+            AssignmentWithTeacher(
+                id=assignment.id,
+                title=assignment.name,
+                teacher_id=assignment.teacher_id,
+                teacher_name=teacher_name,
+                teacher_email=teacher_email,
+                recipient_count=recipient_count,
+                completed_count=completed_count,
+                due_date=assignment.due_date,
+                status=assignment.status,
+                created_at=assignment.created_at,
+            )
+        )
+
+    return AssignmentListResponse(
+        items=items,
+        total=total,
+        skip=skip,
+        limit=limit,
+    )
+
+
+@router.delete(
+    "/assignments/{assignment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete assignment (Admin only)",
+    description="Delete an assignment and all related data including student submissions.",
+)
+def delete_assignment(
+    *,
+    session: SessionDep,
+    assignment_id: uuid.UUID,
+    current_user: User = AdminOrSupervisor,
+) -> None:
+    """
+    Delete assignment and all related data (Admin only).
+
+    Cascades to:
+    - AssignmentStudent records (submissions)
+    - AssignmentActivity records (multi-activity assignments)
+    - Notifications related to the assignment
+    """
+    assignment = session.get(Assignment, assignment_id)
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    # Delete assignment (cascade handles related records)
+    session.delete(assignment)
+    session.commit()
+
+    logger.info(
+        f"Admin {current_user.id} ({current_user.email}) deleted assignment {assignment_id} "
+        f"(title: {assignment.name})"
     )

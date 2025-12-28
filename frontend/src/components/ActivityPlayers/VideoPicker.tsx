@@ -6,8 +6,10 @@
  * to attach to an assignment.
  */
 
-import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { Eye, Loader2, Subtitles, Video, X } from "lucide-react"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -15,13 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Loader2, Video, Eye, X, Subtitles } from "lucide-react"
 import { cn } from "@/lib/utils"
-import {
-  getBookVideos,
-  type VideoInfo,
-} from "@/services/booksApi"
+import { getBookVideos, type VideoInfo } from "@/services/booksApi"
 
 export interface VideoPickerProps {
   /** Book ID to fetch videos from */
@@ -101,7 +98,7 @@ export function VideoPicker({
       <div
         className={cn(
           "flex h-9 items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground",
-          className
+          className,
         )}
       >
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -116,7 +113,7 @@ export function VideoPicker({
       <div
         className={cn(
           "flex h-9 items-center gap-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive",
-          className
+          className,
         )}
       >
         <span>Failed to load videos</span>
@@ -130,7 +127,7 @@ export function VideoPicker({
       <div
         className={cn(
           "flex h-9 items-center gap-2 rounded-md border border-input bg-muted/50 px-3 py-2 text-sm text-muted-foreground",
-          className
+          className,
         )}
       >
         <Video className="h-4 w-4" />

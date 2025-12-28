@@ -110,18 +110,41 @@ export async function downloadReport(
   const contentDisposition = response.headers["content-disposition"]
   let downloadFilename = filename || `report-${jobId}.pdf`
 
+  console.log("DEBUG: Content-Disposition header:", contentDisposition)
+  console.log("DEBUG: All headers:", response.headers)
+
   if (contentDisposition) {
-    const filenameMatch = contentDisposition.match(/filename="?(.+)"?/)
-    if (filenameMatch) {
-      downloadFilename = filenameMatch[1]
+    // Match both quoted and unquoted filenames in Content-Disposition header
+    const filenameMatch = contentDisposition.match(
+      /filename[^;=\n]*=["']?([^"';\n]+)["']?/,
+    )
+    console.log("DEBUG: Filename match:", filenameMatch)
+    if (filenameMatch?.[1]) {
+      downloadFilename = filenameMatch[1].trim()
+      console.log("DEBUG: Extracted filename:", downloadFilename)
     }
   }
+
+  console.log("DEBUG: Final download filename:", downloadFilename)
 
   link.setAttribute("download", downloadFilename)
   document.body.appendChild(link)
   link.click()
   link.remove()
   window.URL.revokeObjectURL(url)
+}
+
+/**
+ * Preview a generated report - returns blob for inline display
+ *
+ * @param jobId - Job UUID
+ * @returns Blob of the PDF file
+ */
+export async function getReportPreviewBlob(jobId: string): Promise<Blob> {
+  const response = await apiClient.get(`/api/v1/reports/${jobId}/preview`, {
+    responseType: "blob",
+  })
+  return new Blob([response.data], { type: "application/pdf" })
 }
 
 /**

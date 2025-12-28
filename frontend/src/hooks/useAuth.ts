@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { useState, useCallback } from "react"
+import { useCallback, useState } from "react"
 
 import {
   type Body_login_login_access_token as AccessToken,
@@ -26,7 +26,9 @@ const setMustChangePasswordStorage = (value: boolean) => {
 }
 
 const useAuth = () => {
-  const [mustChangePassword, setMustChangePasswordState] = useState(getMustChangePassword)
+  const [mustChangePassword, setMustChangePasswordState] = useState(
+    getMustChangePassword,
+  )
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: user } = useQuery<UserPublic | null, Error>({

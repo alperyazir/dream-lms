@@ -72,6 +72,7 @@ class MessageThreadResponse(BaseModel):
     participant_name: str
     participant_email: str
     participant_role: str
+    participant_organization_name: str | None = None  # Publisher organization name
     messages: list[MessagePublic]
     total_messages: int
 
@@ -83,6 +84,7 @@ class RecipientPublic(BaseModel):
     name: str
     email: str
     role: str
+    organization_name: str | None = None  # Publisher organization name (from DCS)
 
 
 class RecipientListResponse(BaseModel):

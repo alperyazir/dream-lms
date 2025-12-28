@@ -86,18 +86,17 @@ export function SharedAssignmentTimer({
       }, 1000)
 
       return () => clearInterval(intervalId)
-    } else {
-      // Elapsed mode - count up
-      const intervalId = setInterval(() => {
-        setSeconds((prev) => {
-          const newValue = prev + 1
-          onElapsedChange?.(newValue)
-          return newValue
-        })
-      }, 1000)
-
-      return () => clearInterval(intervalId)
     }
+    // Elapsed mode - count up
+    const intervalId = setInterval(() => {
+      setSeconds((prev) => {
+        const newValue = prev + 1
+        onElapsedChange?.(newValue)
+        return newValue
+      })
+    }, 1000)
+
+    return () => clearInterval(intervalId)
   }, [isCountdownMode, seconds, hasExpired, onTimeExpired, onElapsedChange])
 
   // Report initial elapsed time
@@ -105,12 +104,13 @@ export function SharedAssignmentTimer({
     if (!isCountdownMode) {
       onElapsedChange?.(seconds)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isCountdownMode, onElapsedChange, seconds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Determine state based on time (only for countdown)
   const remainingMinutes = isCountdownMode ? Math.floor(seconds / 60) : 0
   const isCritical = isCountdownMode && remainingMinutes < 1 && seconds > 0
-  const isWarning = isCountdownMode && remainingMinutes < 5 && remainingMinutes >= 1
+  const isWarning =
+    isCountdownMode && remainingMinutes < 5 && remainingMinutes >= 1
   const isExpired = isCountdownMode && seconds <= 0
 
   // Accessibility announcement for screen readers

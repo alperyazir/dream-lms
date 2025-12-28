@@ -1,14 +1,17 @@
 """PDF report generator using reportlab - Story 5.6."""
 
-import io
+import logging
 from datetime import datetime
 
 from reportlab.lib import colors
+
+logger = logging.getLogger(__name__)
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
-    Image,
     PageBreak,
     Paragraph,
     SimpleDocTemplate,
@@ -16,6 +19,46 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+
+# Register Unicode-compatible fonts for international characters (e.g., Turkish)
+# Try multiple font paths for different operating systems
+FONT_PATHS = [
+    # macOS Arial (supports Turkish characters)
+    ("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
+    # macOS DejaVu (if installed)
+    ("/System/Library/Fonts/Supplemental/DejaVuSans.ttf", "/System/Library/Fonts/Supplemental/DejaVuSans-Bold.ttf"),
+    # Linux common paths
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    # Ubuntu/Debian
+    ("/usr/share/fonts/dejavu/DejaVuSans.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"),
+    # Linux Arial
+    ("/usr/share/fonts/truetype/msttcorefonts/Arial.ttf", "/usr/share/fonts/truetype/msttcorefonts/Arial_Bold.ttf"),
+]
+
+UNICODE_FONT = "Helvetica"  # Default fallback
+UNICODE_FONT_BOLD = "Helvetica-Bold"
+FONT_NAME_REGISTERED = "CustomFont"  # Name we'll use for the registered font
+
+logger.info("DEBUG PDF FONTS: Starting font registration")
+for regular_path, bold_path in FONT_PATHS:
+    try:
+        from pathlib import Path
+        logger.info(f"DEBUG PDF FONTS: Trying {regular_path}")
+        if Path(regular_path).exists() and Path(bold_path).exists():
+            logger.info(f"DEBUG PDF FONTS: Found fonts at {regular_path}")
+            pdfmetrics.registerFont(TTFont(FONT_NAME_REGISTERED, regular_path))
+            pdfmetrics.registerFont(TTFont(f"{FONT_NAME_REGISTERED}-Bold", bold_path))
+            UNICODE_FONT = FONT_NAME_REGISTERED
+            UNICODE_FONT_BOLD = f"{FONT_NAME_REGISTERED}-Bold"
+            logger.info(f"DEBUG PDF FONTS: Successfully registered font from {regular_path}")
+            break
+        else:
+            logger.info(f"DEBUG PDF FONTS: Not found at {regular_path}")
+    except Exception as e:
+        logger.error(f"DEBUG PDF FONTS: Error with {regular_path}: {e}")
+        continue  # Try next path
+
+logger.info(f"DEBUG PDF FONTS: Using font={UNICODE_FONT}, bold={UNICODE_FONT_BOLD}")
 
 # Template type display names
 TEMPLATE_NAMES = {
@@ -61,10 +104,11 @@ def generate_pdf_report(
     story = []
     styles = getSampleStyleSheet()
 
-    # Custom styles
+    # Custom styles with Unicode font support
     title_style = ParagraphStyle(
         "CustomTitle",
         parent=styles["Heading1"],
+        fontName=UNICODE_FONT_BOLD,
         fontSize=24,
         spaceAfter=12,
         alignment=1,  # Center
@@ -73,6 +117,7 @@ def generate_pdf_report(
     subtitle_style = ParagraphStyle(
         "CustomSubtitle",
         parent=styles["Normal"],
+        fontName=UNICODE_FONT,
         fontSize=12,
         textColor=colors.grey,
         alignment=1,
@@ -82,6 +127,7 @@ def generate_pdf_report(
     heading_style = ParagraphStyle(
         "CustomHeading",
         parent=styles["Heading2"],
+        fontName=UNICODE_FONT_BOLD,
         fontSize=14,
         spaceBefore=20,
         spaceAfter=10,
@@ -91,6 +137,7 @@ def generate_pdf_report(
     body_style = ParagraphStyle(
         "CustomBody",
         parent=styles["Normal"],
+        fontName=UNICODE_FONT,
         fontSize=10,
         spaceAfter=8,
         leading=14,
@@ -128,7 +175,7 @@ def generate_pdf_report(
 def _add_footer(canvas, doc):
     """Add footer with page number and generation date."""
     canvas.saveState()
-    canvas.setFont("Helvetica", 8)
+    canvas.setFont(UNICODE_FONT, 8)
     canvas.setFillColor(colors.grey)
 
     # Page number

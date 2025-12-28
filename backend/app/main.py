@@ -1,7 +1,8 @@
 import logging
 import os
-import sentry_sdk
 from contextlib import asynccontextmanager
+
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +14,8 @@ from starlette.responses import JSONResponse
 from app.api.main import api_router
 from app.core.config import settings
 from app.core.rate_limit import limiter
+
+# Note: Publisher sync no longer needed - publishers managed via DCS caching service
 from app.services.webhook_registration import webhook_registration_service
 
 logger = logging.getLogger(__name__)
@@ -31,6 +34,12 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Dream LMS backend...")
 
+    # Log email configuration status
+    if settings.emails_enabled:
+        logger.info(f"✅ Email enabled via SMTP: {settings.SMTP_HOST}")
+    else:
+        logger.warning("⚠️  Email disabled - SMTP not configured. New users will receive passwords in UI.")
+
     # Register webhooks with Dream Central Storage
     logger.info("Attempting to register webhooks with Dream Central Storage...")
     try:
@@ -43,6 +52,35 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Error during webhook registration: {e}")
         logger.warning("   Webhook registration will be skipped. Use admin sync endpoint to register manually.")
+
+    # Note: Publishers no longer synced to local DB - managed via DCS caching service
+    # Publishers are fetched on-demand from DCS and cached (see publisher_service_v2.py)
+    logger.info("Publisher data will be fetched on-demand from Dream Central Storage")
+
+    # Optional: Warm up cache for common data
+    if settings.DCS_CACHE_WARMUP_ENABLED:
+        from app.services.book_service_v2 import get_book_service
+        from app.services.dcs_cache import get_dcs_cache
+        from app.services.publisher_service_v2 import get_publisher_service
+
+        cache = get_dcs_cache()
+        publisher_service = get_publisher_service()
+        book_service = get_book_service()
+
+        try:
+            # Pre-fetch publishers
+            logger.info("Warming up cache: fetching publishers...")
+            await publisher_service.list_publishers()
+            logger.info("✅ Cache warmed: publishers")
+
+            # Note: Book list can be large, only warmup if needed
+            # Uncomment if you want to pre-fetch all books at startup:
+            # logger.info("Warming up cache: fetching books...")
+            # await book_service.list_books()
+            # logger.info("✅ Cache warmed: books")
+        except Exception as e:
+            logger.warning(f"⚠️  Cache warmup failed: {e}")
+            logger.warning("   Cache will be populated on-demand")
 
     yield
 
@@ -82,6 +120,7 @@ if settings.all_cors_origins:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["Content-Disposition"],  # Expose filename header to browser
     )
 
 # Add SlowAPI middleware for rate limiting (Story 4.8 QA Fix)

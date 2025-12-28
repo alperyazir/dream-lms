@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Book, Building2, Check, MapPin } from "lucide-react"
+import { Book, Building2, Check } from "lucide-react"
 import { useState } from "react"
 import { PublishersService, type SchoolCreateByPublisher } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { SchoolCard } from "@/components/schools/SchoolCard"
+import { SchoolDetailsDialog } from "@/components/schools/SchoolDetailsDialog"
+import { SchoolListView } from "@/components/schools/SchoolListView"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -18,7 +20,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
 import useCustomToast from "@/hooks/useCustomToast"
+import { useViewPreference } from "@/hooks/useViewPreference"
 import { createBulkBookAssignments } from "@/services/bookAssignmentsApi"
 import { booksApi } from "@/services/booksApi"
 
@@ -33,13 +37,15 @@ export const Route = createFileRoute("/_layout/publisher/schools")({
 function PublisherSchoolsPage() {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const [viewMode, setViewMode] = useViewPreference("publisherSchools", "grid")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [newSchool, setNewSchool] = useState<SchoolCreateByPublisher>({
     name: "",
     address: "",
     contact_info: "",
   })
-  const [selectedBookIds, setSelectedBookIds] = useState<string[]>([])
+  const [selectedBookIds, setSelectedBookIds] = useState<number[]>([])
+  const [selectedSchool, setSelectedSchool] = useState<any>(null)
 
   // Fetch schools from API
   const {
@@ -63,7 +69,9 @@ function PublisherSchoolsPage() {
   const createSchoolMutation = useMutation({
     mutationFn: async (data: SchoolCreateByPublisher) => {
       // Create the school first
-      const school = await PublishersService.createSchool({ requestBody: data })
+      const school = await PublishersService.createMySchool({
+        requestBody: data,
+      })
 
       // If books were selected, assign them to the new school
       if (selectedBookIds.length > 0) {
@@ -133,8 +141,9 @@ function PublisherSchoolsPage() {
         </p>
       </div>
 
-      {/* Add Button */}
-      <div className="flex justify-end mb-6">
+      {/* Actions Bar */}
+      <div className="flex justify-between items-center mb-6">
+        <ViewModeToggle value={viewMode} onChange={setViewMode} />
         <Button
           onClick={() => setIsAddDialogOpen(true)}
           className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
@@ -162,33 +171,20 @@ function PublisherSchoolsPage() {
             Schools will appear here once they are created
           </p>
         </div>
-      ) : (
+      ) : viewMode === "grid" ? (
         /* Schools Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {schools.map((school) => (
-            <Card
+            <SchoolCard
               key={school.id}
-              className="shadow-neuro border-teal-100 dark:border-teal-900 hover:shadow-neuro-lg transition-shadow"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-foreground mb-1">
-                      {school.name}
-                    </h3>
-                    {school.address && (
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {school.address}
-                      </div>
-                    )}
-                  </div>
-                  <Building2 className="w-8 h-8 text-teal-500" />
-                </div>
-              </CardContent>
-            </Card>
+              school={school}
+              onViewDetails={() => setSelectedSchool(school)}
+            />
           ))}
         </div>
+      ) : (
+        /* Schools List */
+        <SchoolListView schools={schools} onViewDetails={setSelectedSchool} />
       )}
 
       {/* Add School Dialog */}
@@ -210,7 +206,12 @@ function PublisherSchoolsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="school-name">School Name *</Label>
+              <Label htmlFor="school-name">
+                School Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="school-name"
                 placeholder="e.g., Central High School"
@@ -249,7 +250,7 @@ function PublisherSchoolsPage() {
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
                     <Book className="h-4 w-4" />
-                    Assign Books (Optional)
+                    Assign Books
                   </Label>
                   {selectedBookIds.length > 0 && (
                     <span className="text-xs text-muted-foreground">
@@ -319,6 +320,15 @@ function PublisherSchoolsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* School Details Dialog */}
+      {selectedSchool && (
+        <SchoolDetailsDialog
+          open={!!selectedSchool}
+          onOpenChange={(open) => !open && setSelectedSchool(null)}
+          school={selectedSchool}
+        />
+      )}
     </div>
   )
 }

@@ -20,12 +20,6 @@ from app.core.security import get_password_hash
 from app.models import (
     Activity,
     ActivityType,
-    Assignment,
-    AssignmentActivity,
-    AssignmentStatus,
-    AssignmentStudent,
-    AssignmentStudentActivity,
-    AssignmentStudentActivityStatus,
     Book,
     BookAccess,
     Class,

@@ -102,7 +102,6 @@ function AdminTeachers() {
     user_full_name: "",
   })
 
-
   // Fetch teachers from API
   const {
     data: teachers = [],
@@ -489,7 +488,12 @@ function AdminTeachers() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-full-name">Full Name *</Label>
+              <Label htmlFor="edit-full-name">
+                Full Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-full-name"
                 placeholder="e.g., John Doe"
@@ -503,7 +507,12 @@ function AdminTeachers() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-username">Username *</Label>
+              <Label htmlFor="edit-username">
+                Username{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-username"
                 placeholder="e.g., johndoe"
@@ -520,7 +529,12 @@ function AdminTeachers() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-email">Email *</Label>
+              <Label htmlFor="edit-email">
+                Email{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-email"
                 type="email"
@@ -532,7 +546,12 @@ function AdminTeachers() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-school">School *</Label>
+              <Label htmlFor="edit-school">
+                School{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Select
                 value={editTeacher.school_id || ""}
                 onValueChange={(value) =>
@@ -601,7 +620,12 @@ function AdminTeachers() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="full-name">Full Name *</Label>
+              <Label htmlFor="full-name">
+                Full Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="full-name"
                 placeholder="e.g., John Doe"
@@ -620,7 +644,12 @@ function AdminTeachers() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="username">Username *</Label>
+              <Label htmlFor="username">
+                Username{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="username"
                 placeholder="e.g., johndoe"
@@ -637,7 +666,12 @@ function AdminTeachers() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">
+                Email{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -649,7 +683,12 @@ function AdminTeachers() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="school">School *</Label>
+              <Label htmlFor="school">
+                School{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Select
                 value={newTeacher.school_id}
                 onValueChange={(value) =>
@@ -761,12 +800,13 @@ function AdminTeachers() {
           {resetResult?.passwordEmailed ? (
             <div className="flex items-center gap-2 py-4 text-green-600">
               <Mail className="h-5 w-5" />
-              <span>New password has been emailed to the user.</span>
+              <span>Password has been sent to the user's email address.</span>
             </div>
           ) : resetResult?.temporaryPassword ? (
             <div className="space-y-3 py-4">
               <p className="text-amber-600">
-                User has no email address. Please share this password securely:
+                Email delivery is not available. Please share this password
+                securely:
               </p>
               <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
                 <span className="font-mono text-lg flex-1">
@@ -785,7 +825,7 @@ function AdminTeachers() {
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                This password will not be shown again.
+                The user should change this password after first login.
               </p>
             </div>
           ) : null}

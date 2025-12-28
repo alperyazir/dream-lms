@@ -5,8 +5,8 @@
 
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { StorageQuotaBar } from "./StorageQuotaBar"
 import type { StorageQuota } from "@/types/material"
+import { StorageQuotaBar } from "./StorageQuotaBar"
 
 describe("StorageQuotaBar", () => {
   const normalQuota: StorageQuota = {
@@ -47,12 +47,8 @@ describe("StorageQuotaBar", () => {
     expect(screen.getByText("25%")).toBeInTheDocument()
 
     // Should not show warning or full messages
-    expect(
-      screen.queryByText(/Running low on space/)
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByText(/Storage full/)
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/Running low on space/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Storage full/)).not.toBeInTheDocument()
   })
 
   it("renders warning state correctly", () => {
@@ -67,7 +63,7 @@ describe("StorageQuotaBar", () => {
 
     expect(screen.getByText("100%")).toBeInTheDocument()
     expect(
-      screen.getByText(/Storage full - delete materials to upload more/)
+      screen.getByText(/Storage full - delete materials to upload more/),
     ).toBeInTheDocument()
   })
 
@@ -86,7 +82,7 @@ describe("StorageQuotaBar", () => {
 
   it("applies custom className", () => {
     const { container } = render(
-      <StorageQuotaBar quota={normalQuota} className="custom-class" />
+      <StorageQuotaBar quota={normalQuota} className="custom-class" />,
     )
     expect(container.firstChild).toHaveClass("custom-class")
   })

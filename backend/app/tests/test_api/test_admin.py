@@ -5,7 +5,6 @@ Tests for admin endpoints - password reset, user management, validation
 import uuid
 from unittest.mock import patch
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -793,6 +792,7 @@ class TestPublisherLogo:
     ):
         """Test successful logo upload for a publisher [AC: 15]"""
         import io
+
         from PIL import Image
 
         # Create publisher record

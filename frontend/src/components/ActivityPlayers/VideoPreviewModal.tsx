@@ -6,6 +6,8 @@
  * Allows teachers to watch the video and confirm their selection.
  */
 
+import { Subtitles, Video } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -14,10 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { VideoPlayer } from "./VideoPlayer"
-import { Video, Subtitles } from "lucide-react"
 import type { VideoInfo } from "@/services/booksApi"
+import { VideoPlayer } from "./VideoPlayer"
 
 /**
  * Get auth token from localStorage
@@ -41,7 +41,7 @@ export interface VideoPreviewModalProps {
   /** The video to preview */
   video: VideoInfo | null
   /** Book ID for constructing video URL */
-  bookId: string
+  bookId: string | number
   /** Video source URL (pre-constructed) */
   videoSrc?: string
   /** Subtitle source URL (pre-constructed) */
@@ -94,7 +94,8 @@ export function VideoPreviewModal({
   const baseUrl = getApiBaseUrl()
   const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
   const src =
-    videoSrc || `${baseUrl}/api/v1/books/${bookId}/media/${video.path}${tokenParam}`
+    videoSrc ||
+    `${baseUrl}/api/v1/books/${bookId}/media/${video.path}${tokenParam}`
   const subtitles =
     video.has_subtitles && !subtitleSrc
       ? `${baseUrl}/api/v1/books/${bookId}/media/${video.path.replace(/\.[^.]+$/, ".srt")}${tokenParam}`
@@ -111,7 +112,10 @@ export function VideoPreviewModal({
             <Video className="h-5 w-5" />
             Preview Video
           </DialogTitle>
-          <DialogDescription id="video-preview-description" className="flex items-center gap-2">
+          <DialogDescription
+            id="video-preview-description"
+            className="flex items-center gap-2"
+          >
             <span>{video.name}</span>
             <span className="text-muted-foreground">
               ({formatFileSize(video.size_bytes)})
@@ -126,11 +130,7 @@ export function VideoPreviewModal({
         </DialogHeader>
 
         <div className="overflow-hidden rounded-lg">
-          <VideoPlayer
-            src={src}
-            subtitleSrc={subtitles}
-            className="w-full"
-          />
+          <VideoPlayer src={src} subtitleSrc={subtitles} className="w-full" />
         </div>
 
         <DialogFooter>

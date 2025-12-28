@@ -426,13 +426,21 @@ export const ActivityResponseSchema = {
             format: 'uuid',
             title: 'Id'
         },
-        book_id: {
+        dcs_book_id: {
+            type: 'integer',
+            title: 'Dcs Book Id'
+        },
+        module_name: {
             type: 'string',
-            format: 'uuid',
-            title: 'Book Id'
+            title: 'Module Name'
+        },
+        page_number: {
+            type: 'integer',
+            title: 'Page Number'
         },
         activity_type: {
-            '$ref': '#/components/schemas/ActivityType'
+            type: 'string',
+            title: 'Activity Type'
         },
         title: {
             anyOf: [
@@ -444,21 +452,12 @@ export const ActivityResponseSchema = {
                 }
             ],
             title: 'Title'
-        },
-        config_json: {
-            additionalProperties: true,
-            type: 'object',
-            title: 'Config Json'
-        },
-        order_index: {
-            type: 'integer',
-            title: 'Order Index'
         }
     },
     type: 'object',
-    required: ['id', 'book_id', 'activity_type', 'config_json', 'order_index'],
+    required: ['id', 'dcs_book_id', 'module_name', 'page_number', 'activity_type', 'title'],
     title: 'ActivityResponse',
-    description: 'Activity response schema for book detail'
+    description: 'Activity response schema for API.'
 } as const;
 
 export const ActivityScoreItemSchema = {
@@ -631,13 +630,6 @@ export const ActivityStartResponseSchema = {
     required: ['assignment_id', 'assignment_name', 'instructions', 'due_date', 'time_limit_minutes', 'book_id', 'book_title', 'book_name', 'publisher_name', 'book_cover_url', 'activity_id', 'activity_title', 'activity_type', 'config_json', 'current_status', 'time_spent_minutes', 'progress_json', 'has_saved_progress'],
     title: 'ActivityStartResponse',
     description: 'Response schema for starting an assignment - returns full activity configuration.'
-} as const;
-
-export const ActivityTypeSchema = {
-    type: 'string',
-    enum: ['matchTheWords', 'dragdroppicture', 'dragdroppicturegroup', 'fillSentencesWithDots', 'fillpicture', 'circle', 'puzzleFindWords', 'markwithx'],
-    title: 'ActivityType',
-    description: 'Activity type enumeration'
 } as const;
 
 export const ActivityTypeAnalysisSchema = {
@@ -881,13 +873,45 @@ export const AdditionalResourcesSchema = {
             type: 'array',
             title: 'Videos',
             default: []
+        },
+        teacher_materials: {
+            items: {
+                '$ref': '#/components/schemas/TeacherMaterialResource'
+            },
+            type: 'array',
+            title: 'Teacher Materials',
+            default: []
         }
     },
     type: 'object',
     title: 'AdditionalResources',
     description: `Schema for additional resources attached to an assignment.
 
-Currently supports video resources. Extensible for future resource types.`
+Supports video resources and teacher-uploaded materials.`
+} as const;
+
+export const AdditionalResourcesResponseSchema = {
+    properties: {
+        videos: {
+            items: {
+                '$ref': '#/components/schemas/VideoResource'
+            },
+            type: 'array',
+            title: 'Videos',
+            default: []
+        },
+        teacher_materials: {
+            items: {
+                '$ref': '#/components/schemas/TeacherMaterialResourceResponse'
+            },
+            type: 'array',
+            title: 'Teacher Materials',
+            default: []
+        }
+    },
+    type: 'object',
+    title: 'AdditionalResourcesResponse',
+    description: 'Response schema with enriched material data and availability status.'
 } as const;
 
 export const AdminBenchmarkOverviewSchema = {
@@ -1359,6 +1383,34 @@ export const AssignmentListItemSchema = {
     description: 'Assignment list item with enriched data for display.'
 } as const;
 
+export const AssignmentListResponseSchema = {
+    properties: {
+        items: {
+            items: {
+                '$ref': '#/components/schemas/AssignmentWithTeacher'
+            },
+            type: 'array',
+            title: 'Items'
+        },
+        total: {
+            type: 'integer',
+            title: 'Total'
+        },
+        skip: {
+            type: 'integer',
+            title: 'Skip'
+        },
+        limit: {
+            type: 'integer',
+            title: 'Limit'
+        }
+    },
+    type: 'object',
+    required: ['items', 'total', 'skip', 'limit'],
+    title: 'AssignmentListResponse',
+    description: 'Paginated response for assignment lists.'
+} as const;
+
 export const AssignmentPerformanceItemSchema = {
     properties: {
         assignment_id: {
@@ -1494,7 +1546,7 @@ export const AssignmentPreviewResponseSchema = {
         resources: {
             anyOf: [
                 {
-                    '$ref': '#/components/schemas/AdditionalResources'
+                    '$ref': '#/components/schemas/AdditionalResourcesResponse'
                 },
                 {
                     type: 'null'
@@ -1864,6 +1916,67 @@ export const AssignmentUpdateSchema = {
 
 Story 9.8: Added activity_ids field to allow editing activities.
 Story 10.3: Added video_path field to allow attaching/removing video.`
+} as const;
+
+export const AssignmentWithTeacherSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        title: {
+            type: 'string',
+            title: 'Title'
+        },
+        teacher_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Teacher Id'
+        },
+        teacher_name: {
+            type: 'string',
+            title: 'Teacher Name'
+        },
+        teacher_email: {
+            type: 'string',
+            title: 'Teacher Email'
+        },
+        recipient_count: {
+            type: 'integer',
+            title: 'Recipient Count',
+            default: 0
+        },
+        completed_count: {
+            type: 'integer',
+            title: 'Completed Count',
+            default: 0
+        },
+        due_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Date'
+        },
+        status: {
+            '$ref': '#/components/schemas/AssignmentPublishStatus'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'title', 'teacher_id', 'teacher_name', 'teacher_email', 'due_date', 'status', 'created_at'],
+    title: 'AssignmentWithTeacher',
+    description: 'Assignment response with teacher information for admin view.'
 } as const;
 
 export const AvatarTypeSchema = {
@@ -2238,6 +2351,19 @@ export const Body_students_validate_import_fileSchema = {
     title: 'Body_students-validate_import_file'
 } as const;
 
+export const Body_teacher_materials_upload_materialSchema = {
+    properties: {
+        file: {
+            type: 'string',
+            format: 'binary',
+            title: 'File'
+        }
+    },
+    type: 'object',
+    required: ['file'],
+    title: 'Body_teacher-materials-upload_material'
+} as const;
+
 export const Body_teachers_bulk_import_studentsSchema = {
     properties: {
         file: {
@@ -2254,8 +2380,7 @@ export const Body_teachers_bulk_import_studentsSchema = {
 export const BookAssignmentCreateSchema = {
     properties: {
         book_id: {
-            type: 'string',
-            format: 'uuid',
+            type: 'integer',
             title: 'Book Id'
         },
         school_id: {
@@ -2325,8 +2450,7 @@ export const BookAssignmentPublicSchema = {
             title: 'Id'
         },
         book_id: {
-            type: 'string',
-            format: 'uuid',
+            type: 'integer',
             title: 'Book Id'
         },
         school_id: {
@@ -2378,8 +2502,7 @@ export const BookAssignmentResponseSchema = {
             title: 'Id'
         },
         book_id: {
-            type: 'string',
-            format: 'uuid',
+            type: 'integer',
             title: 'Book Id'
         },
         book_title: {
@@ -2497,24 +2620,25 @@ export const BookListResponseSchema = {
         },
         skip: {
             type: 'integer',
-            title: 'Skip'
+            title: 'Skip',
+            default: 0
         },
         limit: {
             type: 'integer',
-            title: 'Limit'
+            title: 'Limit',
+            default: 20
         }
     },
     type: 'object',
-    required: ['items', 'total', 'skip', 'limit'],
+    required: ['items', 'total'],
     title: 'BookListResponse',
-    description: 'Paginated book list response'
+    description: 'List of books response schema.'
 } as const;
 
 export const BookPagesDetailResponseSchema = {
     properties: {
         book_id: {
-            type: 'string',
-            format: 'uuid',
+            type: 'integer',
             title: 'Book Id'
         },
         modules: {
@@ -2549,8 +2673,7 @@ export const BookPagesDetailResponseSchema = {
 export const BookPagesResponseSchema = {
     properties: {
         book_id: {
-            type: 'string',
-            format: 'uuid',
+            type: 'integer',
             title: 'Book Id'
         },
         modules: {
@@ -2575,26 +2698,17 @@ export const BookPagesResponseSchema = {
     description: 'Response for book pages endpoint.'
 } as const;
 
-export const BookResponseSchema = {
+export const BookPublicSchema = {
     properties: {
         id: {
-            type: 'string',
-            format: 'uuid',
+            type: 'integer',
             title: 'Id'
         },
-        dream_storage_id: {
+        name: {
             type: 'string',
-            title: 'Dream Storage Id'
+            title: 'Name'
         },
         title: {
-            type: 'string',
-            title: 'Title'
-        },
-        publisher_name: {
-            type: 'string',
-            title: 'Publisher Name'
-        },
-        description: {
             anyOf: [
                 {
                     type: 'string'
@@ -2603,7 +2717,119 @@ export const BookResponseSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Description'
+            title: 'Title'
+        },
+        publisher_id: {
+            type: 'integer',
+            title: 'Publisher Id'
+        },
+        publisher_name: {
+            type: 'string',
+            title: 'Publisher Name'
+        },
+        cover_url: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Cover Url'
+        },
+        activity_count: {
+            type: 'integer',
+            title: 'Activity Count',
+            default: 0
+        },
+        created_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Created At'
+        },
+        updated_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'name', 'publisher_id', 'publisher_name'],
+    title: 'BookPublic',
+    description: `Book data for API responses - sourced from DCS.
+
+This schema represents books fetched from DCS without local sync.
+The ID is the DCS book ID (integer).`
+} as const;
+
+export const BookResponseSchema = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        title: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Title'
+        },
+        book_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Book Name'
+        },
+        publisher_name: {
+            type: 'string',
+            title: 'Publisher Name'
+        },
+        language: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Language'
+        },
+        category: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Category'
         },
         cover_image_url: {
             anyOf: [
@@ -2619,21 +2845,33 @@ export const BookResponseSchema = {
         activity_count: {
             type: 'integer',
             title: 'Activity Count',
-            description: 'Number of activities in book',
             default: 0
+        },
+        dream_storage_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Dream Storage Id'
         }
     },
     type: 'object',
-    required: ['id', 'dream_storage_id', 'title', 'publisher_name'],
+    required: ['id', 'publisher_name'],
     title: 'BookResponse',
-    description: 'Book response schema for catalog listings'
+    description: `Book response schema for API.
+
+DEPRECATED: Use BookPublic instead. This schema is kept for backwards compatibility
+but will be removed in a future version.`
 } as const;
 
 export const BookStructureResponseSchema = {
     properties: {
         book_id: {
-            type: 'string',
-            format: 'uuid',
+            type: 'integer',
             title: 'Book Id'
         },
         modules: {
@@ -2702,8 +2940,7 @@ export const BookSyncResponseSchema = {
 export const BookVideosResponseSchema = {
     properties: {
         book_id: {
-            type: 'string',
-            format: 'uuid',
+            type: 'integer',
             title: 'Book Id'
         },
         videos: {
@@ -2804,8 +3041,7 @@ export const BulkAssignmentCreatedItemSchema = {
 export const BulkBookAssignmentCreateSchema = {
     properties: {
         book_id: {
-            type: 'string',
-            format: 'uuid',
+            type: 'integer',
             title: 'Book Id'
         },
         school_id: {
@@ -4680,6 +4916,148 @@ export const MarkAllReadResponseSchema = {
     description: 'Schema for mark all as read response.'
 } as const;
 
+export const MaterialListResponseSchema = {
+    properties: {
+        materials: {
+            items: {
+                '$ref': '#/components/schemas/MaterialResponse'
+            },
+            type: 'array',
+            title: 'Materials'
+        },
+        total_count: {
+            type: 'integer',
+            title: 'Total Count'
+        },
+        quota: {
+            '$ref': '#/components/schemas/StorageQuotaResponse'
+        }
+    },
+    type: 'object',
+    required: ['materials', 'total_count', 'quota'],
+    title: 'MaterialListResponse',
+    description: 'List of materials with quota info.'
+} as const;
+
+export const MaterialResponseSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        type: {
+            '$ref': '#/components/schemas/MaterialType'
+        },
+        file_size: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'File Size'
+        },
+        mime_type: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Mime Type'
+        },
+        original_filename: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Original Filename'
+        },
+        url: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Url'
+        },
+        text_content: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Text Content'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        },
+        download_url: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Download Url'
+        }
+    },
+    type: 'object',
+    required: ['id', 'name', 'type', 'created_at', 'updated_at'],
+    title: 'MaterialResponse',
+    description: 'Material response schema.'
+} as const;
+
+export const MaterialTypeSchema = {
+    type: 'string',
+    enum: ['document', 'image', 'audio', 'video', 'url', 'text_note'],
+    title: 'MaterialType',
+    description: 'Types of teacher materials'
+} as const;
+
+export const MaterialUpdateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'MaterialUpdate',
+    description: 'Update material metadata (name only).'
+} as const;
+
 export const MessageSchema = {
     properties: {
         message: {
@@ -5151,7 +5529,7 @@ export const MultiActivityStartResponseSchema = {
         resources: {
             anyOf: [
                 {
-                    '$ref': '#/components/schemas/AdditionalResources'
+                    '$ref': '#/components/schemas/AdditionalResourcesResponse'
                 },
                 {
                     type: 'null'
@@ -5705,6 +6083,34 @@ export const PredefinedAvatarsResponseSchema = {
     description: 'Response containing all predefined avatars.'
 } as const;
 
+export const PresignedUrlResponseSchema = {
+    properties: {
+        url: {
+            type: 'string',
+            title: 'Url'
+        },
+        expires_in_seconds: {
+            type: 'integer',
+            title: 'Expires In Seconds'
+        },
+        content_type: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Content Type'
+        }
+    },
+    type: 'object',
+    required: ['url', 'expires_in_seconds'],
+    title: 'PresignedUrlResponse',
+    description: 'Presigned URL for direct file access.'
+} as const;
+
 export const PrivateUserCreateSchema = {
     properties: {
         email: {
@@ -5797,159 +6203,14 @@ export const PublishAssignmentsResponseSchema = {
     description: 'Response model for publish scheduled assignments task.'
 } as const;
 
-export const PublisherCreateAPISchema = {
+export const PublisherAccountCreateSchema = {
     properties: {
-        name: {
-            type: 'string',
-            maxLength: 255,
-            title: 'Name'
-        },
-        contact_email: {
-            type: 'string',
-            maxLength: 255,
-            format: 'email',
-            title: 'Contact Email'
+        dcs_publisher_id: {
+            type: 'integer',
+            title: 'Dcs Publisher Id',
+            description: 'DCS Publisher ID to link'
         },
         username: {
-            type: 'string',
-            maxLength: 50,
-            minLength: 3,
-            title: 'Username'
-        },
-        user_email: {
-            type: 'string',
-            maxLength: 255,
-            format: 'email',
-            title: 'User Email'
-        },
-        full_name: {
-            type: 'string',
-            maxLength: 255,
-            title: 'Full Name'
-        }
-    },
-    type: 'object',
-    required: ['name', 'contact_email', 'username', 'user_email', 'full_name'],
-    title: 'PublisherCreateAPI',
-    description: 'Properties for API endpoint publisher creation (includes user creation)'
-} as const;
-
-export const PublisherPublicSchema = {
-    properties: {
-        name: {
-            type: 'string',
-            maxLength: 255,
-            title: 'Name'
-        },
-        contact_email: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Contact Email'
-        },
-        logo_url: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 500
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Logo Url',
-            description: 'URL to publisher logo image'
-        },
-        benchmarking_enabled: {
-            type: 'boolean',
-            title: 'Benchmarking Enabled',
-            description: "Enable performance benchmarking for publisher's content",
-            default: true
-        },
-        id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Id'
-        },
-        user_id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'User Id'
-        },
-        user_email: {
-            type: 'string',
-            title: 'User Email'
-        },
-        user_username: {
-            type: 'string',
-            title: 'User Username'
-        },
-        user_full_name: {
-            type: 'string',
-            title: 'User Full Name'
-        },
-        created_at: {
-            type: 'string',
-            format: 'date-time',
-            title: 'Created At'
-        },
-        updated_at: {
-            type: 'string',
-            format: 'date-time',
-            title: 'Updated At'
-        }
-    },
-    type: 'object',
-    required: ['name', 'id', 'user_id', 'user_email', 'user_username', 'user_full_name', 'created_at', 'updated_at'],
-    title: 'PublisherPublic',
-    description: 'Properties to return via API'
-} as const;
-
-export const PublisherUpdateSchema = {
-    properties: {
-        name: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Name'
-        },
-        contact_email: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Contact Email'
-        },
-        user_email: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'User Email'
-        },
-        user_username: {
             anyOf: [
                 {
                     type: 'string',
@@ -5960,9 +6221,198 @@ export const PublisherUpdateSchema = {
                     type: 'null'
                 }
             ],
-            title: 'User Username'
+            title: 'Username',
+            description: 'Username (auto-generated from full_name if not provided)'
         },
-        user_full_name: {
+        email: {
+            type: 'string',
+            format: 'email',
+            title: 'Email'
+        },
+        full_name: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Full Name'
+        }
+    },
+    type: 'object',
+    required: ['dcs_publisher_id', 'email', 'full_name'],
+    title: 'PublisherAccountCreate',
+    description: 'Create a publisher user account linked to a DCS publisher.'
+} as const;
+
+export const PublisherAccountCreationResponseSchema = {
+    properties: {
+        user: {
+            '$ref': '#/components/schemas/UserPublic'
+        },
+        temporary_password: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Temporary Password'
+        },
+        password_emailed: {
+            type: 'boolean',
+            title: 'Password Emailed',
+            default: false
+        },
+        message: {
+            type: 'string',
+            title: 'Message',
+            default: ''
+        }
+    },
+    type: 'object',
+    required: ['user'],
+    title: 'PublisherAccountCreationResponse',
+    description: `Response for creating a publisher user account.
+
+Different from UserCreationResponse because publishers don't have a role_record.`
+} as const;
+
+export const PublisherAccountListResponseSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/PublisherAccountPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'PublisherAccountListResponse',
+    description: 'Response for listing publisher accounts.'
+} as const;
+
+export const PublisherAccountPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        username: {
+            type: 'string',
+            title: 'Username'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
+        },
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        },
+        dcs_publisher_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Dcs Publisher Id'
+        },
+        dcs_publisher_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Dcs Publisher Name'
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active'
+        },
+        created_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'username', 'email', 'full_name', 'dcs_publisher_id', 'is_active'],
+    title: 'PublisherAccountPublic',
+    description: 'Publisher account response with DCS enrichment.'
+} as const;
+
+export const PublisherAccountUpdateSchema = {
+    properties: {
+        dcs_publisher_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Dcs Publisher Id'
+        },
+        username: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50,
+                    minLength: 3
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Username'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'email'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
+        },
+        full_name: {
             anyOf: [
                 {
                     type: 'string',
@@ -5972,9 +6422,9 @@ export const PublisherUpdateSchema = {
                     type: 'null'
                 }
             ],
-            title: 'User Full Name'
+            title: 'Full Name'
         },
-        benchmarking_enabled: {
+        is_active: {
             anyOf: [
                 {
                     type: 'boolean'
@@ -5983,12 +6433,138 @@ export const PublisherUpdateSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Benchmarking Enabled'
+            title: 'Is Active'
         }
     },
     type: 'object',
-    title: 'PublisherUpdate',
-    description: 'Properties to receive via API on Publisher update'
+    title: 'PublisherAccountUpdate',
+    description: 'Update a publisher user account.'
+} as const;
+
+export const PublisherProfileSchema = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        contact_email: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Contact Email'
+        },
+        logo_url: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Logo Url'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        user_email: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Email'
+        },
+        user_full_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Full Name'
+        }
+    },
+    type: 'object',
+    required: ['id', 'name', 'user_id'],
+    title: 'PublisherProfile',
+    description: 'Publisher profile combining DCS and LMS data.'
+} as const;
+
+export const PublisherPublicSchema = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        contact_email: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Contact Email'
+        },
+        logo_url: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Logo Url'
+        }
+    },
+    type: 'object',
+    required: ['id', 'name'],
+    title: 'PublisherPublic',
+    description: 'Publisher data for API responses - sourced from DCS.'
+} as const;
+
+export const PublisherStatsSchema = {
+    properties: {
+        schools_count: {
+            type: 'integer',
+            title: 'Schools Count'
+        },
+        teachers_count: {
+            type: 'integer',
+            title: 'Teachers Count'
+        },
+        books_count: {
+            type: 'integer',
+            title: 'Books Count'
+        }
+    },
+    type: 'object',
+    required: ['schools_count', 'teachers_count', 'books_count'],
+    title: 'PublisherStats',
+    description: 'Publisher organization statistics.'
 } as const;
 
 export const QuestionAnalysisSchema = {
@@ -6533,14 +7109,13 @@ export const SchoolCreateSchema = {
             description: 'Enable performance benchmarking for this school',
             default: true
         },
-        publisher_id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Publisher Id'
+        dcs_publisher_id: {
+            type: 'integer',
+            title: 'Dcs Publisher Id'
         }
     },
     type: 'object',
-    required: ['name', 'publisher_id'],
+    required: ['name', 'dcs_publisher_id'],
     title: 'SchoolCreate',
     description: 'Properties to receive via API on School creation'
 } as const;
@@ -6627,10 +7202,9 @@ export const SchoolPublicSchema = {
             format: 'uuid',
             title: 'Id'
         },
-        publisher_id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Publisher Id'
+        dcs_publisher_id: {
+            type: 'integer',
+            title: 'Dcs Publisher Id'
         },
         created_at: {
             type: 'string',
@@ -6644,7 +7218,7 @@ export const SchoolPublicSchema = {
         }
     },
     type: 'object',
-    required: ['name', 'id', 'publisher_id', 'created_at', 'updated_at'],
+    required: ['name', 'id', 'dcs_publisher_id', 'created_at', 'updated_at'],
     title: 'SchoolPublic',
     description: 'Properties to return via API'
 } as const;
@@ -6685,17 +7259,16 @@ export const SchoolUpdateSchema = {
             ],
             title: 'Contact Info'
         },
-        publisher_id: {
+        dcs_publisher_id: {
             anyOf: [
                 {
-                    type: 'string',
-                    format: 'uuid'
+                    type: 'integer'
                 },
                 {
                     type: 'null'
                 }
             ],
-            title: 'Publisher Id'
+            title: 'Dcs Publisher Id'
         },
         benchmarking_enabled: {
             anyOf: [
@@ -6712,6 +7285,80 @@ export const SchoolUpdateSchema = {
     type: 'object',
     title: 'SchoolUpdate',
     description: 'Properties to receive via API on School update'
+} as const;
+
+export const SchoolWithCountsSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        address: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Address'
+        },
+        contact_info: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Contact Info'
+        },
+        benchmarking_enabled: {
+            type: 'boolean',
+            title: 'Benchmarking Enabled',
+            default: false
+        },
+        dcs_publisher_id: {
+            type: 'integer',
+            title: 'Dcs Publisher Id'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        },
+        teacher_count: {
+            type: 'integer',
+            title: 'Teacher Count',
+            default: 0
+        },
+        student_count: {
+            type: 'integer',
+            title: 'Student Count',
+            default: 0
+        },
+        book_count: {
+            type: 'integer',
+            title: 'Book Count',
+            default: 0
+        }
+    },
+    type: 'object',
+    required: ['id', 'name', 'dcs_publisher_id', 'created_at', 'updated_at'],
+    title: 'SchoolWithCounts',
+    description: 'School response with aggregated counts for publisher views.'
 } as const;
 
 export const ScoreDistributionBucketSchema = {
@@ -6821,6 +7468,35 @@ export const StatusSummarySchema = {
     required: ['not_started', 'in_progress', 'completed', 'past_due'],
     title: 'StatusSummary',
     description: 'Counts of assignments by status.'
+} as const;
+
+export const StorageQuotaResponseSchema = {
+    properties: {
+        used_bytes: {
+            type: 'integer',
+            title: 'Used Bytes'
+        },
+        quota_bytes: {
+            type: 'integer',
+            title: 'Quota Bytes'
+        },
+        used_percentage: {
+            type: 'number',
+            title: 'Used Percentage'
+        },
+        is_warning: {
+            type: 'boolean',
+            title: 'Is Warning'
+        },
+        is_full: {
+            type: 'boolean',
+            title: 'Is Full'
+        }
+    },
+    type: 'object',
+    required: ['used_bytes', 'quota_bytes', 'used_percentage', 'is_warning', 'is_full'],
+    title: 'StorageQuotaResponse',
+    description: 'Storage quota information.'
 } as const;
 
 export const StrugglingStudentItemSchema = {
@@ -7819,6 +8495,189 @@ export const StudyTimeStatsSchema = {
     description: 'Study time statistics.'
 } as const;
 
+export const SupervisorCreateAPISchema = {
+    properties: {
+        username: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 3,
+            title: 'Username'
+        },
+        user_email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    format: 'email'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Email'
+        },
+        full_name: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Full Name'
+        }
+    },
+    type: 'object',
+    required: ['username', 'full_name'],
+    title: 'SupervisorCreateAPI',
+    description: 'Properties for API endpoint supervisor creation'
+} as const;
+
+export const SupervisorCreateResponseSchema = {
+    properties: {
+        user: {
+            '$ref': '#/components/schemas/UserPublic'
+        },
+        temporary_password: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Temporary Password'
+        },
+        password_emailed: {
+            type: 'boolean',
+            title: 'Password Emailed',
+            default: false
+        },
+        message: {
+            type: 'string',
+            title: 'Message',
+            default: ''
+        }
+    },
+    type: 'object',
+    required: ['user'],
+    title: 'SupervisorCreateResponse',
+    description: 'Response schema for supervisor creation'
+} as const;
+
+export const SupervisorPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
+        },
+        username: {
+            type: 'string',
+            title: 'Username'
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active'
+        },
+        created_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Created At'
+        },
+        must_change_password: {
+            type: 'boolean',
+            title: 'Must Change Password'
+        }
+    },
+    type: 'object',
+    required: ['id', 'full_name', 'email', 'username', 'is_active', 'created_at', 'must_change_password'],
+    title: 'SupervisorPublic',
+    description: 'Public supervisor response schema'
+} as const;
+
+export const SupervisorUpdateSchema = {
+    properties: {
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    format: 'email'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
+        },
+        username: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50,
+                    minLength: 3
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Username'
+        },
+        is_active: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Active'
+        }
+    },
+    type: 'object',
+    title: 'SupervisorUpdate',
+    description: 'Properties for updating a supervisor'
+} as const;
+
 export const TeacherCreateAPISchema = {
     properties: {
         username: {
@@ -7881,6 +8740,127 @@ export const TeacherInsightsResponseSchema = {
     required: ['insights', 'last_refreshed'],
     title: 'TeacherInsightsResponse',
     description: 'Response containing all teacher insights.'
+} as const;
+
+export const TeacherMaterialResourceSchema = {
+    properties: {
+        type: {
+            type: 'string',
+            const: 'teacher_material',
+            title: 'Type',
+            default: 'teacher_material'
+        },
+        material_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Material Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        material_type: {
+            type: 'string',
+            title: 'Material Type'
+        }
+    },
+    type: 'object',
+    required: ['material_id', 'name', 'material_type'],
+    title: 'TeacherMaterialResource',
+    description: `Schema for a teacher-uploaded material attached to an assignment.
+
+Story 13.3: Teacher Materials Assignment Integration.
+Stores denormalized name/type for display even if material is deleted.`
+} as const;
+
+export const TeacherMaterialResourceResponseSchema = {
+    properties: {
+        type: {
+            type: 'string',
+            const: 'teacher_material',
+            title: 'Type',
+            default: 'teacher_material'
+        },
+        material_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Material Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        material_type: {
+            type: 'string',
+            title: 'Material Type'
+        },
+        is_available: {
+            type: 'boolean',
+            title: 'Is Available',
+            default: true
+        },
+        file_size: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'File Size'
+        },
+        mime_type: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Mime Type'
+        },
+        url: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Url'
+        },
+        text_content: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Text Content'
+        },
+        download_url: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Download Url'
+        }
+    },
+    type: 'object',
+    required: ['material_id', 'name', 'material_type'],
+    title: 'TeacherMaterialResourceResponse',
+    description: `Response schema with availability status and enriched data.
+
+Used when returning assignment resources to include current material state.`
 } as const;
 
 export const TeacherPublicSchema = {
@@ -8010,6 +8990,139 @@ export const TeacherUpdateSchema = {
     description: 'Properties to receive via API on Teacher update'
 } as const;
 
+export const TeacherWithCountsSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        user_email: {
+            type: 'string',
+            title: 'User Email'
+        },
+        user_username: {
+            type: 'string',
+            title: 'User Username'
+        },
+        user_full_name: {
+            type: 'string',
+            title: 'User Full Name'
+        },
+        school_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'School Id'
+        },
+        school_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'School Name'
+        },
+        subject_specialization: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Subject Specialization'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        },
+        books_assigned: {
+            type: 'integer',
+            title: 'Books Assigned',
+            default: 0
+        },
+        classroom_count: {
+            type: 'integer',
+            title: 'Classroom Count',
+            default: 0
+        }
+    },
+    type: 'object',
+    required: ['id', 'user_id', 'user_email', 'user_username', 'user_full_name', 'school_id', 'created_at', 'updated_at'],
+    title: 'TeacherWithCounts',
+    description: 'Teacher response with aggregated counts and school name for publisher views.'
+} as const;
+
+export const TextNoteCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        content: {
+            type: 'string',
+            maxLength: 51200,
+            minLength: 1,
+            title: 'Content'
+        }
+    },
+    type: 'object',
+    required: ['name', 'content'],
+    title: 'TextNoteCreate',
+    description: 'Create a text note.'
+} as const;
+
+export const TextNoteUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        content: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 51200,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Content'
+        }
+    },
+    type: 'object',
+    title: 'TextNoteUpdate',
+    description: 'Update a text note.'
+} as const;
+
 export const TimeAnalyticsSchema = {
     properties: {
         avg_time_per_assignment: {
@@ -8134,6 +9247,41 @@ export const UpdatePasswordSchema = {
     title: 'UpdatePassword'
 } as const;
 
+export const UploadResponseSchema = {
+    properties: {
+        material: {
+            '$ref': '#/components/schemas/MaterialResponse'
+        },
+        quota: {
+            '$ref': '#/components/schemas/StorageQuotaResponse'
+        }
+    },
+    type: 'object',
+    required: ['material', 'quota'],
+    title: 'UploadResponse',
+    description: 'Response after file upload.'
+} as const;
+
+export const UrlLinkCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        url: {
+            type: 'string',
+            maxLength: 2000,
+            title: 'Url'
+        }
+    },
+    type: 'object',
+    required: ['name', 'url'],
+    title: 'UrlLinkCreate',
+    description: 'Create a URL link.'
+} as const;
+
 export const UserCreateSchema = {
     properties: {
         email: {
@@ -8181,6 +9329,18 @@ export const UserCreateSchema = {
             '$ref': '#/components/schemas/UserRole',
             default: 'student'
         },
+        dcs_publisher_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Dcs Publisher Id',
+            description: 'DCS Publisher ID - only set for publisher role users'
+        },
         password: {
             type: 'string',
             maxLength: 40,
@@ -8200,9 +9360,6 @@ export const UserCreationResponseSchema = {
         },
         role_record: {
             anyOf: [
-                {
-                    '$ref': '#/components/schemas/PublisherPublic'
-                },
                 {
                     '$ref': '#/components/schemas/TeacherPublic'
                 },
@@ -8290,6 +9447,18 @@ export const UserPublicSchema = {
             '$ref': '#/components/schemas/UserRole',
             default: 'student'
         },
+        dcs_publisher_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Dcs Publisher Id',
+            description: 'DCS Publisher ID - only set for publisher role users'
+        },
         id: {
             type: 'string',
             format: 'uuid',
@@ -8334,7 +9503,7 @@ export const UserPublicSchema = {
 
 export const UserRoleSchema = {
     type: 'string',
-    enum: ['admin', 'publisher', 'teacher', 'student'],
+    enum: ['admin', 'supervisor', 'publisher', 'teacher', 'student'],
     title: 'UserRole',
     description: 'User role enumeration for RBAC'
 } as const;
@@ -8392,6 +9561,17 @@ export const UserUpdateSchema = {
         role: {
             '$ref': '#/components/schemas/UserRole',
             default: 'student'
+        },
+        dcs_publisher_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Dcs Publisher Id'
         },
         password: {
             anyOf: [
@@ -8565,57 +9745,9 @@ export const VideoResourceSchema = {
 Story 10.3+: Video with subtitle control for students.`
 } as const;
 
-export const WebhookBookDataSchema = {
-    properties: {
-        id: {
-            type: 'integer',
-            title: 'Id'
-        },
-        book_name: {
-            type: 'string',
-            title: 'Book Name'
-        },
-        book_title: {
-            type: 'string',
-            title: 'Book Title'
-        },
-        publisher: {
-            type: 'string',
-            title: 'Publisher'
-        },
-        language: {
-            type: 'string',
-            title: 'Language'
-        },
-        category: {
-            type: 'string',
-            title: 'Category'
-        },
-        status: {
-            type: 'string',
-            title: 'Status'
-        },
-        version: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Version'
-        }
-    },
-    type: 'object',
-    required: ['id', 'book_name', 'book_title', 'publisher', 'language', 'category', 'status'],
-    title: 'WebhookBookData',
-    description: 'Book data from webhook payload'
-} as const;
-
 export const WebhookEventTypeSchema = {
     type: 'string',
-    enum: ['book.created', 'book.updated', 'book.deleted'],
+    enum: ['book.created', 'book.updated', 'book.deleted', 'publisher.created', 'publisher.updated', 'publisher.deleted'],
     title: 'WebhookEventType',
     description: 'Webhook event type enumeration'
 } as const;
@@ -8631,13 +9763,20 @@ export const WebhookPayloadSchema = {
             title: 'Timestamp'
         },
         data: {
-            '$ref': '#/components/schemas/WebhookBookData'
+            additionalProperties: true,
+            type: 'object',
+            title: 'Data'
         }
     },
     type: 'object',
     required: ['event', 'timestamp', 'data'],
     title: 'WebhookPayload',
-    description: 'Webhook payload schema from Dream Central Storage'
+    description: `Webhook payload schema from Dream Central Storage.
+
+Supports both book and publisher events. The data field structure
+depends on the event type:
+- book.* events: data contains WebhookBookData fields
+- publisher.* events: data contains WebhookPublisherData fields`
 } as const;
 
 export const WordMatchingErrorSchema = {

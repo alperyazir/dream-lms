@@ -168,7 +168,9 @@ export function UrlLinkModal({
               <p
                 className={`text-xs ${urlValid ? "text-green-500" : "text-red-500"}`}
               >
-                {urlValid ? "Valid URL" : "URL must start with http:// or https://"}
+                {urlValid
+                  ? "Valid URL"
+                  : "URL must start with http:// or https://"}
               </p>
             )}
           </div>

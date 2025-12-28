@@ -1,70 +1,44 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { formatDistanceToNow } from "date-fns"
-import {
-  BookOpen,
-  Calendar,
-  CheckCircle,
-  Clock,
-  Edit,
-  ListOrdered,
-  MoreVertical,
-  PlayCircle,
-  Plus,
-  Search,
-  Timer,
-  Trash2,
-  Users,
-} from "lucide-react"
+import { BookOpen, Plus } from "lucide-react"
 import { useMemo, useState } from "react"
 import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
+import {
+  AssignmentFilters,
+  type AssignmentFiltersState,
+} from "@/components/assignments/AssignmentFilters"
+import { AssignmentTableView } from "@/components/assignments/AssignmentTableView"
 import { DeleteAssignmentDialog } from "@/components/assignments/DeleteAssignmentDialog"
-import { EditActivitiesDialog } from "@/components/assignments/EditActivitiesDialog"
-import { EditAssignmentDialog } from "@/components/assignments/EditAssignmentDialog"
-import { Badge } from "@/components/ui/badge"
+import { TeacherAssignmentCard } from "@/components/assignments/TeacherAssignmentCard"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { getAssignments } from "@/services/assignmentsApi"
-import type { AssignmentListItem } from "@/types/assignment"
+import { Card, CardContent } from "@/components/ui/card"
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
+import { useViewPreference } from "@/hooks/useViewPreference"
+import { getAssignmentForEdit, getAssignments } from "@/services/assignmentsApi"
+import { getMyClasses } from "@/services/teachersApi"
+import type {
+  AssignmentForEditResponse,
+  AssignmentListItem,
+} from "@/types/assignment"
+import type { Class } from "@/types/teacher"
 
 export const Route = createFileRoute("/_layout/teacher/assignments/")({
   component: TeacherAssignmentsPage,
 })
 
 function TeacherAssignmentsPage() {
+  const navigate = useNavigate()
+  const [viewMode, setViewMode] = useViewPreference(
+    "teacher-assignments",
+    "grid",
+  )
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingAssignment, setEditingAssignment] =
-    useState<AssignmentListItem | null>(null)
-  const [editingActivities, setEditingActivities] =
-    useState<AssignmentListItem | null>(null)
+    useState<AssignmentForEditResponse | null>(null) // Story 20.2: Use for-edit response
   const [deletingAssignment, setDeletingAssignment] =
     useState<AssignmentListItem | null>(null)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<"created_at" | "due_date" | "name">(
-    "created_at",
-  )
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [filters, setFilters] = useState<AssignmentFiltersState>({})
+  const [sortBy, setSortBy] = useState<"due_date">("due_date")
 
   const {
     data: assignments,
@@ -75,52 +49,67 @@ function TeacherAssignmentsPage() {
     queryFn: getAssignments,
   })
 
-  // Sorting and filtering logic
-  const sortedAndFilteredAssignments = useMemo(() => {
+  const { data: classes } = useQuery<Class[]>({
+    queryKey: ["my-classes"],
+    queryFn: getMyClasses,
+  })
+
+  // Filtering and sorting logic
+  const filteredAndSortedAssignments = useMemo(() => {
     if (!assignments) return []
 
-    // Filter by search query
-    let filtered = assignments.filter((assignment) =>
-      assignment.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    )
+    let filtered = [...assignments]
 
-    // Sort
-    filtered = [...filtered].sort((a, b) => {
-      let compareValue = 0
+    // Apply search filter
+    if (filters.search) {
+      filtered = filtered.filter((assignment) =>
+        assignment.name.toLowerCase().includes(filters.search!.toLowerCase()),
+      )
+    }
 
-      switch (sortBy) {
-        case "name":
-          compareValue = a.name.localeCompare(b.name)
-          break
-        case "due_date": {
-          const aDate = a.due_date ? new Date(a.due_date).getTime() : 0
-          const bDate = b.due_date ? new Date(b.due_date).getTime() : 0
-          compareValue = aDate - bDate
-          break
-        }
-        default:
-          compareValue =
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          break
-      }
+    // Apply class filter
+    if (filters.class_id) {
+      // Note: We'll need to enhance AssignmentListItem to include class_ids
+      // For now, this is a placeholder for the filter logic
+      // filtered = filtered.filter(a => a.class_ids?.includes(filters.class_id!))
+    }
 
-      return sortOrder === "asc" ? compareValue : -compareValue
+    // Apply status filter
+    if (filters.status && filters.status !== "all") {
+      filtered = filtered.filter(
+        (assignment) => assignment.status === filters.status,
+      )
+    }
+
+    // Sort by due date
+    filtered.sort((a, b) => {
+      const aDate = a.due_date ? new Date(a.due_date).getTime() : 0
+      const bDate = b.due_date ? new Date(b.due_date).getTime() : 0
+      return bDate - aDate // Descending order
     })
 
     return filtered
-  }, [assignments, searchQuery, sortBy, sortOrder])
+  }, [assignments, filters])
 
   const handleCreateAssignment = () => {
     setIsDialogOpen(true)
   }
 
-  const handleEdit = (assignment: AssignmentListItem) => {
-    setEditingAssignment(assignment)
+  const handleView = (assignment: AssignmentListItem) => {
+    navigate({
+      to: "/teacher/assignments/$assignmentId",
+      params: { assignmentId: assignment.id },
+    })
   }
 
-  // Story 9.8: Handle edit activities
-  const handleEditActivities = (assignment: AssignmentListItem) => {
-    setEditingActivities(assignment)
+  const handleEdit = async (assignment: AssignmentListItem) => {
+    try {
+      // Story 20.2 CRITICAL FIX: Use for-edit endpoint to get recipients
+      const fullAssignment = await getAssignmentForEdit(assignment.id)
+      setEditingAssignment(fullAssignment)
+    } catch (error) {
+      console.error("Failed to fetch assignment for editing:", error)
+    }
   }
 
   const handleDelete = (assignment: AssignmentListItem) => {
@@ -164,75 +153,26 @@ function TeacherAssignmentsPage() {
             View and manage all your assignments
           </p>
         </div>
-        <Button
-          onClick={handleCreateAssignment}
-          className="bg-purple-600 hover:bg-purple-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Assignment
-        </Button>
-      </div>
-
-      {/* Search and Sort Controls */}
-      {assignments && assignments.length > 0 && (
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <Label htmlFor="search" className="sr-only">
-              Search assignments
-            </Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                id="search"
-                type="text"
-                placeholder="Search assignments..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Sort By */}
-          <div className="w-full sm:w-48">
-            <Label htmlFor="sortBy" className="sr-only">
-              Sort by
-            </Label>
-            <Select
-              value={sortBy}
-              onValueChange={(value: "created_at" | "due_date" | "name") =>
-                setSortBy(value)
-              }
-            >
-              <SelectTrigger id="sortBy">
-                <SelectValue placeholder="Sort by..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_at">Created Date</SelectItem>
-                <SelectItem value="due_date">Due Date</SelectItem>
-                <SelectItem value="name">Name</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Sort Order */}
+        <div className="flex items-center gap-4">
+          <ViewModeToggle value={viewMode} onChange={setViewMode} />
           <Button
-            variant="outline"
-            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            className="w-full sm:w-auto"
+            onClick={handleCreateAssignment}
+            className="bg-purple-600 hover:bg-purple-700"
           >
-            {sortOrder === "asc" ? "↑ Ascending" : "↓ Descending"}
+            <Plus className="w-4 h-4 mr-2" />
+            Create Assignment
           </Button>
         </div>
-      )}
+      </div>
 
-      {/* Result Count */}
       {assignments && assignments.length > 0 && (
-        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          Showing {sortedAndFilteredAssignments.length} of {assignments.length}{" "}
-          assignment{assignments.length !== 1 ? "s" : ""}
-        </div>
+        <AssignmentFilters
+          filters={filters}
+          onChange={setFilters}
+          classes={classes || []}
+          resultCount={filteredAndSortedAssignments.length}
+          totalCount={assignments.length}
+        />
       )}
 
       {!assignments || assignments.length === 0 ? (
@@ -255,34 +195,39 @@ function TeacherAssignmentsPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-start">
-          {sortedAndFilteredAssignments.map((assignment) => (
-            <AssignmentCard
+      ) : viewMode === "grid" ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredAndSortedAssignments.map((assignment) => (
+            <TeacherAssignmentCard
               key={assignment.id}
               assignment={assignment}
-              onEdit={handleEdit}
-              onEditActivities={handleEditActivities}
-              onDelete={handleDelete}
+              onView={() => handleView(assignment)}
+              onEdit={() => handleEdit(assignment)}
+              onDelete={() => handleDelete(assignment)}
             />
           ))}
         </div>
-      )}
-
-      {/* Assignment Creation Dialog */}
-      <AssignmentCreationDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-      />
-
-      {/* Edit Assignment Dialog */}
-      {editingAssignment && (
-        <EditAssignmentDialog
-          isOpen={!!editingAssignment}
-          onClose={() => setEditingAssignment(null)}
-          assignment={editingAssignment}
+      ) : (
+        <AssignmentTableView
+          assignments={filteredAndSortedAssignments}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          sortBy={sortBy}
+          onSort={(column) => setSortBy(column as "due_date")}
         />
       )}
+
+      {/* Story 20.2: Unified Creation/Edit Dialog */}
+      <AssignmentCreationDialog
+        isOpen={isDialogOpen || !!editingAssignment}
+        onClose={() => {
+          setIsDialogOpen(false)
+          setEditingAssignment(null)
+        }}
+        mode={editingAssignment ? "edit" : "create"}
+        existingAssignment={editingAssignment || undefined}
+      />
 
       {/* Delete Assignment Dialog */}
       <DeleteAssignmentDialog
@@ -290,238 +235,6 @@ function TeacherAssignmentsPage() {
         onClose={() => setDeletingAssignment(null)}
         assignment={deletingAssignment}
       />
-
-      {/* Story 9.8: Edit Activities Dialog */}
-      {editingActivities && (
-        <EditActivitiesDialog
-          isOpen={!!editingActivities}
-          onClose={() => setEditingActivities(null)}
-          assignmentId={editingActivities.id}
-          assignmentName={editingActivities.name}
-          bookId={editingActivities.book_id}
-          bookTitle={editingActivities.book_title}
-          currentActivities={[
-            {
-              id: editingActivities.activity_id,
-              title: editingActivities.activity_title,
-              activity_type: editingActivities.activity_type,
-              order_index: 0,
-            },
-          ]}
-        />
-      )}
     </div>
-  )
-}
-
-interface AssignmentCardProps {
-  assignment: AssignmentListItem
-  onEdit: (assignment: AssignmentListItem) => void
-  onEditActivities: (assignment: AssignmentListItem) => void
-  onDelete: (assignment: AssignmentListItem) => void
-}
-
-function AssignmentCard({ assignment, onEdit, onEditActivities, onDelete }: AssignmentCardProps) {
-  const navigate = useNavigate()
-  const completionRate =
-    assignment.total_students > 0
-      ? Math.round((assignment.completed / assignment.total_students) * 100)
-      : 0
-
-  const dueDate = assignment.due_date ? new Date(assignment.due_date) : null
-  const isOverdue = dueDate && dueDate < new Date() && assignment.status === "published"
-  const scheduledDate = assignment.scheduled_publish_date
-    ? new Date(assignment.scheduled_publish_date)
-    : null
-
-  // Determine status badge variant and label
-  const getStatusBadge = () => {
-    switch (assignment.status) {
-      case "scheduled":
-        return {
-          variant: "outline" as const,
-          className: "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
-          label: "Scheduled",
-        }
-      case "draft":
-        return {
-          variant: "outline" as const,
-          className: "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800",
-          label: "Draft",
-        }
-      case "archived":
-        return {
-          variant: "secondary" as const,
-          className: "",
-          label: "Archived",
-        }
-      default:
-        return null // Published - no badge needed (default state)
-    }
-  }
-
-  const statusBadge = getStatusBadge()
-
-  return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <div className="flex items-start justify-between mb-2">
-          <CardTitle className="text-lg line-clamp-2 flex-1">
-            {assignment.name}
-          </CardTitle>
-          <div className="flex items-center gap-2 ml-2">
-            {/* Story 9.6: Show status badge for non-published assignments */}
-            {statusBadge && (
-              <Badge variant={statusBadge.variant} className={statusBadge.className}>
-                {statusBadge.label}
-              </Badge>
-            )}
-            {isOverdue && <Badge variant="destructive">Overdue</Badge>}
-            {/* Actions Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(assignment)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Details
-                </DropdownMenuItem>
-                {/* Story 9.8: Edit Activities option */}
-                <DropdownMenuItem onClick={() => onEditActivities(assignment)}>
-                  <ListOrdered className="mr-2 h-4 w-4" />
-                  Edit Activities
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(assignment)}
-                  className="text-red-600"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <CardDescription className="space-y-1 text-gray-600 dark:text-gray-300">
-          <div className="flex items-center text-sm">
-            <BookOpen className="w-4 h-4 mr-1.5 flex-shrink-0" />
-            <span className="truncate">{assignment.book_title}</span>
-          </div>
-          <div className="flex items-center text-sm">
-            <span className="font-medium mr-1.5">Activity:</span>
-            <span className="truncate">{assignment.activity_title}</span>
-          </div>
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Story 9.6: Scheduled Publish Date */}
-        {scheduledDate && assignment.status === "scheduled" && (
-          <div className="flex items-center text-sm text-amber-600 dark:text-amber-400">
-            <Timer className="w-4 h-4 mr-2 flex-shrink-0" />
-            <span>Publishes {formatDistanceToNow(scheduledDate, { addSuffix: true })}</span>
-          </div>
-        )}
-
-        {/* Due Date */}
-        {dueDate && (
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-            <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
-            <span>Due {formatDistanceToNow(dueDate, { addSuffix: true })}</span>
-          </div>
-        )}
-
-        {/* Time Limit */}
-        {assignment.time_limit_minutes && (
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-            <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
-            <span>{assignment.time_limit_minutes} minutes</span>
-          </div>
-        )}
-
-        {/* Student Count */}
-        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-          <Users className="w-4 h-4 mr-2 flex-shrink-0" />
-          <span>{assignment.total_students} students</span>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-300">Progress</span>
-            <span className="font-semibold text-purple-600 dark:text-purple-400">
-              {completionRate}%
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-            <div
-              className="bg-purple-600 dark:bg-purple-500 h-2 rounded-full transition-all"
-              style={{ width: `${completionRate}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Status Breakdown */}
-        <div className="grid grid-cols-3 gap-2 text-xs">
-          <div className="flex flex-col items-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
-            <div className="flex items-center mb-1">
-              <Clock className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
-              <span className="font-semibold text-gray-900 dark:text-gray-100">
-                {assignment.not_started}
-              </span>
-            </div>
-            <span className="text-gray-600 dark:text-gray-300">
-              Not Started
-            </span>
-          </div>
-          <div className="flex flex-col items-center p-2 bg-blue-50 dark:bg-blue-900/30 rounded">
-            <div className="flex items-center mb-1">
-              <PlayCircle className="w-3 h-3 mr-1 text-blue-600 dark:text-blue-400" />
-              <span className="font-semibold text-blue-600 dark:text-blue-400">
-                {assignment.in_progress}
-              </span>
-            </div>
-            <span className="text-blue-600 dark:text-blue-400">
-              In Progress
-            </span>
-          </div>
-          <div className="flex flex-col items-center p-2 bg-green-50 dark:bg-green-900/30 rounded">
-            <div className="flex items-center mb-1">
-              <CheckCircle className="w-3 h-3 mr-1 text-green-600 dark:text-green-400" />
-              <span className="font-semibold text-green-600 dark:text-green-400">
-                {assignment.completed}
-              </span>
-            </div>
-            <span className="text-green-600 dark:text-green-400">
-              Completed
-            </span>
-          </div>
-        </div>
-
-        {/* Created Date */}
-        <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t dark:border-gray-700">
-          Created{" "}
-          {formatDistanceToNow(new Date(assignment.created_at), {
-            addSuffix: true,
-          })}
-        </div>
-
-        {/* View Button */}
-        <Button
-          className="w-full bg-purple-600 hover:bg-purple-700"
-          onClick={() =>
-            navigate({
-              to: "/teacher/assignments/$assignmentId",
-              params: { assignmentId: assignment.id },
-            })
-          }
-        >
-          View Details
-        </Button>
-      </CardContent>
-    </Card>
   )
 }

@@ -160,7 +160,7 @@ test.describe("Video Attachment - Student Flow (Story 10.3)", () => {
       await page.waitForURL(/\/play-multi/)
 
       // Check if video player is present (only if assignment has video attached)
-      const videoPlayer = page.locator('[aria-label="Video player"]')
+      const _videoPlayer = page.locator('[aria-label="Video player"]')
       // Video player visibility depends on whether assignment has video attached
     }
   })

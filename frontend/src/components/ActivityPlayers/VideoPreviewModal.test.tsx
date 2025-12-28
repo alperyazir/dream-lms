@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeAll } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
-import { VideoPreviewModal } from "./VideoPreviewModal"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { beforeAll, describe, expect, it, vi } from "vitest"
 import type { VideoInfo } from "@/services/booksApi"
+import { VideoPreviewModal } from "./VideoPreviewModal"
 
 // Mock ResizeObserver for Radix UI components
 class MockResizeObserver {
@@ -17,7 +17,11 @@ beforeAll(() => {
 // Mock the VideoPlayer component
 vi.mock("./VideoPlayer", () => ({
   VideoPlayer: vi.fn(({ src, subtitleSrc }) => (
-    <div data-testid="mock-video-player" data-src={src} data-subtitle={subtitleSrc}>
+    <div
+      data-testid="mock-video-player"
+      data-src={src}
+      data-subtitle={subtitleSrc}
+    >
       Mock VideoPlayer
     </div>
   )),
@@ -47,7 +51,7 @@ describe("VideoPreviewModal", () => {
 
   it("renders nothing when video is null", () => {
     const { container } = render(
-      <VideoPreviewModal {...defaultProps} video={null} />
+      <VideoPreviewModal {...defaultProps} video={null} />,
     )
     // Dialog should still render but with empty content
     expect(container).toBeEmptyDOMElement()
@@ -79,7 +83,7 @@ describe("VideoPreviewModal", () => {
     const player = screen.getByTestId("mock-video-player")
     expect(player).toHaveAttribute(
       "data-src",
-      "/api/v1/books/test-book-id/media/videos/chapter1.mp4"
+      "/api/v1/books/test-book-id/media/videos/chapter1.mp4",
     )
   })
 
@@ -89,7 +93,7 @@ describe("VideoPreviewModal", () => {
     const player = screen.getByTestId("mock-video-player")
     expect(player).toHaveAttribute(
       "data-subtitle",
-      "/api/v1/books/test-book-id/media/videos/chapter1.srt"
+      "/api/v1/books/test-book-id/media/videos/chapter1.srt",
     )
   })
 
@@ -104,7 +108,7 @@ describe("VideoPreviewModal", () => {
     render(<VideoPreviewModal {...defaultProps} onAttach={onAttach} />)
 
     expect(
-      screen.getByRole("button", { name: /attach this video/i })
+      screen.getByRole("button", { name: /attach this video/i }),
     ).toBeInTheDocument()
   })
 
@@ -115,11 +119,11 @@ describe("VideoPreviewModal", () => {
         {...defaultProps}
         onAttach={onAttach}
         showAttachButton={false}
-      />
+      />,
     )
 
     expect(
-      screen.queryByRole("button", { name: /attach this video/i })
+      screen.queryByRole("button", { name: /attach this video/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -140,7 +144,7 @@ describe("VideoPreviewModal", () => {
         {...defaultProps}
         onAttach={onAttach}
         onOpenChange={onOpenChange}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByRole("button", { name: /attach this video/i }))
@@ -156,11 +160,11 @@ describe("VideoPreviewModal", () => {
         {...defaultProps}
         onAttach={onAttach}
         attachButtonLabel="Select Video"
-      />
+      />,
     )
 
     expect(
-      screen.getByRole("button", { name: /select video/i })
+      screen.getByRole("button", { name: /select video/i }),
     ).toBeInTheDocument()
   })
 
@@ -169,7 +173,7 @@ describe("VideoPreviewModal", () => {
       <VideoPreviewModal
         {...defaultProps}
         videoSrc="https://custom.url/video.mp4"
-      />
+      />,
     )
 
     const player = screen.getByTestId("mock-video-player")
@@ -181,13 +185,13 @@ describe("VideoPreviewModal", () => {
       <VideoPreviewModal
         {...defaultProps}
         subtitleSrc="https://custom.url/subtitles.srt"
-      />
+      />,
     )
 
     const player = screen.getByTestId("mock-video-player")
     expect(player).toHaveAttribute(
       "data-subtitle",
-      "https://custom.url/subtitles.srt"
+      "https://custom.url/subtitles.srt",
     )
   })
 })

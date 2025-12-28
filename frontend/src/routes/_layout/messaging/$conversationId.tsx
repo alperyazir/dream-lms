@@ -109,11 +109,19 @@ function ConversationView() {
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {participant.name}
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <User className="h-3 w-3 inline mr-1" />
-                {participant.role.charAt(0).toUpperCase() +
-                  participant.role.slice(1)}
-              </p>
+              {/* Show organization name for publishers, otherwise show role */}
+              {participant.role === "publisher" &&
+              participant.organization_name ? (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {participant.organization_name}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <User className="h-3 w-3 inline mr-1" />
+                  {participant.role.charAt(0).toUpperCase() +
+                    participant.role.slice(1)}
+                </p>
+              )}
             </div>
           </div>
         </div>

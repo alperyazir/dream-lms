@@ -16,7 +16,6 @@ Integration tests may require async PostgreSQL for full coverage.
 """
 
 import uuid
-from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlmodel import Session, select
@@ -31,7 +30,6 @@ from app.models import (
     AssignmentStudentActivity,
     AssignmentStudentActivityStatus,
     Book,
-    BookAccess,
     BookStatus,
     Publisher,
     School,

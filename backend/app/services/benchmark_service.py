@@ -9,34 +9,32 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
-from sqlalchemy import func, select, distinct, case
+from sqlalchemy import case, distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import (
+    Activity,
     Assignment,
     AssignmentStatus,
     AssignmentStudent,
     Class,
     ClassStudent,
-    Activity,
-    Book,
-    Publisher,
     School,
-    Teacher,
 )
 from app.schemas.benchmarks import (
     ActivityTypeBenchmark,
+    ActivityTypeStat,
     AdminBenchmarkOverview,
     BenchmarkData,
     BenchmarkMessage,
+    BenchmarkPeriod,
     BenchmarkTrendPoint,
     ClassBenchmarkResponse,
     ClassMetrics,
     SchoolBenchmarkSummary,
-    ActivityTypeStat,
-    BenchmarkPeriod,
 )
+from app.services.book_service_v2 import get_book_service
 
 # Minimum number of classes required for benchmark data to be displayed (privacy threshold)
 MIN_CLASSES_FOR_BENCHMARK = 5
@@ -125,7 +123,7 @@ def _generate_benchmark_message(
         return BenchmarkMessage(
             type="below_average",
             title="Opportunities for growth",
-            description=f"Your class is close to the benchmark. "
+            description="Your class is close to the benchmark. "
             + (f"Consider focusing on {weakest_activity}." if weakest_activity else "You're making progress!"),
             icon="target",
             focus_area=weakest_activity,
@@ -134,7 +132,7 @@ def _generate_benchmark_message(
         return BenchmarkMessage(
             type="needs_focus",
             title="Let's focus on improvement",
-            description=f"There's room for growth"
+            description="There's room for growth"
             + (f", especially in {weakest_activity}." if weakest_activity else ".")
             + " Small steps lead to big results!",
             icon="chart-up",
@@ -250,7 +248,7 @@ async def calculate_school_benchmark(
 
 
 async def calculate_publisher_benchmark(
-    publisher_id: uuid.UUID,
+    publisher_id: int,
     period: BenchmarkPeriod,
     session: AsyncSession,
     exclude_class_id: uuid.UUID | None = None,
@@ -261,7 +259,7 @@ async def calculate_publisher_benchmark(
     [Source: Story 5.7 AC: 4, 6]
 
     Args:
-        publisher_id: Publisher UUID
+        publisher_id: Publisher DCS ID (integer)
         period: Time period for filtering
         session: Database session
         exclude_class_id: Optional class ID to exclude from calculations
@@ -271,6 +269,22 @@ async def calculate_publisher_benchmark(
     """
     period_start = get_period_start(period)
 
+    # Get all books for this publisher from DCS
+    book_service = get_book_service()
+    publisher_books = await book_service.list_books(publisher_id=publisher_id)
+    book_ids = [book.id for book in publisher_books]
+
+    # If publisher has no books, return unavailable benchmark
+    if not book_ids:
+        return BenchmarkData(
+            level="publisher",
+            average_score=0.0,
+            completion_rate=0.0,
+            sample_size=0,
+            period=period,
+            is_available=False,
+        )
+
     # Count distinct classes using publisher's books that have completed assignments
     class_count_query = (
         select(func.count(distinct(Class.id)))
@@ -278,9 +292,8 @@ async def calculate_publisher_benchmark(
         .join(ClassStudent, ClassStudent.class_id == Class.id)
         .join(AssignmentStudent, AssignmentStudent.student_id == ClassStudent.student_id)
         .join(Assignment, Assignment.id == AssignmentStudent.assignment_id)
-        .join(Book, Book.id == Assignment.book_id)
         .where(
-            Book.publisher_id == publisher_id,
+            Assignment.dcs_book_id.in_(book_ids),
             AssignmentStudent.status == AssignmentStatus.completed,
             AssignmentStudent.completed_at >= period_start,
         )
@@ -317,11 +330,10 @@ async def calculate_publisher_benchmark(
         )
         .select_from(AssignmentStudent)
         .join(Assignment, Assignment.id == AssignmentStudent.assignment_id)
-        .join(Book, Book.id == Assignment.book_id)
         .join(ClassStudent, ClassStudent.student_id == AssignmentStudent.student_id)
         .join(Class, Class.id == ClassStudent.class_id)
         .where(
-            Book.publisher_id == publisher_id,
+            Assignment.dcs_book_id.in_(book_ids),
             AssignmentStudent.completed_at >= period_start,
         )
     )
@@ -463,7 +475,7 @@ async def calculate_activity_type_benchmarks(
 async def get_benchmark_trend(
     class_id: uuid.UUID,
     school_id: uuid.UUID,
-    publisher_id: uuid.UUID | None,
+    publisher_id: int | None,
     session: AsyncSession,
     periods: int = 8,
     period_type: Literal["weekly", "monthly"] = "weekly",
@@ -476,7 +488,7 @@ async def get_benchmark_trend(
     Args:
         class_id: Class UUID
         school_id: School UUID
-        publisher_id: Publisher UUID (optional)
+        publisher_id: Publisher DCS ID (integer, optional)
         session: Database session
         periods: Number of periods to include
         period_type: Type of period ('weekly' or 'monthly')
@@ -495,6 +507,13 @@ async def get_benchmark_trend(
 
     if not class_student_ids:
         return []
+
+    # Get publisher book IDs if publisher_id provided
+    book_ids = None
+    if publisher_id:
+        book_service = get_book_service()
+        publisher_books = await book_service.list_books(publisher_id=publisher_id)
+        book_ids = [book.id for book in publisher_books]
 
     for i in range(periods - 1, -1, -1):  # Go from oldest to newest
         if period_type == "weekly":
@@ -554,16 +573,15 @@ async def get_benchmark_trend(
 
         # Publisher benchmark for period (if applicable)
         publisher_avg = None
-        if publisher_id:
+        if publisher_id and book_ids:
             publisher_avg_query = (
                 select(func.avg(AssignmentStudent.score))
                 .select_from(AssignmentStudent)
                 .join(Assignment, Assignment.id == AssignmentStudent.assignment_id)
-                .join(Book, Book.id == Assignment.book_id)
                 .join(ClassStudent, ClassStudent.student_id == AssignmentStudent.student_id)
                 .join(Class, Class.id == ClassStudent.class_id)
                 .where(
-                    Book.publisher_id == publisher_id,
+                    Assignment.dcs_book_id.in_(book_ids),
                     Class.id != class_id,
                     AssignmentStudent.status == AssignmentStatus.completed,
                     AssignmentStudent.completed_at >= period_start,
@@ -611,7 +629,7 @@ async def get_class_benchmarks(
     # Get class with relationships
     class_result = await session.execute(
         select(Class)
-        .options(selectinload(Class.school).selectinload(School.publisher))
+        .options(selectinload(Class.school))
         .where(Class.id == class_id)
     )
     class_obj = class_result.scalar_one_or_none()
@@ -620,11 +638,10 @@ async def get_class_benchmarks(
         raise ValueError(f"Class not found: {class_id}")
 
     school = class_obj.school
-    publisher = school.publisher if school else None
+    publisher_id = school.dcs_publisher_id if school else None
 
     # Check if benchmarking is enabled
     school_enabled = school.benchmarking_enabled if school else True
-    publisher_enabled = publisher.benchmarking_enabled if publisher else True
 
     if not school_enabled:
         return ClassBenchmarkResponse(
@@ -701,11 +718,11 @@ async def get_class_benchmarks(
         exclude_class_id=class_id,
     )
 
-    # Calculate publisher benchmark (if enabled)
+    # Calculate publisher benchmark (if publisher exists)
     publisher_benchmark = None
-    if publisher and publisher_enabled:
+    if publisher_id:
         publisher_benchmark = await calculate_publisher_benchmark(
-            publisher_id=publisher.id,
+            publisher_id=publisher_id,
             period=period,
             session=session,
             exclude_class_id=class_id,
@@ -723,7 +740,7 @@ async def get_class_benchmarks(
     comparison_over_time = await get_benchmark_trend(
         class_id=class_id,
         school_id=school.id,
-        publisher_id=publisher.id if publisher else None,
+        publisher_id=publisher_id,
         session=session,
     )
 

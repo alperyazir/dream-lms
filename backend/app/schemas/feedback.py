@@ -45,7 +45,10 @@ class FeedbackCreate(BaseModel):
         if v is None:
             return v
         # Import here to avoid circular imports
-        from app.core.feedback_constants import MAX_BADGES_PER_FEEDBACK, VALID_BADGE_SLUGS
+        from app.core.feedback_constants import (
+            MAX_BADGES_PER_FEEDBACK,
+            VALID_BADGE_SLUGS,
+        )
 
         if len(v) > MAX_BADGES_PER_FEEDBACK:
             raise ValueError(f"Maximum {MAX_BADGES_PER_FEEDBACK} badges allowed")
@@ -89,7 +92,10 @@ class FeedbackUpdate(BaseModel):
         """Validate badges are from predefined list."""
         if v is None:
             return v
-        from app.core.feedback_constants import MAX_BADGES_PER_FEEDBACK, VALID_BADGE_SLUGS
+        from app.core.feedback_constants import (
+            MAX_BADGES_PER_FEEDBACK,
+            VALID_BADGE_SLUGS,
+        )
 
         if len(v) > MAX_BADGES_PER_FEEDBACK:
             raise ValueError(f"Maximum {MAX_BADGES_PER_FEEDBACK} badges allowed")

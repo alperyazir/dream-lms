@@ -5,7 +5,7 @@
  * Full page view of all notifications with filtering capabilities.
  */
 
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Bell, CheckCheck, Filter } from "lucide-react"
 import { useState } from "react"
 import { NotificationItem } from "@/components/notifications"
@@ -92,6 +92,7 @@ function EmptyState({ filtered }: { filtered: boolean }) {
 }
 
 function NotificationsPage() {
+  const navigate = useNavigate()
   const [filter, setFilter] = useState<"all" | "unread">("all")
   const [typeFilter, setTypeFilter] = useState<NotificationType | "all">("all")
   const [page, setPage] = useState(0)
@@ -111,12 +112,17 @@ function NotificationsPage() {
   const { markAsRead } = useMarkAsRead()
   const { markAllAsRead, isMarking: isMarkingAllRead } = useMarkAllAsRead()
 
+  // Story 16.1: Navigate first, mark as read in background (fire-and-forget)
   const handleNotificationClick = (notification: Notification) => {
-    if (!notification.is_read) {
-      markAsRead(notification.id)
-    }
+    // 1. Navigate immediately (synchronous)
     if (notification.link) {
-      window.location.href = notification.link
+      navigate({ to: notification.link })
+    }
+    // Note: No fallback needed here since we're already on /notifications page
+
+    // 2. Mark as read in background (non-blocking)
+    if (!notification.is_read) {
+      markAsRead(notification.id) // Fire and forget
     }
   }
 

@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.models import Publisher, School, Teacher, User, UserRole
+from app.models import School, Teacher, User, UserRole
 
 
 def test_publisher_list_own_schools(

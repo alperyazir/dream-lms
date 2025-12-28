@@ -19,12 +19,6 @@ import React, { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -39,6 +33,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import type { Material, MaterialType } from "@/types/material"
 import { MATERIAL_TYPE_LABELS } from "@/types/material"
@@ -110,9 +110,10 @@ export function TeacherMaterialsTable({
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
-      filtered = filtered.filter((m) =>
-        m.name.toLowerCase().includes(query) ||
-        m.original_filename?.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (m) =>
+          m.name.toLowerCase().includes(query) ||
+          m.original_filename?.toLowerCase().includes(query),
       )
     }
 
@@ -142,7 +143,7 @@ export function TeacherMaterialsTable({
   // Reset to first page when filter or search changes
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [typeFilter, searchQuery])
+  }, [])
 
   // Handle sort toggle
   const handleSortChange = (newSortBy: SortBy) => {
@@ -225,13 +226,13 @@ export function TeacherMaterialsTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              {(
-                Object.keys(MATERIAL_TYPE_LABELS) as MaterialType[]
-              ).map((type) => (
-                <SelectItem key={type} value={type}>
-                  {MATERIAL_TYPE_LABELS[type]}
-                </SelectItem>
-              ))}
+              {(Object.keys(MATERIAL_TYPE_LABELS) as MaterialType[]).map(
+                (type) => (
+                  <SelectItem key={type} value={type}>
+                    {MATERIAL_TYPE_LABELS[type]}
+                  </SelectItem>
+                ),
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -299,7 +300,10 @@ export function TeacherMaterialsTable({
                       <MaterialTypeIcon type={material.type} />
                     </TableCell>
                     <TableCell className="font-medium">
-                      <div className="max-w-[300px] truncate" title={material.name}>
+                      <div
+                        className="max-w-[300px] truncate"
+                        title={material.name}
+                      >
                         {material.name}
                       </div>
                     </TableCell>
@@ -410,8 +414,9 @@ export function TeacherMaterialsTable({
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {startIndex + 1}-{Math.min(endIndex, sortedMaterials.length)}{" "}
-            of {sortedMaterials.length} materials
+            Showing {startIndex + 1}-
+            {Math.min(endIndex, sortedMaterials.length)} of{" "}
+            {sortedMaterials.length} materials
           </div>
           <div className="flex items-center gap-2">
             <Button

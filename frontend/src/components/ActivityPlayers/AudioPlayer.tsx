@@ -6,30 +6,30 @@
  * playback speed control, volume control, and mute toggle.
  */
 
-import { useRef, useState, useEffect, useCallback } from "react"
-import { Slider } from "@/components/ui/slider"
 import {
-  Play,
-  Pause,
   Loader2,
-  X,
+  Pause,
+  Play,
   RotateCcw,
+  Volume1,
   Volume2,
   VolumeX,
-  Volume1,
+  X,
 } from "lucide-react"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Slider } from "@/components/ui/slider"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 export interface AudioPlayerProps {
@@ -50,7 +50,7 @@ const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
  * Format seconds as MM:SS
  */
 function formatTime(seconds: number): string {
-  if (!isFinite(seconds) || seconds < 0) {
+  if (!Number.isFinite(seconds) || seconds < 0) {
     return "0:00"
   }
   const mins = Math.floor(seconds / 60)
@@ -113,18 +113,21 @@ export function AudioPlayer({
   }, [])
 
   // Handle volume change
-  const handleVolumeChange = useCallback((value: number[]) => {
-    const audio = audioRef.current
-    if (!audio) return
+  const handleVolumeChange = useCallback(
+    (value: number[]) => {
+      const audio = audioRef.current
+      if (!audio) return
 
-    const newVolume = value[0] / 100
-    audio.volume = newVolume
-    setVolume(newVolume)
-    if (newVolume > 0 && isMuted) {
-      setIsMuted(false)
-      audio.muted = false
-    }
-  }, [isMuted])
+      const newVolume = value[0] / 100
+      audio.volume = newVolume
+      setVolume(newVolume)
+      if (newVolume > 0 && isMuted) {
+        setIsMuted(false)
+        audio.muted = false
+      }
+    },
+    [isMuted],
+  )
 
   // Handle mute toggle
   const toggleMute = useCallback(() => {
@@ -213,13 +216,14 @@ export function AudioPlayer({
         audio.pause()
       }
     }
-  }, [src])
+  }, [])
 
   // Calculate progress percentage
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   // Get volume icon based on state
-  const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2
+  const VolumeIcon =
+    isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2
 
   if (!isExpanded) return null
 
@@ -275,7 +279,13 @@ export function AudioPlayer({
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
-              {isLoading ? "Loading..." : error ? "Retry" : isPlaying ? "Pause" : "Play"}
+              {isLoading
+                ? "Loading..."
+                : error
+                  ? "Retry"
+                  : isPlaying
+                    ? "Pause"
+                    : "Play"}
             </TooltipContent>
           </Tooltip>
 
@@ -331,7 +341,8 @@ export function AudioPlayer({
                   onClick={() => handleSpeedChange(speed)}
                   className={cn(
                     "text-xs justify-center",
-                    playbackSpeed === speed && "bg-teal-50 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300",
+                    playbackSpeed === speed &&
+                      "bg-teal-50 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300",
                   )}
                 >
                   {speed}x

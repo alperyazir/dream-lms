@@ -12,7 +12,11 @@ import { useEffect, useState } from "react"
 import { MultiActivityPlayer } from "@/components/ActivityPlayers/MultiActivityPlayer"
 import { Button } from "@/components/ui/button"
 import { getBookActivities } from "@/services/booksApi"
-import type { ActivityProgressInfo, ActivityWithConfig } from "@/types/assignment"
+import type {
+  ActivityProgressInfo,
+  ActivityWithConfig,
+  AdditionalResourcesResponse,
+} from "@/types/assignment"
 import type { Activity } from "@/types/book"
 
 interface PreviewData {
@@ -23,6 +27,7 @@ interface PreviewData {
   activityIds: string[]
   assignmentName: string
   timeLimitMinutes: number | null
+  resources?: AdditionalResourcesResponse | null
 }
 
 const PREVIEW_STORAGE_KEY = "assignment-preview-data"
@@ -43,7 +48,9 @@ function AssignmentPreviewPage() {
         const data = JSON.parse(stored) as PreviewData
         setPreviewData(data)
       } else {
-        setError("No preview data found. Please start from the assignment creation dialog.")
+        setError(
+          "No preview data found. Please start from the assignment creation dialog.",
+        )
       }
     } catch {
       setError("Failed to load preview data.")
@@ -67,26 +74,30 @@ function AssignmentPreviewPage() {
           const indexB = previewData!.activityIds.indexOf(b.id)
           return indexA - indexB
         })
-        .map((a: Activity): ActivityWithConfig => ({
-          id: a.id,
-          title: a.title,
-          activity_type: a.activity_type,
-          config_json: a.config_json,
-          order_index: a.order_index,
-        }))
+        .map(
+          (a: Activity): ActivityWithConfig => ({
+            id: a.id,
+            title: a.title,
+            activity_type: a.activity_type,
+            config_json: a.config_json,
+            order_index: a.order_index,
+          }),
+        )
     : []
 
   // Create empty progress for preview
-  const activityProgress: ActivityProgressInfo[] = selectedActivities.map((activity) => ({
-    id: `preview-${activity.id}`,
-    activity_id: activity.id,
-    status: "not_started" as const,
-    score: null,
-    max_score: 100,
-    response_data: null,
-    started_at: null,
-    completed_at: null,
-  }))
+  const activityProgress: ActivityProgressInfo[] = selectedActivities.map(
+    (activity) => ({
+      id: `preview-${activity.id}`,
+      activity_id: activity.id,
+      status: "not_started" as const,
+      score: null,
+      max_score: 100,
+      response_data: null,
+      started_at: null,
+      completed_at: null,
+    }),
+  )
 
   const handleExit = () => {
     // Clear preview data and close tab
@@ -122,7 +133,9 @@ function AssignmentPreviewPage() {
   if (selectedActivities.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">No activities found for preview.</p>
+        <p className="text-muted-foreground">
+          No activities found for preview.
+        </p>
         <Button onClick={handleBackToCreation}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Close Tab
@@ -146,6 +159,7 @@ function AssignmentPreviewPage() {
         initialTimeSpent={0}
         onExit={handleExit}
         previewMode={true}
+        resources={previewData.resources}
       />
     </div>
   )

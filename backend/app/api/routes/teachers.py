@@ -3,16 +3,18 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from sqlmodel import select, SQLModel
+from sqlmodel import SQLModel, select
 
 from app import crud
 from app.api.deps import AsyncSessionDep, SessionDep, require_role
+from app.core.config import settings
 from app.models import (
     BulkImportErrorDetail,
     BulkImportResponse,
     Class,
     ClassCreateByTeacher,
     ClassPublic,
+    ClassResponse,
     ClassStudent,
     ClassUpdate,
     Student,
@@ -26,16 +28,6 @@ from app.models import (
     UserPublic,
     UserRole,
 )
-from app.schemas.analytics import (
-    InsightDetail,
-    TeacherInsightsResponse,
-)
-from app.services.analytics_service import (
-    dismiss_insight,
-    get_insight_detail,
-    get_teacher_insights,
-)
-from app.core.config import settings
 from app.services.bulk_import import validate_bulk_import
 from app.utils import (
     generate_new_account_email,
@@ -126,21 +118,28 @@ def create_student(
     # Handle password delivery based on email availability
     password_emailed = False
     temp_password_for_response = None
+    message = ""
 
     if user.email and settings.emails_enabled:
-        # Send password via email - secure path
-        email_data = generate_new_account_email(
-            email_to=user.email,
-            username=user.username,
-            password=temp_password
-        )
-        send_email(
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content
-        )
-        password_emailed = True
-        message = "Password sent via email"
+        try:
+            # Send password via email - secure path
+            email_data = generate_new_account_email(
+                email_to=user.email,
+                username=user.username,
+                password=temp_password,
+                full_name=student_in.full_name
+            )
+            send_email(
+                email_to=user.email,
+                subject=email_data.subject,
+                html_content=email_data.html_content
+            )
+            password_emailed = True
+            message = "Password sent via email"
+        except Exception as e:
+            logger.error(f"Failed to send welcome email to {user.email}: {e}")
+            temp_password_for_response = temp_password
+            message = "Email delivery failed. Please share the temporary password securely."
     else:
         # No email or emails disabled - return password once for manual communication
         temp_password_for_response = temp_password
@@ -714,9 +713,9 @@ def bulk_delete_students(
 
 @router.get(
     "/me/classes",
-    response_model=list[ClassPublic],
+    response_model=list[ClassResponse],
     summary="List my classes",
-    description="Retrieve all classes taught by the authenticated teacher. Teacher only.",
+    description="Retrieve all classes taught by the authenticated teacher with student counts. Teacher only.",
 )
 def list_my_classes(
     *,
@@ -724,9 +723,9 @@ def list_my_classes(
     current_user: User = require_role(UserRole.teacher)
 ) -> Any:
     """
-    List all classes taught by this teacher.
+    List all classes taught by this teacher with student counts.
 
-    Returns list of classes.
+    Returns list of classes with student_count for each class.
     """
     # Get Teacher record for current user
     teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
@@ -738,11 +737,27 @@ def list_my_classes(
             detail="Teacher record not found for this user"
         )
 
-    # Get all classes for this teacher
-    classes_statement = select(Class).where(Class.teacher_id == teacher.id)
-    classes = session.exec(classes_statement).all()
+    # Get all classes for this teacher with student count using LEFT JOIN
+    # This avoids N+1 query problem
+    from sqlmodel import func
 
-    return [ClassPublic.model_validate(c) for c in classes]
+    classes_with_counts = session.exec(
+        select(
+            Class,
+            func.count(ClassStudent.id).label("student_count")
+        )
+        .outerjoin(ClassStudent, Class.id == ClassStudent.class_id)
+        .where(Class.teacher_id == teacher.id)
+        .group_by(Class.id)
+    ).all()
+
+    # Build response with student counts
+    response_classes = [
+        ClassResponse(**class_obj.model_dump(), student_count=student_count)
+        for class_obj, student_count in classes_with_counts
+    ]
+
+    return response_classes
 
 
 @router.post(
@@ -1104,39 +1119,42 @@ def get_class_students(
     return result
 
 
-# ============================================================================
-# Teacher Insights Endpoints (Story 5.4)
-# ============================================================================
+class StudentsForClassesRequest(SQLModel):
+    """Request body for fetching students for multiple classes."""
+    class_ids: list[uuid.UUID]
 
 
-@router.get(
-    "/me/insights",
-    response_model=TeacherInsightsResponse,
-    summary="Get teacher insights",
-    description="Get AI-generated insights and patterns detected across teacher's assignments. Teacher only.",
+class ClassStudentsGroup(SQLModel):
+    """Students grouped by class ID."""
+    class_id: uuid.UUID
+    students: list[StudentPublic]
+
+
+@router.post(
+    "/me/classes/students",
+    response_model=list[ClassStudentsGroup],
+    summary="Get students for multiple classes (Story 20.5)",
+    description="Retrieve students for multiple classes at once. Returns students grouped by class ID. Teacher only.",
 )
-async def get_my_insights(
+def get_students_for_classes(
     *,
-    session: AsyncSessionDep,
+    session: SessionDep,
+    request: StudentsForClassesRequest,
     current_user: User = require_role(UserRole.teacher)
 ) -> Any:
     """
-    Get all detected insights for the current teacher.
+    Get students for multiple classes at once.
 
-    Insights include:
-    - Low performing assignments (avg score < 65%)
-    - Common misconceptions (>60% answered incorrectly)
-    - Struggling students (>3 past due, low scores)
-    - Activity type struggles (consistently low scores)
-    - Time management issues (rushing with low scores)
+    This endpoint is optimized for fetching students across multiple classes
+    to avoid N+1 query problems when displaying selected recipients.
 
-    Returns list of insight cards sorted by severity.
+    - **class_ids**: List of class IDs to fetch students for
+
+    Returns list of ClassStudentsGroup, each containing class_id and students list.
     """
     # Get Teacher record for current user
-    teacher_result = await session.execute(
-        select(Teacher).where(Teacher.user_id == current_user.id)
-    )
-    teacher = teacher_result.scalar_one_or_none()
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
 
     if not teacher:
         raise HTTPException(
@@ -1144,15 +1162,97 @@ async def get_my_insights(
             detail="Teacher record not found for this user"
         )
 
-    insights_response = await get_teacher_insights(teacher.id, session)
-    return insights_response
+    # Verify all classes belong to this teacher
+    classes_statement = select(Class).where(
+        Class.id.in_(request.class_ids),
+        Class.teacher_id == teacher.id
+    )
+    classes = session.exec(classes_statement).all()
+
+    verified_class_ids = {c.id for c in classes}
+
+    # If any requested class doesn't belong to teacher, raise error
+    requested_class_ids = set(request.class_ids)
+    if requested_class_ids != verified_class_ids:
+        unauthorized_ids = requested_class_ids - verified_class_ids
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Cannot access classes: {unauthorized_ids}"
+        )
+
+    # Fetch all students for these classes in a single query
+    students_statement = (
+        select(Student, ClassStudent.class_id, User)
+        .join(ClassStudent, ClassStudent.student_id == Student.id)
+        .join(User, User.id == Student.user_id)
+        .where(ClassStudent.class_id.in_(request.class_ids))
+        .order_by(ClassStudent.class_id, User.full_name)
+    )
+    results = session.exec(students_statement).all()
+
+    # Group students by class_id
+    students_by_class: dict[uuid.UUID, list[StudentPublic]] = {
+        class_id: [] for class_id in request.class_ids
+    }
+
+    for student, class_id, user in results:
+        student_data = StudentPublic(
+            grade_level=student.grade_level,
+            parent_email=student.parent_email,
+            id=student.id,
+            user_id=student.user_id,
+            user_email=user.email if user else "",
+            user_username=user.username if user else "",
+            user_full_name=user.full_name if user and user.full_name else "",
+            created_at=student.created_at,
+            updated_at=student.updated_at
+        )
+        students_by_class[class_id].append(student_data)
+
+    # Build response
+    response = [
+        ClassStudentsGroup(class_id=class_id, students=students)
+        for class_id, students in students_by_class.items()
+    ]
+
+    return response
+
+
+# ============================================================================
+# Teacher Insights Endpoints (Story 5.4) - DEPRECATED (Story 21.4)
+# ============================================================================
+# These endpoints have been removed. The Insights feature was experimental
+# and has been replaced with student-specific analytics and reports.
+
+
+@router.get(
+    "/me/insights",
+    deprecated=True,
+    summary="Get teacher insights (DEPRECATED)",
+    description="This endpoint has been removed. Use /teacher/analytics/{student_id} for student-specific insights.",
+)
+async def get_my_insights(
+    *,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher)
+) -> Any:
+    """
+    DEPRECATED: This endpoint has been removed in Story 21.4.
+
+    Please use student analytics (/teacher/analytics/{student_id})
+    or assignment reports (/assignments/{id}/progress) instead.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="The Insights feature has been removed. Please use student analytics or assignment reports instead."
+    )
 
 
 @router.get(
     "/me/insights/{insight_id}",
-    response_model=InsightDetail,
-    summary="Get insight details",
-    description="Get detailed information about a specific insight. Teacher only.",
+    deprecated=True,
+    summary="Get insight details (DEPRECATED)",
+    description="This endpoint has been removed.",
 )
 async def get_insight_details(
     *,
@@ -1161,42 +1261,19 @@ async def get_insight_details(
     current_user: User = require_role(UserRole.teacher)
 ) -> Any:
     """
-    Get detailed breakdown for a specific insight.
-
-    Returns:
-    - Full insight card
-    - List of affected students
-    - Related assignments
-    - Related questions (for misconception insights)
+    DEPRECATED: This endpoint has been removed in Story 21.4.
     """
-    # Get Teacher record for current user
-    teacher_result = await session.execute(
-        select(Teacher).where(Teacher.user_id == current_user.id)
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="The Insights feature has been removed."
     )
-    teacher = teacher_result.scalar_one_or_none()
-
-    if not teacher:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
-        )
-
-    detail = await get_insight_detail(teacher.id, insight_id, session)
-
-    if not detail:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Insight not found"
-        )
-
-    return detail
 
 
 @router.post(
     "/me/insights/{insight_id}/dismiss",
-    status_code=status.HTTP_200_OK,
-    summary="Dismiss insight",
-    description="Dismiss an insight so it won't appear again. Teacher only.",
+    deprecated=True,
+    summary="Dismiss insight (DEPRECATED)",
+    description="This endpoint has been removed.",
 )
 async def dismiss_insight_endpoint(
     *,
@@ -1205,32 +1282,9 @@ async def dismiss_insight_endpoint(
     current_user: User = require_role(UserRole.teacher)
 ) -> Any:
     """
-    Dismiss an insight.
-
-    Dismissed insights won't appear in future insight lists.
-    This action cannot be undone.
-
-    Returns success message.
+    DEPRECATED: This endpoint has been removed in Story 21.4.
     """
-    # Get Teacher record for current user
-    teacher_result = await session.execute(
-        select(Teacher).where(Teacher.user_id == current_user.id)
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="The Insights feature has been removed."
     )
-    teacher = teacher_result.scalar_one_or_none()
-
-    if not teacher:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
-        )
-
-    success = await dismiss_insight(teacher.id, insight_id, session)
-
-    if not success:
-        # Already dismissed or insight doesn't exist
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Insight not found or already dismissed"
-        )
-
-    return {"message": "Insight dismissed successfully"}

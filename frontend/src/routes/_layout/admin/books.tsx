@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router"
-import axios from "axios"
-import { BookOpen, RefreshCw, Search } from "lucide-react"
+import { BookOpen, RefreshCw, UserPlus } from "lucide-react"
 import { useEffect, useState } from "react"
-import { OpenAPI } from "@/client"
+import { AdminBookCard } from "@/components/books/AdminBookCard"
+import { BookCover } from "@/components/books/BookCover"
+import { BookDetailsDialog } from "@/components/books/BookDetailsDialog"
+import { QuickAssignDialog } from "@/components/books/QuickAssignDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { LibraryFilters } from "@/components/library/LibraryFilters"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -16,7 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
 import { toast } from "@/hooks/use-toast"
+import { useLibraryFilters } from "@/hooks/useLibraryFilters"
+import { useViewPreference } from "@/hooks/useViewPreference"
 import { booksApi } from "@/services/booksApi"
 import type { Book } from "@/types/book"
 
@@ -26,13 +31,19 @@ export const Route = createFileRoute("/_layout/admin/books")({
       <AdminBooks />
     </ErrorBoundary>
   ),
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: (search.q as string) || "",
+    publisher: (search.publisher as string) || "",
+    activity: (search.activity as string) || "",
+  }),
 })
 
 function AdminBooks() {
-  const [searchQuery, setSearchQuery] = useState("")
   const [books, setBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
+  const [viewMode, setViewMode] = useViewPreference("admin-library", "table")
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null)
+  const [assignBook, setAssignBook] = useState<Book | null>(null)
 
   const fetchBooks = async () => {
     try {
@@ -55,151 +66,114 @@ function AdminBooks() {
   useEffect(() => {
     fetchBooks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [fetchBooks])
 
-  const handleSync = async () => {
-    try {
-      setSyncing(true)
+  // Use library filters hook
+  const {
+    filters,
+    setFilters,
+    filteredBooks,
+    publishers,
+    resultCount,
+    totalCount,
+  } = useLibraryFilters(books)
 
-      // Get token
-      const token = OpenAPI.TOKEN
-      const tokenValue =
-        typeof token === "function"
-          ? await token({
-              method: "POST",
-              url: `${OpenAPI.BASE}/api/v1/books/sync`,
-            })
-          : token
-
-      // Call sync endpoint
-      await axios.post(
-        `${OpenAPI.BASE}/api/v1/books/sync`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${tokenValue}`,
-          },
-        },
-      )
-
-      toast({
-        title: "Sync Started",
-        description:
-          "Book synchronization has been queued. This may take a few moments.",
-      })
-
-      // Refresh books after a delay
-      setTimeout(() => {
-        fetchBooks()
-      }, 3000)
-    } catch (error) {
-      console.error("Failed to sync books:", error)
-      toast({
-        title: "Error",
-        description: "Failed to start book sync",
-        variant: "destructive",
-      })
-    } finally {
-      setSyncing(false)
-    }
+  const handleViewDetails = (book: Book) => {
+    setSelectedBook(book)
   }
 
-  const filteredBooks = books.filter(
-    (book) =>
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.publisher_name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const handleAssignClick = (book: Book) => {
+    setAssignBook(book)
+  }
 
   return (
     <div className="max-w-full p-6 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Books</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Library</h1>
           <p className="text-muted-foreground">
             Manage educational books in the system
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleSync}
-            disabled={syncing}
-            variant="outline"
-            className="border-teal-500 text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950"
-          >
-            <RefreshCw
-              className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`}
+        {/* View Mode Toggle */}
+        <ViewModeToggle value={viewMode} onChange={setViewMode} />
+      </div>
+
+      {/* Filters */}
+      <LibraryFilters
+        filters={filters}
+        onChange={setFilters}
+        publishers={publishers}
+        showPublisherFilter={true}
+        resultCount={resultCount}
+        totalCount={totalCount}
+      />
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="text-center py-12">
+          <RefreshCw className="w-8 h-8 mx-auto text-teal-500 animate-spin mb-4" />
+          <p className="text-muted-foreground">Loading books...</p>
+        </div>
+      ) : filteredBooks.length === 0 ? (
+        /* Empty State */
+        <div className="text-center py-12">
+          <BookOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <p className="text-lg text-muted-foreground mb-2">
+            {filters.search || filters.publisher || filters.activityType
+              ? "No books found"
+              : "No books yet"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {filters.search || filters.publisher || filters.activityType
+              ? "Try adjusting your filter criteria"
+              : "Books are automatically synced from Dream Central Storage"}
+          </p>
+        </div>
+      ) : viewMode === "grid" ? (
+        /* Grid View */
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {filteredBooks.map((book) => (
+            <AdminBookCard
+              key={book.id}
+              book={book}
+              onViewDetails={() => handleViewDetails(book)}
+              onAssign={() => handleAssignClick(book)}
             />
-            {syncing ? "Syncing..." : "Sync Books"}
-          </Button>
+          ))}
         </div>
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center gap-2 max-w-md">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search books by title, publisher, or grade..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
-      {/* Books Table */}
-      <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-teal-500" />
-            All Books ({filteredBooks.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-12">
-              <RefreshCw className="w-8 h-8 mx-auto text-teal-500 animate-spin mb-4" />
-              <p className="text-muted-foreground">Loading books...</p>
-            </div>
-          ) : filteredBooks.length === 0 ? (
-            <div className="text-center py-12">
-              <BookOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg text-muted-foreground mb-2">
-                {searchQuery ? "No books found" : "No books yet"}
-              </p>
-              <p className="text-sm text-muted-foreground mb-4">
-                {searchQuery
-                  ? "Try adjusting your search query"
-                  : "Click 'Sync Books' to import books from Dream Central Storage"}
-              </p>
-              {!searchQuery && (
-                <Button
-                  onClick={handleSync}
-                  disabled={syncing}
-                  variant="outline"
-                  className="border-teal-500 text-teal-600"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`}
-                  />
-                  {syncing ? "Syncing..." : "Sync Books Now"}
-                </Button>
-              )}
-            </div>
-          ) : (
+      ) : (
+        /* Table View */
+        <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-teal-500" />
+              All Books ({filteredBooks.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-16">Cover</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Publisher</TableHead>
                   <TableHead className="text-center">Activities</TableHead>
                   <TableHead>Description</TableHead>
+                  <TableHead className="w-32">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredBooks.map((book) => (
                   <TableRow key={book.id}>
+                    <TableCell className="w-16">
+                      <BookCover
+                        coverUrl={book.cover_image_url}
+                        title={book.title}
+                        size="sm"
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{book.title}</TableCell>
                     <TableCell className="text-sm">
                       {book.publisher_name}
@@ -210,13 +184,42 @@ function AdminBooks() {
                     <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                       {book.description || "No description"}
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAssignClick(book)}
+                      >
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Assign
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Book Details Dialog */}
+      {selectedBook && (
+        <BookDetailsDialog
+          book={selectedBook}
+          isOpen={!!selectedBook}
+          onClose={() => setSelectedBook(null)}
+        />
+      )}
+
+      {/* Quick Assign Dialog - Story 19.5 */}
+      {assignBook && (
+        <QuickAssignDialog
+          open={!!assignBook}
+          onOpenChange={(open) => !open && setAssignBook(null)}
+          book={assignBook}
+          isAdmin={true}
+        />
+      )}
     </div>
   )
 }

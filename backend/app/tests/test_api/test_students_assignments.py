@@ -6,7 +6,6 @@ GET /api/v1/students/me/assignments
 import uuid
 from datetime import UTC, datetime, timedelta
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 

@@ -5,19 +5,8 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { renderHook, waitFor } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach } from "vitest"
 import type { ReactNode } from "react"
-import {
-  useMaterials,
-  useMaterial,
-  useStorageQuota,
-  useUploadMaterial,
-  useCreateTextNote,
-  useCreateUrlLink,
-  useRenameMaterial,
-  useDeleteMaterial,
-  useMaterialsPage,
-} from "./useMaterials"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as materialsApi from "@/services/materialsApi"
 import type {
   Material,
@@ -25,6 +14,17 @@ import type {
   StorageQuota,
   UploadResponse,
 } from "@/types/material"
+import {
+  useCreateTextNote,
+  useCreateUrlLink,
+  useDeleteMaterial,
+  useMaterial,
+  useMaterials,
+  useMaterialsPage,
+  useRenameMaterial,
+  useStorageQuota,
+  useUploadMaterial,
+} from "./useMaterials"
 
 // Mock the API
 vi.mock("@/services/materialsApi", () => ({
@@ -115,7 +115,9 @@ describe("useMaterials hook", () => {
       expect(result.current.isLoading).toBe(false)
     })
 
-    expect(materialsApi.listMaterials).toHaveBeenCalledWith({ type: "document" })
+    expect(materialsApi.listMaterials).toHaveBeenCalledWith({
+      type: "document",
+    })
   })
 })
 

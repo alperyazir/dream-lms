@@ -166,11 +166,18 @@ function TeacherReportsPage() {
     return (
       <div className="max-w-full p-6 space-y-6">
         <PageHeader />
-        <div className="max-w-xl mx-auto">
+        <div
+          className={
+            workflow.status?.status === "completed"
+              ? "max-w-full"
+              : "max-w-xl mx-auto"
+          }
+        >
           <ReportProgress
             status={workflow.status?.status ?? null}
             progress={workflow.progress}
             errorMessage={workflow.errorMessage}
+            jobId={workflow.jobId}
             onDownload={handleProgressDownload}
             onRetry={handleRetry}
             onCancel={handleCancel}

@@ -17,6 +17,7 @@ export interface Class {
   is_active: boolean
   created_at: string
   updated_at: string
+  student_count: number // Number of enrolled students (Story 20.5)
 }
 
 /**

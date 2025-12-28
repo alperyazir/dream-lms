@@ -125,17 +125,15 @@ export type ActivityProgressSaveResponse = {
 };
 
 /**
- * Activity response schema for book detail
+ * Activity response schema for API.
  */
 export type ActivityResponse = {
     id: string;
-    book_id: string;
-    activity_type: ActivityType;
-    title?: (string | null);
-    config_json: {
-        [key: string]: unknown;
-    };
-    order_index: number;
+    dcs_book_id: number;
+    module_name: string;
+    page_number: number;
+    activity_type: string;
+    title: (string | null);
 };
 
 /**
@@ -180,11 +178,6 @@ export type ActivityStartResponse = {
      */
     readonly has_saved_progress: boolean;
 };
-
-/**
- * Activity type enumeration
- */
-export type ActivityType = 'matchTheWords' | 'dragdroppicture' | 'dragdroppicturegroup' | 'fillSentencesWithDots' | 'fillpicture' | 'circle' | 'puzzleFindWords' | 'markwithx';
 
 /**
  * Activity-type specific analysis results.
@@ -262,10 +255,19 @@ export type ActivityWithConfig = {
 /**
  * Schema for additional resources attached to an assignment.
  *
- * Currently supports video resources. Extensible for future resource types.
+ * Supports video resources and teacher-uploaded materials.
  */
 export type AdditionalResources = {
     videos?: Array<VideoResource>;
+    teacher_materials?: Array<TeacherMaterialResource>;
+};
+
+/**
+ * Response schema with enriched material data and availability status.
+ */
+export type AdditionalResourcesResponse = {
+    videos?: Array<VideoResource>;
+    teacher_materials?: Array<TeacherMaterialResourceResponse>;
 };
 
 /**
@@ -385,6 +387,16 @@ export type AssignmentListItem = {
 };
 
 /**
+ * Paginated response for assignment lists.
+ */
+export type AssignmentListResponse = {
+    items: Array<AssignmentWithTeacher>;
+    total: number;
+    skip: number;
+    limit: number;
+};
+
+/**
  * Performance metrics for a single assignment.
  */
 export type AssignmentPerformanceItem = {
@@ -417,7 +429,7 @@ export type AssignmentPreviewResponse = {
     total_activities: number;
     is_preview?: boolean;
     video_path?: (string | null);
-    resources?: (AdditionalResources | null);
+    resources?: (AdditionalResourcesResponse | null);
 };
 
 /**
@@ -505,6 +517,22 @@ export type AssignmentUpdate = {
     activity_ids?: (Array<(string)> | null);
     video_path?: (string | null);
     resources?: (AdditionalResources | null);
+};
+
+/**
+ * Assignment response with teacher information for admin view.
+ */
+export type AssignmentWithTeacher = {
+    id: string;
+    title: string;
+    teacher_id: string;
+    teacher_name: string;
+    teacher_email: string;
+    recipient_count?: number;
+    completed_count?: number;
+    due_date: (string | null);
+    status: AssignmentPublishStatus;
+    created_at: string;
 };
 
 /**
@@ -650,6 +678,10 @@ export type Body_students_validate_import_file = {
     file: (Blob | File);
 };
 
+export type Body_teacher_materials_upload_material = {
+    file: (Blob | File);
+};
+
 export type Body_teachers_bulk_import_students = {
     file: (Blob | File);
 };
@@ -658,7 +690,7 @@ export type Body_teachers_bulk_import_students = {
  * Properties to receive via API on BookAssignment creation
  */
 export type BookAssignmentCreate = {
-    book_id: string;
+    book_id: number;
     school_id?: (string | null);
     teacher_id?: (string | null);
 };
@@ -678,7 +710,7 @@ export type BookAssignmentListResponse = {
  */
 export type BookAssignmentPublic = {
     id: string;
-    book_id: string;
+    book_id: number;
     school_id: (string | null);
     teacher_id: (string | null);
     assigned_by: string;
@@ -690,7 +722,7 @@ export type BookAssignmentPublic = {
  */
 export type BookAssignmentResponse = {
     id: string;
-    book_id: string;
+    book_id: number;
     book_title: string;
     book_cover_url?: (string | null);
     school_id: (string | null);
@@ -704,20 +736,20 @@ export type BookAssignmentResponse = {
 };
 
 /**
- * Paginated book list response
+ * List of books response schema.
  */
 export type BookListResponse = {
     items: Array<BookResponse>;
     total: number;
-    skip: number;
-    limit: number;
+    skip?: number;
+    limit?: number;
 };
 
 /**
  * Enhanced book pages response with activity coordinates for page viewer.
  */
 export type BookPagesDetailResponse = {
-    book_id: string;
+    book_id: number;
     modules: Array<ModuleInfo>;
     pages: Array<PageDetail>;
     total_pages: number;
@@ -728,33 +760,53 @@ export type BookPagesDetailResponse = {
  * Response for book pages endpoint.
  */
 export type BookPagesResponse = {
-    book_id: string;
+    book_id: number;
     modules: Array<ModulePages>;
     total_pages: number;
     total_activities: number;
 };
 
 /**
- * Book response schema for catalog listings
+ * Book data for API responses - sourced from DCS.
+ *
+ * This schema represents books fetched from DCS without local sync.
+ * The ID is the DCS book ID (integer).
+ */
+export type BookPublic = {
+    id: number;
+    name: string;
+    title?: (string | null);
+    publisher_id: number;
+    publisher_name: string;
+    cover_url?: (string | null);
+    activity_count?: number;
+    created_at?: (string | null);
+    updated_at?: (string | null);
+};
+
+/**
+ * Book response schema for API.
+ *
+ * DEPRECATED: Use BookPublic instead. This schema is kept for backwards compatibility
+ * but will be removed in a future version.
  */
 export type BookResponse = {
-    id: string;
-    dream_storage_id: string;
-    title: string;
+    id: number;
+    title?: (string | null);
+    book_name?: (string | null);
     publisher_name: string;
-    description?: (string | null);
+    language?: (string | null);
+    category?: (string | null);
     cover_image_url?: (string | null);
-    /**
-     * Number of activities in book
-     */
     activity_count?: number;
+    dream_storage_id?: (string | null);
 };
 
 /**
  * Book structure response with modules and pages for activity selection tabs.
  */
 export type BookStructureResponse = {
-    book_id: string;
+    book_id: number;
     modules: Array<ModuleWithActivities>;
     total_pages: number;
     total_activities: number;
@@ -777,7 +829,7 @@ export type BookSyncResponse = {
  * Response for book videos endpoint.
  */
 export type BookVideosResponse = {
-    book_id: string;
+    book_id: number;
     videos: Array<VideoInfo>;
     total_count: number;
 };
@@ -808,7 +860,7 @@ export type BulkAssignmentCreateResponse = {
  * Properties for bulk book assignment creation
  */
 export type BulkBookAssignmentCreate = {
-    book_id: string;
+    book_id: number;
     school_id: string;
     teacher_ids?: (Array<(string)> | null);
     assign_to_all_teachers?: boolean;
@@ -1419,6 +1471,44 @@ export type MarkAllReadResponse = {
     marked_count: number;
 };
 
+/**
+ * List of materials with quota info.
+ */
+export type MaterialListResponse = {
+    materials: Array<MaterialResponse>;
+    total_count: number;
+    quota: StorageQuotaResponse;
+};
+
+/**
+ * Material response schema.
+ */
+export type MaterialResponse = {
+    id: string;
+    name: string;
+    type: MaterialType;
+    file_size?: (number | null);
+    mime_type?: (string | null);
+    original_filename?: (string | null);
+    url?: (string | null);
+    text_content?: (string | null);
+    created_at: string;
+    updated_at: string;
+    download_url?: (string | null);
+};
+
+/**
+ * Types of teacher materials
+ */
+export type MaterialType = 'document' | 'image' | 'audio' | 'video' | 'url' | 'text_note';
+
+/**
+ * Update material metadata (name only).
+ */
+export type MaterialUpdate = {
+    name: string;
+};
+
 export type Message = {
     message: string;
 };
@@ -1543,7 +1633,7 @@ export type MultiActivityStartResponse = {
     time_spent_minutes: number;
     started_at: (string | null);
     video_path?: (string | null);
-    resources?: (AdditionalResources | null);
+    resources?: (AdditionalResourcesResponse | null);
     /**
      * Count of completed activities.
      */
@@ -1747,6 +1837,15 @@ export type PredefinedAvatarsResponse = {
     avatars: Array<PredefinedAvatar>;
 };
 
+/**
+ * Presigned URL for direct file access.
+ */
+export type PresignedUrlResponse = {
+    url: string;
+    expires_in_seconds: number;
+    content_type?: (string | null);
+};
+
 export type PrivateUserCreate = {
     email: string;
     password: string;
@@ -1779,49 +1878,96 @@ export type PublishAssignmentsResponse = {
 };
 
 /**
- * Properties for API endpoint publisher creation (includes user creation)
+ * Create a publisher user account linked to a DCS publisher.
  */
-export type PublisherCreateAPI = {
-    name: string;
-    contact_email: string;
-    username: string;
-    user_email: string;
+export type PublisherAccountCreate = {
+    /**
+     * DCS Publisher ID to link
+     */
+    dcs_publisher_id: number;
+    /**
+     * Username (auto-generated from full_name if not provided)
+     */
+    username?: (string | null);
+    email: string;
     full_name: string;
 };
 
 /**
- * Properties to return via API
+ * Response for creating a publisher user account.
+ *
+ * Different from UserCreationResponse because publishers don't have a role_record.
  */
-export type PublisherPublic = {
-    name: string;
-    contact_email?: (string | null);
-    /**
-     * URL to publisher logo image
-     */
-    logo_url?: (string | null);
-    /**
-     * Enable performance benchmarking for publisher's content
-     */
-    benchmarking_enabled?: boolean;
-    id: string;
-    user_id: string;
-    user_email: string;
-    user_username: string;
-    user_full_name: string;
-    created_at: string;
-    updated_at: string;
+export type PublisherAccountCreationResponse = {
+    user: UserPublic;
+    temporary_password?: (string | null);
+    password_emailed?: boolean;
+    message?: string;
 };
 
 /**
- * Properties to receive via API on Publisher update
+ * Response for listing publisher accounts.
  */
-export type PublisherUpdate = {
-    name?: (string | null);
+export type PublisherAccountListResponse = {
+    data: Array<PublisherAccountPublic>;
+    count: number;
+};
+
+/**
+ * Publisher account response with DCS enrichment.
+ */
+export type PublisherAccountPublic = {
+    id: string;
+    username: string;
+    email: (string | null);
+    full_name: (string | null);
+    dcs_publisher_id: (number | null);
+    dcs_publisher_name?: (string | null);
+    is_active: boolean;
+    created_at?: (string | null);
+};
+
+/**
+ * Update a publisher user account.
+ */
+export type PublisherAccountUpdate = {
+    dcs_publisher_id?: (number | null);
+    username?: (string | null);
+    email?: (string | null);
+    full_name?: (string | null);
+    is_active?: (boolean | null);
+};
+
+/**
+ * Publisher profile combining DCS and LMS data.
+ */
+export type PublisherProfile = {
+    id: number;
+    name: string;
     contact_email?: (string | null);
+    logo_url?: (string | null);
+    user_id: string;
     user_email?: (string | null);
-    user_username?: (string | null);
     user_full_name?: (string | null);
-    benchmarking_enabled?: (boolean | null);
+};
+
+/**
+ * Publisher data for API responses - sourced from DCS.
+ */
+export type PublisherPublic = {
+    id: number;
+    name: string;
+    contact_email?: (string | null);
+    logo_url?: (string | null);
+};
+
+/**
+ * Publisher organization statistics.
+ */
+export type PublisherStats = {
+    schools_count: number;
+    teachers_count: number;
+    books_count: number;
 };
 
 /**
@@ -2021,7 +2167,7 @@ export type SchoolCreate = {
      * Enable performance benchmarking for this school
      */
     benchmarking_enabled?: boolean;
-    publisher_id: string;
+    dcs_publisher_id: number;
 };
 
 /**
@@ -2049,7 +2195,7 @@ export type SchoolPublic = {
      */
     benchmarking_enabled?: boolean;
     id: string;
-    publisher_id: string;
+    dcs_publisher_id: number;
     created_at: string;
     updated_at: string;
 };
@@ -2061,8 +2207,25 @@ export type SchoolUpdate = {
     name?: (string | null);
     address?: (string | null);
     contact_info?: (string | null);
-    publisher_id?: (string | null);
+    dcs_publisher_id?: (number | null);
     benchmarking_enabled?: (boolean | null);
+};
+
+/**
+ * School response with aggregated counts for publisher views.
+ */
+export type SchoolWithCounts = {
+    id: string;
+    name: string;
+    address?: (string | null);
+    contact_info?: (string | null);
+    benchmarking_enabled?: boolean;
+    dcs_publisher_id: number;
+    created_at: string;
+    updated_at: string;
+    teacher_count?: number;
+    student_count?: number;
+    book_count?: number;
 };
 
 /**
@@ -2109,6 +2272,17 @@ export type StatusSummary = {
     in_progress: number;
     completed: number;
     past_due: number;
+};
+
+/**
+ * Storage quota information.
+ */
+export type StorageQuotaResponse = {
+    used_bytes: number;
+    quota_bytes: number;
+    used_percentage: number;
+    is_warning: boolean;
+    is_full: boolean;
 };
 
 /**
@@ -2364,6 +2538,48 @@ export type StudyTimeStats = {
 };
 
 /**
+ * Properties for API endpoint supervisor creation
+ */
+export type SupervisorCreateAPI = {
+    username: string;
+    user_email?: (string | null);
+    full_name: string;
+};
+
+/**
+ * Response schema for supervisor creation
+ */
+export type SupervisorCreateResponse = {
+    user: UserPublic;
+    temporary_password?: (string | null);
+    password_emailed?: boolean;
+    message?: string;
+};
+
+/**
+ * Public supervisor response schema
+ */
+export type SupervisorPublic = {
+    id: string;
+    full_name: (string | null);
+    email: (string | null);
+    username: string;
+    is_active: boolean;
+    created_at: (string | null);
+    must_change_password: boolean;
+};
+
+/**
+ * Properties for updating a supervisor
+ */
+export type SupervisorUpdate = {
+    full_name?: (string | null);
+    email?: (string | null);
+    username?: (string | null);
+    is_active?: (boolean | null);
+};
+
+/**
  * Properties for API endpoint teacher creation (includes user creation)
  */
 export type TeacherCreateAPI = {
@@ -2380,6 +2596,37 @@ export type TeacherCreateAPI = {
 export type TeacherInsightsResponse = {
     insights: Array<InsightCard>;
     last_refreshed: string;
+};
+
+/**
+ * Schema for a teacher-uploaded material attached to an assignment.
+ *
+ * Story 13.3: Teacher Materials Assignment Integration.
+ * Stores denormalized name/type for display even if material is deleted.
+ */
+export type TeacherMaterialResource = {
+    type?: "teacher_material";
+    material_id: string;
+    name: string;
+    material_type: string;
+};
+
+/**
+ * Response schema with availability status and enriched data.
+ *
+ * Used when returning assignment resources to include current material state.
+ */
+export type TeacherMaterialResourceResponse = {
+    type?: "teacher_material";
+    material_id: string;
+    name: string;
+    material_type: string;
+    is_available?: boolean;
+    file_size?: (number | null);
+    mime_type?: (string | null);
+    url?: (string | null);
+    text_content?: (string | null);
+    download_url?: (string | null);
 };
 
 /**
@@ -2406,6 +2653,40 @@ export type TeacherUpdate = {
     user_email?: (string | null);
     user_username?: (string | null);
     user_full_name?: (string | null);
+};
+
+/**
+ * Teacher response with aggregated counts and school name for publisher views.
+ */
+export type TeacherWithCounts = {
+    id: string;
+    user_id: string;
+    user_email: string;
+    user_username: string;
+    user_full_name: string;
+    school_id: string;
+    school_name?: (string | null);
+    subject_specialization?: (string | null);
+    created_at: string;
+    updated_at: string;
+    books_assigned?: number;
+    classroom_count?: number;
+};
+
+/**
+ * Create a text note.
+ */
+export type TextNoteCreate = {
+    name: string;
+    content: string;
+};
+
+/**
+ * Update a text note.
+ */
+export type TextNoteUpdate = {
+    name?: (string | null);
+    content?: (string | null);
 };
 
 /**
@@ -2456,6 +2737,22 @@ export type UpdatePassword = {
     new_password: string;
 };
 
+/**
+ * Response after file upload.
+ */
+export type UploadResponse = {
+    material: MaterialResponse;
+    quota: StorageQuotaResponse;
+};
+
+/**
+ * Create a URL link.
+ */
+export type UrlLinkCreate = {
+    name: string;
+    url: string;
+};
+
 export type UserCreate = {
     email?: (string | null);
     username: string;
@@ -2463,6 +2760,10 @@ export type UserCreate = {
     is_superuser?: boolean;
     full_name?: (string | null);
     role?: UserRole;
+    /**
+     * DCS Publisher ID - only set for publisher role users
+     */
+    dcs_publisher_id?: (number | null);
     password: string;
 };
 
@@ -2474,7 +2775,7 @@ export type UserCreate = {
  */
 export type UserCreationResponse = {
     user: UserPublic;
-    role_record: (PublisherPublic | TeacherPublic | StudentPublic);
+    role_record: (TeacherPublic | StudentPublic);
     temporary_password?: (string | null);
     password_emailed?: boolean;
     message?: string;
@@ -2487,6 +2788,10 @@ export type UserPublic = {
     is_superuser?: boolean;
     full_name?: (string | null);
     role?: UserRole;
+    /**
+     * DCS Publisher ID - only set for publisher role users
+     */
+    dcs_publisher_id?: (number | null);
     id: string;
     must_change_password?: boolean;
     has_completed_tour?: boolean;
@@ -2497,7 +2802,7 @@ export type UserPublic = {
 /**
  * User role enumeration for RBAC
  */
-export type UserRole = 'admin' | 'publisher' | 'teacher' | 'student';
+export type UserRole = 'admin' | 'supervisor' | 'publisher' | 'teacher' | 'student';
 
 export type UsersPublic = {
     data: Array<UserPublic>;
@@ -2511,6 +2816,7 @@ export type UserUpdate = {
     is_superuser?: boolean;
     full_name?: (string | null);
     role?: UserRole;
+    dcs_publisher_id?: (number | null);
     password?: (string | null);
 };
 
@@ -2550,31 +2856,24 @@ export type VideoResource = {
 };
 
 /**
- * Book data from webhook payload
- */
-export type WebhookBookData = {
-    id: number;
-    book_name: string;
-    book_title: string;
-    publisher: string;
-    language: string;
-    category: string;
-    status: string;
-    version?: (string | null);
-};
-
-/**
  * Webhook event type enumeration
  */
-export type WebhookEventType = 'book.created' | 'book.updated' | 'book.deleted';
+export type WebhookEventType = 'book.created' | 'book.updated' | 'book.deleted' | 'publisher.created' | 'publisher.updated' | 'publisher.deleted';
 
 /**
- * Webhook payload schema from Dream Central Storage
+ * Webhook payload schema from Dream Central Storage.
+ *
+ * Supports both book and publisher events. The data field structure
+ * depends on the event type:
+ * - book.* events: data contains WebhookBookData fields
+ * - publisher.* events: data contains WebhookPublisherData fields
  */
 export type WebhookPayload = {
     event: WebhookEventType;
     timestamp: string;
-    data: WebhookBookData;
+    data: {
+        [key: string]: unknown;
+    };
 };
 
 /**
@@ -2597,17 +2896,6 @@ export type WordSearchAnalysis = {
     total_attempts: number;
 };
 
-export type AdminCreatePublisherData = {
-    requestBody: PublisherCreateAPI;
-};
-
-export type AdminCreatePublisherResponse = (UserCreationResponse);
-
-export type AdminListPublishersData = {
-    limit?: number;
-    skip?: number;
-};
-
 export type AdminListPublishersResponse = (Array<PublisherPublic>);
 
 export type AdminCreateSchoolData = {
@@ -2625,17 +2913,12 @@ export type AdminListSchoolsData = {
 export type AdminListSchoolsResponse = (Array<SchoolPublic>);
 
 export type AdminUpdatePublisherData = {
-    publisherId: string;
-    requestBody: PublisherUpdate;
+    publisherId: number;
 };
-
-export type AdminUpdatePublisherResponse = (PublisherPublic);
 
 export type AdminDeletePublisherData = {
-    publisherId: string;
+    publisherId: number;
 };
-
-export type AdminDeletePublisherResponse = (void);
 
 export type AdminUploadPublisherLogoData = {
     formData: Body_admin_upload_publisher_logo;
@@ -2755,6 +3038,12 @@ export type AdminResetUserPasswordData = {
 
 export type AdminResetUserPasswordResponse = (PasswordResetResponse);
 
+export type AdminGetCacheStatsResponse = ({
+    [key: string]: unknown;
+});
+
+export type AdminClearCacheResponse = (void);
+
 export type AdminTestDreamStorageConnectionResponse = ({
     [key: string]: unknown;
 });
@@ -2783,6 +3072,54 @@ export type AdminUpdatePublisherBenchmarkSettingsData = {
 
 export type AdminUpdatePublisherBenchmarkSettingsResponse = (BenchmarkSettingsResponse);
 
+export type AdminCreatePublisherAccountData = {
+    requestBody: PublisherAccountCreate;
+};
+
+export type AdminCreatePublisherAccountResponse = (PublisherAccountCreationResponse);
+
+export type AdminListPublisherAccountsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type AdminListPublisherAccountsResponse = (PublisherAccountListResponse);
+
+export type AdminGetPublisherAccountData = {
+    userId: string;
+};
+
+export type AdminGetPublisherAccountResponse = (PublisherAccountPublic);
+
+export type AdminUpdatePublisherAccountData = {
+    requestBody: PublisherAccountUpdate;
+    userId: string;
+};
+
+export type AdminUpdatePublisherAccountResponse = (PublisherAccountPublic);
+
+export type AdminDeletePublisherAccountData = {
+    userId: string;
+};
+
+export type AdminDeletePublisherAccountResponse = (void);
+
+export type AdminListAllAssignmentsData = {
+    limit?: number;
+    search?: (string | null);
+    skip?: number;
+    status?: (string | null);
+    teacherId?: (string | null);
+};
+
+export type AdminListAllAssignmentsResponse = (AssignmentListResponse);
+
+export type AdminDeleteAssignmentData = {
+    assignmentId: string;
+};
+
+export type AdminDeleteAssignmentResponse = (void);
+
 export type AssignmentsListAssignmentsResponse = (Array<AssignmentListItem>);
 
 export type AssignmentsCreateAssignmentData = {
@@ -2795,9 +3132,9 @@ export type AssignmentsListAllAssignmentsAdminResponse = (Array<AssignmentListIt
 
 export type AssignmentsGetCalendarAssignmentsData = {
     /**
-     * Filter by book ID
+     * Filter by book ID (DCS book ID)
      */
-    bookId?: (string | null);
+    bookId?: (number | null);
     /**
      * Filter by class ID
      */
@@ -2848,6 +3185,15 @@ export type AssignmentsStartMultiActivityAssignmentData = {
 };
 
 export type AssignmentsStartMultiActivityAssignmentResponse = (MultiActivityStartResponse);
+
+export type AssignmentsDownloadAssignmentMaterialData = {
+    assignmentId: string;
+    materialId: string;
+    range?: (string | null);
+    token?: (string | null);
+};
+
+export type AssignmentsDownloadAssignmentMaterialResponse = (unknown);
 
 export type AssignmentsSaveActivityProgressData = {
     activityId: string;
@@ -2962,7 +3308,7 @@ export type BookAssetsServeBookAssetData = {
     /**
      * Book ID
      */
-    bookId: string;
+    bookId: number;
 };
 
 export type BookAssetsServeBookAssetResponse = (unknown);
@@ -2971,7 +3317,7 @@ export type BookAssetsServePageImageData = {
     /**
      * Book ID
      */
-    bookId: string;
+    bookId: number;
     /**
      * Page number
      */
@@ -3008,7 +3354,7 @@ export type BookAssignmentsDeleteBookAssignmentData = {
 export type BookAssignmentsDeleteBookAssignmentResponse = (void);
 
 export type BookAssignmentsGetBookAssignmentsData = {
-    bookId: string;
+    bookId: number;
 };
 
 export type BookAssignmentsGetBookAssignmentsResponse = (Array<BookAssignmentResponse>);
@@ -3028,7 +3374,11 @@ export type BookMediaStreamMediaData = {
 
 export type BookMediaStreamMediaResponse = (unknown);
 
-export type BooksTriggerBookSyncResponse = (BookSyncResponse);
+export type BooksGetBookCoverData = {
+    bookId: number;
+};
+
+export type BooksGetBookCoverResponse = (unknown);
 
 export type BooksListBooksData = {
     activityType?: (string | null);
@@ -3040,19 +3390,19 @@ export type BooksListBooksData = {
 export type BooksListBooksResponse = (BookListResponse);
 
 export type BooksGetBookActivitiesData = {
-    bookId: string;
+    bookId: number;
 };
 
 export type BooksGetBookActivitiesResponse = (Array<ActivityResponse>);
 
 export type BooksGetBookPagesData = {
-    bookId: string;
+    bookId: number;
 };
 
 export type BooksGetBookPagesResponse = (BookPagesResponse);
 
 export type BooksGetPageActivitiesData = {
-    bookId: string;
+    bookId: number;
     moduleName?: (string | null);
     pageNumber: number;
 };
@@ -3060,19 +3410,19 @@ export type BooksGetPageActivitiesData = {
 export type BooksGetPageActivitiesResponse = (Array<PageActivityResponse>);
 
 export type BooksGetBookPagesDetailData = {
-    bookId: string;
+    bookId: number;
 };
 
 export type BooksGetBookPagesDetailResponse = (BookPagesDetailResponse);
 
 export type BooksGetBookStructureData = {
-    bookId: string;
+    bookId: number;
 };
 
 export type BooksGetBookStructureResponse = (BookStructureResponse);
 
 export type BooksListBookVideosData = {
-    bookId: string;
+    bookId: number;
 };
 
 export type BooksListBookVideosResponse = (BookVideosResponse);
@@ -3139,12 +3489,20 @@ export type ClassesGetClassBenchmarksEndpointResponse = (ClassBenchmarkResponse)
 
 export type DevGetQuickLoginUsersResponse = ({
     [key: string]: Array<{
-        [key: string]: (string | boolean | null);
+        [key: string]: (string | null);
     }>;
 });
 
 export type DevResetQuickLoginPasswordsResponse = ({
     [key: string]: (string | number);
+});
+
+export type DevInstantLoginData = {
+    username: string;
+};
+
+export type DevInstantLoginResponse = ({
+    [key: string]: (string);
 });
 
 export type FeedbackGetFeedbackOptionsResponse = (FeedbackOptionsResponse);
@@ -3272,25 +3630,33 @@ export type PrivateCreateUserData = {
 
 export type PrivateCreateUserResponse = (UserPublic);
 
-export type PublishersGetMyProfileResponse = (PublisherPublic);
+export type PublishersGetPublisherLogoData = {
+    publisherId: number;
+};
 
-export type PublishersListMySchoolsResponse = (Array<SchoolPublic>);
+export type PublishersGetPublisherLogoResponse = (unknown);
 
-export type PublishersCreateSchoolData = {
+export type PublishersGetMyProfileResponse = (PublisherProfile);
+
+export type PublishersGetMyStatsResponse = (PublisherStats);
+
+export type PublishersListMySchoolsResponse = (Array<SchoolWithCounts>);
+
+export type PublishersCreateMySchoolData = {
     requestBody: SchoolCreateByPublisher;
 };
 
-export type PublishersCreateSchoolResponse = (SchoolPublic);
+export type PublishersCreateMySchoolResponse = (SchoolPublic);
 
-export type PublishersListMyTeachersResponse = (Array<TeacherPublic>);
+export type PublishersListMyTeachersResponse = (Array<TeacherWithCounts>);
 
-export type PublishersCreateTeacherData = {
+export type PublishersCreateMyTeacherData = {
     requestBody: TeacherCreateAPI;
 };
 
-export type PublishersCreateTeacherResponse = (UserCreationResponse);
+export type PublishersCreateMyTeacherResponse = (UserCreationResponse);
 
-export type PublishersGetMyStatsResponse = (DashboardStats);
+export type PublishersListMyBooksResponse = (Array<BookPublic>);
 
 export type ReportsGenerateReportData = {
     requestBody: ReportGenerateRequest;
@@ -3423,6 +3789,116 @@ export type StudentsDownloadCredentialsData = {
 };
 
 export type StudentsDownloadCredentialsResponse = (unknown);
+
+export type SupervisorsListSupervisorsData = {
+    limit?: number;
+    search?: (string | null);
+    skip?: number;
+};
+
+export type SupervisorsListSupervisorsResponse = (Array<SupervisorPublic>);
+
+export type SupervisorsCreateSupervisorData = {
+    requestBody: SupervisorCreateAPI;
+};
+
+export type SupervisorsCreateSupervisorResponse = (SupervisorCreateResponse);
+
+export type SupervisorsGetSupervisorData = {
+    supervisorId: string;
+};
+
+export type SupervisorsGetSupervisorResponse = (SupervisorPublic);
+
+export type SupervisorsUpdateSupervisorData = {
+    requestBody: SupervisorUpdate;
+    supervisorId: string;
+};
+
+export type SupervisorsUpdateSupervisorResponse = (SupervisorPublic);
+
+export type SupervisorsDeleteSupervisorData = {
+    supervisorId: string;
+};
+
+export type SupervisorsDeleteSupervisorResponse = (void);
+
+export type SupervisorsResetSupervisorPasswordData = {
+    supervisorId: string;
+};
+
+export type SupervisorsResetSupervisorPasswordResponse = (PasswordResetResponse);
+
+export type TeacherMaterialsUploadMaterialData = {
+    formData: Body_teacher_materials_upload_material;
+};
+
+export type TeacherMaterialsUploadMaterialResponse = (UploadResponse);
+
+export type TeacherMaterialsCreateTextNoteData = {
+    requestBody: TextNoteCreate;
+};
+
+export type TeacherMaterialsCreateTextNoteResponse = (MaterialResponse);
+
+export type TeacherMaterialsUpdateTextNoteData = {
+    materialId: string;
+    requestBody: TextNoteUpdate;
+};
+
+export type TeacherMaterialsUpdateTextNoteResponse = (MaterialResponse);
+
+export type TeacherMaterialsCreateUrlLinkData = {
+    requestBody: UrlLinkCreate;
+};
+
+export type TeacherMaterialsCreateUrlLinkResponse = (MaterialResponse);
+
+export type TeacherMaterialsListMaterialsData = {
+    type?: (MaterialType | null);
+};
+
+export type TeacherMaterialsListMaterialsResponse = (MaterialListResponse);
+
+export type TeacherMaterialsGetQuotaResponse = (StorageQuotaResponse);
+
+export type TeacherMaterialsGetMaterialData = {
+    materialId: string;
+};
+
+export type TeacherMaterialsGetMaterialResponse = (MaterialResponse);
+
+export type TeacherMaterialsUpdateMaterialData = {
+    materialId: string;
+    requestBody: MaterialUpdate;
+};
+
+export type TeacherMaterialsUpdateMaterialResponse = (MaterialResponse);
+
+export type TeacherMaterialsDeleteMaterialData = {
+    materialId: string;
+};
+
+export type TeacherMaterialsDeleteMaterialResponse = (void);
+
+export type TeacherMaterialsGetPresignedUrlData = {
+    expiresMinutes?: number;
+    materialId: string;
+};
+
+export type TeacherMaterialsGetPresignedUrlResponse = (PresignedUrlResponse);
+
+export type TeacherMaterialsDownloadMaterialData = {
+    materialId: string;
+};
+
+export type TeacherMaterialsDownloadMaterialResponse = (unknown);
+
+export type TeacherMaterialsStreamMaterialData = {
+    materialId: string;
+};
+
+export type TeacherMaterialsStreamMaterialResponse = (unknown);
 
 export type TeachersListMyStudentsResponse = (Array<StudentPublic>);
 

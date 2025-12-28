@@ -8,7 +8,6 @@
  * Immutable fields are displayed as read-only (activity, book, recipients)
  */
 
-import { useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
@@ -22,9 +21,14 @@ import {
   Trash2,
   Video,
 } from "lucide-react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-
+import {
+  getMaterialTypeLabel,
+  MaterialTypeIcon,
+} from "@/components/materials/MaterialTypeIcon"
+import { TeacherMaterialPicker } from "@/components/materials/TeacherMaterialPicker"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,8 +48,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
-import { MaterialTypeIcon, getMaterialTypeLabel } from "@/components/materials/MaterialTypeIcon"
-import { TeacherMaterialPicker } from "@/components/materials/TeacherMaterialPicker"
 import { useToast } from "@/hooks/use-toast"
 import { previewAssignment, updateAssignment } from "@/services/assignmentsApi"
 import type {
@@ -114,12 +116,13 @@ export function EditAssignmentDialog({
           subtitles_enabled: v.subtitles_enabled,
           has_subtitles: v.has_subtitles,
         })),
-        teacher_materials: previewData.resources.teacher_materials?.map((m) => ({
-          type: "teacher_material" as const,
-          material_id: m.material_id,
-          name: m.name,
-          material_type: m.material_type,
-        })) ?? [],
+        teacher_materials:
+          previewData.resources.teacher_materials?.map((m) => ({
+            type: "teacher_material" as const,
+            material_id: m.material_id,
+            name: m.name,
+            material_type: m.material_type,
+          })) ?? [],
       }
       setResources(formResources)
     } else {
@@ -147,7 +150,9 @@ export function EditAssignmentDialog({
       updateAssignment(assignment.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["assignment-preview", assignment.id] })
+      queryClient.invalidateQueries({
+        queryKey: ["assignment-preview", assignment.id],
+      })
       toast({
         title: "Success",
         description: "Assignment updated successfully!",
@@ -208,7 +213,7 @@ export function EditAssignmentDialog({
   const handleRemoveMaterial = (materialId: string) => {
     if (!resources) return
     const updatedMaterials = (resources.teacher_materials ?? []).filter(
-      (m) => m.material_id !== materialId
+      (m) => m.material_id !== materialId,
     )
     setResources({
       ...resources,
@@ -229,15 +234,20 @@ export function EditAssignmentDialog({
 
     // Filter out already added
     const existingIds = new Set(
-      (resources?.teacher_materials ?? []).map((m) => m.material_id)
+      (resources?.teacher_materials ?? []).map((m) => m.material_id),
     )
-    const uniqueNew = newMaterials.filter((m) => !existingIds.has(m.material_id))
+    const uniqueNew = newMaterials.filter(
+      (m) => !existingIds.has(m.material_id),
+    )
 
     if (uniqueNew.length === 0) return
 
     setResources({
       videos: resources?.videos ?? [],
-      teacher_materials: [...(resources?.teacher_materials ?? []), ...uniqueNew],
+      teacher_materials: [
+        ...(resources?.teacher_materials ?? []),
+        ...uniqueNew,
+      ],
     })
   }
 
@@ -246,7 +256,7 @@ export function EditAssignmentDialog({
   const materialCount = resources?.teacher_materials?.length ?? 0
   const totalResources = videoCount + materialCount
   const selectedMaterialIds = (resources?.teacher_materials ?? []).map(
-    (m) => m.material_id
+    (m) => m.material_id,
   )
 
   return (
@@ -263,14 +273,19 @@ export function EditAssignmentDialog({
         {isLoadingPreview ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Loading assignment data...</span>
+            <span className="ml-2 text-muted-foreground">
+              Loading assignment data...
+            </span>
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Assignment Name */}
             <div className="space-y-2">
               <Label htmlFor="name">
-                Assignment Name <span className="text-red-500">*</span>
+                Assignment Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
               </Label>
               <Input
                 id="name"
@@ -284,7 +299,7 @@ export function EditAssignmentDialog({
 
             {/* Instructions */}
             <div className="space-y-2">
-              <Label htmlFor="instructions">Instructions (optional)</Label>
+              <Label htmlFor="instructions">Instructions</Label>
               <Textarea
                 id="instructions"
                 {...register("instructions")}
@@ -300,7 +315,7 @@ export function EditAssignmentDialog({
 
             {/* Due Date */}
             <div className="space-y-2">
-              <Label htmlFor="due_date">Due Date (optional)</Label>
+              <Label htmlFor="due_date">Due Date</Label>
               <Input
                 id="due_date"
                 type="date"
@@ -308,15 +323,15 @@ export function EditAssignmentDialog({
                 min={format(new Date(), "yyyy-MM-dd")}
               />
               {errors.due_date && (
-                <p className="text-sm text-red-500">{errors.due_date.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.due_date.message}
+                </p>
               )}
             </div>
 
             {/* Time Limit */}
             <div className="space-y-2">
-              <Label htmlFor="time_limit_minutes">
-                Time Limit (minutes, optional)
-              </Label>
+              <Label htmlFor="time_limit_minutes">Time Limit (minutes)</Label>
               <Input
                 id="time_limit_minutes"
                 type="number"
@@ -342,7 +357,9 @@ export function EditAssignmentDialog({
                     <FolderOpen className="h-5 w-5 text-teal-600" />
                     <span className="font-medium">Additional Resources</span>
                     {totalResources > 0 && (
-                      <Badge variant="secondary">{totalResources} attached</Badge>
+                      <Badge variant="secondary">
+                        {totalResources} attached
+                      </Badge>
                     )}
                   </div>
                   {resourcesOpen ? (
@@ -388,7 +405,8 @@ export function EditAssignmentDialog({
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No videos attached. Videos can be added when creating a new assignment.
+                      No videos attached. Videos can be added when creating a
+                      new assignment.
                     </p>
                   )}
                 </div>
@@ -400,7 +418,9 @@ export function EditAssignmentDialog({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <FileBox className="h-4 w-4 text-teal-600" />
-                      <Label className="text-sm font-medium">My Materials</Label>
+                      <Label className="text-sm font-medium">
+                        My Materials
+                      </Label>
                       {materialCount > 0 && (
                         <Badge variant="outline" className="text-xs">
                           {materialCount}
@@ -433,7 +453,11 @@ export function EditAssignmentDialog({
                               {material.name}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              ({getMaterialTypeLabel(material.material_type as MaterialType)})
+                              (
+                              {getMaterialTypeLabel(
+                                material.material_type as MaterialType,
+                              )}
+                              )
                             </span>
                           </div>
                           <Button
@@ -441,7 +465,9 @@ export function EditAssignmentDialog({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => handleRemoveMaterial(material.material_id)}
+                            onClick={() =>
+                              handleRemoveMaterial(material.material_id)
+                            }
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -450,7 +476,8 @@ export function EditAssignmentDialog({
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No materials attached. Click "Add" to attach materials from your library.
+                      No materials attached. Click "Add" to attach materials
+                      from your library.
                     </p>
                   )}
                 </div>
@@ -480,14 +507,18 @@ export function EditAssignmentDialog({
                   <Label className="text-xs text-muted-foreground">
                     Activity Type
                   </Label>
-                  <p className="text-sm capitalize">{assignment.activity_type}</p>
+                  <p className="text-sm capitalize">
+                    {assignment.activity_type}
+                  </p>
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">
                     Students Assigned
                   </Label>
-                  <p className="text-sm">{assignment.total_students} students</p>
+                  <p className="text-sm">
+                    {assignment.total_students} students
+                  </p>
                 </div>
               </div>
             </div>

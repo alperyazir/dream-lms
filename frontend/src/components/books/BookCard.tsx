@@ -1,22 +1,18 @@
-import { Link } from "@tanstack/react-router"
 import { BookOpen } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { getAuthenticatedCoverUrl } from "@/services/booksApi"
 import type { Book } from "@/types/book"
 
 export interface BookCardProps {
   book: Book
-  onClick?: () => void
 }
 
 /**
  * BookCard Component - Story 3.6
  *
  * Displays a book with cover image, title, publisher, description, and activity count.
- * Navigates to book detail page on click.
  *
  * Features:
  * - Cover image with fallback placeholder
@@ -25,7 +21,7 @@ export interface BookCardProps {
  * - Activity count badge
  * - Hover effects
  */
-export function BookCard({ book, onClick }: BookCardProps) {
+export function BookCard({ book }: BookCardProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [isLoadingCover, setIsLoadingCover] = useState(true)
   const [imageError, setImageError] = useState(false)
@@ -116,21 +112,6 @@ export function BookCard({ book, onClick }: BookCardProps) {
   return (
     <Card className="h-full flex flex-col shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <CardContent className="p-4 flex-1">{cardContent}</CardContent>
-      <CardFooter className="p-4 pt-0">
-        <Button
-          asChild
-          className="w-full bg-teal-600 hover:bg-teal-700"
-          onClick={onClick}
-        >
-          <Link
-            to="/teacher/books/$bookId"
-            params={{ bookId: book.id }}
-            aria-label={`View activities for ${book.title}`}
-          >
-            View Activities
-          </Link>
-        </Button>
-      </CardFooter>
     </Card>
   )
 }

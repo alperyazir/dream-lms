@@ -6,7 +6,7 @@ import { Tour } from "@/components/tour/Tour"
 import { TourTrigger } from "@/components/tour/TourTrigger"
 import { NavigationProvider } from "@/contexts/NavigationContext"
 import { TourProvider } from "@/contexts/TourContext"
-import { isLoggedIn, getMustChangePassword } from "@/hooks/useAuth"
+import { getMustChangePassword, isLoggedIn } from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,

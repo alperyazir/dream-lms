@@ -11,13 +11,13 @@
  * - Does NOT start tour if user is null/undefined
  */
 
-import { render, act } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { act, render } from "@testing-library/react"
 import type { ReactNode } from "react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type { UserPublic, UserRole } from "@/client"
 import { TourProvider } from "@/contexts/TourContext"
 import { TourTrigger } from "./TourTrigger"
-import type { UserPublic, UserRole } from "@/client"
 
 // Mock useAuth hook
 const mockUser = vi.fn<[], { user: UserPublic | null | undefined }>()
@@ -40,7 +40,11 @@ vi.mock("./steps", () => ({
   getTourStepsForRole: (role: UserRole) => {
     if (role === "admin") return []
     return [
-      { target: "[data-tour='test']", title: "Test Step", content: "Test content" },
+      {
+        target: "[data-tour='test']",
+        title: "Test Step",
+        content: "Test content",
+      },
     ]
   },
 }))
@@ -89,7 +93,9 @@ describe("TourTrigger", () => {
   })
 
   it("starts tour for teacher with has_completed_tour=false", () => {
-    mockUser.mockReturnValue({ user: createUser({ role: "teacher", has_completed_tour: false }) })
+    mockUser.mockReturnValue({
+      user: createUser({ role: "teacher", has_completed_tour: false }),
+    })
 
     render(<TourTrigger />, { wrapper: createWrapper() })
 
@@ -106,12 +112,14 @@ describe("TourTrigger", () => {
       expect.arrayContaining([
         expect.objectContaining({ target: "[data-tour='test']" }),
       ]),
-      "onboarding"
+      "onboarding",
     )
   })
 
   it("starts tour for student with has_completed_tour=false", () => {
-    mockUser.mockReturnValue({ user: createUser({ role: "student", has_completed_tour: false }) })
+    mockUser.mockReturnValue({
+      user: createUser({ role: "student", has_completed_tour: false }),
+    })
 
     render(<TourTrigger />, { wrapper: createWrapper() })
 
@@ -124,12 +132,14 @@ describe("TourTrigger", () => {
       expect.arrayContaining([
         expect.objectContaining({ target: "[data-tour='test']" }),
       ]),
-      "onboarding"
+      "onboarding",
     )
   })
 
   it("starts tour for publisher with has_completed_tour=false", () => {
-    mockUser.mockReturnValue({ user: createUser({ role: "publisher", has_completed_tour: false }) })
+    mockUser.mockReturnValue({
+      user: createUser({ role: "publisher", has_completed_tour: false }),
+    })
 
     render(<TourTrigger />, { wrapper: createWrapper() })
 
@@ -142,12 +152,14 @@ describe("TourTrigger", () => {
       expect.arrayContaining([
         expect.objectContaining({ target: "[data-tour='test']" }),
       ]),
-      "onboarding"
+      "onboarding",
     )
   })
 
   it("does NOT start tour for admin", () => {
-    mockUser.mockReturnValue({ user: createUser({ role: "admin", has_completed_tour: false }) })
+    mockUser.mockReturnValue({
+      user: createUser({ role: "admin", has_completed_tour: false }),
+    })
 
     render(<TourTrigger />, { wrapper: createWrapper() })
 
@@ -159,7 +171,9 @@ describe("TourTrigger", () => {
   })
 
   it("does NOT start tour if has_completed_tour=true", () => {
-    mockUser.mockReturnValue({ user: createUser({ role: "teacher", has_completed_tour: true }) })
+    mockUser.mockReturnValue({
+      user: createUser({ role: "teacher", has_completed_tour: true }),
+    })
 
     render(<TourTrigger />, { wrapper: createWrapper() })
 
@@ -207,7 +221,9 @@ describe("TourTrigger", () => {
   })
 
   it("does NOT start tour if tour is already active", () => {
-    mockUser.mockReturnValue({ user: createUser({ role: "teacher", has_completed_tour: false }) })
+    mockUser.mockReturnValue({
+      user: createUser({ role: "teacher", has_completed_tour: false }),
+    })
     mockIsActive.mockReturnValue(true)
 
     render(<TourTrigger />, { wrapper: createWrapper() })

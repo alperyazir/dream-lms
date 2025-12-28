@@ -87,7 +87,7 @@ export function MaterialPreviewModal({
         URL.revokeObjectURL(blobUrl)
       }
     }
-  }, [open, material?.id, material?.type]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, material?.id, material?.type, blobUrl, material]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset zoom when modal closes
   const handleOpenChange = useCallback(
@@ -142,7 +142,9 @@ export function MaterialPreviewModal({
               : getDownloadBlobUrl
             fetchFn(material.id)
               .then((url) => setBlobUrl(url))
-              .catch(() => setUrlError("Failed to load file. Please try again."))
+              .catch(() =>
+                setUrlError("Failed to load file. Please try again."),
+              )
               .finally(() => setIsLoadingUrl(false))
           }
         }}
@@ -278,7 +280,10 @@ export function MaterialPreviewModal({
         <p className="text-sm text-muted-foreground text-center break-all max-w-md">
           {material.url}
         </p>
-        <Button onClick={handleOpenUrl} className="bg-teal-600 hover:bg-teal-700">
+        <Button
+          onClick={handleOpenUrl}
+          className="bg-teal-600 hover:bg-teal-700"
+        >
           <ExternalLink className="h-4 w-4 mr-2" />
           Open Link in New Tab
         </Button>
@@ -314,7 +319,9 @@ export function MaterialPreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className={cn("p-0 overflow-hidden max-h-[90vh]", getMaxWidth())}>
+      <DialogContent
+        className={cn("p-0 overflow-hidden max-h-[90vh]", getMaxWidth())}
+      >
         <DialogHeader className="p-4 border-b">
           <div className="flex items-center gap-3 pr-8">
             <MaterialTypeIcon type={material.type} />

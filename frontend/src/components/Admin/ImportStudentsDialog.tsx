@@ -16,11 +16,11 @@ import {
 import { useCallback, useRef, useState } from "react"
 import {
   AdminService,
-  StudentsService,
   type ImportCredential,
   type ImportRowResult,
   type ImportValidationResponse,
   type SchoolPublic,
+  StudentsService,
   type TeacherPublic,
 } from "@/client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -185,14 +185,17 @@ export function ImportStudentsDialog({
     }
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0])
-    }
-  }, [])
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setDragActive(false)
+      if (e.dataTransfer.files?.[0]) {
+        handleFileSelect(e.dataTransfer.files[0])
+      }
+    },
+    [handleFileSelect],
+  )
 
   const handleValidate = () => {
     if (!selectedFile) return
@@ -392,7 +395,13 @@ export function ImportStudentsDialog({
                     disabled={!selectedSchoolId}
                   >
                     <SelectTrigger id="teacher-select">
-                      <SelectValue placeholder={selectedSchoolId ? "Select a teacher" : "Select school first"} />
+                      <SelectValue
+                        placeholder={
+                          selectedSchoolId
+                            ? "Select a teacher"
+                            : "Select school first"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {teachers.map((teacher: TeacherPublic) => (
@@ -492,21 +501,28 @@ export function ImportStudentsDialog({
               </div>
               <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {validationResult.valid_count + validationResult.warning_count}
+                  {validationResult.valid_count +
+                    validationResult.warning_count}
                 </div>
-                <div className="text-sm text-green-600 dark:text-green-400">Importable</div>
+                <div className="text-sm text-green-600 dark:text-green-400">
+                  Importable
+                </div>
               </div>
               <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                   {validationResult.warning_count}
                 </div>
-                <div className="text-sm text-yellow-600 dark:text-yellow-400">Auto-fixed</div>
+                <div className="text-sm text-yellow-600 dark:text-yellow-400">
+                  Auto-fixed
+                </div>
               </div>
               <div className="bg-red-100 dark:bg-red-900/30 rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                   {validationResult.error_count}
                 </div>
-                <div className="text-sm text-red-600 dark:text-red-400">Errors</div>
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  Errors
+                </div>
               </div>
             </div>
 
@@ -523,18 +539,20 @@ export function ImportStudentsDialog({
             )}
 
             {/* Auto-fixed info alert */}
-            {validationResult.warning_count > 0 && validationResult.error_count === 0 && (
-              <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                <AlertTitle className="text-yellow-800 dark:text-yellow-200">
-                  Auto-fixed Issues
-                </AlertTitle>
-                <AlertDescription className="text-yellow-700 dark:text-yellow-300">
-                  {validationResult.warning_count} row(s) had username conflicts that were
-                  automatically resolved. The new usernames are shown in the preview below.
-                </AlertDescription>
-              </Alert>
-            )}
+            {validationResult.warning_count > 0 &&
+              validationResult.error_count === 0 && (
+                <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertTitle className="text-yellow-800 dark:text-yellow-200">
+                    Auto-fixed Issues
+                  </AlertTitle>
+                  <AlertDescription className="text-yellow-700 dark:text-yellow-300">
+                    {validationResult.warning_count} row(s) had username
+                    conflicts that were automatically resolved. The new
+                    usernames are shown in the preview below.
+                  </AlertDescription>
+                </Alert>
+              )}
 
             {/* Preview table */}
             <div className="border rounded-lg max-h-[300px] overflow-auto">
@@ -604,11 +622,22 @@ export function ImportStudentsDialog({
             <div className="flex flex-col items-center gap-4">
               {/* Animated dots */}
               <div className="flex items-center gap-1">
-                <span className="text-muted-foreground">Importing students</span>
+                <span className="text-muted-foreground">
+                  Importing students
+                </span>
                 <span className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -634,30 +663,36 @@ export function ImportStudentsDialog({
             </div>
 
             {/* Info messages (like auto-created classrooms) */}
-            {importErrors.filter(e => e.startsWith("Info:")).length > 0 && (
+            {importErrors.filter((e) => e.startsWith("Info:")).length > 0 && (
               <Alert className="border-teal-200 bg-teal-50 dark:bg-teal-950/30 dark:border-teal-800">
                 <CheckCircle2 className="h-4 w-4 text-teal-600" />
-                <AlertTitle className="text-teal-800 dark:text-teal-300">Additional Actions</AlertTitle>
+                <AlertTitle className="text-teal-800 dark:text-teal-300">
+                  Additional Actions
+                </AlertTitle>
                 <AlertDescription className="text-teal-700 dark:text-teal-400">
                   <ul className="list-disc list-inside mt-2">
-                    {importErrors.filter(e => e.startsWith("Info:")).map((info, i) => (
-                      <li key={i}>{info.replace("Info: ", "")}</li>
-                    ))}
+                    {importErrors
+                      .filter((e) => e.startsWith("Info:"))
+                      .map((info, i) => (
+                        <li key={i}>{info.replace("Info: ", "")}</li>
+                      ))}
                   </ul>
                 </AlertDescription>
               </Alert>
             )}
 
             {/* Actual errors if any */}
-            {importErrors.filter(e => !e.startsWith("Info:")).length > 0 && (
+            {importErrors.filter((e) => !e.startsWith("Info:")).length > 0 && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Some imports failed</AlertTitle>
                 <AlertDescription>
                   <ul className="list-disc list-inside mt-2">
-                    {importErrors.filter(e => !e.startsWith("Info:")).map((error, i) => (
-                      <li key={i}>{error}</li>
-                    ))}
+                    {importErrors
+                      .filter((e) => !e.startsWith("Info:"))
+                      .map((error, i) => (
+                        <li key={i}>{error}</li>
+                      ))}
                   </ul>
                 </AlertDescription>
               </Alert>
@@ -668,10 +703,7 @@ export function ImportStudentsDialog({
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">Student Credentials</h4>
-                  <Button
-                    variant="outline"
-                    onClick={handleDownloadCredentials}
-                  >
+                  <Button variant="outline" onClick={handleDownloadCredentials}>
                     <Download className="w-4 h-4 mr-2" />
                     Download Credentials
                   </Button>
@@ -722,16 +754,14 @@ export function ImportStudentsDialog({
         <DialogFooter>
           {step === "upload" && (
             <>
-              <Button
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-              >
+              <Button variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
               <Button
                 onClick={handleValidate}
                 disabled={
-                  !selectedFile || (isAdmin && (!selectedSchoolId || !selectedTeacherId))
+                  !selectedFile ||
+                  (isAdmin && (!selectedSchoolId || !selectedTeacherId))
                 }
                 className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
               >

@@ -2,13 +2,22 @@
 
 ## 4.1 Overview
 
-Dream Central Storage is an **existing MinIO-based S3-compatible object storage** that hosts all book assets (images, audio) and teacher-uploaded materials. Dream LMS integrates as a client, fetching assets and transforming relative paths to pre-signed URLs.
+Dream Central Storage (DCS) is a **separate REST API service** that manages publishers, books, and content. It is backed by MinIO S3-compatible object storage for assets (images, audio, book covers) and teacher-uploaded materials. Dream LMS consumes data from DCS via REST API with in-memory caching.
+
+**DCS Architecture (v2 - Since Story 24.x):**
+- **DCS owns**: Publishers, Books, Book content, Media assets
+- **LMS owns**: Schools, Teachers, Students, Assignments, Progress
+- **Integration method**: REST API consumption (not database sync)
+- **Caching strategy**: In-memory cache with TTL and webhook invalidation
+- **No local copies**: Publishers and books are NOT stored in LMS database
 
 **Key Integration Points:**
-1. Book catalog sync (admin-triggered)
-2. Activity asset loading (pre-signed URL transformation)
-3. Teacher material uploads (PDFs, videos)
-4. Direct browser → MinIO access (no backend bottleneck)
+1. Fetch publishers/books from DCS REST API on-demand
+2. Cache responses in-memory with configurable TTL
+3. Webhook notifications trigger cache invalidation
+4. Activity asset loading (pre-signed URL transformation)
+5. Teacher material uploads (PDFs, videos)
+6. Direct browser → MinIO access (no backend bottleneck)
 
 ## 4.2 MinIO Client Architecture
 
@@ -135,56 +144,191 @@ def normalize_path(relative_path: str) -> str:
 }
 ```
 
-## 4.4 Book Catalog Sync
+## 4.4 DCS API Integration & Caching
 
-**Endpoint:** `POST /api/v1/admin/books/sync` (Admin only)
+**Architecture (v2):** LMS consumes publisher and book data from DCS REST API, not local database.
 
-**Process:**
-1. Admin triggers sync from Dream LMS UI
-2. Backend fetches book list from Dream Central Storage
-3. For each book:
-   - Download `config.json`
-   - Parse activities
-   - Create/update `books` and `activities` tables
-   - Transform cover image to pre-signed URL
-4. Return sync summary
+### DCS API Endpoints
+
+LMS requires these DCS endpoints:
+- `GET /publishers/` - List all publishers
+- `GET /publishers/{id}` - Get publisher details
+- `GET /publishers/{id}/logo` - Get publisher logo
+- `GET /books/` - List all books
+- `GET /books/{id}` - Get book details
+- `GET /storage/books/{publisher}/{book}/config` - Get book config.json
+- `GET /storage/books/{publisher}/{book}/cover` - Get book cover image
+- `GET /storage/books/{publisher}/{book}/object` - Get book assets
+
+### Publisher Service (v2)
 
 ```python
-async def sync_books_from_storage():
-    """Sync book catalog from Dream Central Storage"""
-    books_synced = 0
-    activities_synced = 0
+# backend/app/services/publisher_service_v2.py
 
-    # List all book directories
-    book_objects = storage_client.list_objects(
-        bucket="dream-central-storage",
-        prefix="books/",
-        recursive=False
-    )
+class PublisherService:
+    """
+    Fetches publisher data from DCS API with caching.
+    Does NOT store publishers in local database.
+    """
 
-    for book_obj in book_objects:
-        # Download config.json for each book
-        config_path = f"{book_obj.object_name}/config.json"
-        config_data = await storage_client.get_object(config_path)
-        config = json.loads(config_data)
+    def __init__(self, dcs_client: DreamStorageClient, cache: DCSCache):
+        self.dcs_client = dcs_client
+        self.cache = cache
 
-        # Create or update book record
-        book = await create_or_update_book(config)
-        books_synced += 1
+    async def list_publishers(self) -> list[PublisherPublic]:
+        """Fetch all publishers from DCS (cached)."""
+        return await self.cache.get_or_fetch(
+            key=CacheKeys.PUBLISHER_LIST,
+            fetch_fn=self.dcs_client.list_publishers,
+            ttl=settings.DCS_CACHE_PUBLISHER_TTL,
+        )
 
-        # Parse activities from config
-        for module in config.get("books", [{}])[0].get("modules", []):
-            for page in module.get("pages", []):
-                for section in page.get("sections", []):
-                    if section.get("activity"):
-                        await create_or_update_activity(book.id, section["activity"])
-                        activities_synced += 1
-
-    return {
-        "books_synced": books_synced,
-        "activities_synced": activities_synced
-    }
+    async def get_publisher(self, publisher_id: str) -> PublisherPublic | None:
+        """Fetch single publisher from DCS (cached)."""
+        return await self.cache.get_or_fetch(
+            key=CacheKeys.publisher_by_id(publisher_id),
+            fetch_fn=lambda: self.dcs_client.get_publisher(publisher_id),
+            ttl=settings.DCS_CACHE_PUBLISHER_TTL,
+        )
 ```
+
+### Book Service (v2)
+
+```python
+# backend/app/services/book_service_v2.py
+
+class BookService:
+    """
+    Fetches book data from DCS API with caching.
+    Does NOT store books in local database.
+    """
+
+    async def list_books(
+        self,
+        publisher_id: str | None = None
+    ) -> list[BookPublic]:
+        """Fetch all books from DCS (cached)."""
+        if publisher_id:
+            key = CacheKeys.books_by_publisher(publisher_id)
+            fetch_fn = lambda: self.dcs_client.list_books(publisher_id=publisher_id)
+        else:
+            key = CacheKeys.BOOK_LIST
+            fetch_fn = self.dcs_client.list_books
+
+        return await self.cache.get_or_fetch(
+            key=key,
+            fetch_fn=fetch_fn,
+            ttl=settings.DCS_CACHE_BOOK_TTL,
+        )
+```
+
+### Cache Configuration
+
+```python
+# backend/app/core/config.py
+
+class Settings(BaseSettings):
+    # DCS Cache settings (in seconds)
+    DCS_CACHE_DEFAULT_TTL: int = 300  # 5 minutes
+    DCS_CACHE_PUBLISHER_TTL: int = 600  # 10 minutes
+    DCS_CACHE_BOOK_TTL: int = 600  # 10 minutes
+    DCS_CACHE_LOGO_TTL: int = 3600  # 1 hour
+    DCS_CACHE_WARMUP_ENABLED: bool = False  # Optional warmup at startup
+```
+
+### Cache Warmup (Optional)
+
+```python
+# backend/app/main.py - lifespan startup
+
+if settings.DCS_CACHE_WARMUP_ENABLED:
+    publisher_service = get_publisher_service()
+
+    try:
+        # Pre-fetch publishers
+        await publisher_service.list_publishers()
+        logger.info("✅ Cache warmed: publishers")
+
+        # Book list can be large, only warmup if needed
+        # await book_service.list_books()
+    except Exception as e:
+        logger.warning(f"⚠️  Cache warmup failed: {e}")
+```
+
+### Webhook-Based Cache Invalidation
+
+DCS sends webhook notifications when publishers or books are created/updated/deleted. LMS invalidates relevant cache entries.
+
+```python
+# backend/app/api/routes/webhooks.py
+
+@router.post("/dream-storage")
+async def receive_dream_storage_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSessionDep,
+) -> dict:
+    """
+    Receive webhook from DCS and invalidate cache.
+
+    Validates signature, logs event, queues background cache invalidation.
+    """
+    cache = get_dcs_cache()
+
+    # Process based on event type
+    if event_type.startswith("book."):
+        if event_type == "book.created":
+            await cache.invalidate(CacheKeys.BOOK_LIST)
+            await cache.invalidate_pattern("dcs:books:publisher:")
+        elif event_type == "book.updated":
+            await cache.invalidate(CacheKeys.book_by_id(book_id))
+            await cache.invalidate(CacheKeys.book_config(book_id))
+            await cache.invalidate(CacheKeys.BOOK_LIST)
+        elif event_type == "book.deleted":
+            await cache.invalidate_pattern(f"dcs:books:id:{book_id}")
+            await cache.invalidate(CacheKeys.BOOK_LIST)
+
+    elif event_type.startswith("publisher."):
+        if event_type == "publisher.created":
+            await cache.invalidate(CacheKeys.PUBLISHER_LIST)
+        elif event_type == "publisher.updated":
+            await cache.invalidate(CacheKeys.publisher_by_id(publisher_id))
+            await cache.invalidate(CacheKeys.publisher_logo(publisher_id))
+            await cache.invalidate(CacheKeys.PUBLISHER_LIST)
+        elif event_type == "publisher.deleted":
+            await cache.invalidate_pattern(f"dcs:publishers:id:{publisher_id}")
+            await cache.invalidate_pattern(f"dcs:books:publisher:{publisher_id}")
+            await cache.invalidate(CacheKeys.PUBLISHER_LIST)
+
+    return {"status": "received", "event_id": str(event_log.id)}
+```
+
+### Cache Monitoring
+
+Admin-only endpoint for monitoring cache performance:
+
+```python
+# backend/app/api/routes/admin.py
+
+@router.get("/cache/stats")
+def get_cache_stats(_: User = require_role(UserRole.admin)) -> dict:
+    """
+    Get DCS cache statistics for monitoring.
+
+    Returns:
+    - entries: Current number of cached items
+    - hits: Total cache hits since startup
+    - misses: Total cache misses since startup
+    - hit_rate: Cache hit rate (0.0 to 1.0)
+    """
+    cache = get_dcs_cache()
+    return cache.stats()
+```
+
+**Target Metrics:**
+- Cache hit rate: > 80% in normal operation
+- API response time (cached): < 50ms
+- API response time (uncached): < 500ms
 
 ## 4.5 Teacher Material Upload
 

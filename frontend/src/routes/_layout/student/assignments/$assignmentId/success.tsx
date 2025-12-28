@@ -103,13 +103,13 @@ function AssignmentSuccessScreen() {
             type="button"
             onClick={() =>
               navigate({
-                to: "/student/assignments/$assignmentId",
+                to: "/student/assignments/$assignmentId/result",
                 params: { assignmentId },
               })
             }
             className="rounded-lg bg-teal-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
           >
-            View Results
+            Review Answers
           </button>
           <button
             type="button"

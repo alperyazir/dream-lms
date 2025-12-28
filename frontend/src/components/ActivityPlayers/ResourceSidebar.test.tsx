@@ -6,8 +6,8 @@
  * videos and teacher materials attached to assignments.
  */
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type {
   AdditionalResourcesResponse,
   TeacherMaterialResourceResponse,
@@ -33,14 +33,37 @@ vi.mock("lucide-react", () => ({
 
 // Mock UI components
 vi.mock("@/components/ui/badge", () => ({
-  Badge: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <span data-testid="badge" className={className}>{children}</span>
+  Badge: ({
+    children,
+    className,
+  }: {
+    children: React.ReactNode
+    className?: string
+  }) => (
+    <span data-testid="badge" className={className}>
+      {children}
+    </span>
   ),
 }))
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, onClick, disabled, className }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; className?: string }) => (
-    <button data-testid="button" onClick={onClick} disabled={disabled} className={className}>
+  Button: ({
+    children,
+    onClick,
+    disabled,
+    className,
+  }: {
+    children: React.ReactNode
+    onClick?: () => void
+    disabled?: boolean
+    className?: string
+  }) => (
+    <button
+      data-testid="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={className}
+    >
       {children}
     </button>
   ),
@@ -236,8 +259,10 @@ const defaultProps = {
   resources: mockResources,
   bookId: "book-123",
   assignmentId: "assignment-456",
-  getVideoUrl: (bookId: string, path: string) => `http://test.com/${bookId}/${path}`,
-  getSubtitleUrl: (bookId: string, path: string) => `http://test.com/${bookId}/${path}.vtt`,
+  getVideoUrl: (bookId: string, path: string) =>
+    `http://test.com/${bookId}/${path}`,
+  getSubtitleUrl: (bookId: string, path: string) =>
+    `http://test.com/${bookId}/${path}.vtt`,
   isOpen: true,
   onClose: vi.fn(),
   selectedVideo: null as VideoResource | null,
@@ -249,7 +274,8 @@ describe("ResourceSidebar", () => {
     vi.clearAllMocks()
     mockFetch.mockResolvedValue({
       ok: true,
-      blob: () => Promise.resolve(new Blob(["test"], { type: "application/pdf" })),
+      blob: () =>
+        Promise.resolve(new Blob(["test"], { type: "application/pdf" })),
     })
   })
 
@@ -268,7 +294,7 @@ describe("ResourceSidebar", () => {
         <ResourceSidebar
           {...defaultProps}
           resources={{ videos: [], teacher_materials: [] }}
-        />
+        />,
       )
       expect(screen.queryByText("Resources")).not.toBeInTheDocument()
     })
@@ -350,7 +376,7 @@ describe("ResourceSidebar", () => {
       expect(mockWindowOpen).toHaveBeenCalledWith(
         "https://example.com/reference",
         "_blank",
-        "noopener,noreferrer"
+        "noopener,noreferrer",
       )
     })
   })
@@ -376,13 +402,16 @@ describe("ResourceSidebar", () => {
   describe("Video Playback", () => {
     it("calls onSelectVideo when Watch Video is clicked on book video", () => {
       const onSelectVideo = vi.fn()
-      render(<ResourceSidebar {...defaultProps} onSelectVideo={onSelectVideo} />)
+      render(
+        <ResourceSidebar {...defaultProps} onSelectVideo={onSelectVideo} />,
+      )
 
       // Find the book video's Watch Video button
       const watchButtons = screen.getAllByRole("button")
       const bookVideoButton = watchButtons.find(
-        (btn) => btn.textContent?.includes("Watch Video") &&
-                 btn.closest("div")?.textContent?.includes("Lesson 1 Video")
+        (btn) =>
+          btn.textContent?.includes("Watch Video") &&
+          btn.closest("div")?.textContent?.includes("Lesson 1 Video"),
       )
 
       if (bookVideoButton) {
@@ -393,7 +422,7 @@ describe("ResourceSidebar", () => {
 
     it("renders VideoPlayer modal when book video is selected", () => {
       render(
-        <ResourceSidebar {...defaultProps} selectedVideo={mockVideoResource} />
+        <ResourceSidebar {...defaultProps} selectedVideo={mockVideoResource} />,
       )
       expect(screen.getByTestId("video-player")).toBeInTheDocument()
     })
@@ -406,8 +435,8 @@ describe("ResourceSidebar", () => {
 
       // Find close button (the chevron)
       const buttons = screen.getAllByRole("button")
-      const closeButton = buttons.find(
-        (btn) => btn.querySelector('[data-testid="icon-chevron"]')
+      const closeButton = buttons.find((btn) =>
+        btn.querySelector('[data-testid="icon-chevron"]'),
       )
 
       if (closeButton) {
@@ -421,14 +450,14 @@ describe("ResourceSidebar", () => {
 describe("ResourcesButton", () => {
   it("renders nothing when resource count is 0", () => {
     render(
-      <ResourcesButton resourceCount={0} isOpen={false} onClick={vi.fn()} />
+      <ResourcesButton resourceCount={0} isOpen={false} onClick={vi.fn()} />,
     )
     expect(screen.queryByText("Resources")).not.toBeInTheDocument()
   })
 
   it("renders button with resource count", () => {
     render(
-      <ResourcesButton resourceCount={5} isOpen={false} onClick={vi.fn()} />
+      <ResourcesButton resourceCount={5} isOpen={false} onClick={vi.fn()} />,
     )
     expect(screen.getByText("5")).toBeInTheDocument()
   })
@@ -436,7 +465,7 @@ describe("ResourcesButton", () => {
   it("calls onClick when clicked", () => {
     const onClick = vi.fn()
     render(
-      <ResourcesButton resourceCount={3} isOpen={false} onClick={onClick} />
+      <ResourcesButton resourceCount={3} isOpen={false} onClick={onClick} />,
     )
 
     const button = screen.getByRole("button")
@@ -446,7 +475,7 @@ describe("ResourcesButton", () => {
 
   it("applies active styling when isOpen is true", () => {
     render(
-      <ResourcesButton resourceCount={3} isOpen={true} onClick={vi.fn()} />
+      <ResourcesButton resourceCount={3} isOpen={true} onClick={vi.fn()} />,
     )
 
     const button = screen.getByRole("button")
@@ -467,7 +496,7 @@ describe("Material Streaming URL Generation", () => {
     expect(mockWindowOpen).toHaveBeenCalledWith(
       "https://example.com/reference",
       "_blank",
-      "noopener,noreferrer"
+      "noopener,noreferrer",
     )
   })
 

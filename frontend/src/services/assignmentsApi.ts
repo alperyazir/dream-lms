@@ -18,10 +18,12 @@ import type {
   ActivityProgressSaveResponse,
   ActivityStartResponse,
   AssignmentCreateRequest,
+  AssignmentForEditResponse,
   AssignmentListItem,
   AssignmentPreviewResponse,
   AssignmentPublishStatus,
   AssignmentResponse,
+  AssignmentResultDetailResponse,
   AssignmentSaveProgressRequest,
   AssignmentSaveProgressResponse,
   AssignmentSubmissionResponse,
@@ -433,9 +435,12 @@ export async function getStudentCalendarAssignments(
     start_date: filters.startDate,
     end_date: filters.endDate,
   }
-  const response = await apiClient.get<StudentCalendarAssignmentsResponse>(url, {
-    params,
-  })
+  const response = await apiClient.get<StudentCalendarAssignmentsResponse>(
+    url,
+    {
+      params,
+    },
+  )
   return response.data
 }
 
@@ -460,6 +465,21 @@ export async function previewAssignment(
 }
 
 /**
+ * Get assignment data for editing (Story 20.2)
+ * Returns assignment data with recipient information preserved
+ *
+ * @param assignmentId - ID of the assignment to edit
+ * @returns Promise with assignment edit data including recipients
+ */
+export async function getAssignmentForEdit(
+  assignmentId: string,
+): Promise<AssignmentForEditResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/for-edit`
+  const response = await apiClient.get<AssignmentForEditResponse>(url)
+  return response.data
+}
+
+/**
  * Preview a single activity
  * Returns activity data for teacher/publisher preview.
  * Teachers must have book access to preview the activity.
@@ -472,6 +492,34 @@ export async function previewActivity(
 ): Promise<ActivityPreviewResponse> {
   const url = `/api/v1/assignments/activities/${activityId}/preview`
   const response = await apiClient.get<ActivityPreviewResponse>(url)
+  return response.data
+}
+
+/**
+ * Get detailed assignment result for review (Story 23.4)
+ * Returns submitted answers with activity config for result review
+ *
+ * @param assignmentId - Assignment ID
+ * @returns Promise with detailed result data including submitted answers
+ */
+export async function getAssignmentResult(
+  assignmentId: string,
+): Promise<AssignmentResultDetailResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/result`
+  const response = await apiClient.get<AssignmentResultDetailResponse>(url)
+  return response.data
+}
+
+/**
+ * Attach a teacher material to an assignment
+ * Story 21.3: Upload Materials in Resources Context
+ */
+async function attachMaterial(
+  assignmentId: string,
+  materialId: string,
+): Promise<{ status: string }> {
+  const url = `/api/v1/assignments/${assignmentId}/materials/${materialId}`
+  const response = await apiClient.post<{ status: string }>(url)
   return response.data
 }
 
@@ -501,6 +549,11 @@ export const assignmentsApi = {
   // Preview/Test Mode APIs (Story 9.7)
   previewAssignment,
   previewActivity,
+  getAssignmentForEdit,
+  // Result Viewing APIs (Story 23.4)
+  getAssignmentResult,
+  // Teacher Materials APIs (Story 21.3)
+  attachMaterial,
 }
 
 export default assignmentsApi

@@ -30,9 +30,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import useCustomToast from "@/hooks/useCustomToast"
+import { useMaterialDownload } from "@/hooks/useMaterialDownload"
 import { useMaterialsPage } from "@/hooks/useMaterials"
-import { getDownloadUrl } from "@/services/materialsApi"
-import type { Material, TextNoteCreate, TextNoteUpdate, UrlLinkCreate } from "@/types/material"
+import type {
+  Material,
+  TextNoteCreate,
+  TextNoteUpdate,
+  UrlLinkCreate,
+} from "@/types/material"
 
 export const Route = createFileRoute("/_layout/teacher/materials/")({
   component: TeacherMaterialsPage,
@@ -67,13 +72,20 @@ function TeacherMaterialsPage() {
   const [urlLinkModalOpen, setUrlLinkModalOpen] = useState(false)
   const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null)
   const [previewModalOpen, setPreviewModalOpen] = useState(false)
-  const [renamingMaterial, setRenamingMaterial] = useState<Material | null>(null)
+  const [renamingMaterial, setRenamingMaterial] = useState<Material | null>(
+    null,
+  )
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
-  const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(null)
+  const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(
+    null,
+  )
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   // Handle file upload
-  const handleUpload = async (file: File, onProgress: (progress: number) => void) => {
+  const handleUpload = async (
+    file: File,
+    onProgress: (progress: number) => void,
+  ) => {
     try {
       await uploadFile({ file, onProgress })
       showSuccessToast(`${file.name} uploaded successfully`)
@@ -145,16 +157,18 @@ function TeacherMaterialsPage() {
     setPreviewModalOpen(true)
   }
 
-  // Handle download
-  const handleDownload = (material: Material) => {
-    const downloadUrl = getDownloadUrl(material.id)
-    // Create a temporary link to trigger download
-    const link = document.createElement("a")
-    link.href = downloadUrl
-    link.download = material.original_filename || material.name
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  // Handle download with authentication
+  const { downloadMaterial } = useMaterialDownload()
+  const handleDownload = async (material: Material) => {
+    try {
+      await downloadMaterial(
+        material.id,
+        material.original_filename || material.name,
+      )
+    } catch (err) {
+      // Error already shown by hook via toast
+      console.error("Download failed:", err)
+    }
   }
 
   // Handle edit (for text notes)

@@ -1,6 +1,6 @@
 /**
  * Teacher Tour Step Definitions
- * 7 steps guiding teachers through Dream LMS key features
+ * 6 steps guiding teachers through Dream LMS key features
  */
 
 import type { TourStep } from "@/types/tour"
@@ -35,14 +35,6 @@ export const teacherTourSteps: TourStep[] = [
     title: "Assignments",
     content:
       "Create and manage assignments for your students. Track due dates, completion status, and grades.",
-    placement: "right",
-    disableBeacon: true,
-  },
-  {
-    target: '[data-tour="sidebar-insights"]',
-    title: "Student Insights",
-    content:
-      "View detailed analytics on student progress. Identify who needs help and celebrate achievements.",
     placement: "right",
     disableBeacon: true,
   },

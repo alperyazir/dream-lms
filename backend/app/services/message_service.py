@@ -1,10 +1,11 @@
 """Message service for direct messaging between teachers and students - Story 6.3."""
 
+import logging
 import uuid
 from datetime import UTC, datetime
 
 import bleach
-from sqlmodel import and_, case, func, literal_column, or_, select
+from sqlmodel import and_, case, func, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models import (
@@ -25,7 +26,7 @@ from app.schemas.message import (
     RecipientPublic,
 )
 from app.services.notification_service import create_notification
-
+from app.services.publisher_service_v2 import get_publisher_service
 
 # HTML sanitization settings for XSS protection
 ALLOWED_TAGS = ["p", "br", "strong", "em", "ul", "ol", "li", "b", "i"]
@@ -72,7 +73,7 @@ async def get_allowed_recipients(
     if user_role == UserRole.admin:
         # Admins can message all teachers and all publishers
         query = (
-            select(User.id, User.full_name, User.email, User.role)
+            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
             .where(
                 User.role.in_([UserRole.teacher, UserRole.publisher]),
                 User.id != user_id,  # Exclude self
@@ -86,14 +87,16 @@ async def get_allowed_recipients(
                 name=row.full_name or row.email.split("@")[0],
                 email=row.email,
                 role=row.role.value,
+                organization_name=None,  # Will be populated below for publishers
             )
             for row in rows
+            if row.email is not None  # Filter out users without email
         ]
 
     elif user_role == UserRole.publisher:
         # Publishers can message all admins and all teachers
         query = (
-            select(User.id, User.full_name, User.email, User.role)
+            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
             .where(
                 User.role.in_([UserRole.admin, UserRole.teacher]),
                 User.id != user_id,  # Exclude self
@@ -107,8 +110,10 @@ async def get_allowed_recipients(
                 name=row.full_name or row.email.split("@")[0],
                 email=row.email,
                 role=row.role.value,
+                organization_name=None,  # Will be populated below for publishers
             )
             for row in rows
+            if row.email is not None  # Filter out users without email
         ]
 
     elif user_role == UserRole.teacher:
@@ -120,7 +125,7 @@ async def get_allowed_recipients(
         # Teachers can message students in their classes
         if teacher_id:
             student_query = (
-                select(User.id, User.full_name, User.email, User.role)
+                select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
                 .join(Student, Student.user_id == User.id)
                 .join(ClassStudent, ClassStudent.student_id == Student.id)
                 .join(Class, Class.id == ClassStudent.class_id)
@@ -135,13 +140,15 @@ async def get_allowed_recipients(
                     name=row.full_name or row.email.split("@")[0],
                     email=row.email,
                     role=row.role.value,
+                    organization_name=None,  # Will be populated below for publishers
                 )
                 for row in student_rows
+                if row.email is not None  # Filter out users without email
             ])
 
         # Teachers can also message admins and publishers
         admin_pub_query = (
-            select(User.id, User.full_name, User.email, User.role)
+            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
             .where(
                 User.role.in_([UserRole.admin, UserRole.publisher]),
                 User.id != user_id,  # Exclude self
@@ -155,8 +162,10 @@ async def get_allowed_recipients(
                 name=row.full_name or row.email.split("@")[0],
                 email=row.email,
                 role=row.role.value,
+                organization_name=None,  # Will be populated below for publishers
             )
             for row in admin_pub_rows
+            if row.email is not None  # Filter out users without email
         ])
 
     elif user_role == UserRole.student:
@@ -170,7 +179,7 @@ async def get_allowed_recipients(
 
         # Students can only message teachers who have assigned them work
         query = (
-            select(User.id, User.full_name, User.email, User.role)
+            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
             .join(Teacher, Teacher.user_id == User.id)
             .join(Assignment, Assignment.teacher_id == Teacher.id)
             .join(AssignmentStudent, AssignmentStudent.assignment_id == Assignment.id)
@@ -185,11 +194,63 @@ async def get_allowed_recipients(
                 name=row.full_name or row.email.split("@")[0],
                 email=row.email,
                 role=row.role.value,
+                organization_name=None,  # Will be populated below for publishers
             )
             for row in rows
+            if row.email is not None  # Filter out users without email
         ]
 
+    # Enrich publisher recipients with organization names from DCS
+    await _enrich_publisher_organization_names(db, recipients)
+
     return recipients
+
+
+async def _enrich_publisher_organization_names(
+    db: AsyncSession,
+    recipients: list[RecipientPublic],
+) -> None:
+    """
+    Enrich publisher recipients with organization names from DCS.
+
+    Modifies recipients in-place.
+
+    Args:
+        db: Database session
+        recipients: List of recipients to enrich
+    """
+    publisher_service = get_publisher_service()
+
+    # Find all publisher recipients
+    publisher_recipient_ids = [
+        r.user_id for r in recipients if r.role == "publisher"
+    ]
+
+    if not publisher_recipient_ids:
+        return
+
+    # Fetch user data with dcs_publisher_id
+    query = select(User.id, User.dcs_publisher_id).where(
+        User.id.in_(publisher_recipient_ids)
+    )
+    result = await db.execute(query)
+    user_publisher_map = {row.id: row.dcs_publisher_id for row in result.all()}
+
+    # Fetch publisher names from DCS for each unique dcs_publisher_id
+    for recipient in recipients:
+        if recipient.role == "publisher":
+            dcs_publisher_id = user_publisher_map.get(recipient.user_id)
+            if dcs_publisher_id:
+                try:
+                    publisher = await publisher_service.get_publisher(dcs_publisher_id)
+                    if publisher:
+                        recipient.organization_name = publisher.name
+                except Exception as e:
+                    # Log but don't fail - organization name is optional
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        f"Failed to fetch publisher {dcs_publisher_id} name: {e}"
+                    )
 
 
 async def validate_recipient(

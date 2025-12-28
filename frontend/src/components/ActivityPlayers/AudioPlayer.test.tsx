@@ -3,8 +3,8 @@
  * Story 10.2: Frontend Audio Player Component
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AudioPlayer } from "./AudioPlayer"
 
 // Mock ResizeObserver (required by radix-ui/slider)
@@ -34,7 +34,7 @@ beforeEach(() => {
       duration = 120 // 2 minutes
       addEventListener = vi.fn()
       removeEventListener = vi.fn()
-    }
+    },
   )
 })
 
@@ -50,7 +50,9 @@ describe("AudioPlayer", () => {
 
   it("renders without crashing", () => {
     render(<AudioPlayer {...defaultProps} />)
-    expect(screen.getByRole("region", { name: /audio player/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("region", { name: /audio player/i }),
+    ).toBeInTheDocument()
   })
 
   it("renders play button", () => {
@@ -58,8 +60,8 @@ describe("AudioPlayer", () => {
     // Initially shows loader since audio hasn't loaded
     // Use getAllByRole since there are multiple buttons now (play, speed, mute, close)
     const buttons = screen.getAllByRole("button")
-    const playButton = buttons.find(
-      (btn) => btn.getAttribute("aria-label")?.match(/loading audio|play/i),
+    const playButton = buttons.find((btn) =>
+      btn.getAttribute("aria-label")?.match(/loading audio|play/i),
     )
     expect(playButton).toBeInTheDocument()
   })
@@ -72,13 +74,17 @@ describe("AudioPlayer", () => {
   })
 
   it("hides when isExpanded is false", () => {
-    const { container } = render(<AudioPlayer {...defaultProps} isExpanded={false} />)
+    const { container } = render(
+      <AudioPlayer {...defaultProps} isExpanded={false} />,
+    )
     expect(container.firstChild).toBeNull()
   })
 
   it("shows when isExpanded is true", () => {
     render(<AudioPlayer {...defaultProps} isExpanded={true} />)
-    expect(screen.getByRole("region", { name: /audio player/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("region", { name: /audio player/i }),
+    ).toBeInTheDocument()
   })
 
   it("renders close button when onClose provided", () => {
@@ -89,7 +95,9 @@ describe("AudioPlayer", () => {
 
   it("does not render close button when onClose not provided", () => {
     render(<AudioPlayer {...defaultProps} />)
-    expect(screen.queryByRole("button", { name: /close/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /close/i }),
+    ).not.toBeInTheDocument()
   })
 
   it("calls onClose when close button clicked", () => {

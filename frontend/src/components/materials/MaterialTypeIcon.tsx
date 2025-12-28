@@ -5,14 +5,7 @@
  * Displays appropriate icon based on material type.
  */
 
-import {
-  FileText,
-  Image,
-  Link,
-  Music,
-  StickyNote,
-  Video,
-} from "lucide-react"
+import { FileText, Image, Link, Music, StickyNote, Video } from "lucide-react"
 import type { MaterialType } from "@/types/material"
 
 interface MaterialTypeIconProps {
@@ -21,7 +14,10 @@ interface MaterialTypeIconProps {
   size?: "sm" | "md" | "lg"
 }
 
-const iconMap: Record<MaterialType, React.ComponentType<{ className?: string }>> = {
+const iconMap: Record<
+  MaterialType,
+  React.ComponentType<{ className?: string }>
+> = {
   document: FileText,
   image: Image,
   audio: Music,

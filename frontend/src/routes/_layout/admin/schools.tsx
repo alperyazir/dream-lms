@@ -66,13 +66,13 @@ function AdminSchools() {
     name: "",
     address: "",
     contact_info: "",
-    publisher_id: "",
+    dcs_publisher_id: 0,
   })
   const [editSchool, setEditSchool] = useState<SchoolUpdate>({
     name: "",
     address: "",
     contact_info: "",
-    publisher_id: "",
+    dcs_publisher_id: 0,
   })
 
   // Fetch schools from API
@@ -103,6 +103,21 @@ function AdminSchools() {
     })
   }, [allPublishers])
 
+  // Helper function to extract error message from API error
+  const getErrorMessage = (error: any): string => {
+    if (typeof error.body?.detail === "string") {
+      return error.body.detail
+    }
+    if (Array.isArray(error.body?.detail)) {
+      // Validation errors - extract messages
+      return error.body.detail.map((err: any) => err.msg).join(", ")
+    }
+    if (error.message) {
+      return error.message
+    }
+    return "An unexpected error occurred. Please try again."
+  }
+
   // Create school mutation
   const createSchoolMutation = useMutation({
     mutationFn: (data: SchoolCreate) =>
@@ -114,14 +129,12 @@ function AdminSchools() {
         name: "",
         address: "",
         contact_info: "",
-        publisher_id: "",
+        dcs_publisher_id: 0,
       })
       showSuccessToast("School created successfully!")
     },
     onError: (error: any) => {
-      showErrorToast(
-        error.body?.detail || "Failed to create school. Please try again.",
-      )
+      showErrorToast(getErrorMessage(error))
     },
   })
 
@@ -141,9 +154,7 @@ function AdminSchools() {
       showSuccessToast("School updated successfully!")
     },
     onError: (error: any) => {
-      showErrorToast(
-        error.body?.detail || "Failed to update school. Please try again.",
-      )
+      showErrorToast(getErrorMessage(error))
     },
   })
 
@@ -155,14 +166,12 @@ function AdminSchools() {
       showSuccessToast("School deleted successfully!")
     },
     onError: (error: any) => {
-      showErrorToast(
-        error.body?.detail || "Failed to delete school. Please try again.",
-      )
+      showErrorToast(getErrorMessage(error))
     },
   })
 
   const handleAddSchool = () => {
-    if (!newSchool.name || !newSchool.publisher_id) {
+    if (!newSchool.name || !newSchool.dcs_publisher_id) {
       showErrorToast("Please fill in all required fields")
       return
     }
@@ -175,14 +184,14 @@ function AdminSchools() {
       name: school.name,
       address: school.address || "",
       contact_info: school.contact_info || "",
-      publisher_id: school.publisher_id,
+      dcs_publisher_id: school.dcs_publisher_id,
     })
     setIsEditDialogOpen(true)
   }
 
   const handleUpdateSchool = () => {
     if (!selectedSchool) return
-    if (!editSchool.name || !editSchool.publisher_id) {
+    if (!editSchool.name || !editSchool.dcs_publisher_id) {
       showErrorToast("Please fill in all required fields")
       return
     }
@@ -210,9 +219,9 @@ function AdminSchools() {
       school.address?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  // Get publisher name by id
-  const getPublisherName = (publisherId: string) => {
-    const publisher = publishers.find((p) => p.id === publisherId)
+  // Get publisher name by DCS publisher id
+  const getPublisherName = (dcsPublisherId: number) => {
+    const publisher = publishers.find((p) => p.id === dcsPublisherId)
     return publisher?.name || "Unknown"
   }
 
@@ -304,7 +313,7 @@ function AdminSchools() {
                     </TableCell>
                     <TableCell className="text-sm">
                       <Badge variant="outline">
-                        {getPublisherName(school.publisher_id)}
+                        {getPublisherName(school.dcs_publisher_id)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -356,7 +365,12 @@ function AdminSchools() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="school-name">School Name *</Label>
+              <Label htmlFor="school-name">
+                School Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="school-name"
                 placeholder="e.g., Lincoln High School"
@@ -367,11 +381,23 @@ function AdminSchools() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="publisher">Publisher *</Label>
+              <Label htmlFor="publisher">
+                Publisher{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Select
-                value={newSchool.publisher_id}
+                value={
+                  newSchool.dcs_publisher_id
+                    ? String(newSchool.dcs_publisher_id)
+                    : ""
+                }
                 onValueChange={(value) =>
-                  setNewSchool({ ...newSchool, publisher_id: value })
+                  setNewSchool({
+                    ...newSchool,
+                    dcs_publisher_id: parseInt(value, 10),
+                  })
                 }
               >
                 <SelectTrigger>
@@ -379,7 +405,7 @@ function AdminSchools() {
                 </SelectTrigger>
                 <SelectContent>
                   {publishers.map((publisher) => (
-                    <SelectItem key={publisher.id} value={publisher.id}>
+                    <SelectItem key={publisher.id} value={String(publisher.id)}>
                       {publisher.name}
                     </SelectItem>
                   ))}
@@ -422,14 +448,14 @@ function AdminSchools() {
               disabled={
                 createSchoolMutation.isPending ||
                 !newSchool.name ||
-                !newSchool.publisher_id
+                !newSchool.dcs_publisher_id
               }
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
               {createSchoolMutation.isPending ? "Creating..." : "Create School"}
             </Button>
           </DialogFooter>
-          {!newSchool.publisher_id && newSchool.name && (
+          {!newSchool.dcs_publisher_id && newSchool.name && (
             <p className="text-sm text-red-500 -mt-2">
               Please select a publisher to continue
             </p>
@@ -446,7 +472,12 @@ function AdminSchools() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-school-name">School Name *</Label>
+              <Label htmlFor="edit-school-name">
+                School Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-school-name"
                 placeholder="e.g., Lincoln High School"
@@ -457,11 +488,23 @@ function AdminSchools() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-publisher">Publisher *</Label>
+              <Label htmlFor="edit-publisher">
+                Publisher{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Select
-                value={editSchool.publisher_id || ""}
+                value={
+                  editSchool.dcs_publisher_id
+                    ? String(editSchool.dcs_publisher_id)
+                    : ""
+                }
                 onValueChange={(value) =>
-                  setEditSchool({ ...editSchool, publisher_id: value })
+                  setEditSchool({
+                    ...editSchool,
+                    dcs_publisher_id: parseInt(value, 10),
+                  })
                 }
               >
                 <SelectTrigger>
@@ -469,7 +512,7 @@ function AdminSchools() {
                 </SelectTrigger>
                 <SelectContent>
                   {publishers.map((publisher) => (
-                    <SelectItem key={publisher.id} value={publisher.id}>
+                    <SelectItem key={publisher.id} value={String(publisher.id)}>
                       {publisher.name}
                     </SelectItem>
                   ))}
@@ -512,7 +555,7 @@ function AdminSchools() {
               disabled={
                 updateSchoolMutation.isPending ||
                 !editSchool.name ||
-                !editSchool.publisher_id
+                !editSchool.dcs_publisher_id
               }
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >

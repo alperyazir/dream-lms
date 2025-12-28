@@ -397,7 +397,6 @@ export function CirclePlayer({
 
   return (
     <div className="flex h-full min-h-0 flex-col p-2">
-
       {/* Background Image with Selectable Areas - fills remaining height */}
       <div
         ref={containerRef}
@@ -467,13 +466,16 @@ export function CirclePlayer({
               const scaledCoords = getScaledCoords(answerIndex)
               const questionIndex = getQuestionIndex(answerIndex)
               // Story 9.7: Check if this is the correct answer for preview mode
-              const isCorrectForPreview = showCorrectAnswers && isCorrectAnswer(answerIndex)
+              const isCorrectForPreview =
+                showCorrectAnswers && isCorrectAnswer(answerIndex)
 
               return (
                 <button
                   type="button"
                   key={answerIndex}
-                  onClick={() => !showCorrectAnswers && handleAreaClick(answerIndex)}
+                  onClick={() =>
+                    !showCorrectAnswers && handleAreaClick(answerIndex)
+                  }
                   className={`
                   absolute flex items-center justify-center rounded-md transition-colors duration-200 box-border
                   ${
@@ -499,7 +501,8 @@ export function CirclePlayer({
                   style={{
                     ...scaledCoords,
                     position: "absolute",
-                    pointerEvents: showResults || showCorrectAnswers ? "none" : "auto",
+                    pointerEvents:
+                      showResults || showCorrectAnswers ? "none" : "auto",
                   }}
                   aria-pressed={selected || isCorrectForPreview}
                   tabIndex={!showResults && !showCorrectAnswers ? 0 : -1}

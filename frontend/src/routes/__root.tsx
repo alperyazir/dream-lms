@@ -19,8 +19,9 @@ const loadDevtools = () =>
     }
   })
 
-const TanStackDevtools =
-  import.meta.env.PROD ? () => null : React.lazy(loadDevtools)
+const TanStackDevtools = import.meta.env.PROD
+  ? () => null
+  : React.lazy(loadDevtools)
 
 export const Route = createRootRoute({
   component: () => (

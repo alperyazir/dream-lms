@@ -88,3 +88,57 @@ def require_role(*allowed_roles: UserRole):
         return current_user
 
     return Depends(role_checker)
+
+
+# Dependency for endpoints accessible by Admin OR Supervisor
+AdminOrSupervisor = require_role(UserRole.admin, UserRole.supervisor)
+
+# Dependency for endpoints ONLY accessible by Admin
+AdminOnly = require_role(UserRole.admin)
+
+
+def can_delete_user(current_user: User, target_user: User) -> bool:
+    """
+    Check if current user can delete target user based on role hierarchy.
+
+    Permission hierarchy:
+    - Admin can delete anyone (except themselves, checked separately)
+    - Supervisor can delete Publisher, Teacher, Student (NOT Admin or Supervisor)
+    - Other roles cannot delete users
+
+    Args:
+        current_user: The user attempting the deletion
+        target_user: The user being deleted
+
+    Returns:
+        True if deletion is allowed, False otherwise
+    """
+    # Self-deletion is handled separately in endpoints
+    if current_user.id == target_user.id:
+        return False
+
+    # Admins can delete anyone (except themselves, handled above)
+    if current_user.role == UserRole.admin:
+        return True
+
+    # Supervisors cannot delete Admins or other Supervisors
+    if current_user.role == UserRole.supervisor:
+        if target_user.role in [UserRole.admin, UserRole.supervisor]:
+            return False
+        return True
+
+    # Other roles cannot delete users
+    return False
+
+
+def can_delete_school(current_user: User) -> bool:
+    """
+    Check if current user can delete a school.
+
+    Args:
+        current_user: The user attempting the deletion
+
+    Returns:
+        True if deletion is allowed (Admin or Supervisor)
+    """
+    return current_user.role in [UserRole.admin, UserRole.supervisor]

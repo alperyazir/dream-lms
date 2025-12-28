@@ -1,10 +1,28 @@
 <mjml>
   <mj-body background-color="#fafbfc">
-    <mj-section background-color="#fff" padding="40px 20px">
+    <!-- Logo Section -->
+    <mj-section background-color="#fff" padding="30px 20px 10px 20px">
+      <mj-column>
+        <mj-image src="{{ link }}/assets/images/dreamedtech_with_name.svg" alt="Dream LMS" width="180px" padding="0"></mj-image>
+      </mj-column>
+    </mj-section>
+
+    <!-- Content Section -->
+    <mj-section background-color="#fff" padding="10px 20px 40px 20px">
       <mj-column vertical-align="middle" width="100%">
-        <mj-text align="center" padding="35px" font-size="20px" font-family="Arial, Helvetica, sans-serif" color="#333">{{ project_name }}</mj-text>
-        <mj-text align="center" font-size="16px" padding-left="25px" padding-right="25px" font-family=", sans-serif" color="#555"><span>Test email for: {{ email }}</span></mj-text>
-        <mj-divider border-color="#ccc" border-width="2px"></mj-divider>
+        <mj-text align="center" padding="20px 25px" font-size="24px" font-weight="bold" font-family="Arial, Helvetica, sans-serif" color="#0d9488">
+          {{ project_name }}
+        </mj-text>
+
+        <mj-text align="center" font-size="16px" padding="10px 25px" font-family="Arial, Helvetica, sans-serif" color="#555">
+          Test email for: {{ email }}
+        </mj-text>
+
+        <mj-divider border-color="#e5e7eb" border-width="1px" padding="20px 25px"></mj-divider>
+
+        <mj-text align="center" font-size="14px" padding="10px 25px" font-family="Arial, Helvetica, sans-serif" color="#6b7280">
+          This is a test email to verify your email configuration is working correctly.
+        </mj-text>
       </mj-column>
     </mj-section>
   </mj-body>

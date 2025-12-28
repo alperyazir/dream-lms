@@ -8,7 +8,7 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.models import Publisher, School, Teacher, User, UserRole
+from app.models import School, Teacher, User, UserRole
 
 
 def test_student_cannot_access_admin_endpoints(

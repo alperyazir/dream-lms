@@ -6,7 +6,7 @@ from sqlmodel import Session
 from starlette.testclient import TestClient
 
 from app.core.config import settings
-from app.models import Publisher, School, User, UserRole
+from app.models import School, User, UserRole
 
 
 # IV1: Admin creates all user types

@@ -11,6 +11,22 @@ import type {
 } from "@/lib/mockData"
 import { getActivityImageUrl } from "@/services/booksApi"
 
+// Story 23.1: Draggable item with unique ID to support duplicate texts
+interface DraggableItem {
+  id: string // Unique instance ID
+  text: string // Display text (can be duplicate)
+  originalIndex: number // Original position in word bank
+}
+
+// Story 23.1: Initialize draggable items with unique IDs
+function initializeItems(words: string[]): DraggableItem[] {
+  return words.map((word, index) => ({
+    id: `item-${index}`, // Deterministic ID for save/resume compatibility
+    text: word,
+    originalIndex: index,
+  }))
+}
+
 interface DragDropPictureGroupPlayerProps {
   activity: DragDropPictureGroupActivity
   bookId: string
@@ -31,11 +47,16 @@ export function DragDropPictureGroupPlayer({
   initialAnswers,
   showCorrectAnswers = false,
 }: DragDropPictureGroupPlayerProps) {
+  // Story 23.1: Initialize items with unique IDs
+  const [allItems] = useState<DraggableItem[]>(() =>
+    initializeItems(activity.words),
+  )
+
   const [answers, setAnswers] = useState<Map<string, string>>(
     initialAnswers || new Map(),
   )
-  const [draggedWord, setDraggedWord] = useState<string | null>(null)
-  const [selectedWord, setSelectedWord] = useState<string | null>(null) // For mobile
+  const [draggedItem, setDraggedItem] = useState<DraggableItem | null>(null)
+  const [selectedItem, setSelectedItem] = useState<DraggableItem | null>(null) // For mobile
   const [hoveredZone, setHoveredZone] = useState<string | null>(null)
 
   // Image state
@@ -51,8 +72,11 @@ export function DragDropPictureGroupPlayer({
   const dropZoneRefs = useRef<(HTMLButtonElement | null)[]>([])
   const wordRefs = useRef<(HTMLButtonElement | null)[]>([])
 
-  // Get used words (already placed in drop zones)
-  const usedWords = new Set(answers.values())
+  // Story 23.1: Get used item IDs (already placed in drop zones)
+  const usedItemIds = new Set(answers.values())
+
+  // Get available items (not yet placed)
+  const availableItems = allItems.filter((item) => !usedItemIds.has(item.id))
 
   // Calculate drop zone ID from coordinates
   const getDropZoneId = (coords: DragDropGroupAnswer["coords"]): string => {
@@ -184,14 +208,14 @@ export function DragDropPictureGroupPlayer({
     }
   }
 
-  // Handle drag start (desktop)
-  const handleDragStart = (word: string) => {
-    setDraggedWord(word)
+  // Story 23.1: Handle drag start (desktop) - now uses DraggableItem
+  const handleDragStart = (item: DraggableItem) => {
+    setDraggedItem(item)
   }
 
   // Handle drag end (desktop)
   const handleDragEnd = () => {
-    setDraggedWord(null)
+    setDraggedItem(null)
   }
 
   // Handle drag over drop zone (desktop)
@@ -205,38 +229,38 @@ export function DragDropPictureGroupPlayer({
     setHoveredZone(null)
   }
 
-  // Handle drop (desktop)
+  // Story 23.1: Handle drop (desktop) - now tracks by item ID
   const handleDrop = (e: React.DragEvent, dropZoneId: string) => {
     e.preventDefault()
-    if (draggedWord) {
+    if (draggedItem) {
       const newAnswers = new Map(answers)
 
-      // Remove word from any previous location
+      // Remove item from any previous location (by ID)
       for (const [key, value] of newAnswers.entries()) {
-        if (value === draggedWord) {
+        if (value === draggedItem.id) {
           newAnswers.delete(key)
         }
       }
 
-      // Add to new location
-      newAnswers.set(dropZoneId, draggedWord)
+      // Add to new location (store item ID, not text)
+      newAnswers.set(dropZoneId, draggedItem.id)
       setAnswers(newAnswers)
       onAnswersChange(newAnswers)
     }
-    setDraggedWord(null)
+    setDraggedItem(null)
     setHoveredZone(null)
   }
 
-  // Handle word click (mobile)
-  const handleWordClick = (word: string) => {
-    if (usedWords.has(word)) return // Can't select used words
-    setSelectedWord(selectedWord === word ? null : word)
+  // Story 23.1: Handle item click (mobile) - now uses DraggableItem
+  const handleItemClick = (item: DraggableItem) => {
+    if (usedItemIds.has(item.id)) return // Can't select used items
+    setSelectedItem(selectedItem?.id === item.id ? null : item)
   }
 
-  // Handle drop zone click (mobile)
+  // Story 23.1: Handle drop zone click (mobile) - now tracks by item ID
   const handleDropZoneClick = (dropZoneId: string) => {
-    if (!selectedWord) {
-      // If no word selected, remove word from this zone
+    if (!selectedItem) {
+      // If no item selected, remove item from this zone
       const newAnswers = new Map(answers)
       newAnswers.delete(dropZoneId)
       setAnswers(newAnswers)
@@ -244,21 +268,34 @@ export function DragDropPictureGroupPlayer({
       return
     }
 
-    // Place selected word in this zone
+    // Place selected item in this zone
     const newAnswers = new Map(answers)
 
-    // Remove word from any previous location
+    // Remove item from any previous location (by ID)
     for (const [key, value] of newAnswers.entries()) {
-      if (value === selectedWord) {
+      if (value === selectedItem.id) {
         newAnswers.delete(key)
       }
     }
 
-    // Add to new location
-    newAnswers.set(dropZoneId, selectedWord)
+    // Add to new location (store item ID, not text)
+    newAnswers.set(dropZoneId, selectedItem.id)
     setAnswers(newAnswers)
     onAnswersChange(newAnswers)
-    setSelectedWord(null)
+    setSelectedItem(null)
+  }
+
+  // Story 23.1: Helper to get item by ID
+  const getItemById = (id: string): DraggableItem | undefined => {
+    return allItems.find((item) => item.id === id)
+  }
+
+  // Story 23.1: Get displayed text for a drop zone (converts ID to text)
+  const getPlacedItemText = (dropZoneId: string): string | null => {
+    const itemId = answers.get(dropZoneId)
+    if (!itemId) return null
+    const item = getItemById(itemId)
+    return item?.text || null
   }
 
   // Check if a drop zone has the correct answer
@@ -271,7 +308,7 @@ export function DragDropPictureGroupPlayer({
   // Story 9.7: Get first correct answer for a drop zone (for preview mode)
   const getCorrectAnswerText = (dropZoneId: string): string | null => {
     const answer = activity.answer.find(
-      (a) => getDropZoneId(a.coords) === dropZoneId
+      (a) => getDropZoneId(a.coords) === dropZoneId,
     )
     // For group type, return the first item in the group array
     return answer?.group?.[0] || null
@@ -281,12 +318,12 @@ export function DragDropPictureGroupPlayer({
   const completionCount = answers.size
   const totalCount = activity.answer.length
 
-  // Keyboard navigation for word bank
-  const handleWordKeyDown = (e: React.KeyboardEvent, word: string) => {
+  // Story 23.1: Keyboard navigation for word bank - now uses DraggableItem
+  const handleItemKeyDown = (e: React.KeyboardEvent, item: DraggableItem) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
-      if (!usedWords.has(word)) {
-        handleWordClick(word)
+      if (!usedItemIds.has(item.id)) {
+        handleItemClick(item)
       }
     }
   }
@@ -302,7 +339,7 @@ export function DragDropPictureGroupPlayer({
       handleDropZoneClick(dropZoneId)
     } else if (e.key === "Escape") {
       e.preventDefault()
-      setSelectedWord(null)
+      setSelectedItem(null) // Story 23.1: Updated to use selectedItem
       setFocusedDropZoneIndex(-1)
     } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault()
@@ -320,47 +357,49 @@ export function DragDropPictureGroupPlayer({
   // Initialize refs array
   useEffect(() => {
     dropZoneRefs.current = dropZoneRefs.current.slice(0, activity.answer.length)
-    wordRefs.current = wordRefs.current.slice(0, activity.words.length)
-  }, [activity.answer.length, activity.words.length])
+    wordRefs.current = wordRefs.current.slice(0, availableItems.length)
+  }, [activity.answer.length, availableItems.length])
 
   return (
     <div className="flex h-full min-h-0 flex-col p-4">
-      {/* Word Bank - no header, just words */}
+      {/* Story 23.1: Word Bank - now renders availableItems with unique IDs */}
       <div className="mb-4 shrink-0">
         <div className="flex min-h-[60px] flex-wrap justify-center gap-2">
-          {activity.words.map((word, index) => (
-            <button
-              type="button"
-              key={index}
-              ref={(el) => {
-                if (el) {
-                  wordRefs.current[index] = el
-                }
-              }}
-              draggable={!usedWords.has(word) && !showResults}
-              onDragStart={() => handleDragStart(word)}
-              onDragEnd={handleDragEnd}
-              onClick={() => !showResults && handleWordClick(word)}
-              onKeyDown={(e) => handleWordKeyDown(e, word)}
-              className={`
-                cursor-pointer rounded-lg border-2 px-4 py-2 font-semibold shadow-neuro-sm transition-all duration-200
-                ${
-                  usedWords.has(word)
-                    ? "pointer-events-none border-gray-300 bg-gray-100 opacity-30 dark:border-gray-600 dark:bg-gray-800"
-                    : selectedWord === word
+          {availableItems.map((item, index) => {
+            const isSelected = selectedItem?.id === item.id
+            const isDragged = draggedItem?.id === item.id
+
+            return (
+              <button
+                type="button"
+                key={item.id} // Story 23.1: Use unique ID as key
+                ref={(el) => {
+                  if (el) {
+                    wordRefs.current[index] = el
+                  }
+                }}
+                draggable={!showResults}
+                onDragStart={() => handleDragStart(item)}
+                onDragEnd={handleDragEnd}
+                onClick={() => !showResults && handleItemClick(item)}
+                onKeyDown={(e) => handleItemKeyDown(e, item)}
+                className={`
+                  cursor-pointer rounded-lg border-2 px-4 py-2 font-semibold shadow-neuro-sm transition-all duration-200
+                  ${
+                    isSelected
                       ? "border-blue-500 bg-blue-50 shadow-neuro dark:border-blue-400 dark:bg-blue-900/30"
-                      : draggedWord === word
+                      : isDragged
                         ? "scale-105 border-teal-500 bg-teal-50 shadow-neuro dark:border-teal-400 dark:bg-teal-900/30"
                         : "border-gray-300 bg-white hover:scale-105 hover:border-teal-400 hover:shadow-neuro dark:border-gray-600 dark:bg-gray-800 dark:hover:border-teal-500"
-                }
-              `}
-              tabIndex={!usedWords.has(word) && !showResults ? 0 : -1}
-              aria-label={`Word: ${word}${usedWords.has(word) ? " (already used)" : ""}`}
-              disabled={usedWords.has(word)}
-            >
-              {word}
-            </button>
-          ))}
+                  }
+                `}
+                tabIndex={!showResults ? 0 : -1}
+                aria-label={`Word: ${item.text}`}
+              >
+                {item.text}
+              </button>
+            )
+          })}
         </div>
 
         {/* Completion Counter */}
@@ -406,16 +445,20 @@ export function DragDropPictureGroupPlayer({
               onLoad={updateImageScale}
             />
 
-            {/* Drop Zones Overlay - positioned over image */}
+            {/* Story 23.1: Drop Zones Overlay - now displays text from item IDs */}
             {activity.answer.map((answer, index) => {
               const dropZoneId = getDropZoneId(answer.coords)
-              const placedWord = answers.get(dropZoneId)
+              const placedItemText = getPlacedItemText(dropZoneId) // Story 23.1: Convert ID to text
               const isHovered = hoveredZone === dropZoneId
               const correct = isCorrect(dropZoneId)
               const scaledCoords = getScaledCoords(answer.coords)
               // Story 9.7: Get correct answer for preview mode
-              const correctAnswerText = showCorrectAnswers ? getCorrectAnswerText(dropZoneId) : null
-              const displayWord = showCorrectAnswers ? correctAnswerText : placedWord
+              const correctAnswerText = showCorrectAnswers
+                ? getCorrectAnswerText(dropZoneId)
+                : null
+              const displayWord = showCorrectAnswers
+                ? correctAnswerText
+                : placedItemText
 
               return (
                 <button
@@ -427,12 +470,20 @@ export function DragDropPictureGroupPlayer({
                     }
                   }}
                   onDragOver={(e) =>
-                    !showResults && !showCorrectAnswers && handleDragOver(e, dropZoneId)
+                    !showResults &&
+                    !showCorrectAnswers &&
+                    handleDragOver(e, dropZoneId)
                   }
                   onDragLeave={handleDragLeave}
-                  onDrop={(e) => !showResults && !showCorrectAnswers && handleDrop(e, dropZoneId)}
+                  onDrop={(e) =>
+                    !showResults &&
+                    !showCorrectAnswers &&
+                    handleDrop(e, dropZoneId)
+                  }
                   onClick={() =>
-                    !showResults && !showCorrectAnswers && handleDropZoneClick(dropZoneId)
+                    !showResults &&
+                    !showCorrectAnswers &&
+                    handleDropZoneClick(dropZoneId)
                   }
                   onKeyDown={(e) => handleDropZoneKeyDown(e, dropZoneId, index)}
                   className={`
@@ -440,7 +491,7 @@ export function DragDropPictureGroupPlayer({
                 ${
                   showCorrectAnswers
                     ? "border-2 border-green-500 bg-green-100/95 text-green-900 dark:bg-green-900/80 dark:text-green-100"
-                    : placedWord
+                    : placedItemText
                       ? showResults
                         ? correct
                           ? "border-2 border-green-500 bg-green-100/95 text-green-900 dark:bg-green-900/80 dark:text-green-100"
@@ -461,7 +512,7 @@ export function DragDropPictureGroupPlayer({
                   </span>
 
                   {/* Results indicator */}
-                  {showResults && placedWord && (
+                  {showResults && placedItemText && (
                     <div
                       className={`
                     absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold shadow-lg

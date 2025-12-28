@@ -115,9 +115,7 @@ export async function uploadFile(
 /**
  * Create a text note
  */
-export async function createTextNote(
-  data: TextNoteCreate,
-): Promise<Material> {
+export async function createTextNote(data: TextNoteCreate): Promise<Material> {
   const url = `${MATERIALS_BASE}/notes`
   const response = await apiClient.post<Material>(url, data)
   return response.data
@@ -193,7 +191,11 @@ export function getStreamUrl(materialId: string): string {
 export async function getPresignedUrl(
   materialId: string,
   expiresMinutes: number = 60,
-): Promise<{ url: string; expires_in_seconds: number; content_type: string | null }> {
+): Promise<{
+  url: string
+  expires_in_seconds: number
+  content_type: string | null
+}> {
   const url = `${MATERIALS_BASE}/${materialId}/presigned-url?expires_minutes=${expiresMinutes}`
   const response = await apiClient.get(url)
   return response.data

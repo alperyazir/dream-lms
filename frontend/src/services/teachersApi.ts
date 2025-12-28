@@ -1,16 +1,13 @@
 /**
  * Teachers API Service
  * Story 3.7: Assignment Creation Dialog & Configuration
- * Story 5.4: Error Pattern Detection & Insights
  *
  * This service provides functions to interact with the Teachers API endpoints.
- * Used for fetching teacher's classes and students for assignment creation,
- * and for accessing teacher insights and analytics.
+ * Used for fetching teacher's classes and students for assignment creation.
  */
 
 import axios from "axios"
 import { OpenAPI } from "../client"
-import type { InsightDetail, TeacherInsightsResponse } from "../types/analytics"
 import type { Class, Student } from "../types/teacher"
 
 /**
@@ -71,49 +68,32 @@ export async function getMyStudents(): Promise<Student[]> {
   return response.data
 }
 
-// ============================================================================
-// Teacher Insights API - Story 5.4
-// ============================================================================
+/**
+ * Class students group - students grouped by class ID
+ * Story 20.5: Recipient Selection Enhancements
+ */
+export interface ClassStudentsGroup {
+  class_id: string
+  students: Student[]
+}
 
 /**
- * Get all insights for the authenticated teacher
+ * Get students for multiple classes at once (Story 20.5)
  *
- * @param forceRefresh - If true, bypasses cache and recalculates insights
- * @returns Promise with teacher insights response
+ * This is optimized to fetch students across multiple classes
+ * in a single request to avoid N+1 query problems.
+ *
+ * @param classIds - Array of class IDs to fetch students for
+ * @returns Promise with array of ClassStudentsGroup
  */
-export async function getMyInsights(
-  forceRefresh: boolean = false,
-): Promise<TeacherInsightsResponse> {
-  const url = `/api/v1/teachers/me/insights`
-  const response = await apiClient.get<TeacherInsightsResponse>(url, {
-    params: forceRefresh ? { force_refresh: true } : undefined,
+export async function getStudentsForClasses(
+  classIds: string[],
+): Promise<ClassStudentsGroup[]> {
+  const url = `/api/v1/teachers/me/classes/students`
+  const response = await apiClient.post<ClassStudentsGroup[]>(url, {
+    class_ids: classIds,
   })
   return response.data
-}
-
-/**
- * Get detailed view of a specific insight
- *
- * @param insightId - The ID of the insight to fetch details for
- * @returns Promise with insight detail
- */
-export async function getInsightDetail(
-  insightId: string,
-): Promise<InsightDetail> {
-  const url = `/api/v1/teachers/me/insights/${insightId}`
-  const response = await apiClient.get<InsightDetail>(url)
-  return response.data
-}
-
-/**
- * Dismiss an insight (hide from future responses)
- *
- * @param insightId - The ID of the insight to dismiss
- * @returns Promise that resolves when dismissed
- */
-export async function dismissInsight(insightId: string): Promise<void> {
-  const url = `/api/v1/teachers/me/insights/${insightId}/dismiss`
-  await apiClient.post(url)
 }
 
 /**
@@ -122,9 +102,7 @@ export async function dismissInsight(insightId: string): Promise<void> {
 export const teachersApi = {
   getMyClasses,
   getMyStudents,
-  getMyInsights,
-  getInsightDetail,
-  dismissInsight,
+  getStudentsForClasses,
 }
 
 export default teachersApi

@@ -587,22 +587,37 @@ function AssignmentDetailContent() {
                 </Button>
               )}
               {assignment.status === "completed" && (
-                <Button
-                  variant={hasFeedback ? "default" : "outline"}
-                  className="w-full"
-                  size="lg"
-                  onClick={() => {
-                    document
-                      .getElementById("feedback-section")
-                      ?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center",
+                <>
+                  <Button
+                    className="w-full bg-teal-600 hover:bg-teal-700"
+                    size="lg"
+                    onClick={() =>
+                      navigate({
+                        to: "/student/assignments/$assignmentId/result",
+                        params: { assignmentId },
                       })
-                  }}
-                >
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  {hasFeedback ? "View Feedback" : "No Feedback Yet"}
-                </Button>
+                    }
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Review Answers
+                  </Button>
+                  <Button
+                    variant={hasFeedback ? "default" : "outline"}
+                    className="w-full"
+                    size="lg"
+                    onClick={() => {
+                      document
+                        .getElementById("feedback-section")
+                        ?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        })
+                    }}
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    {hasFeedback ? "View Feedback" : "No Feedback Yet"}
+                  </Button>
+                </>
               )}
             </CardContent>
           </Card>

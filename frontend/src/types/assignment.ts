@@ -33,19 +33,26 @@ export interface VideoResource {
 /**
  * Teacher material resource attached to an assignment
  * Story 13.3: Teacher Materials Assignment Integration
+ * Extended to include optional preview fields for assignment preview mode
  */
 export interface TeacherMaterialResource {
   type: "teacher_material"
   material_id: string
   name: string
   material_type: string // document, image, audio, video, url, text_note
+  // Optional fields for preview mode (populated when adding materials)
+  url?: string | null // For URL type
+  text_content?: string | null // For text_note type
+  file_size?: number | null
+  mime_type?: string | null
 }
 
 /**
  * Teacher material resource with availability status (for responses)
  * Used when displaying materials to students
  */
-export interface TeacherMaterialResourceResponse extends TeacherMaterialResource {
+export interface TeacherMaterialResourceResponse
+  extends TeacherMaterialResource {
   is_available: boolean
   file_size: number | null
   mime_type: string | null
@@ -127,7 +134,7 @@ export interface DateGroupCreateRequest {
  * Provide either activity_id (single) OR activity_ids (multi), not both.
  */
 export interface AssignmentCreateRequest {
-  book_id: string
+  book_id: string | number
   name: string
   instructions?: string | null
   due_date?: string | null // ISO 8601 datetime string
@@ -240,7 +247,11 @@ export interface AssignmentStudentActivityResponse {
 /**
  * Assignment publishing status (Story 9.6)
  */
-export type AssignmentPublishStatus = "draft" | "scheduled" | "published" | "archived"
+export type AssignmentPublishStatus =
+  | "draft"
+  | "scheduled"
+  | "published"
+  | "archived"
 
 /**
  * Assignment list item with enriched data for display
@@ -603,6 +614,28 @@ export interface StudentAssignmentResultResponse {
   completed_activities: number
 }
 
+/**
+ * Detailed assignment result with answers for review
+ * Story 23.4: Used when students want to review their submitted answers
+ * with correct/incorrect marking
+ */
+export interface AssignmentResultDetailResponse {
+  assignment_id: string
+  assignment_name: string
+  activity_id: string
+  activity_title: string | null
+  activity_type: string
+  book_id: number
+  book_name: string
+  publisher_name: string
+  config_json: Record<string, any> // Activity configuration (includes correct answers)
+  answers_json: Record<string, any> // Student's submitted answers
+  score: number
+  total_points: number
+  completed_at: string
+  time_spent_minutes: number
+}
+
 // =============================================================================
 // Calendar Types (Story 9.6)
 // =============================================================================
@@ -726,6 +759,45 @@ export interface AssignmentPreviewResponse {
 
   // Story 13.3: Additional resources with teacher materials
   resources: AdditionalResourcesResponse | null
+}
+
+/**
+ * Response for editing assignment (Story 20.2)
+ * Extends preview response with recipient and time planning information
+ */
+export interface AssignmentForEditResponse {
+  assignment_id: string
+  assignment_name: string
+  instructions: string | null
+  due_date: string | null
+  time_limit_minutes: number | null
+  status: AssignmentPublishStatus
+
+  // Book info
+  book_id: string
+  book_title: string
+  book_name: string
+  publisher_name: string
+  book_cover_url: string | null
+
+  // Multi-activity data
+  activities: ActivityWithConfig[]
+  total_activities: number
+
+  // Video attachment
+  video_path: string | null
+
+  // Additional resources with teacher materials
+  resources: AdditionalResourcesResponse | null
+
+  // Recipients (Story 20.2)
+  class_ids: string[]
+  student_ids: string[]
+
+  // Time planning (Story 20.2)
+  time_planning_enabled: boolean
+  scheduled_publish_date: string | null
+  date_groups: unknown[] | null
 }
 
 /**

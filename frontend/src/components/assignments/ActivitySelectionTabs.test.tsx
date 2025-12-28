@@ -319,4 +319,44 @@ describe("ActivitySelectionTabs", () => {
     // Should still show 1 selected
     expect(screen.getByText("1 selected")).toBeInTheDocument()
   })
+
+  // Story 20.4: Eye icon removal tests
+  it("does not show preview/eye icon on selected activities", () => {
+    renderComponent(["act-1", "act-2"])
+
+    // Should not find any eye/preview buttons in the selected activities panel
+    const eyeButtons = screen.queryAllByTitle(/preview activity/i)
+    expect(eyeButtons).toHaveLength(0)
+  })
+
+  // Story 20.4: Time Planning mode indicator
+  it("shows Time Planning mode indicator when enabled", () => {
+    const onTimePlanningChange = vi.fn()
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ActivitySelectionTabs
+          bookId="book-1"
+          book={mockBook}
+          selectedActivityIds={[]}
+          onActivityIdsChange={onActivityIdsChange}
+          timePlanningEnabled={true}
+          onTimePlanningChange={onTimePlanningChange}
+        />
+      </QueryClientProvider>,
+    )
+
+    // Should show Time Planning mode indicator
+    expect(screen.getByText(/Time Planning Mode/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Activities will be selected based on time sessions/i),
+    ).toBeInTheDocument()
+  })
+
+  it("does not show Time Planning mode indicator when disabled", () => {
+    renderComponent()
+
+    // Should not show Time Planning mode indicator
+    expect(screen.queryByText(/Time Planning Mode/i)).not.toBeInTheDocument()
+  })
 })

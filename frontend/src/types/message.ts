@@ -64,6 +64,7 @@ export interface MessageThreadResponse {
   participant_name: string
   participant_email: string
   participant_role: string
+  participant_organization_name?: string | null // Publisher organization name
   messages: Message[]
   total_messages: number
 }
@@ -76,6 +77,7 @@ export interface Recipient {
   name: string
   email: string
   role: string
+  organization_name?: string | null // Publisher organization name (from DCS)
 }
 
 /**

@@ -104,7 +104,6 @@ function AdminStudents() {
     parent_email: "",
   })
 
-
   // Fetch students from API
   const {
     data: students = [],
@@ -353,7 +352,9 @@ function AdminStudents() {
       student.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.grade_level?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.parent_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.created_by_teacher_name?.toLowerCase().includes(searchQuery.toLowerCase()),
+      student.created_by_teacher_name
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()),
   )
 
   if (error) {
@@ -591,7 +592,12 @@ function AdminStudents() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="student-full-name">Full Name *</Label>
+              <Label htmlFor="student-full-name">
+                Full Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="student-full-name"
                 placeholder="e.g., John Doe"
@@ -610,7 +616,12 @@ function AdminStudents() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="student-username">Username *</Label>
+              <Label htmlFor="student-username">
+                Username{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="student-username"
                 placeholder="e.g., johndoe"
@@ -627,7 +638,12 @@ function AdminStudents() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="student-email">Email *</Label>
+              <Label htmlFor="student-email">
+                Email{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="student-email"
                 type="email"
@@ -700,7 +716,12 @@ function AdminStudents() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-full-name">Full Name *</Label>
+              <Label htmlFor="edit-full-name">
+                Full Name{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-full-name"
                 placeholder="e.g., John Doe"
@@ -714,7 +735,12 @@ function AdminStudents() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-username">Username *</Label>
+              <Label htmlFor="edit-username">
+                Username{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-username"
                 placeholder="e.g., johndoe"
@@ -731,7 +757,12 @@ function AdminStudents() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-email">Email *</Label>
+              <Label htmlFor="edit-email">
+                Email{" "}
+                <span className="text-destructive ml-1" aria-hidden="true">
+                  *
+                </span>
+              </Label>
               <Input
                 id="edit-email"
                 type="email"
@@ -839,12 +870,13 @@ function AdminStudents() {
           {resetResult?.passwordEmailed ? (
             <div className="flex items-center gap-2 py-4 text-green-600">
               <Mail className="h-5 w-5" />
-              <span>New password has been emailed to the user.</span>
+              <span>Password has been sent to the user's email address.</span>
             </div>
           ) : resetResult?.temporaryPassword ? (
             <div className="space-y-3 py-4">
               <p className="text-amber-600">
-                User has no email address. Please share this password securely:
+                Email delivery is not available. Please share this password
+                securely:
               </p>
               <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
                 <span className="font-mono text-lg flex-1">
@@ -863,7 +895,7 @@ function AdminStudents() {
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                This password will not be shown again.
+                The user should change this password after first login.
               </p>
             </div>
           ) : null}

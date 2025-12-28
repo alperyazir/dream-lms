@@ -54,9 +54,7 @@ export function DeleteMaterialDialog({
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-3">
-              <p>
-                Are you sure you want to delete this material?
-              </p>
+              <p>Are you sure you want to delete this material?</p>
 
               {/* Material info */}
               <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -70,7 +68,8 @@ export function DeleteMaterialDialog({
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" />
                 <span>
                   This action cannot be undone. If this material is attached to
-                  any assignments, students will see "Material unavailable" instead.
+                  any assignments, students will see "Material unavailable"
+                  instead.
                 </span>
               </p>
             </div>

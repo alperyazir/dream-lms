@@ -11,7 +11,6 @@ from app.models import (
     Assignment,
     AssignmentStatus,
     AssignmentStudent,
-    Book,
     Class,
     ClassStudent,
     DismissedInsight,
@@ -67,6 +66,7 @@ from app.schemas.analytics import (
     WordMatchingError,
     WordSearchAnalysis,
 )
+from app.services.book_service_v2 import get_book_service
 
 
 def get_period_start_date(period: PeriodType) -> datetime | None:
@@ -2711,10 +2711,9 @@ async def get_student_progress(
 
     # Get all completed assignments with related data
     completed_query = (
-        select(AssignmentStudent, Assignment, Activity, Book)
+        select(AssignmentStudent, Assignment, Activity)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
         .join(Activity, Assignment.activity_id == Activity.id)
-        .join(Book, Assignment.book_id == Book.id)
         .where(
             AssignmentStudent.student_id == student_id,
             AssignmentStudent.status == AssignmentStatus.completed,
@@ -2772,7 +2771,7 @@ async def get_student_progress(
 
     # Build score trend (for chart)
     score_trend = []
-    for asgn_student, assignment, _, _ in period_completed:
+    for asgn_student, assignment, activity in period_completed:
         if asgn_student.completed_at and asgn_student.score is not None:
             score_trend.append(
                 ScoreTrendPoint(
@@ -2786,7 +2785,7 @@ async def get_student_progress(
 
     # Activity type breakdown
     activity_data: dict[str, tuple[list[int], int]] = {}
-    for asgn_student, _, activity, _ in period_completed:
+    for asgn_student, assignment, activity in period_completed:
         if asgn_student.score is not None:
             act_type = activity.activity_type
             if act_type not in activity_data:
@@ -2806,10 +2805,15 @@ async def get_student_progress(
     ]
 
     # Recent assignments (last 5)
+    # Fetch book titles for recent assignments
+    book_service = get_book_service()
     recent_assignments = []
-    for asgn_student, assignment, activity, book in period_completed[:5]:
-        # Check if teacher has provided feedback (for now, assume no feedback system)
-        has_feedback = False  # TODO: Implement feedback system
+    for asgn_student, assignment, activity in period_completed[:5]:
+        # Fetch book data from DCS
+        book = await book_service.get_book(assignment.dcs_book_id)
+        book_title = book.title if book else "Unknown Book"
+
+        has_feedback = False
 
         recent_assignments.append(
             ProgressRecentAssignment(
@@ -2819,7 +2823,7 @@ async def get_student_progress(
                 completed_at=asgn_student.completed_at,
                 has_feedback=has_feedback,
                 activity_type=activity.activity_type,
-                book_title=book.title,
+                book_title=book_title,
             )
         )
 

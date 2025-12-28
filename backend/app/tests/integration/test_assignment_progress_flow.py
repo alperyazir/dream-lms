@@ -10,26 +10,26 @@ Tests the complete flow:
 """
 
 import uuid
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, UTC, timedelta
 from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select, Session
 
+from app.core.security import create_access_token
 from app.models import (
-    User,
-    UserRole,
-    Publisher,
-    School,
-    Teacher,
-    Student,
-    Book,
     Activity,
     Assignment,
-    AssignmentStudent,
     AssignmentStatus,
+    AssignmentStudent,
+    Book,
+    Publisher,
+    School,
+    Student,
+    Teacher,
+    User,
+    UserRole,
 )
-from app.core.security import create_access_token
 
 
 @pytest.mark.asyncio

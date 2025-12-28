@@ -3,8 +3,8 @@
  * Story 10.2: Frontend Audio Player Component
  */
 
-import { render, screen, fireEvent } from "@testing-library/react"
-import { describe, it, expect, vi } from "vitest"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
 import { AudioButton } from "./AudioButton"
 
 describe("AudioButton", () => {
@@ -48,7 +48,9 @@ describe("AudioButton", () => {
     const onClick = vi.fn()
 
     // Test when not active
-    const { rerender } = render(<AudioButton onClick={onClick} isActive={false} />)
+    const { rerender } = render(
+      <AudioButton onClick={onClick} isActive={false} />,
+    )
     expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "false")
 
     // Test when active

@@ -1,0 +1,56 @@
+schema: 1
+story: '23.2'
+story_title: 'Fix Match Activity Image Sizing'
+gate: CONCERNS
+status_reason: 'Core implementation is solid, but manual QA testing incomplete (DoD all unchecked) and context compatibility not validated'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-12-27T23:50:00Z'
+
+top_issues:
+  - severity: medium
+    category: testing_incomplete
+    description: 'DoD checklist entirely unchecked - manual testing scenarios not completed'
+    suggested_owner: dev
+  - severity: medium
+    category: test_gaps
+    description: 'AC 13-15 (context compatibility) not validated with automated tests'
+    suggested_owner: dev
+
+waiver:
+  active: false
+
+quality_score: 85
+expires: '2026-01-10T23:50:00Z'
+
+evidence:
+  tests_reviewed: 7
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    ac_gaps: [13, 14, 15]
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Pure CSS styling changes, no security implications'
+  performance:
+    status: PASS
+    notes: 'Added lazy loading improves page load performance'
+  reliability:
+    status: CONCERNS
+    notes: 'Context compatibility (assignment/preview modes) not validated'
+  maintainability:
+    status: PASS
+    notes: 'Clean Tailwind utility classes, focused change'
+
+recommendations:
+  immediate:
+    - action: 'Complete manual QA testing per DoD checklist'
+      refs: ['Definition of Done section']
+    - action: 'Test in all 3 contexts: standalone, assignment, teacher preview'
+      refs: ['AC 13-15']
+  future:
+    - action: 'Consider viewport-based max width for very large displays (1920px+)'
+      refs: ['MatchTheWordsPlayer.tsx']
+    - action: 'Add automated tests for context compatibility'
+      refs: ['AC 13-15']

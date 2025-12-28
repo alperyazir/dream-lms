@@ -27,7 +27,6 @@ from app.models import (
     BookStatus,
     Class,
     ClassStudent,
-    Feedback,
     Notification,
     NotificationType,
     Publisher,
