@@ -12,6 +12,28 @@ venv/
 *.pyc
 __pycache__/
 
+# Environment variables
+.env
+.env.local
+.env.*.local
 
+# Logs
+*.log
+logs/
+backend/backend.log
+
+# Backups
+*.bak
+backups/
+backend/backups/
+
+# Generated files
 **.xlsx
+backend/generated_reports/*.pdf
+backend/generated_reports/*.excel
+
+# System files
 .DS_Store
+
+# Duplicate directories
+frontend/frontend/
