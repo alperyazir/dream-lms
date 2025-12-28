@@ -14,7 +14,16 @@ export default defineConfig({
     tanstackRouter({
       target: "react",
       autoCodeSplitting: true,
+      routeFileIgnorePattern: "\\.test\\.(tsx?|jsx?)$|__tests__",
     }),
     react(),
   ],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
+  },
 })
