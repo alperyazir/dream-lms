@@ -21,13 +21,16 @@ export function UpcomingAssignmentsList({
   assignments,
   limit = 5,
 }: UpcomingAssignmentsListProps) {
-  // Filter to only upcoming (not completed and has due date)
+  // Filter to only upcoming (not completed)
   const upcomingAssignments = assignments
-    .filter((a) => a.status !== "completed" && a.due_date)
+    .filter((a) => a.status !== "completed")
     .sort((a, b) => {
-      // Sort by due date (earliest first)
-      const dateA = new Date(a.due_date!).getTime()
-      const dateB = new Date(b.due_date!).getTime()
+      // Sort by due date (earliest first), assignments without due date go to end
+      if (!a.due_date && !b.due_date) return 0
+      if (!a.due_date) return 1 // a goes after b
+      if (!b.due_date) return -1 // a goes before b
+      const dateA = new Date(a.due_date).getTime()
+      const dateB = new Date(b.due_date).getTime()
       return dateA - dateB
     })
     .slice(0, limit)
@@ -72,12 +75,13 @@ interface AssignmentRowProps {
 }
 
 function AssignmentRow({ assignment }: AssignmentRowProps) {
-  const dueDate = new Date(assignment.due_date!)
-  const isOverdue = isPast(dueDate)
-  const isDueToday = isToday(dueDate)
-  const isDueTomorrow = isTomorrow(dueDate)
+  const dueDate = assignment.due_date ? new Date(assignment.due_date) : null
+  const isOverdue = dueDate ? isPast(dueDate) : false
+  const isDueToday = dueDate ? isToday(dueDate) : false
+  const isDueTomorrow = dueDate ? isTomorrow(dueDate) : false
 
   const getDueDateLabel = () => {
+    if (!dueDate) return "No due date"
     if (isOverdue) return "Overdue"
     if (isDueToday) return "Due Today"
     if (isDueTomorrow) return "Due Tomorrow"
@@ -85,6 +89,7 @@ function AssignmentRow({ assignment }: AssignmentRowProps) {
   }
 
   const getDueDateVariant = (): "destructive" | "default" | "secondary" => {
+    if (!dueDate) return "secondary"
     if (isOverdue) return "destructive"
     if (isDueToday) return "default" // Changed from "warning" to "default" as "warning" might not exist
     return "secondary"
@@ -98,10 +103,12 @@ function AssignmentRow({ assignment }: AssignmentRowProps) {
     >
       <div className="flex-1 min-w-0">
         <p className="font-medium truncate">{assignment.assignment_name}</p>
-        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          <span>{format(dueDate, "h:mm a")}</span>
-        </div>
+        {dueDate && (
+          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            <span>{format(dueDate, "h:mm a")}</span>
+          </div>
+        )}
       </div>
       <Badge variant={getDueDateVariant()} className="ml-3 whitespace-nowrap">
         {getDueDateLabel()}

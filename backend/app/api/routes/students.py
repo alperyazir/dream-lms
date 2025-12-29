@@ -465,6 +465,98 @@ async def get_student_badges(
 
 
 @router.get(
+    "",
+    response_model=list[StudentPublic],
+    summary="Get all students (admin/supervisor) or teacher's students",
+)
+async def get_students(
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.teacher),
+    limit: int = Query(100, ge=1, le=500, description="Maximum number of students to return"),
+    offset: int = Query(0, ge=0, description="Number of students to skip"),
+) -> list[StudentPublic]:
+    """
+    Get list of students based on user role.
+
+    **Permissions:**
+    - Admin/Supervisor: See all students in the system
+    - Teacher: See only students in their classes
+
+    Args:
+        session: Database session
+        current_user: Authenticated user
+        limit: Maximum number of students to return (default 100, max 500)
+        offset: Number of students to skip for pagination
+
+    Returns:
+        List of Student records with user information
+
+    Raises:
+        HTTPException(404): Teacher record not found (for teacher role)
+    """
+    if current_user.role in [UserRole.admin, UserRole.supervisor]:
+        # Admin and Supervisor can see all students
+        query = (
+            select(Student, User)
+            .join(User, Student.user_id == User.id)
+            .offset(offset)
+            .limit(limit)
+        )
+    elif current_user.role == UserRole.teacher:
+        # Teachers can only see students in their classes
+        teacher_result = await session.execute(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        )
+        teacher = teacher_result.scalar_one_or_none()
+
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Teacher record not found"
+            )
+
+        # Get students from teacher's classes
+        query = (
+            select(Student, User)
+            .join(User, Student.user_id == User.id)
+            .join(ClassStudent, ClassStudent.student_id == Student.id)
+            .join(Class, Class.id == ClassStudent.class_id)
+            .where(Class.teacher_id == teacher.id)
+            .distinct()
+            .offset(offset)
+            .limit(limit)
+        )
+    else:
+        # Should not reach here due to require_role, but just in case
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to view students"
+        )
+
+    result = await session.execute(query)
+    rows = result.all()
+
+    # Build StudentPublic response
+    students = []
+    for student, user in rows:
+        students.append(
+            StudentPublic(
+                id=student.id,
+                user_id=user.id,
+                user_email=user.email,
+                user_username=user.username,
+                user_full_name=user.full_name,
+                grade_level=student.grade_level,
+                parent_email=student.parent_email,
+                created_at=student.created_at,
+                updated_at=student.updated_at,
+            )
+        )
+
+    return students
+
+
+@router.get(
     "/unassigned",
     response_model=list[StudentPublic],
     summary="Get students not enrolled in teacher's classes (Story 20.5)",

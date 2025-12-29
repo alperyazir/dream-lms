@@ -3,6 +3,7 @@
 - Teacher Announcments
 - KVKK
 - Cant create assignment for different Publisher(Edulink)
+- AI entegration
 
 UI 
 - Genel olarak uygulamada açılan formlardaki required alanlarda kırmızı yıldız olsun, optional kısımları extra olarak optional belirtmeye gerek yok.

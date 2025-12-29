@@ -22,7 +22,7 @@ router = APIRouter(prefix="/messages", tags=["messages"])
 
 
 # Roles allowed to use messaging
-MESSAGING_ROLES = [UserRole.admin, UserRole.publisher, UserRole.teacher, UserRole.student]
+MESSAGING_ROLES = [UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher, UserRole.student]
 
 
 @router.post("", response_model=MessagePublic, status_code=status.HTTP_201_CREATED)

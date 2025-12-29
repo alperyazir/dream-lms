@@ -13,7 +13,6 @@ import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import {
   AchievementBadges,
   ActivityBreakdown,
-  ImprovementTips,
   ProgressScoreChart,
   ProgressStatsCard,
   RecentAssignments,
@@ -117,9 +116,6 @@ function StudentProgressPage() {
         <>
           {/* Stats Card */}
           <ProgressStatsCard stats={progress.stats} />
-
-          {/* Improvement Tips */}
-          <ImprovementTips tips={progress.improvement_tips} />
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
