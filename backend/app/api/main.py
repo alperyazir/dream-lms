@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     admin,
+    announcements,
     assignments,
     avatars,
     book_assets,
@@ -47,6 +48,7 @@ api_router.include_router(reports.router)
 api_router.include_router(webhooks.router)
 api_router.include_router(notifications.router)
 api_router.include_router(messages.router)
+api_router.include_router(announcements.router)
 api_router.include_router(scheduled_tasks.router)
 api_router.include_router(feedback.router)
 api_router.include_router(avatars.router)

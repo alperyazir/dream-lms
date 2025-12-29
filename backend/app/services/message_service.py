@@ -55,7 +55,8 @@ async def get_allowed_recipients(
     Get list of allowed recipients for a user based on their role.
 
     Communication paths:
-    - Admin: Can message all teachers and all publishers
+    - Admin: Can message all teachers, publishers, and students
+    - Supervisor: Can message all users (admin, publisher, teacher, student)
     - Publisher: Can message all admins and all teachers
     - Teacher: Can message students in their classes + all admins + all publishers
     - Student: Can only message teachers who have assigned them work
@@ -71,11 +72,34 @@ async def get_allowed_recipients(
     recipients: list[RecipientPublic] = []
 
     if user_role == UserRole.admin:
-        # Admins can message all teachers and all publishers
+        # Admins can message all teachers, publishers, and students
         query = (
             select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
             .where(
-                User.role.in_([UserRole.teacher, UserRole.publisher]),
+                User.role.in_([UserRole.teacher, UserRole.publisher, UserRole.student]),
+                User.id != user_id,  # Exclude self
+            )
+        )
+        result = await db.execute(query)
+        rows = result.all()
+        recipients = [
+            RecipientPublic(
+                user_id=row.id,
+                name=row.full_name or row.email.split("@")[0],
+                email=row.email,
+                role=row.role.value,
+                organization_name=None,  # Will be populated below for publishers
+            )
+            for row in rows
+            if row.email is not None  # Filter out users without email
+        ]
+
+    elif user_role == UserRole.supervisor:
+        # Supervisors can message all users (admin, publisher, teacher, student)
+        query = (
+            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
+            .where(
+                User.role.in_([UserRole.admin, UserRole.publisher, UserRole.teacher, UserRole.student]),
                 User.id != user_id,  # Exclude self
             )
         )

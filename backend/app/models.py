@@ -5,7 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
 from pydantic import EmailStr, field_validator, model_validator
-from sqlalchemy import JSON, CheckConstraint, Column, UniqueConstraint
+from sqlalchemy import JSON, CheckConstraint, Column, Index, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -285,6 +285,7 @@ class Teacher(TeacherBase, table=True):
     school: School = Relationship(back_populates="teachers", sa_relationship_kwargs={"passive_deletes": True})
     classes: list["Class"] = Relationship(back_populates="teacher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     assignments: list["Assignment"] = Relationship(back_populates="teacher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    announcements: list["Announcement"] = Relationship(sa_relationship_kwargs={"cascade": "all, delete-orphan", "passive_deletes": True})
 
 
 class TeacherPublic(TeacherBase):
@@ -1420,6 +1421,7 @@ class NotificationType(str, Enum):
     material_shared = "material_shared"
     system_announcement = "system_announcement"
     password_reset = "password_reset"
+    announcement = "announcement"
 
 
 # =============================================================================
@@ -1533,6 +1535,81 @@ class Feedback(SQLModel, table=True):
     teacher: "Teacher" = Relationship(
         sa_relationship_kwargs={"passive_deletes": True}
     )
+
+
+# =============================================================================
+# Announcement Models (Story 26.1)
+# =============================================================================
+
+
+class Announcement(SQLModel, table=True):
+    """Announcement database model for teacher announcements."""
+
+    __tablename__ = "announcements"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    title: str = Field(max_length=200)
+    content: str  # Sanitized HTML
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    deleted_at: datetime | None = Field(default=None, index=True)  # Soft delete
+
+    # Relationships
+    teacher: "Teacher" = Relationship(
+        sa_relationship_kwargs={"passive_deletes": True, "overlaps": "announcements"}
+    )
+    recipients: list["AnnouncementRecipient"] = Relationship(
+        back_populates="announcement",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan", "passive_deletes": True}
+    )
+    reads: list["AnnouncementRead"] = Relationship(
+        back_populates="announcement",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan", "passive_deletes": True}
+    )
+
+
+class AnnouncementRecipient(SQLModel, table=True):
+    """Announcement recipient database model linking announcements to students."""
+
+    __tablename__ = "announcement_recipients"
+    __table_args__ = (
+        Index('idx_student_created', 'student_id', 'created_at'),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    announcement_id: uuid.UUID = Field(foreign_key="announcements.id", index=True, ondelete="CASCADE")
+    student_id: uuid.UUID = Field(foreign_key="students.id", index=True, ondelete="CASCADE")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    announcement: "Announcement" = Relationship(
+        back_populates="recipients",
+        sa_relationship_kwargs={"passive_deletes": True}
+    )
+    student: "Student" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+
+
+class AnnouncementRead(SQLModel, table=True):
+    """Announcement read tracking model for student read status."""
+
+    __tablename__ = "announcement_reads"
+    __table_args__ = (
+        UniqueConstraint('announcement_id', 'student_id', name='uq_announcement_read'),
+        Index('idx_student_read_at', 'student_id', 'read_at'),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    announcement_id: uuid.UUID = Field(foreign_key="announcements.id", index=True, ondelete="CASCADE")
+    student_id: uuid.UUID = Field(foreign_key="students.id", index=True, ondelete="CASCADE")
+    read_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    announcement: "Announcement" = Relationship(
+        back_populates="reads",
+        sa_relationship_kwargs={"passive_deletes": True}
+    )
+    student: "Student" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 # =============================================================================

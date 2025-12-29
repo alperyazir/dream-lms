@@ -19,6 +19,7 @@ class NotificationType(str, Enum):
     material_shared = "material_shared"
     system_announcement = "system_announcement"
     password_reset = "password_reset"
+    announcement = "announcement"
 
 
 class NotificationBase(BaseModel):

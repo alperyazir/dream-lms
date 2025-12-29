@@ -8,6 +8,7 @@ import {
   FiClipboard,
   FiFolder,
   FiHome,
+  FiMessageSquare,
   FiSettings,
   FiShield,
   FiTrendingUp,
@@ -142,6 +143,12 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       dataTour: "sidebar-assignments",
     },
     {
+      icon: FiMessageSquare,
+      title: "Announcements",
+      path: "/teacher/announcements",
+      dataTour: "sidebar-announcements",
+    },
+    {
       icon: FiBarChart2,
       title: "Reports",
       path: "/teacher/reports",
@@ -166,15 +173,16 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       dataTour: "sidebar-assignments",
     },
     {
+      icon: FiMessageSquare,
+      title: "Announcements",
+      path: "/student/announcements",
+      dataTour: "sidebar-announcements",
+    },
+    {
       icon: FiTrendingUp,
       title: "My Progress",
       path: "/student/progress",
       dataTour: "sidebar-progress",
-    },
-    {
-      icon: FiBarChart2,
-      title: "Reports",
-      path: "/student/reports",
     },
   ],
 }
