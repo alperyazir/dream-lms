@@ -18,7 +18,7 @@ export type Achievement = {
 export type ActivityAnalyticsItem = {
     activity_id: string;
     activity_title: (string | null);
-    page_number: number;
+    page_number: (number | null);
     activity_type: string;
     class_average_score: (number | null);
     completion_rate: number;
@@ -78,7 +78,7 @@ export type ActivityPreviewResponse = {
     config_json: {
         [key: string]: unknown;
     };
-    book_id: string;
+    book_id: number;
     book_name: string;
     publisher_name: string;
     is_preview?: boolean;
@@ -129,11 +129,15 @@ export type ActivityProgressSaveResponse = {
  */
 export type ActivityResponse = {
     id: string;
-    dcs_book_id: number;
-    module_name: string;
-    page_number: number;
+    book_id: number;
+    module_name?: (string | null);
+    page_number?: (number | null);
     activity_type: string;
-    title: (string | null);
+    title?: (string | null);
+    config_json?: {
+        [key: string]: unknown;
+    };
+    order_index?: number;
 };
 
 /**
@@ -157,7 +161,7 @@ export type ActivityStartResponse = {
     instructions: (string | null);
     due_date: (string | null);
     time_limit_minutes: (number | null);
-    book_id: string;
+    book_id: number;
     book_title: string;
     book_name: string;
     publisher_name: string;
@@ -288,12 +292,236 @@ export type AdminBenchmarkOverview = {
 };
 
 /**
- * Student affected by an insight.
+ * A complete AI-generated quiz with all questions.
+ *
+ * This is the full quiz representation stored internally,
+ * including correct answers and explanations.
+ *
+ * Attributes:
+ * quiz_id: Unique identifier for the quiz.
+ * book_id: ID of the book the quiz is generated from.
+ * module_ids: List of module IDs used for the quiz.
+ * questions: List of quiz questions with answers.
+ * difficulty: Overall difficulty level of the quiz.
+ * language: Language of the quiz content.
+ * created_at: When the quiz was generated.
  */
-export type AffectedStudent = {
+export type AIQuiz = {
+    quiz_id: string;
+    book_id: number;
+    module_ids: Array<(number)>;
+    questions: Array<AIQuizQuestion>;
+    difficulty: string;
+    language: string;
+    created_at: string;
+};
+
+/**
+ * Request to generate an AI-powered MCQ quiz from book modules.
+ *
+ * Attributes:
+ * source_type: Source type (book or material). Defaults to book.
+ * book_id: ID of the book to generate quiz from.
+ * module_ids: List of module IDs to use as source content (at least one).
+ * difficulty: Difficulty level affecting question complexity.
+ * question_count: Number of questions to generate (1-20).
+ * language: Language for questions. If None, auto-detected from modules.
+ * include_explanations: Whether to include explanations for correct answers.
+ */
+export type AIQuizGenerationRequest = {
+    /**
+     * Source type: book or material.
+     */
+    source_type?: 'book' | 'material';
+    book_id: number;
+    /**
+     * At least one module ID required.
+     */
+    module_ids: Array<(number)>;
+    /**
+     * Difficulty level: auto, easy, medium, or hard.
+     */
+    difficulty?: 'auto' | 'easy' | 'medium' | 'hard';
+    /**
+     * Number of questions (1-50).
+     */
+    question_count?: number;
+    /**
+     * Language code. Auto-detected if not provided.
+     */
+    language?: (string | null);
+    /**
+     * Whether to include explanations for correct answers.
+     */
+    include_explanations?: boolean;
+};
+
+/**
+ * Source type: book or material.
+ */
+export type source_type = 'book' | 'material';
+
+/**
+ * Difficulty level: auto, easy, medium, or hard.
+ */
+export type difficulty = 'auto' | 'easy' | 'medium' | 'hard';
+
+/**
+ * Public version of quiz without correct answers.
+ *
+ * Returned to students when they access a quiz for taking.
+ *
+ * Attributes:
+ * quiz_id: Unique identifier for the quiz.
+ * book_id: ID of the book the quiz is generated from.
+ * module_ids: List of module IDs used for the quiz.
+ * questions: List of quiz questions without answers.
+ * difficulty: Overall difficulty level of the quiz.
+ * language: Language of the quiz content.
+ * created_at: When the quiz was generated.
+ * question_count: Number of questions in the quiz.
+ */
+export type AIQuizPublic = {
+    quiz_id: string;
+    book_id: number;
+    module_ids: Array<(number)>;
+    questions: Array<AIQuizQuestionPublic>;
+    difficulty: string;
+    language: string;
+    created_at: string;
+    question_count: number;
+};
+
+/**
+ * A single MCQ question in an AI quiz.
+ *
+ * Contains the question text, options, correct answer, and optional
+ * explanation. Internal version with correct answer visible.
+ *
+ * Attributes:
+ * question_id: Unique identifier for the question.
+ * question_text: The question prompt.
+ * options: List of 4 answer options.
+ * correct_answer: The correct option text.
+ * correct_index: Index of correct answer (0-3).
+ * explanation: Explanation of why the answer is correct.
+ * source_module_id: Module ID the question is derived from.
+ * source_page: Page number reference (optional).
+ * difficulty: Difficulty level of the question.
+ */
+export type AIQuizQuestion = {
+    question_id: string;
+    question_text: string;
+    options: [
+        string,
+        string,
+        string,
+        string
+    ];
+    correct_answer: string;
+    correct_index: number;
+    explanation?: (string | null);
+    source_module_id: number;
+    source_page?: (number | null);
+    difficulty: string;
+};
+
+/**
+ * Public version of quiz question without the correct answer.
+ *
+ * Used when returning quiz questions to students before submission.
+ * The correct_answer, correct_index, and explanation fields are omitted.
+ *
+ * Attributes:
+ * question_id: Unique identifier for the question.
+ * question_text: The question prompt.
+ * options: List of 4 answer options.
+ * source_module_id: Module ID the question is derived from.
+ * difficulty: Difficulty level of the question.
+ */
+export type AIQuizQuestionPublic = {
+    question_id: string;
+    question_text: string;
+    options: [
+        string,
+        string,
+        string,
+        string
+    ];
+    source_module_id: number;
+    difficulty: string;
+};
+
+/**
+ * Result for a single question after submission.
+ *
+ * Attributes:
+ * question_id: ID of the question.
+ * question_text: The question that was asked.
+ * options: All answer options.
+ * correct_answer: The correct answer text.
+ * correct_index: Index of the correct answer.
+ * student_answer_index: The index the student selected.
+ * student_answer: The answer text the student selected.
+ * is_correct: Whether the student's answer was correct.
+ * explanation: Explanation of the correct answer.
+ * source_module_id: Module the question came from.
+ */
+export type AIQuizQuestionResult = {
+    question_id: string;
+    question_text: string;
+    options: Array<(string)>;
+    correct_answer: string;
+    correct_index: number;
+    student_answer_index: (number | null);
+    student_answer: (string | null);
+    is_correct: boolean;
+    explanation?: (string | null);
+    source_module_id: number;
+};
+
+/**
+ * Complete results of a submitted AI quiz.
+ *
+ * Returned after a student submits their answers, revealing
+ * the correct answers, explanations, and calculating the score.
+ *
+ * Attributes:
+ * quiz_id: ID of the quiz.
+ * student_id: ID of the student who submitted.
+ * score: Number of correct answers.
+ * total: Total number of questions.
+ * percentage: Score as a percentage (0-100).
+ * question_results: Detailed results for each question.
+ * submitted_at: When the quiz was submitted.
+ * difficulty: Difficulty level of the quiz.
+ */
+export type AIQuizResult = {
+    quiz_id: string;
     student_id: string;
-    name: string;
-    relevant_metric: string;
+    score: number;
+    total: number;
+    percentage: number;
+    question_results: Array<AIQuizQuestionResult>;
+    submitted_at: string;
+    difficulty: string;
+};
+
+/**
+ * Student's submission of quiz answers.
+ *
+ * Maps question IDs to the selected answer index.
+ *
+ * Attributes:
+ * answers: Dictionary mapping question_id to selected option index (0-3).
+ */
+export type AIQuizSubmission = {
+    /**
+     * Map of question_id to selected answer index (0-3).
+     */
+    answers: {
+        [key: string]: (number);
+    };
 };
 
 /**
@@ -307,6 +535,73 @@ export type AnalyticsSummary = {
 };
 
 /**
+ * Schema for creating a new announcement.
+ */
+export type AnnouncementCreate = {
+    title: string;
+    content: string;
+    recipient_student_ids?: Array<(string)>;
+    recipient_classroom_ids?: Array<(string)>;
+};
+
+/**
+ * Schema for detailed announcement response with recipients.
+ */
+export type AnnouncementDetail = {
+    id: string;
+    teacher_id: string;
+    title: string;
+    content: string;
+    recipient_count: number;
+    created_at: string;
+    updated_at: string;
+    recipient_ids: Array<(string)>;
+};
+
+/**
+ * Schema for paginated announcement list response.
+ */
+export type AnnouncementListResponse = {
+    announcements: Array<AnnouncementPublic>;
+    total: number;
+    limit: number;
+    offset: number;
+};
+
+/**
+ * Schema for announcement API response.
+ */
+export type AnnouncementPublic = {
+    id: string;
+    teacher_id: string;
+    title: string;
+    content: string;
+    recipient_count: number;
+    read_count?: (number | null);
+    created_at: string;
+    updated_at: string;
+};
+
+/**
+ * Schema for mark-as-read response.
+ */
+export type AnnouncementReadResponse = {
+    announcement_id: string;
+    is_read: boolean;
+    read_at: string;
+};
+
+/**
+ * Schema for updating an announcement.
+ */
+export type AnnouncementUpdate = {
+    title?: (string | null);
+    content?: (string | null);
+    recipient_student_ids?: (Array<(string)> | null);
+    recipient_classroom_ids?: (Array<(string)> | null);
+};
+
+/**
  * Distribution of answers for a single option.
  */
 export type AnswerDistributionItem = {
@@ -317,36 +612,95 @@ export type AnswerDistributionItem = {
 };
 
 /**
+ * Module information for vocabulary filtering.
+ */
+export type app__api__routes__vocabulary_explorer__ModuleInfo = {
+    id: string;
+    name: string;
+    vocabulary_count: number;
+};
+
+/**
  * Notification type enumeration
  */
-export type app__models__NotificationType = 'assignment_created' | 'deadline_approaching' | 'feedback_received' | 'message_received' | 'student_completed' | 'past_due' | 'material_shared' | 'system_announcement' | 'password_reset';
+export type app__models__NotificationType = 'assignment_created' | 'deadline_approaching' | 'feedback_received' | 'message_received' | 'student_completed' | 'past_due' | 'material_shared' | 'system_announcement' | 'password_reset' | 'announcement';
+
+/**
+ * Module metadata for navigation shortcuts.
+ */
+export type app__schemas__book__ModuleInfo = {
+    name: string;
+    first_page_index: number;
+    page_count: number;
+};
 
 /**
  * Enum for notification types.
  */
-export type app__schemas__notification__NotificationType = 'assignment_created' | 'deadline_approaching' | 'feedback_received' | 'message_received' | 'student_completed' | 'past_due' | 'material_shared' | 'system_announcement' | 'password_reset';
+export type app__schemas__notification__NotificationType = 'assignment_created' | 'deadline_approaching' | 'feedback_received' | 'message_received' | 'student_completed' | 'past_due' | 'material_shared' | 'system_announcement' | 'password_reset' | 'announcement';
+
+/**
+ * Request to assign content to classes.
+ */
+export type AssignContentRequest = {
+    /**
+     * Assignment name
+     */
+    name: string;
+    /**
+     * Assignment instructions
+     */
+    instructions?: (string | null);
+    /**
+     * Due date
+     */
+    due_date?: (string | null);
+    /**
+     * Time limit in minutes
+     */
+    time_limit_minutes?: (number | null);
+    /**
+     * Class IDs to assign to
+     */
+    class_ids: Array<(string)>;
+};
+
+/**
+ * Response for content assignment.
+ */
+export type AssignContentResponse = {
+    message: string;
+    assignment_id: string;
+    student_count: number;
+};
 
 /**
  * Schema for creating a new assignment.
  *
  * Supports both single-activity (backward compatible) and multi-activity assignments.
  * Provide either activity_id (single) OR activity_ids (multi) OR date_groups (Time Planning).
+ *
+ * Story 27.x: Also supports AI content assignments with source_type="ai_content" and content_id.
  */
 export type AssignmentCreate = {
-    book_id: string;
+    source_type?: 'book' | 'ai_content';
+    book_id?: (number | null);
+    activity_id?: (string | null);
+    activity_ids?: (Array<(string)> | null);
+    content_id?: (string | null);
     name: string;
     instructions?: (string | null);
     due_date?: (string | null);
     time_limit_minutes?: (number | null);
     student_ids?: (Array<(string)> | null);
     class_ids?: (Array<(string)> | null);
-    activity_id?: (string | null);
-    activity_ids?: (Array<(string)> | null);
     scheduled_publish_date?: (string | null);
     date_groups?: (Array<DateGroupCreate> | null);
     video_path?: (string | null);
     resources?: (AdditionalResources | null);
 };
+
+export type source_type2 = 'book' | 'ai_content';
 
 /**
  * Complete detailed results for an assignment.
@@ -363,6 +717,37 @@ export type AssignmentDetailedResultsResponse = {
 };
 
 /**
+ * Response schema for editing an existing assignment.
+ *
+ * Extends preview response with recipient information needed for edit mode.
+ * Used when a teacher wants to edit an existing assignment.
+ */
+export type AssignmentForEditResponse = {
+    assignment_id: string;
+    assignment_name: string;
+    instructions: (string | null);
+    due_date: (string | null);
+    time_limit_minutes: (number | null);
+    status: AssignmentPublishStatus;
+    book_id: number;
+    book_title: string;
+    book_name: string;
+    publisher_name: string;
+    book_cover_url: (string | null);
+    activities: Array<ActivityWithConfig>;
+    total_activities: number;
+    video_path?: (string | null);
+    resources?: (AdditionalResourcesResponse | null);
+    class_ids: Array<(string)>;
+    student_ids: Array<(string)>;
+    time_planning_enabled?: boolean;
+    scheduled_publish_date?: (string | null);
+    date_groups?: (Array<{
+    [key: string]: unknown;
+}> | null);
+};
+
+/**
  * Assignment list item with enriched data for display.
  */
 export type AssignmentListItem = {
@@ -372,7 +757,7 @@ export type AssignmentListItem = {
     due_date: (string | null);
     time_limit_minutes: (number | null);
     created_at: string;
-    book_id: string;
+    book_id: number;
     book_title: string;
     activity_id: string;
     activity_title: string;
@@ -420,7 +805,7 @@ export type AssignmentPreviewResponse = {
     due_date: (string | null);
     time_limit_minutes: (number | null);
     status: AssignmentPublishStatus;
-    book_id: string;
+    book_id: number;
     book_title: string;
     book_name: string;
     publisher_name: string;
@@ -443,7 +828,7 @@ export type AssignmentPublishStatus = 'draft' | 'scheduled' | 'published' | 'arc
 export type AssignmentResponse = {
     id: string;
     teacher_id: string;
-    book_id: string;
+    book_id: number;
     name: string;
     instructions: (string | null);
     due_date: (string | null);
@@ -457,6 +842,35 @@ export type AssignmentResponse = {
     scheduled_publish_date?: (string | null);
     status?: AssignmentPublishStatus;
     video_path?: (string | null);
+};
+
+/**
+ * Detailed assignment result with answers for review.
+ *
+ * Story 23.4: Used when students want to review their submitted answers
+ * with correct/incorrect marking.
+ */
+export type AssignmentResultDetailResponse = {
+    assignment_id: string;
+    assignment_name: string;
+    activity_id: string;
+    activity_title: (string | null);
+    activity_type: string;
+    book_id: number;
+    book_name: string;
+    publisher_name: string;
+    config_json: {
+        [key: string]: unknown;
+    };
+    answers_json: {
+        [key: string]: unknown;
+    };
+    score: number;
+    total_points: number;
+    started_at: (string | null);
+    completed_at: string;
+    time_spent_minutes: number;
+    time_spent_seconds: number;
 };
 
 /**
@@ -533,6 +947,28 @@ export type AssignmentWithTeacher = {
     due_date: (string | null);
     status: AssignmentPublishStatus;
     created_at: string;
+};
+
+/**
+ * Request for vocabulary audio URL.
+ */
+export type AudioUrlRequest = {
+    /**
+     * Language code
+     */
+    language?: string;
+    /**
+     * Word to get audio for
+     */
+    word: string;
+};
+
+/**
+ * Audio URL response.
+ */
+export type AudioUrlResponse = {
+    url: string;
+    expires_at: string;
 };
 
 /**
@@ -682,6 +1118,10 @@ export type Body_teacher_materials_upload_material = {
     file: (Blob | File);
 };
 
+export type Body_teacher_materials_upload_pdf_for_ai = {
+    file: (Blob | File);
+};
+
 export type Body_teachers_bulk_import_students = {
     file: (Blob | File);
 };
@@ -750,7 +1190,7 @@ export type BookListResponse = {
  */
 export type BookPagesDetailResponse = {
     book_id: number;
-    modules: Array<ModuleInfo>;
+    modules: Array<app__schemas__book__ModuleInfo>;
     pages: Array<PageDetail>;
     total_pages: number;
     total_activities: number;
@@ -835,6 +1275,19 @@ export type BookVideosResponse = {
 };
 
 /**
+ * Book with AI vocabulary data available.
+ */
+export type BookWithVocabulary = {
+    id: number;
+    title: string;
+    publisher_name: string;
+    has_ai_data: boolean;
+    processing_status: (string | null);
+    vocabulary_count: number;
+    modules: Array<app__api__routes__vocabulary_explorer__ModuleInfo>;
+};
+
+/**
  * Individual assignment created in bulk operation.
  */
 export type BulkAssignmentCreatedItem = {
@@ -916,7 +1369,7 @@ export type CalendarAssignmentItem = {
     status: AssignmentPublishStatus;
     activity_count: number;
     class_names?: Array<(string)>;
-    book_id: string;
+    book_id: number;
     book_title: string;
 };
 
@@ -1088,6 +1541,14 @@ export type ClassStudentAdd = {
 };
 
 /**
+ * Students grouped by class ID.
+ */
+export type ClassStudentsGroup = {
+    class_id: string;
+    students: Array<StudentPublic>;
+};
+
+/**
  * Properties to receive via API on Class update
  */
 export type ClassUpdate = {
@@ -1107,6 +1568,120 @@ export type CompletionOverview = {
     not_started: number;
     past_due: number;
     total: number;
+};
+
+/**
+ * Content creator information.
+ */
+export type ContentCreator = {
+    id: string;
+    name: string;
+};
+
+/**
+ * Detailed content library item with full activity data.
+ */
+export type ContentItemDetail = {
+    id: string;
+    /**
+     * Type of activity (ai_quiz, vocabulary_quiz, etc.)
+     */
+    activity_type: string;
+    /**
+     * Activity title
+     */
+    title: string;
+    /**
+     * 'book' or 'material'
+     */
+    source_type: string;
+    /**
+     * DCS book ID if book-based
+     */
+    book_id?: (number | null);
+    /**
+     * Book title if book-based
+     */
+    book_title?: (string | null);
+    /**
+     * Material ID if material-based
+     */
+    material_id?: (string | null);
+    /**
+     * Material name if material-based
+     */
+    material_name?: (string | null);
+    /**
+     * Number of questions/items in activity
+     */
+    item_count: number;
+    created_at: string;
+    updated_at?: (string | null);
+    /**
+     * Times used in assignments
+     */
+    used_in_assignments?: number;
+    /**
+     * True if book-based (shared), False if material-based (private)
+     */
+    is_shared: boolean;
+    created_by: ContentCreator;
+    /**
+     * Full activity data
+     */
+    content: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * Public content library item.
+ */
+export type ContentItemPublic = {
+    id: string;
+    /**
+     * Type of activity (ai_quiz, vocabulary_quiz, etc.)
+     */
+    activity_type: string;
+    /**
+     * Activity title
+     */
+    title: string;
+    /**
+     * 'book' or 'material'
+     */
+    source_type: string;
+    /**
+     * DCS book ID if book-based
+     */
+    book_id?: (number | null);
+    /**
+     * Book title if book-based
+     */
+    book_title?: (string | null);
+    /**
+     * Material ID if material-based
+     */
+    material_id?: (string | null);
+    /**
+     * Material name if material-based
+     */
+    material_name?: (string | null);
+    /**
+     * Number of questions/items in activity
+     */
+    item_count: number;
+    created_at: string;
+    updated_at?: (string | null);
+    /**
+     * Times used in assignments
+     */
+    used_in_assignments?: number;
+    /**
+     * True if book-based (shared), False if material-based (private)
+     */
+    is_shared: boolean;
+    created_by: ContentCreator;
 };
 
 /**
@@ -1132,6 +1707,22 @@ export type ConversationPublic = {
     last_message_preview: string;
     last_message_timestamp: string;
     unread_count: number;
+};
+
+/**
+ * Request to create an assignment from generated content.
+ *
+ * Attributes:
+ * quiz_id: ID of the quiz to create assignment from.
+ * activity_type: Type of activity (ai_quiz, vocabulary_quiz, reading, etc.).
+ * title: Title for the assignment.
+ * description: Optional description for the assignment.
+ */
+export type CreateAssignmentRequest = {
+    quiz_id: string;
+    activity_type: string;
+    title: string;
+    description?: (string | null);
 };
 
 /**
@@ -1179,6 +1770,14 @@ export type DeadlineCheckResponse = {
     past_due_students_notified: number;
     past_due_assignments_processed: number;
     message: string;
+};
+
+/**
+ * Response for content deletion.
+ */
+export type DeleteContentResponse = {
+    message: string;
+    content_id: string;
 };
 
 /**
@@ -1423,38 +2022,15 @@ export type ImportValidationResponse = {
 export type ImprovementTrend = 'improving' | 'stable' | 'declining';
 
 /**
- * Summary card for a detected insight.
+ * Paginated library response.
  */
-export type InsightCard = {
-    id: string;
-    type: InsightType;
-    severity: InsightSeverity;
-    title: string;
-    description: string;
-    affected_count: number;
-    recommended_action: string;
-    created_at: string;
+export type LibraryResponse = {
+    items: Array<ContentItemPublic>;
+    total: number;
+    page: number;
+    page_size: number;
+    has_more: boolean;
 };
-
-/**
- * Detailed view of an insight with affected items.
- */
-export type InsightDetail = {
-    insight: InsightCard;
-    affected_students: Array<AffectedStudent>;
-    related_assignments: Array<RelatedAssignment>;
-    related_questions?: (Array<RelatedQuestion> | null);
-};
-
-/**
- * Severity levels for insights.
- */
-export type InsightSeverity = 'moderate' | 'critical';
-
-/**
- * Types of teacher insights.
- */
-export type InsightType = 'struggling_topic' | 'common_misconception' | 'time_management' | 'review_recommended' | 'struggling_students' | 'activity_type_struggle';
 
 /**
  * Response for logo upload
@@ -1557,17 +2133,23 @@ export type MessageThreadResponse = {
     participant_name: string;
     participant_email: string;
     participant_role: string;
+    participant_organization_name?: (string | null);
     messages: Array<MessagePublic>;
     total_messages: number;
 };
 
 /**
- * Module metadata for navigation shortcuts.
+ * Response containing list of modules for a book.
+ *
+ * Attributes:
+ * book_id: Unique identifier for the book.
+ * total_modules: Total number of modules in the book.
+ * modules: List of module summaries.
  */
-export type ModuleInfo = {
-    name: string;
-    first_page_index: number;
-    page_count: number;
+export type ModuleListResponse = {
+    book_id: string;
+    total_modules: number;
+    modules?: Array<ModuleSummary>;
 };
 
 /**
@@ -1576,6 +2158,25 @@ export type ModuleInfo = {
 export type ModulePages = {
     name: string;
     pages: Array<PageInfo>;
+};
+
+/**
+ * Summary information for a book module.
+ *
+ * Provides basic information about a module without the full text content.
+ * Used in module list responses.
+ *
+ * Attributes:
+ * module_id: Unique identifier for the module within the book.
+ * title: Display title of the module (e.g., "Unit 1: Introduction").
+ * pages: List of page numbers included in this module.
+ * word_count: Total word count in the module text.
+ */
+export type ModuleSummary = {
+    module_id: number;
+    title: string;
+    pages?: Array<(number)>;
+    word_count?: number;
 };
 
 /**
@@ -1621,7 +2222,7 @@ export type MultiActivityStartResponse = {
     instructions: (string | null);
     due_date: (string | null);
     time_limit_minutes: (number | null);
-    book_id: string;
+    book_id: number;
     book_title: string;
     book_name: string;
     publisher_name: string;
@@ -1650,6 +2251,8 @@ export type MultiActivityStartResponse = {
 export type MultiActivitySubmitRequest = {
     force_submit?: boolean;
     total_time_spent_minutes?: number;
+    total_time_spent_seconds?: (number | null);
+    activity_states?: (Array<SubmitActivityState> | null);
 };
 
 /**
@@ -1748,7 +2351,7 @@ export type NotificationResponse = {
 /**
  * Notification type enumeration
  */
-export type NotificationType_Input = 'assignment_created' | 'deadline_approaching' | 'feedback_received' | 'message_received' | 'student_completed' | 'past_due' | 'material_shared' | 'system_announcement' | 'password_reset';
+export type NotificationType_Input = 'assignment_created' | 'deadline_approaching' | 'feedback_received' | 'message_received' | 'student_completed' | 'past_due' | 'material_shared' | 'system_announcement' | 'password_reset' | 'announcement';
 
 /**
  * Activity response for page-based selection.
@@ -1851,6 +2454,43 @@ export type PrivateUserCreate = {
     password: string;
     full_name: string;
     is_verified?: boolean;
+};
+
+/**
+ * Processing metadata for a book's AI data.
+ *
+ * Contains information about the processing status and totals
+ * for a book that has been processed by the AI extraction pipeline.
+ *
+ * Attributes:
+ * book_id: Unique identifier for the book in DCS.
+ * processing_status: Current processing status
+ * (pending, processing, completed, partial, failed).
+ * total_pages: Total number of pages in the book.
+ * total_modules: Total number of modules extracted.
+ * total_vocabulary: Total number of vocabulary words extracted.
+ * total_audio_files: Total number of audio files generated.
+ * languages: List of language codes found in the book.
+ * primary_language: Primary language of the book content.
+ * difficulty_range: List of CEFR difficulty levels covered.
+ * stages: Optional processing stage information.
+ */
+export type ProcessingMetadata = {
+    book_id: string;
+    /**
+     * Status: pending, processing, completed, partial, failed
+     */
+    processing_status: string;
+    total_pages?: number;
+    total_modules?: number;
+    total_vocabulary?: number;
+    total_audio_files?: number;
+    languages?: Array<(string)>;
+    primary_language?: string;
+    difficulty_range?: Array<(string)>;
+    stages?: ({
+    [key: string]: unknown;
+} | null);
 };
 
 /**
@@ -1982,6 +2622,296 @@ export type QuestionAnalysis = {
 };
 
 /**
+ * Result for a single question after submission.
+ *
+ * Attributes:
+ * question_id: ID of the question.
+ * definition: The definition that was shown.
+ * correct_answer: The correct word.
+ * student_answer: The word the student selected.
+ * is_correct: Whether the student's answer was correct.
+ * audio_url: Audio URL for the word pronunciation.
+ */
+export type QuestionResult = {
+    question_id: string;
+    definition: string;
+    correct_answer: string;
+    student_answer: (string | null);
+    is_correct: boolean;
+    audio_url?: (string | null);
+};
+
+/**
+ * A complete reading comprehension activity.
+ *
+ * Contains an AI-generated passage based on module topics/context
+ * and comprehension questions about that passage.
+ *
+ * Attributes:
+ * activity_id: Unique identifier for the activity.
+ * book_id: ID of the source book.
+ * module_id: ID of the source module.
+ * module_title: Title of the module.
+ * passage: AI-generated passage based on module topics.
+ * passage_pages: Page numbers from the source module.
+ * questions: List of comprehension questions.
+ * difficulty: Difficulty level of the activity.
+ * language: Language of the content.
+ * created_at: When the activity was generated.
+ */
+export type ReadingComprehensionActivity = {
+    activity_id: string;
+    book_id: number;
+    module_id: number;
+    module_title: string;
+    /**
+     * AI-generated passage based on module topics/context.
+     */
+    passage: string;
+    passage_pages?: Array<(number)>;
+    questions: Array<ReadingComprehensionQuestion>;
+    difficulty: string;
+    language: string;
+    created_at: string;
+};
+
+/**
+ * Public version of activity without correct answers.
+ *
+ * Returned to students when they access an activity.
+ *
+ * Attributes:
+ * activity_id: Unique identifier for the activity.
+ * book_id: ID of the source book.
+ * module_id: ID of the source module.
+ * module_title: Title of the module.
+ * passage: ACTUAL text from the module.
+ * passage_pages: Page numbers covered by the passage.
+ * questions: List of questions without answers.
+ * difficulty: Difficulty level.
+ * language: Language of the content.
+ * created_at: When the activity was generated.
+ * question_count: Number of questions.
+ */
+export type ReadingComprehensionActivityPublic = {
+    activity_id: string;
+    book_id: number;
+    module_id: number;
+    module_title: string;
+    passage: string;
+    passage_pages?: Array<(number)>;
+    questions: Array<ReadingComprehensionQuestionPublic>;
+    difficulty: string;
+    language: string;
+    created_at: string;
+    question_count: number;
+};
+
+/**
+ * A single answer in a submission.
+ *
+ * For MCQ/True-False: answer_index is used.
+ * For Short Answer: answer_text is used.
+ *
+ * Attributes:
+ * question_id: ID of the question being answered.
+ * answer_index: Selected option index (for MCQ/True-False).
+ * answer_text: Text answer (for short answer questions).
+ */
+export type ReadingComprehensionAnswer = {
+    question_id: string;
+    /**
+     * Selected option index for MCQ/True-False.
+     */
+    answer_index?: (number | null);
+    /**
+     * Text answer for short answer questions.
+     */
+    answer_text?: (string | null);
+};
+
+/**
+ * A single comprehension question about the passage.
+ *
+ * Contains the question, answer options (for MCQ/True-False),
+ * correct answer, and a passage reference quote.
+ *
+ * Attributes:
+ * question_id: Unique identifier for the question.
+ * question_type: Type of question (mcq, true_false, short_answer).
+ * question_text: The question or statement text.
+ * options: Answer options (for MCQ/True-False, None for short_answer).
+ * correct_answer: The correct answer text.
+ * correct_index: Index of correct answer (for MCQ/True-False).
+ * explanation: Explanation of the correct answer.
+ * passage_reference: Quote from passage that supports the answer.
+ */
+export type ReadingComprehensionQuestion = {
+    question_id: string;
+    question_type: 'mcq' | 'true_false';
+    question_text: string;
+    /**
+     * Answer options for MCQ (4 options) or True/False (2 options).
+     */
+    options?: (Array<(string)> | null);
+    correct_answer: string;
+    /**
+     * Index of correct answer for MCQ/True-False.
+     */
+    correct_index?: (number | null);
+    explanation: string;
+    /**
+     * Quote from passage supporting the answer.
+     */
+    passage_reference: string;
+};
+
+export type question_type = 'mcq' | 'true_false';
+
+/**
+ * Public version of question without correct answer.
+ *
+ * Used when returning questions to students before submission.
+ *
+ * Attributes:
+ * question_id: Unique identifier for the question.
+ * question_type: Type of question.
+ * question_text: The question or statement text.
+ * options: Answer options (for MCQ/True-False).
+ */
+export type ReadingComprehensionQuestionPublic = {
+    question_id: string;
+    question_type: 'mcq' | 'true_false';
+    question_text: string;
+    options?: (Array<(string)> | null);
+};
+
+/**
+ * Result for a single question after submission.
+ *
+ * Attributes:
+ * question_id: ID of the question.
+ * question_type: Type of question.
+ * question_text: The question text.
+ * options: Answer options (if applicable).
+ * correct_answer: The correct answer.
+ * correct_index: Index of correct answer (if applicable).
+ * student_answer_index: Index selected by student (if applicable).
+ * student_answer_text: Text answer by student (if applicable).
+ * is_correct: Whether the answer was correct.
+ * similarity_score: Similarity score for short answers (0-1).
+ * explanation: Explanation of the correct answer.
+ * passage_reference: Quote from passage supporting the answer.
+ */
+export type ReadingComprehensionQuestionResult = {
+    question_id: string;
+    question_type: 'mcq' | 'true_false';
+    question_text: string;
+    options?: (Array<(string)> | null);
+    correct_answer: string;
+    correct_index?: (number | null);
+    student_answer_index?: (number | null);
+    student_answer_text?: (string | null);
+    is_correct: boolean;
+    /**
+     * Similarity score for short answers (0-1).
+     */
+    similarity_score?: (number | null);
+    explanation: string;
+    passage_reference: string;
+};
+
+/**
+ * Request to generate a reading comprehension activity.
+ *
+ * The LLM creates an ORIGINAL passage based on module topics/context,
+ * then generates comprehension questions about that passage.
+ *
+ * Attributes:
+ * book_id: ID of the book containing the module.
+ * module_id: ID of the module to use as context source.
+ * question_count: Number of questions to generate (1-10).
+ * question_types: Types of questions to generate.
+ * difficulty: Difficulty level. "auto" uses module's CEFR level.
+ * passage_length: Target word count for the AI-generated passage.
+ */
+export type ReadingComprehensionRequest = {
+    book_id: number;
+    /**
+     * Module ID - used as context for passage generation.
+     */
+    module_id: number;
+    /**
+     * Number of questions (1-50).
+     */
+    question_count?: number;
+    /**
+     * Types of questions to generate (MCQ and True/False only).
+     */
+    question_types?: Array<('mcq' | 'true_false')>;
+    /**
+     * Difficulty level. 'auto' uses module's CEFR level.
+     */
+    difficulty?: 'auto' | 'easy' | 'medium' | 'hard';
+    /**
+     * Target word count for the AI-generated passage (100-500).
+     */
+    passage_length?: number;
+};
+
+/**
+ * Complete results of a submitted reading comprehension activity.
+ *
+ * Returned after a student submits their answers.
+ *
+ * Attributes:
+ * activity_id: ID of the activity.
+ * student_id: ID of the student who submitted.
+ * score: Number of correct answers.
+ * total: Total number of questions.
+ * percentage: Score as a percentage (0-100).
+ * question_results: Detailed results for each question.
+ * score_by_type: Score breakdown by question type.
+ * submitted_at: When the activity was submitted.
+ * difficulty: Difficulty level of the activity.
+ * passage: The passage text (for review).
+ * module_title: Title of the source module.
+ */
+export type ReadingComprehensionResult = {
+    activity_id: string;
+    student_id: string;
+    score: number;
+    total: number;
+    percentage: number;
+    question_results: Array<ReadingComprehensionQuestionResult>;
+    /**
+     * Score breakdown: {'mcq': {'correct': 2, 'total': 3}, ...}
+     */
+    score_by_type?: {
+        [key: string]: {
+            [key: string]: (number);
+        };
+    };
+    submitted_at: string;
+    difficulty: string;
+    passage: string;
+    module_title: string;
+};
+
+/**
+ * Student's submission of activity answers.
+ *
+ * Attributes:
+ * answers: List of answers for each question.
+ */
+export type ReadingComprehensionSubmission = {
+    /**
+     * List of answers for each question.
+     */
+    answers: Array<ReadingComprehensionAnswer>;
+};
+
+/**
  * Single recent assignment completion.
  */
 export type RecentActivityItem = {
@@ -2008,26 +2938,29 @@ export type RecipientPublic = {
     name: string;
     email: string;
     role: string;
+    organization_name?: (string | null);
 };
 
 /**
- * Assignment related to an insight.
+ * Request to regenerate a single question in a quiz.
+ *
+ * Attributes:
+ * quiz_id: ID of the quiz containing the question.
+ * question_index: Zero-based index of the question to regenerate.
+ * context: Original generation context (difficulty, language, etc.).
  */
-export type RelatedAssignment = {
-    assignment_id: string;
-    name: string;
-    avg_score: number;
-    completion_rate: number;
-};
-
-/**
- * Question related to an insight (for misconceptions).
- */
-export type RelatedQuestion = {
-    question_id: string;
-    question_text: string;
-    incorrect_percentage: number;
-    common_wrong_answer: (string | null);
+export type RegenerateQuestionRequest = {
+    quiz_id: string;
+    /**
+     * Zero-based index of the question
+     */
+    question_index: number;
+    /**
+     * Original generation parameters (difficulty, language, etc.)
+     */
+    context?: {
+        [key: string]: unknown;
+    };
 };
 
 /**
@@ -2140,6 +3073,46 @@ export type SavedReportTemplate = {
 export type SavedReportTemplateCreate = {
     name: string;
     config: ReportGenerateRequest;
+};
+
+/**
+ * Request to save generated content to teacher's library.
+ *
+ * Attributes:
+ * quiz_id: ID of the quiz to save.
+ * activity_type: Type of activity (ai_quiz, vocabulary_quiz, reading, etc.).
+ * title: Title for the saved content.
+ * description: Optional description for the saved content.
+ * content: Optional full content data. If provided, used directly.
+ * If not provided, falls back to looking up from in-memory storage.
+ */
+export type SaveToLibraryRequest = {
+    quiz_id: string;
+    activity_type: string;
+    title: string;
+    description?: (string | null);
+    /**
+     * Full content data. If provided, used directly instead of storage lookup.
+     */
+    content?: ({
+    [key: string]: unknown;
+} | null);
+};
+
+/**
+ * Response after saving content to library.
+ *
+ * Attributes:
+ * content_id: ID of the saved content in teacher's library.
+ * title: Title of the saved content.
+ * activity_type: Type of activity.
+ * created_at: When the content was saved.
+ */
+export type SaveToLibraryResponse = {
+    content_id: string;
+    title: string;
+    activity_type: string;
+    created_at: string;
 };
 
 /**
@@ -2265,6 +3238,204 @@ export type SelectAvatarRequest = {
 };
 
 /**
+ * A complete sentence builder activity.
+ *
+ * This is the full activity representation stored internally,
+ * including the correct sentences.
+ *
+ * Attributes:
+ * activity_id: Unique identifier for the activity.
+ * book_id: ID of the book the activity is generated from.
+ * module_ids: List of module IDs used for the activity.
+ * sentences: List of sentence items with correct answers.
+ * difficulty: Difficulty level of the activity.
+ * include_audio: Whether audio is included.
+ * created_at: When the activity was generated.
+ */
+export type SentenceBuilderActivity = {
+    activity_id: string;
+    book_id: number;
+    module_ids: Array<(number)>;
+    sentences: Array<SentenceBuilderItem>;
+    difficulty: string;
+    include_audio: boolean;
+    created_at: string;
+};
+
+/**
+ * Public version of activity without correct sentence strings.
+ *
+ * Returned to students when they access an activity for taking.
+ * The correct_sentence field is omitted from items.
+ *
+ * Attributes:
+ * activity_id: Unique identifier for the activity.
+ * book_id: ID of the book the activity is generated from.
+ * module_ids: List of module IDs used for the activity.
+ * sentences: List of sentence items (words only, no correct sentence).
+ * difficulty: Difficulty level of the activity.
+ * include_audio: Whether audio is included.
+ * created_at: When the activity was generated.
+ * sentence_count: Total number of sentences.
+ */
+export type SentenceBuilderActivityPublic = {
+    activity_id: string;
+    book_id: number;
+    module_ids: Array<(number)>;
+    sentences: Array<SentenceBuilderItemPublic>;
+    difficulty: string;
+    include_audio: boolean;
+    created_at: string;
+    sentence_count: number;
+};
+
+/**
+ * A single sentence item in the activity.
+ *
+ * Contains the correct sentence and shuffled word bank.
+ *
+ * Attributes:
+ * item_id: Unique identifier for this sentence.
+ * correct_sentence: The correct sentence as a string.
+ * words: Shuffled word bank for the student to arrange.
+ * word_count: Number of words in the sentence.
+ * audio_url: TTS audio URL for the correct sentence.
+ * source_module_id: ID of the module this sentence came from.
+ * source_page: Page number in the module (if available).
+ * difficulty: Difficulty level of this sentence.
+ */
+export type SentenceBuilderItem = {
+    item_id: string;
+    correct_sentence: string;
+    words: Array<(string)>;
+    word_count: number;
+    audio_url?: (string | null);
+    source_module_id: number;
+    source_page?: (number | null);
+    difficulty: string;
+};
+
+/**
+ * Public version of a sentence item without the correct answer.
+ *
+ * Attributes:
+ * item_id: Unique identifier for this sentence.
+ * words: Shuffled word bank for the student to arrange.
+ * word_count: Number of words in the sentence.
+ * difficulty: Difficulty level of this sentence.
+ */
+export type SentenceBuilderItemPublic = {
+    item_id: string;
+    words: Array<(string)>;
+    word_count: number;
+    difficulty: string;
+};
+
+/**
+ * Request to generate a sentence builder activity.
+ *
+ * Attributes:
+ * book_id: ID of the book to extract sentences from.
+ * module_ids: Optional list of specific module IDs. If None, uses all modules.
+ * sentence_count: Number of sentences in the activity (1-10).
+ * difficulty: Difficulty level based on sentence length.
+ * include_audio: Whether to include audio for correct sentences.
+ */
+export type SentenceBuilderRequest = {
+    book_id: number;
+    /**
+     * Specific modules to use. If None, uses all modules.
+     */
+    module_ids?: (Array<(number)> | null);
+    /**
+     * Number of sentences (1-50).
+     */
+    sentence_count?: number;
+    /**
+     * Difficulty: easy (4-6 words), medium (7-10 words), hard (11+ words).
+     */
+    difficulty?: 'easy' | 'medium' | 'hard';
+    /**
+     * Whether to include TTS audio for correct sentences.
+     */
+    include_audio?: boolean;
+};
+
+/**
+ * Difficulty: easy (4-6 words), medium (7-10 words), hard (11+ words).
+ */
+export type difficulty2 = 'easy' | 'medium' | 'hard';
+
+/**
+ * Complete results of a submitted sentence builder activity.
+ *
+ * Returned after a student submits their answers, revealing
+ * the correct sentences and calculating the score.
+ *
+ * Attributes:
+ * activity_id: ID of the activity.
+ * student_id: ID of the student who submitted.
+ * score: Number of correct sentences.
+ * total: Total number of sentences.
+ * percentage: Score as a percentage (0-100).
+ * sentence_results: Detailed results for each sentence.
+ * submitted_at: When the activity was submitted.
+ * difficulty: Difficulty level of the activity.
+ */
+export type SentenceBuilderResult = {
+    activity_id: string;
+    student_id: string;
+    score: number;
+    total: number;
+    percentage: number;
+    sentence_results: Array<SentenceResult>;
+    submitted_at: string;
+    difficulty: string;
+};
+
+/**
+ * Student's submission of sentence answers.
+ *
+ * Maps sentence item IDs to the student's word ordering.
+ *
+ * Attributes:
+ * answers: Dictionary mapping item_id to ordered list of words.
+ */
+export type SentenceBuilderSubmission = {
+    /**
+     * Map of item_id to ordered list of words.
+     */
+    answers: {
+        [key: string]: Array<(string)>;
+    };
+};
+
+/**
+ * Result for a single sentence after submission.
+ *
+ * Attributes:
+ * item_id: ID of the sentence item.
+ * submitted_words: The student's submitted word order.
+ * correct_sentence: The correct sentence.
+ * is_correct: Whether the submission was correct.
+ * audio_url: Audio URL for the correct sentence (if available).
+ */
+export type SentenceResult = {
+    item_id: string;
+    submitted_words: Array<(string)>;
+    correct_sentence: string;
+    is_correct: boolean;
+    audio_url?: (string | null);
+};
+
+/**
+ * Request body for setting a student's password
+ */
+export type SetStudentPasswordRequest = {
+    password: string;
+};
+
+/**
  * Counts of assignments by status.
  */
 export type StatusSummary = {
@@ -2323,6 +3494,31 @@ export type StudentAnalyticsResponse = {
 };
 
 /**
+ * Schema for student announcement list with pagination and read counts.
+ */
+export type StudentAnnouncementListResponse = {
+    announcements: Array<StudentAnnouncementPublic>;
+    total: number;
+    unread_count: number;
+    limit: number;
+    offset: number;
+};
+
+/**
+ * Schema for student announcement view with read status.
+ */
+export type StudentAnnouncementPublic = {
+    id: string;
+    teacher_id: string;
+    teacher_name: string;
+    title: string;
+    content: string;
+    created_at: string;
+    is_read: boolean;
+    read_at?: (string | null);
+};
+
+/**
  * Individual student's full answers for an assignment.
  */
 export type StudentAnswersResponse = {
@@ -2331,9 +3527,14 @@ export type StudentAnswersResponse = {
     status: string;
     score: (number | null);
     time_spent_minutes: number;
+    time_spent_seconds: number;
     started_at: (string | null);
     completed_at: (string | null);
     answers_json: ({
+    [key: string]: unknown;
+} | null);
+    activity_type?: (string | null);
+    config_json?: ({
     [key: string]: unknown;
 } | null);
 };
@@ -2348,7 +3549,7 @@ export type StudentAssignmentResponse = {
     due_date: (string | null);
     time_limit_minutes: (number | null);
     created_at: string;
-    book_id: string;
+    book_id: number;
     book_title: string;
     book_cover_url: (string | null);
     activity_id: string;
@@ -2404,7 +3605,7 @@ export type StudentCalendarAssignmentItem = {
     id: string;
     name: string;
     due_date: (string | null);
-    book_id: string;
+    book_id: number;
     book_title: string;
     book_cover_url: (string | null);
     activity_count: number;
@@ -2432,6 +3633,7 @@ export type StudentCreateAPI = {
     full_name: string;
     grade_level?: (string | null);
     parent_email?: (string | null);
+    password?: (string | null);
 };
 
 /**
@@ -2461,6 +3663,17 @@ export type StudentLeaderboardItem = {
     name: string;
     avg_score: number;
     rank: number;
+};
+
+/**
+ * Response for viewing/setting student password
+ */
+export type StudentPasswordResponse = {
+    student_id: string;
+    username: string;
+    full_name: string;
+    password?: (string | null);
+    message?: (string | null);
 };
 
 /**
@@ -2513,8 +3726,17 @@ export type StudentResultItem = {
     status: string;
     score: (number | null);
     time_spent_minutes: number;
+    time_spent_seconds: number;
+    started_at: (string | null);
     completed_at: (string | null);
     has_feedback?: boolean;
+};
+
+/**
+ * Request body for fetching students for multiple classes.
+ */
+export type StudentsForClassesRequest = {
+    class_ids: Array<(string)>;
 };
 
 /**
@@ -2535,6 +3757,18 @@ export type StudyTimeStats = {
     this_week_minutes: number;
     this_month_minutes: number;
     avg_per_assignment: number;
+};
+
+/**
+ * Activity state data sent during multi-activity submission.
+ */
+export type SubmitActivityState = {
+    activity_index: number;
+    score?: (number | null);
+    answers_json?: ({
+    [key: string]: unknown;
+} | null);
+    status?: string;
 };
 
 /**
@@ -2591,11 +3825,39 @@ export type TeacherCreateAPI = {
 };
 
 /**
- * Response containing all teacher insights.
+ * List of generated content.
  */
-export type TeacherInsightsResponse = {
-    insights: Array<InsightCard>;
-    last_refreshed: string;
+export type TeacherGeneratedContentListResponse = {
+    items: Array<TeacherGeneratedContentResponse>;
+    total_count: number;
+};
+
+/**
+ * Response for teacher's generated AI content.
+ */
+export type TeacherGeneratedContentResponse = {
+    id: string;
+    teacher_id: string;
+    material_id?: (string | null);
+    book_id?: (number | null);
+    activity_type: string;
+    title: string;
+    content: {
+        [key: string]: unknown;
+    };
+    is_used: boolean;
+    assignment_id?: (string | null);
+    created_at: string;
+    material_name?: (string | null);
+    book_name?: (string | null);
+};
+
+/**
+ * List of teacher materials.
+ */
+export type TeacherMaterialListResponse = {
+    materials: Array<TeacherMaterialResponse>;
+    total_count: number;
 };
 
 /**
@@ -2627,6 +3889,38 @@ export type TeacherMaterialResourceResponse = {
     url?: (string | null);
     text_content?: (string | null);
     download_url?: (string | null);
+};
+
+/**
+ * Teacher material response with AI processing fields.
+ */
+export type TeacherMaterialResponse = {
+    id: string;
+    teacher_id: string;
+    name: string;
+    description?: (string | null);
+    type: MaterialType;
+    source_type: 'pdf' | 'text' | 'other';
+    original_filename?: (string | null);
+    file_size?: (number | null);
+    mime_type?: (string | null);
+    extracted_text?: (string | null);
+    word_count?: (number | null);
+    language?: (string | null);
+    created_at: string;
+    updated_at: string;
+    download_url?: (string | null);
+    is_processable?: boolean;
+};
+
+export type source_type3 = 'pdf' | 'text' | 'other';
+
+/**
+ * Response after material upload with text extraction.
+ */
+export type TeacherMaterialUploadResponse = {
+    material: TeacherMaterialResponse;
+    extraction?: (TextExtractionResult | null);
 };
 
 /**
@@ -2671,6 +3965,27 @@ export type TeacherWithCounts = {
     updated_at: string;
     books_assigned?: number;
     classroom_count?: number;
+};
+
+/**
+ * Result of text extraction from uploaded material.
+ */
+export type TextExtractionResult = {
+    extracted_text: string;
+    word_count: number;
+    language?: (string | null);
+    source_type?: 'pdf' | 'text';
+};
+
+export type source_type4 = 'pdf' | 'text';
+
+/**
+ * Create material from pasted text.
+ */
+export type TextMaterialCreate = {
+    name: string;
+    description?: (string | null);
+    text: string;
 };
 
 /**
@@ -2730,6 +4045,31 @@ export type UnreadCountResponse = {
  */
 export type UnreadMessagesCountResponse = {
     count: number;
+};
+
+/**
+ * Request to update content in the library.
+ */
+export type UpdateContentRequest = {
+    /**
+     * New title for the content
+     */
+    title?: (string | null);
+    /**
+     * Updated content data
+     */
+    content?: ({
+    [key: string]: unknown;
+} | null);
+};
+
+/**
+ * Response for content update.
+ */
+export type UpdateContentResponse = {
+    message: string;
+    content_id: string;
+    updated_at: string;
 };
 
 export type UpdatePassword = {
@@ -2856,6 +4196,241 @@ export type VideoResource = {
 };
 
 /**
+ * Paginated vocabulary list response.
+ */
+export type VocabularyListResponse = {
+    items: Array<VocabularyWordResponse>;
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+};
+
+/**
+ * A complete vocabulary quiz with all questions.
+ *
+ * This is the full quiz representation stored internally,
+ * including correct answers.
+ *
+ * Attributes:
+ * quiz_id: Unique identifier for the quiz.
+ * book_id: ID of the book the quiz is generated from.
+ * module_ids: List of module IDs used for the quiz.
+ * questions: List of quiz questions with answers.
+ * created_at: When the quiz was generated.
+ * quiz_length: Number of questions in the quiz.
+ * quiz_mode: Type of quiz (definition, synonym, antonym, or mixed).
+ */
+export type VocabularyQuiz = {
+    quiz_id: string;
+    book_id: number;
+    module_ids: Array<(number)>;
+    questions: Array<VocabularyQuizQuestion>;
+    created_at: string;
+    quiz_length: number;
+    /**
+     * Type of quiz: mixed (variety), definition, synonym, or antonym.
+     */
+    quiz_mode?: 'definition' | 'synonym' | 'antonym' | 'mixed';
+};
+
+/**
+ * Type of quiz: mixed (variety), definition, synonym, or antonym.
+ */
+export type quiz_mode = 'definition' | 'synonym' | 'antonym' | 'mixed';
+
+/**
+ * Request to generate a vocabulary quiz from book modules.
+ *
+ * Attributes:
+ * book_id: ID of the book to generate quiz from.
+ * module_ids: Optional list of specific module IDs. If None, uses all modules.
+ * quiz_length: Number of questions in the quiz (1-50, default 10).
+ * cefr_levels: Optional list of CEFR levels to filter vocabulary.
+ * include_audio: Whether to include audio URLs for word pronunciation.
+ * quiz_mode: Type of quiz (definition, synonym, antonym, or mixed).
+ */
+export type VocabularyQuizGenerationRequest = {
+    book_id: number;
+    /**
+     * Specific modules to use. If None, uses all modules.
+     */
+    module_ids?: (Array<(number)> | null);
+    /**
+     * Number of questions in the quiz (1-50).
+     */
+    quiz_length?: number;
+    /**
+     * CEFR levels to filter: A1, A2, B1, B2, C1
+     */
+    cefr_levels?: (Array<(string)> | null);
+    /**
+     * Whether to include audio URLs for pronunciation.
+     */
+    include_audio?: boolean;
+    /**
+     * Type of quiz: mixed (variety of definitions, synonyms, antonyms), definition, synonym, or antonym.
+     */
+    quiz_mode?: 'definition' | 'synonym' | 'antonym' | 'mixed';
+};
+
+/**
+ * Public version of quiz without correct answers.
+ *
+ * Returned to students when they access a quiz for taking.
+ *
+ * Attributes:
+ * quiz_id: Unique identifier for the quiz.
+ * book_id: ID of the book the quiz is generated from.
+ * module_ids: List of module IDs used for the quiz.
+ * questions: List of quiz questions without answers.
+ * created_at: When the quiz was generated.
+ * quiz_length: Number of questions in the quiz.
+ * quiz_mode: Type of quiz (definition, synonym, antonym, or mixed).
+ */
+export type VocabularyQuizPublic = {
+    quiz_id: string;
+    book_id: number;
+    module_ids: Array<(number)>;
+    questions: Array<VocabularyQuizQuestionPublic>;
+    created_at: string;
+    quiz_length: number;
+    /**
+     * Type of quiz: mixed (variety), definition, synonym, or antonym.
+     */
+    quiz_mode?: 'definition' | 'synonym' | 'antonym' | 'mixed';
+};
+
+/**
+ * A single question in a vocabulary quiz.
+ *
+ * Displays a prompt (definition, synonym, or antonym) and asks the student
+ * to select the correct word from multiple options.
+ *
+ * Attributes:
+ * question_id: Unique identifier for the question.
+ * definition: The prompt shown to the student (definition, synonym, or antonym).
+ * correct_answer: The correct word that matches the prompt.
+ * options: List of 4 word options including the correct answer.
+ * audio_url: Optional presigned URL for word pronunciation audio.
+ * vocabulary_id: Reference to the DCS vocabulary word ID.
+ * cefr_level: CEFR difficulty level of the word.
+ * question_type: Type of question (definition, synonym, antonym).
+ */
+export type VocabularyQuizQuestion = {
+    question_id: string;
+    definition: string;
+    correct_answer: string;
+    options: [
+        string,
+        string,
+        string,
+        string
+    ];
+    audio_url?: (string | null);
+    vocabulary_id: string;
+    cefr_level: string;
+    /**
+     * Type of question: definition, synonym, or antonym.
+     */
+    question_type?: 'definition' | 'synonym' | 'antonym';
+};
+
+/**
+ * Type of question: definition, synonym, or antonym.
+ */
+export type question_type2 = 'definition' | 'synonym' | 'antonym';
+
+/**
+ * Public version of quiz question without the correct answer.
+ *
+ * Used when returning quiz questions to students before submission.
+ * The correct_answer field is omitted to prevent cheating.
+ *
+ * Attributes:
+ * question_id: Unique identifier for the question.
+ * definition: The prompt shown to the student (definition, synonym, or antonym).
+ * options: List of 4 word options.
+ * audio_url: Optional presigned URL for word pronunciation audio.
+ * cefr_level: CEFR difficulty level of the word.
+ * question_type: Type of question (definition, synonym, antonym).
+ */
+export type VocabularyQuizQuestionPublic = {
+    question_id: string;
+    definition: string;
+    options: [
+        string,
+        string,
+        string,
+        string
+    ];
+    audio_url?: (string | null);
+    cefr_level: string;
+    /**
+     * Type of question: definition, synonym, or antonym.
+     */
+    question_type?: 'definition' | 'synonym' | 'antonym';
+};
+
+/**
+ * Complete results of a submitted vocabulary quiz.
+ *
+ * Returned after a student submits their answers, revealing
+ * the correct answers and calculating the score.
+ *
+ * Attributes:
+ * quiz_id: ID of the quiz.
+ * student_id: ID of the student who submitted.
+ * score: Number of correct answers.
+ * total: Total number of questions.
+ * percentage: Score as a percentage (0-100).
+ * question_results: Detailed results for each question.
+ * submitted_at: When the quiz was submitted.
+ */
+export type VocabularyQuizResult = {
+    quiz_id: string;
+    student_id: string;
+    score: number;
+    total: number;
+    percentage: number;
+    question_results: Array<QuestionResult>;
+    submitted_at: string;
+};
+
+/**
+ * Student's submission of quiz answers.
+ *
+ * Maps question IDs to the selected answer words.
+ *
+ * Attributes:
+ * answers: Dictionary mapping question_id to selected word.
+ */
+export type VocabularyQuizSubmission = {
+    /**
+     * Map of question_id to selected answer word.
+     */
+    answers: {
+        [key: string]: (string);
+    };
+};
+
+/**
+ * A single vocabulary word for display.
+ */
+export type VocabularyWordResponse = {
+    id: string;
+    word: string;
+    translation: string;
+    definition: string;
+    example_sentence: (string | null);
+    cefr_level: string;
+    part_of_speech: (string | null);
+    module_name: string;
+    book_id: number;
+    has_audio?: boolean;
+};
+
+/**
  * Webhook event type enumeration
  */
 export type WebhookEventType = 'book.created' | 'book.updated' | 'book.deleted' | 'publisher.created' | 'publisher.updated' | 'publisher.deleted';
@@ -2877,6 +4452,188 @@ export type WebhookPayload = {
 };
 
 /**
+ * A complete word builder activity.
+ *
+ * This is the full activity representation stored internally,
+ * including the correct words.
+ *
+ * Attributes:
+ * activity_id: Unique identifier for the activity.
+ * book_id: ID of the book the activity is generated from.
+ * module_ids: List of module IDs used for the activity.
+ * words: List of word items with correct answers.
+ * hint_type: Type of hint shown to students.
+ * created_at: When the activity was generated.
+ */
+export type WordBuilderActivity = {
+    activity_id: string;
+    book_id: number;
+    module_ids: Array<(number)>;
+    words: Array<WordBuilderItem>;
+    hint_type: string;
+    created_at: string;
+};
+
+/**
+ * Public version of activity without correct word strings.
+ *
+ * Returned to students when they access an activity for taking.
+ * The correct_word field is omitted from items.
+ *
+ * Attributes:
+ * activity_id: Unique identifier for the activity.
+ * book_id: ID of the book the activity is generated from.
+ * module_ids: List of module IDs used for the activity.
+ * words: List of word items (letters only, no correct word).
+ * hint_type: Type of hint shown to students.
+ * created_at: When the activity was generated.
+ * word_count: Total number of words.
+ */
+export type WordBuilderActivityPublic = {
+    activity_id: string;
+    book_id: number;
+    module_ids: Array<(number)>;
+    words: Array<WordBuilderItemPublic>;
+    hint_type: string;
+    created_at: string;
+    word_count: number;
+};
+
+/**
+ * A single word item in the activity.
+ *
+ * Contains the correct word and scrambled letters.
+ *
+ * Attributes:
+ * item_id: Unique identifier for this word.
+ * correct_word: The correct word spelling.
+ * letters: Scrambled letters for the student to arrange.
+ * definition: Definition text as hint.
+ * audio_url: Audio URL for pronunciation (after correct spelling).
+ * vocabulary_id: ID of the vocabulary entry from DCS.
+ * cefr_level: CEFR level of the word.
+ */
+export type WordBuilderItem = {
+    item_id: string;
+    correct_word: string;
+    letters: Array<(string)>;
+    definition: string;
+    audio_url?: (string | null);
+    vocabulary_id: string;
+    cefr_level: string;
+};
+
+/**
+ * Public version of a word item without the correct answer.
+ *
+ * Attributes:
+ * item_id: Unique identifier for this word.
+ * letters: Scrambled letters for the student to arrange.
+ * definition: Definition text as hint.
+ * audio_url: Audio URL (may be withheld until correct).
+ * letter_count: Number of letters in the word.
+ */
+export type WordBuilderItemPublic = {
+    item_id: string;
+    letters: Array<(string)>;
+    definition: string;
+    audio_url?: (string | null);
+    letter_count: number;
+};
+
+/**
+ * Request to generate a word builder activity.
+ *
+ * Attributes:
+ * book_id: ID of the book to fetch vocabulary from.
+ * module_ids: Optional list of specific module IDs. If None, uses all modules.
+ * word_count: Number of words in the activity (1-15).
+ * cefr_levels: Optional list of CEFR levels to filter vocabulary.
+ * hint_type: Type of hint to show (definition, audio, or both).
+ */
+export type WordBuilderRequest = {
+    book_id: number;
+    /**
+     * Specific modules to use. If None, uses all modules.
+     */
+    module_ids?: (Array<(number)> | null);
+    /**
+     * Number of words (1-50).
+     */
+    word_count?: number;
+    /**
+     * Optional CEFR levels to filter (e.g., ['A1', 'A2']).
+     */
+    cefr_levels?: (Array<(string)> | null);
+    /**
+     * Type of hint: definition text, audio pronunciation, or both.
+     */
+    hint_type?: 'definition' | 'audio' | 'both';
+};
+
+/**
+ * Type of hint: definition text, audio pronunciation, or both.
+ */
+export type hint_type = 'definition' | 'audio' | 'both';
+
+/**
+ * Complete results of a submitted word builder activity.
+ *
+ * Returned after a student submits their answers, revealing
+ * the correct words and calculating the score.
+ *
+ * Attributes:
+ * activity_id: ID of the activity.
+ * student_id: ID of the student who submitted.
+ * score: Total points earned.
+ * max_score: Maximum possible score (word_count * 100).
+ * percentage: Score as a percentage (0-100).
+ * correct_count: Number of words spelled correctly.
+ * total: Total number of words.
+ * word_results: Detailed results for each word.
+ * perfect_words: Number of words correct on first try.
+ * average_attempts: Average attempts per word.
+ * submitted_at: When the activity was submitted.
+ */
+export type WordBuilderResult = {
+    activity_id: string;
+    student_id: string;
+    score: number;
+    max_score: number;
+    percentage: number;
+    correct_count: number;
+    total: number;
+    word_results: Array<WordResult>;
+    perfect_words: number;
+    average_attempts: number;
+    submitted_at: string;
+};
+
+/**
+ * Student's submission of word spellings.
+ *
+ * Maps word item IDs to the student's spelled word and attempt count.
+ *
+ * Attributes:
+ * answers: Dictionary mapping item_id to spelled word string.
+ * attempts: Dictionary mapping item_id to number of attempts.
+ */
+export type WordBuilderSubmission = {
+    /**
+     * Map of item_id to spelled word string.
+     */
+    answers: {
+        [key: string]: (string);
+    };
+    /**
+     * Map of item_id to attempt count.
+     */
+    attempts?: {
+        [key: string]: (number);
+    };
+};
+
+/**
  * Common incorrect word pair mappings.
  */
 export type WordMatchingError = {
@@ -2884,6 +4641,30 @@ export type WordMatchingError = {
     correct_match: string;
     common_incorrect_match: string;
     error_count: number;
+};
+
+/**
+ * Result for a single word after submission.
+ *
+ * Attributes:
+ * item_id: ID of the word item.
+ * submitted_word: The student's submitted spelling.
+ * correct_word: The correct word spelling.
+ * is_correct: Whether the submission was correct.
+ * attempts: Number of attempts the student made.
+ * points: Points earned for this word (based on attempts).
+ * audio_url: Audio URL for the correct word (for review).
+ * definition: Definition of the word (for review).
+ */
+export type WordResult = {
+    item_id: string;
+    submitted_word: string;
+    correct_word: string;
+    is_correct: boolean;
+    attempts: number;
+    points: number;
+    audio_url?: (string | null);
+    definition: string;
 };
 
 /**
@@ -2985,6 +4766,19 @@ export type AdminListStudentsData = {
 };
 
 export type AdminListStudentsResponse = (Array<StudentPublic>);
+
+export type AdminGetStudentPasswordData = {
+    studentId: string;
+};
+
+export type AdminGetStudentPasswordResponse = (StudentPasswordResponse);
+
+export type AdminSetStudentPasswordData = {
+    requestBody: SetStudentPasswordRequest;
+    studentId: string;
+};
+
+export type AdminSetStudentPasswordResponse = (StudentPasswordResponse);
 
 export type AdminUpdateStudentData = {
     requestBody: StudentUpdate;
@@ -3120,6 +4914,408 @@ export type AdminDeleteAssignmentData = {
 
 export type AdminDeleteAssignmentResponse = (void);
 
+export type AiGenerationGetBookAiStatusData = {
+    bookId: number;
+};
+
+export type AiGenerationGetBookAiStatusResponse = (ProcessingMetadata);
+
+export type AiGenerationGetBookAiModulesData = {
+    bookId: number;
+};
+
+export type AiGenerationGetBookAiModulesResponse = (ModuleListResponse);
+
+export type AiGenerationGenerateTtsAudioData = {
+    /**
+     * Language code (en, tr, etc.)
+     */
+    lang?: string;
+    /**
+     * Text to convert to speech
+     */
+    text: string;
+};
+
+export type AiGenerationGenerateTtsAudioResponse = (unknown);
+
+export type AiGenerationStreamVocabularyAudioData = {
+    bookId: number;
+    lang: string;
+    wordId: string;
+};
+
+export type AiGenerationStreamVocabularyAudioResponse = (unknown);
+
+export type AiGenerationGenerateVocabularyQuizData = {
+    requestBody: VocabularyQuizGenerationRequest;
+};
+
+export type AiGenerationGenerateVocabularyQuizResponse = (VocabularyQuiz);
+
+export type AiGenerationGetVocabularyQuizData = {
+    quizId: string;
+};
+
+export type AiGenerationGetVocabularyQuizResponse = (VocabularyQuizPublic);
+
+export type AiGenerationSubmitVocabularyQuizData = {
+    quizId: string;
+    requestBody: VocabularyQuizSubmission;
+};
+
+export type AiGenerationSubmitVocabularyQuizResponse = (VocabularyQuizResult);
+
+export type AiGenerationGetVocabularyQuizResultData = {
+    quizId: string;
+};
+
+export type AiGenerationGetVocabularyQuizResultResponse = (VocabularyQuizResult);
+
+export type AiGenerationDebugQuizRequestData = {
+    requestBody: {
+        [key: string]: unknown;
+    };
+};
+
+export type AiGenerationDebugQuizRequestResponse = ({
+    [key: string]: unknown;
+});
+
+export type AiGenerationGenerateAiQuizData = {
+    requestBody: AIQuizGenerationRequest;
+};
+
+export type AiGenerationGenerateAiQuizResponse = (AIQuiz);
+
+export type AiGenerationGetAiQuizData = {
+    quizId: string;
+};
+
+export type AiGenerationGetAiQuizResponse = (AIQuizPublic);
+
+export type AiGenerationSubmitAiQuizData = {
+    quizId: string;
+    requestBody: AIQuizSubmission;
+};
+
+export type AiGenerationSubmitAiQuizResponse = (AIQuizResult);
+
+export type AiGenerationGetAiQuizResultData = {
+    quizId: string;
+};
+
+export type AiGenerationGetAiQuizResultResponse = (AIQuizResult);
+
+export type AiGenerationGenerateReadingActivityData = {
+    requestBody: ReadingComprehensionRequest;
+};
+
+export type AiGenerationGenerateReadingActivityResponse = (ReadingComprehensionActivity);
+
+export type AiGenerationGetReadingActivityData = {
+    activityId: string;
+};
+
+export type AiGenerationGetReadingActivityResponse = (ReadingComprehensionActivityPublic);
+
+export type AiGenerationSubmitReadingActivityData = {
+    activityId: string;
+    requestBody: ReadingComprehensionSubmission;
+};
+
+export type AiGenerationSubmitReadingActivityResponse = (ReadingComprehensionResult);
+
+export type AiGenerationGetReadingResultData = {
+    activityId: string;
+};
+
+export type AiGenerationGetReadingResultResponse = (ReadingComprehensionResult);
+
+export type AiGenerationGenerateSentenceActivityData = {
+    requestBody: SentenceBuilderRequest;
+};
+
+export type AiGenerationGenerateSentenceActivityResponse = (SentenceBuilderActivity);
+
+export type AiGenerationGetSentenceActivityData = {
+    activityId: string;
+};
+
+export type AiGenerationGetSentenceActivityResponse = (SentenceBuilderActivityPublic);
+
+export type AiGenerationSubmitSentenceActivityData = {
+    activityId: string;
+    requestBody: SentenceBuilderSubmission;
+};
+
+export type AiGenerationSubmitSentenceActivityResponse = (SentenceBuilderResult);
+
+export type AiGenerationGetSentenceResultData = {
+    activityId: string;
+};
+
+export type AiGenerationGetSentenceResultResponse = (SentenceBuilderResult);
+
+export type AiGenerationGenerateWordBuilderActivityData = {
+    requestBody: WordBuilderRequest;
+};
+
+export type AiGenerationGenerateWordBuilderActivityResponse = (WordBuilderActivity);
+
+export type AiGenerationGetWordBuilderActivityData = {
+    activityId: string;
+};
+
+export type AiGenerationGetWordBuilderActivityResponse = (WordBuilderActivityPublic);
+
+export type AiGenerationSubmitWordBuilderActivityData = {
+    activityId: string;
+    requestBody: WordBuilderSubmission;
+};
+
+export type AiGenerationSubmitWordBuilderActivityResponse = (WordBuilderResult);
+
+export type AiGenerationGetWordBuilderResultData = {
+    activityId: string;
+};
+
+export type AiGenerationGetWordBuilderResultResponse = (WordBuilderResult);
+
+export type AiGenerationRegenerateQuizQuestionData = {
+    requestBody: RegenerateQuestionRequest;
+};
+
+export type AiGenerationRegenerateQuizQuestionResponse = (AIQuizQuestion);
+
+export type AiGenerationSaveContentToLibraryData = {
+    requestBody: SaveToLibraryRequest;
+};
+
+export type AiGenerationSaveContentToLibraryResponse = (SaveToLibraryResponse);
+
+export type AiGenerationCreateAssignmentFromContentData = {
+    requestBody: CreateAssignmentRequest;
+};
+
+export type AiGenerationCreateAssignmentFromContentResponse = ({
+    [key: string]: unknown;
+});
+
+export type AiGenerationListLibraryContentData = {
+    /**
+     * Filter by activity type
+     */
+    activityType?: (string | null);
+    /**
+     * Filter by book ID
+     */
+    bookId?: (number | null);
+    /**
+     * Filter by creation date (from)
+     */
+    dateFrom?: (string | null);
+    /**
+     * Filter by creation date (to)
+     */
+    dateTo?: (string | null);
+    /**
+     * Page number
+     */
+    page?: number;
+    /**
+     * Items per page
+     */
+    pageSize?: number;
+    /**
+     * Filter by source type (book/material)
+     */
+    sourceType?: (string | null);
+};
+
+export type AiGenerationListLibraryContentResponse = (LibraryResponse);
+
+export type AiGenerationGetLibraryContentDetailData = {
+    contentId: string;
+};
+
+export type AiGenerationGetLibraryContentDetailResponse = (ContentItemDetail);
+
+export type AiGenerationDeleteLibraryContentData = {
+    contentId: string;
+};
+
+export type AiGenerationDeleteLibraryContentResponse = (DeleteContentResponse);
+
+export type AiGenerationUpdateLibraryContentData = {
+    contentId: string;
+    requestBody: UpdateContentRequest;
+};
+
+export type AiGenerationUpdateLibraryContentResponse = (UpdateContentResponse);
+
+export type AiGenerationAssignLibraryContentData = {
+    contentId: string;
+    requestBody: AssignContentRequest;
+};
+
+export type AiGenerationAssignLibraryContentResponse = (AssignContentResponse);
+
+export type AiUsageGetMyUsageResponse = (unknown);
+
+export type AiUsageGetUsageSummaryData = {
+    /**
+     * Start date (ISO 8601)
+     */
+    fromDate?: (string | null);
+    /**
+     * End date (ISO 8601)
+     */
+    toDate?: (string | null);
+};
+
+export type AiUsageGetUsageSummaryResponse = (unknown);
+
+export type AiUsageGetUsageByTypeData = {
+    /**
+     * Start date (ISO 8601)
+     */
+    fromDate?: (string | null);
+    /**
+     * End date (ISO 8601)
+     */
+    toDate?: (string | null);
+};
+
+export type AiUsageGetUsageByTypeResponse = (unknown);
+
+export type AiUsageGetUsageByTeacherData = {
+    /**
+     * Start date (ISO 8601)
+     */
+    fromDate?: (string | null);
+    /**
+     * Max teachers to return
+     */
+    limit?: number;
+    /**
+     * End date (ISO 8601)
+     */
+    toDate?: (string | null);
+};
+
+export type AiUsageGetUsageByTeacherResponse = (unknown);
+
+export type AiUsageGetUsageByProviderData = {
+    /**
+     * Start date (ISO 8601)
+     */
+    fromDate?: (string | null);
+    /**
+     * End date (ISO 8601)
+     */
+    toDate?: (string | null);
+};
+
+export type AiUsageGetUsageByProviderResponse = (unknown);
+
+export type AiUsageGetErrorsData = {
+    /**
+     * Start date (ISO 8601)
+     */
+    fromDate?: (string | null);
+    /**
+     * Max errors to return
+     */
+    limit?: number;
+    /**
+     * End date (ISO 8601)
+     */
+    toDate?: (string | null);
+};
+
+export type AiUsageGetErrorsResponse = (unknown);
+
+export type AiUsageExportUsageDataData = {
+    /**
+     * Start date (ISO 8601)
+     */
+    fromDate?: (string | null);
+    /**
+     * End date (ISO 8601)
+     */
+    toDate?: (string | null);
+};
+
+export type AiUsageExportUsageDataResponse = (unknown);
+
+export type AnnouncementsGetMyAnnouncementsData = {
+    /**
+     * Filter by read status
+     */
+    filter?: string;
+    /**
+     * Maximum records to return
+     */
+    limit?: number;
+    /**
+     * Number of records to skip
+     */
+    offset?: number;
+};
+
+export type AnnouncementsGetMyAnnouncementsResponse = (StudentAnnouncementListResponse);
+
+export type AnnouncementsCreateAnnouncementData = {
+    requestBody: AnnouncementCreate;
+};
+
+export type AnnouncementsCreateAnnouncementResponse = (AnnouncementPublic);
+
+export type AnnouncementsGetTeacherAnnouncementsData = {
+    /**
+     * Maximum records to return
+     */
+    limit?: number;
+    /**
+     * Number of records to skip
+     */
+    skip?: number;
+};
+
+export type AnnouncementsGetTeacherAnnouncementsResponse = (AnnouncementListResponse);
+
+export type AnnouncementsGetAnnouncementDetailData = {
+    announcementId: string;
+};
+
+export type AnnouncementsGetAnnouncementDetailResponse = (AnnouncementDetail);
+
+export type AnnouncementsUpdateAnnouncementData = {
+    announcementId: string;
+    requestBody: AnnouncementUpdate;
+};
+
+export type AnnouncementsUpdateAnnouncementResponse = (AnnouncementPublic);
+
+export type AnnouncementsDeleteAnnouncementData = {
+    announcementId: string;
+};
+
+export type AnnouncementsDeleteAnnouncementResponse = (void);
+
+export type AnnouncementsGetAnnouncementAsStudentData = {
+    announcementId: string;
+};
+
+export type AnnouncementsGetAnnouncementAsStudentResponse = (StudentAnnouncementPublic);
+
+export type AnnouncementsMarkAnnouncementAsReadData = {
+    announcementId: string;
+};
+
+export type AnnouncementsMarkAnnouncementAsReadResponse = (AnnouncementReadResponse);
+
 export type AssignmentsListAssignmentsResponse = (Array<AssignmentListItem>);
 
 export type AssignmentsCreateAssignmentData = {
@@ -3174,6 +5370,15 @@ export type AssignmentsDeleteAssignmentData = {
 
 export type AssignmentsDeleteAssignmentResponse = (void);
 
+export type AssignmentsAttachMaterialToAssignmentData = {
+    assignmentId: string;
+    materialId: string;
+};
+
+export type AssignmentsAttachMaterialToAssignmentResponse = ({
+    [key: string]: (string);
+});
+
 export type AssignmentsStartAssignmentData = {
     assignmentId: string;
 };
@@ -3223,6 +5428,12 @@ export type AssignmentsSubmitAssignmentData = {
 };
 
 export type AssignmentsSubmitAssignmentResponse = (AssignmentSubmissionResponse);
+
+export type AssignmentsGetAssignmentResultData = {
+    assignmentId: string;
+};
+
+export type AssignmentsGetAssignmentResultResponse = (AssignmentResultDetailResponse);
 
 export type AssignmentsGetDetailedResultsData = {
     assignmentId: string;
@@ -3283,6 +5494,12 @@ export type AssignmentsPreviewAssignmentData = {
 };
 
 export type AssignmentsPreviewAssignmentResponse = (AssignmentPreviewResponse);
+
+export type AssignmentsGetAssignmentForEditData = {
+    assignmentId: string;
+};
+
+export type AssignmentsGetAssignmentForEditResponse = (AssignmentForEditResponse);
 
 export type AssignmentsPreviewActivityData = {
     activityId: string;
@@ -3365,9 +5582,9 @@ export type BookMediaStreamMediaData = {
      */
     assetPath: string;
     /**
-     * Book ID
+     * DCS Book ID
      */
-    bookId: string;
+    bookId: number;
     range?: (string | null);
     token?: (string | null);
 };
@@ -3426,6 +5643,14 @@ export type BooksListBookVideosData = {
 };
 
 export type BooksListBookVideosResponse = (BookVideosResponse);
+
+export type BooksImportBookActivitiesData = {
+    bookId: number;
+};
+
+export type BooksImportBookActivitiesResponse = ({
+    [key: string]: unknown;
+});
 
 export type ClassesCreateClassData = {
     requestBody: ClassCreateByTeacher;
@@ -3670,6 +5895,12 @@ export type ReportsCheckReportStatusData = {
 
 export type ReportsCheckReportStatusResponse = (ReportStatusResponse);
 
+export type ReportsPreviewReportData = {
+    jobId: string;
+};
+
+export type ReportsPreviewReportResponse = (unknown);
+
 export type ReportsDownloadReportData = {
     jobId: string;
 };
@@ -3749,6 +5980,21 @@ export type StudentsGetStudentBadgesData = {
 
 export type StudentsGetStudentBadgesResponse = (StudentBadgeCountsResponse);
 
+export type StudentsGetStudentsData = {
+    /**
+     * Maximum number of students to return
+     */
+    limit?: number;
+    /**
+     * Number of students to skip
+     */
+    offset?: number;
+};
+
+export type StudentsGetStudentsResponse = (Array<StudentPublic>);
+
+export type StudentsGetUnassignedStudentsResponse = (Array<StudentPublic>);
+
 export type StudentsGetStudentCalendarAssignmentsData = {
     /**
      * End date for range (inclusive)
@@ -3771,6 +6017,10 @@ export type StudentsValidateImportFileData = {
 export type StudentsValidateImportFileResponse = (ImportValidationResponse);
 
 export type StudentsExecuteImportData = {
+    /**
+     * Password to apply to all students (Story 28.1)
+     */
+    classPassword?: (string | null);
     formData: Body_students_execute_import;
     /**
      * School ID (required for Admin)
@@ -3890,15 +6140,63 @@ export type TeacherMaterialsGetPresignedUrlResponse = (PresignedUrlResponse);
 
 export type TeacherMaterialsDownloadMaterialData = {
     materialId: string;
+    token?: (string | null);
 };
 
 export type TeacherMaterialsDownloadMaterialResponse = (unknown);
 
 export type TeacherMaterialsStreamMaterialData = {
     materialId: string;
+    token?: (string | null);
 };
 
 export type TeacherMaterialsStreamMaterialResponse = (unknown);
+
+export type TeacherMaterialsUploadPdfForAiData = {
+    description?: (string | null);
+    formData: Body_teacher_materials_upload_pdf_for_ai;
+    /**
+     * Display name
+     */
+    name: string;
+};
+
+export type TeacherMaterialsUploadPdfForAiResponse = (TeacherMaterialUploadResponse);
+
+export type TeacherMaterialsCreateTextMaterialForAiData = {
+    requestBody: TextMaterialCreate;
+};
+
+export type TeacherMaterialsCreateTextMaterialForAiResponse = (TeacherMaterialUploadResponse);
+
+export type TeacherMaterialsListProcessableMaterialsResponse = (TeacherMaterialListResponse);
+
+export type TeacherMaterialsGetMaterialForAiData = {
+    materialId: string;
+};
+
+export type TeacherMaterialsGetMaterialForAiResponse = (TeacherMaterialResponse);
+
+export type TeacherMaterialsListGeneratedContentData = {
+    /**
+     * Filter by activity type
+     */
+    activityType?: (string | null);
+};
+
+export type TeacherMaterialsListGeneratedContentResponse = (TeacherGeneratedContentListResponse);
+
+export type TeacherMaterialsGetGeneratedContentData = {
+    contentId: string;
+};
+
+export type TeacherMaterialsGetGeneratedContentResponse = (TeacherGeneratedContentResponse);
+
+export type TeacherMaterialsDeleteGeneratedContentData = {
+    contentId: string;
+};
+
+export type TeacherMaterialsDeleteGeneratedContentResponse = (void);
 
 export type TeachersListMyStudentsResponse = (Array<StudentPublic>);
 
@@ -3933,7 +6231,7 @@ export type TeachersBulkDeleteStudentsData = {
 
 export type TeachersBulkDeleteStudentsResponse = (BulkDeleteResponse);
 
-export type TeachersListMyClassesResponse = (Array<ClassPublic>);
+export type TeachersListMyClassesResponse = (Array<ClassResponse>);
 
 export type TeachersCreateClassData = {
     requestBody: ClassCreateByTeacher;
@@ -3953,6 +6251,12 @@ export type TeachersUpdateClassData = {
 };
 
 export type TeachersUpdateClassResponse = (ClassPublic);
+
+export type TeachersDeleteClassData = {
+    classId: string;
+};
+
+export type TeachersDeleteClassResponse = (void);
 
 export type TeachersAddStudentsToClassData = {
     classId: string;
@@ -3974,13 +6278,19 @@ export type TeachersRemoveStudentFromClassData = {
 
 export type TeachersRemoveStudentFromClassResponse = (unknown);
 
-export type TeachersGetMyInsightsResponse = (TeacherInsightsResponse);
+export type TeachersGetStudentsForClassesData = {
+    requestBody: StudentsForClassesRequest;
+};
+
+export type TeachersGetStudentsForClassesResponse = (Array<ClassStudentsGroup>);
+
+export type TeachersGetMyInsightsResponse = (unknown);
 
 export type TeachersGetInsightDetailsData = {
     insightId: string;
 };
 
-export type TeachersGetInsightDetailsResponse = (InsightDetail);
+export type TeachersGetInsightDetailsResponse = (unknown);
 
 export type TeachersDismissInsightEndpointData = {
     insightId: string;
@@ -4053,6 +6363,48 @@ export type UtilsTestEmailResponse = (Message);
 export type UtilsHealthCheckResponse = ({
     [key: string]: unknown;
 });
+
+export type VocabularyExplorerGetBooksWithVocabularyResponse = (Array<BookWithVocabulary>);
+
+export type VocabularyExplorerGetVocabularyData = {
+    /**
+     * Book ID to get vocabulary from
+     */
+    bookId: number;
+    /**
+     * CEFR levels, comma-separated
+     */
+    levels?: (string | null);
+    /**
+     * Filter by module ID
+     */
+    moduleId?: (string | null);
+    /**
+     * Page number
+     */
+    page?: number;
+    /**
+     * Items per page
+     */
+    pageSize?: number;
+    /**
+     * Filter by part of speech
+     */
+    partOfSpeech?: (string | null);
+    /**
+     * Search in word/definition
+     */
+    search?: (string | null);
+};
+
+export type VocabularyExplorerGetVocabularyResponse = (VocabularyListResponse);
+
+export type VocabularyExplorerGetAudioUrlData = {
+    bookId: number;
+    requestBody: AudioUrlRequest;
+};
+
+export type VocabularyExplorerGetAudioUrlResponse = (AudioUrlResponse);
 
 export type WebhooksReceiveDreamStorageWebhookResponse = ({
     [key: string]: unknown;

@@ -207,3 +207,19 @@ Enable teachers to generate educational content (questions, activities, vocabula
 **Deliverable:** AI-powered content generation with multi-provider support, vocabulary audio, and intuitive teacher UI
 
 ---
+
+## Epic 28: Teacher-Controlled Student Password Management
+
+**Estimated Effort:** 2-3 days | **Status:** Draft
+
+Transform student password management from a secure-but-complex model to a teacher-controlled model optimized for K-12 educational environments. Teachers can set, view, and modify student passwords directly, eliminating the support burden of forgotten credentials.
+
+**What Currently Exists:** Hashed passwords (irreversible), auto-generated random passwords, forced password change on first login, students can change own passwords
+**What We Build:** Custom password input + Reversible encryption for teacher viewing + Password visibility UI + Remove student password change
+
+**Stories:**
+- 28.1: Teacher-Controlled Student Password Management (Backend + Frontend)
+
+**Deliverable:** Teachers can set/view/change student passwords, students have simple memorable credentials, reduced support burden
+
+---

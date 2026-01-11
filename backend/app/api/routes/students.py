@@ -797,10 +797,11 @@ async def get_student_calendar_assignments(
 
 # --- Student Import Endpoints (Story 9.9) ---
 
-# Template column headers
+# Template column headers (Story 28.1: Added Password column)
 IMPORT_TEMPLATE_HEADERS = [
     "Full Name *",
     "Username",
+    "Password",  # Story 28.1: Optional - use class_password or auto-generate if empty
     "Email",
     "Parent Email",
     "Grade",
@@ -828,10 +829,11 @@ def _create_import_template_workbook() -> Workbook:
         cell.fill = header_fill
         cell.alignment = header_alignment
 
-    # Add example row
+    # Add example row (Story 28.1: Added password column)
     example_row = [
         "Neşet Ertaş",  # Full Name
-        "neset.ertas",  # Username
+        "neset.ertas",  # Username (optional)
+        "student123",  # Password (optional - leave empty to auto-generate)
         "neset@email.com",  # Email
         "parent@email.com",  # Parent Email
         "3",  # Grade
@@ -841,7 +843,7 @@ def _create_import_template_workbook() -> Workbook:
         ws_students.cell(row=2, column=col, value=value)
 
     # Set column widths
-    column_widths = [20, 20, 25, 25, 15, 15]
+    column_widths = [20, 20, 15, 25, 25, 15, 15]
     for col, width in enumerate(column_widths, start=1):
         ws_students.column_dimensions[get_column_letter(col)].width = width
 
@@ -854,17 +856,23 @@ def _create_import_template_workbook() -> Workbook:
         ("Column Descriptions:", None),
         ("- Full Name * (Required):", "Student's full name. Used to generate username if not provided."),
         ("- Username (Optional):", "Leave empty to auto-generate from full name. Turkish characters will be converted."),
+        ("- Password (Optional):", "Student's password. Leave empty to auto-generate or use class password option."),
         ("- Email (Optional):", "Student's email address."),
         ("- Parent Email (Optional):", "Parent/guardian email address for communications."),
         ("- Grade (Optional):", "Student's grade level (e.g., '3', '5', '10')."),
         ("- Class (Optional):", "Class/section identifier (e.g., 'A', 'B', 'Morning'). Used with Grade to create/assign classrooms."),
         ("", None),
+        ("Password Options:", None),
+        ("- Provide passwords in the Password column for individual students", None),
+        ("- Leave Password column empty and use 'class password' option to set same password for all", None),
+        ("- Leave Password column empty without class password to auto-generate unique passwords", None),
+        ("", None),
         ("Notes:", None),
         ("- Maximum 500 students per upload", None),
         ("- Usernames are auto-generated as: firstname.lastname (lowercase, Turkish chars converted)", None),
         ("- If username exists, a number will be appended (e.g., john.doe2)", None),
-        ("- Passwords are auto-generated (8 characters with letters and numbers)", None),
-        ("- Download the credentials file after import - passwords cannot be retrieved later!", None),
+        ("- Auto-generated passwords are 8 characters with letters and numbers", None),
+        ("- Teachers can view and change student passwords anytime from the student list", None),
         ("- Students are bound to the teacher who imports them", None),
         ("", None),
         ("Turkish Character Conversion:", None),
@@ -1108,7 +1116,7 @@ async def validate_import_file(
 @router.post(
     "/import",
     response_model=ImportExecutionResponse,
-    summary="Execute student import (Story 9.9)",
+    summary="Execute student import (Story 9.9, 28.1)",
     description="Import students from validated Excel file. Returns created credentials.",
 )
 async def execute_import(
@@ -1116,6 +1124,7 @@ async def execute_import(
     file: UploadFile = File(..., description="Excel file (.xlsx or .xls)"),
     school_id: uuid.UUID | None = Query(None, description="School ID (required for Admin)"),
     teacher_id_param: uuid.UUID | None = Query(None, alias="teacher_id", description="Teacher ID (optional for Admin, to assign classrooms)"),
+    class_password: str | None = Query(None, min_length=4, max_length=50, description="Password to apply to all students (Story 28.1)"),
     current_user: User = require_role(UserRole.admin, UserRole.teacher),
 ) -> ImportExecutionResponse:
     """
@@ -1125,6 +1134,11 @@ async def execute_import(
 
     - Admin must provide school_id, optionally teacher_id for classroom creation
     - Teacher uses their own school
+
+    **Password Options (Story 28.1):**
+    - Password from Excel file (Password column) takes priority
+    - If no password in file, class_password is used (same for all)
+    - If neither, auto-generate unique password for each student
 
     Creates students with:
     - Role: student
@@ -1286,6 +1300,7 @@ async def execute_import(
         # Support both new ("Full Name *") and old ("Full Name") column headers
         full_name = str(row.get("Full Name *", "") or row.get("Full Name", "") or "").strip()
         provided_username = str(row.get("Username", "") or "").strip()
+        row_password = str(row.get("Password", "") or "").strip()  # Story 28.1
         email = str(row.get("Email", "") or "").strip()
         parent_email = str(row.get("Parent Email", "") or "").strip()
         grade = str(row.get("Grade", "") or "").strip()
@@ -1310,8 +1325,13 @@ async def execute_import(
 
             used_usernames.add(username)
 
-            # Always generate password (Password column was removed from template)
-            password = generate_student_password()
+            # Story 28.1: Password priority: row password > class password > auto-generate
+            if row_password:
+                password = row_password
+            elif class_password:
+                password = class_password
+            else:
+                password = generate_student_password()
 
             # Email is optional - pass None if not provided
             user_email = email if email else None

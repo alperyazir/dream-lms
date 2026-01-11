@@ -15,7 +15,7 @@ from app.api.deps import (
     require_role,
 )
 from app.core.config import settings
-from app.core.security import get_password_hash
+from app.core.security import decrypt_viewable_password, encrypt_viewable_password, get_password_hash
 from app.models import (
     Assignment,
     AssignmentStudent,
@@ -28,9 +28,11 @@ from app.models import (
     SchoolCreate,
     SchoolPublic,
     SchoolUpdate,
+    SetStudentPasswordRequest,
     Student,
     StudentCreate,
     StudentCreateAPI,
+    StudentPasswordResponse,
     StudentPublic,
     StudentUpdate,
     Teacher,
@@ -864,15 +866,17 @@ def create_student(
     """
     Create a new student with user account.
 
-    **Permissions:** Admin, Publisher, OR Teacher
+    **Permissions:** Admin, Supervisor, Publisher, OR Teacher
 
     - **username**: Username for user account (3-50 characters, alphanumeric, underscore, or hyphen)
-    - **user_email**: Email for user account
+    - **user_email**: Email for user account (optional)
     - **full_name**: Full name for user account
     - **grade_level**: Optional grade level
     - **parent_email**: Optional parent email
+    - **password**: Optional custom password (4-50 chars). If not provided, auto-generated.
 
-    Returns user, temp_password, and student record.
+    Returns user, password (for sharing), and student record.
+    Password is stored encrypted so teachers can view/change it later (Story 28.1).
     """
     # Check if user email already exists
     existing_user = crud.get_user_by_email(session=session, email=student_in.user_email)
@@ -890,8 +894,8 @@ def create_student(
             detail="User with this username already exists"
         )
 
-    # Generate secure temporary password
-    temp_password = generate_temp_password()
+    # Use provided password or auto-generate (Story 28.1)
+    password = student_in.password if student_in.password else generate_temp_password()
 
     # Create Student record data
     student_create = StudentCreate(
@@ -905,14 +909,14 @@ def create_student(
         session=session,
         email=student_in.user_email,
         username=student_in.username,
-        password=temp_password,
+        password=password,
         full_name=student_in.full_name,
         student_create=student_create
     )
 
     # Handle password delivery based on email availability
     password_emailed = False
-    temp_password_for_response = None
+    password_for_response = None
     message = ""
 
     if user.email and settings.emails_enabled:
@@ -921,7 +925,7 @@ def create_student(
             email_data = generate_new_account_email(
                 email_to=user.email,
                 username=user.username,
-                password=temp_password,
+                password=password,
                 full_name=student_in.full_name
             )
             send_email(
@@ -933,12 +937,13 @@ def create_student(
             message = "Password sent via email"
         except Exception as e:
             logger.error(f"Failed to send welcome email to {user.email}: {e}")
-            temp_password_for_response = temp_password
-            message = "Email delivery failed. Please share the temporary password securely."
+            password_for_response = password
+            message = "Email delivery failed. Please share the password securely."
     else:
-        # No email or emails disabled - return password once for manual communication
-        temp_password_for_response = temp_password
-        message = "Please share the temporary password securely with the user"
+        # No email or emails disabled - return password for manual communication
+        # Teachers can always view password later via GET /admin/students/{id}/password
+        password_for_response = password
+        message = "Share this password with the student. You can view/change it anytime."
 
     # Build student response with user information
     student_data = StudentPublic(
@@ -956,9 +961,190 @@ def create_student(
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
         role_record=student_data,
-        temporary_password=temp_password_for_response,
+        temporary_password=password_for_response,
         password_emailed=password_emailed,
         message=message
+    )
+
+
+# --- Student Password Management Endpoints (Story 28.1) ---
+
+@router.get(
+    "/students/{student_id}/password",
+    response_model=StudentPasswordResponse,
+    summary="Get student password (Story 28.1)",
+    description="Retrieve viewable password for a student. Teachers can only view their students.",
+)
+def get_student_password(
+    *,
+    session: SessionDep,
+    student_id: uuid.UUID,
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.teacher)
+) -> StudentPasswordResponse:
+    """
+    Get the stored password for a student.
+
+    **Permissions:**
+    - Admin/Supervisor: can view any student's password
+    - Teacher: can only view passwords for students they created or in their classes
+
+    Returns the password if available, or a message if not stored (pre-feature students).
+    """
+    # Get student
+    student = session.get(Student, student_id)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+
+    # Get associated user
+    user = session.get(User, student.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student user not found"
+        )
+
+    # Check access permissions for teachers
+    if current_user.role == UserRole.teacher:
+        teacher = session.exec(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        ).first()
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Teacher record not found"
+            )
+
+        # Check if teacher created this student or student is in their class
+        if student.created_by_teacher_id != teacher.id:
+            # Check if student is in one of teacher's classes
+            from app.models import ClassStudent, Class
+            teacher_class_ids = session.exec(
+                select(Class.id).where(Class.teacher_id == teacher.id)
+            ).all()
+            student_in_class = session.exec(
+                select(ClassStudent).where(
+                    ClassStudent.student_id == student_id,
+                    ClassStudent.class_id.in_(teacher_class_ids)  # type: ignore
+                )
+            ).first()
+            if not student_in_class:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You do not have access to this student's credentials"
+                )
+
+    # Decrypt password if available
+    password = None
+    message = None
+
+    if user.viewable_password_encrypted:
+        password = decrypt_viewable_password(user.viewable_password_encrypted)
+        if not password:
+            message = "Password decryption failed. Please set a new password."
+    else:
+        message = "Password not available (student created before this feature). Set a new password to enable viewing."
+
+    return StudentPasswordResponse(
+        student_id=student_id,
+        username=user.username,
+        full_name=user.full_name or "",
+        password=password,
+        message=message
+    )
+
+
+@router.put(
+    "/students/{student_id}/password",
+    response_model=StudentPasswordResponse,
+    summary="Set student password (Story 28.1)",
+    description="Set a new password for a student. Updates both login password and viewable password.",
+)
+def set_student_password(
+    *,
+    session: SessionDep,
+    student_id: uuid.UUID,
+    body: SetStudentPasswordRequest,
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.teacher)
+) -> StudentPasswordResponse:
+    """
+    Set a new password for a student.
+
+    **Permissions:**
+    - Admin/Supervisor: can set password for any student
+    - Teacher: can only set passwords for students they created or in their classes
+
+    Updates both the hashed login password and the encrypted viewable password.
+    """
+    # Get student
+    student = session.get(Student, student_id)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+
+    # Get associated user
+    user = session.get(User, student.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student user not found"
+        )
+
+    # Check access permissions for teachers
+    if current_user.role == UserRole.teacher:
+        teacher = session.exec(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        ).first()
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Teacher record not found"
+            )
+
+        # Check if teacher created this student or student is in their class
+        if student.created_by_teacher_id != teacher.id:
+            # Check if student is in one of teacher's classes
+            from app.models import ClassStudent, Class
+            teacher_class_ids = session.exec(
+                select(Class.id).where(Class.teacher_id == teacher.id)
+            ).all()
+            student_in_class = session.exec(
+                select(ClassStudent).where(
+                    ClassStudent.student_id == student_id,
+                    ClassStudent.class_id.in_(teacher_class_ids)  # type: ignore
+                )
+            ).first()
+            if not student_in_class:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You do not have access to modify this student's credentials"
+                )
+
+    # Update password
+    user.hashed_password = get_password_hash(body.password)
+    user.must_change_password = False  # Students don't change passwords
+
+    # Store encrypted viewable password
+    try:
+        user.viewable_password_encrypted = encrypt_viewable_password(body.password)
+    except ValueError:
+        # PASSWORD_ENCRYPTION_KEY not configured - skip viewable storage
+        pass
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return StudentPasswordResponse(
+        student_id=student_id,
+        username=user.username,
+        full_name=user.full_name or "",
+        password=body.password,
+        message="Password updated successfully"
     )
 
 

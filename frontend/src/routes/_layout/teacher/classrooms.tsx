@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { BarChart3, Edit, Plus, TrendingUp, UserPlus } from "lucide-react"
+import { BarChart3, Edit, Plus, Trash2, TrendingUp, UserPlus } from "lucide-react"
 import { useState } from "react"
 import {
   type ClassCreateByTeacher,
-  type ClassPublic,
+  type ClassResponse,
   type ClassUpdate,
   type StudentPublic,
   TeachersService,
@@ -12,7 +12,6 @@ import {
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -24,6 +23,14 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/teacher/classrooms")({
@@ -42,7 +49,9 @@ function TeacherClassroomsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isManageStudentsDialogOpen, setIsManageStudentsDialogOpen] =
     useState(false)
-  const [selectedClass, setSelectedClass] = useState<ClassPublic | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedClass, setSelectedClass] = useState<ClassResponse | null>(null)
+  const [classToDelete, setClassToDelete] = useState<ClassResponse | null>(null)
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
 
   const [newClass, setNewClass] = useState<ClassCreateByTeacher>({
@@ -204,7 +213,38 @@ function TeacherClassroomsPage() {
     },
   })
 
-  const handleEditClass = (classItem: ClassPublic) => {
+  // Delete class mutation
+  const deleteClassMutation = useMutation({
+    mutationFn: (classId: string) =>
+      TeachersService.deleteClass({ classId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
+      setIsDeleteDialogOpen(false)
+      setClassToDelete(null)
+      showSuccessToast("Class deleted successfully!")
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to delete class. Please try again."
+      if (error.body?.detail) {
+        if (typeof error.body.detail === "string") {
+          errorMessage = error.body.detail
+        }
+      }
+      showErrorToast(errorMessage)
+    },
+  })
+
+  const handleDeleteClass = (classItem: ClassResponse) => {
+    setClassToDelete(classItem)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteClass = () => {
+    if (!classToDelete) return
+    deleteClassMutation.mutate(classToDelete.id)
+  }
+
+  const handleEditClass = (classItem: ClassResponse) => {
     setSelectedClass(classItem)
     setEditClass({
       name: classItem.name,
@@ -228,7 +268,7 @@ function TeacherClassroomsPage() {
     })
   }
 
-  const handleManageStudents = (classItem: ClassPublic) => {
+  const handleManageStudents = (classItem: ClassResponse) => {
     setSelectedClass(classItem)
     setIsManageStudentsDialogOpen(true)
   }
@@ -322,106 +362,121 @@ function TeacherClassroomsPage() {
           </p>
         </div>
       ) : (
-        /* Classes Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClasses.map((classItem) => (
-            <Card
-              key={classItem.id}
-              className="shadow-neuro border-teal-100 dark:border-teal-900 hover:shadow-neuro-lg transition-shadow"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-foreground mb-1">
-                      {classItem.name}
-                    </h3>
-                    {classItem.subject && (
+        /* Classes List View */
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Class Name</TableHead>
+                <TableHead>Subject</TableHead>
+                <TableHead>Grade Level</TableHead>
+                <TableHead>Academic Year</TableHead>
+                <TableHead>Students</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredClasses.map((classItem) => (
+                <TableRow key={classItem.id}>
+                  <TableCell className="font-medium">{classItem.name}</TableCell>
+                  <TableCell>
+                    {classItem.subject ? (
                       <Badge
                         variant="outline"
-                        className="bg-teal-50 text-teal-700 text-xs"
+                        className="bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
                       >
                         {classItem.subject}
                       </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
                     )}
-                  </div>
-                  <TrendingUp className="w-8 h-8 text-teal-500" />
-                </div>
-
-                <div className="space-y-3">
-                  {classItem.grade_level && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Grade Level:
-                      </span>
+                  </TableCell>
+                  <TableCell>
+                    {classItem.grade_level ? (
                       <Badge
                         variant="outline"
-                        className="bg-blue-50 text-blue-700"
+                        className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                       >
                         {classItem.grade_level}
                       </Badge>
-                    </div>
-                  )}
-                  {classItem.academic_year && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Academic Year:
-                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {classItem.academic_year ? (
                       <Badge
                         variant="outline"
-                        className="bg-purple-50 text-purple-700"
+                        className="bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                       >
                         {classItem.academic_year}
                       </Badge>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Status:</span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className="bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
+                    >
+                      {classItem.student_count ?? 0}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     <Badge
                       variant="outline"
                       className={
                         classItem.is_active
-                          ? "bg-green-50 text-green-700"
-                          : "bg-gray-50 text-gray-700"
+                          ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                          : "bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
                       }
                     >
                       {classItem.is_active ? "Active" : "Inactive"}
                     </Badge>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-2 mt-4 pt-4 border-t">
-                  <Link
-                    to="/teacher/classrooms/$classId"
-                    params={{ classId: classItem.id }}
-                    className="flex-1"
-                  >
-                    <Button size="sm" variant="outline" className="w-full">
-                      <BarChart3 className="w-3 h-3 mr-1" />
-                      View
-                    </Button>
-                  </Link>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEditClass(classItem)}
-                    className="flex-1"
-                  >
-                    <Edit className="w-3 h-3 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => handleManageStudents(classItem)}
-                    className="flex-1 bg-teal-500 hover:bg-teal-600"
-                  >
-                    <UserPlus className="w-3 h-3 mr-1" />
-                    Students
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Link
+                        to="/teacher/classrooms/$classId"
+                        params={{ classId: classItem.id }}
+                      >
+                        <Button size="sm" variant="outline">
+                          <BarChart3 className="w-3 h-3 mr-1" />
+                          View
+                        </Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditClass(classItem)}
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleManageStudents(classItem)}
+                        className="bg-teal-500 hover:bg-teal-600"
+                      >
+                        <UserPlus className="w-3 h-3 mr-1" />
+                        Students
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteClass(classItem)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -709,6 +764,39 @@ function TeacherClassroomsPage() {
               }}
             >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Class</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{classToDelete?.name}"? This will
+              also remove all student enrollments in this class. This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false)
+                setClassToDelete(null)
+              }}
+              disabled={deleteClassMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteClass}
+              disabled={deleteClassMutation.isPending}
+            >
+              {deleteClassMutation.isPending ? "Deleting..." : "Delete Class"}
             </Button>
           </DialogFooter>
         </DialogContent>

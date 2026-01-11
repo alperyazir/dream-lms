@@ -3,7 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   BarChart3,
   Edit,
+  Eye,
+  EyeOff,
   FileSpreadsheet,
+  KeyRound,
   Plus,
   Trash2,
   Users,
@@ -18,6 +21,7 @@ import {
 } from "@/client"
 import { ImportStudentsDialog } from "@/components/Admin/ImportStudentsDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { StudentPasswordModal } from "@/components/student/StudentPasswordModal"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,7 +82,17 @@ function TeacherStudentsPage() {
     full_name: "",
     grade_level: undefined,
     parent_email: undefined,
+    password: undefined,
   })
+  // Story 28.1: Password management state
+  const [autoGeneratePassword, setAutoGeneratePassword] = useState(true)
+  const [showPassword, setShowPassword] = useState(false)
+  // Story 28.1: Password modal state
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [selectedStudentForPassword, setSelectedStudentForPassword] = useState<{
+    id: string
+    name: string
+  } | null>(null)
   const [editStudent, setEditStudent] = useState<StudentUpdate>({
     user_email: undefined,
     user_username: undefined,
@@ -145,8 +159,14 @@ function TeacherStudentsPage() {
 
   // Create student mutation
   const createStudentMutation = useMutation({
-    mutationFn: (data: StudentCreateAPI) =>
-      TeachersService.createStudent({ requestBody: data }),
+    mutationFn: (data: StudentCreateAPI) => {
+      // Convert empty email to undefined so backend treats it as optional
+      const payload = {
+        ...data,
+        user_email: data.user_email?.trim() || undefined,
+      }
+      return TeachersService.createStudent({ requestBody: payload })
+    },
     onSuccess: async (createdStudent) => {
       console.log("Created student:", createdStudent)
       console.log("Selected classroom IDs:", selectedClassroomIds)
@@ -178,8 +198,12 @@ function TeacherStudentsPage() {
             full_name: "",
             grade_level: undefined,
             parent_email: undefined,
+            password: undefined,
           })
           setSelectedClassroomIds([])
+          // Story 28.1: Reset password state
+          setAutoGeneratePassword(true)
+          setShowPassword(false)
           showSuccessToast(message)
         } catch (error: any) {
           console.error("Failed to add student to classrooms:", error)
@@ -192,8 +216,12 @@ function TeacherStudentsPage() {
             full_name: "",
             grade_level: undefined,
             parent_email: undefined,
+            password: undefined,
           })
           setSelectedClassroomIds([])
+          // Story 28.1: Reset password state
+          setAutoGeneratePassword(true)
+          setShowPassword(false)
 
           let errorMsg =
             "Student created but failed to add to some classrooms. You can add them later."
@@ -302,11 +330,7 @@ function TeacherStudentsPage() {
   })
 
   const handleAddStudent = () => {
-    if (
-      !newStudent.username ||
-      !newStudent.user_email ||
-      !newStudent.full_name
-    ) {
+    if (!newStudent.username || !newStudent.full_name) {
       showErrorToast("Please fill in all required fields")
       return
     }
@@ -317,6 +341,18 @@ function TeacherStudentsPage() {
         "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
       )
       return
+    }
+
+    // Story 28.1: Validate password if not auto-generating
+    if (!autoGeneratePassword && newStudent.password) {
+      if (newStudent.password.length < 1) {
+        showErrorToast("Password is required")
+        return
+      }
+      if (newStudent.password.length > 50) {
+        showErrorToast("Password must be 50 characters or less")
+        return
+      }
     }
 
     createStudentMutation.mutate(newStudent)
@@ -593,6 +629,22 @@ function TeacherStudentsPage() {
                           Analytics
                         </Button>
                       </Link>
+                      {/* Story 28.1: View/Set Password button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedStudentForPassword({
+                            id: student.id,
+                            name: student.user_full_name || "Student",
+                          })
+                          setIsPasswordModalOpen(true)
+                        }}
+                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                      >
+                        <KeyRound className="w-3 h-3 mr-1" />
+                        Password
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -676,8 +728,8 @@ function TeacherStudentsPage() {
             <div className="space-y-2">
               <Label htmlFor="email">
                 Email{" "}
-                <span className="text-destructive ml-1" aria-hidden="true">
-                  *
+                <span className="text-muted-foreground font-normal">
+                  (Optional)
                 </span>
               </Label>
               <Input
@@ -689,6 +741,56 @@ function TeacherStudentsPage() {
                   setNewStudent({ ...newStudent, user_email: e.target.value })
                 }
               />
+            </div>
+            {/* Story 28.1: Password field with auto-generate option */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="student-password">Password</Label>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={autoGeneratePassword}
+                    onCheckedChange={(checked) => {
+                      setAutoGeneratePassword(checked === true)
+                      if (checked) {
+                        setNewStudent({ ...newStudent, password: undefined })
+                      }
+                    }}
+                  />
+                  Auto-generate
+                </label>
+              </div>
+              <div className="relative">
+                <Input
+                  id="student-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={autoGeneratePassword ? "Will be auto-generated" : "Enter password"}
+                  value={newStudent.password || ""}
+                  disabled={autoGeneratePassword}
+                  onChange={(e) =>
+                    setNewStudent({ ...newStudent, password: e.target.value || undefined })
+                  }
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={autoGeneratePassword}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {autoGeneratePassword
+                  ? "A secure password will be generated automatically"
+                  : "Any password length allowed"}
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="grade">Grade Level</Label>
@@ -1007,6 +1109,19 @@ function TeacherStudentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Story 28.1: Student Password Modal */}
+      {selectedStudentForPassword && (
+        <StudentPasswordModal
+          studentId={selectedStudentForPassword.id}
+          studentName={selectedStudentForPassword.name}
+          isOpen={isPasswordModalOpen}
+          onClose={() => {
+            setIsPasswordModalOpen(false)
+            setSelectedStudentForPassword(null)
+          }}
+        />
+      )}
     </div>
   )
 }

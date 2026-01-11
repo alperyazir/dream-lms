@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from app.core.security import get_password_hash, verify_password
+from app.core.security import encrypt_viewable_password, get_password_hash, verify_password
 from app.models import (
     Student,
     StudentCreate,
@@ -172,7 +172,7 @@ def create_teacher(
 
 
 def create_student(
-    *, session: Session, email: str | None, username: str, password: str, full_name: str, student_create: StudentCreate, created_by_teacher_id: uuid.UUID | None = None
+    *, session: Session, email: str | None, username: str, password: str, full_name: str, student_create: StudentCreate, created_by_teacher_id: uuid.UUID | None = None, store_viewable_password: bool = True
 ) -> tuple[User, Student]:
     """
     Create a new student user and associated student record atomically.
@@ -185,6 +185,7 @@ def create_student(
         full_name: User full name
         student_create: Student-specific data (grade_level, parent_email)
         created_by_teacher_id: Optional ID of teacher who created this student
+        store_viewable_password: If True, store encrypted password for teacher viewing (Story 28.1)
 
     Returns:
         Tuple of (User, Student) records
@@ -213,12 +214,22 @@ def create_student(
         is_active=True,
         is_superuser=False
     )
-    db_user = User.model_validate(
-        user_create, update={
-            "hashed_password": get_password_hash(password),
-            "must_change_password": True  # New users must change password on first login
-        }
-    )
+
+    # Build update dict for User model
+    update_data: dict[str, Any] = {
+        "hashed_password": get_password_hash(password),
+        "must_change_password": False,  # Students don't change passwords - teachers control them (Story 28.1)
+    }
+
+    # Store encrypted password for teacher viewing if configured
+    if store_viewable_password:
+        try:
+            update_data["viewable_password_encrypted"] = encrypt_viewable_password(password)
+        except ValueError:
+            # PASSWORD_ENCRYPTION_KEY not configured - skip viewable password storage
+            pass
+
+    db_user = User.model_validate(user_create, update=update_data)
     session.add(db_user)
     session.flush()  # Get user.id without committing
 

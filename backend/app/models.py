@@ -93,14 +93,14 @@ class UserBase(SQLModel):
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
-    password: str = Field(min_length=8, max_length=40)
+    password: str = Field(min_length=1, max_length=40)
 
 
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
     email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
     username: str | None = Field(default=None, min_length=3, max_length=50)  # type: ignore
-    password: str | None = Field(default=None, min_length=8, max_length=40)
+    password: str | None = Field(default=None, min_length=1, max_length=40)
     dcs_publisher_id: int | None = Field(default=None)  # type: ignore
 
     @field_validator('username')
@@ -145,6 +145,10 @@ class User(UserBase, table=True):
     hashed_password: str
     must_change_password: bool = Field(default=False)  # True for new users requiring password change
     has_completed_tour: bool = Field(default=False)  # True after user completes onboarding tour
+
+    # Encrypted password for teacher viewing (students only)
+    # Stores Fernet-encrypted password so teachers can help students who forgot
+    viewable_password_encrypted: str | None = Field(default=None, max_length=500)
 
     # Avatar fields
     avatar_url: str | None = Field(default=None, max_length=500)  # URL to avatar image
@@ -372,6 +376,24 @@ class StudentCreateAPI(SQLModel):
     full_name: str = Field(max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
     parent_email: EmailStr | None = Field(default=None, max_length=255)
+    # Optional password - if not provided, auto-generated
+    password: str | None = Field(default=None, min_length=1, max_length=50)
+
+
+# --- Student Password Management (Story 28.1) ---
+
+class StudentPasswordResponse(SQLModel):
+    """Response for viewing/setting student password"""
+    student_id: uuid.UUID
+    username: str
+    full_name: str
+    password: str | None = None  # None if pre-feature student or not available
+    message: str | None = None
+
+
+class SetStudentPasswordRequest(SQLModel):
+    """Request body for setting a student's password"""
+    password: str = Field(min_length=1, max_length=50)
 
 
 # Response for user creation endpoints with temporary password

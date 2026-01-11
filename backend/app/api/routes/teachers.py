@@ -78,13 +78,14 @@ def create_student(
             detail="Teacher record not found for this user"
         )
 
-    # Check if user email already exists
-    existing_user = crud.get_user_by_email(session=session, email=student_in.user_email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
-        )
+    # Check if user email already exists (only if email is provided)
+    if student_in.user_email:
+        existing_user = crud.get_user_by_email(session=session, email=student_in.user_email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this email already exists"
+            )
 
     # Check if username already exists
     existing_username = crud.get_user_by_username(session=session, username=student_in.username)
@@ -94,8 +95,11 @@ def create_student(
             detail="User with this username already exists"
         )
 
-    # Generate secure temporary password
-    temp_password = generate_temp_password()
+    # Use provided password or generate one
+    if student_in.password:
+        temp_password = student_in.password
+    else:
+        temp_password = generate_temp_password()
 
     # Create Student record data
     student_create = StudentCreate(
@@ -909,6 +913,60 @@ def update_class(
     session.refresh(db_class)
 
     return ClassPublic.model_validate(db_class)
+
+
+@router.delete(
+    "/me/classes/{class_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete class",
+    description="Delete a class. This will also remove all student enrollments. Teacher only.",
+)
+def delete_class(
+    *,
+    session: SessionDep,
+    class_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher)
+) -> None:
+    """
+    Delete a class.
+
+    Only the teacher who owns the class can delete it.
+    This will also remove all student enrollments in this class.
+    """
+    # Get Teacher record for current user
+    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
+    teacher = session.exec(teacher_statement).first()
+
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found for this user"
+        )
+
+    # Get class
+    db_class = session.get(Class, class_id)
+    if not db_class:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class not found"
+        )
+
+    # Verify class belongs to this teacher
+    if db_class.teacher_id != teacher.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot delete another teacher's class"
+        )
+
+    # Delete all student enrollments in this class first
+    class_students_statement = select(ClassStudent).where(ClassStudent.class_id == class_id)
+    class_students = session.exec(class_students_statement).all()
+    for cs in class_students:
+        session.delete(cs)
+
+    # Delete the class
+    session.delete(db_class)
+    session.commit()
 
 
 @router.post(

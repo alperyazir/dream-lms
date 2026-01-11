@@ -17,11 +17,25 @@ const getMustChangePassword = () => {
   return sessionStorage.getItem("must_change_password") === "true"
 }
 
+// Story 28.1: Get user role from session storage for route guards
+const getUserRole = () => {
+  return sessionStorage.getItem("user_role")
+}
+
 const setMustChangePasswordStorage = (value: boolean) => {
   if (value) {
     sessionStorage.setItem("must_change_password", "true")
   } else {
     sessionStorage.removeItem("must_change_password")
+  }
+}
+
+// Story 28.1: Store user role in session storage
+const setUserRoleStorage = (role: string | null | undefined) => {
+  if (role) {
+    sessionStorage.setItem("user_role", role)
+  } else {
+    sessionStorage.removeItem("user_role")
   }
 }
 
@@ -71,11 +85,20 @@ const useAuth = () => {
 
   const loginMutation = useMutation({
     mutationFn: login,
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       // Invalidate currentUser to fetch fresh data for the new user
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+      // Story 28.1: Fetch user data and store role for route guards
+      try {
+        const userData = await UsersService.readUserMe()
+        setUserRoleStorage(userData.role)
+      } catch {
+        // Continue even if user fetch fails - role check will be handled in components
+      }
       // Redirect based on must_change_password flag
-      if (response.must_change_password) {
+      // Story 28.1: Students cannot change passwords, so skip change-password redirect
+      const storedRole = getUserRole()
+      if (response.must_change_password && storedRole !== "student") {
         navigate({ to: "/change-password" })
       } else {
         navigate({ to: "/" })
@@ -89,6 +112,8 @@ const useAuth = () => {
     localStorage.removeItem("access_token")
     // Clear must_change_password flag
     sessionStorage.removeItem("must_change_password")
+    // Story 28.1: Clear user role
+    sessionStorage.removeItem("user_role")
     setMustChangePasswordState(false)
 
     // Clear all query cache to remove old user data
@@ -108,5 +133,5 @@ const useAuth = () => {
   }
 }
 
-export { isLoggedIn, getMustChangePassword }
+export { isLoggedIn, getMustChangePassword, getUserRole }
 export default useAuth

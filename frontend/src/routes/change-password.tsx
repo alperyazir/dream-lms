@@ -18,7 +18,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Progress } from "@/components/ui/progress"
-import { getMustChangePassword, isLoggedIn } from "@/hooks/useAuth"
+import { getMustChangePassword, getUserRole, isLoggedIn } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 
 // Password strength calculation
@@ -96,6 +96,11 @@ export const Route = createFileRoute("/change-password")({
     // Redirect if not authenticated
     if (!isLoggedIn()) {
       throw redirect({ to: "/login" })
+    }
+    // Story 28.1: Students cannot change their own passwords - teachers manage them
+    const role = getUserRole()
+    if (role === "student") {
+      throw redirect({ to: "/student/dashboard" })
     }
     // Redirect if doesn't need password change
     if (!getMustChangePassword()) {

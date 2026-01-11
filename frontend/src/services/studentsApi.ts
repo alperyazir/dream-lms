@@ -102,12 +102,61 @@ export async function getUnassignedStudents(): Promise<Student[]> {
 }
 
 /**
+ * Story 28.1: Student Password Response type
+ */
+export interface StudentPasswordResponse {
+  student_id: string
+  username: string
+  full_name: string
+  password: string | null
+  message: string | null
+}
+
+/**
+ * Get viewable password for a student (Story 28.1)
+ * Admin/supervisor can see all students
+ * Teachers can only see passwords for students they created or in their classes
+ *
+ * @param studentId - ID of the student
+ * @returns Promise with student password data
+ */
+export async function getStudentPassword(
+  studentId: string,
+): Promise<StudentPasswordResponse> {
+  const url = `/api/v1/admin/students/${studentId}/password`
+  const response = await apiClient.get<StudentPasswordResponse>(url)
+  return response.data
+}
+
+/**
+ * Set password for a student (Story 28.1)
+ * Admin/supervisor can set for all students
+ * Teachers can only set passwords for students they created or in their classes
+ *
+ * @param studentId - ID of the student
+ * @param password - New password (4-50 characters)
+ * @returns Promise with updated student password data
+ */
+export async function setStudentPassword(
+  studentId: string,
+  password: string,
+): Promise<StudentPasswordResponse> {
+  const url = `/api/v1/admin/students/${studentId}/password`
+  const response = await apiClient.put<StudentPasswordResponse>(url, {
+    password,
+  })
+  return response.data
+}
+
+/**
  * Export as object for easier imports
  */
 export const studentsApi = {
   getStudentAnalytics,
   getStudentProgress,
   getUnassignedStudents,
+  getStudentPassword,
+  setStudentPassword,
 }
 
 export default studentsApi

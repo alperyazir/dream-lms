@@ -118,6 +118,10 @@ class Settings(BaseSettings):
     # AI Generation settings
     AI_MONTHLY_QUOTA: int = 100  # Monthly AI generation quota per teacher
 
+    # Password encryption key for reversible student password storage
+    # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    PASSWORD_ENCRYPTION_KEY: str | None = None
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

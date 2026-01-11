@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminDeletePublisherData, AdminUploadPublisherLogoData, AdminUploadPublisherLogoResponse, AdminDeletePublisherLogoData, AdminDeletePublisherLogoResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkDeleteStudentsData, AdminBulkDeleteStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, AdminAdminUpdateUserData, AdminAdminUpdateUserResponse, AdminResetUserPasswordData, AdminResetUserPasswordResponse, AdminGetCacheStatsResponse, AdminClearCacheResponse, AdminTestDreamStorageConnectionResponse, AdminRegisterWebhooksManuallyData, AdminRegisterWebhooksManuallyResponse, AdminGetBenchmarkOverviewEndpointResponse, AdminUpdateSchoolBenchmarkSettingsData, AdminUpdateSchoolBenchmarkSettingsResponse, AdminUpdatePublisherBenchmarkSettingsData, AdminUpdatePublisherBenchmarkSettingsResponse, AdminCreatePublisherAccountData, AdminCreatePublisherAccountResponse, AdminListPublisherAccountsData, AdminListPublisherAccountsResponse, AdminGetPublisherAccountData, AdminGetPublisherAccountResponse, AdminUpdatePublisherAccountData, AdminUpdatePublisherAccountResponse, AdminDeletePublisherAccountData, AdminDeletePublisherAccountResponse, AdminListAllAssignmentsData, AdminListAllAssignmentsResponse, AdminDeleteAssignmentData, AdminDeleteAssignmentResponse, AssignmentsListAssignmentsResponse, AssignmentsCreateAssignmentData, AssignmentsCreateAssignmentResponse, AssignmentsListAllAssignmentsAdminResponse, AssignmentsGetCalendarAssignmentsData, AssignmentsGetCalendarAssignmentsResponse, AssignmentsCreateBulkAssignmentsData, AssignmentsCreateBulkAssignmentsResponse, AssignmentsUpdateAssignmentData, AssignmentsUpdateAssignmentResponse, AssignmentsDeleteAssignmentData, AssignmentsDeleteAssignmentResponse, AssignmentsStartAssignmentData, AssignmentsStartAssignmentResponse, AssignmentsStartMultiActivityAssignmentData, AssignmentsStartMultiActivityAssignmentResponse, AssignmentsDownloadAssignmentMaterialData, AssignmentsDownloadAssignmentMaterialResponse, AssignmentsSaveActivityProgressData, AssignmentsSaveActivityProgressResponse, AssignmentsSubmitMultiActivityAssignmentData, AssignmentsSubmitMultiActivityAssignmentResponse, AssignmentsSaveProgressData, AssignmentsSaveProgressResponse, AssignmentsSubmitAssignmentData, AssignmentsSubmitAssignmentResponse, AssignmentsGetDetailedResultsData, AssignmentsGetDetailedResultsResponse, AssignmentsGetStudentAnswersData, AssignmentsGetStudentAnswersResponse, AssignmentsGetMultiActivityAnalyticsData, AssignmentsGetMultiActivityAnalyticsResponse, AssignmentsGetStudentAssignmentResultData, AssignmentsGetStudentAssignmentResultResponse, AssignmentsCreateOrUpdateFeedbackData, AssignmentsCreateOrUpdateFeedbackResponse, AssignmentsGetFeedbackData, AssignmentsGetFeedbackResponse, AssignmentsGetMyFeedbackData, AssignmentsGetMyFeedbackResponse, AssignmentsUpdateFeedbackData, AssignmentsUpdateFeedbackResponse, AssignmentsPreviewAssignmentData, AssignmentsPreviewAssignmentResponse, AssignmentsPreviewActivityData, AssignmentsPreviewActivityResponse, AvatarsGetPredefinedAvatarsResponse, AvatarsRemoveAvatarResponse, AvatarsSelectPredefinedAvatarData, AvatarsSelectPredefinedAvatarResponse, BookAssetsServeBookAssetData, BookAssetsServeBookAssetResponse, BookAssetsServePageImageData, BookAssetsServePageImageResponse, BookAssignmentsCreateBookAssignmentData, BookAssignmentsCreateBookAssignmentResponse, BookAssignmentsListBookAssignmentsData, BookAssignmentsListBookAssignmentsResponse, BookAssignmentsCreateBulkBookAssignmentsData, BookAssignmentsCreateBulkBookAssignmentsResponse, BookAssignmentsDeleteBookAssignmentData, BookAssignmentsDeleteBookAssignmentResponse, BookAssignmentsGetBookAssignmentsData, BookAssignmentsGetBookAssignmentsResponse, BookMediaStreamMediaData, BookMediaStreamMediaResponse, BooksGetBookCoverData, BooksGetBookCoverResponse, BooksListBooksData, BooksListBooksResponse, BooksGetBookActivitiesData, BooksGetBookActivitiesResponse, BooksGetBookPagesData, BooksGetBookPagesResponse, BooksGetPageActivitiesData, BooksGetPageActivitiesResponse, BooksGetBookPagesDetailData, BooksGetBookPagesDetailResponse, BooksGetBookStructureData, BooksGetBookStructureResponse, BooksListBookVideosData, BooksListBookVideosResponse, ClassesCreateClassData, ClassesCreateClassResponse, ClassesListClassesData, ClassesListClassesResponse, ClassesGetClassDetailData, ClassesGetClassDetailResponse, ClassesUpdateClassData, ClassesUpdateClassResponse, ClassesArchiveClassData, ClassesArchiveClassResponse, ClassesAddStudentsToClassData, ClassesAddStudentsToClassResponse, ClassesRemoveStudentFromClassData, ClassesRemoveStudentFromClassResponse, ClassesGetClassAnalyticsEndpointData, ClassesGetClassAnalyticsEndpointResponse, ClassesGetClassBenchmarksEndpointData, ClassesGetClassBenchmarksEndpointResponse, DevGetQuickLoginUsersResponse, DevResetQuickLoginPasswordsResponse, DevInstantLoginData, DevInstantLoginResponse, FeedbackGetFeedbackOptionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MessagesSendMessageData, MessagesSendMessageResponse, MessagesGetConversationsData, MessagesGetConversationsResponse, MessagesGetMessageThreadData, MessagesGetMessageThreadResponse, MessagesMarkMessageAsReadData, MessagesMarkMessageAsReadResponse, MessagesGetAllowedRecipientsResponse, MessagesGetUnreadMessagesCountResponse, NotificationsGetNotificationsData, NotificationsGetNotificationsResponse, NotificationsGetUnreadCountResponse, NotificationsMarkNotificationAsReadData, NotificationsMarkNotificationAsReadResponse, NotificationsMarkAllNotificationsAsReadResponse, NotificationsGetNotificationPreferencesResponse, NotificationsUpdateNotificationPreferencesData, NotificationsUpdateNotificationPreferencesResponse, NotificationsUpdateSinglePreferenceData, NotificationsUpdateSinglePreferenceResponse, NotificationsGetMuteStatusResponse, NotificationsSetGlobalMuteData, NotificationsSetGlobalMuteResponse, NotificationsCancelGlobalMuteResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersGetPublisherLogoData, PublishersGetPublisherLogoResponse, PublishersGetMyProfileResponse, PublishersGetMyStatsResponse, PublishersListMySchoolsResponse, PublishersCreateMySchoolData, PublishersCreateMySchoolResponse, PublishersListMyTeachersResponse, PublishersCreateMyTeacherData, PublishersCreateMyTeacherResponse, PublishersListMyBooksResponse, ReportsGenerateReportData, ReportsGenerateReportResponse, ReportsCheckReportStatusData, ReportsCheckReportStatusResponse, ReportsDownloadReportData, ReportsDownloadReportResponse, ReportsListReportHistoryResponse, ReportsListReportTemplatesResponse, ReportsCreateReportTemplateData, ReportsCreateReportTemplateResponse, ReportsRemoveReportTemplateData, ReportsRemoveReportTemplateResponse, ScheduledTasksRunDeadlineRemindersData, ScheduledTasksRunDeadlineRemindersResponse, ScheduledTasksRunApproachingDeadlinesOnlyData, ScheduledTasksRunApproachingDeadlinesOnlyResponse, ScheduledTasksRunPastDueOnlyData, ScheduledTasksRunPastDueOnlyResponse, ScheduledTasksRunPublishScheduledAssignmentsData, ScheduledTasksRunPublishScheduledAssignmentsResponse, StudentsGetStudentAssignmentsData, StudentsGetStudentAssignmentsResponse, StudentsGetStudentProgressData, StudentsGetStudentProgressResponse, StudentsGetStudentAnalyticsData, StudentsGetStudentAnalyticsResponse, StudentsGetMyBadgesResponse, StudentsGetStudentBadgesData, StudentsGetStudentBadgesResponse, StudentsGetStudentCalendarAssignmentsData, StudentsGetStudentCalendarAssignmentsResponse, StudentsGetImportTemplateResponse, StudentsValidateImportFileData, StudentsValidateImportFileResponse, StudentsExecuteImportData, StudentsExecuteImportResponse, StudentsDownloadCredentialsData, StudentsDownloadCredentialsResponse, SupervisorsListSupervisorsData, SupervisorsListSupervisorsResponse, SupervisorsCreateSupervisorData, SupervisorsCreateSupervisorResponse, SupervisorsGetSupervisorData, SupervisorsGetSupervisorResponse, SupervisorsUpdateSupervisorData, SupervisorsUpdateSupervisorResponse, SupervisorsDeleteSupervisorData, SupervisorsDeleteSupervisorResponse, SupervisorsResetSupervisorPasswordData, SupervisorsResetSupervisorPasswordResponse, TeacherMaterialsUploadMaterialData, TeacherMaterialsUploadMaterialResponse, TeacherMaterialsCreateTextNoteData, TeacherMaterialsCreateTextNoteResponse, TeacherMaterialsUpdateTextNoteData, TeacherMaterialsUpdateTextNoteResponse, TeacherMaterialsCreateUrlLinkData, TeacherMaterialsCreateUrlLinkResponse, TeacherMaterialsListMaterialsData, TeacherMaterialsListMaterialsResponse, TeacherMaterialsGetQuotaResponse, TeacherMaterialsGetMaterialData, TeacherMaterialsGetMaterialResponse, TeacherMaterialsUpdateMaterialData, TeacherMaterialsUpdateMaterialResponse, TeacherMaterialsDeleteMaterialData, TeacherMaterialsDeleteMaterialResponse, TeacherMaterialsGetPresignedUrlData, TeacherMaterialsGetPresignedUrlResponse, TeacherMaterialsDownloadMaterialData, TeacherMaterialsDownloadMaterialResponse, TeacherMaterialsStreamMaterialData, TeacherMaterialsStreamMaterialResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersBulkDeleteStudentsData, TeachersBulkDeleteStudentsResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, TeachersGetMyInsightsResponse, TeachersGetInsightDetailsData, TeachersGetInsightDetailsResponse, TeachersDismissInsightEndpointData, TeachersDismissInsightEndpointResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersChangeInitialPasswordData, UsersChangeInitialPasswordResponse, UsersCompleteTourResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksReceiveDreamStorageWebhookResponse, WebhooksTestDreamStorageWebhookData, WebhooksTestDreamStorageWebhookResponse } from './types.gen';
+import type { AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminDeletePublisherData, AdminUploadPublisherLogoData, AdminUploadPublisherLogoResponse, AdminDeletePublisherLogoData, AdminDeletePublisherLogoResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminGetStudentPasswordData, AdminGetStudentPasswordResponse, AdminSetStudentPasswordData, AdminSetStudentPasswordResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkDeleteStudentsData, AdminBulkDeleteStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, AdminAdminUpdateUserData, AdminAdminUpdateUserResponse, AdminResetUserPasswordData, AdminResetUserPasswordResponse, AdminGetCacheStatsResponse, AdminClearCacheResponse, AdminTestDreamStorageConnectionResponse, AdminRegisterWebhooksManuallyData, AdminRegisterWebhooksManuallyResponse, AdminGetBenchmarkOverviewEndpointResponse, AdminUpdateSchoolBenchmarkSettingsData, AdminUpdateSchoolBenchmarkSettingsResponse, AdminUpdatePublisherBenchmarkSettingsData, AdminUpdatePublisherBenchmarkSettingsResponse, AdminCreatePublisherAccountData, AdminCreatePublisherAccountResponse, AdminListPublisherAccountsData, AdminListPublisherAccountsResponse, AdminGetPublisherAccountData, AdminGetPublisherAccountResponse, AdminUpdatePublisherAccountData, AdminUpdatePublisherAccountResponse, AdminDeletePublisherAccountData, AdminDeletePublisherAccountResponse, AdminListAllAssignmentsData, AdminListAllAssignmentsResponse, AdminDeleteAssignmentData, AdminDeleteAssignmentResponse, AiGenerationGetBookAiStatusData, AiGenerationGetBookAiStatusResponse, AiGenerationGetBookAiModulesData, AiGenerationGetBookAiModulesResponse, AiGenerationGenerateTtsAudioData, AiGenerationGenerateTtsAudioResponse, AiGenerationStreamVocabularyAudioData, AiGenerationStreamVocabularyAudioResponse, AiGenerationGenerateVocabularyQuizData, AiGenerationGenerateVocabularyQuizResponse, AiGenerationGetVocabularyQuizData, AiGenerationGetVocabularyQuizResponse, AiGenerationSubmitVocabularyQuizData, AiGenerationSubmitVocabularyQuizResponse, AiGenerationGetVocabularyQuizResultData, AiGenerationGetVocabularyQuizResultResponse, AiGenerationDebugQuizRequestData, AiGenerationDebugQuizRequestResponse, AiGenerationGenerateAiQuizData, AiGenerationGenerateAiQuizResponse, AiGenerationGetAiQuizData, AiGenerationGetAiQuizResponse, AiGenerationSubmitAiQuizData, AiGenerationSubmitAiQuizResponse, AiGenerationGetAiQuizResultData, AiGenerationGetAiQuizResultResponse, AiGenerationGenerateReadingActivityData, AiGenerationGenerateReadingActivityResponse, AiGenerationGetReadingActivityData, AiGenerationGetReadingActivityResponse, AiGenerationSubmitReadingActivityData, AiGenerationSubmitReadingActivityResponse, AiGenerationGetReadingResultData, AiGenerationGetReadingResultResponse, AiGenerationGenerateSentenceActivityData, AiGenerationGenerateSentenceActivityResponse, AiGenerationGetSentenceActivityData, AiGenerationGetSentenceActivityResponse, AiGenerationSubmitSentenceActivityData, AiGenerationSubmitSentenceActivityResponse, AiGenerationGetSentenceResultData, AiGenerationGetSentenceResultResponse, AiGenerationGenerateWordBuilderActivityData, AiGenerationGenerateWordBuilderActivityResponse, AiGenerationGetWordBuilderActivityData, AiGenerationGetWordBuilderActivityResponse, AiGenerationSubmitWordBuilderActivityData, AiGenerationSubmitWordBuilderActivityResponse, AiGenerationGetWordBuilderResultData, AiGenerationGetWordBuilderResultResponse, AiGenerationRegenerateQuizQuestionData, AiGenerationRegenerateQuizQuestionResponse, AiGenerationSaveContentToLibraryData, AiGenerationSaveContentToLibraryResponse, AiGenerationCreateAssignmentFromContentData, AiGenerationCreateAssignmentFromContentResponse, AiGenerationListLibraryContentData, AiGenerationListLibraryContentResponse, AiGenerationGetLibraryContentDetailData, AiGenerationGetLibraryContentDetailResponse, AiGenerationDeleteLibraryContentData, AiGenerationDeleteLibraryContentResponse, AiGenerationUpdateLibraryContentData, AiGenerationUpdateLibraryContentResponse, AiGenerationAssignLibraryContentData, AiGenerationAssignLibraryContentResponse, AiUsageGetMyUsageResponse, AiUsageGetUsageSummaryData, AiUsageGetUsageSummaryResponse, AiUsageGetUsageByTypeData, AiUsageGetUsageByTypeResponse, AiUsageGetUsageByTeacherData, AiUsageGetUsageByTeacherResponse, AiUsageGetUsageByProviderData, AiUsageGetUsageByProviderResponse, AiUsageGetErrorsData, AiUsageGetErrorsResponse, AiUsageExportUsageDataData, AiUsageExportUsageDataResponse, AnnouncementsGetMyAnnouncementsData, AnnouncementsGetMyAnnouncementsResponse, AnnouncementsCreateAnnouncementData, AnnouncementsCreateAnnouncementResponse, AnnouncementsGetTeacherAnnouncementsData, AnnouncementsGetTeacherAnnouncementsResponse, AnnouncementsGetAnnouncementDetailData, AnnouncementsGetAnnouncementDetailResponse, AnnouncementsUpdateAnnouncementData, AnnouncementsUpdateAnnouncementResponse, AnnouncementsDeleteAnnouncementData, AnnouncementsDeleteAnnouncementResponse, AnnouncementsGetAnnouncementAsStudentData, AnnouncementsGetAnnouncementAsStudentResponse, AnnouncementsMarkAnnouncementAsReadData, AnnouncementsMarkAnnouncementAsReadResponse, AssignmentsListAssignmentsResponse, AssignmentsCreateAssignmentData, AssignmentsCreateAssignmentResponse, AssignmentsListAllAssignmentsAdminResponse, AssignmentsGetCalendarAssignmentsData, AssignmentsGetCalendarAssignmentsResponse, AssignmentsCreateBulkAssignmentsData, AssignmentsCreateBulkAssignmentsResponse, AssignmentsUpdateAssignmentData, AssignmentsUpdateAssignmentResponse, AssignmentsDeleteAssignmentData, AssignmentsDeleteAssignmentResponse, AssignmentsAttachMaterialToAssignmentData, AssignmentsAttachMaterialToAssignmentResponse, AssignmentsStartAssignmentData, AssignmentsStartAssignmentResponse, AssignmentsStartMultiActivityAssignmentData, AssignmentsStartMultiActivityAssignmentResponse, AssignmentsDownloadAssignmentMaterialData, AssignmentsDownloadAssignmentMaterialResponse, AssignmentsSaveActivityProgressData, AssignmentsSaveActivityProgressResponse, AssignmentsSubmitMultiActivityAssignmentData, AssignmentsSubmitMultiActivityAssignmentResponse, AssignmentsSaveProgressData, AssignmentsSaveProgressResponse, AssignmentsSubmitAssignmentData, AssignmentsSubmitAssignmentResponse, AssignmentsGetAssignmentResultData, AssignmentsGetAssignmentResultResponse, AssignmentsGetDetailedResultsData, AssignmentsGetDetailedResultsResponse, AssignmentsGetStudentAnswersData, AssignmentsGetStudentAnswersResponse, AssignmentsGetMultiActivityAnalyticsData, AssignmentsGetMultiActivityAnalyticsResponse, AssignmentsGetStudentAssignmentResultData, AssignmentsGetStudentAssignmentResultResponse, AssignmentsCreateOrUpdateFeedbackData, AssignmentsCreateOrUpdateFeedbackResponse, AssignmentsGetFeedbackData, AssignmentsGetFeedbackResponse, AssignmentsGetMyFeedbackData, AssignmentsGetMyFeedbackResponse, AssignmentsUpdateFeedbackData, AssignmentsUpdateFeedbackResponse, AssignmentsPreviewAssignmentData, AssignmentsPreviewAssignmentResponse, AssignmentsGetAssignmentForEditData, AssignmentsGetAssignmentForEditResponse, AssignmentsPreviewActivityData, AssignmentsPreviewActivityResponse, AvatarsGetPredefinedAvatarsResponse, AvatarsRemoveAvatarResponse, AvatarsSelectPredefinedAvatarData, AvatarsSelectPredefinedAvatarResponse, BookAssetsServeBookAssetData, BookAssetsServeBookAssetResponse, BookAssetsServePageImageData, BookAssetsServePageImageResponse, BookAssignmentsCreateBookAssignmentData, BookAssignmentsCreateBookAssignmentResponse, BookAssignmentsListBookAssignmentsData, BookAssignmentsListBookAssignmentsResponse, BookAssignmentsCreateBulkBookAssignmentsData, BookAssignmentsCreateBulkBookAssignmentsResponse, BookAssignmentsDeleteBookAssignmentData, BookAssignmentsDeleteBookAssignmentResponse, BookAssignmentsGetBookAssignmentsData, BookAssignmentsGetBookAssignmentsResponse, BookMediaStreamMediaData, BookMediaStreamMediaResponse, BooksGetBookCoverData, BooksGetBookCoverResponse, BooksListBooksData, BooksListBooksResponse, BooksGetBookActivitiesData, BooksGetBookActivitiesResponse, BooksGetBookPagesData, BooksGetBookPagesResponse, BooksGetPageActivitiesData, BooksGetPageActivitiesResponse, BooksGetBookPagesDetailData, BooksGetBookPagesDetailResponse, BooksGetBookStructureData, BooksGetBookStructureResponse, BooksListBookVideosData, BooksListBookVideosResponse, BooksImportBookActivitiesData, BooksImportBookActivitiesResponse, ClassesCreateClassData, ClassesCreateClassResponse, ClassesListClassesData, ClassesListClassesResponse, ClassesGetClassDetailData, ClassesGetClassDetailResponse, ClassesUpdateClassData, ClassesUpdateClassResponse, ClassesArchiveClassData, ClassesArchiveClassResponse, ClassesAddStudentsToClassData, ClassesAddStudentsToClassResponse, ClassesRemoveStudentFromClassData, ClassesRemoveStudentFromClassResponse, ClassesGetClassAnalyticsEndpointData, ClassesGetClassAnalyticsEndpointResponse, ClassesGetClassBenchmarksEndpointData, ClassesGetClassBenchmarksEndpointResponse, DevGetQuickLoginUsersResponse, DevResetQuickLoginPasswordsResponse, DevInstantLoginData, DevInstantLoginResponse, FeedbackGetFeedbackOptionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MessagesSendMessageData, MessagesSendMessageResponse, MessagesGetConversationsData, MessagesGetConversationsResponse, MessagesGetMessageThreadData, MessagesGetMessageThreadResponse, MessagesMarkMessageAsReadData, MessagesMarkMessageAsReadResponse, MessagesGetAllowedRecipientsResponse, MessagesGetUnreadMessagesCountResponse, NotificationsGetNotificationsData, NotificationsGetNotificationsResponse, NotificationsGetUnreadCountResponse, NotificationsMarkNotificationAsReadData, NotificationsMarkNotificationAsReadResponse, NotificationsMarkAllNotificationsAsReadResponse, NotificationsGetNotificationPreferencesResponse, NotificationsUpdateNotificationPreferencesData, NotificationsUpdateNotificationPreferencesResponse, NotificationsUpdateSinglePreferenceData, NotificationsUpdateSinglePreferenceResponse, NotificationsGetMuteStatusResponse, NotificationsSetGlobalMuteData, NotificationsSetGlobalMuteResponse, NotificationsCancelGlobalMuteResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersGetPublisherLogoData, PublishersGetPublisherLogoResponse, PublishersGetMyProfileResponse, PublishersGetMyStatsResponse, PublishersListMySchoolsResponse, PublishersCreateMySchoolData, PublishersCreateMySchoolResponse, PublishersListMyTeachersResponse, PublishersCreateMyTeacherData, PublishersCreateMyTeacherResponse, PublishersListMyBooksResponse, ReportsGenerateReportData, ReportsGenerateReportResponse, ReportsCheckReportStatusData, ReportsCheckReportStatusResponse, ReportsPreviewReportData, ReportsPreviewReportResponse, ReportsDownloadReportData, ReportsDownloadReportResponse, ReportsListReportHistoryResponse, ReportsListReportTemplatesResponse, ReportsCreateReportTemplateData, ReportsCreateReportTemplateResponse, ReportsRemoveReportTemplateData, ReportsRemoveReportTemplateResponse, ScheduledTasksRunDeadlineRemindersData, ScheduledTasksRunDeadlineRemindersResponse, ScheduledTasksRunApproachingDeadlinesOnlyData, ScheduledTasksRunApproachingDeadlinesOnlyResponse, ScheduledTasksRunPastDueOnlyData, ScheduledTasksRunPastDueOnlyResponse, ScheduledTasksRunPublishScheduledAssignmentsData, ScheduledTasksRunPublishScheduledAssignmentsResponse, StudentsGetStudentAssignmentsData, StudentsGetStudentAssignmentsResponse, StudentsGetStudentProgressData, StudentsGetStudentProgressResponse, StudentsGetStudentAnalyticsData, StudentsGetStudentAnalyticsResponse, StudentsGetMyBadgesResponse, StudentsGetStudentBadgesData, StudentsGetStudentBadgesResponse, StudentsGetStudentsData, StudentsGetStudentsResponse, StudentsGetUnassignedStudentsResponse, StudentsGetStudentCalendarAssignmentsData, StudentsGetStudentCalendarAssignmentsResponse, StudentsGetImportTemplateResponse, StudentsValidateImportFileData, StudentsValidateImportFileResponse, StudentsExecuteImportData, StudentsExecuteImportResponse, StudentsDownloadCredentialsData, StudentsDownloadCredentialsResponse, SupervisorsListSupervisorsData, SupervisorsListSupervisorsResponse, SupervisorsCreateSupervisorData, SupervisorsCreateSupervisorResponse, SupervisorsGetSupervisorData, SupervisorsGetSupervisorResponse, SupervisorsUpdateSupervisorData, SupervisorsUpdateSupervisorResponse, SupervisorsDeleteSupervisorData, SupervisorsDeleteSupervisorResponse, SupervisorsResetSupervisorPasswordData, SupervisorsResetSupervisorPasswordResponse, TeacherMaterialsUploadMaterialData, TeacherMaterialsUploadMaterialResponse, TeacherMaterialsCreateTextNoteData, TeacherMaterialsCreateTextNoteResponse, TeacherMaterialsUpdateTextNoteData, TeacherMaterialsUpdateTextNoteResponse, TeacherMaterialsCreateUrlLinkData, TeacherMaterialsCreateUrlLinkResponse, TeacherMaterialsListMaterialsData, TeacherMaterialsListMaterialsResponse, TeacherMaterialsGetQuotaResponse, TeacherMaterialsGetMaterialData, TeacherMaterialsGetMaterialResponse, TeacherMaterialsUpdateMaterialData, TeacherMaterialsUpdateMaterialResponse, TeacherMaterialsDeleteMaterialData, TeacherMaterialsDeleteMaterialResponse, TeacherMaterialsGetPresignedUrlData, TeacherMaterialsGetPresignedUrlResponse, TeacherMaterialsDownloadMaterialData, TeacherMaterialsDownloadMaterialResponse, TeacherMaterialsStreamMaterialData, TeacherMaterialsStreamMaterialResponse, TeacherMaterialsUploadPdfForAiData, TeacherMaterialsUploadPdfForAiResponse, TeacherMaterialsCreateTextMaterialForAiData, TeacherMaterialsCreateTextMaterialForAiResponse, TeacherMaterialsListProcessableMaterialsResponse, TeacherMaterialsGetMaterialForAiData, TeacherMaterialsGetMaterialForAiResponse, TeacherMaterialsListGeneratedContentData, TeacherMaterialsListGeneratedContentResponse, TeacherMaterialsGetGeneratedContentData, TeacherMaterialsGetGeneratedContentResponse, TeacherMaterialsDeleteGeneratedContentData, TeacherMaterialsDeleteGeneratedContentResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersBulkDeleteStudentsData, TeachersBulkDeleteStudentsResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersDeleteClassData, TeachersDeleteClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, TeachersGetStudentsForClassesData, TeachersGetStudentsForClassesResponse, TeachersGetMyInsightsResponse, TeachersGetInsightDetailsData, TeachersGetInsightDetailsResponse, TeachersDismissInsightEndpointData, TeachersDismissInsightEndpointResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersChangeInitialPasswordData, UsersChangeInitialPasswordResponse, UsersCompleteTourResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, VocabularyExplorerGetBooksWithVocabularyResponse, VocabularyExplorerGetVocabularyData, VocabularyExplorerGetVocabularyResponse, VocabularyExplorerGetAudioUrlData, VocabularyExplorerGetAudioUrlResponse, WebhooksReceiveDreamStorageWebhookResponse, WebhooksTestDreamStorageWebhookData, WebhooksTestDreamStorageWebhookResponse } from './types.gen';
 
 export class AdminService {
     /**
@@ -338,6 +338,51 @@ export class AdminService {
                 skip: data.skip,
                 limit: data.limit
             },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get student password (Story 28.1)
+     * Retrieve viewable password for a student. Teachers can only view their students.
+     * @param data The data for the request.
+     * @param data.studentId
+     * @returns StudentPasswordResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStudentPassword(data: AdminGetStudentPasswordData): CancelablePromise<AdminGetStudentPasswordResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/students/{student_id}/password',
+            path: {
+                student_id: data.studentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Set student password (Story 28.1)
+     * Set a new password for a student. Updates both login password and viewable password.
+     * @param data The data for the request.
+     * @param data.studentId
+     * @param data.requestBody
+     * @returns StudentPasswordResponse Successful Response
+     * @throws ApiError
+     */
+    public static setStudentPassword(data: AdminSetStudentPasswordData): CancelablePromise<AdminSetStudentPasswordResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/admin/students/{student_id}/password',
+            path: {
+                student_id: data.studentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
             }
@@ -819,6 +864,1145 @@ export class AdminService {
     }
 }
 
+export class AiGenerationService {
+    /**
+     * Get AI processing status for a book
+     * Check if a book has been processed by the AI pipeline and get metadata.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns ProcessingMetadata Successful Response
+     * @throws ApiError
+     */
+    public static getBookAiStatus(data: AiGenerationGetBookAiStatusData): CancelablePromise<AiGenerationGetBookAiStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/books/{book_id}/status',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get AI modules for a book
+     * Get the list of modules with AI data for content generation.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns ModuleListResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBookAiModules(data: AiGenerationGetBookAiModulesData): CancelablePromise<AiGenerationGetBookAiModulesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/books/{book_id}/modules',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Generate audio from text
+     * Generate audio pronunciation for a word or short text using TTS. Returns audio as a streaming MP3 response.
+     * @param data The data for the request.
+     * @param data.text Text to convert to speech
+     * @param data.lang Language code (en, tr, etc.)
+     * @returns unknown Audio file
+     * @throws ApiError
+     */
+    public static generateTtsAudio(data: AiGenerationGenerateTtsAudioData): CancelablePromise<AiGenerationGenerateTtsAudioResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/tts/audio',
+            query: {
+                text: data.text,
+                lang: data.lang
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Stream vocabulary audio from DCS
+     * Proxy endpoint to stream vocabulary word audio from DCS. Handles DCS authentication and streams audio to the client.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @param data.lang
+     * @param data.wordId
+     * @returns unknown Audio file stream
+     * @throws ApiError
+     */
+    public static streamVocabularyAudio(data: AiGenerationStreamVocabularyAudioData): CancelablePromise<AiGenerationStreamVocabularyAudioResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/audio/vocabulary/{book_id}/{lang}/{word_id}',
+            path: {
+                book_id: data.bookId,
+                lang: data.lang,
+                word_id: data.wordId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Generate a vocabulary quiz
+     * Generate a vocabulary quiz from book modules. Only teachers, supervisors, and admins can generate quizzes.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns VocabularyQuiz Successful Response
+     * @throws ApiError
+     */
+    public static generateVocabularyQuiz(data: AiGenerationGenerateVocabularyQuizData): CancelablePromise<AiGenerationGenerateVocabularyQuizResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/vocabulary-quiz/generate',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get a vocabulary quiz
+     * Get a vocabulary quiz by ID. Returns the quiz without correct answers for students to take.
+     * @param data The data for the request.
+     * @param data.quizId
+     * @returns VocabularyQuizPublic Successful Response
+     * @throws ApiError
+     */
+    public static getVocabularyQuiz(data: AiGenerationGetVocabularyQuizData): CancelablePromise<AiGenerationGetVocabularyQuizResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/vocabulary-quiz/{quiz_id}',
+            path: {
+                quiz_id: data.quizId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Submit quiz answers
+     * Submit answers for a vocabulary quiz. Returns the results with correct answers revealed.
+     * @param data The data for the request.
+     * @param data.quizId
+     * @param data.requestBody
+     * @returns VocabularyQuizResult Successful Response
+     * @throws ApiError
+     */
+    public static submitVocabularyQuiz(data: AiGenerationSubmitVocabularyQuizData): CancelablePromise<AiGenerationSubmitVocabularyQuizResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/vocabulary-quiz/{quiz_id}/submit',
+            path: {
+                quiz_id: data.quizId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get quiz result
+     * Get the result of a previously submitted quiz.
+     * @param data The data for the request.
+     * @param data.quizId
+     * @returns VocabularyQuizResult Successful Response
+     * @throws ApiError
+     */
+    public static getVocabularyQuizResult(data: AiGenerationGetVocabularyQuizResultData): CancelablePromise<AiGenerationGetVocabularyQuizResultResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/vocabulary-quiz/{quiz_id}/result',
+            path: {
+                quiz_id: data.quizId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Debug endpoint to see raw request body
+     * Debug endpoint to see what the frontend is sending.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static debugQuizRequest(data: AiGenerationDebugQuizRequestData): CancelablePromise<AiGenerationDebugQuizRequestResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/quiz/debug-request',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Generate an AI quiz
+     * Generate an AI-powered MCQ quiz from book modules using LLM. Only teachers, supervisors, and admins can generate quizzes.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns AIQuiz Successful Response
+     * @throws ApiError
+     */
+    public static generateAiQuiz(data: AiGenerationGenerateAiQuizData): CancelablePromise<AiGenerationGenerateAiQuizResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/quiz/generate',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get an AI quiz
+     * Get an AI quiz by ID. Returns the quiz without correct answers for students to take.
+     * @param data The data for the request.
+     * @param data.quizId
+     * @returns AIQuizPublic Successful Response
+     * @throws ApiError
+     */
+    public static getAiQuiz(data: AiGenerationGetAiQuizData): CancelablePromise<AiGenerationGetAiQuizResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/quiz/{quiz_id}',
+            path: {
+                quiz_id: data.quizId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Submit AI quiz answers
+     * Submit answers for an AI quiz. Returns the results with correct answers and explanations revealed.
+     * @param data The data for the request.
+     * @param data.quizId
+     * @param data.requestBody
+     * @returns AIQuizResult Successful Response
+     * @throws ApiError
+     */
+    public static submitAiQuiz(data: AiGenerationSubmitAiQuizData): CancelablePromise<AiGenerationSubmitAiQuizResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/quiz/{quiz_id}/submit',
+            path: {
+                quiz_id: data.quizId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get AI quiz result
+     * Get the result of a previously submitted AI quiz.
+     * @param data The data for the request.
+     * @param data.quizId
+     * @returns AIQuizResult Successful Response
+     * @throws ApiError
+     */
+    public static getAiQuizResult(data: AiGenerationGetAiQuizResultData): CancelablePromise<AiGenerationGetAiQuizResultResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/quiz/{quiz_id}/result',
+            path: {
+                quiz_id: data.quizId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Generate a reading comprehension activity
+     * Generate a reading comprehension activity from a book module. Uses ACTUAL module text as the passage and generates questions about it. Only teachers, supervisors, and admins can generate activities.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns ReadingComprehensionActivity Successful Response
+     * @throws ApiError
+     */
+    public static generateReadingActivity(data: AiGenerationGenerateReadingActivityData): CancelablePromise<AiGenerationGenerateReadingActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/reading/generate',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get a reading comprehension activity
+     * Get a reading comprehension activity by ID. Returns the activity with passage but without correct answers.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @returns ReadingComprehensionActivityPublic Successful Response
+     * @throws ApiError
+     */
+    public static getReadingActivity(data: AiGenerationGetReadingActivityData): CancelablePromise<AiGenerationGetReadingActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/reading/{activity_id}',
+            path: {
+                activity_id: data.activityId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Submit reading comprehension answers
+     * Submit answers for a reading comprehension activity. Returns the results with correct answers and explanations revealed.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @param data.requestBody
+     * @returns ReadingComprehensionResult Successful Response
+     * @throws ApiError
+     */
+    public static submitReadingActivity(data: AiGenerationSubmitReadingActivityData): CancelablePromise<AiGenerationSubmitReadingActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/reading/{activity_id}/submit',
+            path: {
+                activity_id: data.activityId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get reading comprehension result
+     * Get the result of a previously submitted reading comprehension activity.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @returns ReadingComprehensionResult Successful Response
+     * @throws ApiError
+     */
+    public static getReadingResult(data: AiGenerationGetReadingResultData): CancelablePromise<AiGenerationGetReadingResultResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/reading/{activity_id}/result',
+            path: {
+                activity_id: data.activityId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Generate a sentence builder activity
+     * Generate a Duolingo-style sentence building activity from book modules. Students arrange jumbled words into correct sentence order. Only teachers, supervisors, and admins can generate activities.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns SentenceBuilderActivity Successful Response
+     * @throws ApiError
+     */
+    public static generateSentenceActivity(data: AiGenerationGenerateSentenceActivityData): CancelablePromise<AiGenerationGenerateSentenceActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/sentence-builder/generate',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get a sentence builder activity
+     * Get a sentence builder activity by ID. Returns the activity with word banks but without correct sentence answers.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @returns SentenceBuilderActivityPublic Successful Response
+     * @throws ApiError
+     */
+    public static getSentenceActivity(data: AiGenerationGetSentenceActivityData): CancelablePromise<AiGenerationGetSentenceActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/sentence-builder/{activity_id}',
+            path: {
+                activity_id: data.activityId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Submit sentence builder answers
+     * Submit word orderings for a sentence builder activity. Returns the results with correct sentences revealed.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @param data.requestBody
+     * @returns SentenceBuilderResult Successful Response
+     * @throws ApiError
+     */
+    public static submitSentenceActivity(data: AiGenerationSubmitSentenceActivityData): CancelablePromise<AiGenerationSubmitSentenceActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/sentence-builder/{activity_id}/submit',
+            path: {
+                activity_id: data.activityId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get sentence builder result
+     * Get the result of a previously submitted sentence builder activity.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @returns SentenceBuilderResult Successful Response
+     * @throws ApiError
+     */
+    public static getSentenceResult(data: AiGenerationGetSentenceResultData): CancelablePromise<AiGenerationGetSentenceResultResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/sentence-builder/{activity_id}/result',
+            path: {
+                activity_id: data.activityId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Generate a word builder activity
+     * Generate a spelling practice activity from book vocabulary. Students spell words by clicking letters from a scrambled letter bank. Only teachers, supervisors, and admins can generate activities.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns WordBuilderActivity Successful Response
+     * @throws ApiError
+     */
+    public static generateWordBuilderActivity(data: AiGenerationGenerateWordBuilderActivityData): CancelablePromise<AiGenerationGenerateWordBuilderActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/word-builder/generate',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get a word builder activity
+     * Get a word builder activity by ID. Returns the activity with scrambled letters but without correct words.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @returns WordBuilderActivityPublic Successful Response
+     * @throws ApiError
+     */
+    public static getWordBuilderActivity(data: AiGenerationGetWordBuilderActivityData): CancelablePromise<AiGenerationGetWordBuilderActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/word-builder/{activity_id}',
+            path: {
+                activity_id: data.activityId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Submit word builder answers
+     * Submit spellings for a word builder activity. Returns the results with correct words and scores revealed.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @param data.requestBody
+     * @returns WordBuilderResult Successful Response
+     * @throws ApiError
+     */
+    public static submitWordBuilderActivity(data: AiGenerationSubmitWordBuilderActivityData): CancelablePromise<AiGenerationSubmitWordBuilderActivityResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/word-builder/{activity_id}/submit',
+            path: {
+                activity_id: data.activityId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get word builder result
+     * Get the result of a previously submitted word builder activity.
+     * @param data The data for the request.
+     * @param data.activityId
+     * @returns WordBuilderResult Successful Response
+     * @throws ApiError
+     */
+    public static getWordBuilderResult(data: AiGenerationGetWordBuilderResultData): CancelablePromise<AiGenerationGetWordBuilderResultResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/word-builder/{activity_id}/result',
+            path: {
+                activity_id: data.activityId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Regenerate a single question in a quiz
+     * Regenerate a single question in an AI quiz using the same parameters. Only teachers, supervisors, and admins can regenerate questions.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns AIQuizQuestion Successful Response
+     * @throws ApiError
+     */
+    public static regenerateQuizQuestion(data: AiGenerationRegenerateQuizQuestionData): CancelablePromise<AiGenerationRegenerateQuizQuestionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/quiz/regenerate-question',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Save generated content to teacher's library
+     * Save AI-generated content to teacher's personal library for reuse. Only teachers, supervisors, and admins can save content.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns SaveToLibraryResponse Successful Response
+     * @throws ApiError
+     */
+    public static saveContentToLibrary(data: AiGenerationSaveContentToLibraryData): CancelablePromise<AiGenerationSaveContentToLibraryResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/content/save-to-library',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create assignment from generated content
+     * Create an assignment from AI-generated content. Only teachers, supervisors, and admins can create assignments.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static createAssignmentFromContent(data: AiGenerationCreateAssignmentFromContentData): CancelablePromise<AiGenerationCreateAssignmentFromContentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/content/create-assignment',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List teacher's saved AI-generated content
+     * List all saved AI-generated content accessible by the teacher. Includes teacher's own content and shared book-based content.
+     * @param data The data for the request.
+     * @param data.activityType Filter by activity type
+     * @param data.sourceType Filter by source type (book/material)
+     * @param data.bookId Filter by book ID
+     * @param data.dateFrom Filter by creation date (from)
+     * @param data.dateTo Filter by creation date (to)
+     * @param data.page Page number
+     * @param data.pageSize Items per page
+     * @returns LibraryResponse Successful Response
+     * @throws ApiError
+     */
+    public static listLibraryContent(data: AiGenerationListLibraryContentData = {}): CancelablePromise<AiGenerationListLibraryContentResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/library',
+            query: {
+                activity_type: data.activityType,
+                source_type: data.sourceType,
+                book_id: data.bookId,
+                date_from: data.dateFrom,
+                date_to: data.dateTo,
+                page: data.page,
+                page_size: data.pageSize
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get detailed content from library
+     * Retrieve full details of a saved AI-generated content item.
+     * @param data The data for the request.
+     * @param data.contentId
+     * @returns ContentItemDetail Successful Response
+     * @throws ApiError
+     */
+    public static getLibraryContentDetail(data: AiGenerationGetLibraryContentDetailData): CancelablePromise<AiGenerationGetLibraryContentDetailResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/library/{content_id}',
+            path: {
+                content_id: data.contentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete content from library
+     * Delete a saved AI-generated content item. Only the creator can delete.
+     * @param data The data for the request.
+     * @param data.contentId
+     * @returns DeleteContentResponse Successful Response
+     * @throws ApiError
+     */
+    public static deleteLibraryContent(data: AiGenerationDeleteLibraryContentData): CancelablePromise<AiGenerationDeleteLibraryContentResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/ai/library/{content_id}',
+            path: {
+                content_id: data.contentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update content in library
+     * Update a saved AI-generated content item including title and questions.
+     * @param data The data for the request.
+     * @param data.contentId
+     * @param data.requestBody
+     * @returns UpdateContentResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateLibraryContent(data: AiGenerationUpdateLibraryContentData): CancelablePromise<AiGenerationUpdateLibraryContentResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/ai/library/{content_id}',
+            path: {
+                content_id: data.contentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Assign AI content to classes
+     * Create an assignment from AI-generated content and assign to selected classes.
+     * @param data The data for the request.
+     * @param data.contentId
+     * @param data.requestBody
+     * @returns AssignContentResponse Successful Response
+     * @throws ApiError
+     */
+    public static assignLibraryContent(data: AiGenerationAssignLibraryContentData): CancelablePromise<AiGenerationAssignLibraryContentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/library/{content_id}/assign',
+            path: {
+                content_id: data.contentId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class AiUsageService {
+    /**
+     * Get My Usage
+     * Get current user's own AI usage summary.
+     *
+     * Available to all authenticated users (teachers).
+     *
+     * Returns:
+     * - total_generations: Total number of AI generations this month
+     * - monthly_quota: Monthly generation quota limit
+     * - remaining_quota: Remaining generations this month
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getMyUsage(): CancelablePromise<AiUsageGetMyUsageResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/usage/my-usage'
+        });
+    }
+    
+    /**
+     * Get Usage Summary
+     * Get overall AI usage summary.
+     *
+     * Requires admin role.
+     *
+     * Returns:
+     * - total_generations: Total number of AI generations
+     * - total_cost: Estimated total cost in USD
+     * - success_rate: Success rate percentage
+     * - breakdown by operation type (LLM vs TTS)
+     * - token and character usage
+     * @param data The data for the request.
+     * @param data.fromDate Start date (ISO 8601)
+     * @param data.toDate End date (ISO 8601)
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getUsageSummary(data: AiUsageGetUsageSummaryData = {}): CancelablePromise<AiUsageGetUsageSummaryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/usage/summary',
+            query: {
+                from_date: data.fromDate,
+                to_date: data.toDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Usage By Type
+     * Get usage breakdown by activity type.
+     *
+     * Requires admin role.
+     *
+     * Returns list of activity types with:
+     * - activity_type: Type of activity
+     * - count: Number of generations
+     * - cost: Estimated cost in USD
+     * - success_rate: Success rate percentage
+     * @param data The data for the request.
+     * @param data.fromDate Start date (ISO 8601)
+     * @param data.toDate End date (ISO 8601)
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getUsageByType(data: AiUsageGetUsageByTypeData = {}): CancelablePromise<AiUsageGetUsageByTypeResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/usage/by-type',
+            query: {
+                from_date: data.fromDate,
+                to_date: data.toDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Usage By Teacher
+     * Get usage breakdown by teacher.
+     *
+     * Requires admin role.
+     *
+     * Returns list of teachers with:
+     * - teacher_id: Teacher UUID
+     * - teacher_name: Teacher full name
+     * - total_generations: Number of generations
+     * - estimated_cost: Total estimated cost in USD
+     * - top_activity_type: Most used activity type
+     * - last_activity_date: Last generation timestamp
+     * @param data The data for the request.
+     * @param data.fromDate Start date (ISO 8601)
+     * @param data.toDate End date (ISO 8601)
+     * @param data.limit Max teachers to return
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getUsageByTeacher(data: AiUsageGetUsageByTeacherData = {}): CancelablePromise<AiUsageGetUsageByTeacherResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/usage/by-teacher',
+            query: {
+                from_date: data.fromDate,
+                to_date: data.toDate,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Usage By Provider
+     * Get usage breakdown by provider (LLM and TTS).
+     *
+     * Requires admin role.
+     *
+     * Returns list of providers with:
+     * - provider: Provider name
+     * - operation_type: "llm_generation" or "tts_generation"
+     * - count: Number of requests
+     * - cost: Estimated cost in USD
+     * @param data The data for the request.
+     * @param data.fromDate Start date (ISO 8601)
+     * @param data.toDate End date (ISO 8601)
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getUsageByProvider(data: AiUsageGetUsageByProviderData = {}): CancelablePromise<AiUsageGetUsageByProviderResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/usage/by-provider',
+            query: {
+                from_date: data.fromDate,
+                to_date: data.toDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Errors
+     * Get recent AI generation errors.
+     *
+     * Requires admin role.
+     *
+     * Returns list of errors with:
+     * - id: Error log ID
+     * - timestamp: When the error occurred
+     * - provider: Provider that failed
+     * - error_message: Error description
+     * - teacher_id: Teacher who triggered the request
+     * - teacher_name: Teacher full name
+     * - activity_type: Activity type that failed
+     * - operation_type: "llm_generation" or "tts_generation"
+     * @param data The data for the request.
+     * @param data.fromDate Start date (ISO 8601)
+     * @param data.toDate End date (ISO 8601)
+     * @param data.limit Max errors to return
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getErrors(data: AiUsageGetErrorsData = {}): CancelablePromise<AiUsageGetErrorsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/usage/errors',
+            query: {
+                from_date: data.fromDate,
+                to_date: data.toDate,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Export Usage Data
+     * Export usage data as CSV.
+     *
+     * Requires admin role.
+     *
+     * Returns CSV file with all usage data in the specified date range.
+     * @param data The data for the request.
+     * @param data.fromDate Start date (ISO 8601)
+     * @param data.toDate End date (ISO 8601)
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static exportUsageData(data: AiUsageExportUsageDataData = {}): CancelablePromise<AiUsageExportUsageDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/usage/export',
+            query: {
+                from_date: data.fromDate,
+                to_date: data.toDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class AnnouncementsService {
+    /**
+     * Get My Announcements
+     * Get announcements for the current student.
+     *
+     * Supports filtering by read status and pagination.
+     * Returns announcements with read status and teacher information.
+     * @param data The data for the request.
+     * @param data.limit Maximum records to return
+     * @param data.offset Number of records to skip
+     * @param data.filter Filter by read status
+     * @returns StudentAnnouncementListResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMyAnnouncements(data: AnnouncementsGetMyAnnouncementsData = {}): CancelablePromise<AnnouncementsGetMyAnnouncementsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/announcements/me',
+            query: {
+                limit: data.limit,
+                offset: data.offset,
+                filter: data.filter
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Announcement
+     * Create a new announcement and send to selected students/classrooms.
+     *
+     * Teachers can send announcements to:
+     * - Individual students from their classes
+     * - Entire classrooms they teach
+     *
+     * A notification is automatically created for each recipient.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns AnnouncementPublic Successful Response
+     * @throws ApiError
+     */
+    public static createAnnouncement(data: AnnouncementsCreateAnnouncementData): CancelablePromise<AnnouncementsCreateAnnouncementResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/announcements',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Teacher Announcements
+     * Get paginated list of announcements created by the teacher.
+     *
+     * Returns non-deleted announcements ordered by creation date (newest first).
+     * @param data The data for the request.
+     * @param data.skip Number of records to skip
+     * @param data.limit Maximum records to return
+     * @returns AnnouncementListResponse Successful Response
+     * @throws ApiError
+     */
+    public static getTeacherAnnouncements(data: AnnouncementsGetTeacherAnnouncementsData = {}): CancelablePromise<AnnouncementsGetTeacherAnnouncementsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/announcements',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Announcement Detail
+     * Get detailed information about a specific announcement.
+     *
+     * Includes recipient list.
+     * @param data The data for the request.
+     * @param data.announcementId
+     * @returns AnnouncementDetail Successful Response
+     * @throws ApiError
+     */
+    public static getAnnouncementDetail(data: AnnouncementsGetAnnouncementDetailData): CancelablePromise<AnnouncementsGetAnnouncementDetailResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/announcements/{announcement_id}',
+            path: {
+                announcement_id: data.announcementId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Announcement
+     * Update an existing announcement's title, content, and/or recipients.
+     *
+     * Recipients can be updated by providing new lists of student and classroom IDs.
+     * @param data The data for the request.
+     * @param data.announcementId
+     * @param data.requestBody
+     * @returns AnnouncementPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateAnnouncement(data: AnnouncementsUpdateAnnouncementData): CancelablePromise<AnnouncementsUpdateAnnouncementResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/announcements/{announcement_id}',
+            path: {
+                announcement_id: data.announcementId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Announcement
+     * Soft delete an announcement.
+     *
+     * The announcement is marked as deleted but not removed from the database.
+     * @param data The data for the request.
+     * @param data.announcementId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteAnnouncement(data: AnnouncementsDeleteAnnouncementData): CancelablePromise<AnnouncementsDeleteAnnouncementResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/announcements/{announcement_id}',
+            path: {
+                announcement_id: data.announcementId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Announcement As Student
+     * Get announcement detail for a student.
+     *
+     * Returns announcement with read status for the current student.
+     * @param data The data for the request.
+     * @param data.announcementId
+     * @returns StudentAnnouncementPublic Successful Response
+     * @throws ApiError
+     */
+    public static getAnnouncementAsStudent(data: AnnouncementsGetAnnouncementAsStudentData): CancelablePromise<AnnouncementsGetAnnouncementAsStudentResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/announcements/{announcement_id}/student',
+            path: {
+                announcement_id: data.announcementId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Mark Announcement As Read
+     * Mark announcement as read for the current student.
+     *
+     * Idempotent operation - can be called multiple times safely.
+     * @param data The data for the request.
+     * @param data.announcementId
+     * @returns AnnouncementReadResponse Successful Response
+     * @throws ApiError
+     */
+    public static markAnnouncementAsRead(data: AnnouncementsMarkAnnouncementAsReadData): CancelablePromise<AnnouncementsMarkAnnouncementAsReadResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/announcements/{announcement_id}/read',
+            path: {
+                announcement_id: data.announcementId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class AssignmentsService {
     /**
      * List teacher's assignments
@@ -953,6 +2137,29 @@ export class AssignmentsService {
             url: '/api/v1/assignments/{assignment_id}',
             path: {
                 assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Attach teacher material to assignment
+     * Attach a teacher material to an assignment's resources
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @param data.materialId
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static attachMaterialToAssignment(data: AssignmentsAttachMaterialToAssignmentData): CancelablePromise<AssignmentsAttachMaterialToAssignmentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assignments/{assignment_id}/materials/{material_id}',
+            path: {
+                assignment_id: data.assignmentId,
+                material_id: data.materialId
             },
             errors: {
                 422: 'Validation Error'
@@ -1125,6 +2332,27 @@ export class AssignmentsService {
             },
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get assignment submission result for review
+     * Retrieve submitted answers and activity config for result review (Story 23.4)
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns AssignmentResultDetailResponse Successful Response
+     * @throws ApiError
+     */
+    public static getAssignmentResult(data: AssignmentsGetAssignmentResultData): CancelablePromise<AssignmentsGetAssignmentResultResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/result',
+            path: {
+                assignment_id: data.assignmentId
+            },
             errors: {
                 422: 'Validation Error'
             }
@@ -1393,6 +2621,27 @@ export class AssignmentsService {
     }
     
     /**
+     * Get assignment for editing
+     * Get assignment data for editing, including recipients and time planning info.
+     * @param data The data for the request.
+     * @param data.assignmentId
+     * @returns AssignmentForEditResponse Successful Response
+     * @throws ApiError
+     */
+    public static getAssignmentForEdit(data: AssignmentsGetAssignmentForEditData): CancelablePromise<AssignmentsGetAssignmentForEditResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/{assignment_id}/for-edit',
+            path: {
+                assignment_id: data.assignmentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Preview single activity
      * Get single activity data for teacher/publisher preview. No submission recorded.
      * @param data The data for the request.
@@ -1626,7 +2875,7 @@ export class BookMediaService {
      * Stream media file
      * Stream audio/video from Dream Central Storage with Range support
      * @param data The data for the request.
-     * @param data.bookId Book ID
+     * @param data.bookId DCS Book ID
      * @param data.assetPath Relative path to media (e.g., 'audio/08.mp3', 'videos/intro.mp4')
      * @param data.token
      * @param data.range
@@ -1854,6 +3103,27 @@ export class BooksService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/books/{book_id}/videos',
+            path: {
+                book_id: data.bookId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Import activities from DCS config.json into local database
+     * Admin-only endpoint to sync activities from DCS config.json to local Activity table.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static importBookActivities(data: BooksImportBookActivitiesData): CancelablePromise<BooksImportBookActivitiesResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/books/{book_id}/import-activities',
             path: {
                 book_id: data.bookId
             },
@@ -2810,6 +4080,27 @@ export class ReportsService {
     }
     
     /**
+     * Preview generated report
+     * Preview the generated report file in browser.
+     * @param data The data for the request.
+     * @param data.jobId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static previewReport(data: ReportsPreviewReportData): CancelablePromise<ReportsPreviewReportResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/reports/{job_id}/preview',
+            path: {
+                job_id: data.jobId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Download generated report
      * Download the generated report file.
      * @param data The data for the request.
@@ -3151,6 +4442,74 @@ export class StudentsService {
     }
     
     /**
+     * Get all students (admin/supervisor) or teacher's students
+     * Get list of students based on user role.
+     *
+     * **Permissions:**
+     * - Admin/Supervisor: See all students in the system
+     * - Teacher: See only students in their classes
+     *
+     * Args:
+     * session: Database session
+     * current_user: Authenticated user
+     * limit: Maximum number of students to return (default 100, max 500)
+     * offset: Number of students to skip for pagination
+     *
+     * Returns:
+     * List of Student records with user information
+     *
+     * Raises:
+     * HTTPException(404): Teacher record not found (for teacher role)
+     * @param data The data for the request.
+     * @param data.limit Maximum number of students to return
+     * @param data.offset Number of students to skip
+     * @returns StudentPublic Successful Response
+     * @throws ApiError
+     */
+    public static getStudents(data: StudentsGetStudentsData = {}): CancelablePromise<StudentsGetStudentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/students',
+            query: {
+                limit: data.limit,
+                offset: data.offset
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get students not enrolled in teacher's classes (Story 20.5)
+     * Get students visible to teacher but not in any of teacher's classes.
+     *
+     * This endpoint returns students who:
+     * - Were created by the current teacher (via created_by_teacher_id)
+     * - Are NOT enrolled in any of the teacher's classes
+     *
+     * This allows teachers to assign individual students who aren't in classes yet.
+     *
+     * Args:
+     * session: Database session
+     * current_user: Authenticated teacher user
+     *
+     * Returns:
+     * List of Student records with user information
+     *
+     * Raises:
+     * HTTPException(404): Teacher record not found
+     * @returns StudentPublic Successful Response
+     * @throws ApiError
+     */
+    public static getUnassignedStudents(): CancelablePromise<StudentsGetUnassignedStudentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/students/unassigned'
+        });
+    }
+    
+    /**
      * Get student's assignments for calendar view
      * Get assignments within a date range for calendar display. Only shows published assignments.
      * @param data The data for the request.
@@ -3207,12 +4566,13 @@ export class StudentsService {
     }
     
     /**
-     * Execute student import (Story 9.9)
+     * Execute student import (Story 9.9, 28.1)
      * Import students from validated Excel file. Returns created credentials.
      * @param data The data for the request.
      * @param data.formData
      * @param data.schoolId School ID (required for Admin)
      * @param data.teacherId Teacher ID (optional for Admin, to assign classrooms)
+     * @param data.classPassword Password to apply to all students (Story 28.1)
      * @returns ImportExecutionResponse Successful Response
      * @throws ApiError
      */
@@ -3222,7 +4582,8 @@ export class StudentsService {
             url: '/api/v1/students/import',
             query: {
                 school_id: data.schoolId,
-                teacher_id: data.teacherId
+                teacher_id: data.teacherId,
+                class_password: data.classPassword
             },
             formData: data.formData,
             mediaType: 'multipart/form-data',
@@ -3615,8 +4976,13 @@ export class TeacherMaterialsService {
      * Download the file for a material.
      *
      * Only works for file-based materials (document, image, audio, video).
+     *
+     * **Authentication:**
+     * - Header: `Authorization: Bearer <token>` (for fetch/axios requests)
+     * - Query param: `?token=<token>` (for HTML5 video/audio elements)
      * @param data The data for the request.
      * @param data.materialId
+     * @param data.token
      * @returns unknown Successful Response
      * @throws ApiError
      */
@@ -3626,6 +4992,9 @@ export class TeacherMaterialsService {
             url: '/api/v1/teachers/materials/{material_id}/download',
             path: {
                 material_id: data.materialId
+            },
+            query: {
+                token: data.token
             },
             errors: {
                 422: 'Validation Error'
@@ -3638,8 +5007,13 @@ export class TeacherMaterialsService {
      * Stream audio/video file with range request support.
      *
      * Supports HTTP Range headers for seeking in media players.
+     *
+     * **Authentication:**
+     * - Header: `Authorization: Bearer <token>` (for fetch/axios requests)
+     * - Query param: `?token=<token>` (for HTML5 video/audio elements)
      * @param data The data for the request.
      * @param data.materialId
+     * @param data.token
      * @returns unknown Successful Response
      * @throws ApiError
      */
@@ -3649,6 +5023,156 @@ export class TeacherMaterialsService {
             url: '/api/v1/teachers/materials/{material_id}/stream',
             path: {
                 material_id: data.materialId
+            },
+            query: {
+                token: data.token
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Upload PDF with text extraction
+     * Upload a PDF and extract text for AI content generation
+     * @param data The data for the request.
+     * @param data.name Display name
+     * @param data.formData
+     * @param data.description
+     * @returns TeacherMaterialUploadResponse Successful Response
+     * @throws ApiError
+     */
+    public static uploadPdfForAi(data: TeacherMaterialsUploadPdfForAiData): CancelablePromise<TeacherMaterialsUploadPdfForAiResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/materials/ai/upload-pdf',
+            query: {
+                name: data.name,
+                description: data.description
+            },
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create material from text
+     * Create a material from pasted text for AI content generation
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns TeacherMaterialUploadResponse Successful Response
+     * @throws ApiError
+     */
+    public static createTextMaterialForAi(data: TeacherMaterialsCreateTextMaterialForAiData): CancelablePromise<TeacherMaterialsCreateTextMaterialForAiResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/materials/ai/text',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List AI-processable materials
+     * List materials with extracted text available for AI generation
+     * @returns TeacherMaterialListResponse Successful Response
+     * @throws ApiError
+     */
+    public static listProcessableMaterials(): CancelablePromise<TeacherMaterialsListProcessableMaterialsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials/ai/processable'
+        });
+    }
+    
+    /**
+     * Get material for AI
+     * Get material details including extracted text for AI
+     * @param data The data for the request.
+     * @param data.materialId
+     * @returns TeacherMaterialResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMaterialForAi(data: TeacherMaterialsGetMaterialForAiData): CancelablePromise<TeacherMaterialsGetMaterialForAiResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials/ai/{material_id}',
+            path: {
+                material_id: data.materialId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List generated content
+     * List teacher's AI-generated content library
+     * @param data The data for the request.
+     * @param data.activityType Filter by activity type
+     * @returns TeacherGeneratedContentListResponse Successful Response
+     * @throws ApiError
+     */
+    public static listGeneratedContent(data: TeacherMaterialsListGeneratedContentData = {}): CancelablePromise<TeacherMaterialsListGeneratedContentResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials/generated',
+            query: {
+                activity_type: data.activityType
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get generated content
+     * Get a specific generated content item.
+     *
+     * CRITICAL: Only accessible by the owning teacher (isolation).
+     * @param data The data for the request.
+     * @param data.contentId
+     * @returns TeacherGeneratedContentResponse Successful Response
+     * @throws ApiError
+     */
+    public static getGeneratedContent(data: TeacherMaterialsGetGeneratedContentData): CancelablePromise<TeacherMaterialsGetGeneratedContentResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/materials/generated/{content_id}',
+            path: {
+                content_id: data.contentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete generated content
+     * Delete a generated content item.
+     *
+     * Cannot delete content that is already used in an assignment.
+     * @param data The data for the request.
+     * @param data.contentId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteGeneratedContent(data: TeacherMaterialsDeleteGeneratedContentData): CancelablePromise<TeacherMaterialsDeleteGeneratedContentResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/teachers/materials/generated/{content_id}',
+            path: {
+                content_id: data.contentId
             },
             errors: {
                 422: 'Validation Error'
@@ -3778,8 +5302,8 @@ export class TeachersService {
     
     /**
      * List my classes
-     * Retrieve all classes taught by the authenticated teacher. Teacher only.
-     * @returns ClassPublic Successful Response
+     * Retrieve all classes taught by the authenticated teacher with student counts. Teacher only.
+     * @returns ClassResponse Successful Response
      * @throws ApiError
      */
     public static listMyClasses(): CancelablePromise<TeachersListMyClassesResponse> {
@@ -3855,6 +5379,27 @@ export class TeachersService {
     }
     
     /**
+     * Delete class
+     * Delete a class. This will also remove all student enrollments. Teacher only.
+     * @param data The data for the request.
+     * @param data.classId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteClass(data: TeachersDeleteClassData): CancelablePromise<TeachersDeleteClassResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/teachers/me/classes/{class_id}',
+            path: {
+                class_id: data.classId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Add students to class
      * Enroll one or more students in a class. Teacher only.
      * @param data The data for the request.
@@ -3923,9 +5468,30 @@ export class TeachersService {
     }
     
     /**
-     * Get teacher insights
-     * Get AI-generated insights and patterns detected across teacher's assignments. Teacher only.
-     * @returns TeacherInsightsResponse Successful Response
+     * Get students for multiple classes (Story 20.5)
+     * Retrieve students for multiple classes at once. Returns students grouped by class ID. Teacher only.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns ClassStudentsGroup Successful Response
+     * @throws ApiError
+     */
+    public static getStudentsForClasses(data: TeachersGetStudentsForClassesData): CancelablePromise<TeachersGetStudentsForClassesResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/teachers/me/classes/students',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * @deprecated
+     * Get teacher insights (DEPRECATED)
+     * This endpoint has been removed. Use /teacher/analytics/{student_id} for student-specific insights.
+     * @returns unknown Successful Response
      * @throws ApiError
      */
     public static getMyInsights(): CancelablePromise<TeachersGetMyInsightsResponse> {
@@ -3936,11 +5502,12 @@ export class TeachersService {
     }
     
     /**
-     * Get insight details
-     * Get detailed information about a specific insight. Teacher only.
+     * @deprecated
+     * Get insight details (DEPRECATED)
+     * This endpoint has been removed.
      * @param data The data for the request.
      * @param data.insightId
-     * @returns InsightDetail Successful Response
+     * @returns unknown Successful Response
      * @throws ApiError
      */
     public static getInsightDetails(data: TeachersGetInsightDetailsData): CancelablePromise<TeachersGetInsightDetailsResponse> {
@@ -3957,8 +5524,9 @@ export class TeachersService {
     }
     
     /**
-     * Dismiss insight
-     * Dismiss an insight so it won't appear again. Teacher only.
+     * @deprecated
+     * Dismiss insight (DEPRECATED)
+     * This endpoint has been removed.
      * @param data The data for the request.
      * @param data.insightId
      * @returns unknown Successful Response
@@ -4072,6 +5640,8 @@ export class UsersService {
      * Update Password Me
      * Update own password.
      * Also clears must_change_password flag if set.
+     *
+     * Note: Students cannot change their passwords - teachers manage them (Story 28.1).
      * @param data The data for the request.
      * @param data.requestBody
      * @returns Message Successful Response
@@ -4097,6 +5667,8 @@ export class UsersService {
      * - Validates current password
      * - Updates to new password
      * - Clears must_change_password flag
+     *
+     * Note: Students cannot change their passwords - teachers manage them (Story 28.1).
      * @param data The data for the request.
      * @param data.requestBody
      * @returns ChangePasswordResponse Successful Response
@@ -4231,6 +5803,78 @@ export class UtilsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/utils/health-check/'
+        });
+    }
+}
+
+export class VocabularyExplorerService {
+    /**
+     * Get books with vocabulary
+     * Get list of books that have AI vocabulary data available.
+     * @returns BookWithVocabulary Successful Response
+     * @throws ApiError
+     */
+    public static getBooksWithVocabulary(): CancelablePromise<VocabularyExplorerGetBooksWithVocabularyResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/vocabulary/books'
+        });
+    }
+    
+    /**
+     * Get vocabulary list
+     * Get paginated vocabulary with optional filters.
+     * @param data The data for the request.
+     * @param data.bookId Book ID to get vocabulary from
+     * @param data.page Page number
+     * @param data.pageSize Items per page
+     * @param data.moduleId Filter by module ID
+     * @param data.search Search in word/definition
+     * @param data.levels CEFR levels, comma-separated
+     * @param data.partOfSpeech Filter by part of speech
+     * @returns VocabularyListResponse Successful Response
+     * @throws ApiError
+     */
+    public static getVocabulary(data: VocabularyExplorerGetVocabularyData): CancelablePromise<VocabularyExplorerGetVocabularyResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ai/vocabulary',
+            query: {
+                book_id: data.bookId,
+                page: data.page,
+                page_size: data.pageSize,
+                module_id: data.moduleId,
+                search: data.search,
+                levels: data.levels,
+                part_of_speech: data.partOfSpeech
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get audio URL for word
+     * Get presigned audio URL for a vocabulary word.
+     * @param data The data for the request.
+     * @param data.bookId
+     * @param data.requestBody
+     * @returns AudioUrlResponse Successful Response
+     * @throws ApiError
+     */
+    public static getAudioUrl(data: VocabularyExplorerGetAudioUrlData): CancelablePromise<VocabularyExplorerGetAudioUrlResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ai/vocabulary/{book_id}/audio',
+            path: {
+                book_id: data.bookId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
 }

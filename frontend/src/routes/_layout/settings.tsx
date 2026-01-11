@@ -32,6 +32,14 @@ function UserSettings() {
     return null
   }
 
+  // Story 28.1: Filter out password tab for students - teachers manage their passwords
+  const filteredTabs = tabsConfig.filter((tab) => {
+    if (tab.value === "password" && currentUser.role === "student") {
+      return false
+    }
+    return true
+  })
+
   return (
     <div className="max-w-full">
       <h1 className="text-2xl font-bold text-center md:text-left py-12">
@@ -40,13 +48,13 @@ function UserSettings() {
 
       <Tabs defaultValue="my-profile">
         <TabsList>
-          {tabsConfig.map((tab) => (
+          {filteredTabs.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.title}
             </TabsTrigger>
           ))}
         </TabsList>
-        {tabsConfig.map((tab) => (
+        {filteredTabs.map((tab) => (
           <TabsContent key={tab.value} value={tab.value}>
             <tab.component />
           </TabsContent>

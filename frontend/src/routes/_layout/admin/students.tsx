@@ -4,11 +4,14 @@ import {
   Check,
   Copy,
   Edit,
+  Eye,
+  EyeOff,
   FileSpreadsheet,
   GraduationCap,
   KeyRound,
   Mail,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   User,
@@ -24,6 +27,7 @@ import {
 import { ImportStudentsDialog } from "@/components/Admin/ImportStudentsDialog"
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { StudentPasswordModal } from "@/components/student/StudentPasswordModal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -95,7 +99,17 @@ function AdminStudents() {
     full_name: "",
     grade_level: undefined,
     parent_email: undefined,
+    password: undefined,
   })
+  // Story 28.1: Password management state
+  const [autoGeneratePassword, setAutoGeneratePassword] = useState(true)
+  const [showPassword, setShowPassword] = useState(false)
+  // Story 28.1: Password modal state
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [selectedStudentForPassword, setSelectedStudentForPassword] = useState<{
+    id: string
+    name: string
+  } | null>(null)
   const [editStudent, setEditStudent] = useState<StudentUpdate>({
     user_email: "",
     user_username: "",
@@ -127,7 +141,11 @@ function AdminStudents() {
         full_name: "",
         grade_level: undefined,
         parent_email: undefined,
+        password: undefined,
       })
+      // Story 28.1: Reset password state
+      setAutoGeneratePassword(true)
+      setShowPassword(false)
 
       if (response.password_emailed) {
         showSuccessToast("Student created. Password sent to their email.")
@@ -232,11 +250,7 @@ function AdminStudents() {
   })
 
   const handleAddStudent = () => {
-    if (
-      !newStudent.username ||
-      !newStudent.user_email ||
-      !newStudent.full_name
-    ) {
+    if (!newStudent.username || !newStudent.full_name) {
       showErrorToast("Please fill in all required fields")
       return
     }
@@ -247,6 +261,18 @@ function AdminStudents() {
         "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
       )
       return
+    }
+
+    // Story 28.1: Validate password if not auto-generating
+    if (!autoGeneratePassword && newStudent.password) {
+      if (newStudent.password.length < 4) {
+        showErrorToast("Password must be at least 4 characters")
+        return
+      }
+      if (newStudent.password.length > 50) {
+        showErrorToast("Password must be 50 characters or less")
+        return
+      }
     }
 
     createStudentMutation.mutate(newStudent)
@@ -534,18 +560,19 @@ function AdminStudents() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {/* Story 28.1: View/Set Password button */}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            handleResetPassword(
-                              student.user_id,
-                              student.user_full_name || "Student",
-                            )
-                          }
-                          disabled={resetPasswordMutation.isPending}
+                          onClick={() => {
+                            setSelectedStudentForPassword({
+                              id: student.id,
+                              name: student.user_full_name || "Student",
+                            })
+                            setIsPasswordModalOpen(true)
+                          }}
                           className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                          title="Reset Password"
+                          title="View/Set Password"
                         >
                           <KeyRound className="w-4 h-4" />
                         </Button>
@@ -638,12 +665,7 @@ function AdminStudents() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="student-email">
-                Email{" "}
-                <span className="text-destructive ml-1" aria-hidden="true">
-                  *
-                </span>
-              </Label>
+              <Label htmlFor="student-email">Email</Label>
               <Input
                 id="student-email"
                 type="email"
@@ -653,6 +675,56 @@ function AdminStudents() {
                   setNewStudent({ ...newStudent, user_email: e.target.value })
                 }
               />
+            </div>
+            {/* Story 28.1: Password field with auto-generate option */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="student-password">Password</Label>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={autoGeneratePassword}
+                    onCheckedChange={(checked) => {
+                      setAutoGeneratePassword(checked === true)
+                      if (checked) {
+                        setNewStudent({ ...newStudent, password: undefined })
+                      }
+                    }}
+                  />
+                  Auto-generate
+                </label>
+              </div>
+              <div className="relative">
+                <Input
+                  id="student-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={autoGeneratePassword ? "Will be auto-generated" : "Enter password (4+ chars)"}
+                  value={newStudent.password || ""}
+                  disabled={autoGeneratePassword}
+                  onChange={(e) =>
+                    setNewStudent({ ...newStudent, password: e.target.value || undefined })
+                  }
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={autoGeneratePassword}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {autoGeneratePassword
+                  ? "A secure password will be generated automatically"
+                  : "Minimum 4 characters"}
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="grade-level">Grade Level</Label>
@@ -928,6 +1000,19 @@ function AdminStudents() {
         variant="danger"
         isLoading={bulkDeleteMutation.isPending}
       />
+
+      {/* Story 28.1: Student Password Modal */}
+      {selectedStudentForPassword && (
+        <StudentPasswordModal
+          studentId={selectedStudentForPassword.id}
+          studentName={selectedStudentForPassword.name}
+          isOpen={isPasswordModalOpen}
+          onClose={() => {
+            setIsPasswordModalOpen(false)
+            setSelectedStudentForPassword(null)
+          }}
+        />
+      )}
     </div>
   )
 }
