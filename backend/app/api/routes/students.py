@@ -109,6 +109,7 @@ async def get_student_assignments(
 
     # Build query: AssignmentStudent → Assignment → Activity + activity count
     # Only show published assignments to students (not scheduled or draft)
+    # Use LEFT JOIN (outerjoin) to include Content Library assignments without activity_id
     query = (
         select(
             AssignmentStudent,
@@ -117,7 +118,7 @@ async def get_student_assignments(
             func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
         )
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(Activity, Assignment.activity_id == Activity.id)
         .outerjoin(
             activity_count_subq,
             activity_count_subq.c.assignment_id == Assignment.id
@@ -149,16 +150,39 @@ async def get_student_assignments(
     for row in rows:
         assignment_student = row[0]
         assignment = row[1]
-        activity = row[2]
+        activity = row[2]  # May be None for Content Library assignments
         activity_count = row[3]
 
         # Fetch book data from DCS
         book = await book_service.get_book(assignment.dcs_book_id)
+
+        # Handle Content Library assignments (may not have book in DCS)
         if not book:
-            logger.warning(
-                f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
-            )
-            continue
+            if assignment.activity_content:
+                # Content Library assignment - use placeholder book info
+                book_id = assignment.dcs_book_id if assignment.dcs_book_id else 0
+                book_title = "AI Generated"
+                book_cover_url = None
+            else:
+                logger.warning(
+                    f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
+                )
+                continue
+        else:
+            book_id = book.id
+            book_title = book.title or book.name
+            book_cover_url = book.cover_url
+
+        # Handle Content Library assignments (no activity record)
+        if activity:
+            activity_id = activity.id
+            activity_title = activity.title
+            activity_type = activity.activity_type
+        else:
+            # Content Library assignment - use assignment's embedded data
+            activity_id = assignment.id  # Use assignment id as pseudo activity id
+            activity_title = assignment.name
+            activity_type = assignment.activity_type if assignment.activity_type else "ai_quiz"
 
         response = StudentAssignmentResponse(
             # Assignment fields
@@ -170,14 +194,14 @@ async def get_student_assignments(
             created_at=assignment.created_at,
 
             # Book fields (from DCS via BookService)
-            book_id=book.id,
-            book_title=book.title or book.name,
-            book_cover_url=book.cover_url,
+            book_id=book_id,
+            book_title=book_title,
+            book_cover_url=book_cover_url,
 
             # Activity fields (first activity for display purposes)
-            activity_id=activity.id,
-            activity_title=activity.title,
-            activity_type=activity.activity_type,
+            activity_id=activity_id,
+            activity_title=activity_title,
+            activity_type=activity_type,
 
             # Student-specific fields
             status=assignment_student.status,

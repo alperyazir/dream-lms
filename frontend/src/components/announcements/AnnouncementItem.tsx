@@ -6,9 +6,9 @@
  */
 
 import { formatDistanceToNow } from "date-fns"
+import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import type { StudentAnnouncement } from "@/types/announcement"
-import { useState } from "react"
 import { AnnouncementDetailModal } from "./AnnouncementDetailModal"
 
 interface AnnouncementItemProps {
@@ -19,8 +19,7 @@ export function AnnouncementItem({ announcement }: AnnouncementItemProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   // Get first 100 characters for snippet
-  const snippet =
-    announcement.content.replace(/<[^>]*>/g, "").substring(0, 100) + "..."
+  const snippet = `${announcement.content.replace(/<[^>]*>/g, "").substring(0, 100)}...`
 
   return (
     <>

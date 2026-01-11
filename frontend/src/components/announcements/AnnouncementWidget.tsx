@@ -5,15 +5,10 @@
  * Displays recent unread announcements on the student dashboard
  */
 
-import { Bell, ChevronRight } from "lucide-react"
 import { Link } from "@tanstack/react-router"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Bell, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { StudentAnnouncement } from "@/types/announcement"
 import { AnnouncementItem } from "./AnnouncementItem"
 

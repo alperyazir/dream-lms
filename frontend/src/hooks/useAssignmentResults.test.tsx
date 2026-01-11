@@ -55,6 +55,8 @@ const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
       status: "completed",
       score: 95,
       time_spent_minutes: 12,
+      time_spent_seconds: 720,
+      started_at: "2025-02-10T10:18:00Z",
       completed_at: "2025-02-10T10:30:00Z",
       has_feedback: true,
     },
@@ -64,6 +66,8 @@ const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
       status: "completed",
       score: 80,
       time_spent_minutes: 18,
+      time_spent_seconds: 1080,
+      started_at: "2025-02-11T14:02:00Z",
       completed_at: "2025-02-11T14:20:00Z",
       has_feedback: false,
     },
@@ -73,6 +77,8 @@ const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
       status: "in_progress",
       score: null,
       time_spent_minutes: 5,
+      time_spent_seconds: 300,
+      started_at: "2025-02-12T09:00:00Z",
       completed_at: null,
       has_feedback: false,
     },
@@ -122,6 +128,7 @@ const mockStudentAnswersResponse: StudentAnswersResponse = {
   status: "completed",
   score: 95,
   time_spent_minutes: 12,
+  time_spent_seconds: 720,
   started_at: "2025-02-10T10:15:00Z",
   completed_at: "2025-02-10T10:30:00Z",
   answers_json: {
@@ -129,6 +136,8 @@ const mockStudentAnswersResponse: StudentAnswersResponse = {
     zone2: "correct_answer",
     zone3: "wrong_answer",
   },
+  activity_type: "dragdroppicture",
+  config_json: null,
 }
 
 describe("useAssignmentResults", () => {

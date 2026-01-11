@@ -345,3 +345,122 @@ def teacher_user_with_record_fixture(session: Session) -> User:
     session.refresh(user)
 
     return user
+
+
+@pytest.fixture(name="assignment_with_activity")
+def assignment_with_activity_fixture(session: Session, student_user) -> tuple:
+    """Create an assignment with a linked activity for testing AI activity progress."""
+    from datetime import datetime, UTC, timedelta
+    from app.models import (
+        Activity,
+        ActivityType,
+        Assignment,
+        AssignmentStudent,
+        AssignmentActivity,
+        School,
+        Teacher,
+        Student,
+    )
+    from sqlalchemy import select
+
+    # Create school with mock DCS publisher ID
+    mock_dcs_publisher_id = 999
+    school = School(
+        id=uuid.uuid4(),
+        name="Test School",
+        dcs_publisher_id=mock_dcs_publisher_id,
+    )
+    session.add(school)
+    session.commit()
+
+    # Create teacher user
+    teacher_user = User(
+        id=uuid.uuid4(),
+        email="teacher_activity@example.com",
+        username="teacheractivity",
+        hashed_password=get_password_hash("teacherpassword"),
+        role=UserRole.teacher,
+        is_active=True,
+        is_superuser=False,
+        full_name="Teacher Activity User",
+    )
+    session.add(teacher_user)
+    session.commit()
+
+    # Create teacher record
+    teacher = Teacher(
+        id=uuid.uuid4(),
+        user_id=teacher_user.id,
+        school_id=school.id,
+        subject_specialization="Test Subject",
+    )
+    session.add(teacher)
+    session.commit()
+
+    # Get student record from student_user
+    result = session.execute(
+        select(Student).where(Student.user_id == student_user.id)
+    )
+    student = result.scalar_one_or_none()
+
+    # Create student if not exists
+    if not student:
+        student = Student(
+            id=uuid.uuid4(),
+            user_id=student_user.id,
+            school_id=school.id,
+            grade_level=10,
+        )
+        session.add(student)
+        session.commit()
+
+    # Create activity
+    activity = Activity(
+        id=uuid.uuid4(),
+        module_name="Test Module",
+        page_number=1,
+        section_index=0,
+        activity_type=ActivityType.vocabulary_quiz,  # Default, can be overridden in tests
+        title="Test AI Activity",
+        config_json={"test": "data"},
+        dcs_book_id=1,
+    )
+    session.add(activity)
+    session.commit()
+
+    # Create assignment
+    assignment = Assignment(
+        id=uuid.uuid4(),
+        name="Test AI Assignment",
+        description="Test assignment for AI activities",
+        teacher_id=teacher.id,
+        activity_id=activity.id,
+        dcs_book_id=1,
+        due_date=datetime.now(UTC) + timedelta(days=7),
+        time_limit_minutes=60,
+    )
+    session.add(assignment)
+    session.commit()
+
+    # Link activity to assignment
+    assignment_activity = AssignmentActivity(
+        id=uuid.uuid4(),
+        assignment_id=assignment.id,
+        activity_id=activity.id,
+        order_index=0,
+    )
+    session.add(assignment_activity)
+    session.commit()
+
+    # Assign to student
+    assignment_student = AssignmentStudent(
+        assignment_id=assignment.id,
+        student_id=student.id,
+    )
+    session.add(assignment_student)
+    session.commit()
+
+    session.refresh(assignment)
+    session.refresh(activity)
+
+    return (assignment, activity)

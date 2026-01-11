@@ -6,13 +6,13 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import { AnnouncementWidget } from "@/components/announcements/AnnouncementWidget"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { ProgressSummaryCard } from "@/components/student/ProgressSummaryCard"
 import { UpcomingAssignmentsList } from "@/components/student/UpcomingAssignmentsList"
-import { AnnouncementWidget } from "@/components/announcements/AnnouncementWidget"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useStudentProgress } from "@/hooks/useStudentProgress"
 import { useStudentAnnouncements } from "@/hooks/useAnnouncements"
+import { useStudentProgress } from "@/hooks/useStudentProgress"
 import { getStudentAssignments } from "@/services/assignmentsApi"
 
 export const Route = createFileRoute("/_layout/student/dashboard")({
@@ -36,10 +36,11 @@ function StudentDashboard() {
   })
 
   // Fetch last 3 announcements (all, not just unread) so they stay visible after reading
-  const { data: announcementsData, isLoading: isLoadingAnnouncements } = useStudentAnnouncements({
-    filter: "all",
-    limit: 3,
-  })
+  const { data: announcementsData, isLoading: isLoadingAnnouncements } =
+    useStudentAnnouncements({
+      filter: "all",
+      limit: 3,
+    })
 
   return (
     <div className="container py-4 md:py-6 space-y-4 md:space-y-6">
@@ -55,11 +56,13 @@ function StudentDashboard() {
 
       {/* Cards stack vertically, full width */}
       <div className="space-y-4 md:space-y-6">
-        {/* Announcements Widget - Top priority for students */}
-        <AnnouncementWidget
-          announcements={announcementsData?.announcements || []}
-          isLoading={isLoadingAnnouncements}
-        />
+        {/* Announcements Widget - Only show when there are announcements */}
+        {(isLoadingAnnouncements || (announcementsData?.announcements && announcementsData.announcements.length > 0)) && (
+          <AnnouncementWidget
+            announcements={announcementsData?.announcements || []}
+            isLoading={isLoadingAnnouncements}
+          />
+        )}
 
         {/* Progress Summary */}
         {isLoadingProgress ? (

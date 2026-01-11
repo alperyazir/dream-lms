@@ -1,10 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link as RouterLink, useLocation } from "@tanstack/react-router"
+import type { LucideIcon } from "lucide-react"
+import { Sparkles } from "lucide-react"
+import { useState } from "react"
 import {
+  FiActivity,
   FiBarChart2,
   FiBook,
   FiBriefcase,
   FiCalendar,
+  FiChevronDown,
+  FiChevronRight,
   FiClipboard,
   FiFolder,
   FiHome,
@@ -26,12 +32,20 @@ interface SidebarItemsProps {
   isCollapsed?: boolean
 }
 
+type IconComponent = IconType | LucideIcon
+
+interface SubItem {
+  icon: IconComponent
+  title: string
+  path: string
+}
+
 interface Item {
-  icon: IconType
+  icon: IconComponent
   title: string
   path: string
   comingSoon?: boolean
-  dataTour?: string
+  children?: SubItem[]
 }
 
 interface AdminStats {
@@ -44,12 +58,7 @@ interface AdminStats {
 // Role-specific menu items
 const roleMenuItems: Record<UserRole, Item[]> = {
   admin: [
-    {
-      icon: FiHome,
-      title: "Dashboard",
-      path: "/admin/dashboard",
-      dataTour: "sidebar-dashboard",
-    },
+    { icon: FiHome, title: "Dashboard", path: "/admin/dashboard" },
     { icon: FiShield, title: "Supervisors", path: "/admin/supervisors" },
     { icon: FiBriefcase, title: "Publishers", path: "/admin/publishers" },
     { icon: FiTrendingUp, title: "Schools", path: "/admin/schools" },
@@ -58,14 +67,11 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiUsers, title: "Students", path: "/admin/students" },
     { icon: FiClipboard, title: "Assignments", path: "/admin/assignments" },
     { icon: FiBarChart2, title: "Benchmarks", path: "/admin/benchmarks" },
+    { icon: FiActivity, title: "AI Usage", path: "/admin/ai-usage" },
+    { icon: Sparkles, title: "DreamAI", path: "/dreamai" },
   ],
   supervisor: [
-    {
-      icon: FiHome,
-      title: "Dashboard",
-      path: "/admin/dashboard",
-      dataTour: "sidebar-dashboard",
-    },
+    { icon: FiHome, title: "Dashboard", path: "/admin/dashboard" },
     // Supervisors cannot manage other supervisors, so no Supervisors menu item
     { icon: FiBriefcase, title: "Publishers", path: "/admin/publishers" },
     { icon: FiTrendingUp, title: "Schools", path: "/admin/schools" },
@@ -74,116 +80,32 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiUsers, title: "Students", path: "/admin/students" },
     { icon: FiClipboard, title: "Assignments", path: "/admin/assignments" },
     { icon: FiBarChart2, title: "Benchmarks", path: "/admin/benchmarks" },
+    { icon: Sparkles, title: "DreamAI", path: "/dreamai" },
   ],
   publisher: [
-    {
-      icon: FiHome,
-      title: "Dashboard",
-      path: "/publisher/dashboard",
-      dataTour: "sidebar-dashboard",
-    },
-    {
-      icon: FiBook,
-      title: "Library",
-      path: "/publisher/library",
-      dataTour: "sidebar-library",
-    },
-    {
-      icon: FiTrendingUp,
-      title: "Schools",
-      path: "/publisher/schools",
-      dataTour: "sidebar-schools",
-    },
-    {
-      icon: FiUsers,
-      title: "Teachers",
-      path: "/publisher/teachers",
-      dataTour: "sidebar-teachers",
-    },
+    { icon: FiHome, title: "Dashboard", path: "/publisher/dashboard" },
+    { icon: FiBook, title: "Library", path: "/publisher/library" },
+    { icon: FiTrendingUp, title: "Schools", path: "/publisher/schools" },
+    { icon: FiUsers, title: "Teachers", path: "/publisher/teachers" },
   ],
   teacher: [
-    {
-      icon: FiHome,
-      title: "Dashboard",
-      path: "/teacher/dashboard",
-      dataTour: "sidebar-dashboard",
-    },
-    {
-      icon: FiCalendar,
-      title: "Calendar",
-      path: "/teacher/calendar",
-    },
-    {
-      icon: FiBook,
-      title: "Library",
-      path: "/teacher/books",
-      dataTour: "sidebar-library",
-    },
-    {
-      icon: FiFolder,
-      title: "My Materials",
-      path: "/teacher/materials",
-      dataTour: "sidebar-materials",
-    },
-    {
-      icon: FiTrendingUp,
-      title: "Classrooms",
-      path: "/teacher/classrooms",
-    },
-    {
-      icon: FiUsers,
-      title: "Students",
-      path: "/teacher/students",
-      dataTour: "sidebar-students",
-    },
-    {
-      icon: FiClipboard,
-      title: "Assignments",
-      path: "/teacher/assignments",
-      dataTour: "sidebar-assignments",
-    },
-    {
-      icon: FiMessageSquare,
-      title: "Announcements",
-      path: "/teacher/announcements",
-      dataTour: "sidebar-announcements",
-    },
-    {
-      icon: FiBarChart2,
-      title: "Reports",
-      path: "/teacher/reports",
-    },
+    { icon: FiHome, title: "Dashboard", path: "/teacher/dashboard" },
+    { icon: FiCalendar, title: "Calendar", path: "/teacher/calendar" },
+    { icon: FiBook, title: "Library", path: "/teacher/books" },
+    { icon: FiFolder, title: "My Materials", path: "/teacher/materials" },
+    { icon: Sparkles, title: "DreamAI", path: "/dreamai" },
+    { icon: FiTrendingUp, title: "Classrooms", path: "/teacher/classrooms" },
+    { icon: FiUsers, title: "Students", path: "/teacher/students" },
+    { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments" },
+    { icon: FiMessageSquare, title: "Announcements", path: "/teacher/announcements" },
+    { icon: FiBarChart2, title: "Reports", path: "/teacher/reports" },
   ],
   student: [
-    {
-      icon: FiHome,
-      title: "Dashboard",
-      path: "/student/dashboard",
-      dataTour: "sidebar-dashboard",
-    },
-    {
-      icon: FiCalendar,
-      title: "Calendar",
-      path: "/student/calendar",
-    },
-    {
-      icon: FiClipboard,
-      title: "Assignments",
-      path: "/student/assignments",
-      dataTour: "sidebar-assignments",
-    },
-    {
-      icon: FiMessageSquare,
-      title: "Announcements",
-      path: "/student/announcements",
-      dataTour: "sidebar-announcements",
-    },
-    {
-      icon: FiTrendingUp,
-      title: "My Progress",
-      path: "/student/progress",
-      dataTour: "sidebar-progress",
-    },
+    { icon: FiHome, title: "Dashboard", path: "/student/dashboard" },
+    { icon: FiCalendar, title: "Calendar", path: "/student/calendar" },
+    { icon: FiClipboard, title: "Assignments", path: "/student/assignments" },
+    { icon: FiMessageSquare, title: "Announcements", path: "/student/announcements" },
+    { icon: FiTrendingUp, title: "My Progress", path: "/student/progress" },
   ],
 }
 
@@ -192,8 +114,28 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const location = useLocation()
 
+  // Track which collapsible menus are expanded
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
+    // Auto-expand if user is on a DreamAI page
+    location.pathname.startsWith("/dreamai") ? { DreamAI: true } : {},
+  )
+
   const userRole = (currentUser?.role || "student") as UserRole
   const menuItems = roleMenuItems[userRole] || roleMenuItems.student
+
+  // Toggle menu expansion
+  const toggleMenu = (title: string) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [title]: !prev[title],
+    }))
+  }
+
+  // Check if any child path is active
+  const isChildActive = (children: SubItem[] | undefined): boolean => {
+    if (!children) return false
+    return children.some((child) => location.pathname === child.path)
+  }
 
   // Fetch real stats for admin users
   // TODO: Re-enable when AdminService.getDashboardStats is implemented
@@ -256,11 +198,95 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     }
   }
 
-  const renderMenuItem = (item: Item) => {
-    const { icon: IconComponent, title, path, comingSoon, dataTour } = item
+  // Render a sub-menu item
+  const renderSubMenuItem = (subItem: SubItem) => {
+    const { icon: IconComponent, title, path } = subItem
     const isActive = location.pathname === path
+
+    return (
+      <RouterLink key={title} to={path} onClick={onClose}>
+        <div
+          className={`flex items-center text-sm transition-colors pl-10 pr-4 py-2 ${
+            isActive
+              ? "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-r-4 border-teal-500"
+              : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+          }`}
+        >
+          <IconComponent
+            className={`h-4 w-4 ${isActive ? "text-teal-600 dark:text-teal-400" : ""}`}
+          />
+          <span className={`ml-3 ${isActive ? "font-semibold" : ""}`}>
+            {title}
+          </span>
+        </div>
+      </RouterLink>
+    )
+  }
+
+  const renderMenuItem = (item: Item) => {
+    const {
+      icon: IconComponent,
+      title,
+      path,
+      comingSoon,
+      children,
+    } = item
+    const isActive = location.pathname === path
+    const hasActiveChild = isChildActive(children)
+    const isExpanded = expandedMenus[title] || hasActiveChild
     const itemCount = getItemCount(path)
 
+    // Render collapsible menu with children
+    if (children && children.length > 0) {
+      const parentContent = (
+        <button
+          type="button"
+          onClick={() => toggleMenu(title)}
+          className={`w-full flex items-center text-sm transition-colors relative ${
+            isCollapsed ? "justify-center px-2 py-3" : "gap-4 px-4 py-2"
+          } ${
+            hasActiveChild
+              ? "bg-teal-50/50 dark:bg-teal-900/10 text-teal-600 dark:text-teal-400"
+              : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+          }`}
+          title={isCollapsed ? title : undefined}
+        >
+          <IconComponent
+            className={`self-center h-5 w-5 ${hasActiveChild ? "text-teal-600 dark:text-teal-400" : ""} ${
+              isCollapsed ? "mx-auto" : ""
+            }`}
+          />
+          {!isCollapsed && (
+            <>
+              <span
+                className={`ml-2 flex-1 text-left ${hasActiveChild ? "font-semibold" : ""}`}
+              >
+                {title}
+              </span>
+              {isExpanded ? (
+                <FiChevronDown className="h-4 w-4" />
+              ) : (
+                <FiChevronRight className="h-4 w-4" />
+              )}
+            </>
+          )}
+        </button>
+      )
+
+      return (
+        <div key={title}>
+          {parentContent}
+          {/* Render children when expanded (and not collapsed sidebar) */}
+          {isExpanded && !isCollapsed && (
+            <div className="bg-gray-50 dark:bg-gray-900/50">
+              {children.map(renderSubMenuItem)}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // Render regular menu item (no children)
     const content = (
       <div
         className={`flex items-center text-sm transition-colors relative ${
@@ -271,7 +297,6 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
             : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
         } ${comingSoon ? "opacity-60" : ""}`}
         title={isCollapsed ? title : undefined}
-        data-tour={dataTour}
       >
         <IconComponent
           className={`self-center h-5 w-5 ${isActive ? "text-teal-600 dark:text-teal-400" : ""} ${
@@ -324,12 +349,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   }
 
   const bottomItems: Item[] = [
-    {
-      icon: FiSettings,
-      title: "Settings",
-      path: "/settings",
-      dataTour: "sidebar-settings",
-    },
+    { icon: FiSettings, title: "Settings", path: "/settings" },
   ]
 
   // Add User Management for admins only

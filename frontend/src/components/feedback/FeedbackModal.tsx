@@ -23,7 +23,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
 import { useFeedbackModal } from "@/hooks/useFeedback"
 import { isFeedbackPublic } from "@/types/feedback"
-import { BadgeSelector } from "./BadgeSelector"
 import { EmojiPicker } from "./EmojiPicker"
 
 interface FeedbackModalProps {
@@ -46,7 +45,6 @@ export function FeedbackModal({
   score,
 }: FeedbackModalProps) {
   const [feedbackText, setFeedbackText] = useState("")
-  const [selectedBadges, setSelectedBadges] = useState<string[]>([])
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
 
   const {
@@ -63,7 +61,6 @@ export function FeedbackModal({
   useEffect(() => {
     if (isOpen && feedback && isFeedbackPublic(feedback)) {
       setFeedbackText(feedback.feedback_text || "")
-      setSelectedBadges(feedback.badges || [])
       // emoji_reactions is an array, take first element if exists
       setSelectedEmoji(
         feedback.emoji_reactions && feedback.emoji_reactions.length > 0
@@ -72,7 +69,6 @@ export function FeedbackModal({
       )
     } else if (isOpen && !feedback) {
       setFeedbackText("")
-      setSelectedBadges([])
       setSelectedEmoji(null)
     }
   }, [isOpen, feedback])
@@ -96,7 +92,6 @@ export function FeedbackModal({
 
     try {
       await saveDraft(feedbackText, {
-        badges: selectedBadges,
         emoji_reaction: selectedEmoji,
       })
       toast({
@@ -124,16 +119,11 @@ export function FeedbackModal({
 
     try {
       await publish(feedbackText, {
-        badges: selectedBadges,
         emoji_reaction: selectedEmoji,
       })
-      const badgeMessage =
-        selectedBadges.length > 0
-          ? ` with ${selectedBadges.length} badge${selectedBadges.length > 1 ? "s" : ""}`
-          : ""
       toast({
         title: "Feedback Published",
-        description: `Student has been notified of your feedback${badgeMessage}`,
+        description: "Student has been notified of your feedback",
       })
       onClose()
     } catch (_error) {
@@ -193,15 +183,6 @@ export function FeedbackModal({
                   )}
                 </div>
               </div>
-
-              <Separator />
-
-              {/* Badge Selection (Story 6.5) */}
-              <BadgeSelector
-                selectedBadges={selectedBadges}
-                onBadgesChange={setSelectedBadges}
-                disabled={isSaving}
-              />
 
               <Separator />
 

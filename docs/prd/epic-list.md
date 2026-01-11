@@ -172,3 +172,38 @@ Introduce an interactive onboarding tour that guides new users (Teachers, Studen
 **Deliverable:** Engaging onboarding experience for new Teachers, Students, and Publishers (Admin excluded)
 
 ---
+
+## Epic 13: DreamAI - AI-Powered Content Generation
+
+**Estimated Effort:** 4-5 weeks | **Status:** Planning
+
+Enable teachers to generate educational content (questions, activities, vocabulary quizzes) using AI. Integrates with DCS pre-processed book data and supports teacher-uploaded materials. Features a dedicated DreamAI section in the sidebar with abstracted LLM and TTS provider layers for flexibility.
+
+**What Currently Exists:** Manual activity creation, no AI assistance, no vocabulary audio
+**What We Build:** AI content generation + TTS audio playback + DreamAI UI + Provider abstraction layers
+
+**Dependencies:** DCS Epic 10 (AI Book Processing Pipeline)
+
+**Stories:**
+- 13.1: LLM Provider Abstraction Layer
+- 13.2: DeepSeek Provider Integration
+- 13.3: Gemini Provider Integration
+- 13.4: TTS Provider Abstraction Layer
+- 13.5: Edge TTS Provider Integration
+- 13.6: Azure TTS Provider (Fallback)
+- 13.7: AI Service Integration with DCS
+- 13.8: MCQ Generation from Modules
+- 13.9: Vocabulary Quiz Generation with Audio
+- 13.10: True/False Generation
+- 13.11: Fill-in-the-Blank Generation
+- 13.12: Teacher Materials Processing
+- 13.13: DreamAI Sidebar Section
+- 13.14: Question Generator UI
+- 13.15: Vocabulary Explorer with Audio Player
+- 13.16: Generated Content Review Flow
+- 13.17: Content Library UI
+- 13.18: AI Usage Dashboard
+
+**Deliverable:** AI-powered content generation with multi-provider support, vocabulary audio, and intuitive teacher UI
+
+---

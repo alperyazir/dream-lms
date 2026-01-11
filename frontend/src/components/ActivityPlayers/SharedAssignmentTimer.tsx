@@ -63,6 +63,9 @@ export function SharedAssignmentTimer({
   // Track if we've already fired the expiry callback
   const [hasExpired, setHasExpired] = useState(false)
 
+  // Track elapsed time for both modes (for saving progress)
+  const [_elapsedTime, setElapsedTime] = useState(Math.floor(elapsedMinutes * 60))
+
   // Timer tick
   useEffect(() => {
     if (isCountdownMode) {
@@ -83,6 +86,12 @@ export function SharedAssignmentTimer({
           }
           return newValue
         })
+        // Track elapsed time in countdown mode too
+        setElapsedTime((prev) => {
+          const newElapsed = prev + 1
+          onElapsedChange?.(newElapsed)
+          return newElapsed
+        })
       }, 1000)
 
       return () => clearInterval(intervalId)
@@ -99,12 +108,13 @@ export function SharedAssignmentTimer({
     return () => clearInterval(intervalId)
   }, [isCountdownMode, seconds, hasExpired, onTimeExpired, onElapsedChange])
 
-  // Report initial elapsed time
+  // Report initial elapsed time on mount
   useEffect(() => {
-    if (!isCountdownMode) {
-      onElapsedChange?.(seconds)
-    }
-  }, [isCountdownMode, onElapsedChange, seconds]) // eslint-disable-line react-hooks/exhaustive-deps
+    const initialElapsed = Math.floor(elapsedMinutes * 60)
+    onElapsedChange?.(initialElapsed)
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Determine state based on time (only for countdown)
   const remainingMinutes = isCountdownMode ? Math.floor(seconds / 60) : 0

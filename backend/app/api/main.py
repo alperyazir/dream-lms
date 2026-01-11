@@ -2,6 +2,8 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     admin,
+    ai_generation,
+    ai_usage,
     announcements,
     assignments,
     avatars,
@@ -25,6 +27,7 @@ from app.api.routes import (
     teachers,
     users,
     utils,
+    vocabulary_explorer,
     webhooks,
 )
 from app.core.config import settings
@@ -53,6 +56,9 @@ api_router.include_router(scheduled_tasks.router)
 api_router.include_router(feedback.router)
 api_router.include_router(avatars.router)
 api_router.include_router(teacher_materials.router)
+api_router.include_router(ai_generation.router)
+api_router.include_router(ai_usage.router)
+api_router.include_router(vocabulary_explorer.router)
 
 
 if settings.ENVIRONMENT == "local":

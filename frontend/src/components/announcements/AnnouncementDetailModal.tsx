@@ -5,8 +5,8 @@
  * Shows full announcement content and handles auto-mark-as-read
  */
 
-import { useEffect } from "react"
 import { formatDistanceToNow } from "date-fns"
+import { useEffect } from "react"
 import {
   Dialog,
   DialogContent,

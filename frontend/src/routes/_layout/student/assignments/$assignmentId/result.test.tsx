@@ -5,10 +5,16 @@
  * Validates that the result screen fetches and displays submission data correctly.
  */
 
-import { render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { describe, expect, it, vi, beforeEach } from "vitest"
-import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router"
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router"
+import { render, screen, waitFor } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as assignmentsApi from "@/services/assignmentsApi"
 
 // Import the actual component - adjust path if needed
@@ -32,7 +38,7 @@ describe("AssignmentResultDetailPage (Story 23.4)", () => {
     activity_id: "activity-1",
     activity_title: "Addition Practice",
     activity_type: "multipleChoice",
-    book_id: "book-1",
+    book_id: 1,
     book_name: "Math Grade 5",
     publisher_name: "Dream Publishers",
     config_json: {
@@ -47,8 +53,10 @@ describe("AssignmentResultDetailPage (Story 23.4)", () => {
     },
     score: 85.5,
     total_points: 100.0,
+    started_at: "2025-12-28T10:15:00Z",
     completed_at: "2025-12-28T10:30:00Z",
     time_spent_minutes: 15,
+    time_spent_seconds: 900, // 15 minutes in seconds
   }
 
   const renderWithRouter = (assignmentId: string) => {
@@ -124,9 +132,7 @@ describe("AssignmentResultDetailPage (Story 23.4)", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/results not found/i)).toBeInTheDocument()
-      expect(
-        screen.getByText(/hasn't been completed yet/i),
-      ).toBeInTheDocument()
+      expect(screen.getByText(/hasn't been completed yet/i)).toBeInTheDocument()
     })
   })
 

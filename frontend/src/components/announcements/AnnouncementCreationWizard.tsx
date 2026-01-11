@@ -3,8 +3,9 @@
  * Story 26.1: Multi-step announcement creation with improved UX
  */
 
-import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { CheckCircle2, FileText, Users } from "lucide-react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,10 +16,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { RichTextEditor } from "./RichTextEditor"
-import { RecipientSelector } from "./RecipientSelector"
-import { CheckCircle2, FileText, Users } from "lucide-react"
 import { teachersApi } from "@/services/teachersApi"
+import { RecipientSelector } from "./RecipientSelector"
+import { RichTextEditor } from "./RichTextEditor"
 
 interface AnnouncementCreationWizardProps {
   open: boolean
@@ -51,7 +51,7 @@ export function AnnouncementCreationWizard({
   const [content, setContent] = useState(initialData?.content || "")
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([])
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>(
-    initialData?.recipientStudentIds || []
+    initialData?.recipientStudentIds || [],
   )
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -71,7 +71,12 @@ export function AnnouncementCreationWizard({
 
   // Reset all form fields when initialData changes (e.g., editing different announcements)
   useEffect(() => {
-    if (initialData && isEditMode && classes.length > 0 && classStudentsGroups.length > 0) {
+    if (
+      initialData &&
+      isEditMode &&
+      classes.length > 0 &&
+      classStudentsGroups.length > 0
+    ) {
       setTitle(initialData.title || "")
       setContent(initialData.content || "")
 
@@ -87,7 +92,10 @@ export function AnnouncementCreationWizard({
         const classStudentIds = group.students.map((s) => s.id)
 
         // If class has students and ALL are in recipients, select the class
-        if (classStudentIds.length > 0 && classStudentIds.every((id) => recipientIdSet.has(id))) {
+        if (
+          classStudentIds.length > 0 &&
+          classStudentIds.every((id) => recipientIdSet.has(id))
+        ) {
           selectedClasses.push(group.class_id)
           // Remove these students from individual selection since they're covered by class
           classStudentIds.forEach((id) => individualStudents.delete(id))
@@ -250,13 +258,21 @@ export function AnnouncementCreationWizard({
 
         {/* Footer Actions */}
         <div className="flex justify-between pt-4 border-t">
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={handleClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
 
           <div className="flex gap-2">
             {step === 2 && (
-              <Button variant="outline" onClick={handleBack} disabled={isSubmitting}>
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={isSubmitting}
+              >
                 Back
               </Button>
             )}

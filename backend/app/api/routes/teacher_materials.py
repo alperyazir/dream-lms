@@ -1,11 +1,13 @@
 """
-Teacher Materials API endpoints for Story 13.1.
+Teacher Materials API endpoints for Stories 13.1 and 27.15.
 
 Provides endpoints for teachers to manage their personal materials:
 - Upload files (documents, images, audio, video)
 - Create text notes and URL links
 - List, update, delete materials
 - Download/stream files
+- Upload PDFs with text extraction for AI (Story 27.15)
+- Manage AI-generated content library (Story 27.15)
 """
 
 import uuid
@@ -24,7 +26,14 @@ from app.api.deps import CurrentUser, SessionDep, get_db
 from app.core import security
 from app.core.config import settings
 from app.core.rate_limit import limiter
-from app.models import MaterialType, Teacher, TeacherMaterial, TokenPayload, User
+from app.models import (
+    MaterialType,
+    Teacher,
+    TeacherGeneratedContent,
+    TeacherMaterial,
+    TokenPayload,
+    User,
+)
 from app.schemas.material import (
     MaterialListResponse,
     MaterialResponse,
@@ -35,6 +44,18 @@ from app.schemas.material import (
     TextNoteUpdate,
     UploadResponse,
     UrlLinkCreate,
+)
+from app.schemas.teacher_material import (
+    TeacherGeneratedContentListResponse,
+    TeacherGeneratedContentResponse,
+    TeacherMaterialListResponse,
+    TeacherMaterialResponse,
+    TeacherMaterialUploadResponse,
+    TextMaterialCreate,
+)
+from app.services.pdf_processing_service import (
+    get_pdf_processing_service,
+    PDFProcessingService,
 )
 from app.services.dream_storage_client import (
     DreamCentralStorageClient,
@@ -766,3 +787,365 @@ async def stream_material(
         status_code=status_code,
         headers=headers,
     )
+
+
+# =============================================================================
+# AI Processing Endpoints (Story 27.15)
+# =============================================================================
+
+
+@router.post(
+    "/ai/upload-pdf",
+    response_model=TeacherMaterialUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload PDF with text extraction",
+    description="Upload a PDF and extract text for AI content generation",
+)
+@limiter.limit("20/hour")
+async def upload_pdf_for_ai(
+    request: Request,  # noqa: ARG001 - Required by slowapi rate limiter
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    dcs_client: DreamCentralStorageClient = Depends(get_dream_storage_client),
+    pdf_service: PDFProcessingService = Depends(get_pdf_processing_service),
+    file: UploadFile = File(...),
+    name: str = Query(..., min_length=1, max_length=255, description="Display name"),
+    description: str | None = Query(None, max_length=1000),
+) -> TeacherMaterialUploadResponse:
+    """
+    Upload a PDF file and extract text for AI content generation.
+
+    The PDF text is extracted and stored for use with AI generation features.
+    Only PDF files are supported (max 50MB).
+
+    Returns the material with extracted text, word count, and detected language.
+    """
+    teacher_id = get_teacher_id(session, current_user)
+
+    # Validate file type
+    if file.content_type not in ["application/pdf", "application/x-pdf"]:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Only PDF files are supported for text extraction",
+        )
+
+    # Read and validate file content
+    file_content = await file.read()
+    file_size = len(file_content)
+    await file.seek(0)
+
+    validate_file_content(file_content, file.filename or "upload.pdf")
+
+    # Check quota
+    check_quota(session, teacher_id, file_size)
+
+    # Extract text from PDF
+    extraction_result = await pdf_service.process_pdf(file)
+
+    # Upload to storage
+    storage_filename = sanitize_filename_for_storage(file.filename)
+    try:
+        storage_path = await dcs_client.upload_teacher_material(
+            teacher_id=str(teacher_id),
+            file_content=file_content,
+            filename=storage_filename,
+            content_type=file.content_type or "application/pdf",
+            material_type="document",
+        )
+    except DreamStorageError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to upload file to storage: {str(e)}",
+        )
+
+    # Create material record with extracted text
+    material = TeacherMaterial(
+        teacher_id=teacher_id,
+        name=name,
+        type=MaterialType.document,
+        storage_path=storage_path,
+        file_size=file_size,
+        mime_type=file.content_type,
+        original_filename=file.filename,
+        extracted_text=extraction_result.extracted_text,
+        word_count=extraction_result.word_count,
+        language=extraction_result.language,
+    )
+    session.add(material)
+
+    # Update quota
+    update_quota_usage(session, teacher_id, file_size)
+
+    session.commit()
+    session.refresh(material)
+
+    return TeacherMaterialUploadResponse(
+        material=TeacherMaterialResponse.from_material(material),
+        extraction=extraction_result,
+    )
+
+
+@router.post(
+    "/ai/text",
+    response_model=TeacherMaterialUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create material from text",
+    description="Create a material from pasted text for AI content generation",
+)
+async def create_text_material_for_ai(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    pdf_service: PDFProcessingService = Depends(get_pdf_processing_service),
+    data: TextMaterialCreate,
+) -> TeacherMaterialUploadResponse:
+    """
+    Create a material from pasted text for AI content generation.
+
+    The text is processed and stored for use with AI generation features.
+    Text is analyzed for word count and language detection.
+    """
+    teacher_id = get_teacher_id(session, current_user)
+
+    # Process the text
+    extraction_result = await pdf_service.process_text_input(data.text)
+
+    # Create material record
+    material = TeacherMaterial(
+        teacher_id=teacher_id,
+        name=data.name,
+        type=MaterialType.text_note,
+        text_content=data.text,
+        extracted_text=extraction_result.extracted_text,
+        word_count=extraction_result.word_count,
+        language=extraction_result.language,
+    )
+    session.add(material)
+    session.commit()
+    session.refresh(material)
+
+    return TeacherMaterialUploadResponse(
+        material=TeacherMaterialResponse.from_material(material),
+        extraction=extraction_result,
+    )
+
+
+@router.get(
+    "/ai/processable",
+    response_model=TeacherMaterialListResponse,
+    summary="List AI-processable materials",
+    description="List materials with extracted text available for AI generation",
+)
+async def list_processable_materials(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> TeacherMaterialListResponse:
+    """
+    List teacher's materials that have extracted text available for AI processing.
+
+    Only returns materials where extracted_text is not null.
+    """
+    teacher_id = get_teacher_id(session, current_user)
+
+    query = select(TeacherMaterial).where(
+        TeacherMaterial.teacher_id == teacher_id,
+        TeacherMaterial.extracted_text.isnot(None),
+    ).order_by(TeacherMaterial.created_at.desc())
+
+    materials = session.exec(query).all()
+
+    return TeacherMaterialListResponse(
+        materials=[TeacherMaterialResponse.from_material(m) for m in materials],
+        total_count=len(materials),
+    )
+
+
+@router.get(
+    "/ai/{material_id}",
+    response_model=TeacherMaterialResponse,
+    summary="Get material for AI",
+    description="Get material details including extracted text for AI",
+)
+async def get_material_for_ai(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    material_id: uuid.UUID,
+) -> TeacherMaterialResponse:
+    """
+    Get material details including extracted text.
+
+    Returns 422 if material has no extracted text.
+    """
+    teacher_id = get_teacher_id(session, current_user)
+    material = get_teacher_material(session, material_id, teacher_id)
+
+    if not material.extracted_text:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Material has no extracted text for AI processing",
+        )
+
+    return TeacherMaterialResponse.from_material(material)
+
+
+# =============================================================================
+# Generated Content Endpoints (Story 27.15)
+# =============================================================================
+
+
+@router.get(
+    "/generated",
+    response_model=TeacherGeneratedContentListResponse,
+    summary="List generated content",
+    description="List teacher's AI-generated content library",
+)
+async def list_generated_content(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    activity_type: str | None = Query(None, description="Filter by activity type"),
+) -> TeacherGeneratedContentListResponse:
+    """
+    List all AI-generated content for the current teacher.
+
+    Optionally filter by activity type (vocab_quiz, ai_quiz, reading, matching, etc.).
+
+    CRITICAL: Only returns content owned by the authenticated teacher (isolation).
+    """
+    teacher_id = get_teacher_id(session, current_user)
+
+    query = select(TeacherGeneratedContent).where(
+        TeacherGeneratedContent.teacher_id == teacher_id
+    )
+
+    if activity_type:
+        query = query.where(TeacherGeneratedContent.activity_type == activity_type)
+
+    query = query.order_by(TeacherGeneratedContent.created_at.desc())
+    items = session.exec(query).all()
+
+    # Convert to response with enriched fields
+    responses = []
+    for item in items:
+        # Get material name if material_id exists
+        material_name = None
+        if item.material_id:
+            material = session.get(TeacherMaterial, item.material_id)
+            if material:
+                material_name = material.name
+
+        responses.append(TeacherGeneratedContentResponse(
+            id=item.id,
+            teacher_id=item.teacher_id,
+            material_id=item.material_id,
+            book_id=item.book_id,
+            activity_type=item.activity_type,
+            title=item.title,
+            content=item.content,
+            is_used=item.is_used,
+            assignment_id=item.assignment_id,
+            created_at=item.created_at,
+            material_name=material_name,
+        ))
+
+    return TeacherGeneratedContentListResponse(
+        items=responses,
+        total_count=len(responses),
+    )
+
+
+@router.get(
+    "/generated/{content_id}",
+    response_model=TeacherGeneratedContentResponse,
+    summary="Get generated content",
+)
+async def get_generated_content(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    content_id: uuid.UUID,
+) -> TeacherGeneratedContentResponse:
+    """
+    Get a specific generated content item.
+
+    CRITICAL: Only accessible by the owning teacher (isolation).
+    """
+    teacher_id = get_teacher_id(session, current_user)
+
+    content = session.exec(
+        select(TeacherGeneratedContent).where(
+            TeacherGeneratedContent.id == content_id,
+            TeacherGeneratedContent.teacher_id == teacher_id,
+        )
+    ).first()
+
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Generated content not found",
+        )
+
+    # Get material name if exists
+    material_name = None
+    if content.material_id:
+        material = session.get(TeacherMaterial, content.material_id)
+        if material:
+            material_name = material.name
+
+    return TeacherGeneratedContentResponse(
+        id=content.id,
+        teacher_id=content.teacher_id,
+        material_id=content.material_id,
+        book_id=content.book_id,
+        activity_type=content.activity_type,
+        title=content.title,
+        content=content.content,
+        is_used=content.is_used,
+        assignment_id=content.assignment_id,
+        created_at=content.created_at,
+        material_name=material_name,
+    )
+
+
+@router.delete(
+    "/generated/{content_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete generated content",
+)
+async def delete_generated_content(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    content_id: uuid.UUID,
+) -> None:
+    """
+    Delete a generated content item.
+
+    Cannot delete content that is already used in an assignment.
+    """
+    teacher_id = get_teacher_id(session, current_user)
+
+    content = session.exec(
+        select(TeacherGeneratedContent).where(
+            TeacherGeneratedContent.id == content_id,
+            TeacherGeneratedContent.teacher_id == teacher_id,
+        )
+    ).first()
+
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Generated content not found",
+        )
+
+    if content.is_used:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete content that is used in an assignment",
+        )
+
+    session.delete(content)
+    session.commit()

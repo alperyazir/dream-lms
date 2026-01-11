@@ -15,7 +15,7 @@ import { AssignmentStatusBadge } from "./AssignmentStatusBadge"
 interface AssignmentTableViewProps {
   assignments: AssignmentListItem[]
   onView: (assignment: AssignmentListItem) => void
-  onEdit: (assignment: AssignmentListItem) => void
+  onEdit?: (assignment: AssignmentListItem) => void
   onDelete: (assignment: AssignmentListItem) => void
   sortBy?: string
   onSort?: (column: string) => void
@@ -112,13 +112,15 @@ export function AssignmentTableView({
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEdit(assignment)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      {onEdit && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEdit(assignment)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

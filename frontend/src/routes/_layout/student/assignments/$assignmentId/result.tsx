@@ -1,6 +1,7 @@
 /**
  * Assignment Result Detail Screen
  * Story 23.4: Fix Result Screen Stale Progress
+ * Task 5: Detailed Answer Review for All Activity Types
  *
  * Displays submitted answers with correct/incorrect marking for review.
  * Fetches submission data from backend to ensure fresh, accurate answers.
@@ -8,17 +9,35 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, XCircle } from "lucide-react"
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  Loader2,
+  XCircle,
+} from "lucide-react"
 import { useMemo } from "react"
+import { AIQuizResults } from "@/components/ActivityPlayers/AIQuizResults"
+import { ReadingComprehensionResults } from "@/components/ActivityPlayers/ReadingComprehensionResults"
+import { SentenceBuilderResults } from "@/components/ActivityPlayers/SentenceBuilderResults"
+import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQuizResults"
+import { WordBuilderResults } from "@/components/ActivityPlayers/WordBuilderResults"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  parseAIQuizResult,
+  parseReadingComprehensionResult,
+  parseSentenceBuilderResult,
+  parseVocabularyQuizResult,
+  parseWordBuilderResult,
+  supportsDetailedReview,
+} from "@/lib/resultParsers"
 import { getAssignmentResult } from "@/services/assignmentsApi"
 
 export const Route = createFileRoute(
@@ -43,27 +62,86 @@ function AssignmentResultDetailPage() {
     staleTime: 0, // Always fetch fresh data
   })
 
-  // Calculate correct/incorrect count from answers and config
+  // Parse result data based on activity type for detailed review
+  const parsedResult = useMemo(() => {
+    if (!result || !result.config_json || !result.answers_json) return null
+
+    const { activity_type, config_json, answers_json, score } = result
+
+    // Debug logging to understand data structure
+    console.log("[Result] activity_type:", activity_type)
+    console.log("[Result] config_json:", JSON.stringify(config_json, null, 2))
+    console.log("[Result] answers_json:", JSON.stringify(answers_json, null, 2))
+
+    switch (activity_type) {
+      case "ai_quiz":
+        return parseAIQuizResult(config_json, answers_json, score)
+      case "vocabulary_quiz":
+        return parseVocabularyQuizResult(config_json, answers_json, score)
+      case "reading_comprehension":
+        return parseReadingComprehensionResult(config_json, answers_json, score)
+      case "sentence_builder":
+        return parseSentenceBuilderResult(config_json, answers_json, score)
+      case "word_builder":
+        return parseWordBuilderResult(config_json, answers_json, score)
+      default:
+        return null
+    }
+  }, [result])
+
+  // Calculate correct/incorrect count from parsed result or estimation
   const answerStats = useMemo(() => {
     if (!result) return null
 
-    // TODO: For future answer review UI implementation
-    // const config = result.config_json
-    // const answers = result.answers_json
+    // If we have parsed result, use actual counts
+    if (parsedResult) {
+      if ("question_results" in parsedResult) {
+        // AI Quiz or Reading Comprehension
+        const correct = parsedResult.question_results.filter((r) => r.is_correct).length
+        return {
+          correct,
+          incorrect: parsedResult.total - correct,
+          total: parsedResult.total,
+        }
+      } else if ("results" in parsedResult) {
+        // Vocabulary Quiz
+        const correct = parsedResult.results.filter((r) => r.is_correct).length
+        return {
+          correct,
+          incorrect: parsedResult.total - correct,
+          total: parsedResult.total,
+        }
+      } else if ("sentence_results" in parsedResult) {
+        // Sentence Builder
+        const correct = parsedResult.sentence_results.filter((r) => r.is_correct).length
+        return {
+          correct,
+          incorrect: parsedResult.total - correct,
+          total: parsedResult.total,
+        }
+      } else if ("word_results" in parsedResult) {
+        // Word Builder
+        return {
+          correct: parsedResult.correct_count,
+          incorrect: parsedResult.total - parsedResult.correct_count,
+          total: parsedResult.total,
+        }
+      }
+    }
 
-    // Different activity types store answers differently
-    // This is a simplified calculation - actual implementation depends on activity type
+    // Fallback: estimate from score percentage
     const total = result.total_points
     const score = result.score
-    const correct = Math.round((score / 100) * (total / 100) * total)
-    const incorrect = Math.round(total / 100) - correct
+    const estimatedTotal = Math.round(total / 100) || 10
+    const correct = Math.round((score / 100) * estimatedTotal)
+    const incorrect = estimatedTotal - correct
 
     return {
       correct,
       incorrect,
-      total: Math.round(total / 100),
+      total: estimatedTotal,
     }
-  }, [result])
+  }, [result, parsedResult])
 
   // Handle navigation back
   const handleBack = () => {
@@ -140,20 +218,32 @@ function AssignmentResultDetailPage() {
 
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{result.assignment_name}</h1>
+            <h1 className="text-3xl font-bold mb-2">
+              {result.assignment_name}
+            </h1>
             <p className="text-muted-foreground">
               {result.book_name} • {result.activity_title || "Activity Review"}
             </p>
           </div>
 
-          {/* Score Badge */}
+          {/* Score Badge - Use calculated score from answerStats when available */}
           <div className="text-right">
-            <div className={`text-5xl font-bold ${getScoreColor(result.score)}`}>
-              {Math.round(result.score)}%
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Your final score
-            </p>
+            {(() => {
+              // Calculate actual score from correct/incorrect if we have parsed results
+              const calculatedScore = answerStats && answerStats.total > 0
+                ? Math.round((answerStats.correct / answerStats.total) * 100)
+                : Math.round(result.score)
+              return (
+                <>
+                  <div className={`text-5xl font-bold ${getScoreColor(calculatedScore)}`}>
+                    {calculatedScore}%
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your final score
+                  </p>
+                </>
+              )
+            })()}
           </div>
         </div>
       </div>
@@ -199,86 +289,63 @@ function AssignmentResultDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {result.time_spent_minutes} min
+              {(() => {
+                // Use time_spent_seconds for precise display
+                const totalSeconds = result.time_spent_seconds || (result.time_spent_minutes * 60) || 0
+
+                if (totalSeconds === 0) {
+                  return "< 1 sec"
+                }
+
+                const minutes = Math.floor(totalSeconds / 60)
+                const seconds = totalSeconds % 60
+
+                if (minutes === 0) {
+                  return `${seconds} sec`
+                }
+
+                return `${minutes} min ${seconds} sec`
+              })()}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Activity Review Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Submission Details</CardTitle>
-          <CardDescription>
-            Completed on {new Date(result.completed_at).toLocaleDateString()} at{" "}
-            {new Date(result.completed_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Submission Summary */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                Activity Type
-              </h3>
-              <p className="text-lg capitalize">
-                {result.activity_type.replace(/([A-Z])/g, " $1").trim()}
-              </p>
-            </div>
+      {/* Detailed Answer Review Section */}
+      {parsedResult && supportsDetailedReview(result.activity_type) && (
+        <div className="mt-6">
+          <h2 className="text-xl font-semibold mb-4">Detailed Answer Review</h2>
+          {result.activity_type === "ai_quiz" && "question_results" in parsedResult && (
+            <AIQuizResults result={parsedResult as ReturnType<typeof parseAIQuizResult> & object} hideSummary />
+          )}
+          {result.activity_type === "vocabulary_quiz" && "results" in parsedResult && (
+            <VocabularyQuizResults result={parsedResult as ReturnType<typeof parseVocabularyQuizResult> & object} hideSummary />
+          )}
+          {result.activity_type === "reading_comprehension" && "question_results" in parsedResult && (
+            <ReadingComprehensionResults result={parsedResult as ReturnType<typeof parseReadingComprehensionResult> & object} hideSummary />
+          )}
+          {result.activity_type === "sentence_builder" && "sentence_results" in parsedResult && (
+            <SentenceBuilderResults result={parsedResult as ReturnType<typeof parseSentenceBuilderResult> & object} hideSummary />
+          )}
+          {result.activity_type === "word_builder" && "word_results" in parsedResult && (
+            <WordBuilderResults result={parsedResult as ReturnType<typeof parseWordBuilderResult> & object} />
+          )}
+        </div>
+      )}
 
-            {result.activity_title && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                  Activity Title
-                </h3>
-                <p className="text-lg">{result.activity_title}</p>
-              </div>
-            )}
-
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                Your Performance
-              </h3>
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm">Score</span>
-                    <span className="text-sm font-medium">
-                      {Math.round(result.score)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
-                    <div
-                      className={`h-3 rounded-full transition-all ${
-                        result.score >= 90
-                          ? "bg-green-600"
-                          : result.score >= 70
-                            ? "bg-blue-600"
-                            : result.score >= 50
-                              ? "bg-yellow-600"
-                              : "bg-red-600"
-                      }`}
-                      style={{ width: `${result.score}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Note about answer review */}
+      {/* Note for unsupported activity types */}
+      {(!parsedResult || !supportsDetailedReview(result.activity_type)) && (
+        <Card className="mt-6">
+          <CardContent className="pt-6">
             <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Note:</strong> Detailed answer review with correct/incorrect
-                marking will be available in a future update. Your submission has
-                been recorded and graded.
+                <strong>Note:</strong> Detailed answer review is not available for this activity type.
+                Your submission has been recorded and graded.
               </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Action Buttons */}
       <div className="mt-6 flex gap-3 justify-end">

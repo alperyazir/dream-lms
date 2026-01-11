@@ -4,10 +4,19 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router"
+import { formatDistanceToNow } from "date-fns"
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Pencil,
+  Plus,
+  Trash2,
+  Users,
+} from "lucide-react"
 import { useState } from "react"
-import { Plus, Trash2, Users, Pencil, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AnnouncementCreationWizard } from "@/components/announcements/AnnouncementCreationWizard"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,15 +27,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { AnnouncementCreationWizard } from "@/components/announcements/AnnouncementCreationWizard"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
+  useAnnouncementDetail,
   useAnnouncements,
   useCreateAnnouncement,
-  useUpdateAnnouncement,
   useDeleteAnnouncement,
-  useAnnouncementDetail,
+  useUpdateAnnouncement,
 } from "@/hooks/useAnnouncements"
-import { formatDistanceToNow } from "date-fns"
 import type { Announcement } from "@/types/announcement"
 
 export const Route = createFileRoute("/_layout/teacher/announcements")({
@@ -52,7 +61,7 @@ function AnnouncementsPage() {
   // Fetch details for editing announcement (to get recipients)
   const { data: announcementDetail } = useAnnouncementDetail(
     editingAnnouncement?.id || "",
-    { enabled: !!editingAnnouncement && isEditOpen }
+    { enabled: !!editingAnnouncement && isEditOpen },
   )
 
   const handleCreate = async (data: {
@@ -114,7 +123,8 @@ function AnnouncementsPage() {
   const totalPages = Math.ceil(totalAnnouncements / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
-  const paginatedAnnouncements = announcementsData?.announcements.slice(startIndex, endIndex) || []
+  const paginatedAnnouncements =
+    announcementsData?.announcements.slice(startIndex, endIndex) || []
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)))
@@ -184,16 +194,21 @@ function AnnouncementsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
-                        <CardTitle className="text-lg">{announcement.title}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {announcement.title}
+                        </CardTitle>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Users className="h-4 w-4" />
                             {announcement.recipient_count} recipients
                           </span>
                           <span>
-                            {formatDistanceToNow(new Date(announcement.created_at), {
-                              addSuffix: true,
-                            })}
+                            {formatDistanceToNow(
+                              new Date(announcement.created_at),
+                              {
+                                addSuffix: true,
+                              },
+                            )}
                           </span>
                         </div>
                       </div>
@@ -220,7 +235,9 @@ function AnnouncementsPage() {
                   <CardContent className="pt-2">
                     <div
                       className={`prose prose-sm max-w-none ${
-                        !isExpanded ? "line-clamp-3 max-h-[4.5rem] overflow-hidden" : ""
+                        !isExpanded
+                          ? "line-clamp-3 max-h-[4.5rem] overflow-hidden"
+                          : ""
                       }`}
                       dangerouslySetInnerHTML={{ __html: announcement.content }}
                     />
@@ -255,7 +272,9 @@ function AnnouncementsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-muted-foreground">
-                Showing {startIndex + 1}-{Math.min(endIndex, totalAnnouncements)} of {totalAnnouncements} announcements
+                Showing {startIndex + 1}-
+                {Math.min(endIndex, totalAnnouncements)} of {totalAnnouncements}{" "}
+                announcements
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -268,17 +287,19 @@ function AnnouncementsPage() {
                   Previous
                 </Button>
                 <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <Button
-                      key={page}
-                      variant={currentPage === page ? "default" : "outline"}
-                      size="sm"
-                      className="w-8 h-8 p-0"
-                      onClick={() => goToPage(page)}
-                    >
-                      {page}
-                    </Button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        className="w-8 h-8 p-0"
+                        onClick={() => goToPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    ),
+                  )}
                 </div>
                 <Button
                   variant="outline"

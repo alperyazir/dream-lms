@@ -204,7 +204,9 @@ class StudentResultItem(BaseModel):
     name: str
     status: str
     score: int | None
-    time_spent_minutes: int
+    time_spent_minutes: int  # Deprecated: use time_spent_seconds
+    time_spent_seconds: int  # Precise time in seconds
+    started_at: datetime | None  # When student started the assignment
     completed_at: datetime | None
     has_feedback: bool = False
 
@@ -283,10 +285,14 @@ class StudentAnswersResponse(BaseModel):
     name: str
     status: str
     score: int | None
-    time_spent_minutes: int
+    time_spent_minutes: int  # Deprecated: use time_spent_seconds
+    time_spent_seconds: int  # Precise time in seconds
     started_at: datetime | None
     completed_at: datetime | None
     answers_json: dict[str, Any] | None
+    # Added for detailed result review (questions, correct answers, etc.)
+    activity_type: str | None = None
+    config_json: dict[str, Any] | None = None
 
 
 class AssignmentDetailedResultsResponse(BaseModel):

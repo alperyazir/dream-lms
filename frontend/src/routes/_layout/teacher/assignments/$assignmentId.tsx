@@ -5,7 +5,6 @@ import {
   BarChart3,
   CheckCircle,
   Clock,
-  Download,
   Eye,
   Hourglass,
   MessageSquare,
@@ -25,7 +24,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
-import * as XLSX from "xlsx"
+import { AIQuizResults } from "@/components/ActivityPlayers/AIQuizResults"
+import { ReadingComprehensionResults } from "@/components/ActivityPlayers/ReadingComprehensionResults"
+import { SentenceBuilderResults } from "@/components/ActivityPlayers/SentenceBuilderResults"
+import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQuizResults"
+import { WordBuilderResults } from "@/components/ActivityPlayers/WordBuilderResults"
 import { MultiActivityAnalyticsTable } from "@/components/analytics/MultiActivityAnalyticsTable"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { FeedbackModal } from "@/components/feedback"
@@ -50,6 +53,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  parseAIQuizResult,
+  parseReadingComprehensionResult,
+  parseSentenceBuilderResult,
+  parseVocabularyQuizResult,
+  parseWordBuilderResult,
+} from "@/lib/resultParsers"
 import { useAssignmentAnalytics } from "@/hooks/useAssignmentAnalytics"
 import {
   useAssignmentResults,
@@ -465,10 +475,12 @@ function StudentResultsTable({
   students,
   assignmentId,
   assignmentName,
+  activityType,
 }: {
   students: StudentResultItem[]
   assignmentId: string
   assignmentName: string
+  activityType: string
 }) {
   const [statusFilter, setStatusFilter] = useState<StudentStatus>("all")
   const [sortBy, setSortBy] = useState<SortBy>("name")
@@ -642,11 +654,27 @@ function StudentResultsTable({
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {student.time_spent_minutes > 0 ? (
-                          <span>{student.time_spent_minutes} min</span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        {(() => {
+                          // Use time_spent_seconds for precise display
+                          const totalSeconds = student.time_spent_seconds || (student.time_spent_minutes * 60) || 0
+
+                          if (student.status !== "completed") {
+                            return <span className="text-muted-foreground">—</span>
+                          }
+
+                          if (totalSeconds === 0) {
+                            return <span className="text-muted-foreground">{"< 1 sec"}</span>
+                          }
+
+                          const minutes = Math.floor(totalSeconds / 60)
+                          const seconds = totalSeconds % 60
+
+                          if (minutes === 0) {
+                            return <span>{seconds} sec</span>
+                          }
+
+                          return <span>{minutes} min {seconds} sec</span>
+                        })()}
                       </TableCell>
                       <TableCell>
                         {student.completed_at ? (
@@ -728,6 +756,7 @@ function StudentResultsTable({
       <StudentAnswersDialog
         assignmentId={assignmentId}
         studentId={selectedStudentId}
+        activityType={activityType}
         onClose={() => setSelectedStudentId(null)}
       />
 
@@ -748,30 +777,20 @@ function StudentResultsTable({
 function StudentAnswersDialog({
   assignmentId,
   studentId,
+  activityType,
   onClose,
 }: {
   assignmentId: string
   studentId: string | null
+  activityType: string
   onClose: () => void
 }) {
-  console.log("[StudentAnswersDialog] Rendering with studentId:", studentId)
-
-  const { answers, isLoading, error } = useStudentAnswers({
+  const { answers, isLoading } = useStudentAnswers({
     assignmentId,
     studentId: studentId || "",
   })
 
-  console.log("[StudentAnswersDialog] Hook result:", {
-    answers,
-    isLoading,
-    error,
-    studentId,
-  })
-
   if (!studentId) {
-    console.log(
-      "[StudentAnswersDialog] Returning null because studentId is null",
-    )
     return null
   }
 
@@ -812,7 +831,23 @@ function StudentAnswersDialog({
                   Time Spent
                 </span>
                 <p className="font-medium">
-                  {answers.time_spent_minutes} minutes
+                  {(() => {
+                    // Use time_spent_seconds for precise display
+                    const totalSeconds = answers.time_spent_seconds || (answers.time_spent_minutes * 60) || 0
+
+                    if (totalSeconds === 0) {
+                      return "< 1 sec"
+                    }
+
+                    const minutes = Math.floor(totalSeconds / 60)
+                    const seconds = totalSeconds % 60
+
+                    if (minutes === 0) {
+                      return `${seconds} sec`
+                    }
+
+                    return `${minutes} min ${seconds} sec`
+                  })()}
                 </p>
               </div>
               <div>
@@ -827,12 +862,83 @@ function StudentAnswersDialog({
 
             {answers.answers_json && (
               <div>
-                <h4 className="font-medium mb-2">Answers</h4>
-                <div className="bg-muted rounded-lg p-4">
-                  <pre className="text-sm overflow-x-auto whitespace-pre-wrap">
-                    {JSON.stringify(answers.answers_json, null, 2)}
-                  </pre>
-                </div>
+                <h4 className="font-medium mb-2">Detailed Answer Review</h4>
+                {(() => {
+                  // Try to parse and show detailed results for supported activity types
+                  const responseActivityType = answers.activity_type || activityType
+                  const configJson = answers.config_json
+
+                  if (configJson && answers.answers_json) {
+                    // AI Quiz
+                    if (responseActivityType === "ai_quiz") {
+                      const parsedResult = parseAIQuizResult(
+                        configJson,
+                        answers.answers_json,
+                        answers.score || 0
+                      )
+                      if (parsedResult) {
+                        return <AIQuizResults result={parsedResult} hideSummary />
+                      }
+                    }
+
+                    // Vocabulary Quiz
+                    if (responseActivityType === "vocabulary_quiz") {
+                      const parsedResult = parseVocabularyQuizResult(
+                        configJson,
+                        answers.answers_json,
+                        answers.score || 0
+                      )
+                      if (parsedResult) {
+                        return <VocabularyQuizResults result={parsedResult} hideSummary />
+                      }
+                    }
+
+                    // Reading Comprehension
+                    if (responseActivityType === "reading_comprehension") {
+                      const parsedResult = parseReadingComprehensionResult(
+                        configJson,
+                        answers.answers_json,
+                        answers.score || 0
+                      )
+                      if (parsedResult) {
+                        return <ReadingComprehensionResults result={parsedResult} hideSummary />
+                      }
+                    }
+
+                    // Sentence Builder
+                    if (responseActivityType === "sentence_builder") {
+                      const parsedResult = parseSentenceBuilderResult(
+                        configJson,
+                        answers.answers_json,
+                        answers.score || 0
+                      )
+                      if (parsedResult) {
+                        return <SentenceBuilderResults result={parsedResult} hideSummary />
+                      }
+                    }
+
+                    // Word Builder
+                    if (responseActivityType === "word_builder") {
+                      const parsedResult = parseWordBuilderResult(
+                        configJson,
+                        answers.answers_json,
+                        answers.score || 0
+                      )
+                      if (parsedResult) {
+                        return <WordBuilderResults result={parsedResult} hideSummary />
+                      }
+                    }
+                  }
+
+                  // Fallback: show raw JSON for unsupported types or missing config
+                  return (
+                    <div className="bg-muted rounded-lg p-4">
+                      <pre className="text-sm overflow-x-auto whitespace-pre-wrap">
+                        {JSON.stringify(answers.answers_json, null, 2)}
+                      </pre>
+                    </div>
+                  )
+                })()}
               </div>
             )}
           </div>
@@ -874,117 +980,6 @@ function AssignmentDetailContent() {
   const handleStartTestMode = useCallback(() => {
     startTestMode(assignmentId)
   }, [assignmentId, startTestMode])
-
-  // Export results to Excel
-  const handleExportExcel = useCallback(() => {
-    if (!results) return
-
-    // Create workbook
-    const wb = XLSX.utils.book_new()
-
-    // Summary sheet
-    const summaryData = [
-      ["Assignment Results Summary"],
-      [],
-      ["Assignment Name", results.assignment_name],
-      ["Activity Type", results.activity_type],
-      [
-        "Due Date",
-        results.due_date
-          ? new Date(results.due_date).toLocaleDateString()
-          : "N/A",
-      ],
-      [],
-      ["Completion Overview"],
-      ["Completed", results.completion_overview.completed],
-      ["In Progress", results.completion_overview.in_progress],
-      ["Not Started", results.completion_overview.not_started],
-      ["Past Due", results.completion_overview.past_due],
-      ["Total", results.completion_overview.total],
-      [],
-      ["Score Statistics"],
-      [
-        "Average Score",
-        results.score_statistics
-          ? `${results.score_statistics.avg_score.toFixed(1)}%`
-          : "N/A",
-      ],
-      [
-        "Median Score",
-        results.score_statistics
-          ? `${results.score_statistics.median_score}%`
-          : "N/A",
-      ],
-      [
-        "Highest Score",
-        results.score_statistics
-          ? `${results.score_statistics.highest_score}%`
-          : "N/A",
-      ],
-      [
-        "Lowest Score",
-        results.score_statistics
-          ? `${results.score_statistics.lowest_score}%`
-          : "N/A",
-      ],
-    ]
-    const summaryWs = XLSX.utils.aoa_to_sheet(summaryData)
-    XLSX.utils.book_append_sheet(wb, summaryWs, "Summary")
-
-    // Student Results sheet
-    const studentHeaders = [
-      "Name",
-      "Status",
-      "Score",
-      "Time Spent (min)",
-      "Completed At",
-    ]
-    const studentRows = results.student_results.map((student) => [
-      student.name,
-      student.status,
-      student.score !== null ? `${student.score}%` : "N/A",
-      student.time_spent_minutes,
-      student.completed_at
-        ? new Date(student.completed_at).toLocaleString()
-        : "N/A",
-    ])
-    const studentWs = XLSX.utils.aoa_to_sheet([studentHeaders, ...studentRows])
-    XLSX.utils.book_append_sheet(wb, studentWs, "Student Results")
-
-    // Question Analysis sheet (if available)
-    if (results.question_analysis?.questions) {
-      const questionHeaders = ["Question", "Correct %", "Total Responses"]
-      const questionRows = results.question_analysis.questions.map((q) => [
-        q.question_text,
-        `${q.correct_percentage.toFixed(1)}%`,
-        q.total_responses,
-      ])
-      const questionWs = XLSX.utils.aoa_to_sheet([
-        questionHeaders,
-        ...questionRows,
-      ])
-      XLSX.utils.book_append_sheet(wb, questionWs, "Question Analysis")
-    }
-
-    // Most Missed Questions sheet (if available)
-    if (
-      results.question_analysis?.most_missed &&
-      results.question_analysis.most_missed.length > 0
-    ) {
-      const missedHeaders = ["Question", "Correct %", "Common Wrong Answer"]
-      const missedRows = results.question_analysis.most_missed.map((q) => [
-        q.question_text,
-        `${q.correct_percentage.toFixed(1)}%`,
-        q.common_wrong_answer || "N/A",
-      ])
-      const missedWs = XLSX.utils.aoa_to_sheet([missedHeaders, ...missedRows])
-      XLSX.utils.book_append_sheet(wb, missedWs, "Most Missed Questions")
-    }
-
-    // Generate filename and download
-    const filename = `${results.assignment_name.replace(/[^a-z0-9]/gi, "_")}_Results_${new Date().toISOString().split("T")[0]}.xlsx`
-    XLSX.writeFile(wb, filename)
-  }, [results])
 
   // Loading state
   if (isLoading) {
@@ -1052,26 +1047,26 @@ function AssignmentDetailContent() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* Story 9.7: Preview Assignment button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleStartTestMode}
-                disabled={isLoadingPreview}
-                className="flex items-center gap-2"
-              >
-                <Play className="h-4 w-4" />
-                {isLoadingPreview ? "Loading..." : "Preview"}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportExcel}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Export Excel
-              </Button>
+              {/* Story 9.7: Preview Assignment button (not for AI content) */}
+              {![
+                "ai_quiz",
+                "vocabulary_quiz",
+                "reading_comprehension",
+                "sentence_builder",
+                "word_builder",
+                "vocabulary_matching",
+              ].includes(results.activity_type) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartTestMode}
+                  disabled={isLoadingPreview}
+                  className="flex items-center gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  {isLoadingPreview ? "Loading..." : "Preview"}
+                </Button>
+              )}
               <Badge className="bg-teal-100 text-teal-800">
                 {results.completion_overview.total > 0
                   ? (
@@ -1136,6 +1131,7 @@ function AssignmentDetailContent() {
             students={results.student_results}
             assignmentId={assignmentId}
             assignmentName={results.assignment_name}
+            activityType={results.activity_type}
           />
         </TabsContent>
 

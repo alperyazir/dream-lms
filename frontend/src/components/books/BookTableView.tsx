@@ -100,7 +100,13 @@ export function BookTableView({
             </TableRow>
           ) : (
             books.map((book) => (
-              <TableRow key={book.id}>
+              <TableRow
+                key={book.id}
+                className={
+                  onViewDetails ? "cursor-pointer hover:bg-muted/50" : ""
+                }
+                onClick={() => onViewDetails?.(book)}
+              >
                 <TableCell>
                   <BookCoverThumbnail book={book} />
                 </TableCell>
@@ -116,7 +122,10 @@ export function BookTableView({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onViewDetails(book)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onViewDetails(book)
+                      }}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Details
@@ -126,7 +135,10 @@ export function BookTableView({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onAssign(book)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onAssign(book)
+                      }}
                     >
                       Assign
                     </Button>

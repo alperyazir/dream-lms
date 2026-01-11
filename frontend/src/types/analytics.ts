@@ -216,7 +216,9 @@ export interface StudentResultItem {
   name: string
   status: string
   score: number | null
-  time_spent_minutes: number
+  time_spent_minutes: number // Deprecated: use time_spent_seconds
+  time_spent_seconds: number // Precise time in seconds
+  started_at: string | null // ISO 8601 datetime string - when student started
   completed_at: string | null // ISO 8601 datetime string
   has_feedback: boolean
 }
@@ -303,10 +305,14 @@ export interface StudentAnswersResponse {
   name: string
   status: string
   score: number | null
-  time_spent_minutes: number
+  time_spent_minutes: number // Deprecated: use time_spent_seconds
+  time_spent_seconds: number // Precise time in seconds
   started_at: string | null // ISO 8601 datetime string
   completed_at: string | null // ISO 8601 datetime string
   answers_json: Record<string, unknown> | null
+  // Added for detailed result review
+  activity_type: string | null
+  config_json: Record<string, unknown> | null
 }
 
 /**

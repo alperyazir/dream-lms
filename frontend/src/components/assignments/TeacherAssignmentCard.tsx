@@ -14,7 +14,7 @@ import { AssignmentStatusBadge } from "./AssignmentStatusBadge"
 interface TeacherAssignmentCardProps {
   assignment: AssignmentListItem
   onView: () => void
-  onEdit: () => void
+  onEdit?: () => void
   onDelete: () => void
 }
 
@@ -82,10 +82,12 @@ export function TeacherAssignmentCard({
           <Eye className="h-4 w-4 mr-1" />
           View
         </Button>
-        <Button variant="ghost" size="sm" onClick={onEdit}>
-          <Pencil className="h-4 w-4 mr-1" />
-          Edit
-        </Button>
+        {onEdit && (
+          <Button variant="ghost" size="sm" onClick={onEdit}>
+            <Pencil className="h-4 w-4 mr-1" />
+            Edit
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"

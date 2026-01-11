@@ -3,27 +3,31 @@
  * Story 26.1: Teacher Announcement Creation & Management
  */
 
-import { useEditor, EditorContent } from "@tiptap/react"
-import StarterKit from "@tiptap/starter-kit"
+import CharacterCount from "@tiptap/extension-character-count"
 import Placeholder from "@tiptap/extension-placeholder"
 import Underline from "@tiptap/extension-underline"
-import CharacterCount from "@tiptap/extension-character-count"
-import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { EditorContent, useEditor } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
 import {
   Bold,
-  Italic,
-  List,
-  ListOrdered,
+  Code,
   Heading1,
   Heading2,
   Heading3,
-  Underline as UnderlineIcon,
-  Strikethrough,
+  Italic,
+  List,
+  ListOrdered,
   Smile,
-  Code,
+  Strikethrough,
+  Underline as UnderlineIcon,
 } from "lucide-react"
-import { useState, useCallback } from "react"
+import { useCallback, useState } from "react"
+import { Button } from "@/components/ui/button"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 interface RichTextEditorProps {
   content: string
@@ -34,9 +38,36 @@ interface RichTextEditorProps {
 
 // Common emojis for quick access
 const EMOJI_LIST = [
-  "😊", "👍", "❤️", "🎉", "✅", "⚠️", "📢", "📚", "✏️", "📝",
-  "🌟", "💡", "🎯", "🏆", "🔔", "📅", "⏰", "✨", "👏", "🙌",
-  "📖", "🎓", "💯", "🚀", "🎨", "🔥", "💪", "🤔", "😃", "😄",
+  "😊",
+  "👍",
+  "❤️",
+  "🎉",
+  "✅",
+  "⚠️",
+  "📢",
+  "📚",
+  "✏️",
+  "📝",
+  "🌟",
+  "💡",
+  "🎯",
+  "🏆",
+  "🔔",
+  "📅",
+  "⏰",
+  "✨",
+  "👏",
+  "🙌",
+  "📖",
+  "🎓",
+  "💯",
+  "🚀",
+  "🎨",
+  "🔥",
+  "💪",
+  "🤔",
+  "😃",
+  "😄",
 ]
 
 export function RichTextEditor({
@@ -92,19 +123,23 @@ export function RichTextEditor({
     },
   })
 
-  const insertEmoji = useCallback((emoji: string) => {
-    if (editor) {
-      editor.chain().focus().insertContent(emoji).run()
-      setEmojiPickerOpen(false)
-    }
-  }, [editor])
+  const insertEmoji = useCallback(
+    (emoji: string) => {
+      if (editor) {
+        editor.chain().focus().insertContent(emoji).run()
+        setEmojiPickerOpen(false)
+      }
+    },
+    [editor],
+  )
 
   if (!editor) {
     return null
   }
 
   // Get character count
-  const characterCount = editor.storage.characterCount?.characters?.() ?? editor.getText().length
+  const characterCount =
+    editor.storage.characterCount?.characters?.() ?? editor.getText().length
 
   return (
     <div className={className}>
@@ -116,7 +151,11 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={editor.isActive("bold") ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          className={
+            editor.isActive("bold")
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Bold (Ctrl+B)"
         >
           <Bold className="h-4 w-4" />
@@ -126,7 +165,11 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={editor.isActive("italic") ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          className={
+            editor.isActive("italic")
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Italic (Ctrl+I)"
         >
           <Italic className="h-4 w-4" />
@@ -136,7 +179,11 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={editor.isActive("underline") ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          className={
+            editor.isActive("underline")
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Underline (Ctrl+U)"
         >
           <UnderlineIcon className="h-4 w-4" />
@@ -146,7 +193,11 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleStrike().run()}
-          className={editor.isActive("strike") ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          className={
+            editor.isActive("strike")
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Strikethrough"
         >
           <Strikethrough className="h-4 w-4" />
@@ -156,7 +207,11 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleCode().run()}
-          className={editor.isActive("code") ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          className={
+            editor.isActive("code")
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Code"
         >
           <Code className="h-4 w-4" />
@@ -169,8 +224,14 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={editor.isActive("heading", { level: 1 }) ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
+          }
+          className={
+            editor.isActive("heading", { level: 1 })
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Heading 1"
         >
           <Heading1 className="h-4 w-4" />
@@ -179,8 +240,14 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={editor.isActive("heading", { level: 2 }) ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
+          className={
+            editor.isActive("heading", { level: 2 })
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Heading 2"
         >
           <Heading2 className="h-4 w-4" />
@@ -189,8 +256,14 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className={editor.isActive("heading", { level: 3 }) ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 3 }).run()
+          }
+          className={
+            editor.isActive("heading", { level: 3 })
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Heading 3"
         >
           <Heading3 className="h-4 w-4" />
@@ -204,7 +277,11 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={editor.isActive("bulletList") ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          className={
+            editor.isActive("bulletList")
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Bullet List"
         >
           <List className="h-4 w-4" />
@@ -214,7 +291,11 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={editor.isActive("orderedList") ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}
+          className={
+            editor.isActive("orderedList")
+              ? "bg-teal-500 hover:bg-teal-600 text-white"
+              : ""
+          }
           title="Numbered List"
         >
           <ListOrdered className="h-4 w-4" />

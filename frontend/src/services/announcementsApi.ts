@@ -84,11 +84,11 @@ export const announcementsApi = {
    * Get all announcements for the current teacher (paginated)
    */
   getAll: async (
-    params?: AnnouncementQueryParams
+    params?: AnnouncementQueryParams,
   ): Promise<AnnouncementListResponse> => {
     const response = await apiClient.get<AnnouncementListResponse>(
       "/api/v1/announcements",
-      { params }
+      { params },
     )
     return response.data
   },
@@ -98,7 +98,7 @@ export const announcementsApi = {
    */
   getById: async (announcementId: string): Promise<AnnouncementDetail> => {
     const response = await apiClient.get<AnnouncementDetail>(
-      `/api/v1/announcements/${announcementId}`
+      `/api/v1/announcements/${announcementId}`,
     )
     return response.data
   },
@@ -109,7 +109,7 @@ export const announcementsApi = {
   create: async (data: AnnouncementCreate): Promise<Announcement> => {
     const response = await apiClient.post<Announcement>(
       "/api/v1/announcements",
-      data
+      data,
     )
     return response.data
   },
@@ -119,11 +119,11 @@ export const announcementsApi = {
    */
   update: async (
     announcementId: string,
-    data: AnnouncementUpdate
+    data: AnnouncementUpdate,
   ): Promise<Announcement> => {
     const response = await apiClient.put<Announcement>(
       `/api/v1/announcements/${announcementId}`,
-      data
+      data,
     )
     return response.data
   },
@@ -141,11 +141,11 @@ export const announcementsApi = {
    * Get announcements for the current student
    */
   getMyAnnouncements: async (
-    params?: StudentAnnouncementQueryParams
+    params?: StudentAnnouncementQueryParams,
   ): Promise<StudentAnnouncementListResponse> => {
     const response = await apiClient.get<StudentAnnouncementListResponse>(
       "/api/v1/announcements/me",
-      { params }
+      { params },
     )
     return response.data
   },
@@ -153,9 +153,11 @@ export const announcementsApi = {
   /**
    * Get a specific announcement as a student
    */
-  getAsStudent: async (announcementId: string): Promise<StudentAnnouncement> => {
+  getAsStudent: async (
+    announcementId: string,
+  ): Promise<StudentAnnouncement> => {
     const response = await apiClient.get<StudentAnnouncement>(
-      `/api/v1/announcements/${announcementId}/student`
+      `/api/v1/announcements/${announcementId}/student`,
     )
     return response.data
   },
@@ -164,10 +166,10 @@ export const announcementsApi = {
    * Mark an announcement as read
    */
   markAsRead: async (
-    announcementId: string
+    announcementId: string,
   ): Promise<AnnouncementReadResponse> => {
     const response = await apiClient.patch<AnnouncementReadResponse>(
-      `/api/v1/announcements/${announcementId}/read`
+      `/api/v1/announcements/${announcementId}/read`,
     )
     return response.data
   },

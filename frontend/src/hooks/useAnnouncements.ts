@@ -8,8 +8,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/hooks/use-toast"
 import {
-  announcementsApi,
   type AnnouncementQueryParams,
+  announcementsApi,
   type StudentAnnouncementQueryParams,
 } from "@/services/announcementsApi"
 import type {
@@ -38,7 +38,7 @@ export function useAnnouncements(
   params: AnnouncementQueryParams = {},
   options: {
     enabled?: boolean
-  } = {}
+  } = {},
 ) {
   return useQuery({
     queryKey: [...ANNOUNCEMENTS_QUERY_KEY, params],
@@ -57,7 +57,7 @@ export function useAnnouncementDetail(
   announcementId: string,
   options: {
     enabled?: boolean
-  } = {}
+  } = {},
 ) {
   return useQuery({
     queryKey: announcementDetailQueryKey(announcementId),
@@ -170,7 +170,9 @@ export function useDeleteAnnouncement() {
 /**
  * Query keys for student announcements
  */
-export const STUDENT_ANNOUNCEMENTS_QUERY_KEY = ["student-announcements"] as const
+export const STUDENT_ANNOUNCEMENTS_QUERY_KEY = [
+  "student-announcements",
+] as const
 
 /**
  * Query key factory for student announcement detail
@@ -188,7 +190,7 @@ export function useStudentAnnouncements(
   params: StudentAnnouncementQueryParams = {},
   options: {
     enabled?: boolean
-  } = {}
+  } = {},
 ) {
   return useQuery({
     queryKey: [...STUDENT_ANNOUNCEMENTS_QUERY_KEY, params],
@@ -207,7 +209,7 @@ export function useStudentAnnouncementDetail(
   announcementId: string,
   options: {
     enabled?: boolean
-  } = {}
+  } = {},
 ) {
   return useQuery({
     queryKey: studentAnnouncementDetailQueryKey(announcementId),
@@ -229,7 +231,9 @@ export function useMarkAnnouncementAsRead() {
       announcementsApi.markAsRead(announcementId),
     onSuccess: () => {
       // Invalidate all student announcements queries to update read status
-      queryClient.invalidateQueries({ queryKey: STUDENT_ANNOUNCEMENTS_QUERY_KEY })
+      queryClient.invalidateQueries({
+        queryKey: STUDENT_ANNOUNCEMENTS_QUERY_KEY,
+      })
     },
   })
 }

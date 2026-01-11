@@ -32,6 +32,7 @@ import {
   BookOpen,
   Calendar as CalendarIcon,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -41,6 +42,7 @@ import {
   List,
   Plus,
   Send,
+  Sparkles,
   Timer,
   Trash2,
   Users,
@@ -62,6 +64,12 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Popover,
   PopoverContent,
@@ -350,12 +358,6 @@ function TeacherCalendarPage() {
     }
   }
 
-  // Handle click on empty calendar date
-  const handleDateClick = (date: Date) => {
-    setPrefilledDate(date)
-    setIsCreateDialogOpen(true)
-  }
-
   // Render assignment item (used in both calendar cell and list view)
   const renderAssignmentItem = (
     assignment: CalendarAssignmentItem,
@@ -473,16 +475,32 @@ function TeacherCalendarPage() {
             View and manage your assignment schedule
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setPrefilledDate(null)
-            setIsCreateDialogOpen(true)
-          }}
-          className="bg-teal-600 hover:bg-teal-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Assignment
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="bg-teal-600 hover:bg-teal-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Assignment
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => {
+                setPrefilledDate(null)
+                setIsCreateDialogOpen(true)
+              }}
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Book Assignment
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => navigate({ to: "/dreamai/generator" })}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI Generated Assignment
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Controls */}
@@ -641,18 +659,7 @@ function TeacherCalendarPage() {
                       isCurrentMonth
                         ? "bg-background hover:bg-muted/50"
                         : "bg-muted/30 text-muted-foreground"
-                    } ${isDayToday ? "ring-2 ring-teal-500" : ""} cursor-pointer transition-colors`}
-                    onClick={(e) => {
-                      // Only trigger if clicking on empty area (not on assignment pills)
-                      if (
-                        e.target === e.currentTarget ||
-                        (e.target as HTMLElement).classList.contains(
-                          "day-number",
-                        )
-                      ) {
-                        handleDateClick(day)
-                      }
-                    }}
+                    } ${isDayToday ? "ring-2 ring-teal-500" : ""} transition-colors`}
                   >
                     {/* Day Number */}
                     <div
@@ -756,17 +763,9 @@ function TeacherCalendarPage() {
                     key={day.toISOString()}
                     className={`min-h-[200px] border rounded-md p-2 ${
                       isDayToday ? "ring-2 ring-teal-500" : ""
-                    } hover:bg-muted/50 cursor-pointer transition-colors`}
-                    onClick={(e) => {
-                      if (e.target === e.currentTarget) {
-                        handleDateClick(day)
-                      }
-                    }}
+                    } hover:bg-muted/50 transition-colors`}
                   >
-                    <div
-                      className="space-y-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <div className="space-y-1">
                       {dayAssignments.map((assignment) =>
                         renderAssignmentItem(assignment, true),
                       )}
@@ -795,17 +794,32 @@ function TeacherCalendarPage() {
               <div className="text-center py-12 text-muted-foreground">
                 <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No assignments found for this month.</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => {
-                    setPrefilledDate(null)
-                    setIsCreateDialogOpen(true)
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Assignment
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="mt-4">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Assignment
+                      <ChevronDown className="w-4 h-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setPrefilledDate(null)
+                        setIsCreateDialogOpen(true)
+                      }}
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Book Assignment
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate({ to: "/dreamai/generator" })}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      AI Generated Assignment
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ) : (
               <div className="space-y-3">

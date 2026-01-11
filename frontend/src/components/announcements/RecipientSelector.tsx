@@ -4,7 +4,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query"
-import { Search, User as UserIcon, Users, CheckCircle } from "lucide-react"
+import { CheckCircle, Search, User as UserIcon, Users } from "lucide-react"
 import { useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -62,7 +62,10 @@ export function RecipientSelector({
   const classToStudentsMap = useMemo(() => {
     const map = new Map<string, string[]>()
     for (const group of classStudentsGroups) {
-      map.set(group.class_id, group.students.map((s) => s.id))
+      map.set(
+        group.class_id,
+        group.students.map((s) => s.id),
+      )
     }
     return map
   }, [classStudentsGroups])
@@ -127,14 +130,18 @@ export function RecipientSelector({
 
       // Also remove these students from individual selection if they were auto-added
       const studentsToRemove = new Set(classStudents)
-      const newStudentIds = selectedStudentIds.filter((id) => !studentsToRemove.has(id))
+      const newStudentIds = selectedStudentIds.filter(
+        (id) => !studentsToRemove.has(id),
+      )
       onStudentIdsChange(newStudentIds)
     } else {
       // Selecting classroom: add the class
       onClassIdsChange([...selectedClassIds, classId])
 
       // Also add these students to individual selection for visibility
-      const newStudentIds = [...new Set([...selectedStudentIds, ...classStudents])]
+      const newStudentIds = [
+        ...new Set([...selectedStudentIds, ...classStudents]),
+      ]
       onStudentIdsChange(newStudentIds)
     }
   }
@@ -148,10 +155,14 @@ export function RecipientSelector({
 
       // If this student was selected via a classroom, we need to also deselect that classroom
       const studentClasses = studentToClassesMap.get(studentId) || []
-      const classesToDeselect = studentClasses.filter((classId) => selectedClassIds.includes(classId))
+      const classesToDeselect = studentClasses.filter((classId) =>
+        selectedClassIds.includes(classId),
+      )
 
       if (classesToDeselect.length > 0) {
-        const newClassIds = selectedClassIds.filter((id) => !classesToDeselect.includes(id))
+        const newClassIds = selectedClassIds.filter(
+          (id) => !classesToDeselect.includes(id),
+        )
         onClassIdsChange(newClassIds)
       }
     } else {
@@ -287,7 +298,9 @@ export function RecipientSelector({
                         <CardContent className="flex items-center space-x-3 py-3">
                           <Checkbox
                             checked={selectedClassIds.includes(classItem.id)}
-                            onCheckedChange={() => handleClassToggle(classItem.id)}
+                            onCheckedChange={() =>
+                              handleClassToggle(classItem.id)
+                            }
                             onClick={(e) => e.stopPropagation()}
                           />
                           <div className="flex-1 min-w-0">
@@ -397,8 +410,12 @@ export function RecipientSelector({
                   ) : (
                     <div className="space-y-2">
                       {filteredStudents.map((student) => {
-                        const isSelected = selectedStudentIds.includes(student.id)
-                        const isViaClass = studentsSelectedViaClass.has(student.id)
+                        const isSelected = selectedStudentIds.includes(
+                          student.id,
+                        )
+                        const isViaClass = studentsSelectedViaClass.has(
+                          student.id,
+                        )
                         const showSelected = isSelected || isViaClass
 
                         return (
@@ -414,16 +431,23 @@ export function RecipientSelector({
                             <CardContent className="flex items-center space-x-3 py-3">
                               <Checkbox
                                 checked={showSelected}
-                                onCheckedChange={() => handleStudentToggle(student.id)}
+                                onCheckedChange={() =>
+                                  handleStudentToggle(student.id)
+                                }
                                 onClick={(e) => e.stopPropagation()}
                               />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                   <p className="font-medium text-foreground">
-                                    {student.user_full_name || student.user_username || "Unknown Student"}
+                                    {student.user_full_name ||
+                                      student.user_username ||
+                                      "Unknown Student"}
                                   </p>
                                   {isViaClass && (
-                                    <Badge variant="outline" className="text-xs bg-teal-100 dark:bg-teal-900 border-teal-300">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs bg-teal-100 dark:bg-teal-900 border-teal-300"
+                                    >
                                       <CheckCircle className="w-3 h-3 mr-1" />
                                       via class
                                     </Badge>

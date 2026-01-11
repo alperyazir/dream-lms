@@ -14,12 +14,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
 import { useViewPreference } from "@/hooks/useViewPreference"
-import { getAssignmentForEdit, getAssignments } from "@/services/assignmentsApi"
+import { getAssignments } from "@/services/assignmentsApi"
 import { getMyClasses } from "@/services/teachersApi"
-import type {
-  AssignmentForEditResponse,
-  AssignmentListItem,
-} from "@/types/assignment"
+import type { AssignmentListItem } from "@/types/assignment"
 import type { Class } from "@/types/teacher"
 
 export const Route = createFileRoute("/_layout/teacher/assignments/")({
@@ -33,8 +30,6 @@ function TeacherAssignmentsPage() {
     "grid",
   )
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingAssignment, setEditingAssignment] =
-    useState<AssignmentForEditResponse | null>(null) // Story 20.2: Use for-edit response
   const [deletingAssignment, setDeletingAssignment] =
     useState<AssignmentListItem | null>(null)
   const [filters, setFilters] = useState<AssignmentFiltersState>({})
@@ -102,16 +97,6 @@ function TeacherAssignmentsPage() {
     })
   }
 
-  const handleEdit = async (assignment: AssignmentListItem) => {
-    try {
-      // Story 20.2 CRITICAL FIX: Use for-edit endpoint to get recipients
-      const fullAssignment = await getAssignmentForEdit(assignment.id)
-      setEditingAssignment(fullAssignment)
-    } catch (error) {
-      console.error("Failed to fetch assignment for editing:", error)
-    }
-  }
-
   const handleDelete = (assignment: AssignmentListItem) => {
     setDeletingAssignment(assignment)
   }
@@ -156,8 +141,8 @@ function TeacherAssignmentsPage() {
         <div className="flex items-center gap-4">
           <ViewModeToggle value={viewMode} onChange={setViewMode} />
           <Button
-            onClick={handleCreateAssignment}
             className="bg-purple-600 hover:bg-purple-700"
+            onClick={handleCreateAssignment}
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Assignment
@@ -187,8 +172,8 @@ function TeacherAssignmentsPage() {
               assignment to get started.
             </p>
             <Button
-              onClick={handleCreateAssignment}
               className="mt-6 bg-purple-600 hover:bg-purple-700"
+              onClick={handleCreateAssignment}
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Assignment
@@ -202,7 +187,6 @@ function TeacherAssignmentsPage() {
               key={assignment.id}
               assignment={assignment}
               onView={() => handleView(assignment)}
-              onEdit={() => handleEdit(assignment)}
               onDelete={() => handleDelete(assignment)}
             />
           ))}
@@ -211,22 +195,17 @@ function TeacherAssignmentsPage() {
         <AssignmentTableView
           assignments={filteredAndSortedAssignments}
           onView={handleView}
-          onEdit={handleEdit}
           onDelete={handleDelete}
           sortBy={sortBy}
           onSort={(column) => setSortBy(column as "due_date")}
         />
       )}
 
-      {/* Story 20.2: Unified Creation/Edit Dialog */}
+      {/* Assignment Creation Dialog */}
       <AssignmentCreationDialog
-        isOpen={isDialogOpen || !!editingAssignment}
-        onClose={() => {
-          setIsDialogOpen(false)
-          setEditingAssignment(null)
-        }}
-        mode={editingAssignment ? "edit" : "create"}
-        existingAssignment={editingAssignment || undefined}
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        mode="create"
       />
 
       {/* Delete Assignment Dialog */}

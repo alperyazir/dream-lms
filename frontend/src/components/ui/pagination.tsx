@@ -192,3 +192,20 @@ export const PaginationPageText = React.forwardRef<
     </p>
   )
 })
+
+// Additional exports for compatibility
+export const PaginationContent = PaginationItems
+export const PaginationLink = PaginationItem
+export const PaginationPrevious = PaginationPrevTrigger
+export const PaginationNext = PaginationNextTrigger
+
+// Compound component export
+export const Pagination = {
+  Root: PaginationRoot,
+  PrevTrigger: PaginationPrevTrigger,
+  NextTrigger: PaginationNextTrigger,
+  Item: PaginationItem,
+  Items: PaginationItems,
+  Ellipsis: PaginationEllipsis,
+  PageText: PaginationPageText,
+}

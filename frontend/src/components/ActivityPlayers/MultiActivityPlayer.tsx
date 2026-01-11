@@ -6,6 +6,7 @@
  * shared timer, and per-activity progress tracking.
  */
 
+import { useQueryClient } from "@tanstack/react-query"
 import { Eye, EyeOff, FolderOpen, LogOut, RotateCcw } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -16,6 +17,7 @@ import type {
   MatchTheWordsActivity,
   PuzzleFindWordsActivity,
 } from "@/lib/mockData"
+import { cn } from "@/lib/utils"
 import {
   saveActivityProgress,
   submitMultiActivityAssignment,
@@ -25,6 +27,10 @@ import {
   getSubtitleUrl,
   getVideoStreamUrl,
 } from "@/services/booksApi"
+import {
+  type QuestionNavigationState,
+  supportsQuestionNavigation,
+} from "@/types/activity-player"
 import type {
   ActivityProgressInfo,
   ActivityState,
@@ -168,6 +174,7 @@ export function MultiActivityPlayer({
   resources,
 }: MultiActivityPlayerProps) {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   // Current activity index
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -225,6 +232,11 @@ export function MultiActivityPlayer({
   const [resetTrigger, setResetTrigger] = useState(0)
   const [showResetDialog, setShowResetDialog] = useState(false)
 
+  // Question-level navigation state (for activities that support it)
+  const [questionIndex, setQuestionIndex] = useState(0)
+  const [questionNavigationState, setQuestionNavigationState] =
+    useState<QuestionNavigationState | null>(null)
+
   // Story 10.3: Video URLs (only compute if videoPath exists)
   const videoSrc = useMemo(() => {
     if (!videoPath) return null
@@ -241,9 +253,9 @@ export function MultiActivityPlayer({
     Math.floor(initialTimeSpent * 60),
   )
 
-  // Convert to minutes for API calls
+  // Convert to minutes for API calls (ceil so partial minutes count)
   const getElapsedMinutes = useCallback(() => {
-    return Math.floor(elapsedSeconds / 60)
+    return elapsedSeconds > 0 ? Math.ceil(elapsedSeconds / 60) : 0
   }, [elapsedSeconds])
 
   // Callback for timer to update elapsed time
@@ -254,6 +266,19 @@ export function MultiActivityPlayer({
   // Current activity data
   const currentActivity = activities[currentIndex]
   const currentState = activityStates.get(currentActivity?.id || "")
+
+  // Check if current activity supports question-level navigation
+  const hasQuestionNavigation = supportsQuestionNavigation(
+    currentActivity?.activity_type || "",
+  )
+
+  // Reset question navigation state when activity changes
+  useEffect(() => {
+    if (!hasQuestionNavigation) {
+      setQuestionIndex(0)
+      setQuestionNavigationState(null)
+    }
+  }, [hasQuestionNavigation])
 
   // Story 10.2: Check if current activity has audio
   const audioPath = useMemo(() => {
@@ -326,8 +351,9 @@ export function MultiActivityPlayer({
 
   // Save current activity progress to backend
   // Story 9.7: Skip backend save in preview mode - just update local state
+  // forceInProgress: when true, always send status as "in_progress" (for Save & Exit)
   const saveCurrentActivityProgress = useCallback(
-    async (forNavigation = false) => {
+    async (forNavigation = false, forceInProgress = false) => {
       if (!currentActivity || !currentState) return
 
       // Only save if there's something to save
@@ -348,11 +374,17 @@ export function MultiActivityPlayer({
 
       setIsSaving(true)
       try {
+        // Determine status: forceInProgress overrides completed status (for Save & Exit)
+        const saveStatus = forceInProgress
+          ? "in_progress"
+          : currentState.status === "completed"
+            ? "completed"
+            : "in_progress"
+
         await saveActivityProgress(assignmentId, currentActivity.id, {
           response_data: currentState.responseData || {},
           time_spent_seconds: currentState.timeSpentSeconds,
-          status:
-            currentState.status === "completed" ? "completed" : "in_progress",
+          status: saveStatus,
           score: currentState.score,
           max_score: 100,
         })
@@ -367,11 +399,21 @@ export function MultiActivityPlayer({
           return newStates
         })
         // Note: Removed toast on navigation to reduce popups
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to save activity progress:", error)
+        console.error("Error response:", error?.response?.data)
+        console.error("Error status:", error?.response?.status)
+        console.error("Request data was:", {
+          assignmentId,
+          activityId: currentActivity.id,
+          responseData: currentState.responseData,
+          status: currentState.status,
+        })
         toast({
           title: "Save failed",
-          description: "Could not save your progress. Please try again.",
+          description:
+            error?.response?.data?.detail ||
+            "Could not save your progress. Please try again.",
           variant: "destructive",
         })
         throw error
@@ -426,9 +468,10 @@ export function MultiActivityPlayer({
   )
 
   // Handle "Save & Exit" button
+  // Always save as "in_progress" to prevent marking assignment as completed
   const handleSaveAndExit = useCallback(async () => {
     try {
-      await saveCurrentActivityProgress(false)
+      await saveCurrentActivityProgress(false, true) // forceInProgress = true
       // Note: Removed toast - exit action is self-explanatory
       onExit()
     } catch {
@@ -447,9 +490,21 @@ export function MultiActivityPlayer({
     // Force submit with current progress
     setIsSubmitting(true)
     try {
+      // Build activity_states from local state for Content Library assignments
+      const activityStatesForSubmit = activities.map((activity, index) => {
+        const state = activityStates.get(activity.id)
+        return {
+          activity_index: index,
+          score: state?.score ?? null,
+          answers_json: state?.responseData || {},
+          status: state?.status || "completed",
+        }
+      })
+
       const response = await submitMultiActivityAssignment(assignmentId, {
         force_submit: true,
-        total_time_spent_minutes: getElapsedMinutes(),
+        total_time_spent_seconds: elapsedSeconds, // Send precise seconds
+        activity_states: activityStatesForSubmit,
       })
       onSubmitSuccess?.(response)
     } catch (error) {
@@ -462,7 +517,7 @@ export function MultiActivityPlayer({
     } finally {
       setIsSubmitting(false)
     }
-  }, [assignmentId, getElapsedMinutes, onSubmitSuccess, toast])
+  }, [activities, activityStates, assignmentId, elapsedSeconds, onSubmitSuccess, toast])
 
   // Confirm and submit assignment
   // Story 9.7: In preview mode, calculate local results without backend call
@@ -523,10 +578,23 @@ export function MultiActivityPlayer({
         return
       }
 
+      // Build activity_states from local state for Content Library assignments
+      // This sends scores calculated by ActivityPlayer to the backend
+      const activityStatesForSubmit = activities.map((activity, index) => {
+        const state = activityStates.get(activity.id)
+        return {
+          activity_index: index,
+          score: state?.score ?? null,
+          answers_json: state?.responseData || {},
+          status: state?.status || "completed",
+        }
+      })
+
       // Submit the assignment (force_submit=true if not all activities completed)
       const response = await submitMultiActivityAssignment(assignmentId, {
         force_submit: !allCompleted,
-        total_time_spent_minutes: getElapsedMinutes(),
+        total_time_spent_seconds: elapsedSeconds, // Send precise seconds
+        activity_states: activityStatesForSubmit,
       })
 
       toast({
@@ -535,6 +603,9 @@ export function MultiActivityPlayer({
       })
 
       onSubmitSuccess?.(response)
+
+      // Invalidate student assignments query so dashboard shows updated status
+      queryClient.invalidateQueries({ queryKey: ["studentAssignments"] })
     } catch (error) {
       console.error("Submit failed:", error)
       toast({
@@ -552,10 +623,12 @@ export function MultiActivityPlayer({
     assignmentId,
     completedCount,
     currentActivity,
+    elapsedSeconds,
     getElapsedMinutes,
     onPreviewComplete,
     onSubmitSuccess,
     previewMode,
+    queryClient,
     saveCurrentActivityProgress,
     toast,
   ])
@@ -641,21 +714,76 @@ export function MultiActivityPlayer({
 
       {/* Compact header with stepper, timer, and question */}
       <header className="shrink-0 border-b bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="px-3 py-2">
+        <div className="px-3 py-3">
           {/* Top row: centered stepper with timer/resources on sides */}
-          <div className="relative flex items-center justify-center">
+          <div className="relative flex items-center justify-center min-h-[40px]">
             {/* Left spacer for balance */}
             <div className="absolute left-0 w-32" />
 
-            {/* Activity stepper (mini-map) - centered */}
+            {/* Activity/Question stepper (mini-map) - centered */}
             <div className="flex justify-center">
-              <ActivityNavigationBar
-                activities={activities}
-                currentIndex={currentIndex}
-                activityStates={activityStates}
-                onNavigate={handleNavigate}
-                disabled={isSaving || isSubmitting}
-              />
+              {hasQuestionNavigation && questionNavigationState ? (
+                // Question-level navigation for activities that support it
+                <div className="flex items-center gap-0 mx-auto px-2 py-1 overflow-x-auto scrollbar-none">
+                  {Array.from({
+                    length: questionNavigationState.totalItems,
+                  }).map((_, i) => {
+                    // Use questionIndex for immediate feedback, fall back to navigationState
+                    const isCurrent = i === questionIndex
+                    // Check if this question index is in the answered indices
+                    const itemAnswered =
+                      questionNavigationState.answeredIndices.includes(i)
+                    const isLast = i === questionNavigationState.totalItems - 1
+
+                    return (
+                      <div key={i} className="flex items-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuestionIndex(i)
+                          }}
+                          disabled={isSaving || isSubmitting}
+                          className={cn(
+                            "relative flex items-center justify-center rounded-full font-semibold transition-all duration-200",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1",
+                            "disabled:cursor-not-allowed disabled:opacity-50",
+                            "h-8 w-8 text-sm",
+                            isCurrent
+                              ? "bg-teal-600 text-white shadow-lg scale-110 dark:bg-teal-500"
+                              : itemAnswered
+                                ? "bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300"
+                                : "bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600",
+                          )}
+                          title={`Item ${i + 1}`}
+                          aria-label={`Item ${i + 1}${itemAnswered ? " (answered)" : ""}`}
+                        >
+                          {i + 1}
+                        </button>
+                        {/* Connector line */}
+                        {!isLast && (
+                          <div
+                            className={cn(
+                              "h-0.5 w-3 transition-colors duration-200",
+                              itemAnswered
+                                ? "bg-teal-400 dark:bg-teal-600"
+                                : "bg-gray-300 dark:bg-gray-600",
+                            )}
+                          />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                // Regular activities: Show activity navigation
+                <ActivityNavigationBar
+                  activities={activities}
+                  currentIndex={currentIndex}
+                  activityStates={activityStates}
+                  onNavigate={handleNavigate}
+                  disabled={isSaving || isSubmitting}
+                />
+              )}
             </div>
 
             {/* Timer and Resources button - absolute right */}
@@ -676,16 +804,13 @@ export function MultiActivityPlayer({
                 </Button>
               )}
 
-              {/* Only render timer if timeLimit is set or we need to track elapsed time */}
-              {(timeLimit !== null && timeLimit !== undefined) ||
-              initialTimeSpent > 0 ? (
-                <SharedAssignmentTimer
-                  totalTimeLimit={timeLimit}
-                  elapsedMinutes={initialTimeSpent}
-                  onTimeExpired={timeLimit ? handleTimeExpired : undefined}
-                  onElapsedChange={!timeLimit ? handleElapsedChange : undefined}
-                />
-              ) : null}
+              {/* Always show timer - for countdown if timeLimit set, or elapsed time tracking otherwise */}
+              <SharedAssignmentTimer
+                totalTimeLimit={timeLimit}
+                elapsedMinutes={initialTimeSpent}
+                onTimeExpired={timeLimit ? handleTimeExpired : undefined}
+                onElapsedChange={handleElapsedChange}
+              />
             </div>
           </div>
 
@@ -740,6 +865,16 @@ export function MultiActivityPlayer({
                 onActivityComplete={handleActivityComplete} // Story 8.3: Notify parent when activity completed with score
                 showCorrectAnswers={previewMode && showAnswers} // Story 9.7: Show correct answers in preview mode
                 resetTrigger={resetTrigger} // Story 10.3: External reset trigger from footer
+                // Question-level navigation for activities that support it
+                currentQuestionIndex={
+                  hasQuestionNavigation ? questionIndex : undefined
+                }
+                onQuestionIndexChange={
+                  hasQuestionNavigation ? setQuestionIndex : undefined
+                }
+                onNavigationStateChange={
+                  hasQuestionNavigation ? setQuestionNavigationState : undefined
+                }
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
@@ -801,18 +936,18 @@ export function MultiActivityPlayer({
         )}
 
         {/* Main footer controls */}
-        <div className="px-3 py-1.5">
-          <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <div className="px-4 py-3">
+          <div className="mx-auto flex max-w-7xl items-center">
             {/* Left side: Reset button + Show Answers toggle in preview mode */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-1 items-center gap-3">
               {/* Reset button */}
               <button
                 type="button"
                 onClick={() => setShowResetDialog(true)}
                 disabled={isSaving || isSubmitting}
-                className="flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                className="flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
-                <RotateCcw className="h-3 w-3" />
+                <RotateCcw className="h-4 w-4" />
                 Reset
               </button>
               {/* Show Answers toggle in preview mode */}
@@ -820,7 +955,7 @@ export function MultiActivityPlayer({
                 <button
                   type="button"
                   onClick={() => setShowAnswers(!showAnswers)}
-                  className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     showAnswers
                       ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
                       : "border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -828,12 +963,12 @@ export function MultiActivityPlayer({
                 >
                   {showAnswers ? (
                     <>
-                      <EyeOff className="h-3 w-3" />
+                      <EyeOff className="h-4 w-4" />
                       Hide Answers
                     </>
                   ) : (
                     <>
-                      <Eye className="h-3 w-3" />
+                      <Eye className="h-4 w-4" />
                       Show Answers
                     </>
                   )}
@@ -841,91 +976,154 @@ export function MultiActivityPlayer({
               )}
             </div>
 
-            {/* Center: Activity navigation - compact */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleNavigate(currentIndex - 1)}
-                disabled={currentIndex === 0 || isSaving || isSubmitting}
-                className="flex items-center gap-0.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              >
-                <svg
-                  className="h-3 w-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-                Prev
-              </button>
+            {/* Center: Activity/Question navigation */}
+            <div className="flex items-center gap-3">
+              {hasQuestionNavigation && questionNavigationState ? (
+                // Question-level navigation for activities that support it
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setQuestionIndex(questionIndex - 1)}
+                    disabled={questionIndex === 0 || isSaving || isSubmitting}
+                    className="flex items-center gap-1.5 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                    Prev
+                  </button>
 
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {currentIndex + 1} / {activities.length}
-              </span>
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {questionIndex + 1} / {questionNavigationState.totalItems}
+                  </span>
 
-              <button
-                type="button"
-                onClick={() => handleNavigate(currentIndex + 1)}
-                disabled={
-                  currentIndex === activities.length - 1 ||
-                  isSaving ||
-                  isSubmitting
-                }
-                className="flex items-center gap-0.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              >
-                Next
-                <svg
-                  className="h-3 w-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuestionIndex(questionIndex + 1)}
+                    disabled={
+                      questionIndex ===
+                        questionNavigationState.totalItems - 1 ||
+                      isSaving ||
+                      isSubmitting
+                    }
+                    className="flex items-center gap-1.5 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  >
+                    Next
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </>
+              ) : (
+                // Regular: Navigate activities
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate(currentIndex - 1)}
+                    disabled={currentIndex === 0 || isSaving || isSubmitting}
+                    className="flex items-center gap-1.5 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                    Prev
+                  </button>
+
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {currentIndex + 1} / {activities.length}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate(currentIndex + 1)}
+                    disabled={
+                      currentIndex === activities.length - 1 ||
+                      isSaving ||
+                      isSubmitting
+                    }
+                    className="flex items-center gap-1.5 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  >
+                    Next
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Right side: Save & Exit + Submit (or Exit Preview in preview mode) */}
-            {previewMode ? (
-              <button
-                type="button"
-                onClick={onExit}
-                className="flex items-center gap-1.5 rounded-md bg-gray-600 px-3 py-1 text-xs font-semibold text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600"
-              >
-                <LogOut className="h-3 w-3" />
-                Exit Preview
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
+            <div className="flex flex-1 items-center justify-end gap-3">
+              {previewMode ? (
                 <button
                   type="button"
-                  onClick={handleSaveAndExit}
-                  disabled={isSaving || isSubmitting}
-                  className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  onClick={onExit}
+                  className="flex items-center gap-2 rounded-md bg-gray-600 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600"
                 >
-                  {isSaving ? "Saving..." : "Save & Exit"}
+                  <LogOut className="h-4 w-4" />
+                  Exit Preview
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSubmitClick}
-                  disabled={isSubmitting}
-                  className="rounded-md bg-teal-600 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
-                >
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </button>
-              </div>
-            )}
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSaveAndExit}
+                    disabled={isSaving || isSubmitting}
+                    className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  >
+                    {isSaving ? "Saving..." : "Save & Exit"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmitClick}
+                    disabled={isSubmitting}
+                    className="rounded-md bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit"}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </footer>
@@ -972,6 +1170,10 @@ export function MultiActivityPlayer({
                   setShowResetDialog(false)
                   // Turn off Show Answers so user can interact
                   setShowAnswers(false)
+                  // Reset question index for activities with question navigation
+                  if (hasQuestionNavigation) {
+                    setQuestionIndex(0)
+                  }
                   // Also reset the activity state in the parent
                   if (currentActivity) {
                     setActivityStates((prev) => {

@@ -280,6 +280,10 @@ class Teacher(TeacherBase, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
+    # AI Usage Tracking
+    ai_generations_used: int = Field(default=0)  # Count of AI generations this month
+    ai_quota_reset_date: datetime = Field(default_factory=lambda: datetime.now(UTC))  # Last reset date
+
     # Relationships
     user: User = Relationship(back_populates="teacher", sa_relationship_kwargs={"passive_deletes": True})
     school: School = Relationship(back_populates="teachers", sa_relationship_kwargs={"passive_deletes": True})
@@ -729,6 +733,7 @@ class BookAssignmentListResponse(SQLModel):
 
 class ActivityType(str, Enum):
     """Activity type enumeration"""
+    # Existing DCS book activity types
     matchTheWords = "matchTheWords"
     dragdroppicture = "dragdroppicture"
     dragdroppicturegroup = "dragdroppicturegroup"
@@ -737,6 +742,13 @@ class ActivityType(str, Enum):
     circle = "circle"
     puzzleFindWords = "puzzleFindWords"
     markwithx = "markwithx"
+    # AI-generated activity types (Epic 27)
+    vocabulary_quiz = "vocabulary_quiz"
+    ai_quiz = "ai_quiz"
+    reading_comprehension = "reading_comprehension"
+    sentence_builder = "sentence_builder"
+    word_builder = "word_builder"
+    vocabulary_matching = "vocabulary_matching"
 
 
 class ActivityBase(SQLModel):
@@ -852,6 +864,12 @@ class AssignmentBase(SQLModel):
     # Each resource: {type: "video", path: "...", subtitles_enabled: true, name: "..."}
     # Future types: "pdf", "image", "link", etc.
     resources: dict | None = Field(default=None, sa_column=Column(JSON))
+    # Story 27.20: AI-generated activity content storage
+    # For AI-generated activities, store activity type and content directly
+    activity_type: ActivityType | None = Field(default=None)
+    activity_content: dict | None = Field(default=None, sa_column=Column(JSON))
+    generation_source: str | None = Field(default=None, max_length=50)  # "book" | "material" | "manual"
+    source_id: str | None = Field(default=None, max_length=255)  # book_id or material_id
 
 
 class AssignmentCreate(AssignmentBase):
@@ -994,7 +1012,8 @@ class AssignmentStudentBase(SQLModel):
     progress_json: dict | None = Field(default=None, sa_column=Column(JSON))
     started_at: datetime | None = Field(default=None)
     completed_at: datetime | None = Field(default=None)
-    time_spent_minutes: int = Field(default=0)
+    time_spent_minutes: int = Field(default=0)  # Deprecated: use time_spent_seconds
+    time_spent_seconds: int = Field(default=0)  # Precise time tracking in seconds
     last_saved_at: datetime | None = Field(default=None)
 
 
@@ -1680,6 +1699,11 @@ class TeacherMaterial(SQLModel, table=True):
     # For text notes only
     text_content: str | None = Field(default=None)  # Max ~50KB
 
+    # AI Processing Fields (Story 27.15)
+    extracted_text: str | None = Field(default=None)  # Extracted/processed text for AI
+    word_count: int | None = Field(default=None)  # Word count of extracted text
+    language: str | None = Field(default=None, max_length=10)  # Detected language code
+
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -1696,6 +1720,77 @@ class TeacherStorageQuota(SQLModel, table=True):
     teacher_id: uuid.UUID = Field(foreign_key="teachers.id", primary_key=True, ondelete="CASCADE")
     used_bytes: int = Field(default=0)
     quota_bytes: int = Field(default=524288000)  # 500MB default
+
+    # Relationship
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+
+
+class TeacherGeneratedContent(SQLModel, table=True):
+    """Teacher's generated AI content database model (Story 27.15).
+
+    Stores AI-generated activities from teacher's uploaded materials or book content.
+    Content is isolated per teacher - teacher A cannot see teacher B's generated content.
+    """
+
+    __tablename__ = "teacher_generated_content"
+    __table_args__ = (
+        Index('idx_generated_content_teacher', 'teacher_id'),
+        Index('idx_generated_content_material', 'material_id'),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+
+    # Source reference (one of these should be set)
+    material_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="teacher_materials.id",
+        ondelete="SET NULL"
+    )
+    book_id: int | None = Field(default=None)  # DCS book ID, null if material-based
+
+    # Content details
+    activity_type: str = Field(max_length=50)  # vocab_quiz, ai_quiz, reading, matching, etc.
+    title: str = Field(max_length=255)  # Generated activity title
+    content: dict = Field(default_factory=dict, sa_column=Column(JSON))  # Activity data
+
+    # Usage tracking
+    is_used: bool = Field(default=False)  # True if used in assignment
+    assignment_id: uuid.UUID | None = Field(default=None)  # Link to assignment if used
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime | None = Field(default=None)
+
+    # Relationships
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+    material: "TeacherMaterial" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+
+
+class AIUsageLog(SQLModel, table=True):
+    """AI usage tracking for monitoring LLM and TTS generation costs and patterns."""
+
+    __tablename__ = "ai_usage_logs"
+    __table_args__ = (
+        Index('idx_ai_usage_teacher', 'teacher_id'),
+        Index('idx_ai_usage_timestamp', 'timestamp'),
+        Index('idx_ai_usage_provider', 'provider'),
+        Index('idx_ai_usage_activity_type', 'activity_type'),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
+    operation_type: str = Field(max_length=50)  # "llm_generation", "tts_generation"
+    activity_type: str = Field(max_length=100)  # "vocabulary_quiz", "ai_quiz", etc.
+    provider: str = Field(max_length=50)  # "deepseek", "gemini", "edge_tts", "azure_tts"
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    audio_characters: int = Field(default=0, ge=0)
+    estimated_cost: float = Field(default=0.0, ge=0.0)  # USD
+    success: bool = Field(default=True)
+    error_message: str | None = Field(default=None, max_length=1000)
+    duration_ms: int = Field(default=0, ge=0)
 
     # Relationship
     teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})

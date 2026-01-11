@@ -5,14 +5,14 @@
  * Full page view of all announcements with filtering and pagination
  */
 
-import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { Bell } from "lucide-react"
+import { useState } from "react"
+import { AnnouncementItem } from "@/components/announcements/AnnouncementItem"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useStudentAnnouncements } from "@/hooks/useAnnouncements"
-import { AnnouncementItem } from "@/components/announcements/AnnouncementItem"
-import { Button } from "@/components/ui/button"
 
 export const Route = createFileRoute("/_layout/student/announcements")({
   component: StudentAnnouncementsPage,
@@ -39,14 +39,15 @@ function StudentAnnouncementsPage() {
       </div>
 
       {/* Filter tabs */}
-      <Tabs value={filter} onValueChange={(v) => {
-        setFilter(v as "all" | "unread" | "read")
-        setPage(1) // Reset to first page when filter changes
-      }}>
+      <Tabs
+        value={filter}
+        onValueChange={(v) => {
+          setFilter(v as "all" | "unread" | "read")
+          setPage(1) // Reset to first page when filter changes
+        }}
+      >
         <TabsList>
-          <TabsTrigger value="all">
-            All {data && `(${data.total})`}
-          </TabsTrigger>
+          <TabsTrigger value="all">All {data && `(${data.total})`}</TabsTrigger>
           <TabsTrigger value="unread">
             Unread {data && `(${data.unread_count})`}
           </TabsTrigger>
@@ -126,8 +127,12 @@ function EmptyState({ filter }: { filter: string }) {
   return (
     <div className="text-center py-12 text-muted-foreground">
       <Bell className="h-16 w-16 mx-auto mb-4 opacity-50" />
-      <p className="font-medium text-lg">{messages[filter as keyof typeof messages]}</p>
-      <p className="text-sm mt-2">{descriptions[filter as keyof typeof descriptions]}</p>
+      <p className="font-medium text-lg">
+        {messages[filter as keyof typeof messages]}
+      </p>
+      <p className="text-sm mt-2">
+        {descriptions[filter as keyof typeof descriptions]}
+      </p>
     </div>
   )
 }

@@ -19,6 +19,12 @@ interface ActivityHeaderProps {
     | "circle"
     | "markwithx"
     | "puzzleFindWords"
+    // Story 27.20: AI-generated activity types
+    | "vocabulary_quiz"
+    | "ai_quiz"
+    | "reading_comprehension"
+    | "sentence_builder"
+    | "word_builder"
   timeLimit?: number // in minutes
   onTimeExpired?: () => void
   /** Activity config object (may contain audio_extra) */

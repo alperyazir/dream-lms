@@ -3,6 +3,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { useCountdown } from "@/hooks/useCountdown"
+import {
+  getActivityTypeColorClasses,
+  getActivityTypeConfig,
+} from "@/lib/activityTypeConfig"
 import type { AssignmentFull, AssignmentStudent, Book } from "@/lib/mockData"
 import type { StudentAssignmentResponse } from "@/types/assignment"
 
@@ -233,6 +237,25 @@ export function StudentAssignmentCard({
               Time limit: {assignment.time_limit_minutes} min
             </div>
           )}
+
+          {/* Activity Type Badge - Story 27.20 */}
+          {assignment.activity_type &&
+            (() => {
+              const config = getActivityTypeConfig(assignment.activity_type)
+              const colorClasses = getActivityTypeColorClasses(config.color)
+              const IconComponent = config.icon
+              return (
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={`text-xs ${colorClasses.text} ${colorClasses.border}`}
+                  >
+                    <IconComponent className="mr-1 h-3 w-3" />
+                    {config.label}
+                  </Badge>
+                </div>
+              )
+            })()}
 
           {/* Activity Info */}
           <div className="text-sm text-muted-foreground line-clamp-1">

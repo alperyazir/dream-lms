@@ -2,7 +2,7 @@
 
 import { toast } from "@/hooks/use-toast"
 
-const useCustomToast = () => {
+export const useCustomToast = () => {
   const showSuccessToast = (description: string) => {
     toast({
       title: "Success!",

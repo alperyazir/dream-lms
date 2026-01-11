@@ -213,12 +213,44 @@ export interface PuzzleFindWordsActivity {
   audio_extra?: AudioExtra // Story 10.2: Optional audio content
 }
 
+// Story 27.20: AI-generated activity types
+export interface AIActivityBase {
+  type: string
+  content: any // The actual quiz/activity data (VocabularyQuizPublic, AIQuizPublic, etc.)
+}
+
+export interface VocabularyQuizActivity extends AIActivityBase {
+  type: "vocabulary_quiz"
+}
+
+export interface AIQuizActivity extends AIActivityBase {
+  type: "ai_quiz"
+}
+
+export interface ReadingComprehensionActivity extends AIActivityBase {
+  type: "reading_comprehension"
+}
+
+export interface SentenceBuilderActivity extends AIActivityBase {
+  type: "sentence_builder"
+}
+
+export interface WordBuilderActivity extends AIActivityBase {
+  type: "word_builder"
+}
+
 export type ActivityConfig =
   | DragDropPictureActivity
   | DragDropPictureGroupActivity
   | MatchTheWordsActivity
   | CircleActivity
   | PuzzleFindWordsActivity
+  // Story 27.20: AI-generated activity types
+  | VocabularyQuizActivity
+  | AIQuizActivity
+  | ReadingComprehensionActivity
+  | SentenceBuilderActivity
+  | WordBuilderActivity
 
 // ============================================================================
 

@@ -25,7 +25,7 @@ function Navbar() {
           <NotificationBell />
 
           {/* Messages Icon with Unread Count */}
-          <Link to="/messaging" data-tour="navbar-messages">
+          <Link to="/messaging">
             <Button
               variant="ghost"
               size="icon"
@@ -60,7 +60,7 @@ function Navbar() {
           <NotificationBell size="sm" />
 
           {/* Messages Icon with Unread Count */}
-          <Link to="/messaging" data-tour="navbar-messages">
+          <Link to="/messaging">
             <Button
               variant="ghost"
               size="icon"

@@ -206,6 +206,21 @@ class CacheKeys:
     BOOK_BY_ID = "dcs:books:id:{id}"
     BOOK_CONFIG = "dcs:books:config:{id}"
 
+    # AI Data keys (Story 27.7)
+    AI_METADATA = "dcs:ai:metadata:{book_id}"
+    AI_MODULES = "dcs:ai:modules:{book_id}"
+    AI_MODULES_METADATA = "dcs:ai:modules:metadata:{book_id}"
+    AI_MODULE_DETAIL = "dcs:ai:module:{book_id}:{module_id}"
+    AI_VOCABULARY = "dcs:ai:vocabulary:{book_id}"
+    AI_VOCABULARY_MODULE = "dcs:ai:vocabulary:{book_id}:{module_id}"
+    AI_AUDIO_URL = "dcs:ai:audio:{book_id}:{lang}:{word}"
+
+    # AI Data TTL constants (in seconds)
+    AI_METADATA_TTL = 60  # 1 minute - may change during processing
+    AI_MODULES_TTL = 300  # 5 minutes - relatively static
+    AI_VOCABULARY_TTL = 300  # 5 minutes - relatively static
+    AI_AUDIO_URL_TTL = 3600  # 1 hour - presigned URLs valid for 1 hour
+
     @staticmethod
     def publisher_by_id(publisher_id: str) -> str:
         """Get cache key for specific publisher."""
@@ -230,6 +245,41 @@ class CacheKeys:
     def books_by_publisher(publisher_id: str) -> str:
         """Get cache key for books by publisher."""
         return CacheKeys.BOOK_LIST_BY_PUBLISHER.format(publisher_id=publisher_id)
+
+    # AI Data key helpers
+    @staticmethod
+    def ai_metadata(book_id: int) -> str:
+        """Get cache key for AI processing metadata."""
+        return CacheKeys.AI_METADATA.format(book_id=book_id)
+
+    @staticmethod
+    def ai_modules(book_id: int) -> str:
+        """Get cache key for AI module list."""
+        return CacheKeys.AI_MODULES.format(book_id=book_id)
+
+    @staticmethod
+    def ai_modules_metadata(book_id: int) -> str:
+        """Get cache key for AI modules metadata (includes topics, vocabulary counts)."""
+        return CacheKeys.AI_MODULES_METADATA.format(book_id=book_id)
+
+    @staticmethod
+    def ai_module_detail(book_id: int, module_id: int) -> str:
+        """Get cache key for AI module detail."""
+        return CacheKeys.AI_MODULE_DETAIL.format(book_id=book_id, module_id=module_id)
+
+    @staticmethod
+    def ai_vocabulary(book_id: int, module_id: int | None = None) -> str:
+        """Get cache key for AI vocabulary (with optional module filter)."""
+        if module_id is not None:
+            return CacheKeys.AI_VOCABULARY_MODULE.format(
+                book_id=book_id, module_id=module_id
+            )
+        return CacheKeys.AI_VOCABULARY.format(book_id=book_id)
+
+    @staticmethod
+    def ai_audio_url(book_id: int, lang: str, word: str) -> str:
+        """Get cache key for AI audio presigned URL."""
+        return CacheKeys.AI_AUDIO_URL.format(book_id=book_id, lang=lang, word=word)
 
 
 # Singleton instance

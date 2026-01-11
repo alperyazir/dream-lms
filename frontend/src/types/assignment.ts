@@ -126,25 +126,39 @@ export interface DateGroupCreateRequest {
 }
 
 /**
+ * Source type for assignment creation
+ * Story 27.x: Unified Assignment Creation
+ */
+export type AssignmentSourceType = "book" | "ai_content"
+
+/**
  * Assignment creation request payload
  * Story 8.1: Supports both single-activity (backward compatible) and multi-activity assignments.
  * Story 9.6: Added scheduled_publish_date for scheduled publishing.
  * Story 9.x: Added date_groups for Time Planning mode (creates multiple assignments)
  * Story 10.3: Added video_path for video attachment
+ * Story 27.x: Added source_type and content_id for AI content assignments
  * Provide either activity_id (single) OR activity_ids (multi), not both.
+ * For AI content assignments, use source_type="ai_content" and provide content_id.
  */
 export interface AssignmentCreateRequest {
-  book_id: string | number
+  // Story 27.x: Source type - "book" for book activities, "ai_content" for AI-generated content
+  source_type?: AssignmentSourceType
+  // For book assignments (default)
+  book_id?: string | number
+  // Backward compatible: single activity (legacy)
+  activity_id?: string
+  // Multi-activity: list of activities with order
+  activity_ids?: string[]
+  // Story 27.x: For AI content assignments
+  content_id?: string
+  // Common fields
   name: string
   instructions?: string | null
   due_date?: string | null // ISO 8601 datetime string
   time_limit_minutes?: number | null
   student_ids?: string[]
   class_ids?: string[]
-  // Backward compatible: single activity (legacy)
-  activity_id?: string
-  // Multi-activity: list of activities with order
-  activity_ids?: string[]
   // Story 9.6: Scheduled publishing
   scheduled_publish_date?: string | null // ISO 8601 datetime string
   // Story 9.x: Time Planning mode - creates multiple assignments
@@ -493,12 +507,26 @@ export interface ActivityProgressSaveResponse {
 }
 
 /**
+ * Activity state data sent during multi-activity submission
+ * Used for Content Library (AI) assignments where scores are calculated on frontend
+ */
+export interface SubmitActivityState {
+  activity_index: number
+  score: number | null
+  answers_json?: Record<string, unknown>
+  status?: string
+}
+
+/**
  * Multi-activity assignment submit request
  * Story 8.3: Student Multi-Activity Assignment Player
  */
 export interface MultiActivitySubmitRequest {
   force_submit?: boolean // For timer expiry
-  total_time_spent_minutes?: number
+  total_time_spent_minutes?: number // Deprecated: use total_time_spent_seconds
+  total_time_spent_seconds?: number // Preferred: precise time in seconds
+  // Activity states with scores - required for Content Library assignments
+  activity_states?: SubmitActivityState[]
 }
 
 /**
@@ -632,8 +660,10 @@ export interface AssignmentResultDetailResponse {
   answers_json: Record<string, any> // Student's submitted answers
   score: number
   total_points: number
+  started_at: string | null // When student started the assignment
   completed_at: string
-  time_spent_minutes: number
+  time_spent_minutes: number // Deprecated: use time_spent_seconds
+  time_spent_seconds: number // Precise time in seconds
 }
 
 // =============================================================================

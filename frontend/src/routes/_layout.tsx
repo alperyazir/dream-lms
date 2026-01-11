@@ -2,10 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import { UsersService } from "@/client"
 import Navbar from "@/components/Common/Navbar"
 import Sidebar from "@/components/Common/Sidebar"
-import { Tour } from "@/components/tour/Tour"
-import { TourTrigger } from "@/components/tour/TourTrigger"
 import { NavigationProvider } from "@/contexts/NavigationContext"
-import { TourProvider } from "@/contexts/TourContext"
 import { getMustChangePassword, isLoggedIn } from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout")({
@@ -57,11 +54,7 @@ function LayoutContent() {
 function Layout() {
   return (
     <NavigationProvider>
-      <TourProvider>
-        <LayoutContent />
-        <Tour />
-        <TourTrigger />
-      </TourProvider>
+      <LayoutContent />
     </NavigationProvider>
   )
 }

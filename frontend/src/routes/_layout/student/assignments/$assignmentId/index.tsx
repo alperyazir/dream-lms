@@ -42,6 +42,14 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { useMyFeedback } from "@/hooks/useFeedback"
 import {
+  parseAIQuizResult,
+  parseReadingComprehensionResult,
+  parseSentenceBuilderResult,
+  parseVocabularyQuizResult,
+  parseWordBuilderResult,
+} from "@/lib/resultParsers"
+import {
+  getAssignmentResult,
   getStudentAssignments,
   startMultiActivityAssignment,
 } from "@/services/assignmentsApi"
@@ -83,6 +91,65 @@ function AssignmentDetailContent() {
     isLoading: isFeedbackLoading,
     hasFeedback,
   } = useMyFeedback(assignment?.status === "completed" ? assignmentId : null)
+
+  // Fetch result data for completed assignments to calculate accurate score
+  const { data: resultData } = useQuery({
+    queryKey: ["assignments", assignmentId, "result"],
+    queryFn: () => getAssignmentResult(assignmentId),
+    enabled: assignment?.status === "completed",
+    retry: false,
+    staleTime: 30000,
+  })
+
+  // Calculate accurate score from parsed result data
+  const calculatedScore = (() => {
+    if (!resultData || !resultData.config_json || !resultData.answers_json) {
+      return assignment?.score ?? null
+    }
+
+    const { activity_type, config_json, answers_json, score } = resultData
+
+    let parsedResult = null
+    switch (activity_type) {
+      case "ai_quiz":
+        parsedResult = parseAIQuizResult(config_json, answers_json, score)
+        break
+      case "vocabulary_quiz":
+        parsedResult = parseVocabularyQuizResult(config_json, answers_json, score)
+        break
+      case "reading_comprehension":
+        parsedResult = parseReadingComprehensionResult(config_json, answers_json, score)
+        break
+      case "sentence_builder":
+        parsedResult = parseSentenceBuilderResult(config_json, answers_json, score)
+        break
+      case "word_builder":
+        parsedResult = parseWordBuilderResult(config_json, answers_json, score)
+        break
+    }
+
+    if (!parsedResult) return assignment?.score ?? null
+
+    // Calculate score based on activity type
+    let correct = 0
+    let total = 0
+
+    if ("question_results" in parsedResult) {
+      correct = parsedResult.question_results.filter((r) => r.is_correct).length
+      total = parsedResult.total
+    } else if ("results" in parsedResult) {
+      correct = parsedResult.results.filter((r) => r.is_correct).length
+      total = parsedResult.total
+    } else if ("sentence_results" in parsedResult) {
+      correct = parsedResult.sentence_results.filter((r) => r.is_correct).length
+      total = parsedResult.total
+    } else if ("word_results" in parsedResult) {
+      correct = parsedResult.correct_count
+      total = parsedResult.total
+    }
+
+    return total > 0 ? Math.round((correct / total) * 100) : (assignment?.score ?? null)
+  })()
 
   // Get activity count from assignment data
   const activityCount = assignment?.activity_count || 1
@@ -334,13 +401,16 @@ function AssignmentDetailContent() {
                   </p>
                   <p className="text-lg">{statusLabels[assignment.status]}</p>
                 </div>
-                {assignment.score !== null && (
+                {calculatedScore !== null && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
                       Score
                     </p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {assignment.score}%
+                    <p className={`text-2xl font-bold ${
+                      calculatedScore >= 70 ? "text-green-600" :
+                      calculatedScore >= 50 ? "text-yellow-600" : "text-red-600"
+                    }`}>
+                      {calculatedScore}%
                     </p>
                   </div>
                 )}

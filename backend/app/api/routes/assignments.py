@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.models import (
     Activity,
+    ActivityType,
     Assignment,
     AssignmentActivity,
     AssignmentPublishStatus,
@@ -34,6 +35,7 @@ from app.models import (
     NotificationType,
     Student,
     Teacher,
+    TeacherGeneratedContent,
     TeacherMaterial,
     TokenPayload,
     User,
@@ -414,9 +416,10 @@ async def list_assignments(
         )
 
     # Get all assignments for this teacher with activity info
+    # Use LEFT JOIN (outerjoin) to include Content Library assignments without activity_id
     result = await session.execute(
         select(Assignment, Activity)
-        .join(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(Activity, Assignment.activity_id == Activity.id)
         .options(selectinload(Assignment.assignment_students))
         .where(Assignment.teacher_id == teacher.id)
         .order_by(Assignment.created_at.desc())
@@ -435,7 +438,11 @@ async def list_assignments(
             logger.warning(
                 f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
             )
-            continue
+            # For Content Library assignments, create a placeholder book if not found
+            if assignment.activity_content:
+                book_title = "AI Generated"
+            else:
+                continue
 
         # Use pre-loaded assignment_students relationship (no N+1 query)
         assignment_students = assignment.assignment_students
@@ -452,6 +459,21 @@ async def list_assignments(
             1 for s in assignment_students if s.status == AssignmentStatus.completed
         )
 
+        # Handle Content Library assignments (no activity record)
+        if activity:
+            activity_id = activity.id
+            activity_title = activity.title
+            activity_type = activity.activity_type.value if hasattr(activity.activity_type, 'value') else str(activity.activity_type)
+            book_id = book.id
+            book_title_final = book.title or book.name
+        else:
+            # Content Library assignment - use assignment's embedded data
+            activity_id = assignment.id  # Use assignment id as pseudo activity id
+            activity_title = assignment.name
+            activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+            book_id = assignment.dcs_book_id if assignment.dcs_book_id else 0
+            book_title_final = book.title or book.name if book else "AI Generated"
+
         assignment_list.append(
             AssignmentListItem(
                 id=assignment.id,
@@ -460,11 +482,11 @@ async def list_assignments(
                 due_date=assignment.due_date,
                 time_limit_minutes=assignment.time_limit_minutes,
                 created_at=assignment.created_at,
-                book_id=book.id,
-                book_title=book.title or book.name,
-                activity_id=activity.id,
-                activity_title=activity.title,
-                activity_type=activity.activity_type,
+                book_id=book_id,
+                book_title=book_title_final,
+                activity_id=activity_id,
+                activity_title=activity_title,
+                activity_type=activity_type,
                 total_students=total_students,
                 not_started=not_started,
                 in_progress=in_progress,
@@ -806,12 +828,6 @@ async def create_assignment(
     # Load school relationship for publisher_id access
     await session.refresh(teacher, ["school"])
 
-    # Get activity IDs (handles both single and multi-activity)
-    activity_ids = assignment_in.get_activity_ids()
-
-    # Validate teacher has access to all activities
-    activities = await _verify_activities_access(session, activity_ids, teacher)
-
     # Validate due_date is in future (Pydantic also validates, but double-check)
     _validate_due_date(assignment_in.due_date)
 
@@ -834,10 +850,7 @@ async def create_assignment(
         session, assignment_in.resources, teacher.id
     )
 
-    # Create Assignment record
     now = datetime.now(UTC)
-    # Keep activity_id for backward compatibility (set to first activity if multi)
-    first_activity_id = activity_ids[0] if activity_ids else None
 
     # Determine assignment status based on scheduled_publish_date
     if (
@@ -847,6 +860,140 @@ async def create_assignment(
         assignment_status = AssignmentPublishStatus.scheduled
     else:
         assignment_status = AssignmentPublishStatus.published
+
+    # Story 27.x: Handle AI content assignments differently
+    if assignment_in.source_type == "ai_content":
+        # Fetch TeacherGeneratedContent
+        content_result = await session.execute(
+            select(TeacherGeneratedContent).where(
+                TeacherGeneratedContent.id == assignment_in.content_id
+            )
+        )
+        content = content_result.scalar_one_or_none()
+
+        if not content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="AI content not found",
+            )
+
+        # Verify teacher owns the content
+        if content.teacher_id != teacher.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to use this content",
+            )
+
+        # Map content activity_type string to ActivityType enum
+        try:
+            activity_type_enum = ActivityType(content.activity_type)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid activity type: {content.activity_type}",
+            )
+
+        # Create Assignment with embedded AI content
+        assignment = Assignment(
+            teacher_id=teacher.id,
+            activity_id=None,  # No activity reference for AI content
+            dcs_book_id=content.book_id or 0,  # Use book_id from content or 0 if material-based
+            name=assignment_in.name,
+            instructions=assignment_in.instructions,
+            due_date=assignment_in.due_date,
+            time_limit_minutes=assignment_in.time_limit_minutes,
+            scheduled_publish_date=assignment_in.scheduled_publish_date,
+            status=assignment_status,
+            video_path=assignment_in.video_path,
+            resources=validated_resources.model_dump(mode="json") if validated_resources else None,
+            # AI content fields
+            activity_type=activity_type_enum,
+            activity_content=content.content,
+            generation_source="book" if content.book_id else "material",
+            source_id=str(content.book_id) if content.book_id else str(content.material_id),
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(assignment)
+        await session.flush()
+
+        # Create AssignmentStudent records (no AssignmentStudentActivity for AI content)
+        for student in students:
+            assignment_student = AssignmentStudent(
+                assignment_id=assignment.id,
+                student_id=student.id,
+                status=AssignmentStatus.not_started,
+                score=None,
+                answers_json=None,
+                progress_json=None,
+                started_at=None,
+                completed_at=None,
+                time_spent_minutes=0,
+                last_saved_at=None,
+            )
+            session.add(assignment_student)
+
+        # Mark the content as used
+        content.is_used = True
+        content.assignment_id = assignment.id
+        content.updated_at = now
+        session.add(content)
+
+        await session.commit()
+        await session.refresh(assignment)
+
+        # Create notifications for all assigned students
+        if assignment_status == AssignmentPublishStatus.published:
+            for student in students:
+                student_user_id = student.user_id
+                if student_user_id:
+                    await notification_service.create_notification(
+                        db=session,
+                        user_id=student_user_id,
+                        notification_type=NotificationType.assignment_created,
+                        title=f"New Assignment: {assignment.name}",
+                        message=f"You have been assigned '{assignment.name}'. "
+                        + (f"Due: {assignment.due_date.strftime('%b %d, %Y')}" if assignment.due_date else "No due date"),
+                        link=f"/student/assignments/{assignment.id}",
+                    )
+
+        # Build response for AI content assignment
+        assignment_response = AssignmentResponse(
+            id=assignment.id,
+            teacher_id=assignment.teacher_id,
+            book_id=assignment.dcs_book_id,
+            name=assignment.name,
+            instructions=assignment.instructions,
+            due_date=assignment.due_date,
+            time_limit_minutes=assignment.time_limit_minutes,
+            scheduled_publish_date=assignment.scheduled_publish_date,
+            status=assignment.status,
+            video_path=assignment.video_path,
+            created_at=assignment.created_at,
+            updated_at=assignment.updated_at,
+            student_count=len(students),
+            activity_id=None,
+            activities=[],  # AI content has no activities in junction table
+            activity_count=1,  # AI content counts as 1 activity
+        )
+
+        logger.info(
+            f"AI content assignment created: id={assignment.id}, teacher_id={teacher.id}, "
+            f"content_id={content.id}, activity_type={content.activity_type}, students={len(students)}"
+        )
+
+        return assignment_response
+
+    # === Standard book assignment flow ===
+
+    # Get activity IDs (handles both single and multi-activity)
+    activity_ids = assignment_in.get_activity_ids()
+
+    # Validate teacher has access to all activities
+    activities = await _verify_activities_access(session, activity_ids, teacher)
+
+    # Keep activity_id for backward compatibility (set to first activity if multi)
+    first_activity_id = activity_ids[0] if activity_ids else None
 
     assignment = Assignment(
         teacher_id=teacher.id,
@@ -1561,10 +1708,11 @@ async def start_assignment(
         )
 
     # Query AssignmentStudent with joins to Assignment and Activity
+    # Use LEFT JOIN (outerjoin) to support Content Library assignments without activity_id
     result = await session.execute(
         select(AssignmentStudent, Assignment, Activity)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(Activity, Assignment.activity_id == Activity.id)
         .where(
             AssignmentStudent.assignment_id == assignment_id,
             AssignmentStudent.student_id == student.id,
@@ -1584,11 +1732,27 @@ async def start_assignment(
     # Fetch book data from DCS
     book_service = get_book_service()
     book = await book_service.get_book(assignment.dcs_book_id)
+
+    # For Content Library assignments, book might not exist - use placeholder
     if not book:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Book data not available",
-        )
+        if assignment.activity_content:
+            # Content Library assignment - create placeholder book info
+            book_id = assignment.dcs_book_id if assignment.dcs_book_id else 0
+            book_title = "AI Generated"
+            book_name = "AI Generated"
+            publisher_name = ""
+            book_cover_url = None
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Book data not available",
+            )
+    else:
+        book_id = book.id
+        book_title = book.title or book.name
+        book_name = book.name
+        publisher_name = book.publisher_name
+        book_cover_url = book.cover_url
 
     # Check if assignment is published (students can't access scheduled assignments)
     if assignment.status != AssignmentPublishStatus.published:
@@ -1610,6 +1774,29 @@ async def start_assignment(
         assignment_student.started_at = datetime.now(UTC)
         await session.commit()
         await session.refresh(assignment_student)
+    elif assignment_student.started_at is None:
+        # Fix: Set started_at for resumed assignments that don't have it
+        assignment_student.started_at = datetime.now(UTC)
+        await session.commit()
+        await session.refresh(assignment_student)
+
+    # Handle Content Library assignments (no activity record)
+    if activity:
+        activity_id = activity.id
+        activity_title = activity.title
+        activity_type = activity.activity_type.value
+        config_json = activity.config_json
+    else:
+        # Content Library assignment - use assignment's embedded data
+        activity_id = assignment.id  # Use assignment id as pseudo activity id
+        activity_title = assignment.name
+        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        # Build config_json with structure expected by frontend:
+        # { type: "ai_quiz", content: { questions: [...] } }
+        config_json = {
+            "type": activity_type,
+            "content": assignment.activity_content or {}
+        }
 
     # Build response
     response = ActivityStartResponse(
@@ -1618,15 +1805,15 @@ async def start_assignment(
         instructions=assignment.instructions,
         due_date=assignment.due_date,
         time_limit_minutes=assignment.time_limit_minutes,
-        book_id=book.id,
-        book_title=book.title or book.name,
-        book_name=book.name,  # Story 4.2: For Dream Central Storage image URLs
-        publisher_name=book.publisher_name,  # Story 4.2: For Dream Central Storage image URLs
-        book_cover_url=book.cover_url,
-        activity_id=activity.id,
-        activity_title=activity.title,
-        activity_type=activity.activity_type.value,
-        config_json=activity.config_json,
+        book_id=book_id,
+        book_title=book_title,
+        book_name=book_name,  # Story 4.2: For Dream Central Storage image URLs
+        publisher_name=publisher_name,  # Story 4.2: For Dream Central Storage image URLs
+        book_cover_url=book_cover_url,
+        activity_id=activity_id,
+        activity_title=activity_title,
+        activity_type=activity_type,
+        config_json=config_json,
         current_status=assignment_student.status.value,
         time_spent_minutes=assignment_student.time_spent_minutes,
         progress_json=assignment_student.progress_json,
@@ -1708,11 +1895,27 @@ async def start_multi_activity_assignment(
     # Fetch book data from DCS
     book_service = get_book_service()
     book = await book_service.get_book(assignment.dcs_book_id)
+
+    # For Content Library assignments, book might not exist - use placeholder
     if not book:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Book data not available",
-        )
+        if assignment.activity_content:
+            # Content Library assignment - create placeholder book info
+            book_id = assignment.dcs_book_id if assignment.dcs_book_id else 0
+            book_title = "AI Generated"
+            book_name = "AI Generated"
+            publisher_name = ""
+            book_cover_url = None
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Book data not available",
+            )
+    else:
+        book_id = book.id
+        book_title = book.title or book.name
+        book_name = book.name
+        publisher_name = book.publisher_name
+        book_cover_url = book.cover_url
 
     # Check if assignment is published (students can't access scheduled assignments)
     if assignment.status != AssignmentPublishStatus.published:
@@ -1737,81 +1940,126 @@ async def start_multi_activity_assignment(
     )
     assignment_activities = result.all()
 
-    if not assignment_activities:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No activities found for this assignment",
-        )
-
     # Build activities list with configs
     activities: list[ActivityWithConfig] = []
     activity_ids: list[uuid.UUID] = []
 
-    for aa, activity in assignment_activities:
+    # Handle Content Library assignments (single embedded activity without AssignmentActivity records)
+    if not assignment_activities and assignment.activity_content:
+        # Content Library assignment - create single activity from embedded content
+        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        # Build config_json with structure expected by frontend:
+        # { type: "ai_quiz", content: { questions: [...] } }
+        config_json = {
+            "type": activity_type,
+            "content": assignment.activity_content or {}
+        }
         activities.append(
             ActivityWithConfig(
-                id=activity.id,
-                title=activity.title,
-                activity_type=activity.activity_type.value,
-                config_json=activity.config_json or {},
-                order_index=aa.order_index,
+                id=assignment.id,  # Use assignment id as pseudo activity id
+                title=assignment.name,
+                activity_type=activity_type,
+                config_json=config_json,
+                order_index=0,
             )
         )
-        activity_ids.append(activity.id)
-
-    # Get existing AssignmentStudentActivity records
-    result = await session.execute(
-        select(AssignmentStudentActivity).where(
-            AssignmentStudentActivity.assignment_student_id == assignment_student.id,
-            AssignmentStudentActivity.activity_id.in_(activity_ids),
+        activity_ids.append(assignment.id)
+    elif not assignment_activities:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No activities found for this assignment",
         )
-    )
-    existing_progress = {ap.activity_id: ap for ap in result.scalars().all()}
+    else:
+        for aa, activity in assignment_activities:
+            activities.append(
+                ActivityWithConfig(
+                    id=activity.id,
+                    title=activity.title,
+                    activity_type=activity.activity_type.value,
+                    config_json=activity.config_json or {},
+                    order_index=aa.order_index,
+                )
+            )
+            activity_ids.append(activity.id)
 
-    # Initialize missing AssignmentStudentActivity records
+    # Build activity progress list
     activity_progress: list[ActivityProgressInfo] = []
-    for activity in activities:
-        if activity.id in existing_progress:
-            ap = existing_progress[activity.id]
-            activity_progress.append(
-                ActivityProgressInfo(
-                    id=ap.id,
-                    activity_id=ap.activity_id,
-                    status=ap.status.value,
-                    score=ap.score,
-                    max_score=ap.max_score,
-                    response_data=ap.response_data,
-                    started_at=ap.started_at,
-                    completed_at=ap.completed_at,
-                )
-            )
-        else:
-            # Create new AssignmentStudentActivity record
-            new_progress = AssignmentStudentActivity(
-                assignment_student_id=assignment_student.id,
-                activity_id=activity.id,
-                status=AssignmentStudentActivityStatus.not_started,
-                max_score=100.0,
-            )
-            session.add(new_progress)
-            await session.flush()  # Get the ID
 
+    # For Content Library assignments, we don't have AssignmentStudentActivity records
+    # Use AssignmentStudent directly for progress tracking
+    is_content_library = not assignment_activities and assignment.activity_content
+
+    if is_content_library:
+        # Content Library assignment - build progress from AssignmentStudent
+        for activity in activities:
             activity_progress.append(
                 ActivityProgressInfo(
-                    id=new_progress.id,
-                    activity_id=new_progress.activity_id,
-                    status=new_progress.status.value,
-                    score=None,
-                    max_score=new_progress.max_score,
-                    response_data=None,
-                    started_at=None,
-                    completed_at=None,
+                    id=assignment_student.id,  # Use assignment_student id
+                    activity_id=activity.id,
+                    status=assignment_student.status.value,
+                    score=assignment_student.score,
+                    max_score=100.0,
+                    response_data=assignment_student.progress_json,
+                    started_at=assignment_student.started_at,
+                    completed_at=assignment_student.completed_at,
                 )
             )
+    else:
+        # Regular multi-activity assignment - use AssignmentStudentActivity records
+        result = await session.execute(
+            select(AssignmentStudentActivity).where(
+                AssignmentStudentActivity.assignment_student_id == assignment_student.id,
+                AssignmentStudentActivity.activity_id.in_(activity_ids),
+            )
+        )
+        existing_progress = {ap.activity_id: ap for ap in result.scalars().all()}
+
+        # Initialize missing AssignmentStudentActivity records
+        for activity in activities:
+            if activity.id in existing_progress:
+                ap = existing_progress[activity.id]
+                activity_progress.append(
+                    ActivityProgressInfo(
+                        id=ap.id,
+                        activity_id=ap.activity_id,
+                        status=ap.status.value,
+                        score=ap.score,
+                        max_score=ap.max_score,
+                        response_data=ap.response_data,
+                        started_at=ap.started_at,
+                        completed_at=ap.completed_at,
+                    )
+                )
+            else:
+                # Create new AssignmentStudentActivity record
+                new_progress = AssignmentStudentActivity(
+                    assignment_student_id=assignment_student.id,
+                    activity_id=activity.id,
+                    status=AssignmentStudentActivityStatus.not_started,
+                    max_score=100.0,
+                )
+                session.add(new_progress)
+                await session.flush()  # Get the ID
+
+                activity_progress.append(
+                    ActivityProgressInfo(
+                        id=new_progress.id,
+                        activity_id=new_progress.activity_id,
+                        status=new_progress.status.value,
+                        score=None,
+                        max_score=new_progress.max_score,
+                        response_data=None,
+                        started_at=None,
+                        completed_at=None,
+                    )
+                )
 
     # Update assignment status if not_started
     if assignment_student.status == AssignmentStatus.not_started:
         assignment_student.status = AssignmentStatus.in_progress
+        assignment_student.started_at = datetime.now(UTC)
+    elif assignment_student.started_at is None:
+        # Fix: Set started_at for resumed assignments that don't have it
         assignment_student.started_at = datetime.now(UTC)
 
     await session.commit()
@@ -1820,18 +2068,18 @@ async def start_multi_activity_assignment(
     # Story 13.3: Enrich resources with availability status for students
     enriched_resources = await _enrich_resources(session, assignment.resources)
 
-    # Build response
+    # Build response (use placeholder book info for Content Library assignments)
     response = MultiActivityStartResponse(
         assignment_id=assignment.id,
         assignment_name=assignment.name,
         instructions=assignment.instructions,
         due_date=assignment.due_date,
         time_limit_minutes=assignment.time_limit_minutes,
-        book_id=book.id,
-        book_title=book.title or book.name,
-        book_name=book.name,
-        publisher_name=book.publisher_name,
-        book_cover_url=book.cover_url,
+        book_id=book_id,
+        book_title=book_title,
+        book_name=book_name,
+        publisher_name=publisher_name,
+        book_cover_url=book_cover_url,
         activities=activities,
         activity_progress=activity_progress,
         total_activities=len(activities),
@@ -2230,7 +2478,80 @@ async def save_activity_progress(
             detail="Assignment not found or not assigned to you",
         )
 
-    # Check assignment is not already completed
+    # Get Assignment to check if it's a Content Library assignment
+    # Must do this BEFORE the generic "already completed" check
+    result = await session.execute(
+        select(Assignment).where(Assignment.id == assignment_id)
+    )
+    assignment = result.scalar_one_or_none()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    # Check if this is a Content Library assignment (AI-generated)
+    # Content Library assignments use assignment.activity_content and activity_id == assignment_id
+    is_content_library = (
+        assignment.activity_content is not None
+        and activity_id == assignment_id
+    )
+
+    # For Content Library assignments, handle already-completed gracefully (idempotent)
+    # For regular multi-activity, reject saves to completed assignments
+    if is_content_library:
+        # Content Library assignment - save to AssignmentStudent.progress_json
+        # Check if already completed - return success (idempotent)
+        if assignment_student.status == AssignmentStatus.completed:
+            return ActivityProgressSaveResponse(
+                message="Activity already completed",
+                activity_id=activity_id,
+                status=assignment_student.status.value,
+                score=assignment_student.score,
+                last_saved_at=assignment_student.completed_at or datetime.now(UTC),
+            )
+
+        # Update progress in AssignmentStudent
+        assignment_student.progress_json = progress.response_data
+
+        # Set started_at on first save
+        if assignment_student.started_at is None:
+            assignment_student.started_at = datetime.now(UTC)
+
+        # Update status
+        if progress.status == "completed":
+            assignment_student.status = AssignmentStatus.completed
+            assignment_student.score = progress.score
+            assignment_student.completed_at = datetime.now(UTC)
+        elif assignment_student.status == AssignmentStatus.not_started:
+            assignment_student.status = AssignmentStatus.in_progress
+
+        try:
+            await session.commit()
+            await session.refresh(assignment_student)
+            logger.info(
+                f"Content Library activity progress saved: assignment={assignment_id}, "
+                f"student={student.id}, status={progress.status}"
+            )
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Failed to save Content Library progress: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to save progress",
+            )
+
+        return ActivityProgressSaveResponse(
+            message="Progress saved successfully",
+            activity_id=activity_id,
+            status=assignment_student.status.value,
+            score=assignment_student.score,
+            last_saved_at=datetime.now(UTC),
+        )
+
+    # Regular multi-activity assignment
+    # Check assignment is not already completed (reject for non-Content Library)
     if assignment_student.status == AssignmentStatus.completed:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -2382,29 +2703,264 @@ async def submit_multi_activity_assignment(
             detail="Student record not found for this user",
         )
 
-    # Get AssignmentStudent with eager load of activity_progress
+    # Get AssignmentStudent with eager load of activity_progress, and also get Assignment
     result = await session.execute(
-        select(AssignmentStudent)
+        select(AssignmentStudent, Assignment)
+        .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
         .options(selectinload(AssignmentStudent.activity_progress))
         .where(
             AssignmentStudent.assignment_id == assignment_id,
             AssignmentStudent.student_id == student.id,
         )
     )
-    assignment_student = result.scalar_one_or_none()
+    row = result.one_or_none()
 
-    if not assignment_student:
+    if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Assignment not found or not assigned to you",
         )
 
-    # Idempotent behavior: if already completed, return existing result
+    assignment_student, assignment = row
+
+    # Check if this is a Content Library assignment (AI-generated content)
+    is_content_library = assignment.activity_content is not None
+
+    # Debug logging for Content Library assignment detection
+    logger.info(
+        f"Submit multi-activity: assignment_id={assignment_id}, "
+        f"is_content_library={is_content_library}, "
+        f"activity_content_exists={assignment.activity_content is not None}, "
+        f"activity_states_count={len(submission.activity_states) if submission.activity_states else 0}"
+    )
+
+    # Idempotent behavior: if already completed, check if we need to save answers_json or time
     if assignment_student.status == AssignmentStatus.completed:
+        needs_commit = False
+
+        # Update time if provided (Content Library can be marked completed
+        # by save_activity_progress before submit is called, so time needs saving here too)
+        if submission.total_time_spent_seconds is not None and submission.total_time_spent_seconds > 0:
+            assignment_student.time_spent_seconds = submission.total_time_spent_seconds
+            assignment_student.time_spent_minutes = submission.total_time_spent_seconds // 60
+            needs_commit = True
+        elif submission.total_time_spent_minutes > 0:
+            assignment_student.time_spent_minutes = submission.total_time_spent_minutes
+            assignment_student.time_spent_seconds = submission.total_time_spent_minutes * 60
+            needs_commit = True
+
+        # For Content Library assignments, answers_json might not have been saved yet
+        # (save-progress marks as completed but doesn't save answers_json)
+        if is_content_library and not assignment_student.answers_json:
+            # Save answers_json now from activity_states or progress_json
+            consolidated_answers = {}
+            if submission.activity_states and len(submission.activity_states) > 0:
+                for state in submission.activity_states:
+                    consolidated_answers[str(state.activity_index)] = {
+                        "answers": state.answers_json or {},
+                        "score": state.score,
+                        "status": "completed",
+                    }
+            elif assignment_student.progress_json:
+                consolidated_answers["0"] = {
+                    "answers": assignment_student.progress_json,
+                    "score": assignment_student.score,
+                    "status": "completed",
+                }
+
+            if consolidated_answers:
+                assignment_student.answers_json = consolidated_answers
+                needs_commit = True
+                logger.info(
+                    f"Submit multi-activity (idempotent): saved answers_json for Content Library, "
+                    f"keys={list(consolidated_answers.keys())}"
+                )
+
+        # Commit if any updates were made
+        if needs_commit:
+            await session.commit()
+            await session.refresh(assignment_student)
+
         # Build per-activity scores from existing progress
         per_activity_scores = []
+
+        if is_content_library:
+            # Content Library assignment - single activity from embedded content
+            activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+            per_activity_scores.append(
+                PerActivityScore(
+                    activity_id=assignment.id,  # Use assignment ID as pseudo activity ID
+                    activity_title=assignment.name,
+                    score=assignment_student.score,
+                    max_score=100.0,
+                    status="completed",
+                )
+            )
+            total_activities = 1
+            completed_activities = 1
+        else:
+            # Regular multi-activity assignment
+            for ap in assignment_student.activity_progress:
+                # Need to get activity title
+                result = await session.execute(
+                    select(Activity).where(Activity.id == ap.activity_id)
+                )
+                activity = result.scalar_one_or_none()
+                per_activity_scores.append(
+                    PerActivityScore(
+                        activity_id=ap.activity_id,
+                        activity_title=activity.title if activity else None,
+                        score=ap.score,
+                        max_score=ap.max_score,
+                        status=ap.status.value,
+                    )
+                )
+            total_activities = len(assignment_student.activity_progress)
+            completed_activities = sum(
+                1 for ap in assignment_student.activity_progress
+                if ap.status == AssignmentStudentActivityStatus.completed
+            )
+
+        return MultiActivitySubmitResponse(
+            success=True,
+            message="Assignment already submitted",
+            assignment_id=assignment_id,
+            combined_score=assignment_student.score or 0,
+            per_activity_scores=per_activity_scores,
+            completed_at=assignment_student.completed_at or datetime.now(UTC),
+            total_activities=total_activities,
+            completed_activities=completed_activities,
+        )
+
+    # Check assignment is in progress
+    if assignment_student.status == AssignmentStatus.not_started:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Assignment not started yet",
+        )
+
+    # Check if all activities are completed
+    if is_content_library:
+        # Content Library: check if we have activity_states OR saved progress
+        # The frontend sends scores calculated from the AI content
+        has_activity_data = (
+            (submission.activity_states and len(submission.activity_states) > 0)
+            or assignment_student.progress_json is not None
+        )
+        if not has_activity_data and not submission.force_submit:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No activity data provided for submission.",
+            )
+    else:
+        # Regular multi-activity: check AssignmentStudentActivity records
+        incomplete_activities = [
+            ap for ap in assignment_student.activity_progress
+            if ap.status != AssignmentStudentActivityStatus.completed
+        ]
+
+        if incomplete_activities and not submission.force_submit:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Not all activities completed. {len(incomplete_activities)} activities remaining.",
+            )
+
+    # Calculate combined score
+    if is_content_library:
+        # Content Library: get score from frontend submission activity_states
+        # The frontend calculates scores based on AI content correct answers
+        combined_score = 0.0
+        if submission.activity_states and len(submission.activity_states) > 0:
+            total_score = 0.0
+            count = 0
+            for state in submission.activity_states:
+                if state.score is not None:
+                    total_score += state.score
+                    count += 1
+            if count > 0:
+                combined_score = total_score / count
+        elif assignment_student.score is not None:
+            # Fallback: use score from save-progress endpoint
+            combined_score = assignment_student.score
+            logger.info(
+                f"Submit multi-activity: using saved score fallback ({combined_score}) for Content Library"
+            )
+    else:
+        # Regular multi-activity: use the model's method
+        combined_score = assignment_student.calculate_combined_score()
+        if combined_score is None:
+            combined_score = 0.0
+
+    # Update assignment status
+    assignment_student.status = AssignmentStatus.completed
+    assignment_student.score = combined_score
+    assignment_student.completed_at = datetime.now(UTC)
+
+    # Save time: prefer seconds if provided, fallback to minutes
+    if submission.total_time_spent_seconds is not None:
+        assignment_student.time_spent_seconds = submission.total_time_spent_seconds
+        assignment_student.time_spent_minutes = submission.total_time_spent_seconds // 60
+    else:
+        assignment_student.time_spent_minutes = submission.total_time_spent_minutes
+        assignment_student.time_spent_seconds = submission.total_time_spent_minutes * 60
+
+    # Consolidate all activity answers into answers_json for analytics/insights
+    # This enables the insights service to analyze multi-activity assignments
+    consolidated_answers = {}
+    if is_content_library:
+        # Content Library: build from frontend submission OR from progress_json
+        if submission.activity_states and len(submission.activity_states) > 0:
+            for state in submission.activity_states:
+                consolidated_answers[str(state.activity_index)] = {
+                    "answers": state.answers_json or {},
+                    "score": state.score,
+                    "status": "completed" if state.score is not None else "in_progress",
+                }
+        elif assignment_student.progress_json:
+            # Fallback: use saved progress from save-progress endpoint
+            consolidated_answers["0"] = {
+                "answers": assignment_student.progress_json,
+                "score": combined_score,
+                "status": "completed",
+            }
+            logger.info(
+                f"Submit multi-activity: using progress_json fallback for Content Library assignment"
+            )
+    else:
+        # Regular multi-activity: build from AssignmentStudentActivity records
         for ap in assignment_student.activity_progress:
-            # Need to get activity title
+            if ap.response_data:
+                # Store answers keyed by activity_id
+                consolidated_answers[str(ap.activity_id)] = {
+                    "answers": ap.response_data,
+                    "score": ap.score,
+                    "status": ap.status.value,
+                }
+    assignment_student.answers_json = consolidated_answers
+
+    # Debug logging for answers_json
+    logger.info(
+        f"Submit multi-activity: consolidated_answers keys={list(consolidated_answers.keys())}, "
+        f"answers_json set={assignment_student.answers_json is not None}"
+    )
+
+    # Build per-activity scores response
+    per_activity_scores = []
+    if is_content_library:
+        # Content Library: single activity from embedded content
+        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        per_activity_scores.append(
+            PerActivityScore(
+                activity_id=assignment.id,  # Use assignment ID as pseudo activity ID
+                activity_title=assignment.name,
+                score=combined_score,
+                max_score=100.0,
+                status="completed",
+            )
+        )
+    else:
+        # Regular multi-activity: build from AssignmentStudentActivity records
+        for ap in assignment_student.activity_progress:
             result = await session.execute(
                 select(Activity).where(Activity.id == ap.activity_id)
             )
@@ -2418,80 +2974,6 @@ async def submit_multi_activity_assignment(
                     status=ap.status.value,
                 )
             )
-
-        return MultiActivitySubmitResponse(
-            success=True,
-            message="Assignment already submitted",
-            assignment_id=assignment_id,
-            combined_score=assignment_student.score or 0,
-            per_activity_scores=per_activity_scores,
-            completed_at=assignment_student.completed_at or datetime.now(UTC),
-            total_activities=len(assignment_student.activity_progress),
-            completed_activities=sum(
-                1 for ap in assignment_student.activity_progress
-                if ap.status == AssignmentStudentActivityStatus.completed
-            ),
-        )
-
-    # Check assignment is in progress
-    if assignment_student.status == AssignmentStatus.not_started:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Assignment not started yet",
-        )
-
-    # Check if all activities are completed
-    incomplete_activities = [
-        ap for ap in assignment_student.activity_progress
-        if ap.status != AssignmentStudentActivityStatus.completed
-    ]
-
-    if incomplete_activities and not submission.force_submit:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Not all activities completed. {len(incomplete_activities)} activities remaining.",
-        )
-
-    # Calculate combined score using the model's method
-    combined_score = assignment_student.calculate_combined_score()
-    if combined_score is None:
-        combined_score = 0.0
-
-    # Update assignment status
-    assignment_student.status = AssignmentStatus.completed
-    assignment_student.score = combined_score
-    assignment_student.completed_at = datetime.now(UTC)
-    assignment_student.time_spent_minutes = submission.total_time_spent_minutes
-
-    # Consolidate all activity answers into answers_json for analytics/insights
-    # This enables the insights service to analyze multi-activity assignments
-    consolidated_answers = {}
-    for ap in assignment_student.activity_progress:
-        if ap.response_data:
-            # Store answers keyed by activity_id
-            consolidated_answers[str(ap.activity_id)] = {
-                "answers": ap.response_data,
-                "score": ap.score,
-                "status": ap.status.value,
-            }
-    assignment_student.answers_json = consolidated_answers
-
-    # Build per-activity scores response
-    per_activity_scores = []
-    for ap in assignment_student.activity_progress:
-        result = await session.execute(
-            select(Activity).where(Activity.id == ap.activity_id)
-        )
-        activity = result.scalar_one_or_none()
-        per_activity_scores.append(
-            PerActivityScore(
-                activity_id=ap.activity_id,
-                activity_title=activity.title if activity else None,
-                score=ap.score,
-                max_score=ap.max_score,
-                status=ap.status.value,
-            )
-        )
 
     try:
         await session.commit()
@@ -2509,10 +2991,18 @@ async def submit_multi_activity_assignment(
             detail="Failed to submit assignment",
         )
 
-    completed_count = sum(
-        1 for ap in assignment_student.activity_progress
-        if ap.status == AssignmentStudentActivityStatus.completed
-    )
+    # Calculate total and completed activities count
+    if is_content_library:
+        # Content Library: single activity
+        total_activities = 1
+        completed_count = 1
+    else:
+        # Regular multi-activity
+        total_activities = len(assignment_student.activity_progress)
+        completed_count = sum(
+            1 for ap in assignment_student.activity_progress
+            if ap.status == AssignmentStudentActivityStatus.completed
+        )
 
     return MultiActivitySubmitResponse(
         success=True,
@@ -2521,7 +3011,7 @@ async def submit_multi_activity_assignment(
         combined_score=combined_score,
         per_activity_scores=per_activity_scores,
         completed_at=assignment_student.completed_at,
-        total_activities=len(assignment_student.activity_progress),
+        total_activities=total_activities,
         completed_activities=completed_count,
     )
 
@@ -2836,11 +3326,11 @@ async def get_assignment_result(
             detail="Student record not found for this user",
         )
 
-    # Get AssignmentStudent record with joins to Assignment and Activity
+    # Get AssignmentStudent record with joins to Assignment (Activity is optional for AI content)
     result = await session.execute(
         select(AssignmentStudent, Assignment, Activity)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(Activity, Assignment.activity_id == Activity.id)  # LEFT JOIN for AI content
         .where(
             AssignmentStudent.assignment_id == assignment_id,
             AssignmentStudent.student_id == student.id,
@@ -2856,8 +3346,16 @@ async def get_assignment_result(
 
     assignment_student, assignment, activity = assignment_data
 
+    # Debug logging
+    logger.info(
+        f"Get assignment result: assignment_id={assignment_id}, "
+        f"status={assignment_student.status}, "
+        f"has_answers_json={assignment_student.answers_json is not None and len(assignment_student.answers_json) > 0}"
+    )
+
     # Check if assignment is completed
     if assignment_student.status != AssignmentStatus.completed:
+        logger.warning(f"Get assignment result: status is {assignment_student.status}, expected completed")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Assignment has not been completed yet",
@@ -2865,6 +3363,7 @@ async def get_assignment_result(
 
     # Check if answers_json exists
     if not assignment_student.answers_json:
+        logger.warning(f"Get assignment result: answers_json is empty or None")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No submission data found for this assignment",
@@ -2873,28 +3372,59 @@ async def get_assignment_result(
     # Fetch book data from DCS for metadata
     book_service = get_book_service()
     book = await book_service.get_book(assignment.dcs_book_id)
+
+    # For AI Content assignments, book might not exist - use placeholder
     if not book:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Book data not available",
-        )
+        if assignment.activity_content:
+            # AI Content assignment - create placeholder book info
+            book_id = assignment.dcs_book_id if assignment.dcs_book_id else 0
+            book_name = "AI Generated"
+            publisher_name = ""
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Book data not available",
+            )
+    else:
+        book_id = book.id
+        book_name = book.name
+        publisher_name = book.publisher_name
+
+    # Handle AI Content assignments (no Activity record)
+    if activity:
+        # Traditional assignment with Activity record
+        activity_id = activity.id
+        activity_title = activity.title
+        activity_type = activity.activity_type.value
+        config_json = activity.config_json
+    else:
+        # AI Content assignment - use embedded content
+        activity_id = assignment.id  # Use assignment ID as pseudo activity ID
+        activity_title = assignment.name
+        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        config_json = {
+            "type": activity_type,
+            "content": assignment.activity_content or {}
+        }
 
     # Build response with all data needed for result review
     return AssignmentResultDetailResponse(
         assignment_id=assignment.id,
         assignment_name=assignment.name,
-        activity_id=activity.id,
-        activity_title=activity.title,
-        activity_type=activity.activity_type.value,
-        book_id=book.id,
-        book_name=book.name,
-        publisher_name=book.publisher_name,
-        config_json=activity.config_json,
+        activity_id=activity_id,
+        activity_title=activity_title,
+        activity_type=activity_type,
+        book_id=book_id,
+        book_name=book_name,
+        publisher_name=publisher_name,
+        config_json=config_json,
         answers_json=assignment_student.answers_json,
         score=assignment_student.score or 0.0,
         total_points=100.0,  # Standard total for percentage-based scoring
+        started_at=assignment_student.started_at,
         completed_at=assignment_student.completed_at,
         time_spent_minutes=assignment_student.time_spent_minutes,
+        time_spent_seconds=assignment_student.time_spent_seconds,
     )
 
 
@@ -3113,6 +3643,80 @@ async def get_multi_activity_analytics(
         .order_by(AssignmentActivity.order_index)
     )
     assignment_activities = result.all()
+
+    # Handle Content Library assignments (single embedded activity without AssignmentActivity records)
+    if not assignment_activities and assignment.activity_content:
+        # Build analytics from AssignmentStudent records for Content Library assignment
+        result = await session.execute(
+            select(AssignmentStudent, Student, User)
+            .join(Student, AssignmentStudent.student_id == Student.id)
+            .join(User, Student.user_id == User.id)
+            .where(AssignmentStudent.assignment_id == assignment_id)
+        )
+        all_students_data = result.all()
+        total_students = len(all_students_data)
+
+        # Count completed students
+        completed_records = [
+            (astu, student, user) for astu, student, user in all_students_data
+            if astu.status == AssignmentStatus.completed
+        ]
+        completed_count = len(completed_records)
+        submitted_count = completed_count
+
+        # Calculate class average score
+        scores = [astu.score for astu, _, _ in completed_records if astu.score is not None]
+        class_average_score = sum(scores) / len(scores) if scores else None
+
+        # Build single activity analytics item
+        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        activities_analytics = [
+            ActivityAnalyticsItem(
+                activity_id=assignment.id,  # Use assignment id as pseudo activity id
+                activity_title=assignment.name,
+                page_number=None,
+                activity_type=activity_type,
+                class_average_score=round(class_average_score, 1) if class_average_score is not None else None,
+                completion_rate=round(completed_count / total_students, 2) if total_students > 0 else 0.0,
+                completed_count=completed_count,
+                total_assigned_count=total_students,
+            )
+        ]
+
+        # Build expanded students list if requested (use assignment_id as activity_id)
+        expanded_students: list[StudentActivityScore] | None = None
+        if expand_activity_id and str(expand_activity_id) == str(assignment.id):
+            expanded_students = []
+            for astu, student, user in all_students_data:
+                time_spent_seconds = 0
+                if astu.started_at and astu.completed_at:
+                    time_spent_seconds = int((astu.completed_at - astu.started_at).total_seconds())
+
+                expanded_students.append(
+                    StudentActivityScore(
+                        student_id=student.id,
+                        student_name=user.full_name or user.email,
+                        status=astu.status.value,
+                        score=astu.score,
+                        max_score=100.0,  # Default max score for AI activities
+                        time_spent_seconds=time_spent_seconds,
+                        completed_at=astu.completed_at,
+                    )
+                )
+
+        logger.info(
+            f"Content Library analytics retrieved for assignment {assignment_id} "
+            f"by teacher {teacher.id}"
+        )
+
+        return MultiActivityAnalyticsResponse(
+            assignment_id=assignment_id,
+            assignment_name=assignment.name,
+            total_students=total_students,
+            submitted_count=submitted_count,
+            activities=activities_analytics,
+            expanded_students=expanded_students,
+        )
 
     if not assignment_activities:
         raise HTTPException(

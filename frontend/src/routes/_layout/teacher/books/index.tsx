@@ -177,7 +177,13 @@ function TeacherBooksPage() {
           <BookTableView
             books={books}
             showAssignButton={false}
-            showViewDetails={false}
+            showViewDetails={true}
+            onViewDetails={(book) =>
+              navigate({
+                to: "/teacher/books/$bookId",
+                params: { bookId: String(book.id) },
+              })
+            }
           />
         ))}
     </div>

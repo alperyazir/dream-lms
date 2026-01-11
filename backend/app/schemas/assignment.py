@@ -121,19 +121,30 @@ class AssignmentCreate(BaseModel):
 
     Supports both single-activity (backward compatible) and multi-activity assignments.
     Provide either activity_id (single) OR activity_ids (multi) OR date_groups (Time Planning).
+
+    Story 27.x: Also supports AI content assignments with source_type="ai_content" and content_id.
     """
 
-    book_id: int  # DCS book ID (changed from UUID in Epic 24)
+    # Story 27.x: Source type - "book" (default) or "ai_content"
+    source_type: Literal["book", "ai_content"] = "book"
+
+    # For book assignments (required when source_type="book")
+    book_id: int | None = None  # DCS book ID (changed from UUID in Epic 24)
+    # Backward compatible: single activity (legacy)
+    activity_id: uuid.UUID | None = None
+    # Multi-activity: list of activities with order
+    activity_ids: list[uuid.UUID] | None = None
+
+    # Story 27.x: For AI content assignments (required when source_type="ai_content")
+    content_id: uuid.UUID | None = None
+
+    # Common fields
     name: str
     instructions: str | None = None
     due_date: datetime | None = None
     time_limit_minutes: int | None = None
     student_ids: list[uuid.UUID] | None = None
     class_ids: list[uuid.UUID] | None = None
-    # Backward compatible: single activity (legacy)
-    activity_id: uuid.UUID | None = None
-    # Multi-activity: list of activities with order
-    activity_ids: list[uuid.UUID] | None = None
     # Scheduling fields
     scheduled_publish_date: datetime | None = None
     # Time Planning mode: creates multiple assignments, one per date group
@@ -201,8 +212,25 @@ class AssignmentCreate(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def validate_activity_ids(self) -> "AssignmentCreate":
-        """Validate that either activity_id OR activity_ids OR date_groups is provided."""
+    def validate_source_requirements(self) -> "AssignmentCreate":
+        """Validate source-specific requirements."""
+        # Story 27.x: AI content assignments
+        if self.source_type == "ai_content":
+            if self.content_id is None:
+                raise ValueError("content_id is required for AI content assignments")
+            # AI content doesn't use book_id, activity_id, activity_ids, or date_groups
+            if self.book_id is not None:
+                raise ValueError("book_id should not be provided for AI content assignments")
+            if self.activity_id is not None or (self.activity_ids is not None and len(self.activity_ids) > 0):
+                raise ValueError("activity_id/activity_ids should not be provided for AI content assignments")
+            if self.date_groups is not None and len(self.date_groups) > 0:
+                raise ValueError("date_groups should not be provided for AI content assignments")
+            return self
+
+        # Book assignments: require book_id and activity_id/activity_ids
+        if self.book_id is None:
+            raise ValueError("book_id is required for book assignments")
+
         has_single = self.activity_id is not None
         has_multi = self.activity_ids is not None and len(self.activity_ids) > 0
         has_date_groups = self.date_groups is not None and len(self.date_groups) > 0
@@ -743,11 +771,23 @@ class ActivityProgressSaveResponse(BaseModel):
     last_saved_at: datetime
 
 
+class SubmitActivityState(BaseModel):
+    """Activity state data sent during multi-activity submission."""
+
+    activity_index: int  # Index of the activity in the activities array
+    score: float | None = None
+    answers_json: dict | None = None  # Student's answers for the activity
+    status: str = "completed"
+
+
 class MultiActivitySubmitRequest(BaseModel):
     """Request schema for submitting a multi-activity assignment."""
 
     force_submit: bool = False  # Force submit even if not all activities completed (for timeout)
-    total_time_spent_minutes: int = 0
+    total_time_spent_minutes: int = 0  # Deprecated: use total_time_spent_seconds
+    total_time_spent_seconds: int | None = None  # Preferred: precise time in seconds
+    # Activity states with scores and answers - required for Content Library assignments
+    activity_states: list[SubmitActivityState] | None = None
 
 
 class PerActivityScore(BaseModel):
@@ -799,7 +839,7 @@ class ActivityAnalyticsItem(BaseModel):
 
     activity_id: uuid.UUID
     activity_title: str | None
-    page_number: int
+    page_number: int | None  # None for AI content assignments
     activity_type: str
     class_average_score: float | None  # None if no completions
     completion_rate: float  # 0.0 to 1.0
@@ -878,8 +918,10 @@ class AssignmentResultDetailResponse(BaseModel):
     answers_json: dict  # Student's submitted answers
     score: float
     total_points: float
+    started_at: datetime | None  # When student started the assignment
     completed_at: datetime
-    time_spent_minutes: int
+    time_spent_minutes: int  # Deprecated: use time_spent_seconds
+    time_spent_seconds: int  # Precise time in seconds
 
 
 # --- Calendar Schemas (Story 9.6) ---

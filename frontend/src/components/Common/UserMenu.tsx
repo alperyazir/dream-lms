@@ -26,7 +26,6 @@ const UserMenu = () => {
           <DropdownMenuTrigger asChild className="p-2">
             <Button
               data-testid="user-menu"
-              data-tour="user-menu"
               variant="default"
               className="max-w-sm truncate gap-2"
             >

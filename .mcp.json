@@ -50,9 +50,10 @@
                 "--context",
                 "ide-assistant",
                 "--project",
-                "/Users/alperyazir/Dev/dream-lms"
+                "/Users/alperyazir/Dev/dream-lms",
+                "--no-ui"
             ],
-            "env": {}
+            "env": {"SERENA_HEADLESS": "true"}
         }
     }
 }

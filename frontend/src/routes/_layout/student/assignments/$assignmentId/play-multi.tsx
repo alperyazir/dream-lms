@@ -9,6 +9,8 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { AlertCircle, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { AssignmentIntroScreen } from "@/components/ActivityPlayers/AssignmentIntroScreen"
 import { MultiActivityPlayer } from "@/components/ActivityPlayers/MultiActivityPlayer"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -28,6 +30,9 @@ function MultiActivityPlayerPage() {
   const { assignmentId } = Route.useParams()
   const navigate = useNavigate()
 
+  // Show intro screen before starting (skip for resumed assignments)
+  const [showIntro, setShowIntro] = useState(true)
+
   // Fetch multi-activity assignment data
   const {
     data: assignment,
@@ -38,8 +43,10 @@ function MultiActivityPlayerPage() {
     queryFn: (): Promise<MultiActivityStartResponse> =>
       startMultiActivityAssignment(assignmentId),
     retry: false,
-    staleTime: 0, // Always refetch to get latest progress
-    gcTime: 0, // Don't cache - we want fresh data every time
+    staleTime: Infinity, // Don't consider data stale during this session
+    gcTime: 0, // Don't cache for next mount - always fetch fresh on remount
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnReconnect: false, // Don't refetch on network reconnect
   })
 
   // Handle exit - return to assignment detail page
@@ -62,6 +69,19 @@ function MultiActivityPlayerPage() {
     })
   }
 
+  // Handle 409 Conflict - redirect to result page when assignment is already completed
+  // Must be before any early returns to comply with Rules of Hooks
+  const errorStatus = (error as any)?.response?.status
+  useEffect(() => {
+    if (errorStatus === 409) {
+      navigate({
+        to: "/student/assignments/$assignmentId/result",
+        params: { assignmentId },
+        replace: true,
+      })
+    }
+  }, [errorStatus, assignmentId, navigate])
+
   // Loading state
   if (isLoading) {
     return (
@@ -80,15 +100,26 @@ function MultiActivityPlayerPage() {
     const status = errorResponse?.status
     const detail = errorResponse?.data?.detail || "An error occurred"
 
+    // 409 Conflict = Assignment already completed - show loading while redirecting
+    if (status === 409) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">
+              Redirecting to results...
+            </p>
+          </div>
+        </div>
+      )
+    }
+
     let errorTitle = "Error Loading Assignment"
     let errorMessage = detail
 
     if (status === 404) {
       errorTitle = "Assignment Not Found"
       errorMessage = "This assignment doesn't exist or is not assigned to you."
-    } else if (status === 409) {
-      errorTitle = "Assignment Already Completed"
-      errorMessage = "You have already completed this assignment."
     }
 
     return (
@@ -132,6 +163,20 @@ function MultiActivityPlayerPage() {
           </div>
         </div>
       </div>
+    )
+  }
+
+  // Skip intro for resumed assignments (already started)
+  const isResuming = assignment.time_spent_minutes > 0
+
+  // Show intro screen for new assignments
+  if (showIntro && !isResuming) {
+    return (
+      <AssignmentIntroScreen
+        assignment={assignment}
+        onStart={() => setShowIntro(false)}
+        onBack={handleExit}
+      />
     )
   }
 

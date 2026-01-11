@@ -81,7 +81,8 @@ class BookRead(BaseModel):
     description: str | None = None
     status: str | None = None
     activity_count: int | None = None  # Total activity count from DCS
-    activity_details: dict[str, int] | None = None  # Activity breakdown by type
+    # Use Any to handle malformed data from DCS (some books have invalid values)
+    activity_details: dict[str, Any] | None = None  # Activity breakdown by type
     language: str | None = None
     category: str | None = None
 
@@ -89,6 +90,16 @@ class BookRead(BaseModel):
     def title(self) -> str:
         """Get display title (book_title if available, otherwise book_name)."""
         return self.book_title or self.book_name
+
+    @property
+    def valid_activity_details(self) -> dict[str, int]:
+        """Get activity_details with only valid integer values."""
+        if not self.activity_details:
+            return {}
+        return {
+            k: v for k, v in self.activity_details.items()
+            if isinstance(v, int)
+        }
 
 
 class PublisherRead(BaseModel):

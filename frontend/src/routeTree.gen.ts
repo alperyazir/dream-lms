@@ -22,6 +22,7 @@ import { Route as LayoutPublisherRouteImport } from './routes/_layout.publisher'
 import { Route as LayoutNotificationsRouteImport } from './routes/_layout/notifications'
 import { Route as LayoutAdminRouteImport } from './routes/_layout.admin'
 import { Route as LayoutMessagingIndexRouteImport } from './routes/_layout/messaging/index'
+import { Route as LayoutDreamaiIndexRouteImport } from './routes/_layout/dreamai/index'
 import { Route as LayoutTeacherStudentsRouteImport } from './routes/_layout/teacher/students'
 import { Route as LayoutTeacherReportsRouteImport } from './routes/_layout/teacher/reports'
 import { Route as LayoutTeacherInsightsRouteImport } from './routes/_layout/teacher/insights'
@@ -29,17 +30,24 @@ import { Route as LayoutTeacherDashboardRouteImport } from './routes/_layout/tea
 import { Route as LayoutTeacherClassroomsRouteImport } from './routes/_layout/teacher/classrooms'
 import { Route as LayoutTeacherCalendarRouteImport } from './routes/_layout/teacher/calendar'
 import { Route as LayoutTeacherAssignmentsRouteImport } from './routes/_layout/teacher/assignments'
+import { Route as LayoutTeacherAnnouncementsRouteImport } from './routes/_layout/teacher/announcements'
+import { Route as LayoutTeacherAiMaterialsRouteImport } from './routes/_layout/teacher/ai-materials'
 import { Route as LayoutStudentReportsRouteImport } from './routes/_layout/student/reports'
 import { Route as LayoutStudentProgressRouteImport } from './routes/_layout/student/progress'
 import { Route as LayoutStudentDashboardRouteImport } from './routes/_layout/student/dashboard'
 import { Route as LayoutStudentCalendarRouteImport } from './routes/_layout/student/calendar'
 import { Route as LayoutStudentAssignmentsRouteImport } from './routes/_layout/student/assignments'
+import { Route as LayoutStudentAnnouncementsRouteImport } from './routes/_layout/student/announcements'
 import { Route as LayoutPublisherTeachersRouteImport } from './routes/_layout/publisher/teachers'
 import { Route as LayoutPublisherSchoolsRouteImport } from './routes/_layout/publisher/schools'
 import { Route as LayoutPublisherLibraryRouteImport } from './routes/_layout/publisher/library'
 import { Route as LayoutPublisherDashboardRouteImport } from './routes/_layout/publisher/dashboard'
 import { Route as LayoutPublisherBookAssignmentsRouteImport } from './routes/_layout/publisher/book-assignments'
 import { Route as LayoutMessagingConversationIdRouteImport } from './routes/_layout/messaging/$conversationId'
+import { Route as LayoutDreamaiVocabularyRouteImport } from './routes/_layout/dreamai/vocabulary'
+import { Route as LayoutDreamaiMaterialsRouteImport } from './routes/_layout/dreamai/materials'
+import { Route as LayoutDreamaiLibraryRouteImport } from './routes/_layout/dreamai/library'
+import { Route as LayoutDreamaiGeneratorRouteImport } from './routes/_layout/dreamai/generator'
 import { Route as LayoutAdminUsersRouteImport } from './routes/_layout/admin.users'
 import { Route as LayoutAdminTeachersRouteImport } from './routes/_layout/admin/teachers'
 import { Route as LayoutAdminSupervisorsRouteImport } from './routes/_layout/admin/supervisors'
@@ -50,6 +58,7 @@ import { Route as LayoutAdminDashboardRouteImport } from './routes/_layout/admin
 import { Route as LayoutAdminBooksRouteImport } from './routes/_layout/admin/books'
 import { Route as LayoutAdminBenchmarksRouteImport } from './routes/_layout/admin/benchmarks'
 import { Route as LayoutAdminAssignmentsRouteImport } from './routes/_layout/admin/assignments'
+import { Route as LayoutAdminAiUsageRouteImport } from './routes/_layout/admin/ai-usage'
 import { Route as LayoutTeacherMaterialsIndexRouteImport } from './routes/_layout/teacher/materials/index'
 import { Route as LayoutTeacherBooksIndexRouteImport } from './routes/_layout/teacher/books/index'
 import { Route as LayoutTeacherAssignmentsIndexRouteImport } from './routes/_layout/teacher/assignments/index'
@@ -131,6 +140,11 @@ const LayoutMessagingIndexRoute = LayoutMessagingIndexRouteImport.update({
   path: '/messaging/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutDreamaiIndexRoute = LayoutDreamaiIndexRouteImport.update({
+  id: '/dreamai/',
+  path: '/dreamai/',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutTeacherStudentsRoute = LayoutTeacherStudentsRouteImport.update({
   id: '/students',
   path: '/students',
@@ -167,6 +181,18 @@ const LayoutTeacherAssignmentsRoute =
     path: '/assignments',
     getParentRoute: () => LayoutTeacherRoute,
   } as any)
+const LayoutTeacherAnnouncementsRoute =
+  LayoutTeacherAnnouncementsRouteImport.update({
+    id: '/announcements',
+    path: '/announcements',
+    getParentRoute: () => LayoutTeacherRoute,
+  } as any)
+const LayoutTeacherAiMaterialsRoute =
+  LayoutTeacherAiMaterialsRouteImport.update({
+    id: '/ai-materials',
+    path: '/ai-materials',
+    getParentRoute: () => LayoutTeacherRoute,
+  } as any)
 const LayoutStudentReportsRoute = LayoutStudentReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -191,6 +217,12 @@ const LayoutStudentAssignmentsRoute =
   LayoutStudentAssignmentsRouteImport.update({
     id: '/assignments',
     path: '/assignments',
+    getParentRoute: () => LayoutStudentRoute,
+  } as any)
+const LayoutStudentAnnouncementsRoute =
+  LayoutStudentAnnouncementsRouteImport.update({
+    id: '/announcements',
+    path: '/announcements',
     getParentRoute: () => LayoutStudentRoute,
   } as any)
 const LayoutPublisherTeachersRoute = LayoutPublisherTeachersRouteImport.update({
@@ -226,6 +258,26 @@ const LayoutMessagingConversationIdRoute =
     path: '/messaging/$conversationId',
     getParentRoute: () => LayoutRoute,
   } as any)
+const LayoutDreamaiVocabularyRoute = LayoutDreamaiVocabularyRouteImport.update({
+  id: '/dreamai/vocabulary',
+  path: '/dreamai/vocabulary',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutDreamaiMaterialsRoute = LayoutDreamaiMaterialsRouteImport.update({
+  id: '/dreamai/materials',
+  path: '/dreamai/materials',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutDreamaiLibraryRoute = LayoutDreamaiLibraryRouteImport.update({
+  id: '/dreamai/library',
+  path: '/dreamai/library',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutDreamaiGeneratorRoute = LayoutDreamaiGeneratorRouteImport.update({
+  id: '/dreamai/generator',
+  path: '/dreamai/generator',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutAdminUsersRoute = LayoutAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -274,6 +326,11 @@ const LayoutAdminBenchmarksRoute = LayoutAdminBenchmarksRouteImport.update({
 const LayoutAdminAssignmentsRoute = LayoutAdminAssignmentsRouteImport.update({
   id: '/assignments',
   path: '/assignments',
+  getParentRoute: () => LayoutAdminRoute,
+} as any)
+const LayoutAdminAiUsageRoute = LayoutAdminAiUsageRouteImport.update({
+  id: '/ai-usage',
+  path: '/ai-usage',
   getParentRoute: () => LayoutAdminRoute,
 } as any)
 const LayoutTeacherMaterialsIndexRoute =
@@ -384,6 +441,7 @@ export interface FileRoutesByFullPath {
   '/student': typeof LayoutStudentRouteWithChildren
   '/teacher': typeof LayoutTeacherRouteWithChildren
   '/': typeof LayoutIndexRoute
+  '/admin/ai-usage': typeof LayoutAdminAiUsageRoute
   '/admin/assignments': typeof LayoutAdminAssignmentsRoute
   '/admin/benchmarks': typeof LayoutAdminBenchmarksRoute
   '/admin/books': typeof LayoutAdminBooksRoute
@@ -394,17 +452,24 @@ export interface FileRoutesByFullPath {
   '/admin/supervisors': typeof LayoutAdminSupervisorsRoute
   '/admin/teachers': typeof LayoutAdminTeachersRoute
   '/admin/users': typeof LayoutAdminUsersRoute
+  '/dreamai/generator': typeof LayoutDreamaiGeneratorRoute
+  '/dreamai/library': typeof LayoutDreamaiLibraryRoute
+  '/dreamai/materials': typeof LayoutDreamaiMaterialsRoute
+  '/dreamai/vocabulary': typeof LayoutDreamaiVocabularyRoute
   '/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
   '/publisher/book-assignments': typeof LayoutPublisherBookAssignmentsRoute
   '/publisher/dashboard': typeof LayoutPublisherDashboardRoute
   '/publisher/library': typeof LayoutPublisherLibraryRoute
   '/publisher/schools': typeof LayoutPublisherSchoolsRoute
   '/publisher/teachers': typeof LayoutPublisherTeachersRoute
+  '/student/announcements': typeof LayoutStudentAnnouncementsRoute
   '/student/assignments': typeof LayoutStudentAssignmentsRouteWithChildren
   '/student/calendar': typeof LayoutStudentCalendarRoute
   '/student/dashboard': typeof LayoutStudentDashboardRoute
   '/student/progress': typeof LayoutStudentProgressRoute
   '/student/reports': typeof LayoutStudentReportsRoute
+  '/teacher/ai-materials': typeof LayoutTeacherAiMaterialsRoute
+  '/teacher/announcements': typeof LayoutTeacherAnnouncementsRoute
   '/teacher/assignments': typeof LayoutTeacherAssignmentsRouteWithChildren
   '/teacher/calendar': typeof LayoutTeacherCalendarRoute
   '/teacher/classrooms': typeof LayoutTeacherClassroomsRoute
@@ -412,6 +477,7 @@ export interface FileRoutesByFullPath {
   '/teacher/insights': typeof LayoutTeacherInsightsRoute
   '/teacher/reports': typeof LayoutTeacherReportsRoute
   '/teacher/students': typeof LayoutTeacherStudentsRoute
+  '/dreamai': typeof LayoutDreamaiIndexRoute
   '/messaging': typeof LayoutMessagingIndexRoute
   '/student/assignments/$assignmentId': typeof LayoutStudentAssignmentsAssignmentIdRouteWithChildren
   '/teacher/analytics/$studentId': typeof LayoutTeacherAnalyticsStudentIdRoute
@@ -442,6 +508,7 @@ export interface FileRoutesByTo {
   '/student': typeof LayoutStudentRouteWithChildren
   '/teacher': typeof LayoutTeacherRouteWithChildren
   '/': typeof LayoutIndexRoute
+  '/admin/ai-usage': typeof LayoutAdminAiUsageRoute
   '/admin/assignments': typeof LayoutAdminAssignmentsRoute
   '/admin/benchmarks': typeof LayoutAdminBenchmarksRoute
   '/admin/books': typeof LayoutAdminBooksRoute
@@ -452,22 +519,30 @@ export interface FileRoutesByTo {
   '/admin/supervisors': typeof LayoutAdminSupervisorsRoute
   '/admin/teachers': typeof LayoutAdminTeachersRoute
   '/admin/users': typeof LayoutAdminUsersRoute
+  '/dreamai/generator': typeof LayoutDreamaiGeneratorRoute
+  '/dreamai/library': typeof LayoutDreamaiLibraryRoute
+  '/dreamai/materials': typeof LayoutDreamaiMaterialsRoute
+  '/dreamai/vocabulary': typeof LayoutDreamaiVocabularyRoute
   '/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
   '/publisher/book-assignments': typeof LayoutPublisherBookAssignmentsRoute
   '/publisher/dashboard': typeof LayoutPublisherDashboardRoute
   '/publisher/library': typeof LayoutPublisherLibraryRoute
   '/publisher/schools': typeof LayoutPublisherSchoolsRoute
   '/publisher/teachers': typeof LayoutPublisherTeachersRoute
+  '/student/announcements': typeof LayoutStudentAnnouncementsRoute
   '/student/calendar': typeof LayoutStudentCalendarRoute
   '/student/dashboard': typeof LayoutStudentDashboardRoute
   '/student/progress': typeof LayoutStudentProgressRoute
   '/student/reports': typeof LayoutStudentReportsRoute
+  '/teacher/ai-materials': typeof LayoutTeacherAiMaterialsRoute
+  '/teacher/announcements': typeof LayoutTeacherAnnouncementsRoute
   '/teacher/calendar': typeof LayoutTeacherCalendarRoute
   '/teacher/classrooms': typeof LayoutTeacherClassroomsRoute
   '/teacher/dashboard': typeof LayoutTeacherDashboardRoute
   '/teacher/insights': typeof LayoutTeacherInsightsRoute
   '/teacher/reports': typeof LayoutTeacherReportsRoute
   '/teacher/students': typeof LayoutTeacherStudentsRoute
+  '/dreamai': typeof LayoutDreamaiIndexRoute
   '/messaging': typeof LayoutMessagingIndexRoute
   '/teacher/analytics/$studentId': typeof LayoutTeacherAnalyticsStudentIdRoute
   '/teacher/assignments/$assignmentId': typeof LayoutTeacherAssignmentsAssignmentIdRoute
@@ -499,6 +574,7 @@ export interface FileRoutesById {
   '/_layout/student': typeof LayoutStudentRouteWithChildren
   '/_layout/teacher': typeof LayoutTeacherRouteWithChildren
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/admin/ai-usage': typeof LayoutAdminAiUsageRoute
   '/_layout/admin/assignments': typeof LayoutAdminAssignmentsRoute
   '/_layout/admin/benchmarks': typeof LayoutAdminBenchmarksRoute
   '/_layout/admin/books': typeof LayoutAdminBooksRoute
@@ -509,17 +585,24 @@ export interface FileRoutesById {
   '/_layout/admin/supervisors': typeof LayoutAdminSupervisorsRoute
   '/_layout/admin/teachers': typeof LayoutAdminTeachersRoute
   '/_layout/admin/users': typeof LayoutAdminUsersRoute
+  '/_layout/dreamai/generator': typeof LayoutDreamaiGeneratorRoute
+  '/_layout/dreamai/library': typeof LayoutDreamaiLibraryRoute
+  '/_layout/dreamai/materials': typeof LayoutDreamaiMaterialsRoute
+  '/_layout/dreamai/vocabulary': typeof LayoutDreamaiVocabularyRoute
   '/_layout/messaging/$conversationId': typeof LayoutMessagingConversationIdRoute
   '/_layout/publisher/book-assignments': typeof LayoutPublisherBookAssignmentsRoute
   '/_layout/publisher/dashboard': typeof LayoutPublisherDashboardRoute
   '/_layout/publisher/library': typeof LayoutPublisherLibraryRoute
   '/_layout/publisher/schools': typeof LayoutPublisherSchoolsRoute
   '/_layout/publisher/teachers': typeof LayoutPublisherTeachersRoute
+  '/_layout/student/announcements': typeof LayoutStudentAnnouncementsRoute
   '/_layout/student/assignments': typeof LayoutStudentAssignmentsRouteWithChildren
   '/_layout/student/calendar': typeof LayoutStudentCalendarRoute
   '/_layout/student/dashboard': typeof LayoutStudentDashboardRoute
   '/_layout/student/progress': typeof LayoutStudentProgressRoute
   '/_layout/student/reports': typeof LayoutStudentReportsRoute
+  '/_layout/teacher/ai-materials': typeof LayoutTeacherAiMaterialsRoute
+  '/_layout/teacher/announcements': typeof LayoutTeacherAnnouncementsRoute
   '/_layout/teacher/assignments': typeof LayoutTeacherAssignmentsRouteWithChildren
   '/_layout/teacher/calendar': typeof LayoutTeacherCalendarRoute
   '/_layout/teacher/classrooms': typeof LayoutTeacherClassroomsRoute
@@ -527,6 +610,7 @@ export interface FileRoutesById {
   '/_layout/teacher/insights': typeof LayoutTeacherInsightsRoute
   '/_layout/teacher/reports': typeof LayoutTeacherReportsRoute
   '/_layout/teacher/students': typeof LayoutTeacherStudentsRoute
+  '/_layout/dreamai/': typeof LayoutDreamaiIndexRoute
   '/_layout/messaging/': typeof LayoutMessagingIndexRoute
   '/_layout/student/assignments/$assignmentId': typeof LayoutStudentAssignmentsAssignmentIdRouteWithChildren
   '/_layout/teacher/analytics/$studentId': typeof LayoutTeacherAnalyticsStudentIdRoute
@@ -559,6 +643,7 @@ export interface FileRouteTypes {
     | '/student'
     | '/teacher'
     | '/'
+    | '/admin/ai-usage'
     | '/admin/assignments'
     | '/admin/benchmarks'
     | '/admin/books'
@@ -569,17 +654,24 @@ export interface FileRouteTypes {
     | '/admin/supervisors'
     | '/admin/teachers'
     | '/admin/users'
+    | '/dreamai/generator'
+    | '/dreamai/library'
+    | '/dreamai/materials'
+    | '/dreamai/vocabulary'
     | '/messaging/$conversationId'
     | '/publisher/book-assignments'
     | '/publisher/dashboard'
     | '/publisher/library'
     | '/publisher/schools'
     | '/publisher/teachers'
+    | '/student/announcements'
     | '/student/assignments'
     | '/student/calendar'
     | '/student/dashboard'
     | '/student/progress'
     | '/student/reports'
+    | '/teacher/ai-materials'
+    | '/teacher/announcements'
     | '/teacher/assignments'
     | '/teacher/calendar'
     | '/teacher/classrooms'
@@ -587,6 +679,7 @@ export interface FileRouteTypes {
     | '/teacher/insights'
     | '/teacher/reports'
     | '/teacher/students'
+    | '/dreamai'
     | '/messaging'
     | '/student/assignments/$assignmentId'
     | '/teacher/analytics/$studentId'
@@ -617,6 +710,7 @@ export interface FileRouteTypes {
     | '/student'
     | '/teacher'
     | '/'
+    | '/admin/ai-usage'
     | '/admin/assignments'
     | '/admin/benchmarks'
     | '/admin/books'
@@ -627,22 +721,30 @@ export interface FileRouteTypes {
     | '/admin/supervisors'
     | '/admin/teachers'
     | '/admin/users'
+    | '/dreamai/generator'
+    | '/dreamai/library'
+    | '/dreamai/materials'
+    | '/dreamai/vocabulary'
     | '/messaging/$conversationId'
     | '/publisher/book-assignments'
     | '/publisher/dashboard'
     | '/publisher/library'
     | '/publisher/schools'
     | '/publisher/teachers'
+    | '/student/announcements'
     | '/student/calendar'
     | '/student/dashboard'
     | '/student/progress'
     | '/student/reports'
+    | '/teacher/ai-materials'
+    | '/teacher/announcements'
     | '/teacher/calendar'
     | '/teacher/classrooms'
     | '/teacher/dashboard'
     | '/teacher/insights'
     | '/teacher/reports'
     | '/teacher/students'
+    | '/dreamai'
     | '/messaging'
     | '/teacher/analytics/$studentId'
     | '/teacher/assignments/$assignmentId'
@@ -673,6 +775,7 @@ export interface FileRouteTypes {
     | '/_layout/student'
     | '/_layout/teacher'
     | '/_layout/'
+    | '/_layout/admin/ai-usage'
     | '/_layout/admin/assignments'
     | '/_layout/admin/benchmarks'
     | '/_layout/admin/books'
@@ -683,17 +786,24 @@ export interface FileRouteTypes {
     | '/_layout/admin/supervisors'
     | '/_layout/admin/teachers'
     | '/_layout/admin/users'
+    | '/_layout/dreamai/generator'
+    | '/_layout/dreamai/library'
+    | '/_layout/dreamai/materials'
+    | '/_layout/dreamai/vocabulary'
     | '/_layout/messaging/$conversationId'
     | '/_layout/publisher/book-assignments'
     | '/_layout/publisher/dashboard'
     | '/_layout/publisher/library'
     | '/_layout/publisher/schools'
     | '/_layout/publisher/teachers'
+    | '/_layout/student/announcements'
     | '/_layout/student/assignments'
     | '/_layout/student/calendar'
     | '/_layout/student/dashboard'
     | '/_layout/student/progress'
     | '/_layout/student/reports'
+    | '/_layout/teacher/ai-materials'
+    | '/_layout/teacher/announcements'
     | '/_layout/teacher/assignments'
     | '/_layout/teacher/calendar'
     | '/_layout/teacher/classrooms'
@@ -701,6 +811,7 @@ export interface FileRouteTypes {
     | '/_layout/teacher/insights'
     | '/_layout/teacher/reports'
     | '/_layout/teacher/students'
+    | '/_layout/dreamai/'
     | '/_layout/messaging/'
     | '/_layout/student/assignments/$assignmentId'
     | '/_layout/teacher/analytics/$studentId'
@@ -821,6 +932,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutMessagingIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/dreamai/': {
+      id: '/_layout/dreamai/'
+      path: '/dreamai'
+      fullPath: '/dreamai'
+      preLoaderRoute: typeof LayoutDreamaiIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/teacher/students': {
       id: '/_layout/teacher/students'
       path: '/students'
@@ -870,6 +988,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutTeacherAssignmentsRouteImport
       parentRoute: typeof LayoutTeacherRoute
     }
+    '/_layout/teacher/announcements': {
+      id: '/_layout/teacher/announcements'
+      path: '/announcements'
+      fullPath: '/teacher/announcements'
+      preLoaderRoute: typeof LayoutTeacherAnnouncementsRouteImport
+      parentRoute: typeof LayoutTeacherRoute
+    }
+    '/_layout/teacher/ai-materials': {
+      id: '/_layout/teacher/ai-materials'
+      path: '/ai-materials'
+      fullPath: '/teacher/ai-materials'
+      preLoaderRoute: typeof LayoutTeacherAiMaterialsRouteImport
+      parentRoute: typeof LayoutTeacherRoute
+    }
     '/_layout/student/reports': {
       id: '/_layout/student/reports'
       path: '/reports'
@@ -903,6 +1035,13 @@ declare module '@tanstack/react-router' {
       path: '/assignments'
       fullPath: '/student/assignments'
       preLoaderRoute: typeof LayoutStudentAssignmentsRouteImport
+      parentRoute: typeof LayoutStudentRoute
+    }
+    '/_layout/student/announcements': {
+      id: '/_layout/student/announcements'
+      path: '/announcements'
+      fullPath: '/student/announcements'
+      preLoaderRoute: typeof LayoutStudentAnnouncementsRouteImport
       parentRoute: typeof LayoutStudentRoute
     }
     '/_layout/publisher/teachers': {
@@ -945,6 +1084,34 @@ declare module '@tanstack/react-router' {
       path: '/messaging/$conversationId'
       fullPath: '/messaging/$conversationId'
       preLoaderRoute: typeof LayoutMessagingConversationIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/dreamai/vocabulary': {
+      id: '/_layout/dreamai/vocabulary'
+      path: '/dreamai/vocabulary'
+      fullPath: '/dreamai/vocabulary'
+      preLoaderRoute: typeof LayoutDreamaiVocabularyRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/dreamai/materials': {
+      id: '/_layout/dreamai/materials'
+      path: '/dreamai/materials'
+      fullPath: '/dreamai/materials'
+      preLoaderRoute: typeof LayoutDreamaiMaterialsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/dreamai/library': {
+      id: '/_layout/dreamai/library'
+      path: '/dreamai/library'
+      fullPath: '/dreamai/library'
+      preLoaderRoute: typeof LayoutDreamaiLibraryRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/dreamai/generator': {
+      id: '/_layout/dreamai/generator'
+      path: '/dreamai/generator'
+      fullPath: '/dreamai/generator'
+      preLoaderRoute: typeof LayoutDreamaiGeneratorRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/admin/users': {
@@ -1015,6 +1182,13 @@ declare module '@tanstack/react-router' {
       path: '/assignments'
       fullPath: '/admin/assignments'
       preLoaderRoute: typeof LayoutAdminAssignmentsRouteImport
+      parentRoute: typeof LayoutAdminRoute
+    }
+    '/_layout/admin/ai-usage': {
+      id: '/_layout/admin/ai-usage'
+      path: '/ai-usage'
+      fullPath: '/admin/ai-usage'
+      preLoaderRoute: typeof LayoutAdminAiUsageRouteImport
       parentRoute: typeof LayoutAdminRoute
     }
     '/_layout/teacher/materials/': {
@@ -1133,6 +1307,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface LayoutAdminRouteChildren {
+  LayoutAdminAiUsageRoute: typeof LayoutAdminAiUsageRoute
   LayoutAdminAssignmentsRoute: typeof LayoutAdminAssignmentsRoute
   LayoutAdminBenchmarksRoute: typeof LayoutAdminBenchmarksRoute
   LayoutAdminBooksRoute: typeof LayoutAdminBooksRoute
@@ -1146,6 +1321,7 @@ interface LayoutAdminRouteChildren {
 }
 
 const LayoutAdminRouteChildren: LayoutAdminRouteChildren = {
+  LayoutAdminAiUsageRoute: LayoutAdminAiUsageRoute,
   LayoutAdminAssignmentsRoute: LayoutAdminAssignmentsRoute,
   LayoutAdminBenchmarksRoute: LayoutAdminBenchmarksRoute,
   LayoutAdminBooksRoute: LayoutAdminBooksRoute,
@@ -1227,6 +1403,7 @@ const LayoutStudentAssignmentsRouteWithChildren =
   )
 
 interface LayoutStudentRouteChildren {
+  LayoutStudentAnnouncementsRoute: typeof LayoutStudentAnnouncementsRoute
   LayoutStudentAssignmentsRoute: typeof LayoutStudentAssignmentsRouteWithChildren
   LayoutStudentCalendarRoute: typeof LayoutStudentCalendarRoute
   LayoutStudentDashboardRoute: typeof LayoutStudentDashboardRoute
@@ -1235,6 +1412,7 @@ interface LayoutStudentRouteChildren {
 }
 
 const LayoutStudentRouteChildren: LayoutStudentRouteChildren = {
+  LayoutStudentAnnouncementsRoute: LayoutStudentAnnouncementsRoute,
   LayoutStudentAssignmentsRoute: LayoutStudentAssignmentsRouteWithChildren,
   LayoutStudentCalendarRoute: LayoutStudentCalendarRoute,
   LayoutStudentDashboardRoute: LayoutStudentDashboardRoute,
@@ -1266,6 +1444,8 @@ const LayoutTeacherAssignmentsRouteWithChildren =
   )
 
 interface LayoutTeacherRouteChildren {
+  LayoutTeacherAiMaterialsRoute: typeof LayoutTeacherAiMaterialsRoute
+  LayoutTeacherAnnouncementsRoute: typeof LayoutTeacherAnnouncementsRoute
   LayoutTeacherAssignmentsRoute: typeof LayoutTeacherAssignmentsRouteWithChildren
   LayoutTeacherCalendarRoute: typeof LayoutTeacherCalendarRoute
   LayoutTeacherClassroomsRoute: typeof LayoutTeacherClassroomsRoute
@@ -1282,6 +1462,8 @@ interface LayoutTeacherRouteChildren {
 }
 
 const LayoutTeacherRouteChildren: LayoutTeacherRouteChildren = {
+  LayoutTeacherAiMaterialsRoute: LayoutTeacherAiMaterialsRoute,
+  LayoutTeacherAnnouncementsRoute: LayoutTeacherAnnouncementsRoute,
   LayoutTeacherAssignmentsRoute: LayoutTeacherAssignmentsRouteWithChildren,
   LayoutTeacherCalendarRoute: LayoutTeacherCalendarRoute,
   LayoutTeacherClassroomsRoute: LayoutTeacherClassroomsRoute,
@@ -1309,7 +1491,12 @@ interface LayoutRouteChildren {
   LayoutStudentRoute: typeof LayoutStudentRouteWithChildren
   LayoutTeacherRoute: typeof LayoutTeacherRouteWithChildren
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutDreamaiGeneratorRoute: typeof LayoutDreamaiGeneratorRoute
+  LayoutDreamaiLibraryRoute: typeof LayoutDreamaiLibraryRoute
+  LayoutDreamaiMaterialsRoute: typeof LayoutDreamaiMaterialsRoute
+  LayoutDreamaiVocabularyRoute: typeof LayoutDreamaiVocabularyRoute
   LayoutMessagingConversationIdRoute: typeof LayoutMessagingConversationIdRoute
+  LayoutDreamaiIndexRoute: typeof LayoutDreamaiIndexRoute
   LayoutMessagingIndexRoute: typeof LayoutMessagingIndexRoute
 }
 
@@ -1321,7 +1508,12 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutStudentRoute: LayoutStudentRouteWithChildren,
   LayoutTeacherRoute: LayoutTeacherRouteWithChildren,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutDreamaiGeneratorRoute: LayoutDreamaiGeneratorRoute,
+  LayoutDreamaiLibraryRoute: LayoutDreamaiLibraryRoute,
+  LayoutDreamaiMaterialsRoute: LayoutDreamaiMaterialsRoute,
+  LayoutDreamaiVocabularyRoute: LayoutDreamaiVocabularyRoute,
   LayoutMessagingConversationIdRoute: LayoutMessagingConversationIdRoute,
+  LayoutDreamaiIndexRoute: LayoutDreamaiIndexRoute,
   LayoutMessagingIndexRoute: LayoutMessagingIndexRoute,
 }
 

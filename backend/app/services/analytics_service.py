@@ -721,9 +721,10 @@ async def get_assignment_detailed_results(
         ValueError: If assignment not found or teacher doesn't own it
     """
     # Get assignment and verify ownership
+    # Use LEFT JOIN (outerjoin) to support Content Library assignments without activity_id
     assignment_result = await session.execute(
         select(Assignment, Activity)
-        .join(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(Activity, Assignment.activity_id == Activity.id)
         .where(Assignment.id == assignment_id)
     )
     assignment_row = assignment_result.one_or_none()
@@ -735,6 +736,16 @@ async def get_assignment_detailed_results(
 
     if assignment.teacher_id != teacher_id:
         raise ValueError(f"Assignment not found: {assignment_id}")
+
+    # Determine activity_type and config_json
+    # For Content Library assignments, use assignment fields directly
+    if activity:
+        activity_type = activity.activity_type
+        config_json = activity.config_json
+    else:
+        # Content Library assignment - use assignment.activity_type and activity_content
+        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        config_json = assignment.activity_content or {}
 
     # Get all student submissions for this assignment
     submissions_result = await session.execute(
@@ -811,6 +822,8 @@ async def get_assignment_detailed_results(
             status=asgn_student.status.value,
             score=asgn_student.score,
             time_spent_minutes=asgn_student.time_spent_minutes or 0,
+            time_spent_seconds=asgn_student.time_spent_seconds or 0,
+            started_at=asgn_student.started_at,
             completed_at=asgn_student.completed_at,
             has_feedback=asgn_student.id in feedback_assignment_student_ids,
         )
@@ -819,15 +832,15 @@ async def get_assignment_detailed_results(
 
     # Calculate question-level analysis
     question_analysis = await _analyze_activity_answers(
-        activity.activity_type,
-        activity.config_json,
+        activity_type,
+        config_json,
         [asgn_student for asgn_student, _, _ in submissions if asgn_student.answers_json],
     )
 
     return AssignmentDetailedResultsResponse(
         assignment_id=str(assignment_id),
         assignment_name=assignment.name,
-        activity_type=activity.activity_type,
+        activity_type=activity_type,
         due_date=assignment.due_date,
         completion_overview=completion_overview,
         score_statistics=score_statistics,
@@ -883,15 +896,33 @@ async def get_student_assignment_answers(
 
     asgn_student, student, user = submission_row
 
+    # Build config_json for detailed result review
+    # For AI-generated activities, use activity_content directly
+    # For book-based activities, build from activity data
+    config_json = None
+    activity_type_str = None
+
+    if assignment.activity_type:
+        activity_type_str = assignment.activity_type.value
+        # AI-generated activities store content directly
+        if assignment.activity_content:
+            config_json = {
+                "type": activity_type_str,
+                "content": assignment.activity_content,
+            }
+
     return StudentAnswersResponse(
         student_id=str(student.id),
         name=user.full_name or user.email,
         status=asgn_student.status.value,
         score=asgn_student.score,
         time_spent_minutes=asgn_student.time_spent_minutes or 0,
+        time_spent_seconds=asgn_student.time_spent_seconds or 0,
         started_at=asgn_student.started_at,
         completed_at=asgn_student.completed_at,
         answers_json=asgn_student.answers_json,
+        activity_type=activity_type_str,
+        config_json=config_json,
     )
 
 

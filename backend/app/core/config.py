@@ -115,6 +115,9 @@ class Settings(BaseSettings):
     DCS_CACHE_LOGO_TTL: int = 3600  # 1 hour (logos rarely change)
     DCS_CACHE_WARMUP_ENABLED: bool = False  # Optional: pre-fetch data at startup
 
+    # AI Generation settings
+    AI_MONTHLY_QUOTA: int = 100  # Monthly AI generation quota per teacher
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

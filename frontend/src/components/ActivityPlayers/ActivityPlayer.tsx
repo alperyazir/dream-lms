@@ -4,18 +4,24 @@
  * Story 4.8 - Activity Progress Persistence (Save & Resume)
  */
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { useToast } from "@/hooks/use-toast"
 import { useAssignmentSubmission } from "@/hooks/useAssignmentSubmission"
 import { useAutoSaveWithData } from "@/hooks/useAutoSave"
 import type {
   ActivityConfig,
+  // Story 27.20: AI-generated activity types for scoring
+  AIQuizActivity,
   CircleActivity,
   DragDropPictureActivity,
   DragDropPictureGroupActivity,
   MatchTheWordsActivity,
   PuzzleFindWordsActivity,
+  ReadingComprehensionActivity,
+  SentenceBuilderActivity,
+  VocabularyQuizActivity,
+  WordBuilderActivity,
 } from "@/lib/mockData"
 import {
   scoreCircle,
@@ -25,14 +31,21 @@ import {
   scoreWordSearch,
 } from "@/lib/scoring"
 import { saveProgress } from "@/services/assignmentsApi"
+import type { QuestionNavigationState } from "@/types/activity-player"
 import { ActivityFooter } from "./ActivityFooter"
 import { ActivityHeader } from "./ActivityHeader"
 import { ActivityResults, type ScoreResult } from "./ActivityResults"
+import { AIQuizPlayerAdapter } from "./AIQuizPlayerAdapter"
 import { CirclePlayer } from "./CirclePlayer"
 import { DragDropPictureGroupPlayer } from "./DragDropPictureGroupPlayer"
 import { DragDropPicturePlayer } from "./DragDropPicturePlayer"
 import { MatchTheWordsPlayer } from "./MatchTheWordsPlayer"
 import { PuzzleFindWordsPlayer } from "./PuzzleFindWordsPlayer"
+import { ReadingComprehensionPlayerAdapter } from "./ReadingComprehensionPlayerAdapter"
+import { SentenceBuilderPlayerAdapter } from "./SentenceBuilderPlayerAdapter"
+// Story 27.20: AI-generated activity player adapters
+import { VocabularyQuizPlayerAdapter } from "./VocabularyQuizPlayerAdapter"
+import { WordBuilderPlayerAdapter } from "./WordBuilderPlayerAdapter"
 
 interface ActivityPlayerProps {
   activityConfig: ActivityConfig
@@ -48,6 +61,12 @@ interface ActivityPlayerProps {
     | "circle"
     | "markwithx"
     | "puzzleFindWords"
+    // Story 27.20: AI-generated activity types
+    | "vocabulary_quiz"
+    | "ai_quiz"
+    | "reading_comprehension"
+    | "sentence_builder"
+    | "word_builder"
   timeLimit?: number // minutes
   onExit: () => void
   initialProgress?: Record<string, any> | null // Story 4.8: Saved progress from backend
@@ -63,6 +82,11 @@ interface ActivityPlayerProps {
   showCorrectAnswers?: boolean
   // Story 10.3: External reset trigger - increments to trigger reset
   resetTrigger?: number
+  // Generic question/item navigation control (for question-level navigation from parent)
+  // Works with: ai_quiz, vocabulary_quiz, reading_comprehension, sentence_builder, word_builder
+  currentQuestionIndex?: number
+  onQuestionIndexChange?: (index: number) => void
+  onNavigationStateChange?: (state: QuestionNavigationState) => void
 }
 
 // Type for activity answers - different players use different data structures
@@ -106,7 +130,13 @@ export function restoreProgressFromJson(
     if (
       activityType === "dragdroppicture" ||
       activityType === "dragdroppicturegroup" ||
-      activityType === "matchTheWords"
+      activityType === "matchTheWords" ||
+      // Story 27.20: AI activity types also use Map<string, string>
+      activityType === "vocabulary_quiz" ||
+      activityType === "ai_quiz" ||
+      activityType === "reading_comprehension" ||
+      activityType === "sentence_builder" ||
+      activityType === "word_builder"
     ) {
       // Convert object back to Map<string, string>
       const map = new Map<string, string>(
@@ -152,6 +182,9 @@ export function ActivityPlayer({
   onActivityComplete,
   showCorrectAnswers = false,
   resetTrigger = 0,
+  currentQuestionIndex,
+  onQuestionIndexChange,
+  onNavigationStateChange,
 }: ActivityPlayerProps) {
   // Guard clause: activityConfig is required
   if (!activityConfig) {
@@ -187,8 +220,10 @@ export function ActivityPlayer({
   }, [resetTrigger, activityType])
 
   // Calculate time spent (initial + new time)
+  // Use Math.ceil so any partial minute counts (e.g., 30 seconds = 1 minute)
   const getTimeSpent = () => {
-    const newTime = Math.floor((Date.now() - startTime) / 1000 / 60) // minutes
+    const elapsedSeconds = (Date.now() - startTime) / 1000
+    const newTime = elapsedSeconds > 0 ? Math.ceil(elapsedSeconds / 60) : 0 // minutes
     return initialTimeSpent + newTime
   }
 
@@ -340,6 +375,169 @@ export function ActivityPlayer({
         const scoreResult = scoreWordSearch(foundWords, config.words)
         calculatedScore = scoreResult.score
         answersJson = { answers: Array.from(foundWords) }
+      } else if (normalizedType === "ai_quiz") {
+        // Story 27.20: AI Quiz scoring
+        const config = activityConfig as AIQuizActivity
+        const quiz = config.content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (quiz?.questions) {
+          quiz.questions.forEach(
+            (q: { question_id: string; correct_index?: number }) => {
+              const userAnswer = userAnswers.get(q.question_id)
+              if (
+                userAnswer !== undefined &&
+                parseInt(userAnswer, 10) === q.correct_index
+              ) {
+                correctCount++
+              }
+            },
+          )
+          calculatedScore =
+            quiz.questions.length > 0
+              ? Math.round((correctCount / quiz.questions.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "vocabulary_quiz") {
+        // Story 27.20: Vocabulary Quiz scoring
+        const config = activityConfig as VocabularyQuizActivity
+        const quiz = config.content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (quiz?.questions) {
+          quiz.questions.forEach(
+            (q: { question_id: string; correct_answer?: string }) => {
+              const userAnswer = userAnswers.get(q.question_id)
+              if (userAnswer === q.correct_answer) {
+                correctCount++
+              }
+            },
+          )
+          calculatedScore =
+            quiz.questions.length > 0
+              ? Math.round((correctCount / quiz.questions.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "reading_comprehension") {
+        // Story 27.20: Reading Comprehension scoring
+        const config = activityConfig as ReadingComprehensionActivity
+        const content = config.content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+        let totalQuestions = 0
+
+        if (content?.questions) {
+          content.questions.forEach(
+            (q: {
+              question_id: string
+              question_type?: string
+              correct_index?: number
+              correct_answer_text?: string
+            }) => {
+              totalQuestions++
+              const userAnswer = userAnswers.get(q.question_id)
+              // MCQ/True-False use correct_index, Short Answer uses string comparison
+              if (q.question_type === "short_answer") {
+                // Simplified - exact match (backend does proper grading)
+                if (
+                  userAnswer?.toLowerCase().trim() ===
+                  q.correct_answer_text?.toLowerCase().trim()
+                ) {
+                  correctCount++
+                }
+              } else {
+                if (
+                  userAnswer !== undefined &&
+                  parseInt(userAnswer, 10) === q.correct_index
+                ) {
+                  correctCount++
+                }
+              }
+            },
+          )
+          calculatedScore =
+            totalQuestions > 0
+              ? Math.round((correctCount / totalQuestions) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "sentence_builder") {
+        // Story 27.20: Sentence Builder scoring
+        const config = activityConfig as SentenceBuilderActivity
+        const content = config.content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (content?.sentences) {
+          content.sentences.forEach(
+            (s: {
+              item_id?: string
+              sentence_id?: string
+              correct_sentence?: string
+              correct_order?: string[]
+              words?: string[]
+            }) => {
+              // Support both item_id and sentence_id
+              const sentenceId = s.item_id || s.sentence_id || ""
+              const userAnswer = userAnswers.get(sentenceId)
+              // User answer is JSON stringified array of words or direct comparison with correct_sentence
+              if (userAnswer) {
+                try {
+                  const userWords = JSON.parse(userAnswer)
+                  const userSentence = Array.isArray(userWords) ? userWords.join(" ") : userAnswer
+                  // Compare with correct_sentence (string) or correct_order/words (array)
+                  if (s.correct_sentence) {
+                    if (userSentence === s.correct_sentence) {
+                      correctCount++
+                    }
+                  } else {
+                    const correctWords = s.correct_order || s.words
+                    if (JSON.stringify(userWords) === JSON.stringify(correctWords)) {
+                      correctCount++
+                    }
+                  }
+                } catch {
+                  // If not JSON, compare directly with correct_sentence
+                  if (s.correct_sentence && userAnswer === s.correct_sentence) {
+                    correctCount++
+                  }
+                }
+              }
+            },
+          )
+          calculatedScore =
+            content.sentences.length > 0
+              ? Math.round((correctCount / content.sentences.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "word_builder") {
+        // Story 27.20: Word Builder scoring
+        const config = activityConfig as WordBuilderActivity
+        const content = config.content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (content?.words) {
+          content.words.forEach((w: { item_id?: string; word_id?: string; correct_word?: string; word?: string }) => {
+            // Support both item_id and word_id, and both correct_word and word
+            const wordId = w.item_id || w.word_id || ""
+            const correctWord = w.correct_word || w.word || ""
+            const userAnswer = userAnswers.get(wordId)
+            if (userAnswer?.toLowerCase() === correctWord?.toLowerCase()) {
+              correctCount++
+            }
+          })
+          calculatedScore =
+            content.words.length > 0
+              ? Math.round((correctCount / content.words.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
       }
 
       // Report score to parent using ref (avoids infinite loop)
@@ -525,6 +723,196 @@ export function ActivityPlayer({
       for (const word of foundWords) {
         correctSet.add(word)
       }
+    } else if (activityConfig.type === "ai_quiz") {
+      // Story 27.20: AI Quiz scoring
+      const config = activityConfig as AIQuizActivity
+      const quiz = config.content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalQuestions = 0
+
+      if (quiz?.questions) {
+        quiz.questions.forEach(
+          (q: { question_id: string; correct_index?: number }) => {
+            const userAnswer = userAnswers.get(q.question_id)
+            totalQuestions++
+            // Parse "index:X" format
+            const answerIndex = userAnswer?.startsWith("index:")
+              ? parseInt(userAnswer.substring(6), 10)
+              : parseInt(userAnswer || "", 10)
+            if (!isNaN(answerIndex) && answerIndex === q.correct_index) {
+              correctCount++
+              correctSet.add(q.question_id)
+            }
+          },
+        )
+      }
+      score = {
+        score: totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+        correct: correctCount,
+        total: totalQuestions,
+        breakdown: { activity_type: "ai_quiz" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "vocabulary_quiz") {
+      // Story 27.20: Vocabulary Quiz scoring
+      const config = activityConfig as VocabularyQuizActivity
+      const quiz = config.content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalQuestions = 0
+
+      if (quiz?.questions) {
+        quiz.questions.forEach(
+          (q: { question_id: string; correct_answer?: string }) => {
+            const userAnswer = userAnswers.get(q.question_id)
+            totalQuestions++
+            if (userAnswer === q.correct_answer) {
+              correctCount++
+              correctSet.add(q.question_id)
+            }
+          },
+        )
+      }
+      score = {
+        score: totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+        correct: correctCount,
+        total: totalQuestions,
+        breakdown: { activity_type: "vocabulary_quiz" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "reading_comprehension") {
+      // Story 27.20: Reading Comprehension scoring
+      const config = activityConfig as ReadingComprehensionActivity
+      const content = config.content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalQuestions = 0
+
+      if (content?.questions) {
+        content.questions.forEach(
+          (q: {
+            question_id: string
+            question_type?: string
+            correct_index?: number
+            correct_answer?: string
+          }) => {
+            const userAnswer = userAnswers.get(q.question_id)
+            totalQuestions++
+
+            if (q.question_type === "short_answer") {
+              // Parse "text:X" format
+              const answerText = userAnswer?.startsWith("text:")
+                ? userAnswer.substring(5)
+                : userAnswer
+              if (
+                answerText?.toLowerCase().trim() ===
+                q.correct_answer?.toLowerCase().trim()
+              ) {
+                correctCount++
+                correctSet.add(q.question_id)
+              }
+            } else {
+              // MCQ/True-False - parse "index:X" format
+              const answerIndex = userAnswer?.startsWith("index:")
+                ? parseInt(userAnswer.substring(6), 10)
+                : parseInt(userAnswer || "", 10)
+              if (!isNaN(answerIndex) && answerIndex === q.correct_index) {
+                correctCount++
+                correctSet.add(q.question_id)
+              }
+            }
+          },
+        )
+      }
+      score = {
+        score: totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+        correct: correctCount,
+        total: totalQuestions,
+        breakdown: { activity_type: "reading_comprehension" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "sentence_builder") {
+      // Story 27.20: Sentence Builder scoring
+      const config = activityConfig as SentenceBuilderActivity
+      const content = config.content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalSentences = 0
+
+      if (content?.sentences) {
+        content.sentences.forEach(
+          (s: {
+            item_id?: string
+            correct_sentence?: string
+            correct_order?: string[]
+            words?: string[]
+          }) => {
+            const sentenceId = s.item_id || ""
+            const userAnswer = userAnswers.get(sentenceId)
+            totalSentences++
+
+            if (userAnswer) {
+              try {
+                const userWords = JSON.parse(userAnswer)
+                const userSentence = Array.isArray(userWords) ? userWords.join(" ") : userAnswer
+                if (s.correct_sentence) {
+                  if (userSentence === s.correct_sentence) {
+                    correctCount++
+                    correctSet.add(sentenceId)
+                  }
+                } else {
+                  const correctWords = s.correct_order || s.words
+                  if (JSON.stringify(userWords) === JSON.stringify(correctWords)) {
+                    correctCount++
+                    correctSet.add(sentenceId)
+                  }
+                }
+              } catch {
+                if (s.correct_sentence && userAnswer === s.correct_sentence) {
+                  correctCount++
+                  correctSet.add(sentenceId)
+                }
+              }
+            }
+          },
+        )
+      }
+      score = {
+        score: totalSentences > 0 ? Math.round((correctCount / totalSentences) * 100) : 0,
+        correct: correctCount,
+        total: totalSentences,
+        breakdown: { activity_type: "sentence_builder" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "word_builder") {
+      // Story 27.20: Word Builder scoring
+      const config = activityConfig as WordBuilderActivity
+      const content = config.content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalWords = 0
+
+      if (content?.words) {
+        content.words.forEach((w: { item_id?: string; word_id?: string; correct_word?: string; word?: string }) => {
+          const wordId = w.item_id || w.word_id || ""
+          const correctWord = w.correct_word || w.word || ""
+          const userAnswer = userAnswers.get(wordId)
+          totalWords++
+
+          if (userAnswer?.toLowerCase() === correctWord?.toLowerCase()) {
+            correctCount++
+            correctSet.add(wordId)
+          }
+        })
+      }
+      score = {
+        score: totalWords > 0 ? Math.round((correctCount / totalWords) * 100) : 0,
+        correct: correctCount,
+        total: totalWords,
+        breakdown: { activity_type: "word_builder" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
     } else {
       // Mock score for other activity types (to be implemented)
       score = {
@@ -558,9 +946,38 @@ export function ActivityPlayer({
   }
 
   // Handler for when player components update their answers
-  const handleAnswersChange = (newAnswers: ActivityAnswers) => {
-    setAnswers(newAnswers)
-  }
+  // Memoized to prevent infinite loops in child components
+  // Also compares values to prevent unnecessary state updates that cause loops
+  const handleAnswersChange = useCallback((newAnswers: ActivityAnswers) => {
+    setAnswers((prevAnswers) => {
+      // Skip update if both are null/undefined
+      if (!newAnswers && !prevAnswers) return prevAnswers
+
+      // If one is null and other isn't, update
+      if (!newAnswers || !prevAnswers) return newAnswers
+
+      // Compare Map values
+      if (newAnswers instanceof Map && prevAnswers instanceof Map) {
+        if (newAnswers.size !== prevAnswers.size) return newAnswers
+        for (const [key, value] of newAnswers) {
+          if (prevAnswers.get(key) !== value) return newAnswers
+        }
+        return prevAnswers // Same content, keep reference
+      }
+
+      // Compare Set values
+      if (newAnswers instanceof Set && prevAnswers instanceof Set) {
+        if (newAnswers.size !== prevAnswers.size) return newAnswers
+        for (const value of newAnswers) {
+          if (!prevAnswers.has(value)) return newAnswers
+        }
+        return prevAnswers // Same content, keep reference
+      }
+
+      // Different types or other cases - update
+      return newAnswers
+    })
+  }, [])
 
   const handleSave = async () => {
     if (!answers) return
@@ -675,6 +1092,82 @@ export function ActivityPlayer({
             assignmentId={assignmentId}
             initialAnswers={answers as Set<string>}
             showCorrectAnswers={showCorrectAnswers}
+          />
+        )
+
+      // Story 27.20: AI-generated activity players
+      case "vocabulary_quiz":
+        return (
+          <VocabularyQuizPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "ai_quiz":
+        return (
+          <AIQuizPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "reading_comprehension":
+        return (
+          <ReadingComprehensionPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "sentence_builder":
+        return (
+          <SentenceBuilderPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentSentenceIndex={currentQuestionIndex}
+            onSentenceIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "word_builder":
+        return (
+          <WordBuilderPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentWordIndex={currentQuestionIndex}
+            onWordIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
           />
         )
 
