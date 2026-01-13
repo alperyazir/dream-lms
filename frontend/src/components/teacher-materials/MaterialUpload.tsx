@@ -290,7 +290,7 @@ export function MaterialUpload({
                   <p className="text-xs text-green-600 dark:text-green-400 mb-1">
                     Preview (first 300 characters):
                   </p>
-                  <div className="p-2 bg-white dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400 max-h-24 overflow-y-auto">
+                  <div className="p-2 bg-white dark:bg-neutral-800 rounded text-xs text-gray-600 dark:text-gray-400 max-h-24 overflow-y-auto">
                     {extraction.extracted_text.slice(0, 300)}
                     {extraction.extracted_text.length > 300 && "..."}
                   </div>

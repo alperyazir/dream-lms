@@ -123,10 +123,11 @@ services:
 
       - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8000
 
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`api.${DOMAIN?Variable not set}`)
+      # Only route valid API paths (blocks /api/clients and other bot paths)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`api.${DOMAIN?Variable not set}`) && (PathPrefix(`/api/v1`) || PathPrefix(`/static`) || PathPrefix(`/docs`) || PathPrefix(`/openapi.json`))
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.entrypoints=http
 
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`api.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`api.${DOMAIN?Variable not set}`) && (PathPrefix(`/api/v1`) || PathPrefix(`/static`) || PathPrefix(`/docs`) || PathPrefix(`/openapi.json`))
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.entrypoints=https
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls=true
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=le

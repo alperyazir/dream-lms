@@ -77,7 +77,11 @@ export function ContentTable({
               <TableRow key={content.id}>
                 {/* Icon */}
                 <TableCell className="py-2">
-                  <div className={`rounded-md p-1.5 ${colorClasses.bg} w-fit`}>
+                  <div
+                    className={`rounded-md p-1.5 ${colorClasses.bg} w-fit ${
+                      colorClasses.isAI ? "shadow-lg shadow-purple-500/30 dark:shadow-purple-500/40" : ""
+                    }`}
+                  >
                     <IconComponent className={`h-4 w-4 ${colorClasses.text}`} />
                   </div>
                 </TableCell>

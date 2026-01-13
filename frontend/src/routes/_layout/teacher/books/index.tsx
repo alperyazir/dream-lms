@@ -12,10 +12,12 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useCallback, useMemo } from "react"
+import { FiBook } from "react-icons/fi"
 import { useDebouncedCallback } from "use-debounce"
 import { BookCard } from "@/components/books/BookCard"
 import { BookTableView } from "@/components/books/BookTableView"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import {
   LibraryFilters,
   type LibraryFiltersState,
@@ -102,19 +104,14 @@ function TeacherBooksPage() {
   }, [books])
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Library</h1>
-        <p className="text-muted-foreground">
-          Browse books and activities available to your school
-        </p>
-      </div>
-
-      {/* Header Actions */}
-      <div className="flex justify-end mb-4">
+    <PageContainer>
+      <PageHeader
+        icon={FiBook}
+        title="Library"
+        description="Browse books and activities available to your school"
+      >
         <ViewModeToggle value={viewMode} onChange={setViewMode} />
-      </div>
+      </PageHeader>
 
       {/* Filters */}
       <LibraryFilters
@@ -186,6 +183,6 @@ function TeacherBooksPage() {
             }
           />
         ))}
-    </div>
+    </PageContainer>
   )
 }

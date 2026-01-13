@@ -15,13 +15,14 @@ import {
   Sparkles,
 } from "lucide-react"
 import { useState } from "react"
-import { AIContentAssignmentDialog } from "@/components/DreamAI/AIContentAssignmentDialog"
+import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
 import { ContentCard } from "@/components/DreamAI/ContentCard"
 import { ContentPreviewModal } from "@/components/DreamAI/ContentPreviewModal"
 import { ContentTable } from "@/components/DreamAI/ContentTable"
 import { EditContentModal } from "@/components/DreamAI/EditContentModal"
 import { GenerateContentDialog } from "@/components/DreamAI/GenerateContentDialog"
 import { LibraryFilters } from "@/components/DreamAI/LibraryFilters"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   AlertDialog,
@@ -102,24 +103,12 @@ function ContentLibraryPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 p-2">
-            <Sparkles className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Dream AI Generation
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Generate and manage AI-powered learning activities
-            </p>
-          </div>
-        </div>
-
-        {/* Generate Button */}
+    <PageContainer>
+      <PageHeader
+        icon={Sparkles}
+        title="Dream AI Generation"
+        description="Generate and manage AI-powered learning activities"
+      >
         <Button
           onClick={() => setShowGenerateDialog(true)}
           className="bg-purple-600 hover:bg-purple-700"
@@ -127,7 +116,7 @@ function ContentLibraryPage() {
           <Sparkles className="h-4 w-4 mr-2" />
           AI Generation
         </Button>
-      </div>
+      </PageHeader>
 
       {/* AI Usage Quota - Right after header */}
       <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border w-fit">
@@ -282,11 +271,11 @@ function ContentLibraryPage() {
         onSaved={() => refetch()}
       />
 
-      {/* Assign Content Dialog */}
-      <AIContentAssignmentDialog
-        open={!!assignmentContent}
-        onOpenChange={(open) => !open && setAssignmentContent(null)}
-        content={assignmentContent}
+      {/* Create Assignment Dialog (with pre-selected AI content) */}
+      <AssignmentCreationDialog
+        isOpen={!!assignmentContent}
+        onClose={() => setAssignmentContent(null)}
+        preSelectedAIContent={assignmentContent}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -326,6 +315,6 @@ function ContentLibraryPage() {
         onOpenChange={setShowGenerateDialog}
         onSaveSuccess={() => refetch()}
       />
-    </div>
+    </PageContainer>
   )
 }

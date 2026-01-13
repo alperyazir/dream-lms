@@ -103,10 +103,10 @@ export function ReadingComprehensionResults({
               )}
             />
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-neutral-800 dark:text-gray-400">
                 {result.module_title}
               </span>
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-neutral-800 dark:text-gray-400">
                 Difficulty: {getDifficultyLabel(result.difficulty)}
               </span>
             </div>
@@ -132,7 +132,7 @@ export function ReadingComprehensionResults({
               {Object.entries(result.score_by_type).map(([type, scores]) => (
                 <div
                   key={type}
-                  className="rounded-lg bg-gray-50 p-3 text-center dark:bg-gray-800/50"
+                  className="rounded-lg bg-gray-50 p-3 text-center dark:bg-neutral-800/50"
                 >
                   <span className="mb-1 block text-xs font-medium text-muted-foreground">
                     {getQuestionTypeLabel(type as any)}
@@ -328,7 +328,7 @@ function OptionsDisplay({
                 "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200",
               !isCorrectOption &&
                 !showAsIncorrect &&
-                "bg-gray-50 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400",
+                "bg-gray-50 text-gray-600 dark:bg-neutral-800/50 dark:text-gray-400",
             )}
           >
             {result.question_type !== "true_false" && (

@@ -42,21 +42,22 @@ export function AddToAssignmentModal({
       // Navigate to new assignment creation with content pre-selected
       // The assignment creation page should handle query params for pre-selected content
       navigate({
-        to: "/teacher/assignments/new",
+        to: "/teacher/assignments" as const,
         search: {
+          action: "new",
           content_id: content.id,
           activity_type: content.activity_type,
-        },
+        } as Record<string, string>,
       })
     } else {
       // Navigate to assignment list filtered by drafts
       // Teacher can then select which draft to add content to
       navigate({
-        to: "/teacher/assignments",
+        to: "/teacher/assignments" as const,
         search: {
           status: "draft",
           add_content_id: content.id,
-        },
+        } as Record<string, string>,
       })
     }
     onOpenChange(false)

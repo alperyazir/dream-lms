@@ -19,6 +19,10 @@ export interface SelectAvatarRequest {
   avatar_id: string
 }
 
+export interface SetAvatarUrlRequest {
+  avatar_url: string
+}
+
 export interface AvatarUpdateResponse {
   message: string
   avatar_url: string | null

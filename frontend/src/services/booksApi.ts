@@ -31,9 +31,8 @@ const apiClient = axios.create({
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
-  // In development, don't set baseURL - let Vite proxy handle /api requests
-  // In production, the frontend is served from the same origin as the backend
-  // so relative URLs work correctly
+  // Set baseURL from OpenAPI config to ensure requests go to correct backend
+  config.baseURL = OpenAPI.BASE
 
   const token = OpenAPI.TOKEN
   if (token) {

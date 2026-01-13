@@ -195,7 +195,7 @@ export function MaterialPreviewModal({
       <div className="w-full h-[70vh]">
         <iframe
           src={`${blobUrl}#toolbar=1`}
-          className="w-full h-full border-0 rounded-lg bg-gray-100 dark:bg-gray-800"
+          className="w-full h-full border-0 rounded-lg bg-gray-100 dark:bg-neutral-800"
           title={material.name}
         />
       </div>
@@ -229,7 +229,7 @@ export function MaterialPreviewModal({
         </div>
 
         {/* Image */}
-        <div className="overflow-auto max-h-[70vh] flex justify-center bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+        <div className="overflow-auto max-h-[70vh] flex justify-center bg-gray-100 dark:bg-neutral-800 rounded-lg p-4">
           <img
             src={blobUrl!}
             alt={material.name}
@@ -296,7 +296,7 @@ export function MaterialPreviewModal({
     return (
       <div className="p-6">
         <div className="prose dark:prose-invert max-w-none">
-          <div className="whitespace-pre-wrap font-mono text-sm bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border">
+          <div className="whitespace-pre-wrap font-mono text-sm bg-gray-50 dark:bg-neutral-800 rounded-lg p-4 border">
             {material.text_content || "No content"}
           </div>
         </div>

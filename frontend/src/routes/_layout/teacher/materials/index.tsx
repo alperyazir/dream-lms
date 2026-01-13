@@ -8,6 +8,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Link, Plus, StickyNote, Upload } from "lucide-react"
 import { useState } from "react"
+import { FiFolder } from "react-icons/fi"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { DeleteMaterialDialog } from "@/components/materials/DeleteMaterialDialog"
 import { MaterialPreviewModal } from "@/components/materials/MaterialPreviewModal"
 import { MaterialUploadZone } from "@/components/materials/MaterialUploadZone"
@@ -198,31 +200,26 @@ function TeacherMaterialsPage() {
   // Handle error display
   if (error) {
     return (
-      <div className="container mx-auto py-6 px-4">
-        <div className="border border-red-200 dark:border-red-800 rounded-lg bg-white dark:bg-gray-900">
+      <PageContainer>
+        <div className="border border-red-200 dark:border-red-800 rounded-lg bg-white dark:bg-neutral-900">
           <div className="py-8 text-center">
             <p className="text-red-500">
               Failed to load materials. Please try again later.
             </p>
           </div>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="container mx-auto py-6 px-4 space-y-6">
+    <PageContainer>
       {/* Page Header with Add Material Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            My Materials
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Upload and manage your supplementary teaching materials
-          </p>
-        </div>
-
+      <PageHeader
+        icon={FiFolder}
+        title="My Materials"
+        description="Upload and manage your supplementary teaching materials"
+      >
         {/* Add Material Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -246,13 +243,13 @@ function TeacherMaterialsPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </PageHeader>
 
       {/* Storage Quota - Compact */}
       <StorageQuotaBar quota={quota} />
 
       {/* Materials Table - Main Content */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg border shadow-sm">
+      <div className="bg-white dark:bg-neutral-900 rounded-lg border shadow-sm">
         <div className="p-4 border-b">
           <h2 className="text-lg font-semibold">
             Your Materials ({materials.length})
@@ -334,6 +331,6 @@ function TeacherMaterialsPage() {
         onConfirm={handleDelete}
         isDeleting={isDeleting}
       />
-    </div>
+    </PageContainer>
   )
 }

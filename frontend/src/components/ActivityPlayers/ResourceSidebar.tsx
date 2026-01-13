@@ -419,7 +419,7 @@ export function ResourceSidebar({
 
       case "text_note":
         return (
-          <div className="w-full max-w-2xl max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg overflow-auto">
+          <div className="w-full max-w-2xl max-h-[80vh] bg-white dark:bg-neutral-800 rounded-lg overflow-auto">
             <div className="p-6">
               <pre className="whitespace-pre-wrap font-sans text-base text-gray-900 dark:text-gray-100">
                 {material.text_content || "No content available"}
@@ -455,7 +455,7 @@ export function ResourceSidebar({
   return (
     <>
       {/* Sidebar Panel - integrated into layout */}
-      <aside className="w-80 shrink-0 border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 flex flex-col h-full">
+      <aside className="w-80 shrink-0 border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-neutral-800 flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
           <div className="flex items-center gap-2">
@@ -489,7 +489,7 @@ export function ResourceSidebar({
                 {resources.videos.map((video) => (
                   <div
                     key={video.path}
-                    className="rounded-lg border border-gray-200 bg-gray-50 p-3 transition-colors hover:border-teal-300 hover:bg-teal-50/50 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:border-teal-700 dark:hover:bg-teal-900/20"
+                    className="rounded-lg border border-gray-200 bg-gray-50 p-3 transition-colors hover:border-teal-300 hover:bg-teal-50/50 dark:border-gray-700 dark:bg-neutral-800/50 dark:hover:border-teal-700 dark:hover:bg-teal-900/20"
                   >
                     <div className="flex items-start gap-3">
                       {/* Video icon */}
@@ -540,7 +540,7 @@ export function ResourceSidebar({
                     key={material.material_id}
                     className={`rounded-lg border p-3 transition-colors ${
                       material.is_available
-                        ? "border-gray-200 bg-gray-50 hover:border-teal-300 hover:bg-teal-50/50 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:border-teal-700 dark:hover:bg-teal-900/20"
+                        ? "border-gray-200 bg-gray-50 hover:border-teal-300 hover:bg-teal-50/50 dark:border-gray-700 dark:bg-neutral-800/50 dark:hover:border-teal-700 dark:hover:bg-teal-900/20"
                         : "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/20"
                     }`}
                   >

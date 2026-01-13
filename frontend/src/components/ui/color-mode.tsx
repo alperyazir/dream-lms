@@ -59,7 +59,7 @@ export const ColorModeButton = React.forwardRef<
   }, [])
 
   if (!mounted) {
-    return <Skeleton className="h-8 w-8" />
+    return <Skeleton className="h-10 w-10 rounded-full" />
   }
 
   return (
@@ -69,6 +69,7 @@ export const ColorModeButton = React.forwardRef<
       size="icon"
       aria-label="Toggle color mode"
       ref={ref}
+      className="h-10 w-10 rounded-full hover:bg-accent/80 active:scale-95 transition-all"
       {...props}
     >
       <ColorModeIcon />

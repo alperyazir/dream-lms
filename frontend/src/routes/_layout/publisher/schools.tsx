@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Book, Building2, Check } from "lucide-react"
 import { useState } from "react"
+import { FiTrendingUp } from "react-icons/fi"
 import { PublishersService, type SchoolCreateByPublisher } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { SchoolCard } from "@/components/schools/SchoolCard"
 import { SchoolDetailsDialog } from "@/components/schools/SchoolDetailsDialog"
 import { SchoolListView } from "@/components/schools/SchoolListView"
@@ -132,17 +134,13 @@ function PublisherSchoolsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageContainer>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Schools</h1>
-        <p className="text-muted-foreground">
-          Schools managed by your organization
-        </p>
-      </div>
-
-      {/* Actions Bar */}
-      <div className="flex justify-between items-center mb-6">
+      <PageHeader
+        icon={FiTrendingUp}
+        title="My Schools"
+        description="Schools managed by your organization"
+      >
         <ViewModeToggle value={viewMode} onChange={setViewMode} />
         <Button
           onClick={() => setIsAddDialogOpen(true)}
@@ -151,7 +149,7 @@ function PublisherSchoolsPage() {
           <Building2 className="w-4 h-4 mr-2" />
           Add School
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Loading/Error States */}
       {error ? (
@@ -329,6 +327,6 @@ function PublisherSchoolsPage() {
           school={selectedSchool}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

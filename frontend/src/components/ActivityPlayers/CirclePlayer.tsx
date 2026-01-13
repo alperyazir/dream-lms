@@ -400,7 +400,7 @@ export function CirclePlayer({
       {/* Background Image with Selectable Areas - fills remaining height */}
       <div
         ref={containerRef}
-        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800"
         style={{
           willChange: "auto",
           height: lockedContainerHeight ? `${lockedContainerHeight}px` : "auto",
@@ -557,7 +557,7 @@ export function CirclePlayer({
 
       {/* Results Legend - compact */}
       {showResults && (
-        <div className="mt-2 shrink-0 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+        <div className="mt-2 shrink-0 rounded-lg bg-gray-50 px-3 py-2 dark:bg-neutral-800">
           <div className="flex flex-wrap items-center gap-3 text-xs">
             <span className="font-medium text-gray-700 dark:text-gray-300">
               Legend:

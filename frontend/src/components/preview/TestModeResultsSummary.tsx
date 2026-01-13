@@ -64,7 +64,7 @@ export function TestModeResultsSummary({
 
         <div className="space-y-6 py-4">
           {/* Overall Score */}
-          <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-neutral-800">
             <div
               className={`text-4xl font-bold ${getScoreColor(results.totalScore)}`}
             >

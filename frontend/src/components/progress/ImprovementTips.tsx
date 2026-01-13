@@ -31,7 +31,7 @@ export const ImprovementTips = React.memo(({ tips }: ImprovementTipsProps) => {
           {tips.map((tip, index) => (
             <div
               key={index}
-              className="flex gap-3 p-3 rounded-lg bg-white/80 dark:bg-gray-900/50 border border-amber-100 dark:border-amber-900/30"
+              className="flex gap-3 p-3 rounded-lg bg-white/80 dark:bg-neutral-900/50 border border-amber-100 dark:border-amber-900/30"
             >
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center">

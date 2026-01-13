@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { BarChart3, Edit, Plus, Trash2, TrendingUp, UserPlus } from "lucide-react"
 import { useState } from "react"
+import { FiTrendingUp } from "react-icons/fi"
 import {
   type ClassCreateByTeacher,
   type ClassResponse,
@@ -10,6 +11,7 @@ import {
   TeachersService,
 } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -314,17 +316,23 @@ function TeacherClassroomsPage() {
   )
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Classrooms</h1>
-        <p className="text-muted-foreground">
-          Manage your classes and monitor student performance
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={FiTrendingUp}
+        title="My Classrooms"
+        description="Manage your classes and monitor student performance"
+      >
+        <Button
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Class
+        </Button>
+      </PageHeader>
 
-      {/* Search and Create */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      {/* Search */}
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <Input
             type="search"
@@ -334,13 +342,6 @@ function TeacherClassroomsPage() {
             className="w-full"
           />
         </div>
-        <Button
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Class
-        </Button>
       </div>
 
       {/* Loading/Error States */}
@@ -430,7 +431,7 @@ function TeacherClassroomsPage() {
                       className={
                         classItem.is_active
                           ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                          : "bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                          : "bg-gray-50 text-gray-700 dark:bg-neutral-800 dark:text-gray-400"
                       }
                     >
                       {classItem.is_active ? "Active" : "Inactive"}
@@ -801,6 +802,6 @@ function TeacherClassroomsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   )
 }

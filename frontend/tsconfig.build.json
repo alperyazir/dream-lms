@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
   "exclude": ["tests/**/*.ts", "src/**/*.test.ts", "src/**/*.test.tsx"]
 }

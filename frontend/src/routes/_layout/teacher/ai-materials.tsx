@@ -9,11 +9,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { FileText, Plus, RefreshCw, Sparkles } from "lucide-react"
 import { useCallback, useState } from "react"
+// Note: This page uses Sparkles from lucide-react for the icon
 import {
   GeneratedContentLibrary,
   MaterialLibrary,
   MaterialUpload,
 } from "@/components/teacher-materials"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -121,23 +123,17 @@ function AIMaterialsPage() {
   )
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            AI Content Materials
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Upload PDFs or paste text to generate quizzes, activities, and more
-            with AI.
-          </p>
-        </div>
+    <PageContainer>
+      <PageHeader
+        icon={Sparkles}
+        title="AI Content Materials"
+        description="Upload PDFs or paste text to generate quizzes, activities, and more with AI"
+      >
         <Button onClick={() => setUploadDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Material
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Main Content Tabs */}
       <Tabs
@@ -211,6 +207,6 @@ function AIMaterialsPage() {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   )
 }

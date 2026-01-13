@@ -7,8 +7,10 @@ import {
   UserCheck,
   Users,
 } from "lucide-react"
+import { FiHome } from "react-icons/fi"
 import { AdminService } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { StatCard } from "@/components/dashboard/StatCard"
 
 export const Route = createFileRoute("/_layout/admin/dashboard")({
@@ -42,16 +44,12 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="max-w-full p-6 space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Admin Dashboard
-        </h1>
-        <p className="text-muted-foreground">
-          System overview and recent activity
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={FiHome}
+        title="Admin Dashboard 👋"
+        description="System overview and recent activity"
+      />
 
       {/* Stats Cards - Comprehensive Overview */}
       <div>
@@ -115,6 +113,6 @@ function AdminDashboard() {
           </div>
         )}
       </div>
-    </div>
+    </PageContainer>
   )
 }

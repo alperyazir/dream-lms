@@ -56,8 +56,9 @@ class PredefinedAvatarsResponse(BaseModel):
 
 
 class SelectAvatarRequest(BaseModel):
-    """Request to select a predefined avatar."""
-    avatar_id: str
+    """Request to select a predefined avatar or set a custom DiceBear URL."""
+    avatar_id: str | None = None
+    avatar_url: str | None = None
 
 
 class AvatarUpdateResponse(BaseModel):
@@ -78,30 +79,51 @@ def get_predefined_avatars() -> Any:
 
 
 @router.patch("/me", response_model=UserPublic)
-def select_predefined_avatar(
+def update_avatar(
     *,
     session: SessionDep,
     current_user: CurrentUser,
     request: SelectAvatarRequest
 ) -> Any:
     """
-    Select a predefined avatar for the current user.
-    """
-    # Find the selected avatar
-    selected_avatar = next(
-        (a for a in PREDEFINED_AVATARS if a["id"] == request.avatar_id),
-        None
-    )
+    Update the current user's avatar.
 
-    if not selected_avatar:
+    Can either:
+    - Select a predefined avatar by avatar_id
+    - Set a custom DiceBear URL via avatar_url
+    """
+    # Validate request - must have either avatar_id or avatar_url
+    if not request.avatar_id and not request.avatar_url:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid avatar_id. Choose from: {[a['id'] for a in PREDEFINED_AVATARS]}"
+            detail="Must provide either avatar_id or avatar_url"
         )
 
-    # Update user's avatar
-    current_user.avatar_url = selected_avatar["url"]
-    current_user.avatar_type = AvatarType.predefined
+    # If avatar_url is provided, use it directly (for DiceBear)
+    if request.avatar_url:
+        # Validate it's a DiceBear URL for security
+        if not request.avatar_url.startswith("https://api.dicebear.com/"):
+            raise HTTPException(
+                status_code=400,
+                detail="Custom avatar URLs must be from DiceBear (https://api.dicebear.com/)"
+            )
+        current_user.avatar_url = request.avatar_url
+        current_user.avatar_type = AvatarType.custom
+    else:
+        # Find the selected predefined avatar
+        selected_avatar = next(
+            (a for a in PREDEFINED_AVATARS if a["id"] == request.avatar_id),
+            None
+        )
+
+        if not selected_avatar:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid avatar_id. Choose from: {[a['id'] for a in PREDEFINED_AVATARS]}"
+            )
+
+        current_user.avatar_url = selected_avatar["url"]
+        current_user.avatar_type = AvatarType.predefined
 
     session.add(current_user)
     session.commit()

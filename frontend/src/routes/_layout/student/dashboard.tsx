@@ -6,12 +6,15 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import { FiHome } from "react-icons/fi"
 import { AnnouncementWidget } from "@/components/announcements/AnnouncementWidget"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { ProgressSummaryCard } from "@/components/student/ProgressSummaryCard"
 import { UpcomingAssignmentsList } from "@/components/student/UpcomingAssignmentsList"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useStudentAnnouncements } from "@/hooks/useAnnouncements"
+import useAuth from "@/hooks/useAuth"
 import { useStudentProgress } from "@/hooks/useStudentProgress"
 import { getStudentAssignments } from "@/services/assignmentsApi"
 
@@ -24,6 +27,11 @@ export const Route = createFileRoute("/_layout/student/dashboard")({
 })
 
 function StudentDashboard() {
+  const { user } = useAuth()
+
+  // Get first name from full name
+  const firstName = user?.full_name?.split(" ")[0] || "Student"
+
   // Fetch real assignments from API
   const { data: assignments = [], isLoading: isLoadingAssignments } = useQuery({
     queryKey: ["studentAssignments"],
@@ -43,16 +51,12 @@ function StudentDashboard() {
     })
 
   return (
-    <div className="container py-4 md:py-6 space-y-4 md:space-y-6">
-      {/* Page Title */}
-      <div className="px-1">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
-          Student Dashboard
-        </h1>
-        <p className="text-sm md:text-base text-muted-foreground mt-1">
-          Welcome back! Here's your learning overview.
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={FiHome}
+        title={`${firstName}'s Dashboard 👋`}
+        description="Welcome back! Here's your learning overview."
+      />
 
       {/* Cards stack vertically, full width */}
       <div className="space-y-4 md:space-y-6">
@@ -78,6 +82,6 @@ function StudentDashboard() {
           <UpcomingAssignmentsList assignments={assignments} />
         )}
       </div>
-    </div>
+    </PageContainer>
   )
 }

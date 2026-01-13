@@ -46,7 +46,7 @@ export function ActivityResults({
 
   return (
     <div className="flex min-h-[calc(100vh-200px)] items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-neuro dark:bg-gray-800">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-neuro dark:bg-neutral-800">
         {/* Score Circle */}
         <div className="mx-auto mb-6 flex h-64 w-64 items-center justify-center">
           <div className="relative">
@@ -154,7 +154,7 @@ export function ActivityResults({
 
         {/* Performance breakdown (optional) */}
         {scoreResult.breakdown && (
-          <div className="mt-6 rounded-lg bg-gray-50 p-4 dark:bg-gray-900">
+          <div className="mt-6 rounded-lg bg-gray-50 p-4 dark:bg-neutral-900">
             <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
               Performance Details
             </h3>

@@ -375,7 +375,7 @@ function PageWithMarkers({
 
   return (
     <div
-      className={`relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex flex-col ${
+      className={`relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-neutral-800 flex flex-col ${
         useSingleSizing
           ? "h-full max-h-full aspect-[3/4]"
           : "h-full max-h-full aspect-[3/4] max-w-[48%]"

@@ -611,7 +611,7 @@ export function GenerateContentDialog({
                           ? "bg-purple-500 text-white shadow-sm"
                           : isCurrent
                             ? "bg-purple-500 text-white ring-2 ring-purple-500/20 shadow-md"
-                            : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600",
+                            : "bg-gray-100 dark:bg-neutral-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600",
                       )}
                     >
                       {isCompleted ? (
@@ -1304,7 +1304,7 @@ function StepResultPreview({
                               .map((letter: string, i: number) => (
                                 <span
                                   key={i}
-                                  className="w-8 h-8 flex items-center justify-center text-sm font-bold bg-white dark:bg-gray-800 rounded-md border-2 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 shadow-sm"
+                                  className="w-8 h-8 flex items-center justify-center text-sm font-bold bg-white dark:bg-neutral-800 rounded-md border-2 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 shadow-sm"
                                 >
                                   {letter.toUpperCase()}
                                 </span>
@@ -1316,7 +1316,7 @@ function StepResultPreview({
                               .map((word: string, i: number) => (
                                 <span
                                   key={i}
-                                  className="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 rounded-md border-2 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 shadow-sm"
+                                  className="px-3 py-1.5 text-sm font-medium bg-white dark:bg-neutral-800 rounded-md border-2 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 shadow-sm"
                                 >
                                   {word}
                                 </span>

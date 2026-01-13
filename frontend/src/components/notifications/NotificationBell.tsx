@@ -59,17 +59,20 @@ export function NotificationBell({
               ? `Notifications (${unreadCount} unread)`
               : "Notifications"
           }
-          className={cn("relative", buttonClasses, className)}
+          className={cn("relative rounded-full hover:bg-accent/80 active:scale-95 transition-all", buttonClasses, className)}
         >
           <Bell style={{ width: iconSize, height: iconSize }} />
           {unreadCount > 0 && (
-            <span
-              className={cn(
-                "absolute flex items-center justify-center rounded-full bg-red-600 font-semibold text-white",
-                badgeClasses,
-              )}
-            >
-              {formatCount(unreadCount)}
+            <span className={cn("absolute flex items-center justify-center", isSmall ? "top-0.5 right-0.5" : "top-1 right-1")}>
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+              <span
+                className={cn(
+                  "relative flex items-center justify-center rounded-full bg-red-500 font-bold text-white",
+                  isSmall ? "h-3.5 w-3.5 text-[9px]" : "h-4 w-4 text-[10px]",
+                )}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
             </span>
           )}
         </Button>

@@ -14,6 +14,7 @@ import {
   MaterialLibrary,
   MaterialUpload,
 } from "@/components/teacher-materials"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -117,27 +118,17 @@ function MyMaterialsPage() {
   )
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg">
-            <FileText className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              My Materials
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Upload PDFs or paste text for AI content generation
-            </p>
-          </div>
-        </div>
+    <PageContainer>
+      <PageHeader
+        icon={Sparkles}
+        title="My Materials"
+        description="Upload PDFs or paste text for AI content generation"
+      >
         <Button onClick={() => setUploadDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Material
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Main Content Tabs */}
       <Tabs
@@ -211,6 +202,6 @@ function MyMaterialsPage() {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   )
 }

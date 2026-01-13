@@ -48,9 +48,11 @@ import {
   Users,
 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { FiCalendar } from "react-icons/fi"
 import { TeachersService } from "@/client"
 import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -322,7 +324,7 @@ function TeacherCalendarPage() {
       case "draft":
         return {
           className:
-            "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800",
+            "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-neutral-800",
           label: "Draft",
         }
       case "published":
@@ -335,7 +337,7 @@ function TeacherCalendarPage() {
       case "archived":
         return {
           className:
-            "border-gray-400 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800",
+            "border-gray-400 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-800",
           label: "Archived",
         }
       default:
@@ -354,7 +356,7 @@ function TeacherCalendarPage() {
       case "published":
         return "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300"
       default:
-        return "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+        return "bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300"
     }
   }
 
@@ -466,15 +468,13 @@ function TeacherCalendarPage() {
     classFilter !== "all" || statusFilter !== "all" || bookFilter !== "all"
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageContainer>
       {/* Header */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold mb-1">Assignment Calendar</h1>
-          <p className="text-muted-foreground">
-            View and manage your assignment schedule
-          </p>
-        </div>
+      <PageHeader
+        icon={FiCalendar}
+        title="Assignment Calendar"
+        description="View and manage your assignment schedule"
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="bg-teal-600 hover:bg-teal-700">
@@ -501,10 +501,10 @@ function TeacherCalendarPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </PageHeader>
 
       {/* Controls */}
-      <Card className="mb-6">
+      <Card>
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Period Navigation */}
@@ -870,7 +870,7 @@ function TeacherCalendarPage() {
           <span>Past Due</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-gray-100 dark:bg-gray-800" />
+          <div className="w-3 h-3 rounded bg-gray-100 dark:bg-neutral-800" />
           <span>Draft/Archived</span>
         </div>
       </div>
@@ -926,7 +926,7 @@ function TeacherCalendarPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   )
 }
 
@@ -980,13 +980,13 @@ function AssignmentPopoverContent({
       case "draft":
         return {
           className:
-            "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800",
+            "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-neutral-800",
           label: "Draft",
         }
       default:
         return {
           className:
-            "border-gray-400 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800",
+            "border-gray-400 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-800",
           label: assignment.status,
         }
     }

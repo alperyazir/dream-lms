@@ -27,7 +27,7 @@ export function ActivityFooter({
   lastSavedAt,
 }: ActivityFooterProps) {
   return (
-    <footer className="border-t bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+    <footer className="border-t bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-neutral-800">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         {/* Left: Exit button */}
         <Button

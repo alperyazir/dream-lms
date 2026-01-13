@@ -261,7 +261,7 @@ function MostMissedQuestionsCard({
           {questions.map((q, idx) => (
             <div
               key={q.question_id}
-              className="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-gray-900 border"
+              className="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-neutral-900 border"
             >
               <Badge variant="destructive" className="mt-0.5">
                 #{idx + 1}

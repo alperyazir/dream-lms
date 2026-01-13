@@ -374,7 +374,7 @@ export function AIQuizForm({
 
         {/* Estimated time */}
         {isFormValid && (
-          <div className="flex items-center gap-2 rounded-md bg-gray-50 p-3 text-sm text-muted-foreground dark:bg-gray-800/50">
+          <div className="flex items-center gap-2 rounded-md bg-gray-50 p-3 text-sm text-muted-foreground dark:bg-neutral-800/50">
             <Clock className="h-4 w-4" />
             <span>Estimated generation time: ~{estimatedTime} seconds</span>
           </div>

@@ -10,7 +10,6 @@
 
 import { useMutation } from "@tanstack/react-query"
 import { useCallback, useState } from "react"
-import { toast } from "sonner"
 
 import {
   type AIQuizQuestion,
@@ -84,10 +83,10 @@ export function useContentReview(initialContent: GeneratedActivity) {
       contentReviewApi.regenerateQuestion(request),
     onSuccess: (newQuestion: AIQuizQuestion, variables) => {
       updateQuestion(variables.question_index, newQuestion)
-      toast.success("Question regenerated successfully")
+      console.log("Question regenerated successfully")
     },
     onError: (error: any) => {
-      toast.error(
+      console.error(
         error.response?.data?.detail || "Failed to regenerate question",
       )
     },
@@ -130,11 +129,11 @@ export function useContentReview(initialContent: GeneratedActivity) {
     try {
       // TODO: Implement regenerate all API call
       // For now, just show a toast
-      toast.info("Regenerate all functionality will be implemented")
+      console.info("Regenerate all functionality will be implemented")
 
       setState((prev) => ({ ...prev, isRegenerating: false }))
     } catch (_error) {
-      toast.error("Failed to regenerate content")
+      console.error("Failed to regenerate content")
       setState((prev) => ({ ...prev, isRegenerating: false }))
     }
   }, [])

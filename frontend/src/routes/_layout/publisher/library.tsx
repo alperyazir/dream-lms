@@ -2,15 +2,16 @@ import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { BookOpen, RefreshCw, UserPlus } from "lucide-react"
 import { useEffect, useState } from "react"
+import { FiBook } from "react-icons/fi"
 import { PublishersService } from "@/client"
 import { BookTableView } from "@/components/books/BookTableView"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { QuickAssignDialog } from "@/components/books/QuickAssignDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { LibraryFilters } from "@/components/library/LibraryFilters"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { PublisherLogo } from "@/components/ui/publisher-logo"
 import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
 import { useLibraryFilters } from "@/hooks/useLibraryFilters"
 import { useViewPreference } from "@/hooks/useViewPreference"
@@ -147,13 +148,6 @@ function PublisherLibraryPage() {
     setAssignBook(book)
   }
 
-  // Fetch publisher profile for header display
-  const { data: profile } = useQuery({
-    queryKey: ["publisherProfile"],
-    queryFn: () => PublishersService.getMyProfile(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  })
-
   // Fetch books for this publisher only (much faster than fetching all books)
   const { data: booksData = [], isLoading: loading } = useQuery({
     queryKey: ["publisherMyBooks"],
@@ -177,29 +171,14 @@ function PublisherLibraryPage() {
     useLibraryFilters(books)
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header with Logo */}
-      <div className="mb-8 flex items-center gap-6">
-        {/* Publisher Logo from DCS */}
-        {profile && (
-          <div className="flex-shrink-0">
-            <PublisherLogo
-              publisherId={profile.id}
-              size="lg"
-              alt={`${profile.name} logo`}
-              className="shadow-lg"
-            />
-          </div>
-        )}
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold mb-2">My Library</h1>
-          <p className="text-muted-foreground">
-            View your published books and learning materials
-          </p>
-        </div>
-        {/* View Mode Toggle */}
+    <PageContainer>
+      <PageHeader
+        icon={FiBook}
+        title="My Library"
+        description="View your published books and learning materials"
+      >
         <ViewModeToggle value={viewMode} onChange={setViewMode} />
-      </div>
+      </PageHeader>
 
       {/* Filters - hide publisher filter for publishers */}
       <LibraryFilters
@@ -261,6 +240,6 @@ function PublisherLibraryPage() {
           isAdmin={false}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

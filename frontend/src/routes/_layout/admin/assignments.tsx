@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Eye, Trash2 } from "lucide-react"
 import { useState } from "react"
+import { FiClipboard } from "react-icons/fi"
 import { AdminService } from "@/client"
 import type {
   AssignmentListResponse,
   AssignmentWithTeacher,
 } from "@/client/types.gen"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -143,11 +145,15 @@ function AdminAssignmentsPage() {
   }
 
   return (
-    <div className="container py-6">
-      <h1 className="text-3xl font-bold mb-6">All Assignments</h1>
+    <PageContainer>
+      <PageHeader
+        icon={FiClipboard}
+        title="All Assignments"
+        description="View and manage all assignments across teachers"
+      />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
+      <div className="flex flex-wrap gap-3">
         <Input
           placeholder="Search by title..."
           value={filters.search || ""}
@@ -310,6 +316,6 @@ function AdminAssignmentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   )
 }

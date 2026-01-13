@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { AlertTriangle, Book, Check, User, UserPlus } from "lucide-react"
 import { useMemo, useState } from "react"
+import { FiUsers } from "react-icons/fi"
 import {
   AdminService,
   PublishersService,
   type TeacherCreateAPI,
 } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { TeacherCard } from "@/components/teachers/TeacherCard"
 import { TeacherDetailsDialog } from "@/components/teachers/TeacherDetailsDialog"
 import {
@@ -238,23 +240,13 @@ function PublisherTeachersPage() {
   }, [teachers, filters])
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageContainer>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Teachers</h1>
-        <p className="text-muted-foreground">
-          Manage teachers using your published materials
-        </p>
-      </div>
-
-      {/* Filters and Actions */}
-      <TeacherFilters
-        filters={filters}
-        onChange={setFilters}
-        schools={schools}
-      />
-
-      <div className="flex justify-between items-center mb-6">
+      <PageHeader
+        icon={FiUsers}
+        title="Teachers"
+        description="Manage teachers using your published materials"
+      >
         <ViewModeToggle value={viewMode} onChange={setViewMode} />
         <Button
           onClick={() => setIsAddDialogOpen(true)}
@@ -263,7 +255,14 @@ function PublisherTeachersPage() {
           <UserPlus className="w-4 h-4 mr-2" />
           Add Teacher
         </Button>
-      </div>
+      </PageHeader>
+
+      {/* Filters */}
+      <TeacherFilters
+        filters={filters}
+        onChange={setFilters}
+        schools={schools}
+      />
 
       {/* Loading/Error States */}
       {error ? (
@@ -553,6 +552,6 @@ function PublisherTeachersPage() {
           teacher={selectedTeacher}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

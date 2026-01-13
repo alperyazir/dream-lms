@@ -14,7 +14,6 @@ import type { Class, Student } from "../types/teacher"
  * Create axios instance with OpenAPI config
  */
 const apiClient = axios.create({
-  baseURL: OpenAPI.BASE,
   headers: {
     "Content-Type": "application/json",
   },
@@ -22,6 +21,9 @@ const apiClient = axios.create({
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
+  // Set baseURL from OpenAPI config to ensure requests go to correct backend
+  config.baseURL = OpenAPI.BASE
+
   const token = OpenAPI.TOKEN
   if (token) {
     // Handle both sync and async token functions

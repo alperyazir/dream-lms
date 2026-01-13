@@ -66,7 +66,7 @@ function PageCard({
       `}
     >
       {/* Thumbnail */}
-      <div className="relative w-full aspect-[3/4] bg-gray-100 dark:bg-gray-800">
+      <div className="relative w-full aspect-[3/4] bg-gray-100 dark:bg-neutral-800">
         {thumbnailUrl && !thumbnailError ? (
           <img
             src={thumbnailUrl}

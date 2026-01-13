@@ -111,7 +111,7 @@ export function PageThumbnail({
       `}
     >
       {/* Thumbnail Image */}
-      <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
+      <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-neutral-800">
         {isLoading && <Skeleton className="w-full h-full" />}
         {!isLoading && hasError && (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">

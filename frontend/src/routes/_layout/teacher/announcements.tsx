@@ -16,7 +16,9 @@ import {
   Users,
 } from "lucide-react"
 import { useState } from "react"
+import { FiMessageSquare } from "react-icons/fi"
 import { AnnouncementCreationWizard } from "@/components/announcements/AnnouncementCreationWizard"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -131,21 +133,18 @@ function AnnouncementsPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <PageContainer>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Announcements</h1>
-          <p className="text-muted-foreground">
-            Send announcements to your students
-          </p>
-        </div>
-
+      <PageHeader
+        icon={FiMessageSquare}
+        title="Announcements"
+        description="Send announcements to your students"
+      >
         <Button onClick={() => setIsCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Announcement
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Announcement Creation Wizard */}
       <AnnouncementCreationWizard
@@ -332,6 +331,6 @@ function AnnouncementsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   )
 }

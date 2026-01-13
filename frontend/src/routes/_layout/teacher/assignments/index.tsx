@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { BookOpen, Plus } from "lucide-react"
 import { useMemo, useState } from "react"
+import { FiClipboard } from "react-icons/fi"
 import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import {
   AssignmentFilters,
   type AssignmentFiltersState,
@@ -128,27 +130,21 @@ function TeacherAssignmentsPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            My Assignments
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            View and manage all your assignments
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <ViewModeToggle value={viewMode} onChange={setViewMode} />
-          <Button
-            className="bg-purple-600 hover:bg-purple-700"
-            onClick={handleCreateAssignment}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Assignment
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={FiClipboard}
+        title="My Assignments"
+        description="View and manage all your assignments"
+      >
+        <ViewModeToggle value={viewMode} onChange={setViewMode} />
+        <Button
+          className="bg-purple-600 hover:bg-purple-700"
+          onClick={handleCreateAssignment}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Assignment
+        </Button>
+      </PageHeader>
 
       {assignments && assignments.length > 0 && (
         <AssignmentFilters
@@ -214,6 +210,6 @@ function TeacherAssignmentsPage() {
         onClose={() => setDeletingAssignment(null)}
         assignment={deletingAssignment}
       />
-    </div>
+    </PageContainer>
   )
 }

@@ -12,6 +12,7 @@ import {
   UserCheck,
 } from "lucide-react"
 import { useState } from "react"
+import { FiUsers } from "react-icons/fi"
 import {
   AdminService,
   type TeacherCreateAPI,
@@ -20,6 +21,7 @@ import {
 } from "@/client"
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -323,22 +325,17 @@ function AdminTeachers() {
 
   if (error) {
     return (
-      <div className="max-w-full p-6">
+      <PageContainer>
         <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded">
           Error loading teachers. Please try again later.
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="max-w-full p-6 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Teachers</h1>
-          <p className="text-muted-foreground">Manage teachers in the system</p>
-        </div>
+    <PageContainer>
+      <PageHeader icon={FiUsers} title="Teachers" description="Manage teachers in the system">
         <Button
           onClick={() => setIsAddDialogOpen(true)}
           className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
@@ -346,7 +343,7 @@ function AdminTeachers() {
           <Plus className="w-4 h-4 mr-2" />
           Add Teacher
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Search */}
       <div className="flex items-center gap-2 max-w-md">
@@ -835,6 +832,6 @@ function AdminTeachers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   )
 }

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { FiMail } from "react-icons/fi"
+import { Mail } from "lucide-react"
 import { NotificationBell } from "@/components/notifications"
 import { Button } from "@/components/ui/button"
 import { ColorModeButton } from "@/components/ui/color-mode"
@@ -9,80 +9,94 @@ import Logo from "/assets/images/dreamedtech_single.svg"
 import UserMenu from "./UserMenu"
 
 function Navbar() {
-  // Fetch unread messages count from API
   const { count: totalUnreadMessages } = useMessagesUnreadCount()
 
   return (
     <>
       {/* Desktop Navbar */}
-      <div className="hidden md:flex justify-between sticky top-0 items-center bg-muted w-full p-4 z-10">
-        <Link to="/" className="flex items-center gap-3">
-          <img src={Logo} alt="DreamEdTech" className="h-10 w-10" />
-          <h1 className="text-2xl font-bold text-foreground">Dream LMS</h1>
-        </Link>
-        <div className="flex gap-2 items-center">
-          {/* Notification Bell */}
-          <NotificationBell />
-
-          {/* Messages Icon with Unread Count */}
-          <Link to="/messaging">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={`Messages ${totalUnreadMessages > 0 ? `(${totalUnreadMessages} unread)` : ""}`}
-              className="relative"
-            >
-              <FiMail fontSize="20" />
-              {totalUnreadMessages > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-semibold text-white">
-                  {totalUnreadMessages}
-                </span>
-              )}
-            </Button>
+      <header className="hidden md:flex sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+        <div className="flex h-16 w-full items-center justify-between px-6">
+          {/* Left: Logo */}
+          <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
+            <div className="relative">
+              <img
+                src={Logo}
+                alt="DreamEdTech"
+                className="h-9 w-9 transition-transform group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+              Dream LMS
+            </span>
           </Link>
 
-          {/* Dark Mode Toggle */}
-          <ColorModeButton />
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <NotificationBell />
 
-          {/* User Menu */}
-          <UserMenu />
+            <Link to="/messaging">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Messages ${totalUnreadMessages > 0 ? `(${totalUnreadMessages} unread)` : ""}`}
+                className="relative h-10 w-10 rounded-full hover:bg-accent/80 active:scale-95 transition-all"
+              >
+                <Mail className="h-5 w-5" />
+                {totalUnreadMessages > 0 && (
+                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                      {totalUnreadMessages > 9 ? "9+" : totalUnreadMessages}
+                    </span>
+                  </span>
+                )}
+              </Button>
+            </Link>
+
+            <ColorModeButton />
+
+            <div className="h-6 w-px bg-border mx-2" />
+
+            <UserMenu />
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Mobile Navbar */}
-      <div className="flex md:hidden justify-between sticky top-0 items-center bg-muted w-full p-3 z-10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={Logo} alt="DreamEdTech" className="h-8 w-8" />
-          <h1 className="text-xl font-bold text-foreground">Dream LMS</h1>
-        </Link>
-        <div className="flex gap-1 items-center">
-          {/* Notification Bell */}
-          <NotificationBell size="sm" />
-
-          {/* Messages Icon with Unread Count */}
-          <Link to="/messaging">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={`Messages ${totalUnreadMessages > 0 ? `(${totalUnreadMessages} unread)` : ""}`}
-              className="relative h-9 w-9"
-            >
-              <FiMail fontSize="18" />
-              {totalUnreadMessages > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold text-white">
-                  {totalUnreadMessages}
-                </span>
-              )}
-            </Button>
+      <header className="flex md:hidden sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+        <div className="flex h-14 w-full items-center justify-between px-4">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2">
+            <img src={Logo} alt="DreamEdTech" className="h-8 w-8" />
+            <span className="text-lg font-bold">Dream LMS</span>
           </Link>
 
-          {/* Dark Mode Toggle */}
-          <ColorModeButton />
+          {/* Actions */}
+          <div className="flex items-center gap-0.5">
+            <NotificationBell size="sm" />
 
-          {/* User Menu */}
-          <UserMenu />
+            <Link to="/messaging">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Messages ${totalUnreadMessages > 0 ? `(${totalUnreadMessages} unread)` : ""}`}
+                className="relative h-9 w-9 rounded-full hover:bg-accent/80 active:scale-95 transition-all"
+              >
+                <Mail className="h-4 w-4" />
+                {totalUnreadMessages > 0 && (
+                  <span className="absolute top-0.5 right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                    {totalUnreadMessages > 9 ? "9+" : totalUnreadMessages}
+                  </span>
+                )}
+              </Button>
+            </Link>
+
+            <ColorModeButton />
+            <UserMenu />
+          </div>
         </div>
-      </div>
+      </header>
     </>
   )
 }

@@ -32,7 +32,9 @@ import {
   PlayCircle,
 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { FiCalendar } from "react-icons/fi"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -156,7 +158,7 @@ function StudentCalendarPage() {
       default:
         return {
           className:
-            "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800",
+            "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-neutral-800",
           label: "Not Started",
           Icon: Clock,
         }
@@ -240,14 +242,13 @@ function StudentCalendarPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageContainer>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-1">My Calendar</h1>
-        <p className="text-muted-foreground">
-          Track your assignments and due dates
-        </p>
-      </div>
+      <PageHeader
+        icon={FiCalendar}
+        title="My Calendar"
+        description="Track your assignments and due dates"
+      />
 
       {/* Controls */}
       <Card className="mb-6">
@@ -448,7 +449,7 @@ function StudentCalendarPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageContainer>
   )
 }
 
@@ -531,7 +532,7 @@ function getStatusBadgeHelper(status: AssignmentStatus) {
     default:
       return {
         className:
-          "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800",
+          "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-neutral-800",
         label: "Not Started",
         Icon: Clock,
       }

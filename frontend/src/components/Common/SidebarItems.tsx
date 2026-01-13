@@ -3,6 +3,7 @@ import { Link as RouterLink, useLocation } from "@tanstack/react-router"
 import type { LucideIcon } from "lucide-react"
 import { Sparkles } from "lucide-react"
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   FiActivity,
   FiBarChart2,
@@ -10,7 +11,6 @@ import {
   FiBriefcase,
   FiCalendar,
   FiChevronDown,
-  FiChevronRight,
   FiClipboard,
   FiFolder,
   FiHome,
@@ -24,6 +24,12 @@ import type { IconType } from "react-icons/lib"
 
 import type { UserPublic, UserRole } from "@/client"
 import { PublisherLogo } from "@/components/ui/publisher-logo"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { getStudentAssignments } from "@/services/assignmentsApi"
 import { getMyProfile } from "@/services/publishersApi"
 
@@ -72,7 +78,6 @@ const roleMenuItems: Record<UserRole, Item[]> = {
   ],
   supervisor: [
     { icon: FiHome, title: "Dashboard", path: "/admin/dashboard" },
-    // Supervisors cannot manage other supervisors, so no Supervisors menu item
     { icon: FiBriefcase, title: "Publishers", path: "/admin/publishers" },
     { icon: FiTrendingUp, title: "Schools", path: "/admin/schools" },
     { icon: FiUsers, title: "Teachers", path: "/admin/teachers" },
@@ -116,7 +121,6 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
 
   // Track which collapsible menus are expanded
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
-    // Auto-expand if user is on a DreamAI page
     location.pathname.startsWith("/dreamai") ? { DreamAI: true } : {},
   )
 
@@ -138,13 +142,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   }
 
   // Fetch real stats for admin users
-  // TODO: Re-enable when AdminService.getDashboardStats is implemented
   const adminStats = undefined as AdminStats | undefined
-  // const { data: adminStats } = useQuery({
-  //   queryKey: ["adminStats"],
-  //   queryFn: () => AdminService.getDashboardStats(),
-  //   enabled: userRole === "admin",
-  // })
 
   // Fetch student assignments for notification badge
   const { data: studentAssignments = [] } = useQuery({
@@ -158,10 +156,10 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     queryKey: ["publisherProfile"],
     queryFn: () => getMyProfile(),
     enabled: userRole === "publisher",
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 
-  // Count incomplete student assignments (not_started + in_progress + past_due)
+  // Count incomplete student assignments
   const incompleteAssignmentsCount = Array.isArray(studentAssignments)
     ? studentAssignments.filter(
         (assignment) => assignment.status !== "completed",
@@ -178,17 +176,17 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
       case "/admin/teachers":
         return adminStats?.total_teachers ?? null
       case "/admin/books":
-        return null // Books not tracked in stats
+        return null
       case "/admin/students":
         return adminStats?.total_students ?? null
       case "/admin/assignments":
-        return null // Assignments not tracked in stats
+        return null
       case "/publisher/library":
-        return null // Will be implemented later
+        return null
       case "/publisher/schools":
-        return null // Will be implemented later
+        return null
       case "/publisher/teachers":
-        return null // Will be implemented later
+        return null
       case "/student/assignments":
         return incompleteAssignmentsCount > 0
           ? incompleteAssignmentsCount
@@ -199,31 +197,59 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   }
 
   // Render a sub-menu item
-  const renderSubMenuItem = (subItem: SubItem) => {
+  const renderSubMenuItem = (subItem: SubItem, index: number) => {
     const { icon: IconComponent, title, path } = subItem
     const isActive = location.pathname === path
 
     return (
-      <RouterLink key={title} to={path} onClick={onClose}>
-        <div
-          className={`flex items-center text-sm transition-colors pl-10 pr-4 py-2 ${
-            isActive
-              ? "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-r-4 border-teal-500"
-              : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-          }`}
-        >
-          <IconComponent
-            className={`h-4 w-4 ${isActive ? "text-teal-600 dark:text-teal-400" : ""}`}
-          />
-          <span className={`ml-3 ${isActive ? "font-semibold" : ""}`}>
-            {title}
-          </span>
-        </div>
-      </RouterLink>
+      <motion.div
+        key={title}
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        <RouterLink to={path} onClick={onClose}>
+          <div
+            className={`flex items-center text-sm transition-all duration-200 ml-4 pl-6 pr-4 py-2 rounded-lg ${
+              isActive
+                ? "bg-primary/10 text-primary font-medium"
+                : "hover:bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <IconComponent className="h-4 w-4 flex-shrink-0" />
+            <span className="ml-3">{title}</span>
+          </div>
+        </RouterLink>
+      </motion.div>
     )
   }
 
-  const renderMenuItem = (item: Item) => {
+  // Wrapper component for tooltip on collapsed state
+  const MenuItemWrapper = ({
+    title,
+    isCollapsed,
+    children,
+  }: {
+    title: string
+    isCollapsed: boolean
+    children: React.ReactNode
+  }) => {
+    if (isCollapsed) {
+      return (
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>{children}</TooltipTrigger>
+            <TooltipContent side="right" className="font-medium">
+              {title}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    }
+    return <>{children}</>
+  }
+
+  const renderMenuItem = (item: Item, index: number) => {
     const {
       icon: IconComponent,
       title,
@@ -239,112 +265,143 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     // Render collapsible menu with children
     if (children && children.length > 0) {
       const parentContent = (
-        <button
+        <motion.button
           type="button"
-          onClick={() => toggleMenu(title)}
-          className={`w-full flex items-center text-sm transition-colors relative ${
-            isCollapsed ? "justify-center px-2 py-3" : "gap-4 px-4 py-2"
+          onClick={() => !isCollapsed && toggleMenu(title)}
+          className={`w-full flex items-center text-sm transition-all duration-200 rounded-lg mx-2 ${
+            isCollapsed
+              ? "justify-center py-3 px-0 w-12"
+              : "gap-3 px-4 py-2.5"
           } ${
             hasActiveChild
-              ? "bg-teal-50/50 dark:bg-teal-900/10 text-teal-600 dark:text-teal-400"
-              : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+              ? "bg-primary/10 text-primary"
+              : "hover:bg-muted text-muted-foreground hover:text-foreground"
           }`}
+          style={{ width: isCollapsed ? 48 : "calc(100% - 16px)" }}
           title={isCollapsed ? title : undefined}
         >
-          <IconComponent
-            className={`self-center h-5 w-5 ${hasActiveChild ? "text-teal-600 dark:text-teal-400" : ""} ${
-              isCollapsed ? "mx-auto" : ""
-            }`}
-          />
-          {!isCollapsed && (
-            <>
-              <span
-                className={`ml-2 flex-1 text-left ${hasActiveChild ? "font-semibold" : ""}`}
+          <IconComponent className="h-5 w-5 flex-shrink-0" />
+          <AnimatePresence mode="wait">
+            {!isCollapsed && (
+              <motion.div
+                className="flex items-center flex-1"
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2 }}
               >
-                {title}
-              </span>
-              {isExpanded ? (
-                <FiChevronDown className="h-4 w-4" />
-              ) : (
-                <FiChevronRight className="h-4 w-4" />
-              )}
-            </>
-          )}
-        </button>
+                <span className={`flex-1 text-left whitespace-nowrap ${hasActiveChild ? "font-medium" : ""}`}>
+                  {title}
+                </span>
+                <motion.div
+                  animate={{ rotate: isExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <FiChevronDown className="h-4 w-4" />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
       )
 
       return (
-        <div key={title}>
-          {parentContent}
+        <div key={title} className="mb-1">
+          <MenuItemWrapper title={title} isCollapsed={isCollapsed}>
+            {parentContent}
+          </MenuItemWrapper>
           {/* Render children when expanded (and not collapsed sidebar) */}
-          {isExpanded && !isCollapsed && (
-            <div className="bg-gray-50 dark:bg-gray-900/50">
-              {children.map(renderSubMenuItem)}
-            </div>
-          )}
+          <AnimatePresence>
+            {isExpanded && !isCollapsed && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="py-1">
+                  {children.map((child, idx) => renderSubMenuItem(child, idx))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )
     }
 
     // Render regular menu item (no children)
     const content = (
-      <div
-        className={`flex items-center text-sm transition-colors relative ${
-          isCollapsed ? "justify-center px-2 py-3" : "gap-4 px-4 py-2"
+      <motion.div
+        className={`flex items-center text-sm transition-all duration-200 rounded-lg mx-2 relative ${
+          isCollapsed
+            ? "justify-center py-3 px-0 w-12"
+            : "gap-3 px-4 py-2.5"
         } ${
           isActive
-            ? "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-r-4 border-teal-500"
-            : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-        } ${comingSoon ? "opacity-60" : ""}`}
+            ? "bg-primary/10 text-primary font-medium border-l-[3px] border-primary"
+            : "hover:bg-muted text-muted-foreground hover:text-foreground border-l-[3px] border-transparent"
+        } ${comingSoon ? "opacity-50 cursor-not-allowed" : ""}`}
+        style={{ width: isCollapsed ? 48 : "calc(100% - 16px)" }}
         title={isCollapsed ? title : undefined}
       >
-        <IconComponent
-          className={`self-center h-5 w-5 ${isActive ? "text-teal-600 dark:text-teal-400" : ""} ${
-            isCollapsed ? "mx-auto" : ""
-          }`}
-        />
-        {!isCollapsed && (
-          <>
-            <span className={`ml-2 flex-1 ${isActive ? "font-semibold" : ""}`}>
-              {title}
-            </span>
-            {itemCount !== null && !comingSoon && (
-              <span
-                className={`text-xs px-2 py-0.5 rounded ${
-                  path === "/student/assignments"
-                    ? "bg-red-500 text-white font-semibold"
-                    : "bg-gray-200 dark:bg-gray-700"
-                }`}
-              >
-                {itemCount}
-              </span>
-            )}
-            {comingSoon && (
-              <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
-                Soon
-              </span>
-            )}
-          </>
-        )}
+        <IconComponent className="h-5 w-5 flex-shrink-0" />
+
+        <AnimatePresence mode="wait">
+          {!isCollapsed && (
+            <motion.div
+              className="flex items-center flex-1 overflow-hidden"
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: "auto" }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <span className="flex-1 whitespace-nowrap">{title}</span>
+              {itemCount !== null && !comingSoon && (
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ml-2 ${
+                    path === "/student/assignments"
+                      ? "bg-destructive text-destructive-foreground font-medium"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {itemCount}
+                </span>
+              )}
+              {comingSoon && (
+                <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full ml-2">
+                  Soon
+                </span>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Show notification dot when collapsed and has count */}
         {isCollapsed && itemCount !== null && !comingSoon && (
-          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive" />
         )}
-      </div>
+      </motion.div>
     )
 
     if (comingSoon) {
       return (
-        <div key={title} className="cursor-not-allowed">
-          {content}
+        <div key={title} className="mb-1">
+          <MenuItemWrapper title={`${title} (Coming Soon)`} isCollapsed={isCollapsed}>
+            {content}
+          </MenuItemWrapper>
         </div>
       )
     }
 
     return (
-      <RouterLink key={title} to={path} onClick={onClose}>
-        {content}
-      </RouterLink>
+      <div key={title} className="mb-1">
+        <MenuItemWrapper title={title} isCollapsed={isCollapsed}>
+          <RouterLink to={path} onClick={onClose}>
+            {content}
+          </RouterLink>
+        </MenuItemWrapper>
+      </div>
     )
   }
 
@@ -352,7 +409,6 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     { icon: FiSettings, title: "Settings", path: "/settings" },
   ]
 
-  // Add User Management for admins only
   if (currentUser?.is_superuser) {
     bottomItems.push({
       icon: FiUsers,
@@ -366,7 +422,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
       {/* Publisher Logo Section */}
       {userRole === "publisher" && publisherProfile && (
         <div
-          className={`border-b border-gray-200 dark:border-gray-700 ${
+          className={`border-b border-border/50 mb-4 ${
             isCollapsed ? "py-3 px-2" : "p-4"
           } flex justify-center`}
         >
@@ -378,16 +434,14 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
         </div>
       )}
 
-      {!isCollapsed && (
-        <p className="text-xs px-4 py-2 font-bold text-gray-500 dark:text-gray-400">
-          Menu
-        </p>
-      )}
-      <div className="flex-1">{menuItems.map(renderMenuItem)}</div>
+      {/* Main Menu Items */}
+      <div className="flex-1 flex flex-col">
+        {menuItems.map((item, index) => renderMenuItem(item, index))}
+      </div>
 
       {/* Bottom Section */}
-      <div className="border-t border-gray-200 dark:border-gray-700 mt-auto">
-        {bottomItems.map(renderMenuItem)}
+      <div className="border-t border-border/50 pt-4 mt-auto">
+        {bottomItems.map((item, index) => renderMenuItem(item, index))}
       </div>
     </>
   )

@@ -6,10 +6,11 @@
  * Comprehensive student-facing progress dashboard
  */
 
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { BarChart3 } from "lucide-react"
+import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
+import { FiTrendingUp } from "react-icons/fi"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import {
   AchievementBadges,
   ActivityBreakdown,
@@ -19,14 +20,6 @@ import {
   RecentFeedbackSection,
   StudyTimeCard,
 } from "@/components/progress"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import {
   Select,
   SelectContent,
@@ -52,45 +45,23 @@ function StudentProgressPage() {
 
   if (error) {
     return (
-      <div className="max-w-full p-6">
+      <PageContainer>
         <div className="text-center py-12">
           <p className="text-lg text-red-500">
             Failed to load your progress data. Please try again later.
           </p>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="max-w-full p-6 space-y-6">
-      {/* Breadcrumb Navigation */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/student/dashboard">Dashboard</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>My Progress</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-teal-500" />
-            My Progress
-          </h1>
-          <p className="text-muted-foreground">
-            Track your learning journey and achievements
-          </p>
-        </div>
-
+    <PageContainer>
+      <PageHeader
+        icon={FiTrendingUp}
+        title="My Progress"
+        description="Track your learning journey and achievements"
+      >
         {/* Period Filter */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Show:</span>
@@ -108,7 +79,7 @@ function StudentProgressPage() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </PageHeader>
 
       {isLoading ? (
         <ProgressSkeleton />
@@ -149,7 +120,7 @@ function StudentProgressPage() {
           </p>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }
 

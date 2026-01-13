@@ -100,7 +100,7 @@ export function RenameDialog({
 
         <div className="space-y-4 py-4">
           {/* Current material info */}
-          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-neutral-800 rounded-lg">
             <MaterialTypeIcon type={material.type} />
             <span className="text-sm text-muted-foreground truncate">
               Current: {material.name}

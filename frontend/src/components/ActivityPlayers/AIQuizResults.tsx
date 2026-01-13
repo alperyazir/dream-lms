@@ -89,7 +89,7 @@ export function AIQuizResults({ result, onRetry, onBack, hideSummary = false }: 
               )}
             />
             <div className="mt-3 flex items-center justify-center gap-2">
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-neutral-800 dark:text-gray-400">
                 Difficulty:{" "}
                 {getDifficultyLabel(
                   result.difficulty as "easy" | "medium" | "hard",
@@ -211,7 +211,7 @@ function QuestionResultCard({ result, index }: QuestionResultCardProps) {
                         "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200",
                       !isCorrectOption &&
                         !showAsIncorrect &&
-                        "bg-gray-50 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400",
+                        "bg-gray-50 text-gray-600 dark:bg-neutral-800/50 dark:text-gray-400",
                     )}
                   >
                     <span

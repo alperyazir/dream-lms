@@ -160,7 +160,7 @@ export function StepConfigureSettings({
 
         <div className="flex gap-4 h-[500px]">
           {/* Left Column: Date List */}
-          <div className="w-48 shrink-0 border rounded-lg p-3 bg-gray-50 dark:bg-gray-900">
+          <div className="w-48 shrink-0 border rounded-lg p-3 bg-gray-50 dark:bg-neutral-900">
             <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
               Date Groups
@@ -174,7 +174,7 @@ export function StepConfigureSettings({
                       "p-2 rounded-lg cursor-pointer transition-all border",
                       selectedDateIndex === index
                         ? "bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-700"
-                        : "bg-white dark:bg-gray-800 border-transparent hover:border-gray-300 dark:hover:border-gray-600",
+                        : "bg-white dark:bg-neutral-800 border-transparent hover:border-gray-300 dark:hover:border-gray-600",
                     )}
                     onClick={() => setSelectedDateIndex(index)}
                   >
@@ -380,7 +380,7 @@ export function StepConfigureSettings({
         </div>
 
         {/* Summary */}
-        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg">
           <div className="flex items-center gap-2 text-sm">
             <FileText className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">

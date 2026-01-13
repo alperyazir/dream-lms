@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { FiUsers } from "react-icons/fi"
 import {
   type StudentCreateAPI,
   type StudentPublic,
@@ -21,6 +22,7 @@ import {
 } from "@/client"
 import { ImportStudentsDialog } from "@/components/Admin/ImportStudentsDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { StudentPasswordModal } from "@/components/student/StudentPasswordModal"
 import {
   AlertDialog,
@@ -431,43 +433,38 @@ function TeacherStudentsPage() {
   )
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Students</h1>
-        <p className="text-muted-foreground">
-          View and manage students in your classes
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={FiUsers}
+        title="My Students"
+        description="View and manage students in your classes"
+      >
+        <Button
+          variant="outline"
+          onClick={() => setIsImportDialogOpen(true)}
+          className="border-teal-200 hover:border-teal-300 hover:bg-teal-50"
+        >
+          <FileSpreadsheet className="w-4 h-4 mr-2" />
+          Import Students
+        </Button>
+        <Button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Student
+        </Button>
+      </PageHeader>
 
-      {/* Search and Add */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <Input
-            type="search"
-            placeholder="Search students by name, email, or class..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsImportDialogOpen(true)}
-            className="border-teal-200 hover:border-teal-300 hover:bg-teal-50"
-          >
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Import Students
-          </Button>
-          <Button
-            onClick={() => setIsAddDialogOpen(true)}
-            className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Student
-          </Button>
-        </div>
+      {/* Search */}
+      <div className="flex-1">
+        <Input
+          type="search"
+          placeholder="Search students by name, email, or class..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full max-w-md"
+        />
       </div>
 
       {/* Bulk Action Bar */}
@@ -1122,6 +1119,6 @@ function TeacherStudentsPage() {
           }}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

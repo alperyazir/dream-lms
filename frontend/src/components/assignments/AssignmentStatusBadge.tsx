@@ -29,7 +29,7 @@ export function AssignmentStatusBadge({
       return (
         <Badge
           variant="outline"
-          className={`border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 ${className || ""}`}
+          className={`border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-neutral-800 ${className || ""}`}
         >
           Draft
         </Badge>

@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
+import { FiClipboard } from "react-icons/fi"
 import { StudentAssignmentCard } from "@/components/assignments/AssignmentCard"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { getStudentAssignments } from "@/services/assignmentsApi"
 import type { StudentAssignmentResponse } from "@/types/assignment"
 
@@ -114,13 +116,13 @@ function StudentAssignmentsContent() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <PageContainer>
         <div className="text-center py-12">
           <p className="text-lg text-muted-foreground">
             Loading assignments...
           </p>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
@@ -128,7 +130,7 @@ function StudentAssignmentsContent() {
   if (error) {
     console.error("Error loading assignments:", error)
     return (
-      <div className="container mx-auto px-4 py-8">
+      <PageContainer>
         <div className="text-center py-12">
           <p className="text-lg text-red-600">
             Failed to load assignments. Please try again.
@@ -137,18 +139,17 @@ function StudentAssignmentsContent() {
             {error instanceof Error ? error.message : "Unknown error"}
           </p>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Assignments</h1>
-        <p className="text-muted-foreground">
-          Track and complete your assigned work
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={FiClipboard}
+        title="My Assignments"
+        description="Track and complete your assigned work"
+      />
 
       {/* Tabs */}
       <div className="mb-6">
@@ -221,6 +222,6 @@ function StudentAssignmentsContent() {
             "No past due assignments. Keep up the good work!",
           )}
       </div>
-    </div>
+    </PageContainer>
   )
 }

@@ -118,7 +118,7 @@ export function RichTextEditor({
 
   if (!editor) {
     return (
-      <div className="min-h-[250px] border rounded-md bg-gray-50 dark:bg-gray-800 animate-pulse" />
+      <div className="min-h-[250px] border rounded-md bg-gray-50 dark:bg-neutral-800 animate-pulse" />
     )
   }
 
@@ -127,7 +127,7 @@ export function RichTextEditor({
   return (
     <div className={cn("border rounded-md overflow-hidden", className)}>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50 dark:bg-gray-800">
+      <div className="flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50 dark:bg-neutral-800">
         {/* Text formatting */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}

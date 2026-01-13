@@ -7,9 +7,11 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { BarChart2, BookOpen, Clock, FileText } from "lucide-react"
+import { BookOpen, Clock, FileText } from "lucide-react"
 import { useState } from "react"
+import { FiBarChart2 } from "react-icons/fi"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { ReportBuilder } from "@/components/reports/ReportBuilder"
 import { ReportHistory } from "@/components/reports/ReportHistory"
 import { ReportProgress } from "@/components/reports/ReportProgress"
@@ -164,8 +166,8 @@ function TeacherReportsPage() {
   // Show progress view when generating
   if (pageView === "progress") {
     return (
-      <div className="max-w-full p-6 space-y-6">
-        <PageHeader />
+      <PageContainer>
+        <ReportsPageHeader />
         <div
           className={
             workflow.status?.status === "completed"
@@ -184,13 +186,13 @@ function TeacherReportsPage() {
             isDownloading={workflow.isDownloading}
           />
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="max-w-full p-6 space-y-6">
-      <PageHeader />
+    <PageContainer>
+      <ReportsPageHeader />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -278,7 +280,7 @@ function TeacherReportsPage() {
           />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageContainer>
   )
 }
 
@@ -286,20 +288,13 @@ function TeacherReportsPage() {
 // Sub-components
 // ============================================================================
 
-function PageHeader() {
+function ReportsPageHeader() {
   return (
-    <div className="flex items-start justify-between">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-          <BarChart2 className="w-8 h-8 text-teal-500" />
-          Reports
-        </h1>
-        <p className="text-muted-foreground">
-          Generate and download performance reports for students, classes, and
-          assignments.
-        </p>
-      </div>
-    </div>
+    <PageHeader
+      icon={FiBarChart2}
+      title="Reports"
+      description="Generate and download performance reports for students, classes, and assignments."
+    />
   )
 }
 
@@ -341,7 +336,7 @@ function SummaryCard({
 
 function ReportsPageSkeleton() {
   return (
-    <div className="max-w-full p-6 space-y-6">
+    <PageContainer>
       <div>
         <Skeleton className="h-9 w-48 mb-2" />
         <Skeleton className="h-5 w-96" />
@@ -358,6 +353,6 @@ function ReportsPageSkeleton() {
           <Skeleton className="h-64" />
         </div>
       </div>
-    </div>
+    </PageContainer>
   )
 }

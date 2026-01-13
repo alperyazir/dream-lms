@@ -11,6 +11,7 @@ import { BookText, ShoppingCart, Sparkles } from "lucide-react"
 import { useState } from "react"
 import { VocabularyFilters } from "@/components/DreamAI/VocabularyFilters"
 import { VocabularyTable } from "@/components/DreamAI/VocabularyTable"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -75,26 +76,15 @@ function VocabularyExplorerPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg">
-            <BookText className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Vocabulary Explorer
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Browse and explore vocabulary from your course books
-            </p>
-          </div>
-        </div>
-
+    <PageContainer>
+      <PageHeader
+        icon={Sparkles}
+        title="Vocabulary Explorer"
+        description="Browse and explore vocabulary from your course books"
+      >
         {/* Cart Badge & Create Quiz Button */}
         {cartSize > 0 && (
-          <div className="flex items-center gap-3">
+          <>
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-emerald-600" />
               <Badge variant="default" className="bg-emerald-600">
@@ -111,9 +101,9 @@ function VocabularyExplorerPage() {
             <Button variant="outline" size="sm" onClick={clearCart}>
               Clear
             </Button>
-          </div>
+          </>
         )}
-      </div>
+      </PageHeader>
 
       {/* Loading State for Books */}
       {booksLoading && (
@@ -189,6 +179,6 @@ function VocabularyExplorerPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -12,6 +12,7 @@ import type {
   AvatarUpdateResponse,
   PredefinedAvatarsResponse,
   SelectAvatarRequest,
+  SetAvatarUrlRequest,
 } from "../types/avatar"
 
 // UserPublic is used for the selectPredefinedAvatar return type
@@ -93,12 +94,27 @@ export async function removeAvatar(): Promise<AvatarUpdateResponse> {
 }
 
 /**
+ * Set a custom avatar URL for the current user (e.g., DiceBear)
+ *
+ * @param data - Object with avatar_url
+ * @returns Promise with the updated user
+ */
+export async function setAvatarUrl(
+  data: SetAvatarUrlRequest,
+): Promise<UserPublic> {
+  const url = `/api/v1/avatars/me`
+  const response = await apiClient.patch<UserPublic>(url, data)
+  return response.data
+}
+
+/**
  * Export as object for easier imports
  */
 export const avatarsApi = {
   getPredefinedAvatars,
   selectPredefinedAvatar,
   removeAvatar,
+  setAvatarUrl,
 }
 
 export default avatarsApi

@@ -2500,7 +2500,7 @@ def _count_activity_items(activity_type: str, content: dict) -> int:
     try:
         if activity_type in ["ai_quiz", "vocabulary_quiz"]:
             return len(content.get("questions", []))
-        elif activity_type == "reading":
+        elif activity_type in ["reading", "reading_comprehension"]:
             return len(content.get("questions", []))
         elif activity_type == "sentence_builder":
             return len(content.get("sentences", []))

@@ -585,7 +585,7 @@ export function ActivitySelectionTabs({
   return (
     <div className="flex flex-col h-full max-h-[min(600px,72vh)] overflow-hidden w-full max-w-full">
       {/* Header with Book Info and Time Planning Toggle - Compact single row */}
-      <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-1.5 border border-gray-200 dark:border-gray-700 shrink-0 mb-2">
+      <div className="flex items-center justify-between bg-gray-50 dark:bg-neutral-800/50 rounded-lg px-3 py-1.5 border border-gray-200 dark:border-gray-700 shrink-0 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <h4 className="font-medium text-sm text-foreground truncate">
             {book.title}
@@ -737,7 +737,7 @@ export function ActivitySelectionTabs({
                       "flex items-center gap-1 p-1.5 rounded-md cursor-pointer transition-colors group",
                       selectedDateIndex === index
                         ? "bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700"
-                        : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent",
+                        : "bg-gray-50 dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent",
                     )}
                     onClick={() => setSelectedDateIndex(index)}
                   >
@@ -939,7 +939,7 @@ export function ActivitySelectionTabs({
                               return (
                                 <div
                                   key={activity.id}
-                                  className="flex items-start gap-1 p-1 bg-gray-50 dark:bg-gray-800 rounded group"
+                                  className="flex items-start gap-1 p-1 bg-gray-50 dark:bg-neutral-800 rounded group"
                                 >
                                   <div className="flex-1 min-w-0">
                                     <div className="text-[9px] font-medium text-foreground truncate">

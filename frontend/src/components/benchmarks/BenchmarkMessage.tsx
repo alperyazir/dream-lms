@@ -95,7 +95,7 @@ function getMessageStyles(type: BenchmarkMessageType["type"]): {
       return {
         borderColor: "border-gray-300 dark:border-gray-700",
         bgGradient:
-          "bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20",
+          "bg-gradient-to-r from-gray-50 to-slate-50 dark:from-neutral-900/20 dark:to-slate-900/20",
         iconColor: "text-gray-500",
         titleColor: "text-gray-700 dark:text-gray-400",
       }

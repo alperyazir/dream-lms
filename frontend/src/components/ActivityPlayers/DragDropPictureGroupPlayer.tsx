@@ -390,7 +390,7 @@ export function DragDropPictureGroupPlayer({
                       ? "border-blue-500 bg-blue-50 shadow-neuro dark:border-blue-400 dark:bg-blue-900/30"
                       : isDragged
                         ? "scale-105 border-teal-500 bg-teal-50 shadow-neuro dark:border-teal-400 dark:bg-teal-900/30"
-                        : "border-gray-300 bg-white hover:scale-105 hover:border-teal-400 hover:shadow-neuro dark:border-gray-600 dark:bg-gray-800 dark:hover:border-teal-500"
+                        : "border-gray-300 bg-white hover:scale-105 hover:border-teal-400 hover:shadow-neuro dark:border-gray-600 dark:bg-neutral-800 dark:hover:border-teal-500"
                   }
                 `}
                 tabIndex={!showResults ? 0 : -1}
@@ -411,7 +411,7 @@ export function DragDropPictureGroupPlayer({
       {/* Background Image with Drop Zones */}
       <div
         ref={containerRef}
-        className="relative flex flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+        className="relative flex flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800"
       >
         {/* Loading state */}
         {!imageUrl && !imageError && (
@@ -499,7 +499,7 @@ export function DragDropPictureGroupPlayer({
                         : "border-2 border-teal-500 bg-teal-100/95 text-teal-900 dark:bg-teal-900/80 dark:text-teal-100"
                       : isHovered
                         ? "border-2 border-dashed border-teal-500 bg-teal-50/50 dark:bg-teal-900/30"
-                        : "border-2 border-dashed border-gray-400 bg-white/50 hover:border-gray-500 dark:border-gray-500 dark:bg-gray-800/50"
+                        : "border-2 border-dashed border-gray-400 bg-white/50 hover:border-gray-500 dark:border-gray-500 dark:bg-neutral-800/50"
                 }
               `}
                   style={scaledCoords}

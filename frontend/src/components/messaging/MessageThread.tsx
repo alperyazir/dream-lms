@@ -116,7 +116,7 @@ export const MessageThread = React.memo(
                         "rounded-lg px-4 py-3 shadow-sm",
                         isCurrentUser
                           ? "bg-teal-600 text-white"
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white",
+                          : "bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white",
                       )}
                     >
                       {/* Subject (if first message or different subject) */}

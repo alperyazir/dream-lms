@@ -765,7 +765,7 @@ export function GenerationPreview({
                                 className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-medium shrink-0 ${
                                   opt.isCorrect
                                     ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400"
-                                    : "bg-gray-100 dark:bg-gray-800"
+                                    : "bg-gray-100 dark:bg-neutral-800"
                                 }`}
                               >
                                 {opt.label}

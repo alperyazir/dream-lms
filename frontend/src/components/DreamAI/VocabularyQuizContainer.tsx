@@ -64,12 +64,14 @@ export function VocabularyQuizContainer({
           quiz_id: quiz.quiz_id,
           book_id: quiz.book_id,
           quiz_length: quiz.quiz_length,
+          quiz_mode: quiz.quiz_mode,
           questions: quiz.questions.map((q) => ({
             question_id: q.question_id,
             definition: q.definition,
             options: q.options,
             audio_url: q.audio_url,
             cefr_level: q.cefr_level,
+            question_type: q.question_type,
           })),
         })
         setPhase("preview")

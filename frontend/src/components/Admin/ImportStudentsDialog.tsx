@@ -493,7 +493,7 @@ export function ImportStudentsDialog({
           <div className="space-y-4 py-4">
             {/* Summary */}
             <div className="grid grid-cols-4 gap-4">
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
+              <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {validationResult.total_count}
                 </div>
@@ -557,7 +557,7 @@ export function ImportStudentsDialog({
             {/* Preview table */}
             <div className="border rounded-lg max-h-[300px] overflow-auto">
               <Table>
-                <TableHeader className="sticky top-0 bg-white dark:bg-gray-900">
+                <TableHeader className="sticky top-0 bg-white dark:bg-neutral-900">
                   <TableRow>
                     <TableHead className="w-16">Row</TableHead>
                     <TableHead>Full Name</TableHead>

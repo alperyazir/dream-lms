@@ -8,7 +8,9 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Bell } from "lucide-react"
 import { useState } from "react"
+import { FiMessageSquare } from "react-icons/fi"
 import { AnnouncementItem } from "@/components/announcements/AnnouncementItem"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -32,11 +34,8 @@ function StudentAnnouncementsPage() {
   const totalPages = data ? Math.ceil(data.total / limit) : 0
 
   return (
-    <div className="container py-6 space-y-6 max-w-4xl">
-      <div className="flex items-center gap-3">
-        <Bell className="h-8 w-8 text-teal-500" />
-        <h1 className="text-3xl font-bold">Announcements</h1>
-      </div>
+    <PageContainer maxWidth="medium">
+      <PageHeader icon={FiMessageSquare} title="Announcements" />
 
       {/* Filter tabs */}
       <Tabs
@@ -107,7 +106,7 @@ function StudentAnnouncementsPage() {
           </Button>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }
 

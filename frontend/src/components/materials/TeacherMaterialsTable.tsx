@@ -174,11 +174,11 @@ export function TeacherMaterialsTable({
           <div className="h-9 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
         <div className="border rounded-lg overflow-hidden">
-          <div className="h-12 bg-gray-100 dark:bg-gray-800" />
+          <div className="h-12 bg-gray-100 dark:bg-neutral-800" />
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className="h-14 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+              className="h-14 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900"
             />
           ))}
         </div>

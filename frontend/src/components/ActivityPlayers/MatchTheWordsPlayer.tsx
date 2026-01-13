@@ -630,7 +630,7 @@ export function MatchTheWordsPlayer({
                       </div>
                     ) : item.image_path ? (
                       <div className="relative aspect-square w-full max-w-[200px] flex-shrink-0">
-                        <div className="flex h-full w-full items-center justify-center rounded-lg border-2 border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800">
+                        <div className="flex h-full w-full items-center justify-center rounded-lg border-2 border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-neutral-800">
                           <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
                         </div>
                       </div>

@@ -43,7 +43,7 @@ function PreferenceToggle({
   disabled: boolean
 }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
+    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
       <div className="flex-1 pr-4">
         <Label
           htmlFor={`pref-${preference.notification_type}`}
@@ -51,7 +51,7 @@ function PreferenceToggle({
         >
           {preference.label}
         </Label>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mt-0.5">
           {preference.description}
         </p>
       </div>
@@ -99,11 +99,13 @@ function GlobalMuteSection({
     })
 
     return (
-      <div className="bg-muted/50 rounded-lg p-4 mb-6">
-        <div className="flex items-center gap-3 mb-3">
-          <BellOff className="h-5 w-5 text-muted-foreground" />
+      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-full bg-destructive/10">
+            <BellOff className="h-5 w-5 text-destructive" />
+          </div>
           <div className="flex-1">
-            <p className="text-sm font-medium">Notifications are muted</p>
+            <p className="text-sm font-medium text-destructive">Notifications are muted</p>
             <p className="text-sm text-muted-foreground">
               Until {mutedUntil} (~{remainingHours} hour
               {remainingHours !== 1 ? "s" : ""} remaining)
@@ -127,9 +129,11 @@ function GlobalMuteSection({
   }
 
   return (
-    <div className="bg-muted/50 rounded-lg p-4 mb-6">
+    <div className="bg-muted/30 border border-border/50 rounded-lg p-4 mb-6">
       <div className="flex items-center gap-3">
-        <Clock className="h-5 w-5 text-muted-foreground" />
+        <div className="p-2 rounded-full bg-muted">
+          <Clock className="h-5 w-5 text-muted-foreground" />
+        </div>
         <div className="flex-1">
           <p className="text-sm font-medium">Mute all notifications</p>
           <p className="text-sm text-muted-foreground">
@@ -191,13 +195,13 @@ function EmailNotificationsSection() {
   ]
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 pt-6 border-t border-border/50">
       <div className="flex items-center gap-2 mb-4">
         <Mail className="h-4 w-4 text-muted-foreground" />
         <h4 className="text-sm font-medium text-muted-foreground">
           Email Notifications
         </h4>
-        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
           Coming soon
         </span>
       </div>
@@ -205,7 +209,7 @@ function EmailNotificationsSection() {
         {emailPreferences.map((pref) => (
           <div
             key={pref.id}
-            className="flex items-center justify-between py-3 border-b border-border last:border-0"
+            className="flex items-center justify-between py-4 border-b border-border/50 last:border-0"
           >
             <div className="flex-1 pr-4">
               <Label
@@ -214,7 +218,7 @@ function EmailNotificationsSection() {
               >
                 {pref.label}
               </Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {pref.description}
               </p>
             </div>
@@ -222,7 +226,7 @@ function EmailNotificationsSection() {
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground mt-2 italic">
+      <p className="text-xs text-muted-foreground mt-3 italic">
         Email notifications will be available in a future update.
       </p>
     </div>
@@ -249,10 +253,13 @@ const NotificationSettings = () => {
 
   if (isLoadingPreferences) {
     return (
-      <div className="max-w-full">
-        <h3 className="text-sm font-semibold py-4">Notifications</h3>
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Notification Preferences</h3>
+          <p className="text-sm text-muted-foreground">Manage how you receive notifications</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
     )
@@ -260,8 +267,11 @@ const NotificationSettings = () => {
 
   if (preferencesError) {
     return (
-      <div className="max-w-full">
-        <h3 className="text-sm font-semibold py-4">Notifications</h3>
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Notification Preferences</h3>
+          <p className="text-sm text-muted-foreground">Manage how you receive notifications</p>
+        </div>
         <Alert variant="destructive">
           <AlertDescription>
             Failed to load notification preferences. Please try again later.
@@ -272,11 +282,11 @@ const NotificationSettings = () => {
   }
 
   return (
-    <div className="max-w-full">
-      <h3 className="text-sm font-semibold py-4 flex items-center gap-2">
-        <Bell className="h-4 w-4" />
-        Notifications
-      </h3>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground">Notification Preferences</h3>
+        <p className="text-sm text-muted-foreground">Manage how you receive notifications</p>
+      </div>
 
       <GlobalMuteSection
         isMuted={isMuted}
@@ -288,9 +298,10 @@ const NotificationSettings = () => {
       />
 
       <div className="space-y-1">
-        <h4 className="text-sm font-medium text-muted-foreground mb-2">
-          Notification Types
-        </h4>
+        <div className="flex items-center gap-2 mb-2">
+          <Bell className="h-4 w-4 text-primary" />
+          <h4 className="text-sm font-medium text-foreground">In-App Notifications</h4>
+        </div>
         <div className={isMuted ? "opacity-50" : ""}>
           {preferences.map((pref) => (
             <PreferenceToggle
@@ -303,7 +314,7 @@ const NotificationSettings = () => {
           ))}
         </div>
         {isMuted && (
-          <p className="text-xs text-muted-foreground mt-2 italic">
+          <p className="text-xs text-muted-foreground mt-3 italic">
             Individual preferences are disabled while notifications are muted.
           </p>
         )}

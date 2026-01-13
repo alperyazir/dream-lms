@@ -123,7 +123,7 @@ export const ActivityHeader = memo(function ActivityHeader({
             {/* Timer (if time limit exists) */}
             {timeRemaining !== null && (
               <div
-                className={`flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-sm dark:bg-gray-800 ${getTimeColor()}`}
+                className={`flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-sm dark:bg-neutral-800 ${getTimeColor()}`}
                 role="timer"
                 aria-label={`Time remaining: ${formatTime(timeRemaining)}`}
               >

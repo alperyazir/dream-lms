@@ -42,7 +42,12 @@ export function GenerateButton({
   if (isGenerating) {
     return (
       <div className="space-y-3">
-        <Button onClick={onGenerate} disabled className="w-full" size="lg">
+        <Button
+          onClick={onGenerate}
+          disabled
+          className="w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white shadow-lg shadow-purple-500/30"
+          size="lg"
+        >
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Generating...
         </Button>
@@ -52,7 +57,7 @@ export function GenerateButton({
             <p className="text-sm text-muted-foreground">
               This may take up to {estimatedTime} seconds
             </p>
-            <Progress value={undefined} className="h-2" />
+            <Progress value={undefined} className="h-2 [&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-violet-500" />
           </div>
         )}
 
@@ -60,7 +65,7 @@ export function GenerateButton({
           <Button
             onClick={onCancel}
             variant="outline"
-            className="w-full"
+            className="w-full border-purple-300 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/50"
             size="sm"
           >
             <X className="mr-2 h-4 w-4" />
@@ -76,7 +81,7 @@ export function GenerateButton({
       <Button
         onClick={onGenerate}
         disabled={isDisabled}
-        className="w-full"
+        className="w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 disabled:from-gray-400 disabled:to-gray-500 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40 transition-all duration-200 hover:-translate-y-0.5"
         size="lg"
       >
         <Sparkles className="mr-2 h-4 w-4" />

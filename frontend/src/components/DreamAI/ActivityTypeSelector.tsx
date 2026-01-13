@@ -3,6 +3,7 @@
  * Story 27.17: Question Generator UI - Task 3
  *
  * Displays available activity types as selectable cards with icons and descriptions.
+ * Uses neon purple gradient theme for AI-generated content.
  */
 
 import {
@@ -11,6 +12,7 @@ import {
   ClipboardList,
   FileEdit,
   type LucideIcon,
+  Sparkles,
   Type,
 } from "lucide-react"
 import { Label } from "@/components/ui/label"
@@ -24,6 +26,7 @@ export interface ActivityTypeConfig {
   description: string
   options: string[]
   defaultOptions: Record<string, any>
+  gradient: string // Neon gradient colors
 }
 
 export const ACTIVITY_TYPES: ActivityTypeConfig[] = [
@@ -38,6 +41,7 @@ export const ACTIVITY_TYPES: ActivityTypeConfig[] = [
       quiz_length: 10,
       include_audio: true,
     },
+    gradient: "from-violet-500 to-purple-600",
   },
   {
     id: "ai_quiz",
@@ -50,6 +54,7 @@ export const ACTIVITY_TYPES: ActivityTypeConfig[] = [
       difficulty: "medium",
       include_explanations: true,
     },
+    gradient: "from-purple-500 to-violet-600",
   },
   {
     id: "reading_comprehension",
@@ -61,6 +66,7 @@ export const ACTIVITY_TYPES: ActivityTypeConfig[] = [
       passage_length: 200,
       question_count: 5,
     },
+    gradient: "from-fuchsia-500 to-purple-600",
   },
   {
     id: "sentence_builder",
@@ -73,6 +79,7 @@ export const ACTIVITY_TYPES: ActivityTypeConfig[] = [
       difficulty: "medium",
       include_audio: true,
     },
+    gradient: "from-indigo-500 to-purple-600",
   },
   {
     id: "word_builder",
@@ -81,6 +88,7 @@ export const ACTIVITY_TYPES: ActivityTypeConfig[] = [
     description: "Spell words from scrambled letters",
     options: ["word_count", "include_audio"],
     defaultOptions: { word_count: 10, include_audio: true },
+    gradient: "from-pink-500 to-purple-600",
   },
 ]
 
@@ -95,11 +103,16 @@ export function ActivityTypeSelector({
 }: ActivityTypeSelectorProps) {
   return (
     <div className="space-y-3">
-      <div>
-        <Label className="text-base font-semibold">Activity Type</Label>
-        <p className="text-sm text-muted-foreground">
-          Choose what type of content to generate
-        </p>
+      <div className="flex items-center gap-2">
+        <div className="p-1.5 rounded-md bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg shadow-purple-500/30">
+          <Sparkles className="h-4 w-4 text-white" />
+        </div>
+        <div>
+          <Label className="text-base font-semibold">Activity Type</Label>
+          <p className="text-sm text-muted-foreground">
+            Choose what type of AI content to generate
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -110,15 +123,26 @@ export function ActivityTypeSelector({
               onSelect(activityType.id, activityType.defaultOptions)
             }
             className={cn(
-              "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
-              "hover:border-primary/50 hover:bg-accent/50",
-              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              "group flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
+              "hover:shadow-lg hover:shadow-purple-500/20 hover:-translate-y-0.5",
+              "focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
               selectedType === activityType.id
-                ? "border-primary bg-primary/5"
-                : "border-muted bg-card",
+                ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                : "border-muted bg-card hover:border-purple-400/50",
             )}
           >
-            <activityType.icon className="h-8 w-8 mb-2" />
+            <div
+              className={cn(
+                "p-2.5 rounded-lg bg-gradient-to-br mb-2 transition-all duration-200",
+                activityType.gradient,
+                "shadow-md group-hover:shadow-lg",
+                selectedType === activityType.id
+                  ? "shadow-purple-500/40"
+                  : "shadow-purple-500/20 group-hover:shadow-purple-500/30"
+              )}
+            >
+              <activityType.icon className="h-6 w-6 text-white" />
+            </div>
             <div className="text-sm font-medium text-center">
               {activityType.name}
             </div>

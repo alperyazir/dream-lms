@@ -239,12 +239,12 @@ export function PuzzleFindWordsPlayer({
   }
 
   return (
-    <div className="flex min-h-[600px] items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex min-h-[600px] items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-neutral-900 dark:to-neutral-800">
       <div className="w-full max-w-6xl">
         <div className="flex flex-col lg:flex-row gap-8 items-center justify-center min-h-[500px]">
           {/* Grid - Centered */}
           <div className="flex flex-col items-center justify-center">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
+            <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl p-6">
               <table
                 className="border-separate border-spacing-1"
                 onMouseUp={handleMouseUp}
@@ -303,7 +303,7 @@ export function PuzzleFindWordsPlayer({
 
           {/* Word List - Modern Card */}
           <div className="w-full lg:w-80">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sticky top-6">
+            <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl p-6 sticky top-6">
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                   Words to Find
@@ -338,7 +338,7 @@ export function PuzzleFindWordsPlayer({
                         ${
                           found
                             ? `${getWordColor(word.toUpperCase())} border-2 border-transparent shadow-md scale-105`
-                            : "border-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600"
+                            : "border-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-neutral-900 hover:border-gray-300 dark:hover:border-gray-600"
                         }
                       `}
                     >

@@ -18,6 +18,7 @@ import {
   Palette,
   PenLine,
   Search,
+  Sparkles,
   Type,
   X,
 } from "lucide-react"
@@ -26,6 +27,7 @@ export interface ActivityTypeConfig {
   icon: LucideIcon
   label: string
   color: string
+  isAI?: boolean // Flag for AI-generated content
 }
 
 /**
@@ -74,31 +76,36 @@ export const ACTIVITY_TYPE_CONFIG: Record<string, ActivityTypeConfig> = {
     label: "Mark with X",
     color: "red",
   },
-  // AI-generated activity types (Epic 27)
+  // AI-generated activity types (Epic 27) - Neon purple gradient theme
   vocabulary_quiz: {
     icon: FileQuestion,
     label: "Vocabulary Quiz",
-    color: "blue",
+    color: "ai-violet",
+    isAI: true,
   },
   ai_quiz: {
     icon: CheckSquare,
     label: "Quiz",
-    color: "green",
+    color: "ai-purple",
+    isAI: true,
   },
   reading_comprehension: {
     icon: BookOpen,
     label: "Reading Comprehension",
-    color: "orange",
+    color: "ai-fuchsia",
+    isAI: true,
   },
   sentence_builder: {
     icon: PenLine,
     label: "Sentence Builder",
-    color: "cyan",
+    color: "ai-indigo",
+    isAI: true,
   },
   word_builder: {
     icon: Type,
     label: "Word Builder",
-    color: "pink",
+    color: "ai-pink",
+    isAI: true,
   },
 }
 
@@ -127,8 +134,10 @@ export function getActivityTypeColorClasses(color: string): {
   bg: string
   text: string
   border: string
+  isAI?: boolean
+  gradient?: string
 } {
-  const colorMap: Record<string, { bg: string; text: string; border: string }> =
+  const colorMap: Record<string, { bg: string; text: string; border: string; isAI?: boolean; gradient?: string }> =
     {
       blue: {
         bg: "bg-blue-100 dark:bg-blue-900/20",
@@ -176,15 +185,51 @@ export function getActivityTypeColorClasses(color: string): {
         border: "border-cyan-300 dark:border-cyan-700",
       },
       gray: {
-        bg: "bg-gray-100 dark:bg-gray-900/20",
+        bg: "bg-gray-100 dark:bg-neutral-900/20",
         text: "text-gray-700 dark:text-gray-300",
         border: "border-gray-300 dark:border-gray-700",
+      },
+      // AI Neon Purple Gradient Colors
+      "ai-purple": {
+        bg: "bg-gradient-to-br from-purple-500 to-violet-600 dark:from-purple-600 dark:to-violet-700",
+        text: "text-white",
+        border: "border-purple-400 dark:border-purple-500",
+        isAI: true,
+        gradient: "from-purple-500 to-violet-600",
+      },
+      "ai-violet": {
+        bg: "bg-gradient-to-br from-violet-500 to-purple-600 dark:from-violet-600 dark:to-purple-700",
+        text: "text-white",
+        border: "border-violet-400 dark:border-violet-500",
+        isAI: true,
+        gradient: "from-violet-500 to-purple-600",
+      },
+      "ai-fuchsia": {
+        bg: "bg-gradient-to-br from-fuchsia-500 to-purple-600 dark:from-fuchsia-600 dark:to-purple-700",
+        text: "text-white",
+        border: "border-fuchsia-400 dark:border-fuchsia-500",
+        isAI: true,
+        gradient: "from-fuchsia-500 to-purple-600",
+      },
+      "ai-indigo": {
+        bg: "bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700",
+        text: "text-white",
+        border: "border-indigo-400 dark:border-indigo-500",
+        isAI: true,
+        gradient: "from-indigo-500 to-purple-600",
+      },
+      "ai-pink": {
+        bg: "bg-gradient-to-br from-pink-500 to-purple-600 dark:from-pink-600 dark:to-purple-700",
+        text: "text-white",
+        border: "border-pink-400 dark:border-pink-500",
+        isAI: true,
+        gradient: "from-pink-500 to-purple-600",
       },
     }
 
   return (
     colorMap[color] || {
-      bg: "bg-gray-100 dark:bg-gray-900/20",
+      bg: "bg-gray-100 dark:bg-neutral-900/20",
       text: "text-gray-700 dark:text-gray-300",
       border: "border-gray-300 dark:border-gray-700",
     }

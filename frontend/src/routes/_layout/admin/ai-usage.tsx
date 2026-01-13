@@ -5,6 +5,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { subDays } from "date-fns"
 import { useState } from "react"
+import { FiActivity } from "react-icons/fi"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { DateRangeFilter } from "@/components/Admin/AIUsage/DateRangeFilter"
 import { ExportButton } from "@/components/Admin/AIUsage/ExportButton"
 import { UsageByTeacherTable } from "@/components/Admin/AIUsage/UsageByTeacherTable"
@@ -40,25 +42,18 @@ function AIUsageDashboard() {
   const { data: errors, isLoading: errorsLoading } = useAIUsageErrors(dateRange)
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            AI Usage Dashboard
-          </h1>
-          <p className="text-muted-foreground">
-            Monitor AI generation costs and usage patterns
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <DateRangeFilter
-            dateRange={dateRange}
-            onDateRangeChange={setDateRange}
-          />
-          <ExportButton dateRange={dateRange} />
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={FiActivity}
+        title="AI Usage Dashboard"
+        description="Monitor AI generation costs and usage patterns"
+      >
+        <DateRangeFilter
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+        />
+        <ExportButton dateRange={dateRange} />
+      </PageHeader>
 
       {/* Summary Cards */}
       {summary && (
@@ -268,6 +263,6 @@ function AIUsageDashboard() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   )
 }

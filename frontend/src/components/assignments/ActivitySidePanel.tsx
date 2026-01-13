@@ -199,7 +199,7 @@ function PageActivityGroup({
 
   if (activities.length === 0) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+      <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="font-medium text-sm text-foreground">
             {moduleName} - Page {pageNumber}
@@ -213,7 +213,7 @@ function PageActivityGroup({
   }
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+    <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
       {/* Page Header */}
       <div className="flex items-center justify-between mb-3">
         <span className="font-medium text-sm text-foreground">

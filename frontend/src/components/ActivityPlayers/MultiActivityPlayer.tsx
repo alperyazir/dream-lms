@@ -700,7 +700,7 @@ export function MultiActivityPlayer({
     : ""
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-neutral-900">
       {/* Story 9.7: Preview mode banner */}
       {previewMode && (
         <div className="shrink-0 bg-amber-100 dark:bg-amber-900 border-b border-amber-200 dark:border-amber-800">
@@ -713,7 +713,7 @@ export function MultiActivityPlayer({
       )}
 
       {/* Compact header with stepper, timer, and question */}
-      <header className="shrink-0 border-b bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <header className="shrink-0 border-b bg-white shadow-sm dark:border-gray-700 dark:bg-neutral-800">
         <div className="px-3 py-3">
           {/* Top row: centered stepper with timer/resources on sides */}
           <div className="relative flex items-center justify-center min-h-[40px]">
@@ -914,10 +914,10 @@ export function MultiActivityPlayer({
       </div>
 
       {/* Compact footer with navigation and submit */}
-      <footer className="shrink-0 border-t bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <footer className="shrink-0 border-t bg-white shadow-sm dark:border-gray-700 dark:bg-neutral-800">
         {/* Story 10.2: Audio Player Row - always shown when activity has audio */}
         {audioPath && (
-          <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-900">
+          <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-neutral-900">
             <div className="mx-auto max-w-3xl">
               {audioLoading ? (
                 <div className="flex items-center justify-center gap-2 py-1 text-sm text-gray-500">
@@ -1142,7 +1142,7 @@ export function MultiActivityPlayer({
       {/* Reset confirmation dialog */}
       {showResetDialog && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+          <div className="mx-4 w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-neutral-800">
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900">
                 <RotateCcw className="h-5 w-5 text-amber-600 dark:text-amber-400" />

@@ -8,8 +8,10 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
 
 from app.api.main import api_router
 from app.core.config import settings
@@ -19,6 +21,17 @@ from app.core.rate_limit import limiter
 from app.services.webhook_registration import webhook_registration_service
 
 logger = logging.getLogger(__name__)
+
+
+class BotBlockerMiddleware(BaseHTTPMiddleware):
+    """Silently block common bot/scanner requests to reduce log noise."""
+
+    BLOCKED_PATHS = {"/api/clients", "/api/client"}
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path in self.BLOCKED_PATHS:
+            return Response(status_code=404)
+        return await call_next(request)
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -125,6 +138,9 @@ if settings.all_cors_origins:
 
 # Add SlowAPI middleware for rate limiting (Story 4.8 QA Fix)
 app.add_middleware(SlowAPIMiddleware)
+
+# Block common bot/scanner paths to reduce log noise
+app.add_middleware(BotBlockerMiddleware)
 
 # Mount static files directory for serving uploaded content (logos, etc.)
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")

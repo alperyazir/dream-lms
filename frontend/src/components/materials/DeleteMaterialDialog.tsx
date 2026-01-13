@@ -57,7 +57,7 @@ export function DeleteMaterialDialog({
               <p>Are you sure you want to delete this material?</p>
 
               {/* Material info */}
-              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-neutral-800 rounded-lg">
                 <MaterialTypeIcon type={material.type} />
                 <span className="font-medium text-foreground truncate">
                   {material.name}

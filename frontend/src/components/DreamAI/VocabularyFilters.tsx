@@ -104,7 +104,7 @@ export function VocabularyFilters({
   }
 
   return (
-    <div className="space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg border">
+    <div className="space-y-4 p-4 bg-white dark:bg-neutral-800 rounded-lg border">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Book Selector */}
         <div className="space-y-2">

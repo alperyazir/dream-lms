@@ -10,6 +10,12 @@ export const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const
 export type CEFRLevel = (typeof CEFR_LEVELS)[number]
 
 /**
+ * Quiz length options
+ */
+export const QUIZ_LENGTH_OPTIONS = [5, 10, 15, 20, 25, 30] as const
+export type QuizLength = (typeof QUIZ_LENGTH_OPTIONS)[number]
+
+/**
  * Valid quiz mode options
  */
 export const QUIZ_MODES = ["definition", "synonym", "antonym", "mixed"] as const

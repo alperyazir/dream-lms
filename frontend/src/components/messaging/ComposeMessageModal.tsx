@@ -123,7 +123,7 @@ export const ComposeMessageModal = React.memo(
                   </span>
                 </Label>
                 {selectedRecipient ? (
-                  <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-neutral-800 rounded-lg">
                     <div className="flex-1">
                       <RecipientItem
                         recipient={selectedRecipient}

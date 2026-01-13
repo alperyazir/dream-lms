@@ -960,7 +960,7 @@ export function ActivityPlayer({
       if (newAnswers instanceof Map && prevAnswers instanceof Map) {
         if (newAnswers.size !== prevAnswers.size) return newAnswers
         for (const [key, value] of newAnswers) {
-          if (prevAnswers.get(key) !== value) return newAnswers
+          if ((prevAnswers as Map<unknown, unknown>).get(key) !== value) return newAnswers
         }
         return prevAnswers // Same content, keep reference
       }
@@ -1007,7 +1007,7 @@ export function ActivityPlayer({
   const renderPlayer = () => {
     const fallbackUI = (
       <div className="flex min-h-[400px] items-center justify-center p-8">
-        <div className="rounded-lg bg-white p-8 text-center shadow-lg dark:bg-gray-800">
+        <div className="rounded-lg bg-white p-8 text-center shadow-lg dark:bg-neutral-800">
           <h2 className="mb-4 text-xl font-bold text-red-600 dark:text-red-400">
             Activity Error
           </h2>
@@ -1183,7 +1183,7 @@ export function ActivityPlayer({
   // When fully embedded (embedded=true), render only the player content with full height
   if (embedded === true) {
     return (
-      <div className="flex h-full flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="flex h-full flex-col bg-gray-50 dark:bg-neutral-900">
         {/* Main Content - Activity Only - Full Height */}
         <div className="flex h-full min-h-0 flex-1">
           <div className="h-full w-full">
@@ -1204,7 +1204,7 @@ export function ActivityPlayer({
   // When embedded="header-only", show activity header but hide footer
   if (embedded === "header-only") {
     return (
-      <div className="flex h-full flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="flex h-full flex-col bg-gray-50 dark:bg-neutral-900">
         {/* Activity Header */}
         <ActivityHeader
           bookTitle={bookTitle}
@@ -1234,7 +1234,7 @@ export function ActivityPlayer({
 
   // Standalone mode - full header/footer
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-neutral-900">
       {/* Activity Header */}
       <ActivityHeader
         bookTitle={bookTitle}

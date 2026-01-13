@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react"
 import { useState } from "react"
+import { FiUsers } from "react-icons/fi"
 import {
   AdminService,
   type StudentCreateAPI,
@@ -27,6 +28,7 @@ import {
 import { ImportStudentsDialog } from "@/components/Admin/ImportStudentsDialog"
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { StudentPasswordModal } from "@/components/student/StudentPasswordModal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -385,40 +387,33 @@ function AdminStudents() {
 
   if (error) {
     return (
-      <div className="max-w-full p-6">
+      <PageContainer>
         <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded">
           Error loading students. Please try again later.
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="max-w-full p-6 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Students</h1>
-          <p className="text-muted-foreground">Manage students in the system</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsImportDialogOpen(true)}
-            className="border-teal-200 hover:border-teal-300 hover:bg-teal-50"
-          >
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Import Students
-          </Button>
-          <Button
-            onClick={() => setIsAddDialogOpen(true)}
-            className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Student
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader icon={FiUsers} title="Students" description="Manage students in the system">
+        <Button
+          variant="outline"
+          onClick={() => setIsImportDialogOpen(true)}
+          className="border-teal-200 hover:border-teal-300 hover:bg-teal-50"
+        >
+          <FileSpreadsheet className="w-4 h-4 mr-2" />
+          Import Students
+        </Button>
+        <Button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-neuro-sm"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Student
+        </Button>
+      </PageHeader>
 
       {/* Search */}
       <div className="flex items-center gap-2 max-w-md">
@@ -1013,6 +1008,6 @@ function AdminStudents() {
           }}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -69,6 +69,8 @@ interface AssignmentCreationDialogProps {
   // Story 20.2: Edit mode support
   mode?: "create" | "edit"
   existingAssignment?: AssignmentForEditResponse // Story 20.2: Use for-edit response with recipients
+  // Pre-selected AI content (from library "Use" button)
+  preSelectedAIContent?: ContentItem | null
 }
 
 const STEPS = [
@@ -87,6 +89,7 @@ export function AssignmentCreationDialog({
   prefilledPublishDate,
   mode = "create",
   existingAssignment,
+  preSelectedAIContent,
 }: AssignmentCreationDialogProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -163,6 +166,28 @@ export function AssignmentCreationDialog({
 
         // Start at activities step (step 1) in edit mode
         setCurrentStep(1)
+      } else if (preSelectedAIContent) {
+        // AI Content pre-selected (from library "Use" button)
+        // Start at step 1 with AI content already selected
+        setCurrentStep(1)
+        setSourceType("ai_content")
+        setSelectedContent(preSelectedAIContent)
+        setSelectedBook(null)
+        setSelectedActivityIds([])
+        setFormData({
+          name: preSelectedAIContent.title,
+          instructions: "",
+          due_date: null,
+          time_limit_minutes: null,
+          student_ids: [],
+          class_ids: [],
+          activity_ids: [],
+          scheduled_publish_date: prefilledPublishDate || null,
+          time_planning_enabled: false,
+          date_groups: [],
+          video_path: null,
+          resources: null,
+        })
       } else {
         // Create mode: reset to defaults
         setCurrentStep(initialBook ? 1 : 0)
@@ -196,6 +221,7 @@ export function AssignmentCreationDialog({
     prefilledPublishDate,
     isEditMode,
     existingAssignment,
+    preSelectedAIContent,
   ])
 
   // Update form name when activities are selected (only in create mode)
@@ -822,7 +848,7 @@ export function AssignmentCreationDialog({
                           ? "bg-teal-500 text-white shadow-sm"
                           : isCurrent
                             ? "bg-teal-500 text-white ring-2 ring-teal-500/20 shadow-md"
-                            : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600"
+                            : "bg-gray-100 dark:bg-neutral-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600"
                       }`}
                     >
                       {isCompleted ? (
@@ -1077,7 +1103,7 @@ function StepReviewCreateMulti({
 
       <ScrollArea className="flex-1 pr-4">
         <div className="grid gap-4">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
             <h4 className="font-medium text-foreground mb-2">
               Assignment Name
             </h4>
@@ -1086,7 +1112,7 @@ function StepReviewCreateMulti({
 
           {/* Source - Book or AI Content */}
           {sourceType === "book" && book ? (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
               <h4 className="font-medium text-foreground mb-2">Book</h4>
               <p className="text-muted-foreground">{book.title}</p>
               <p className="text-sm text-muted-foreground">
@@ -1094,7 +1120,7 @@ function StepReviewCreateMulti({
               </p>
             </div>
           ) : selectedContent && aiContentConfig && aiColorClasses ? (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
               <h4 className="font-medium text-foreground mb-2">AI Content</h4>
               <div className="flex items-center gap-3">
                 <div className={`rounded-lg p-2 ${aiColorClasses.bg}`}>
@@ -1115,7 +1141,7 @@ function StepReviewCreateMulti({
           ) : null}
 
           {/* Activities / Items */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
             <h4 className="font-medium text-foreground mb-2">
               {sourceType === "ai_content" ? "Content Items" : "Activities"}
             </h4>
@@ -1158,20 +1184,20 @@ function StepReviewCreateMulti({
             )}
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
             <h4 className="font-medium text-foreground mb-2">Recipients</h4>
             <p className="text-muted-foreground">{recipientCount}</p>
           </div>
 
           {formData.instructions && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
               <h4 className="font-medium text-foreground mb-2">Instructions</h4>
               <p className="text-muted-foreground">{formData.instructions}</p>
             </div>
           )}
 
           {/* Story 9.6: Show publishing schedule */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
             <h4 className="font-medium text-foreground mb-2">Publishing</h4>
             {formData.scheduled_publish_date ? (
               <div className="flex items-center gap-2">
@@ -1196,7 +1222,7 @@ function StepReviewCreateMulti({
           </div>
 
           {formData.due_date && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
               <h4 className="font-medium text-foreground mb-2">Due Date</h4>
               <p className="text-muted-foreground">
                 {format(formData.due_date, "PPP 'at' p")}
@@ -1205,7 +1231,7 @@ function StepReviewCreateMulti({
           )}
 
           {formData.time_limit_minutes && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
               <h4 className="font-medium text-foreground mb-2">Time Limit</h4>
               <p className="text-muted-foreground">
                 {formData.time_limit_minutes} minutes
@@ -1215,7 +1241,7 @@ function StepReviewCreateMulti({
 
           {/* Show resources if any */}
           {formData.resources && formData.resources.videos.length > 0 && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
               <h4 className="font-medium text-foreground mb-2">
                 Additional Resources
               </h4>

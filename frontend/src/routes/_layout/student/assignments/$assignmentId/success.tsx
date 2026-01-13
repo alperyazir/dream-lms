@@ -53,12 +53,12 @@ function AssignmentSuccessScreen() {
   const scoreStyle = getScoreStyle(score)
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-50 to-blue-50 dark:from-neutral-900 dark:to-neutral-800">
       {showConfetti && (
         <Confetti width={width} height={height} recycle={false} />
       )}
 
-      <div className="mx-4 max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl dark:bg-gray-800">
+      <div className="mx-4 max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl dark:bg-neutral-800">
         {/* Success Icon */}
         <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
           <svg

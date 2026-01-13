@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { AlertCircle, BookOpen, School, Users } from "lucide-react"
+import { FiHome } from "react-icons/fi"
 import { PublishersService } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { StatCard } from "@/components/dashboard/StatCard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PublisherLogo } from "@/components/ui/publisher-logo"
 
 export const Route = createFileRoute("/_layout/publisher/dashboard")({
   component: () => (
@@ -50,7 +51,7 @@ function PublisherDashboard() {
   // Handle account not linked to DCS publisher (403)
   if ((profileError as any)?.status === 403) {
     return (
-      <div className="max-w-full p-6">
+      <PageContainer>
         <div className="text-center py-12">
           <AlertCircle className="w-16 h-16 mx-auto text-amber-500 mb-4" />
           <h2 className="text-xl font-semibold mb-2">Account Not Linked</h2>
@@ -59,14 +60,14 @@ function PublisherDashboard() {
             contact an administrator to set up your publisher access.
           </p>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   // Handle DCS publisher not found (404)
   if ((profileError as any)?.status === 404) {
     return (
-      <div className="max-w-full p-6">
+      <PageContainer>
         <div className="text-center py-12">
           <AlertCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
           <h2 className="text-xl font-semibold mb-2">Publisher Not Found</h2>
@@ -75,14 +76,14 @@ function PublisherDashboard() {
             Storage. Please contact an administrator for assistance.
           </p>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   // Handle other profile errors
   if (profileError) {
     return (
-      <div className="max-w-full p-6">
+      <PageContainer>
         <div className="text-center py-12">
           <AlertCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
           <h2 className="text-xl font-semibold mb-2">Error Loading Profile</h2>
@@ -90,40 +91,21 @@ function PublisherDashboard() {
             Unable to load your publisher profile. Please try again later.
           </p>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   const isLoading = profileLoading || statsLoading
 
   return (
-    <div className="max-w-full p-6 space-y-8">
-      {/* Header with Logo */}
-      <div className="flex items-center gap-6">
-        {/* Publisher Logo from DCS */}
-        {profile && (
-          <div className="flex-shrink-0">
-            <PublisherLogo
-              publisherId={profile.id}
-              size="lg"
-              alt={`${profile.name} logo`}
-              className="shadow-lg"
-            />
-          </div>
-        )}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            {profileLoading
-              ? "Loading..."
-              : profile?.name || "Publisher Dashboard"}
-          </h1>
-          <p className="text-muted-foreground">
-            {profile?.user_full_name
-              ? `Welcome, ${profile.user_full_name}`
-              : "Overview of your organization's schools, books, and teachers"}
-          </p>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={FiHome}
+        title={profileLoading ? "Loading..." : `${profile?.name || "Publisher Dashboard"} 👋`}
+        description={profile?.user_full_name
+          ? `Welcome, ${profile.user_full_name}`
+          : "Overview of your organization's schools, books, and teachers"}
+      />
 
       {/* Stats Cards */}
       {statsError ? (
@@ -182,6 +164,6 @@ function PublisherDashboard() {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   )
 }

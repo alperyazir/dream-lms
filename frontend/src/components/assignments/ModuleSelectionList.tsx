@@ -61,7 +61,7 @@ function ModuleCard({
                   ? "bg-purple-500 text-white"
                   : isPartiallySelected
                     ? "bg-purple-200 dark:bg-purple-700/50 text-purple-600 dark:text-purple-300"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-400"
+                    : "bg-gray-100 dark:bg-neutral-800 text-gray-400"
               }
             `}
           >
