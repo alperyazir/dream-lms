@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, RefreshCw, UserPlus } from "lucide-react"
-import { useEffect, useState } from "react"
+import { BookOpen, Download, ExternalLink, RefreshCw, UserPlus } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
 import { AdminBookCard } from "@/components/books/AdminBookCard"
 import { BookCover } from "@/components/books/BookCover"
 import { BookDetailsDialog } from "@/components/books/BookDetailsDialog"
 import { QuickAssignDialog } from "@/components/books/QuickAssignDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { LibraryFilters } from "@/components/library/LibraryFilters"
+import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,6 +45,7 @@ function AdminBooks() {
   const [viewMode, setViewMode] = useViewPreference("admin-library", "table")
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [assignBook, setAssignBook] = useState<Book | null>(null)
+  const [downloadBook, setDownloadBook] = useState<Book | null>(null)
 
   const fetchBooks = async () => {
     try {
@@ -85,6 +87,14 @@ function AdminBooks() {
   const handleAssignClick = (book: Book) => {
     setAssignBook(book)
   }
+
+  const handleOpenFlowbook = useCallback((book: Book) => {
+    window.open(`/viewer/${book.id}`, "_blank")
+  }, [])
+
+  const handleDownload = useCallback((book: Book) => {
+    setDownloadBook(book)
+  }, [])
 
   return (
     <div className="max-w-full p-6 space-y-8">
@@ -140,6 +150,8 @@ function AdminBooks() {
               book={book}
               onViewDetails={() => handleViewDetails(book)}
               onAssign={() => handleAssignClick(book)}
+              onOpenFlowbook={() => handleOpenFlowbook(book)}
+              onDownload={() => handleDownload(book)}
             />
           ))}
         </div>
@@ -161,7 +173,7 @@ function AdminBooks() {
                   <TableHead>Publisher</TableHead>
                   <TableHead className="text-center">Activities</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead className="w-32">Actions</TableHead>
+                  <TableHead className="w-48">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -185,14 +197,32 @@ function AdminBooks() {
                       {book.description || "No description"}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAssignClick(book)}
-                      >
-                        <UserPlus className="h-4 w-4 mr-1" />
-                        Assign
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenFlowbook(book)}
+                          title="Open with Flowbook"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDownload(book)}
+                          title="Download Book"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAssignClick(book)}
+                        >
+                          <UserPlus className="h-4 w-4 mr-1" />
+                          Assign
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -218,6 +248,16 @@ function AdminBooks() {
           onOpenChange={(open) => !open && setAssignBook(null)}
           book={assignBook}
           isAdmin={true}
+        />
+      )}
+
+      {/* Platform Select Dialog for Download */}
+      {downloadBook && (
+        <PlatformSelectDialog
+          bookId={downloadBook.id}
+          bookTitle={downloadBook.title || ""}
+          isOpen={!!downloadBook}
+          onClose={() => setDownloadBook(null)}
         />
       )}
     </div>

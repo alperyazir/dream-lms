@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, RefreshCw, UserPlus } from "lucide-react"
-import { useEffect, useState } from "react"
+import { BookOpen, Download, ExternalLink, RefreshCw, UserPlus } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
 import { FiBook } from "react-icons/fi"
 import { PublishersService } from "@/client"
 import { BookTableView } from "@/components/books/BookTableView"
@@ -9,6 +9,7 @@ import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { QuickAssignDialog } from "@/components/books/QuickAssignDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { LibraryFilters } from "@/components/library/LibraryFilters"
+import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -39,9 +40,11 @@ export const Route = createFileRoute("/_layout/publisher/library")({
 interface PublisherBookCardProps {
   book: Book
   onAssignClick: () => void
+  onOpenFlowbook?: () => void
+  onDownload?: () => void
 }
 
-function PublisherBookCard({ book, onAssignClick }: PublisherBookCardProps) {
+function PublisherBookCard({ book, onAssignClick, onOpenFlowbook, onDownload }: PublisherBookCardProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [isLoadingCover, setIsLoadingCover] = useState(true)
   const [imageError, setImageError] = useState(false)
@@ -126,9 +129,34 @@ function PublisherBookCard({ book, onAssignClick }: PublisherBookCardProps) {
           {book.activity_count === 1 ? "activity" : "activities"}
         </Badge>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+        <div className="flex gap-2 w-full">
+          {onOpenFlowbook && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onOpenFlowbook}
+              className="flex-1"
+            >
+              <ExternalLink className="h-4 w-4 mr-1" />
+              Open
+            </Button>
+          )}
+          {onDownload && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDownload}
+              className="flex-1"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Download
+            </Button>
+          )}
+        </div>
         <Button
           className="w-full bg-teal-600 hover:bg-teal-700"
+          size="sm"
           onClick={onAssignClick}
         >
           <UserPlus className="h-4 w-4 mr-2" />
@@ -141,12 +169,21 @@ function PublisherBookCard({ book, onAssignClick }: PublisherBookCardProps) {
 
 function PublisherLibraryPage() {
   const [assignBook, setAssignBook] = useState<Book | null>(null)
+  const [downloadBook, setDownloadBook] = useState<Book | null>(null)
   const [viewMode, setViewMode] = useViewPreference("publisher-library", "grid")
 
   // Handle opening the assign dialog
   const handleAssignClick = (book: Book) => {
     setAssignBook(book)
   }
+
+  const handleOpenFlowbook = useCallback((book: Book) => {
+    window.open(`/viewer/${book.id}`, "_blank")
+  }, [])
+
+  const handleDownload = useCallback((book: Book) => {
+    setDownloadBook(book)
+  }, [])
 
   // Fetch books for this publisher only (much faster than fetching all books)
   const { data: booksData = [], isLoading: loading } = useQuery({
@@ -160,6 +197,7 @@ function PublisherLibraryPage() {
     id: book.id,
     dream_storage_id: book.name, // Using book name as a fallback
     title: book.title || book.name,
+    publisher_id: book.publisher_id,
     publisher_name: book.publisher_name,
     description: null, // Not available in BookPublic
     cover_image_url: book.cover_url || null,
@@ -218,6 +256,8 @@ function PublisherLibraryPage() {
               key={book.id}
               book={book}
               onAssignClick={() => handleAssignClick(book)}
+              onOpenFlowbook={() => handleOpenFlowbook(book)}
+              onDownload={() => handleDownload(book)}
             />
           ))}
         </div>
@@ -226,6 +266,8 @@ function PublisherLibraryPage() {
         <BookTableView
           books={filteredBooks}
           onAssign={handleAssignClick}
+          onOpenFlowbook={handleOpenFlowbook}
+          onDownload={handleDownload}
           showAssignButton={true}
           showViewDetails={false}
         />
@@ -238,6 +280,16 @@ function PublisherLibraryPage() {
           onOpenChange={(open) => !open && setAssignBook(null)}
           book={assignBook}
           isAdmin={false}
+        />
+      )}
+
+      {/* Platform Select Dialog for Download */}
+      {downloadBook && (
+        <PlatformSelectDialog
+          bookId={downloadBook.id}
+          bookTitle={downloadBook.title || ""}
+          isOpen={!!downloadBook}
+          onClose={() => setDownloadBook(null)}
         />
       )}
     </PageContainer>

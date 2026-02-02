@@ -62,8 +62,10 @@ def _validate_asset_path(asset_path: str) -> None:
             detail="Invalid asset path: null bytes not allowed",
         )
 
-    # Validate allowed characters (alphanumeric, /, ., -, _)
-    if not re.match(r"^[a-zA-Z0-9/._-]+$", asset_path):
+    # Validate path structure - allow Unicode characters but prevent dangerous patterns
+    # Block control characters and shell metacharacters
+    dangerous_chars = set('<>"|*?\\:')
+    if any(c in asset_path for c in dangerous_chars):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid asset path: contains invalid characters",
@@ -124,10 +126,12 @@ async def _check_book_access(
         return book
 
     if current_user.role == UserRole.publisher:
-        # Publisher role deprecated
+        # Publisher can access their own books' assets
+        if current_user.dcs_publisher_id and current_user.dcs_publisher_id == book.publisher_id:
+            return book
         raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail="Publisher role is deprecated. Publishers are now managed in Dream Central Storage."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this book",
         )
 
     elif current_user.role == UserRole.teacher:

@@ -1,4 +1,4 @@
-import { Eye, UserPlus } from "lucide-react"
+import { Download, ExternalLink, Eye, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import type { Book } from "@/types/book"
@@ -8,12 +8,16 @@ interface AdminBookCardProps {
   book: Book
   onViewDetails: () => void
   onAssign?: () => void
+  onOpenFlowbook?: () => void
+  onDownload?: () => void
 }
 
 export function AdminBookCard({
   book,
   onViewDetails,
   onAssign,
+  onOpenFlowbook,
+  onDownload,
 }: AdminBookCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
@@ -36,27 +40,53 @@ export function AdminBookCard({
           {book.activity_count} activities
         </p>
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex gap-2">
-        {onAssign && (
+      <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+        <div className="flex gap-2 w-full">
+          {onOpenFlowbook && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onOpenFlowbook}
+              className="flex-1"
+            >
+              <ExternalLink className="h-4 w-4 mr-1" />
+              Open
+            </Button>
+          )}
+          {onDownload && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDownload}
+              className="flex-1"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Download
+            </Button>
+          )}
+        </div>
+        <div className="flex gap-2 w-full">
+          {onAssign && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onAssign}
+              className="flex-1"
+            >
+              <UserPlus className="h-4 w-4 mr-1" />
+              Assign
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
-            onClick={onAssign}
+            onClick={onViewDetails}
             className="flex-1"
           >
-            <UserPlus className="h-4 w-4 mr-1" />
-            Assign
+            <Eye className="h-4 w-4 mr-1" />
+            Details
           </Button>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onViewDetails}
-          className="flex-1"
-        >
-          <Eye className="h-4 w-4 mr-1" />
-          Details
-        </Button>
+        </div>
       </CardFooter>
     </Card>
   )
