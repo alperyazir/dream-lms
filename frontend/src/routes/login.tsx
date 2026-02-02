@@ -4,10 +4,21 @@ import {
   Link as RouterLink,
   redirect,
 } from "@tanstack/react-router"
+import { motion } from "framer-motion"
+import {
+  BarChart3,
+  Eye,
+  EyeOff,
+  Lock,
+  Moon,
+  Sparkles,
+  Sun,
+  User,
+  Zap,
+} from "lucide-react"
+import { useTheme } from "next-themes"
 import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { motion } from "framer-motion"
-import { useTheme } from "next-themes"
 import type { Body_login_login_access_token as AccessToken } from "@/client"
 import { OpenAPI } from "@/client"
 import { Button } from "@/components/ui/button"
@@ -15,17 +26,6 @@ import { Input } from "@/components/ui/input"
 import { WaveAnimation } from "@/components/ui/wave-animation"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 import { passwordRules } from "../utils"
-import {
-  User,
-  Lock,
-  Eye,
-  EyeOff,
-  Sparkles,
-  BarChart3,
-  Zap,
-  Sun,
-  Moon,
-} from "lucide-react"
 
 // Type for quick login users response
 interface QuickLoginUser {
@@ -200,7 +200,6 @@ function Login() {
 
       {/* Main Content Container */}
       <div className="relative z-10 min-h-screen flex items-center justify-center lg:justify-between px-4 py-8 lg:px-12 xl:px-20 2xl:px-32 pb-[14vh]">
-
         {/* Left Hero Section - Hidden on mobile */}
         <motion.div
           className="hidden lg:flex flex-col justify-center max-w-xl"
@@ -209,7 +208,10 @@ function Login() {
           animate="visible"
         >
           {/* Logo */}
-          <motion.div variants={itemVariants} className="flex items-center gap-4 mb-6">
+          <motion.div
+            variants={itemVariants}
+            className="flex items-center gap-4 mb-6"
+          >
             <img
               src="/assets/images/dreamedtech_single.svg"
               alt="Dream EdTech"
@@ -230,7 +232,8 @@ function Login() {
               </span>
             </h1>
             <p className="text-base xl:text-lg text-white/80 dark:text-neutral-400 max-w-lg">
-              Transform the way you teach and learn with our intelligent learning management system.
+              Transform the way you teach and learn with our intelligent
+              learning management system.
             </p>
           </motion.div>
 
@@ -246,7 +249,9 @@ function Login() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-white">{feature.title}</h3>
-                  <p className="text-sm text-white/70 dark:text-neutral-400">{feature.description}</p>
+                  <p className="text-sm text-white/70 dark:text-neutral-400">
+                    {feature.description}
+                  </p>
                 </div>
               </div>
             ))}
@@ -282,139 +287,182 @@ function Login() {
               </div>
 
               {/* Login Form */}
-              <form onSubmit={handleSubmit(onSubmit)} className="relative space-y-4">
-              {/* Username */}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">
-                  Username
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    {...register("username", {
-                      required: "Username or email is required",
-                    })}
-                    placeholder="Enter username or email"
-                    type="text"
-                    className="pl-12 h-12 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700 focus:border-teal-500 focus:ring-teal-500/20 transition-all"
-                  />
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="relative space-y-4"
+              >
+                {/* Username */}
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">
+                    Username
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      {...register("username", {
+                        required: "Username or email is required",
+                      })}
+                      placeholder="Enter username or email"
+                      type="text"
+                      className="pl-12 h-12 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700 focus:border-teal-500 focus:ring-teal-500/20 transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Password */}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    {...register("password", passwordRules())}
-                    placeholder="Enter password"
-                    type={showPassword ? "text" : "password"}
-                    className="pl-12 pr-12 h-12 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700 focus:border-teal-500 focus:ring-teal-500/20 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                {/* Password */}
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      {...register("password", passwordRules())}
+                      placeholder="Enter password"
+                      type={showPassword ? "text" : "password"}
+                      className="pl-12 pr-12 h-12 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700 focus:border-teal-500 focus:ring-teal-500/20 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-sm text-destructive mt-2">
+                      {errors.password.message}
+                    </p>
+                  )}
                 </div>
-                {errors.password && (
-                  <p className="text-sm text-destructive mt-2">{errors.password.message}</p>
+
+                {/* Error */}
+                {loginError && (
+                  <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center">
+                    {loginError}
+                  </div>
                 )}
-              </div>
 
-              {/* Error */}
-              {loginError && (
-                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center">
-                  {loginError}
+                {/* Forgot Password */}
+                <div className="text-right">
+                  <RouterLink
+                    to="/recover-password"
+                    className="text-sm text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Forgot Password?
+                  </RouterLink>
+                </div>
+
+                {/* Submit */}
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || loginMutation.isPending}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-white font-semibold shadow-lg shadow-teal-500/30 hover:shadow-teal-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                >
+                  {loginMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Signing in...
+                    </div>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+              </form>
+
+              {/* Dev Quick Login */}
+              {import.meta.env.DEV && (
+                <div className="mt-6 pt-4 border-t border-border">
+                  <p className="text-xs text-center text-muted-foreground mb-3 flex items-center justify-center gap-2">
+                    <span className="px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium">
+                      DEV
+                    </span>
+                    Quick Login
+                  </p>
+                  {isError && (
+                    <p className="text-xs text-center text-destructive mb-2">
+                      Unavailable
+                    </p>
+                  )}
+                  {!isError && quickLoginUsers && (
+                    <div className="space-y-2 max-h-[140px] overflow-y-auto">
+                      {[
+                        {
+                          key: "admin" as const,
+                          label: "Admin",
+                          color: "text-amber-600 dark:text-amber-400",
+                        },
+                        {
+                          key: "teacher" as const,
+                          label: "Teacher",
+                          color: "text-emerald-600 dark:text-emerald-400",
+                        },
+                        {
+                          key: "student" as const,
+                          label: "Student",
+                          color: "text-purple-600 dark:text-purple-400",
+                        },
+                      ].map((role) => {
+                        const users = quickLoginUsers[role.key] || []
+                        if (users.length === 0) return null
+                        return (
+                          <div
+                            key={role.key}
+                            className="flex flex-wrap gap-1.5"
+                          >
+                            <span className={`text-xs ${role.color} w-16`}>
+                              {role.label}:
+                            </span>
+                            {users.slice(0, 3).map((user) => (
+                              <Button
+                                key={user.username}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => instantLogin(user.username)}
+                                className="text-xs h-6 px-2 rounded"
+                              >
+                                {user.username}
+                              </Button>
+                            ))}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Forgot Password */}
-              <div className="text-right">
-                <RouterLink
-                  to="/recover-password"
-                  className="text-sm text-primary hover:text-primary/80 transition-colors"
-                >
-                  Forgot Password?
-                </RouterLink>
-              </div>
-
-              {/* Submit */}
-              <Button
-                type="submit"
-                disabled={isSubmitting || loginMutation.isPending}
-                className="w-full h-12 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-white font-semibold shadow-lg shadow-teal-500/30 hover:shadow-teal-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-              >
-                {loginMutation.isPending ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing in...
-                  </div>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-            </form>
-
-            {/* Dev Quick Login */}
-            {import.meta.env.DEV && (
+              {/* Footer Links */}
               <div className="mt-6 pt-4 border-t border-border">
-                <p className="text-xs text-center text-muted-foreground mb-3 flex items-center justify-center gap-2">
-                  <span className="px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium">
-                    DEV
-                  </span>
-                  Quick Login
-                </p>
-                {isError && (
-                  <p className="text-xs text-center text-destructive mb-2">Unavailable</p>
-                )}
-                {!isError && quickLoginUsers && (
-                  <div className="space-y-2 max-h-[140px] overflow-y-auto">
-                    {[
-                      { key: "admin" as const, label: "Admin", color: "text-amber-600 dark:text-amber-400" },
-                      { key: "teacher" as const, label: "Teacher", color: "text-emerald-600 dark:text-emerald-400" },
-                      { key: "student" as const, label: "Student", color: "text-purple-600 dark:text-purple-400" },
-                    ].map((role) => {
-                      const users = quickLoginUsers[role.key] || []
-                      if (users.length === 0) return null
-                      return (
-                        <div key={role.key} className="flex flex-wrap gap-1.5">
-                          <span className={`text-xs ${role.color} w-16`}>{role.label}:</span>
-                          {users.slice(0, 3).map((user) => (
-                            <Button
-                              key={user.username}
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => instantLogin(user.username)}
-                              className="text-xs h-6 px-2 rounded"
-                            >
-                              {user.username}
-                            </Button>
-                          ))}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Documentation
+                  </a>
+                  <span>|</span>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Support
+                  </a>
+                  <span>|</span>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Privacy
+                  </a>
+                </div>
               </div>
-            )}
-
-            {/* Footer Links */}
-            <div className="mt-6 pt-4 border-t border-border">
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                <a href="#" className="hover:text-foreground transition-colors">Documentation</a>
-                <span>|</span>
-                <a href="#" className="hover:text-foreground transition-colors">Support</a>
-                <span>|</span>
-                <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-              </div>
-            </div>
             </div>
           </div>
         </motion.div>

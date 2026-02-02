@@ -3,7 +3,7 @@
  * Tests for authentication hook including getUserRole functionality.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { getMustChangePassword, getUserRole, isLoggedIn } from "./useAuth"
 
 describe("useAuth helper functions", () => {

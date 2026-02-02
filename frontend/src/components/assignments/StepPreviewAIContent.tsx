@@ -312,7 +312,8 @@ export function StepPreviewAIContent({ content }: StepPreviewAIContentProps) {
             <span>{config.label}</span>
             <span>•</span>
             <span>
-              {getActualItemCount()} {getActualItemCount() === 1 ? "item" : "items"}
+              {getActualItemCount()}{" "}
+              {getActualItemCount() === 1 ? "item" : "items"}
             </span>
             {(content.book_title || content.material_name) && (
               <>

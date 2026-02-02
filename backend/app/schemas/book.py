@@ -40,6 +40,7 @@ class BookResponse(BaseModel):
     id: int  # Changed from UUID to int (DCS book ID)
     title: str | None = None
     book_name: str | None = None  # DCS book_name
+    publisher_id: int  # DCS publisher ID for logo URL
     publisher_name: str
     language: str | None = None
     category: str | None = None
@@ -155,6 +156,42 @@ class ActivityMarker(BaseModel):
     activity_type: str
     section_index: int
     coords: ActivityCoords | None
+    config: dict = {}  # Activity configuration data for the player
+
+
+class AudioMarker(BaseModel):
+    """Audio marker with position for page viewer."""
+
+    id: str
+    src: str  # Media path like "audio/M1/track.mp3"
+    x: int
+    y: int
+    width: int = 40
+    height: int = 40
+
+
+class VideoMarker(BaseModel):
+    """Video marker with position for page viewer."""
+
+    id: str
+    src: str  # Media path like "video/1.mp4"
+    poster: str | None = None  # Optional poster image path
+    subtitle_src: str | None = None  # Optional subtitle file path
+    x: int
+    y: int
+    width: int = 50
+    height: int = 50
+
+
+class FillAnswerMarker(BaseModel):
+    """Fill answer marker - clickable area that shows text answer when clicked."""
+
+    id: str
+    x: int
+    y: int
+    width: int
+    height: int
+    text: str
 
 
 class PageDetail(BaseModel):
@@ -164,6 +201,9 @@ class PageDetail(BaseModel):
     image_url: str
     module_name: str
     activities: list[ActivityMarker]
+    audio: list[AudioMarker] = []
+    video: list[VideoMarker] = []
+    fill_answers: list[FillAnswerMarker] = []
 
 
 class ModuleInfo(BaseModel):
@@ -241,3 +281,21 @@ class BookVideosResponse(BaseModel):
     book_id: int  # Changed from UUID to int (DCS book ID)
     videos: list[VideoInfo]
     total_count: int
+
+
+# --- Story 29.3: Book Bundle Download ---
+
+
+class BundleRequest(BaseModel):
+    """Request body for book bundle download."""
+
+    platform: str  # mac, win, win7-8, linux
+
+
+class BundleResponse(BaseModel):
+    """Response for book bundle download request."""
+
+    download_url: str
+    file_name: str
+    file_size: int
+    expires_at: str | None = None

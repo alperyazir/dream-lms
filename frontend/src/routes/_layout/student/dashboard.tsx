@@ -61,7 +61,9 @@ function StudentDashboard() {
       {/* Cards stack vertically, full width */}
       <div className="space-y-4 md:space-y-6">
         {/* Announcements Widget - Only show when there are announcements */}
-        {(isLoadingAnnouncements || (announcementsData?.announcements && announcementsData.announcements.length > 0)) && (
+        {(isLoadingAnnouncements ||
+          (announcementsData?.announcements &&
+            announcementsData.announcements.length > 0)) && (
           <AnnouncementWidget
             announcements={announcementsData?.announcements || []}
             isLoading={isLoadingAnnouncements}

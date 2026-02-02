@@ -13,9 +13,11 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { useSoundContext } from "@/hooks/useSoundEffects"
 import { cn } from "@/lib/utils"
 import type { AIQuizQuestionResult, AIQuizResult } from "@/types/ai-quiz"
 import { getDifficultyLabel } from "@/types/ai-quiz"
@@ -31,12 +33,25 @@ interface AIQuizResultsProps {
   hideSummary?: boolean
 }
 
-export function AIQuizResults({ result, onRetry, onBack, hideSummary = false }: AIQuizResultsProps) {
+export function AIQuizResults({
+  result,
+  onRetry,
+  onBack,
+  hideSummary = false,
+}: AIQuizResultsProps) {
+  const { play: playSound } = useSoundContext()
   const correctCount = result.question_results.filter(
     (r) => r.is_correct,
   ).length
   const totalCount = result.total
   const percentage = result.percentage
+
+  // Play completion sound on mount
+  useEffect(() => {
+    if (percentage >= 60) {
+      playSound("complete")
+    }
+  }, [percentage, playSound])
 
   // Determine score color
   const getScoreColor = (pct: number) => {
@@ -53,7 +68,12 @@ export function AIQuizResults({ result, onRetry, onBack, hideSummary = false }: 
   }
 
   return (
-    <div className={cn("mx-auto flex max-w-2xl flex-col gap-6", !hideSummary && "p-4")}>
+    <div
+      className={cn(
+        "mx-auto flex max-w-2xl flex-col gap-6",
+        !hideSummary && "p-4",
+      )}
+    >
       {/* Score summary card - hidden when embedded in result page */}
       {!hideSummary && (
         <Card className="overflow-hidden shadow-lg">
@@ -70,7 +90,9 @@ export function AIQuizResults({ result, onRetry, onBack, hideSummary = false }: 
             <h2 className="mb-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
               Quiz Complete!
             </h2>
-            <div className={cn("text-5xl font-bold", getScoreColor(percentage))}>
+            <div
+              className={cn("text-5xl font-bold", getScoreColor(percentage))}
+            >
               {correctCount}/{totalCount}
             </div>
             <p

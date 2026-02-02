@@ -7,11 +7,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Save } from "lucide-react"
 import { useState } from "react"
-import {
-  getStudentPassword,
-  setStudentPassword,
-  type StudentPasswordResponse,
-} from "@/services/studentsApi"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -25,6 +20,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import useCustomToast from "@/hooks/useCustomToast"
+import {
+  getStudentPassword,
+  type StudentPasswordResponse,
+  setStudentPassword,
+} from "@/services/studentsApi"
 
 interface StudentPasswordModalProps {
   studentId: string
@@ -65,7 +65,9 @@ export function StudentPasswordModal({
   const setPasswordMutation = useMutation({
     mutationFn: (password: string) => setStudentPassword(studentId, password),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["studentPassword", studentId] })
+      queryClient.invalidateQueries({
+        queryKey: ["studentPassword", studentId],
+      })
       setNewPassword("")
       showSuccessToast("Password updated successfully!")
       refetch()
@@ -148,7 +150,9 @@ export function StudentPasswordModal({
               <>
                 {/* Username */}
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Username</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Username
+                  </Label>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-muted/50 rounded-md px-3 py-2 font-mono text-sm">
                       {passwordData?.username || "—"}
@@ -171,7 +175,9 @@ export function StudentPasswordModal({
 
                 {/* Password */}
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Password</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Password
+                  </Label>
                   {passwordData?.password ? (
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted/50 rounded-md px-3 py-2 font-mono text-sm">
@@ -222,7 +228,10 @@ export function StudentPasswordModal({
             </h4>
 
             <div className="space-y-2">
-              <Label htmlFor="new-password" className="text-xs text-muted-foreground">
+              <Label
+                htmlFor="new-password"
+                className="text-xs text-muted-foreground"
+              >
                 New Password
               </Label>
               <div className="flex items-center gap-2">

@@ -28,7 +28,9 @@ describe("ActivityTypeSelector", () => {
   it("displays activity type descriptions", () => {
     render(<ActivityTypeSelector selectedType={null} onSelect={mockOnSelect} />)
 
-    expect(screen.getByText("Definition, synonym, or antonym quiz")).toBeInTheDocument()
+    expect(
+      screen.getByText("Definition, synonym, or antonym quiz"),
+    ).toBeInTheDocument()
     expect(
       screen.getByText("AI-generated multiple choice questions"),
     ).toBeInTheDocument()

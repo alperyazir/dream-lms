@@ -1,5 +1,5 @@
+import { AnimatePresence, motion } from "framer-motion"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
 import { useNavigation } from "@/contexts/NavigationContext"
 import SidebarItems from "./SidebarItems"
 

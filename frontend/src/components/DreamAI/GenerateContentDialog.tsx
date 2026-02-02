@@ -51,7 +51,7 @@ import type { ActivityType } from "@/hooks/useGenerationState"
 import { useGenerationState } from "@/hooks/useGenerationState"
 import { generateActivity } from "@/lib/generateActivity"
 import { cn } from "@/lib/utils"
-import { getBooks } from "@/services/booksApi"
+import { getAuthenticatedCoverUrl, getBooks } from "@/services/booksApi"
 import { contentReviewApi } from "@/services/contentReviewApi"
 import { type AIModuleSummary, getBookAIModules } from "@/services/dcsAiDataApi"
 import type { Book } from "@/types/book"
@@ -115,6 +115,22 @@ export function GenerateContentDialog({
   const [isLoadingModules, setIsLoadingModules] = useState(false)
   const [bookSearch, setBookSearch] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [coverUrls, setCoverUrls] = useState<Record<number, string>>({})
+
+  // Load cover URLs for books
+  useEffect(() => {
+    const loadCovers = async () => {
+      const urls: Record<number, string> = {}
+      for (const book of books) {
+        if (book.cover_image_url) {
+          const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+          if (url) urls[book.id] = url
+        }
+      }
+      setCoverUrls(urls)
+    }
+    if (books.length > 0) loadCovers()
+  }, [books])
 
   // Edit state for generated questions
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
@@ -664,6 +680,7 @@ export function GenerateContentDialog({
                   setModuleIds([]) // Clear modules when book changes
                 }}
                 error={error}
+                coverUrls={coverUrls}
               />
             )}
 
@@ -936,6 +953,7 @@ interface StepSelectBookProps {
   onSearchChange: (search: string) => void
   onBookSelect: (bookId: number | null) => void
   error: string | null
+  coverUrls: Record<number, string>
 }
 
 function StepSelectBook({
@@ -946,6 +964,7 @@ function StepSelectBook({
   onSearchChange,
   onBookSelect,
   error,
+  coverUrls,
 }: StepSelectBookProps) {
   return (
     <div className="h-full flex flex-col">
@@ -1001,9 +1020,9 @@ function StepSelectBook({
               >
                 {/* Book Cover */}
                 <div className="aspect-[3/4] w-full rounded overflow-hidden bg-muted">
-                  {book.cover_image_url ? (
+                  {coverUrls[book.id] ? (
                     <img
-                      src={book.cover_image_url}
+                      src={coverUrls[book.id]}
                       alt={book.title}
                       className="w-full h-full object-cover"
                     />

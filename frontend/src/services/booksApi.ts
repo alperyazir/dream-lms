@@ -481,6 +481,46 @@ export async function getPageImageUrl(
   }
 }
 
+/**
+ * Get authenticated media URL (for audio/video)
+ *
+ * Story 29.3: FlowbookViewer Integration
+ *
+ * Fetches media with authentication headers and returns a blob URL.
+ *
+ * @param mediaUrl - The media URL (audio or video)
+ * @returns Promise with blob URL string, or null if fetch fails
+ */
+export async function getMediaUrl(mediaUrl: string): Promise<string | null> {
+  if (!mediaUrl) return null
+
+  try {
+    const response = await apiClient.get(mediaUrl, {
+      responseType: "blob",
+    })
+
+    const blobUrl = URL.createObjectURL(response.data)
+    return blobUrl
+  } catch (error) {
+    console.error("Failed to fetch media:", error)
+    return null
+  }
+}
+
+/**
+ * Get a single book by ID
+ *
+ * Story 29.3: FlowbookViewer Integration
+ *
+ * @param bookId - Book ID (string or number)
+ * @returns Promise with book data
+ */
+export async function getBook(bookId: string | number): Promise<Book> {
+  const url = `/api/v1/books/${bookId}`
+  const response = await apiClient.get<Book>(url)
+  return response.data
+}
+
 // --- Story 9.5: Activity Selection Tabs ---
 
 /**
@@ -502,11 +542,50 @@ export async function getBookStructure(
   return response.data
 }
 
+// --- Story 29.3: Book Bundle Download ---
+
+/**
+ * Platform options for standalone app bundle download
+ */
+export type Platform = "mac" | "win" | "win7-8" | "linux"
+
+/**
+ * Response from book bundle request
+ */
+export interface BundleResponse {
+  download_url: string
+  file_name: string
+  file_size: number
+  expires_at: string | null
+}
+
+/**
+ * Request a standalone app bundle download URL for a book
+ *
+ * Story 29.3: Book Preview and Download Actions
+ *
+ * Calls the backend to get a signed download URL for the book bundle.
+ * The returned URL can be used to download the standalone app.
+ *
+ * @param bookId - Book ID (DCS book ID)
+ * @param platform - Target platform (mac, win, win7-8, linux)
+ * @returns Promise with bundle response containing download URL
+ */
+export async function requestBookBundle(
+  bookId: string | number,
+  platform: Platform,
+): Promise<BundleResponse> {
+  const url = `/api/v1/books/${bookId}/bundle`
+  const response = await apiClient.post<BundleResponse>(url, { platform })
+  return response.data
+}
+
 /**
  * Export as object for easier imports
  */
 export const booksApi = {
   getBooks,
+  getBook,
   getBookActivities,
   getBookById,
   getAuthenticatedCoverUrl,
@@ -517,10 +596,12 @@ export const booksApi = {
   getPageThumbnailUrl,
   getBookPagesDetail,
   getPageImageUrl,
+  getMediaUrl,
   getBookStructure,
   getBookVideos,
   getVideoStreamUrl,
   getSubtitleUrl,
+  requestBookBundle,
 }
 
 export default booksApi

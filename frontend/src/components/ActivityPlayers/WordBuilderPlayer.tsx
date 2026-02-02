@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { useSoundContext } from "@/hooks/useSoundEffects"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
 import type {
@@ -21,7 +22,6 @@ import type {
 import {
   getFeedbackMessage,
   getProgressText,
-  HINT_TYPE_LABELS,
   initializeLettersWithIndices,
 } from "@/types/word-builder"
 
@@ -93,9 +93,10 @@ export function WordBuilderPlayer({
     [isExternallyControlled, onWordIndexChange],
   )
   const [wordStates, setWordStates] = useState<Record<string, WordState>>({})
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showSuccess, _setShowSuccess] = useState(false)
   const [isShaking, setIsShaking] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const { play: playSound } = useSoundContext()
 
   const totalWords = activity.words.length
 
@@ -169,7 +170,9 @@ export function WordBuilderPlayer({
         ...prev,
         [currentWord.item_id]: {
           placedLetters: [],
-          availableLetters: shuffleArray(initializeLettersWithIndices(currentWord.letters)),
+          availableLetters: shuffleArray(
+            initializeLettersWithIndices(currentWord.letters),
+          ),
           attempts: 0,
           isCorrect: null,
           isChecking: false,
@@ -194,6 +197,7 @@ export function WordBuilderPlayer({
   const handleLetterBankClick = useCallback(
     (letterWithIndex: LetterWithIndex, bankIndex: number) => {
       if (!currentWord || !currentState || currentState.isCorrect) return
+      playSound("drop")
 
       setWordStates((prev) => {
         const state = prev[currentWord.item_id]
@@ -213,13 +217,14 @@ export function WordBuilderPlayer({
         }
       })
     },
-    [currentWord, currentState],
+    [currentWord, currentState, playSound],
   )
 
   // Handle clicking a placed letter to return it
   const handlePlacedLetterClick = useCallback(
     (letterWithIndex: LetterWithIndex, placedIndex: number) => {
       if (!currentWord || !currentState || currentState.isCorrect) return
+      playSound("drag")
 
       setWordStates((prev) => {
         const state = prev[currentWord.item_id]
@@ -239,7 +244,7 @@ export function WordBuilderPlayer({
         }
       })
     },
-    [currentWord, currentState],
+    [currentWord, currentState, playSound],
   )
 
   // Clear all placed letters
@@ -251,7 +256,9 @@ export function WordBuilderPlayer({
       [currentWord.item_id]: {
         ...prev[currentWord.item_id],
         placedLetters: [],
-        availableLetters: shuffleArray(initializeLettersWithIndices(currentWord.letters)),
+        availableLetters: shuffleArray(
+          initializeLettersWithIndices(currentWord.letters),
+        ),
         isCorrect: null,
       },
     }))

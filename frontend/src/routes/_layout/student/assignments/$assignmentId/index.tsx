@@ -115,13 +115,25 @@ function AssignmentDetailContent() {
         parsedResult = parseAIQuizResult(config_json, answers_json, score)
         break
       case "vocabulary_quiz":
-        parsedResult = parseVocabularyQuizResult(config_json, answers_json, score)
+        parsedResult = parseVocabularyQuizResult(
+          config_json,
+          answers_json,
+          score,
+        )
         break
       case "reading_comprehension":
-        parsedResult = parseReadingComprehensionResult(config_json, answers_json, score)
+        parsedResult = parseReadingComprehensionResult(
+          config_json,
+          answers_json,
+          score,
+        )
         break
       case "sentence_builder":
-        parsedResult = parseSentenceBuilderResult(config_json, answers_json, score)
+        parsedResult = parseSentenceBuilderResult(
+          config_json,
+          answers_json,
+          score,
+        )
         break
       case "word_builder":
         parsedResult = parseWordBuilderResult(config_json, answers_json, score)
@@ -148,7 +160,9 @@ function AssignmentDetailContent() {
       total = parsedResult.total
     }
 
-    return total > 0 ? Math.round((correct / total) * 100) : (assignment?.score ?? null)
+    return total > 0
+      ? Math.round((correct / total) * 100)
+      : (assignment?.score ?? null)
   })()
 
   // Get activity count from assignment data
@@ -406,10 +420,15 @@ function AssignmentDetailContent() {
                     <p className="text-sm font-medium text-muted-foreground">
                       Score
                     </p>
-                    <p className={`text-2xl font-bold ${
-                      calculatedScore >= 70 ? "text-green-600" :
-                      calculatedScore >= 50 ? "text-yellow-600" : "text-red-600"
-                    }`}>
+                    <p
+                      className={`text-2xl font-bold ${
+                        calculatedScore >= 70
+                          ? "text-green-600"
+                          : calculatedScore >= 50
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                      }`}
+                    >
                       {calculatedScore}%
                     </p>
                   </div>

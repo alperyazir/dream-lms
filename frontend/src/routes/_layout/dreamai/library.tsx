@@ -16,13 +16,13 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { ContentCard } from "@/components/DreamAI/ContentCard"
 import { ContentPreviewModal } from "@/components/DreamAI/ContentPreviewModal"
 import { ContentTable } from "@/components/DreamAI/ContentTable"
 import { EditContentModal } from "@/components/DreamAI/EditContentModal"
 import { GenerateContentDialog } from "@/components/DreamAI/GenerateContentDialog"
 import { LibraryFilters } from "@/components/DreamAI/LibraryFilters"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   AlertDialog,

@@ -138,7 +138,7 @@ export function ActivityTypeSelector({
                 "shadow-md group-hover:shadow-lg",
                 selectedType === activityType.id
                   ? "shadow-purple-500/40"
-                  : "shadow-purple-500/20 group-hover:shadow-purple-500/30"
+                  : "shadow-purple-500/20 group-hover:shadow-purple-500/30",
               )}
             >
               <activityType.icon className="h-6 w-6 text-white" />

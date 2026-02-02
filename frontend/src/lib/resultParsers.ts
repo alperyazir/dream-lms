@@ -11,8 +11,14 @@ import type {
   ReadingComprehensionQuestionResult,
   ReadingComprehensionResult,
 } from "@/types/reading-comprehension"
-import type { SentenceBuilderResult, SentenceResult } from "@/types/sentence-builder"
-import type { QuestionResult, VocabularyQuizResult } from "@/types/vocabulary-quiz"
+import type {
+  SentenceBuilderResult,
+  SentenceResult,
+} from "@/types/sentence-builder"
+import type {
+  QuestionResult,
+  VocabularyQuizResult,
+} from "@/types/vocabulary-quiz"
 import type { WordBuilderResult, WordResult } from "@/types/word-builder"
 
 /**
@@ -47,13 +53,15 @@ export function parseAIQuizResult(
       if (typeof val === "number") return val
       if (typeof val === "string") {
         const num = parseInt(val, 10)
-        return isNaN(num) ? null : num
+        return Number.isNaN(num) ? null : num
       }
       return null
     }
 
     // Helper to extract answers from nested structure (handles both number and string indices)
-    const extractAnswers = (obj: Record<string, unknown>): Record<string, number> | null => {
+    const extractAnswers = (
+      obj: Record<string, unknown>,
+    ): Record<string, number> | null => {
       // Check for nested answers object
       if (obj.answers && typeof obj.answers === "object") {
         const inner = obj.answers as Record<string, unknown>
@@ -61,19 +69,27 @@ export function parseAIQuizResult(
           return convertToNumbers(inner.answers as Record<string, unknown>)
         }
         const keys = Object.keys(inner)
-        if (keys.length > 0 && !["score", "status", "answers"].includes(keys[0])) {
+        if (
+          keys.length > 0 &&
+          !["score", "status", "answers"].includes(keys[0])
+        ) {
           return convertToNumbers(inner)
         }
       }
       const keys = Object.keys(obj)
-      if (keys.length > 0 && !["score", "status", "answers", "0", "1", "2"].includes(keys[0])) {
+      if (
+        keys.length > 0 &&
+        !["score", "status", "answers", "0", "1", "2"].includes(keys[0])
+      ) {
         return convertToNumbers(obj)
       }
       return null
     }
 
     // Helper to convert object values to numbers
-    const convertToNumbers = (obj: Record<string, unknown>): Record<string, number> => {
+    const convertToNumbers = (
+      obj: Record<string, unknown>,
+    ): Record<string, number> => {
       const result: Record<string, number> = {}
       for (const [key, value] of Object.entries(obj)) {
         const num = toNumber(value)
@@ -86,16 +102,29 @@ export function parseAIQuizResult(
 
     let answerMap: Record<string, number> = {}
 
-    console.log("[parseAIQuizResult] Raw answers:", JSON.stringify(answers, null, 2))
+    console.log(
+      "[parseAIQuizResult] Raw answers:",
+      JSON.stringify(answers, null, 2),
+    )
 
     const firstKey = Object.keys(answers)[0]
-    if (firstKey && typeof answers[firstKey] === "object" && answers[firstKey] !== null) {
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
       const activityEntry = answers[firstKey] as Record<string, unknown>
-      console.log("[parseAIQuizResult] Activity entry keys:", Object.keys(activityEntry))
+      console.log(
+        "[parseAIQuizResult] Activity entry keys:",
+        Object.keys(activityEntry),
+      )
 
       if (activityEntry.answers && typeof activityEntry.answers === "object") {
         const outerAnswers = activityEntry.answers as Record<string, unknown>
-        console.log("[parseAIQuizResult] Outer answers keys:", Object.keys(outerAnswers))
+        console.log(
+          "[parseAIQuizResult] Outer answers keys:",
+          Object.keys(outerAnswers),
+        )
 
         const extracted = extractAnswers(outerAnswers)
         if (extracted && Object.keys(extracted).length > 0) {
@@ -115,7 +144,10 @@ export function parseAIQuizResult(
       if (extracted) answerMap = extracted
     }
 
-    console.log("[parseAIQuizResult] Final answerMap:", JSON.stringify(answerMap))
+    console.log(
+      "[parseAIQuizResult] Final answerMap:",
+      JSON.stringify(answerMap),
+    )
 
     if (Object.keys(answerMap).length === 0) {
       console.warn("[parseAIQuizResult] WARNING: No answers extracted!")
@@ -132,7 +164,8 @@ export function parseAIQuizResult(
         correct_answer: q.correct_answer,
         correct_index: q.correct_index,
         student_answer_index: studentAnswerIndex,
-        student_answer: studentAnswerIndex !== null ? q.options[studentAnswerIndex] : null,
+        student_answer:
+          studentAnswerIndex !== null ? q.options[studentAnswerIndex] : null,
         is_correct: isCorrect,
         explanation: q.explanation,
         source_module_id: q.source_module_id || 0,
@@ -183,19 +216,27 @@ export function parseVocabularyQuizResult(
     }
 
     // Helper to extract answers from nested structure
-    const extractAnswers = (obj: Record<string, unknown>): Record<string, string> | null => {
+    const extractAnswers = (
+      obj: Record<string, unknown>,
+    ): Record<string, string> | null => {
       if (obj.answers && typeof obj.answers === "object") {
         const inner = obj.answers as Record<string, unknown>
         if (inner.answers && typeof inner.answers === "object") {
           return inner.answers as Record<string, string>
         }
         const keys = Object.keys(inner)
-        if (keys.length > 0 && !["score", "status", "answers"].includes(keys[0])) {
+        if (
+          keys.length > 0 &&
+          !["score", "status", "answers"].includes(keys[0])
+        ) {
           return inner as Record<string, string>
         }
       }
       const keys = Object.keys(obj)
-      if (keys.length > 0 && !["score", "status", "answers", "0", "1", "2"].includes(keys[0])) {
+      if (
+        keys.length > 0 &&
+        !["score", "status", "answers", "0", "1", "2"].includes(keys[0])
+      ) {
         return obj as Record<string, string>
       }
       return null
@@ -203,16 +244,29 @@ export function parseVocabularyQuizResult(
 
     let answerMap: Record<string, string> = {}
 
-    console.log("[parseVocabularyQuizResult] Raw answers:", JSON.stringify(answers, null, 2))
+    console.log(
+      "[parseVocabularyQuizResult] Raw answers:",
+      JSON.stringify(answers, null, 2),
+    )
 
     const firstKey = Object.keys(answers)[0]
-    if (firstKey && typeof answers[firstKey] === "object" && answers[firstKey] !== null) {
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
       const activityEntry = answers[firstKey] as Record<string, unknown>
-      console.log("[parseVocabularyQuizResult] Activity entry keys:", Object.keys(activityEntry))
+      console.log(
+        "[parseVocabularyQuizResult] Activity entry keys:",
+        Object.keys(activityEntry),
+      )
 
       if (activityEntry.answers && typeof activityEntry.answers === "object") {
         const outerAnswers = activityEntry.answers as Record<string, unknown>
-        console.log("[parseVocabularyQuizResult] Outer answers keys:", Object.keys(outerAnswers))
+        console.log(
+          "[parseVocabularyQuizResult] Outer answers keys:",
+          Object.keys(outerAnswers),
+        )
 
         const extracted = extractAnswers(outerAnswers)
         if (extracted) {
@@ -234,7 +288,10 @@ export function parseVocabularyQuizResult(
       if (extracted) answerMap = extracted
     }
 
-    console.log("[parseVocabularyQuizResult] Final answerMap:", JSON.stringify(answerMap))
+    console.log(
+      "[parseVocabularyQuizResult] Final answerMap:",
+      JSON.stringify(answerMap),
+    )
 
     if (Object.keys(answerMap).length === 0) {
       console.warn("[parseVocabularyQuizResult] WARNING: No answers extracted!")
@@ -242,7 +299,8 @@ export function parseVocabularyQuizResult(
 
     const results: QuestionResult[] = questions.map((q) => {
       const userAnswer = answerMap[q.question_id] || ""
-      const isCorrect = userAnswer.toLowerCase() === q.correct_answer.toLowerCase()
+      const isCorrect =
+        userAnswer.toLowerCase() === q.correct_answer.toLowerCase()
 
       return {
         question_id: q.question_id,
@@ -295,24 +353,42 @@ export function parseReadingComprehensionResult(
     }>
 
     if (!questions || !Array.isArray(questions)) {
-      console.error("[parseReadingComprehensionResult] No questions found in config")
+      console.error(
+        "[parseReadingComprehensionResult] No questions found in config",
+      )
       return null
     }
 
     // Helper to extract map-based answers (question_id -> value)
-    const extractMapAnswers = (obj: Record<string, unknown>): Record<string, unknown> | null => {
-      if (obj.answers && typeof obj.answers === "object" && !Array.isArray(obj.answers)) {
+    const extractMapAnswers = (
+      obj: Record<string, unknown>,
+    ): Record<string, unknown> | null => {
+      if (
+        obj.answers &&
+        typeof obj.answers === "object" &&
+        !Array.isArray(obj.answers)
+      ) {
         const inner = obj.answers as Record<string, unknown>
-        if (inner.answers && typeof inner.answers === "object" && !Array.isArray(inner.answers)) {
+        if (
+          inner.answers &&
+          typeof inner.answers === "object" &&
+          !Array.isArray(inner.answers)
+        ) {
           return inner.answers as Record<string, unknown>
         }
         const keys = Object.keys(inner)
-        if (keys.length > 0 && !["score", "status", "answers"].includes(keys[0])) {
+        if (
+          keys.length > 0 &&
+          !["score", "status", "answers"].includes(keys[0])
+        ) {
           return inner
         }
       }
       const keys = Object.keys(obj)
-      if (keys.length > 0 && !["score", "status", "answers", "0", "1", "2"].includes(keys[0])) {
+      if (
+        keys.length > 0 &&
+        !["score", "status", "answers", "0", "1", "2"].includes(keys[0])
+      ) {
         return obj
       }
       return null
@@ -321,33 +397,70 @@ export function parseReadingComprehensionResult(
     // Answers can be either:
     // 1. Map-based: { "question_id": "answer_index_or_text" }
     // 2. Array-based: [{ question_id, answer_index, answer_text }]
-    const answerMap = new Map<string, { answer_index?: number | null; answer_text?: string | null }>()
+    const answerMap = new Map<
+      string,
+      { answer_index?: number | null; answer_text?: string | null }
+    >()
 
-    console.log("[parseReadingComprehensionResult] Raw answers:", JSON.stringify(answers, null, 2))
+    console.log(
+      "[parseReadingComprehensionResult] Raw answers:",
+      JSON.stringify(answers, null, 2),
+    )
 
     const firstKey = Object.keys(answers)[0]
-    if (firstKey && typeof answers[firstKey] === "object" && answers[firstKey] !== null) {
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
       const activityEntry = answers[firstKey] as Record<string, unknown>
-      console.log("[parseReadingComprehensionResult] Activity entry keys:", Object.keys(activityEntry))
+      console.log(
+        "[parseReadingComprehensionResult] Activity entry keys:",
+        Object.keys(activityEntry),
+      )
 
       if (activityEntry.answers && typeof activityEntry.answers === "object") {
         const outerAnswers = activityEntry.answers as Record<string, unknown>
-        console.log("[parseReadingComprehensionResult] Outer answers keys:", Object.keys(outerAnswers))
-        console.log("[parseReadingComprehensionResult] Outer answers content:", JSON.stringify(outerAnswers, null, 2))
+        console.log(
+          "[parseReadingComprehensionResult] Outer answers keys:",
+          Object.keys(outerAnswers),
+        )
+        console.log(
+          "[parseReadingComprehensionResult] Outer answers content:",
+          JSON.stringify(outerAnswers, null, 2),
+        )
 
         // Try array format first
         if (outerAnswers.answers && Array.isArray(outerAnswers.answers)) {
-          const answerList = outerAnswers.answers as Array<{ question_id: string; answer_index?: number | null; answer_text?: string | null }>
+          const answerList = outerAnswers.answers as Array<{
+            question_id: string
+            answer_index?: number | null
+            answer_text?: string | null
+          }>
           answerList.forEach((a) => {
-            answerMap.set(a.question_id, { answer_index: a.answer_index, answer_text: a.answer_text })
+            answerMap.set(a.question_id, {
+              answer_index: a.answer_index,
+              answer_text: a.answer_text,
+            })
           })
-          console.log("[parseReadingComprehensionResult] Found double-nested array answers")
+          console.log(
+            "[parseReadingComprehensionResult] Found double-nested array answers",
+          )
         } else if (Array.isArray(activityEntry.answers)) {
-          const answerList = activityEntry.answers as Array<{ question_id: string; answer_index?: number | null; answer_text?: string | null }>
+          const answerList = activityEntry.answers as Array<{
+            question_id: string
+            answer_index?: number | null
+            answer_text?: string | null
+          }>
           answerList.forEach((a) => {
-            answerMap.set(a.question_id, { answer_index: a.answer_index, answer_text: a.answer_text })
+            answerMap.set(a.question_id, {
+              answer_index: a.answer_index,
+              answer_text: a.answer_text,
+            })
           })
-          console.log("[parseReadingComprehensionResult] Found single-level array answers")
+          console.log(
+            "[parseReadingComprehensionResult] Found single-level array answers",
+          )
         } else {
           // Try map format - first with extractMapAnswers
           const mapAnswers = extractMapAnswers(outerAnswers)
@@ -359,24 +472,38 @@ export function parseReadingComprehensionResult(
                 // Handle "index:X" format
                 if (value.startsWith("index:")) {
                   const indexVal = parseInt(value.substring(6), 10)
-                  if (!isNaN(indexVal)) {
-                    answerMap.set(qId, { answer_index: indexVal, answer_text: null })
+                  if (!Number.isNaN(indexVal)) {
+                    answerMap.set(qId, {
+                      answer_index: indexVal,
+                      answer_text: null,
+                    })
                   }
-                // Handle "text:X" format
+                  // Handle "text:X" format
                 } else if (value.startsWith("text:")) {
-                  answerMap.set(qId, { answer_index: null, answer_text: value.substring(5) })
+                  answerMap.set(qId, {
+                    answer_index: null,
+                    answer_text: value.substring(5),
+                  })
                 } else {
                   // Could be index as string or text answer
                   const numVal = parseInt(value, 10)
-                  if (!isNaN(numVal)) {
-                    answerMap.set(qId, { answer_index: numVal, answer_text: value })
+                  if (!Number.isNaN(numVal)) {
+                    answerMap.set(qId, {
+                      answer_index: numVal,
+                      answer_text: value,
+                    })
                   } else {
-                    answerMap.set(qId, { answer_index: null, answer_text: value })
+                    answerMap.set(qId, {
+                      answer_index: null,
+                      answer_text: value,
+                    })
                   }
                 }
               }
             })
-            console.log("[parseReadingComprehensionResult] Found map-based answers via extractMapAnswers")
+            console.log(
+              "[parseReadingComprehensionResult] Found map-based answers via extractMapAnswers",
+            )
           }
 
           // Direct fallback: try to extract directly from outerAnswers (skip metadata keys)
@@ -391,26 +518,40 @@ export function parseReadingComprehensionResult(
                   // Handle "index:X" format
                   if (value.startsWith("index:")) {
                     const indexVal = parseInt(value.substring(6), 10)
-                    if (!isNaN(indexVal)) {
-                      answerMap.set(key, { answer_index: indexVal, answer_text: null })
+                    if (!Number.isNaN(indexVal)) {
+                      answerMap.set(key, {
+                        answer_index: indexVal,
+                        answer_text: null,
+                      })
                     }
-                  // Handle "text:X" format
+                    // Handle "text:X" format
                   } else if (value.startsWith("text:")) {
-                    answerMap.set(key, { answer_index: null, answer_text: value.substring(5) })
+                    answerMap.set(key, {
+                      answer_index: null,
+                      answer_text: value.substring(5),
+                    })
                   } else {
                     // Plain number as string or text
                     const numVal = parseInt(value, 10)
-                    if (!isNaN(numVal)) {
-                      answerMap.set(key, { answer_index: numVal, answer_text: value })
+                    if (!Number.isNaN(numVal)) {
+                      answerMap.set(key, {
+                        answer_index: numVal,
+                        answer_text: value,
+                      })
                     } else {
-                      answerMap.set(key, { answer_index: null, answer_text: value })
+                      answerMap.set(key, {
+                        answer_index: null,
+                        answer_text: value,
+                      })
                     }
                   }
                 }
               }
             })
             if (answerMap.size > 0) {
-              console.log("[parseReadingComprehensionResult] Found answers via direct extraction from outerAnswers")
+              console.log(
+                "[parseReadingComprehensionResult] Found answers via direct extraction from outerAnswers",
+              )
             }
           }
         }
@@ -418,7 +559,9 @@ export function parseReadingComprehensionResult(
 
       // Fallback: try extracting map directly from activityEntry
       if (answerMap.size === 0) {
-        console.log("[parseReadingComprehensionResult] Trying fallback extraction from activityEntry")
+        console.log(
+          "[parseReadingComprehensionResult] Trying fallback extraction from activityEntry",
+        )
         const metadataKeys = ["score", "status", "answers", "time_spent"]
         Object.entries(activityEntry).forEach(([key, value]) => {
           if (!metadataKeys.includes(key)) {
@@ -428,16 +571,25 @@ export function parseReadingComprehensionResult(
               // Handle "index:X" format
               if (value.startsWith("index:")) {
                 const indexVal = parseInt(value.substring(6), 10)
-                if (!isNaN(indexVal)) {
-                  answerMap.set(key, { answer_index: indexVal, answer_text: null })
+                if (!Number.isNaN(indexVal)) {
+                  answerMap.set(key, {
+                    answer_index: indexVal,
+                    answer_text: null,
+                  })
                 }
-              // Handle "text:X" format
+                // Handle "text:X" format
               } else if (value.startsWith("text:")) {
-                answerMap.set(key, { answer_index: null, answer_text: value.substring(5) })
+                answerMap.set(key, {
+                  answer_index: null,
+                  answer_text: value.substring(5),
+                })
               } else {
                 const numVal = parseInt(value, 10)
-                if (!isNaN(numVal)) {
-                  answerMap.set(key, { answer_index: numVal, answer_text: value })
+                if (!Number.isNaN(numVal)) {
+                  answerMap.set(key, {
+                    answer_index: numVal,
+                    answer_text: value,
+                  })
                 } else {
                   answerMap.set(key, { answer_index: null, answer_text: value })
                 }
@@ -446,20 +598,42 @@ export function parseReadingComprehensionResult(
           }
         })
         if (answerMap.size > 0) {
-          console.log("[parseReadingComprehensionResult] Found answers via direct extraction from activityEntry")
+          console.log(
+            "[parseReadingComprehensionResult] Found answers via direct extraction from activityEntry",
+          )
         }
       }
     } else if (Array.isArray(answers)) {
-      const answerList = answers as Array<{ question_id: string; answer_index?: number | null; answer_text?: string | null }>
+      const answerList = answers as Array<{
+        question_id: string
+        answer_index?: number | null
+        answer_text?: string | null
+      }>
       answerList.forEach((a) => {
-        answerMap.set(a.question_id, { answer_index: a.answer_index, answer_text: a.answer_text })
+        answerMap.set(a.question_id, {
+          answer_index: a.answer_index,
+          answer_text: a.answer_text,
+        })
       })
     }
 
     // Final fallback: try to extract directly from root answers object
     if (answerMap.size === 0) {
-      console.log("[parseReadingComprehensionResult] Trying final fallback from root answers")
-      const metadataKeys = ["score", "status", "answers", "time_spent", "0", "1", "2", "3", "4", "5"]
+      console.log(
+        "[parseReadingComprehensionResult] Trying final fallback from root answers",
+      )
+      const metadataKeys = [
+        "score",
+        "status",
+        "answers",
+        "time_spent",
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+      ]
       Object.entries(answers).forEach(([key, value]) => {
         if (!metadataKeys.includes(key)) {
           if (typeof value === "number") {
@@ -468,15 +642,21 @@ export function parseReadingComprehensionResult(
             // Handle "index:X" format
             if (value.startsWith("index:")) {
               const indexVal = parseInt(value.substring(6), 10)
-              if (!isNaN(indexVal)) {
-                answerMap.set(key, { answer_index: indexVal, answer_text: null })
+              if (!Number.isNaN(indexVal)) {
+                answerMap.set(key, {
+                  answer_index: indexVal,
+                  answer_text: null,
+                })
               }
-            // Handle "text:X" format
+              // Handle "text:X" format
             } else if (value.startsWith("text:")) {
-              answerMap.set(key, { answer_index: null, answer_text: value.substring(5) })
+              answerMap.set(key, {
+                answer_index: null,
+                answer_text: value.substring(5),
+              })
             } else {
               const numVal = parseInt(value, 10)
-              if (!isNaN(numVal)) {
+              if (!Number.isNaN(numVal)) {
                 answerMap.set(key, { answer_index: numVal, answer_text: value })
               } else {
                 answerMap.set(key, { answer_index: null, answer_text: value })
@@ -487,11 +667,19 @@ export function parseReadingComprehensionResult(
       })
     }
 
-    console.log("[parseReadingComprehensionResult] Final answerMap size:", answerMap.size)
-    console.log("[parseReadingComprehensionResult] Final answerMap entries:", Array.from(answerMap.entries()))
+    console.log(
+      "[parseReadingComprehensionResult] Final answerMap size:",
+      answerMap.size,
+    )
+    console.log(
+      "[parseReadingComprehensionResult] Final answerMap entries:",
+      Array.from(answerMap.entries()),
+    )
 
     if (answerMap.size === 0) {
-      console.warn("[parseReadingComprehensionResult] WARNING: No answers extracted!")
+      console.warn(
+        "[parseReadingComprehensionResult] WARNING: No answers extracted!",
+      )
     }
 
     const scoreByType: Record<string, { correct: number; total: number }> = {}
@@ -501,53 +689,62 @@ export function parseReadingComprehensionResult(
       if (typeof val === "number") return val
       if (typeof val === "string") {
         const num = parseInt(val, 10)
-        return isNaN(num) ? null : num
+        return Number.isNaN(num) ? null : num
       }
       return null
     }
 
-    const questionResults: ReadingComprehensionQuestionResult[] = questions.map((q) => {
-      const answer = answerMap.get(q.question_id)
-      const studentAnswerIndex = answer?.answer_index ?? null
-      const studentAnswerText = answer?.answer_text ?? null
+    const questionResults: ReadingComprehensionQuestionResult[] = questions.map(
+      (q) => {
+        const answer = answerMap.get(q.question_id)
+        const studentAnswerIndex = answer?.answer_index ?? null
+        const studentAnswerText = answer?.answer_text ?? null
 
-      // Convert correct_index to number (it may be stored as string in JSON)
-      const correctIndex = toNumber(q.correct_index)
+        // Convert correct_index to number (it may be stored as string in JSON)
+        const correctIndex = toNumber(q.correct_index)
 
-      let isCorrect = false
-      if (q.question_type === "short_answer") {
-        // For short answer, we do a simple comparison (backend should have calculated this)
-        isCorrect = studentAnswerText?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()
-      } else {
-        // Compare as numbers to handle string vs number type mismatches
-        isCorrect = studentAnswerIndex !== null && correctIndex !== null && studentAnswerIndex === correctIndex
-        console.log(`[parseReadingComprehensionResult] Q${q.question_id}: studentIdx=${studentAnswerIndex} (${typeof studentAnswerIndex}), correctIdx=${correctIndex} (${typeof q.correct_index}), isCorrect=${isCorrect}`)
-      }
+        let isCorrect = false
+        if (q.question_type === "short_answer") {
+          // For short answer, we do a simple comparison (backend should have calculated this)
+          isCorrect =
+            studentAnswerText?.toLowerCase().trim() ===
+            q.correct_answer.toLowerCase().trim()
+        } else {
+          // Compare as numbers to handle string vs number type mismatches
+          isCorrect =
+            studentAnswerIndex !== null &&
+            correctIndex !== null &&
+            studentAnswerIndex === correctIndex
+          console.log(
+            `[parseReadingComprehensionResult] Q${q.question_id}: studentIdx=${studentAnswerIndex} (${typeof studentAnswerIndex}), correctIdx=${correctIndex} (${typeof q.correct_index}), isCorrect=${isCorrect}`,
+          )
+        }
 
-      // Track score by type
-      if (!scoreByType[q.question_type]) {
-        scoreByType[q.question_type] = { correct: 0, total: 0 }
-      }
-      scoreByType[q.question_type].total++
-      if (isCorrect) {
-        scoreByType[q.question_type].correct++
-      }
+        // Track score by type
+        if (!scoreByType[q.question_type]) {
+          scoreByType[q.question_type] = { correct: 0, total: 0 }
+        }
+        scoreByType[q.question_type].total++
+        if (isCorrect) {
+          scoreByType[q.question_type].correct++
+        }
 
-      return {
-        question_id: q.question_id,
-        question_type: q.question_type,
-        question_text: q.question_text,
-        options: q.options,
-        correct_answer: q.correct_answer,
-        correct_index: correctIndex,
-        student_answer_index: studentAnswerIndex,
-        student_answer_text: studentAnswerText,
-        is_correct: isCorrect,
-        similarity_score: null,
-        explanation: q.explanation,
-        passage_reference: q.passage_reference,
-      }
-    })
+        return {
+          question_id: q.question_id,
+          question_type: q.question_type,
+          question_text: q.question_text,
+          options: q.options,
+          correct_answer: q.correct_answer,
+          correct_index: correctIndex,
+          student_answer_index: studentAnswerIndex,
+          student_answer_text: studentAnswerText,
+          is_correct: isCorrect,
+          similarity_score: null,
+          explanation: q.explanation,
+          passage_reference: q.passage_reference,
+        }
+      },
+    )
 
     const correctCount = questionResults.filter((r) => r.is_correct).length
     const total = questionResults.length
@@ -615,11 +812,23 @@ export function parseSentenceBuilderResult(
 
     // Helper to extract answers from nested structure (for array values)
     // Handles both actual arrays and JSON-stringified arrays
-    const extractAnswers = (obj: Record<string, unknown>): Record<string, string[]> | null => {
-      const metadataKeys = ["score", "status", "answers", "time_spent", "0", "1", "2"]
+    const extractAnswers = (
+      obj: Record<string, unknown>,
+    ): Record<string, string[]> | null => {
+      const metadataKeys = [
+        "score",
+        "status",
+        "answers",
+        "time_spent",
+        "0",
+        "1",
+        "2",
+      ]
 
       // Convert values that may be JSON strings to arrays
-      const convertToArrayMap = (source: Record<string, unknown>): Record<string, string[]> | null => {
+      const convertToArrayMap = (
+        source: Record<string, unknown>,
+      ): Record<string, string[]> | null => {
         const result: Record<string, string[]> = {}
         for (const [key, value] of Object.entries(source)) {
           if (metadataKeys.includes(key)) continue
@@ -650,16 +859,29 @@ export function parseSentenceBuilderResult(
 
     let answerMap: Record<string, string[]> = {}
 
-    console.log("[parseSentenceBuilderResult] Raw answers:", JSON.stringify(answers, null, 2))
+    console.log(
+      "[parseSentenceBuilderResult] Raw answers:",
+      JSON.stringify(answers, null, 2),
+    )
 
     const firstKey = Object.keys(answers)[0]
-    if (firstKey && typeof answers[firstKey] === "object" && answers[firstKey] !== null) {
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
       const activityEntry = answers[firstKey] as Record<string, unknown>
-      console.log("[parseSentenceBuilderResult] Activity entry keys:", Object.keys(activityEntry))
+      console.log(
+        "[parseSentenceBuilderResult] Activity entry keys:",
+        Object.keys(activityEntry),
+      )
 
       if (activityEntry.answers && typeof activityEntry.answers === "object") {
         const outerAnswers = activityEntry.answers as Record<string, unknown>
-        console.log("[parseSentenceBuilderResult] Outer answers keys:", Object.keys(outerAnswers))
+        console.log(
+          "[parseSentenceBuilderResult] Outer answers keys:",
+          Object.keys(outerAnswers),
+        )
 
         const extracted = extractAnswers(outerAnswers)
         if (extracted) {
@@ -699,7 +921,15 @@ export function parseSentenceBuilderResult(
         answerMap = extracted
       } else {
         // Fallback: try parsing each value directly from root answers
-        const metadataKeys = ["score", "status", "answers", "time_spent", "0", "1", "2"]
+        const metadataKeys = [
+          "score",
+          "status",
+          "answers",
+          "time_spent",
+          "0",
+          "1",
+          "2",
+        ]
         for (const [key, value] of Object.entries(answers)) {
           if (metadataKeys.includes(key)) continue
           const arr = parseArrayValue(value)
@@ -710,15 +940,22 @@ export function parseSentenceBuilderResult(
       }
     }
 
-    console.log("[parseSentenceBuilderResult] Final answerMap:", JSON.stringify(answerMap))
+    console.log(
+      "[parseSentenceBuilderResult] Final answerMap:",
+      JSON.stringify(answerMap),
+    )
 
     if (Object.keys(answerMap).length === 0) {
-      console.warn("[parseSentenceBuilderResult] WARNING: No answers extracted!")
+      console.warn(
+        "[parseSentenceBuilderResult] WARNING: No answers extracted!",
+      )
     }
 
     const sentenceResults: SentenceResult[] = sentences.map((s) => {
       const submittedWords = answerMap[s.item_id] || []
-      console.log(`[parseSentenceBuilderResult] Sentence ${s.item_id}: submitted=${JSON.stringify(submittedWords)}, correct="${s.correct_sentence}"`)
+      console.log(
+        `[parseSentenceBuilderResult] Sentence ${s.item_id}: submitted=${JSON.stringify(submittedWords)}, correct="${s.correct_sentence}"`,
+      )
       const isCorrect = submittedWords.join(" ") === s.correct_sentence
 
       return {
@@ -773,7 +1010,10 @@ export function parseWordBuilderResult(
 
     if (!words || !Array.isArray(words)) {
       console.error("[parseWordBuilderResult] No words found in config")
-      console.error("[parseWordBuilderResult] Config structure:", JSON.stringify(config, null, 2))
+      console.error(
+        "[parseWordBuilderResult] Config structure:",
+        JSON.stringify(config, null, 2),
+      )
       return null
     }
 
@@ -785,49 +1025,90 @@ export function parseWordBuilderResult(
     let wordAnswers: Record<string, string> = {}
     let attemptMap: Record<string, number> = {}
 
-    console.log("[parseWordBuilderResult] Raw answers:", JSON.stringify(answers, null, 2))
+    console.log(
+      "[parseWordBuilderResult] Raw answers:",
+      JSON.stringify(answers, null, 2),
+    )
 
     // Helper to check if object looks like an answer map (has UUID-like keys with string values)
     const looksLikeAnswerMap = (obj: Record<string, unknown>): boolean => {
       const keys = Object.keys(obj)
       if (keys.length === 0) return false
       // Check if keys are not metadata fields and values are strings
-      const nonMetadataKeys = keys.filter(k => !["score", "status", "answers", "attempts", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(k))
-      return nonMetadataKeys.length > 0 && nonMetadataKeys.some(k => typeof obj[k] === "string")
+      const nonMetadataKeys = keys.filter(
+        (k) =>
+          ![
+            "score",
+            "status",
+            "answers",
+            "attempts",
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+          ].includes(k),
+      )
+      return (
+        nonMetadataKeys.length > 0 &&
+        nonMetadataKeys.some((k) => typeof obj[k] === "string")
+      )
     }
 
     // Recursive helper to find answer map at any depth
-    const findAnswerMap = (obj: Record<string, unknown>, depth = 0): Record<string, string> | null => {
+    const findAnswerMap = (
+      obj: Record<string, unknown>,
+      depth = 0,
+    ): Record<string, string> | null => {
       if (depth > 5) return null // Prevent infinite recursion
 
       // Check if current object is an answer map
       if (looksLikeAnswerMap(obj)) {
-        const answerKeys = Object.keys(obj).filter(k => !["score", "status", "answers", "attempts"].includes(k))
+        const answerKeys = Object.keys(obj).filter(
+          (k) => !["score", "status", "answers", "attempts"].includes(k),
+        )
         if (answerKeys.length > 0) {
           const result: Record<string, string> = {}
-          answerKeys.forEach(k => {
+          answerKeys.forEach((k) => {
             if (typeof obj[k] === "string") {
               result[k] = obj[k] as string
             }
           })
           if (Object.keys(result).length > 0) {
-            console.log(`[parseWordBuilderResult] Found answer map at depth ${depth}`)
+            console.log(
+              `[parseWordBuilderResult] Found answer map at depth ${depth}`,
+            )
             return result
           }
         }
       }
 
       // Try "answers" key first (most common nesting)
-      if (obj.answers && typeof obj.answers === "object" && obj.answers !== null) {
-        const found = findAnswerMap(obj.answers as Record<string, unknown>, depth + 1)
+      if (
+        obj.answers &&
+        typeof obj.answers === "object" &&
+        obj.answers !== null
+      ) {
+        const found = findAnswerMap(
+          obj.answers as Record<string, unknown>,
+          depth + 1,
+        )
         if (found) return found
       }
 
       // Try numeric keys (activity index like "0")
-      const numericKeys = Object.keys(obj).filter(k => /^\d+$/.test(k))
+      const numericKeys = Object.keys(obj).filter((k) => /^\d+$/.test(k))
       for (const key of numericKeys) {
         if (typeof obj[key] === "object" && obj[key] !== null) {
-          const found = findAnswerMap(obj[key] as Record<string, unknown>, depth + 1)
+          const found = findAnswerMap(
+            obj[key] as Record<string, unknown>,
+            depth + 1,
+          )
           if (found) return found
         }
       }
@@ -842,19 +1123,32 @@ export function parseWordBuilderResult(
     }
 
     // Also try to find attempts map
-    const findAttemptsMap = (obj: Record<string, unknown>, depth = 0): Record<string, number> | null => {
+    const findAttemptsMap = (
+      obj: Record<string, unknown>,
+      depth = 0,
+    ): Record<string, number> | null => {
       if (depth > 5) return null
       if (obj.attempts && typeof obj.attempts === "object") {
         return obj.attempts as Record<string, number>
       }
-      if (obj.answers && typeof obj.answers === "object" && obj.answers !== null) {
-        const found = findAttemptsMap(obj.answers as Record<string, unknown>, depth + 1)
+      if (
+        obj.answers &&
+        typeof obj.answers === "object" &&
+        obj.answers !== null
+      ) {
+        const found = findAttemptsMap(
+          obj.answers as Record<string, unknown>,
+          depth + 1,
+        )
         if (found) return found
       }
-      const numericKeys = Object.keys(obj).filter(k => /^\d+$/.test(k))
+      const numericKeys = Object.keys(obj).filter((k) => /^\d+$/.test(k))
       for (const key of numericKeys) {
         if (typeof obj[key] === "object" && obj[key] !== null) {
-          const found = findAttemptsMap(obj[key] as Record<string, unknown>, depth + 1)
+          const found = findAttemptsMap(
+            obj[key] as Record<string, unknown>,
+            depth + 1,
+          )
           if (found) return found
         }
       }
@@ -863,13 +1157,27 @@ export function parseWordBuilderResult(
 
     attemptMap = findAttemptsMap(answers) || {}
 
-    console.log("[parseWordBuilderResult] Final wordAnswers:", JSON.stringify(wordAnswers))
-    console.log("[parseWordBuilderResult] Words in config:", words.map(w => ({ id: w.item_id || w.word_id, word: w.correct_word || w.word })))
-    console.log("[parseWordBuilderResult] Answer keys:", Object.keys(wordAnswers))
+    console.log(
+      "[parseWordBuilderResult] Final wordAnswers:",
+      JSON.stringify(wordAnswers),
+    )
+    console.log(
+      "[parseWordBuilderResult] Words in config:",
+      words.map((w) => ({
+        id: w.item_id || w.word_id,
+        word: w.correct_word || w.word,
+      })),
+    )
+    console.log(
+      "[parseWordBuilderResult] Answer keys:",
+      Object.keys(wordAnswers),
+    )
 
     // Warn if no answers were extracted
     if (Object.keys(wordAnswers).length === 0) {
-      console.warn("[parseWordBuilderResult] WARNING: No answers extracted! Check data structure above.")
+      console.warn(
+        "[parseWordBuilderResult] WARNING: No answers extracted! Check data structure above.",
+      )
     }
 
     // Create array of answer values for fallback matching by index
@@ -897,24 +1205,36 @@ export function parseWordBuilderResult(
       // Fallback: If answer keys look like UUIDs but don't match, try index-based lookup
       if (!submittedWord && answerValues.length === words.length) {
         submittedWord = answerValues[index] || ""
-        console.log(`[parseWordBuilderResult] Using index-based fallback for word ${index}: "${submittedWord}"`)
+        console.log(
+          `[parseWordBuilderResult] Using index-based fallback for word ${index}: "${submittedWord}"`,
+        )
       }
 
       // Fallback: Try partial ID match (in case of prefix/suffix differences)
       if (!submittedWord) {
         for (const [key, value] of Object.entries(wordAnswers)) {
-          if (wordId.includes(key) || key.includes(wordId) ||
-              (w.item_id && (w.item_id.includes(key) || key.includes(w.item_id)))) {
+          if (
+            wordId.includes(key) ||
+            key.includes(wordId) ||
+            (w.item_id && (w.item_id.includes(key) || key.includes(w.item_id)))
+          ) {
             submittedWord = value
-            console.log(`[parseWordBuilderResult] Partial match found: ${key} matches ${wordId}`)
+            console.log(
+              `[parseWordBuilderResult] Partial match found: ${key} matches ${wordId}`,
+            )
             break
           }
         }
       }
 
-      const attempts = attemptMap[wordId] || attemptMap[w.item_id || ""] || attemptMap[w.word_id || ""] || 1
+      const attempts =
+        attemptMap[wordId] ||
+        attemptMap[w.item_id || ""] ||
+        attemptMap[w.word_id || ""] ||
+        1
 
-      const isCorrect = submittedWord.toLowerCase() === correctWord.toLowerCase()
+      const isCorrect =
+        submittedWord.toLowerCase() === correctWord.toLowerCase()
 
       // Calculate points based on attempts
       let points = 0
@@ -925,7 +1245,9 @@ export function parseWordBuilderResult(
         else points = 30
       }
 
-      console.log(`[parseWordBuilderResult] Word ${index} (${wordId}): submitted="${submittedWord}", correct="${correctWord}", isCorrect=${isCorrect}`)
+      console.log(
+        `[parseWordBuilderResult] Word ${index} (${wordId}): submitted="${submittedWord}", correct="${correctWord}", isCorrect=${isCorrect}`,
+      )
 
       return {
         item_id: wordId,
@@ -943,7 +1265,9 @@ export function parseWordBuilderResult(
     const total = wordResults.length
     const totalScore = wordResults.reduce((sum, r) => sum + r.points, 0)
     const maxScore = total * 100
-    const perfectWords = wordResults.filter((r) => r.is_correct && r.attempts === 1).length
+    const perfectWords = wordResults.filter(
+      (r) => r.is_correct && r.attempts === 1,
+    ).length
     const totalAttempts = wordResults.reduce((sum, r) => sum + r.attempts, 0)
 
     return {
@@ -981,6 +1305,10 @@ export type SupportedActivityType = (typeof SUPPORTED_ACTIVITY_TYPES)[number]
 /**
  * Check if an activity type supports detailed result review
  */
-export function supportsDetailedReview(activityType: string): activityType is SupportedActivityType {
-  return SUPPORTED_ACTIVITY_TYPES.includes(activityType as SupportedActivityType)
+export function supportsDetailedReview(
+  activityType: string,
+): activityType is SupportedActivityType {
+  return SUPPORTED_ACTIVITY_TYPES.includes(
+    activityType as SupportedActivityType,
+  )
 }

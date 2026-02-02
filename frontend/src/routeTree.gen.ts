@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as ViewerBookIdRouteImport } from './routes/viewer.$bookId'
 import { Route as LayoutTeacherRouteImport } from './routes/_layout.teacher'
 import { Route as LayoutStudentRouteImport } from './routes/_layout.student'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
@@ -25,6 +26,7 @@ import { Route as LayoutMessagingIndexRouteImport } from './routes/_layout/messa
 import { Route as LayoutDreamaiIndexRouteImport } from './routes/_layout/dreamai/index'
 import { Route as LayoutTeacherStudentsRouteImport } from './routes/_layout/teacher/students'
 import { Route as LayoutTeacherReportsRouteImport } from './routes/_layout/teacher/reports'
+import { Route as LayoutTeacherLibraryViewerRouteImport } from './routes/_layout/teacher/library-viewer'
 import { Route as LayoutTeacherInsightsRouteImport } from './routes/_layout/teacher/insights'
 import { Route as LayoutTeacherDashboardRouteImport } from './routes/_layout/teacher/dashboard'
 import { Route as LayoutTeacherClassroomsRouteImport } from './routes/_layout/teacher/classrooms'
@@ -40,6 +42,7 @@ import { Route as LayoutStudentAssignmentsRouteImport } from './routes/_layout/s
 import { Route as LayoutStudentAnnouncementsRouteImport } from './routes/_layout/student/announcements'
 import { Route as LayoutPublisherTeachersRouteImport } from './routes/_layout/publisher/teachers'
 import { Route as LayoutPublisherSchoolsRouteImport } from './routes/_layout/publisher/schools'
+import { Route as LayoutPublisherLibraryViewerRouteImport } from './routes/_layout/publisher/library-viewer'
 import { Route as LayoutPublisherLibraryRouteImport } from './routes/_layout/publisher/library'
 import { Route as LayoutPublisherDashboardRouteImport } from './routes/_layout/publisher/dashboard'
 import { Route as LayoutPublisherBookAssignmentsRouteImport } from './routes/_layout/publisher/book-assignments'
@@ -54,6 +57,7 @@ import { Route as LayoutAdminSupervisorsRouteImport } from './routes/_layout/adm
 import { Route as LayoutAdminStudentsRouteImport } from './routes/_layout/admin/students'
 import { Route as LayoutAdminSchoolsRouteImport } from './routes/_layout/admin/schools'
 import { Route as LayoutAdminPublishersRouteImport } from './routes/_layout/admin/publishers'
+import { Route as LayoutAdminLibraryViewerRouteImport } from './routes/_layout/admin/library-viewer'
 import { Route as LayoutAdminDashboardRouteImport } from './routes/_layout/admin/dashboard'
 import { Route as LayoutAdminBooksRouteImport } from './routes/_layout/admin/books'
 import { Route as LayoutAdminBenchmarksRouteImport } from './routes/_layout/admin/benchmarks'
@@ -105,6 +109,11 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const ViewerBookIdRoute = ViewerBookIdRouteImport.update({
+  id: '/viewer/$bookId',
+  path: '/viewer/$bookId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LayoutTeacherRoute = LayoutTeacherRouteImport.update({
   id: '/teacher',
   path: '/teacher',
@@ -155,6 +164,12 @@ const LayoutTeacherReportsRoute = LayoutTeacherReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => LayoutTeacherRoute,
 } as any)
+const LayoutTeacherLibraryViewerRoute =
+  LayoutTeacherLibraryViewerRouteImport.update({
+    id: '/library-viewer',
+    path: '/library-viewer',
+    getParentRoute: () => LayoutTeacherRoute,
+  } as any)
 const LayoutTeacherInsightsRoute = LayoutTeacherInsightsRouteImport.update({
   id: '/insights',
   path: '/insights',
@@ -235,6 +250,12 @@ const LayoutPublisherSchoolsRoute = LayoutPublisherSchoolsRouteImport.update({
   path: '/schools',
   getParentRoute: () => LayoutPublisherRoute,
 } as any)
+const LayoutPublisherLibraryViewerRoute =
+  LayoutPublisherLibraryViewerRouteImport.update({
+    id: '/library-viewer',
+    path: '/library-viewer',
+    getParentRoute: () => LayoutPublisherRoute,
+  } as any)
 const LayoutPublisherLibraryRoute = LayoutPublisherLibraryRouteImport.update({
   id: '/library',
   path: '/library',
@@ -308,6 +329,12 @@ const LayoutAdminPublishersRoute = LayoutAdminPublishersRouteImport.update({
   path: '/publishers',
   getParentRoute: () => LayoutAdminRoute,
 } as any)
+const LayoutAdminLibraryViewerRoute =
+  LayoutAdminLibraryViewerRouteImport.update({
+    id: '/library-viewer',
+    path: '/library-viewer',
+    getParentRoute: () => LayoutAdminRoute,
+  } as any)
 const LayoutAdminDashboardRoute = LayoutAdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -440,12 +467,14 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRoute
   '/student': typeof LayoutStudentRouteWithChildren
   '/teacher': typeof LayoutTeacherRouteWithChildren
+  '/viewer/$bookId': typeof ViewerBookIdRoute
   '/': typeof LayoutIndexRoute
   '/admin/ai-usage': typeof LayoutAdminAiUsageRoute
   '/admin/assignments': typeof LayoutAdminAssignmentsRoute
   '/admin/benchmarks': typeof LayoutAdminBenchmarksRoute
   '/admin/books': typeof LayoutAdminBooksRoute
   '/admin/dashboard': typeof LayoutAdminDashboardRoute
+  '/admin/library-viewer': typeof LayoutAdminLibraryViewerRoute
   '/admin/publishers': typeof LayoutAdminPublishersRoute
   '/admin/schools': typeof LayoutAdminSchoolsRoute
   '/admin/students': typeof LayoutAdminStudentsRoute
@@ -460,6 +489,7 @@ export interface FileRoutesByFullPath {
   '/publisher/book-assignments': typeof LayoutPublisherBookAssignmentsRoute
   '/publisher/dashboard': typeof LayoutPublisherDashboardRoute
   '/publisher/library': typeof LayoutPublisherLibraryRoute
+  '/publisher/library-viewer': typeof LayoutPublisherLibraryViewerRoute
   '/publisher/schools': typeof LayoutPublisherSchoolsRoute
   '/publisher/teachers': typeof LayoutPublisherTeachersRoute
   '/student/announcements': typeof LayoutStudentAnnouncementsRoute
@@ -475,6 +505,7 @@ export interface FileRoutesByFullPath {
   '/teacher/classrooms': typeof LayoutTeacherClassroomsRoute
   '/teacher/dashboard': typeof LayoutTeacherDashboardRoute
   '/teacher/insights': typeof LayoutTeacherInsightsRoute
+  '/teacher/library-viewer': typeof LayoutTeacherLibraryViewerRoute
   '/teacher/reports': typeof LayoutTeacherReportsRoute
   '/teacher/students': typeof LayoutTeacherStudentsRoute
   '/dreamai': typeof LayoutDreamaiIndexRoute
@@ -507,12 +538,14 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsRoute
   '/student': typeof LayoutStudentRouteWithChildren
   '/teacher': typeof LayoutTeacherRouteWithChildren
+  '/viewer/$bookId': typeof ViewerBookIdRoute
   '/': typeof LayoutIndexRoute
   '/admin/ai-usage': typeof LayoutAdminAiUsageRoute
   '/admin/assignments': typeof LayoutAdminAssignmentsRoute
   '/admin/benchmarks': typeof LayoutAdminBenchmarksRoute
   '/admin/books': typeof LayoutAdminBooksRoute
   '/admin/dashboard': typeof LayoutAdminDashboardRoute
+  '/admin/library-viewer': typeof LayoutAdminLibraryViewerRoute
   '/admin/publishers': typeof LayoutAdminPublishersRoute
   '/admin/schools': typeof LayoutAdminSchoolsRoute
   '/admin/students': typeof LayoutAdminStudentsRoute
@@ -527,6 +560,7 @@ export interface FileRoutesByTo {
   '/publisher/book-assignments': typeof LayoutPublisherBookAssignmentsRoute
   '/publisher/dashboard': typeof LayoutPublisherDashboardRoute
   '/publisher/library': typeof LayoutPublisherLibraryRoute
+  '/publisher/library-viewer': typeof LayoutPublisherLibraryViewerRoute
   '/publisher/schools': typeof LayoutPublisherSchoolsRoute
   '/publisher/teachers': typeof LayoutPublisherTeachersRoute
   '/student/announcements': typeof LayoutStudentAnnouncementsRoute
@@ -540,6 +574,7 @@ export interface FileRoutesByTo {
   '/teacher/classrooms': typeof LayoutTeacherClassroomsRoute
   '/teacher/dashboard': typeof LayoutTeacherDashboardRoute
   '/teacher/insights': typeof LayoutTeacherInsightsRoute
+  '/teacher/library-viewer': typeof LayoutTeacherLibraryViewerRoute
   '/teacher/reports': typeof LayoutTeacherReportsRoute
   '/teacher/students': typeof LayoutTeacherStudentsRoute
   '/dreamai': typeof LayoutDreamaiIndexRoute
@@ -573,12 +608,14 @@ export interface FileRoutesById {
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/student': typeof LayoutStudentRouteWithChildren
   '/_layout/teacher': typeof LayoutTeacherRouteWithChildren
+  '/viewer/$bookId': typeof ViewerBookIdRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/admin/ai-usage': typeof LayoutAdminAiUsageRoute
   '/_layout/admin/assignments': typeof LayoutAdminAssignmentsRoute
   '/_layout/admin/benchmarks': typeof LayoutAdminBenchmarksRoute
   '/_layout/admin/books': typeof LayoutAdminBooksRoute
   '/_layout/admin/dashboard': typeof LayoutAdminDashboardRoute
+  '/_layout/admin/library-viewer': typeof LayoutAdminLibraryViewerRoute
   '/_layout/admin/publishers': typeof LayoutAdminPublishersRoute
   '/_layout/admin/schools': typeof LayoutAdminSchoolsRoute
   '/_layout/admin/students': typeof LayoutAdminStudentsRoute
@@ -593,6 +630,7 @@ export interface FileRoutesById {
   '/_layout/publisher/book-assignments': typeof LayoutPublisherBookAssignmentsRoute
   '/_layout/publisher/dashboard': typeof LayoutPublisherDashboardRoute
   '/_layout/publisher/library': typeof LayoutPublisherLibraryRoute
+  '/_layout/publisher/library-viewer': typeof LayoutPublisherLibraryViewerRoute
   '/_layout/publisher/schools': typeof LayoutPublisherSchoolsRoute
   '/_layout/publisher/teachers': typeof LayoutPublisherTeachersRoute
   '/_layout/student/announcements': typeof LayoutStudentAnnouncementsRoute
@@ -608,6 +646,7 @@ export interface FileRoutesById {
   '/_layout/teacher/classrooms': typeof LayoutTeacherClassroomsRoute
   '/_layout/teacher/dashboard': typeof LayoutTeacherDashboardRoute
   '/_layout/teacher/insights': typeof LayoutTeacherInsightsRoute
+  '/_layout/teacher/library-viewer': typeof LayoutTeacherLibraryViewerRoute
   '/_layout/teacher/reports': typeof LayoutTeacherReportsRoute
   '/_layout/teacher/students': typeof LayoutTeacherStudentsRoute
   '/_layout/dreamai/': typeof LayoutDreamaiIndexRoute
@@ -642,12 +681,14 @@ export interface FileRouteTypes {
     | '/settings'
     | '/student'
     | '/teacher'
+    | '/viewer/$bookId'
     | '/'
     | '/admin/ai-usage'
     | '/admin/assignments'
     | '/admin/benchmarks'
     | '/admin/books'
     | '/admin/dashboard'
+    | '/admin/library-viewer'
     | '/admin/publishers'
     | '/admin/schools'
     | '/admin/students'
@@ -662,6 +703,7 @@ export interface FileRouteTypes {
     | '/publisher/book-assignments'
     | '/publisher/dashboard'
     | '/publisher/library'
+    | '/publisher/library-viewer'
     | '/publisher/schools'
     | '/publisher/teachers'
     | '/student/announcements'
@@ -677,6 +719,7 @@ export interface FileRouteTypes {
     | '/teacher/classrooms'
     | '/teacher/dashboard'
     | '/teacher/insights'
+    | '/teacher/library-viewer'
     | '/teacher/reports'
     | '/teacher/students'
     | '/dreamai'
@@ -709,12 +752,14 @@ export interface FileRouteTypes {
     | '/settings'
     | '/student'
     | '/teacher'
+    | '/viewer/$bookId'
     | '/'
     | '/admin/ai-usage'
     | '/admin/assignments'
     | '/admin/benchmarks'
     | '/admin/books'
     | '/admin/dashboard'
+    | '/admin/library-viewer'
     | '/admin/publishers'
     | '/admin/schools'
     | '/admin/students'
@@ -729,6 +774,7 @@ export interface FileRouteTypes {
     | '/publisher/book-assignments'
     | '/publisher/dashboard'
     | '/publisher/library'
+    | '/publisher/library-viewer'
     | '/publisher/schools'
     | '/publisher/teachers'
     | '/student/announcements'
@@ -742,6 +788,7 @@ export interface FileRouteTypes {
     | '/teacher/classrooms'
     | '/teacher/dashboard'
     | '/teacher/insights'
+    | '/teacher/library-viewer'
     | '/teacher/reports'
     | '/teacher/students'
     | '/dreamai'
@@ -774,12 +821,14 @@ export interface FileRouteTypes {
     | '/_layout/settings'
     | '/_layout/student'
     | '/_layout/teacher'
+    | '/viewer/$bookId'
     | '/_layout/'
     | '/_layout/admin/ai-usage'
     | '/_layout/admin/assignments'
     | '/_layout/admin/benchmarks'
     | '/_layout/admin/books'
     | '/_layout/admin/dashboard'
+    | '/_layout/admin/library-viewer'
     | '/_layout/admin/publishers'
     | '/_layout/admin/schools'
     | '/_layout/admin/students'
@@ -794,6 +843,7 @@ export interface FileRouteTypes {
     | '/_layout/publisher/book-assignments'
     | '/_layout/publisher/dashboard'
     | '/_layout/publisher/library'
+    | '/_layout/publisher/library-viewer'
     | '/_layout/publisher/schools'
     | '/_layout/publisher/teachers'
     | '/_layout/student/announcements'
@@ -809,6 +859,7 @@ export interface FileRouteTypes {
     | '/_layout/teacher/classrooms'
     | '/_layout/teacher/dashboard'
     | '/_layout/teacher/insights'
+    | '/_layout/teacher/library-viewer'
     | '/_layout/teacher/reports'
     | '/_layout/teacher/students'
     | '/_layout/dreamai/'
@@ -837,6 +888,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RecoverPasswordRoute: typeof RecoverPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ViewerBookIdRoute: typeof ViewerBookIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -882,6 +934,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
+    }
+    '/viewer/$bookId': {
+      id: '/viewer/$bookId'
+      path: '/viewer/$bookId'
+      fullPath: '/viewer/$bookId'
+      preLoaderRoute: typeof ViewerBookIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_layout/teacher': {
       id: '/_layout/teacher'
@@ -951,6 +1010,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/teacher/reports'
       preLoaderRoute: typeof LayoutTeacherReportsRouteImport
+      parentRoute: typeof LayoutTeacherRoute
+    }
+    '/_layout/teacher/library-viewer': {
+      id: '/_layout/teacher/library-viewer'
+      path: '/library-viewer'
+      fullPath: '/teacher/library-viewer'
+      preLoaderRoute: typeof LayoutTeacherLibraryViewerRouteImport
       parentRoute: typeof LayoutTeacherRoute
     }
     '/_layout/teacher/insights': {
@@ -1058,6 +1124,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutPublisherSchoolsRouteImport
       parentRoute: typeof LayoutPublisherRoute
     }
+    '/_layout/publisher/library-viewer': {
+      id: '/_layout/publisher/library-viewer'
+      path: '/library-viewer'
+      fullPath: '/publisher/library-viewer'
+      preLoaderRoute: typeof LayoutPublisherLibraryViewerRouteImport
+      parentRoute: typeof LayoutPublisherRoute
+    }
     '/_layout/publisher/library': {
       id: '/_layout/publisher/library'
       path: '/library'
@@ -1154,6 +1227,13 @@ declare module '@tanstack/react-router' {
       path: '/publishers'
       fullPath: '/admin/publishers'
       preLoaderRoute: typeof LayoutAdminPublishersRouteImport
+      parentRoute: typeof LayoutAdminRoute
+    }
+    '/_layout/admin/library-viewer': {
+      id: '/_layout/admin/library-viewer'
+      path: '/library-viewer'
+      fullPath: '/admin/library-viewer'
+      preLoaderRoute: typeof LayoutAdminLibraryViewerRouteImport
       parentRoute: typeof LayoutAdminRoute
     }
     '/_layout/admin/dashboard': {
@@ -1312,6 +1392,7 @@ interface LayoutAdminRouteChildren {
   LayoutAdminBenchmarksRoute: typeof LayoutAdminBenchmarksRoute
   LayoutAdminBooksRoute: typeof LayoutAdminBooksRoute
   LayoutAdminDashboardRoute: typeof LayoutAdminDashboardRoute
+  LayoutAdminLibraryViewerRoute: typeof LayoutAdminLibraryViewerRoute
   LayoutAdminPublishersRoute: typeof LayoutAdminPublishersRoute
   LayoutAdminSchoolsRoute: typeof LayoutAdminSchoolsRoute
   LayoutAdminStudentsRoute: typeof LayoutAdminStudentsRoute
@@ -1326,6 +1407,7 @@ const LayoutAdminRouteChildren: LayoutAdminRouteChildren = {
   LayoutAdminBenchmarksRoute: LayoutAdminBenchmarksRoute,
   LayoutAdminBooksRoute: LayoutAdminBooksRoute,
   LayoutAdminDashboardRoute: LayoutAdminDashboardRoute,
+  LayoutAdminLibraryViewerRoute: LayoutAdminLibraryViewerRoute,
   LayoutAdminPublishersRoute: LayoutAdminPublishersRoute,
   LayoutAdminSchoolsRoute: LayoutAdminSchoolsRoute,
   LayoutAdminStudentsRoute: LayoutAdminStudentsRoute,
@@ -1342,6 +1424,7 @@ interface LayoutPublisherRouteChildren {
   LayoutPublisherBookAssignmentsRoute: typeof LayoutPublisherBookAssignmentsRoute
   LayoutPublisherDashboardRoute: typeof LayoutPublisherDashboardRoute
   LayoutPublisherLibraryRoute: typeof LayoutPublisherLibraryRoute
+  LayoutPublisherLibraryViewerRoute: typeof LayoutPublisherLibraryViewerRoute
   LayoutPublisherSchoolsRoute: typeof LayoutPublisherSchoolsRoute
   LayoutPublisherTeachersRoute: typeof LayoutPublisherTeachersRoute
 }
@@ -1350,6 +1433,7 @@ const LayoutPublisherRouteChildren: LayoutPublisherRouteChildren = {
   LayoutPublisherBookAssignmentsRoute: LayoutPublisherBookAssignmentsRoute,
   LayoutPublisherDashboardRoute: LayoutPublisherDashboardRoute,
   LayoutPublisherLibraryRoute: LayoutPublisherLibraryRoute,
+  LayoutPublisherLibraryViewerRoute: LayoutPublisherLibraryViewerRoute,
   LayoutPublisherSchoolsRoute: LayoutPublisherSchoolsRoute,
   LayoutPublisherTeachersRoute: LayoutPublisherTeachersRoute,
 }
@@ -1451,6 +1535,7 @@ interface LayoutTeacherRouteChildren {
   LayoutTeacherClassroomsRoute: typeof LayoutTeacherClassroomsRoute
   LayoutTeacherDashboardRoute: typeof LayoutTeacherDashboardRoute
   LayoutTeacherInsightsRoute: typeof LayoutTeacherInsightsRoute
+  LayoutTeacherLibraryViewerRoute: typeof LayoutTeacherLibraryViewerRoute
   LayoutTeacherReportsRoute: typeof LayoutTeacherReportsRoute
   LayoutTeacherStudentsRoute: typeof LayoutTeacherStudentsRoute
   LayoutTeacherAnalyticsStudentIdRoute: typeof LayoutTeacherAnalyticsStudentIdRoute
@@ -1469,6 +1554,7 @@ const LayoutTeacherRouteChildren: LayoutTeacherRouteChildren = {
   LayoutTeacherClassroomsRoute: LayoutTeacherClassroomsRoute,
   LayoutTeacherDashboardRoute: LayoutTeacherDashboardRoute,
   LayoutTeacherInsightsRoute: LayoutTeacherInsightsRoute,
+  LayoutTeacherLibraryViewerRoute: LayoutTeacherLibraryViewerRoute,
   LayoutTeacherReportsRoute: LayoutTeacherReportsRoute,
   LayoutTeacherStudentsRoute: LayoutTeacherStudentsRoute,
   LayoutTeacherAnalyticsStudentIdRoute: LayoutTeacherAnalyticsStudentIdRoute,
@@ -1526,6 +1612,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RecoverPasswordRoute: RecoverPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ViewerBookIdRoute: ViewerBookIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

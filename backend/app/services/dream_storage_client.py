@@ -1306,6 +1306,51 @@ class DreamCentralStorageClient:
             logger.error(f"Error fetching publishers list: {e}")
             raise DreamStorageError(f"Failed to fetch publishers: {e}") from e
 
+    async def request_book_bundle(
+        self,
+        book_id: int,
+        platform: str,
+    ) -> dict[str, Any]:
+        """
+        Request a standalone app bundle download URL for a book.
+
+        Calls DCS POST /standalone-apps/bundle endpoint to generate a download URL.
+
+        Args:
+            book_id: DCS book ID
+            platform: Target platform (mac, win, win7-8, linux)
+
+        Returns:
+            Dict with download_url, file_name, file_size, expires_at
+
+        Raises:
+            DreamStorageError: If request fails
+            ValueError: If platform is invalid
+        """
+        valid_platforms = {"mac", "win", "win7-8", "linux"}
+        if platform not in valid_platforms:
+            raise ValueError(f"Invalid platform: {platform}. Must be one of: {valid_platforms}")
+
+        try:
+            response = await self._make_request(
+                "POST",
+                "/standalone-apps/bundle",
+                json={"platform": platform, "book_id": book_id},
+            )
+            result = response.json()
+
+            return {
+                "download_url": result.get("download_url"),
+                "file_name": result.get("file_name"),
+                "file_size": result.get("file_size", 0),
+                "expires_at": result.get("expires_at"),
+            }
+        except DreamStorageNotFoundError:
+            raise DreamStorageError(f"Book {book_id} not found or bundle not available")
+        except Exception as e:
+            logger.error(f"Failed to request bundle for book {book_id}: {e}")
+            raise DreamStorageError(f"Failed to request bundle: {e}") from e
+
     async def get_publisher_by_id(self, publisher_id: int) -> PublisherRead | None:
         """
         Fetch single publisher by DCS ID.

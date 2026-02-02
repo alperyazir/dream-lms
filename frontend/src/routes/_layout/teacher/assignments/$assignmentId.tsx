@@ -53,6 +53,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAssignmentAnalytics } from "@/hooks/useAssignmentAnalytics"
+import {
+  useAssignmentResults,
+  useStudentAnswers,
+} from "@/hooks/useAssignmentResults"
+import { useQuickAssignmentTest } from "@/hooks/usePreviewMode"
 import {
   parseAIQuizResult,
   parseReadingComprehensionResult,
@@ -60,12 +66,6 @@ import {
   parseVocabularyQuizResult,
   parseWordBuilderResult,
 } from "@/lib/resultParsers"
-import { useAssignmentAnalytics } from "@/hooks/useAssignmentAnalytics"
-import {
-  useAssignmentResults,
-  useStudentAnswers,
-} from "@/hooks/useAssignmentResults"
-import { useQuickAssignmentTest } from "@/hooks/usePreviewMode"
 import type {
   ActivityTypeAnalysis,
   MostMissedQuestion,
@@ -656,14 +656,23 @@ function StudentResultsTable({
                       <TableCell className="text-right">
                         {(() => {
                           // Use time_spent_seconds for precise display
-                          const totalSeconds = student.time_spent_seconds || (student.time_spent_minutes * 60) || 0
+                          const totalSeconds =
+                            student.time_spent_seconds ||
+                            student.time_spent_minutes * 60 ||
+                            0
 
                           if (student.status !== "completed") {
-                            return <span className="text-muted-foreground">—</span>
+                            return (
+                              <span className="text-muted-foreground">—</span>
+                            )
                           }
 
                           if (totalSeconds === 0) {
-                            return <span className="text-muted-foreground">{"< 1 sec"}</span>
+                            return (
+                              <span className="text-muted-foreground">
+                                {"< 1 sec"}
+                              </span>
+                            )
                           }
 
                           const minutes = Math.floor(totalSeconds / 60)
@@ -673,7 +682,11 @@ function StudentResultsTable({
                             return <span>{seconds} sec</span>
                           }
 
-                          return <span>{minutes} min {seconds} sec</span>
+                          return (
+                            <span>
+                              {minutes} min {seconds} sec
+                            </span>
+                          )
                         })()}
                       </TableCell>
                       <TableCell>
@@ -833,7 +846,10 @@ function StudentAnswersDialog({
                 <p className="font-medium">
                   {(() => {
                     // Use time_spent_seconds for precise display
-                    const totalSeconds = answers.time_spent_seconds || (answers.time_spent_minutes * 60) || 0
+                    const totalSeconds =
+                      answers.time_spent_seconds ||
+                      answers.time_spent_minutes * 60 ||
+                      0
 
                     if (totalSeconds === 0) {
                       return "< 1 sec"
@@ -865,7 +881,8 @@ function StudentAnswersDialog({
                 <h4 className="font-medium mb-2">Detailed Answer Review</h4>
                 {(() => {
                   // Try to parse and show detailed results for supported activity types
-                  const responseActivityType = answers.activity_type || activityType
+                  const responseActivityType =
+                    answers.activity_type || activityType
                   const configJson = answers.config_json
 
                   if (configJson && answers.answers_json) {
@@ -874,10 +891,12 @@ function StudentAnswersDialog({
                       const parsedResult = parseAIQuizResult(
                         configJson,
                         answers.answers_json,
-                        answers.score || 0
+                        answers.score || 0,
                       )
                       if (parsedResult) {
-                        return <AIQuizResults result={parsedResult} hideSummary />
+                        return (
+                          <AIQuizResults result={parsedResult} hideSummary />
+                        )
                       }
                     }
 
@@ -886,10 +905,15 @@ function StudentAnswersDialog({
                       const parsedResult = parseVocabularyQuizResult(
                         configJson,
                         answers.answers_json,
-                        answers.score || 0
+                        answers.score || 0,
                       )
                       if (parsedResult) {
-                        return <VocabularyQuizResults result={parsedResult} hideSummary />
+                        return (
+                          <VocabularyQuizResults
+                            result={parsedResult}
+                            hideSummary
+                          />
+                        )
                       }
                     }
 
@@ -898,10 +922,15 @@ function StudentAnswersDialog({
                       const parsedResult = parseReadingComprehensionResult(
                         configJson,
                         answers.answers_json,
-                        answers.score || 0
+                        answers.score || 0,
                       )
                       if (parsedResult) {
-                        return <ReadingComprehensionResults result={parsedResult} hideSummary />
+                        return (
+                          <ReadingComprehensionResults
+                            result={parsedResult}
+                            hideSummary
+                          />
+                        )
                       }
                     }
 
@@ -910,10 +939,15 @@ function StudentAnswersDialog({
                       const parsedResult = parseSentenceBuilderResult(
                         configJson,
                         answers.answers_json,
-                        answers.score || 0
+                        answers.score || 0,
                       )
                       if (parsedResult) {
-                        return <SentenceBuilderResults result={parsedResult} hideSummary />
+                        return (
+                          <SentenceBuilderResults
+                            result={parsedResult}
+                            hideSummary
+                          />
+                        )
                       }
                     }
 
@@ -922,10 +956,15 @@ function StudentAnswersDialog({
                       const parsedResult = parseWordBuilderResult(
                         configJson,
                         answers.answers_json,
-                        answers.score || 0
+                        answers.score || 0,
                       )
                       if (parsedResult) {
-                        return <WordBuilderResults result={parsedResult} hideSummary />
+                        return (
+                          <WordBuilderResults
+                            result={parsedResult}
+                            hideSummary
+                          />
+                        )
                       }
                     }
                   }

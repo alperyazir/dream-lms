@@ -11,7 +11,6 @@ import {
   KeyRound,
   Mail,
   Plus,
-  RefreshCw,
   Search,
   Trash2,
   User,
@@ -313,7 +312,7 @@ function AdminStudents() {
   }
 
   // Password reset handlers [Story 9.2]
-  const handleResetPassword = (userId: string, userName: string) => {
+  const _handleResetPassword = (userId: string, userName: string) => {
     setStudentToResetPassword({ userId, userName })
     setIsResetPasswordDialogOpen(true)
   }
@@ -397,7 +396,11 @@ function AdminStudents() {
 
   return (
     <PageContainer>
-      <PageHeader icon={FiUsers} title="Students" description="Manage students in the system">
+      <PageHeader
+        icon={FiUsers}
+        title="Students"
+        description="Manage students in the system"
+      >
         <Button
           variant="outline"
           onClick={() => setIsImportDialogOpen(true)}
@@ -692,11 +695,18 @@ function AdminStudents() {
                 <Input
                   id="student-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder={autoGeneratePassword ? "Will be auto-generated" : "Enter password (4+ chars)"}
+                  placeholder={
+                    autoGeneratePassword
+                      ? "Will be auto-generated"
+                      : "Enter password (4+ chars)"
+                  }
                   value={newStudent.password || ""}
                   disabled={autoGeneratePassword}
                   onChange={(e) =>
-                    setNewStudent({ ...newStudent, password: e.target.value || undefined })
+                    setNewStudent({
+                      ...newStudent,
+                      password: e.target.value || undefined,
+                    })
                   }
                   className="pr-10"
                 />

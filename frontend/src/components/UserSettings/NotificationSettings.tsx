@@ -105,7 +105,9 @@ function GlobalMuteSection({
             <BellOff className="h-5 w-5 text-destructive" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-destructive">Notifications are muted</p>
+            <p className="text-sm font-medium text-destructive">
+              Notifications are muted
+            </p>
             <p className="text-sm text-muted-foreground">
               Until {mutedUntil} (~{remainingHours} hour
               {remainingHours !== 1 ? "s" : ""} remaining)
@@ -255,8 +257,12 @@ const NotificationSettings = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Notification Preferences</h3>
-          <p className="text-sm text-muted-foreground">Manage how you receive notifications</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            Notification Preferences
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Manage how you receive notifications
+          </p>
         </div>
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -269,8 +275,12 @@ const NotificationSettings = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Notification Preferences</h3>
-          <p className="text-sm text-muted-foreground">Manage how you receive notifications</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            Notification Preferences
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Manage how you receive notifications
+          </p>
         </div>
         <Alert variant="destructive">
           <AlertDescription>
@@ -284,8 +294,12 @@ const NotificationSettings = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-foreground">Notification Preferences</h3>
-        <p className="text-sm text-muted-foreground">Manage how you receive notifications</p>
+        <h3 className="text-lg font-semibold text-foreground">
+          Notification Preferences
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Manage how you receive notifications
+        </p>
       </div>
 
       <GlobalMuteSection
@@ -300,7 +314,9 @@ const NotificationSettings = () => {
       <div className="space-y-1">
         <div className="flex items-center gap-2 mb-2">
           <Bell className="h-4 w-4 text-primary" />
-          <h4 className="text-sm font-medium text-foreground">In-App Notifications</h4>
+          <h4 className="text-sm font-medium text-foreground">
+            In-App Notifications
+          </h4>
         </div>
         <div className={isMuted ? "opacity-50" : ""}>
           {preferences.map((pref) => (

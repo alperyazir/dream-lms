@@ -33,12 +33,13 @@ const UserMenu = () => {
   }
 
   const roleInfo = getRoleInfo(user?.role || "")
-  const initials = user?.full_name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U"
+  const initials =
+    user?.full_name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U"
 
   return (
     <DropdownMenu>
@@ -49,7 +50,10 @@ const UserMenu = () => {
           className="relative h-10 gap-2 pl-2 pr-3 rounded-full hover:bg-accent/80 active:scale-95 transition-all"
         >
           <Avatar className="h-7 w-7 border border-border">
-            <AvatarImage src={user?.avatar_url || undefined} alt={user?.full_name || "User"} />
+            <AvatarImage
+              src={user?.avatar_url || undefined}
+              alt={user?.full_name || "User"}
+            />
             <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
               {initials}
             </AvatarFallback>
@@ -66,13 +70,18 @@ const UserMenu = () => {
         <DropdownMenuLabel className="font-normal p-3">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10 border-2 border-border">
-              <AvatarImage src={user?.avatar_url || undefined} alt={user?.full_name || "User"} />
+              <AvatarImage
+                src={user?.avatar_url || undefined}
+                alt={user?.full_name || "User"}
+              />
               <AvatarFallback className="text-sm font-medium bg-primary/10 text-primary">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col space-y-0.5 overflow-hidden">
-              <p className="text-sm font-medium leading-none truncate">{user?.full_name || "User"}</p>
+              <p className="text-sm font-medium leading-none truncate">
+                {user?.full_name || "User"}
+              </p>
               <p className="text-xs text-muted-foreground truncate">
                 {user?.email}
               </p>
@@ -86,7 +95,10 @@ const UserMenu = () => {
         <DropdownMenuSeparator />
 
         <DropdownMenuItem asChild>
-          <Link to="/settings" className="flex items-center gap-3 cursor-pointer py-2.5 px-3">
+          <Link
+            to="/settings"
+            className="flex items-center gap-3 cursor-pointer py-2.5 px-3"
+          >
             <User className="h-4 w-4 text-muted-foreground" />
             <span>My Profile</span>
           </Link>

@@ -101,10 +101,16 @@ function PublisherDashboard() {
     <PageContainer>
       <PageHeader
         icon={FiHome}
-        title={profileLoading ? "Loading..." : `${profile?.name || "Publisher Dashboard"} 👋`}
-        description={profile?.user_full_name
-          ? `Welcome, ${profile.user_full_name}`
-          : "Overview of your organization's schools, books, and teachers"}
+        title={
+          profileLoading
+            ? "Loading..."
+            : `${profile?.name || "Publisher Dashboard"} 👋`
+        }
+        description={
+          profile?.user_full_name
+            ? `Welcome, ${profile.user_full_name}`
+            : "Overview of your organization's schools, books, and teachers"
+        }
       />
 
       {/* Stats Cards */}

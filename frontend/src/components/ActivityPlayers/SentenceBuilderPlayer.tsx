@@ -11,13 +11,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { useSoundContext } from "@/hooks/useSoundEffects"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
 import type {
   SentenceBuilderActivityPublic,
   SentenceBuilderSubmission,
 } from "@/types/sentence-builder"
-import { DIFFICULTY_LABELS, getProgressText } from "@/types/sentence-builder"
+import { getProgressText } from "@/types/sentence-builder"
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray<T>(array: T[]): T[] {
@@ -91,8 +92,9 @@ export function SentenceBuilderPlayer({
   const [sentenceStates, setSentenceStates] = useState<
     Record<string, SentenceState>
   >({})
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showSuccess, _setShowSuccess] = useState(false)
   const [isShaking, setIsShaking] = useState(false)
+  const { play: playSound } = useSoundContext()
 
   const totalSentences = activity.sentences.length
 
@@ -181,6 +183,7 @@ export function SentenceBuilderPlayer({
   const handleWordBankClick = useCallback(
     (word: string, index: number) => {
       if (!currentSentence || !currentState || currentState.isCorrect) return
+      playSound("drop")
 
       setSentenceStates((prev) => {
         const state = prev[currentSentence.item_id]
@@ -200,13 +203,14 @@ export function SentenceBuilderPlayer({
         }
       })
     },
-    [currentSentence, currentState],
+    [currentSentence, currentState, playSound],
   )
 
   // Handle clicking a placed word to return it
   const handlePlacedWordClick = useCallback(
     (word: string, index: number) => {
       if (!currentSentence || !currentState || currentState.isCorrect) return
+      playSound("drag")
 
       setSentenceStates((prev) => {
         const state = prev[currentSentence.item_id]
@@ -226,7 +230,7 @@ export function SentenceBuilderPlayer({
         }
       })
     },
-    [currentSentence, currentState],
+    [currentSentence, currentState, playSound],
   )
 
   // Clear all placed words
@@ -326,7 +330,13 @@ export function SentenceBuilderPlayer({
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handlePreviousSentence, handleNextSentence, allWordsPlaced, currentIndex, totalSentences])
+  }, [
+    handlePreviousSentence,
+    handleNextSentence,
+    allWordsPlaced,
+    currentIndex,
+    totalSentences,
+  ])
 
   if (isCompleted) {
     return (

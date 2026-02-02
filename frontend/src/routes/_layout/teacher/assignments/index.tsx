@@ -4,7 +4,6 @@ import { BookOpen, Plus } from "lucide-react"
 import { useMemo, useState } from "react"
 import { FiClipboard } from "react-icons/fi"
 import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import {
   AssignmentFilters,
   type AssignmentFiltersState,
@@ -12,6 +11,7 @@ import {
 import { AssignmentTableView } from "@/components/assignments/AssignmentTableView"
 import { DeleteAssignmentDialog } from "@/components/assignments/DeleteAssignmentDialog"
 import { TeacherAssignmentCard } from "@/components/assignments/TeacherAssignmentCard"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ViewModeToggle } from "@/components/ui/view-mode-toggle"

@@ -22,7 +22,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
 import type { AIQuizPublic } from "@/types/ai-quiz"
-import { getDifficultyLabel } from "@/types/ai-quiz"
 
 /** @deprecated Use QuestionNavigationState from @/types/activity-player instead */
 export type AIQuizNavigationState = QuestionNavigationState

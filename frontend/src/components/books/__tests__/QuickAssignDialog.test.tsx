@@ -38,6 +38,7 @@ const mockBook: Book = {
   id: 123,
   dream_storage_id: "test-123",
   title: "Test Book",
+  publisher_id: 1,
   publisher_name: "Test Publisher",
   description: "Test description",
   cover_image_url: "/test-cover.jpg",

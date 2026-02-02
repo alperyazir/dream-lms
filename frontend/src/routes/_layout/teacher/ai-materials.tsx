@@ -9,13 +9,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { FileText, Plus, RefreshCw, Sparkles } from "lucide-react"
 import { useCallback, useState } from "react"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 // Note: This page uses Sparkles from lucide-react for the icon
 import {
   GeneratedContentLibrary,
   MaterialLibrary,
   MaterialUpload,
 } from "@/components/teacher-materials"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {

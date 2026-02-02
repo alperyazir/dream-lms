@@ -223,3 +223,21 @@ Transform student password management from a secure-but-complex model to a teach
 **Deliverable:** Teachers can set/view/change student passwords, students have simple memorable credentials, reduced support burden
 
 ---
+
+## Epic 29: DCS Library Viewer Integration
+
+**Estimated Effort:** 1-2 weeks | **Status:** Draft
+
+Enable admin, supervisor, publisher, and teacher users to browse DCS book libraries and preview books using an embedded flowbook-online viewer, with the ability to download book bundles. Internal integration of flowbook-online components for seamless UX.
+
+**What Currently Exists:** Book catalog browsing with activity selection, no full book preview capability
+**What We Build:** Embedded flowbook-online viewer + Library browser page + Preview/Download actions
+
+**Stories:**
+- 29.1: Integrate Flowbook-Online Viewer Components
+- 29.2: Create DCS Library Browser Page
+- 29.3: Book Preview and Download Actions
+
+**Deliverable:** Privileged users can browse, preview, and download books from DCS libraries within LMS
+
+---

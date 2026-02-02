@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useSoundContext } from "@/hooks/useSoundEffects"
 import type { DragDropAnswer, DragDropPictureActivity } from "@/lib/mockData"
 import { getActivityImageUrl } from "@/services/booksApi"
 
@@ -67,6 +68,7 @@ export function DragDropPicturePlayer({
   const [, setFocusedDropZoneIndex] = useState<number>(-1)
   const dropZoneRefs = useRef<(HTMLButtonElement | null)[]>([])
   const wordRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const { play: playSound } = useSoundContext()
 
   // Story 23.1: Get used item IDs (already placed in drop zones)
   const usedItemIds = new Set(answers.values())
@@ -190,23 +192,38 @@ export function DragDropPicturePlayer({
     }
   }, [updateImageScale])
 
-  // Get scaled coordinates (Story 4.2)
+  // Get scaled coordinates (Story 4.2) with minimum size for better tap targets
   const getScaledCoords = (coords: {
     x: number
     y: number
     w: number
     h: number
   }) => {
+    const scaledWidth = coords.w * imageScale.x
+    const scaledHeight = coords.h * imageScale.y
+
+    // Minimum sizes for better interaction (60px width, 40px height)
+    const minWidth = 60
+    const minHeight = 40
+
+    const finalWidth = Math.max(scaledWidth, minWidth)
+    const finalHeight = Math.max(scaledHeight, minHeight)
+
+    // Adjust position to center if we expanded the size
+    const widthDiff = finalWidth - scaledWidth
+    const heightDiff = finalHeight - scaledHeight
+
     return {
-      left: imageOffset.x + coords.x * imageScale.x,
-      top: imageOffset.y + coords.y * imageScale.y,
-      width: coords.w * imageScale.x,
-      height: coords.h * imageScale.y,
+      left: imageOffset.x + coords.x * imageScale.x - widthDiff / 2,
+      top: imageOffset.y + coords.y * imageScale.y - heightDiff / 2,
+      width: finalWidth,
+      height: finalHeight,
     }
   }
 
   // Story 23.1: Handle drag start (desktop) - now uses DraggableItem
   const handleDragStart = (item: DraggableItem) => {
+    playSound("drag")
     setDraggedItem(item)
   }
 
@@ -230,6 +247,7 @@ export function DragDropPicturePlayer({
   const handleDrop = (e: React.DragEvent, dropZoneId: string) => {
     e.preventDefault()
     if (draggedItem) {
+      playSound("drop")
       const newAnswers = new Map(answers)
 
       // Remove item from any previous location (by ID)
@@ -251,6 +269,7 @@ export function DragDropPicturePlayer({
   // Story 23.1: Handle item click (mobile) - now uses DraggableItem
   const handleItemClick = (item: DraggableItem) => {
     if (usedItemIds.has(item.id)) return // Can't select used items
+    playSound("click")
     setSelectedItem(selectedItem?.id === item.id ? null : item)
   }
 
@@ -264,6 +283,9 @@ export function DragDropPicturePlayer({
       onAnswersChange(newAnswers)
       return
     }
+
+    // Play drop sound when placing item
+    playSound("drop")
 
     // Place selected item in this zone
     const newAnswers = new Map(answers)

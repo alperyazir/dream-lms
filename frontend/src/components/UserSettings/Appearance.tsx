@@ -29,8 +29,12 @@ const Appearance = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-foreground">Theme Preferences</h3>
-        <p className="text-sm text-muted-foreground">Choose how Dream LMS looks to you</p>
+        <h3 className="text-lg font-semibold text-foreground">
+          Theme Preferences
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Choose how Dream LMS looks to you
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -44,19 +48,19 @@ const Appearance = () => {
               "hover:border-primary/50 hover:bg-accent/50",
               theme === t.value
                 ? "border-primary bg-primary/5"
-                : "border-border bg-card"
+                : "border-border bg-card",
             )}
           >
             <div
               className={cn(
                 "p-3 rounded-full",
-                theme === t.value ? "bg-primary/10" : "bg-muted"
+                theme === t.value ? "bg-primary/10" : "bg-muted",
               )}
             >
               <t.icon
                 className={cn(
                   "h-6 w-6",
-                  theme === t.value ? "text-primary" : "text-muted-foreground"
+                  theme === t.value ? "text-primary" : "text-muted-foreground",
                 )}
               />
             </div>
@@ -64,12 +68,14 @@ const Appearance = () => {
               <p
                 className={cn(
                   "font-medium",
-                  theme === t.value ? "text-primary" : "text-foreground"
+                  theme === t.value ? "text-primary" : "text-foreground",
                 )}
               >
                 {t.label}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t.description}
+              </p>
             </div>
             {theme === t.value && (
               <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />

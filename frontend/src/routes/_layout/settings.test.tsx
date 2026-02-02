@@ -41,14 +41,28 @@ vi.mock("@/components/ui/tabs", () => ({
     <div data-testid="tabs">{children}</div>
   ),
   TabsList: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="tabs-list" role="tablist">{children}</div>
+    <div data-testid="tabs-list" role="tablist">
+      {children}
+    </div>
   ),
-  TabsTrigger: ({ children, value }: { children: React.ReactNode; value: string }) => (
-    <button data-testid={`tab-${value}`} role="tab">{children}</button>
+  TabsTrigger: ({
+    children,
+    value,
+  }: {
+    children: React.ReactNode
+    value: string
+  }) => (
+    <button data-testid={`tab-${value}`} role="tab">
+      {children}
+    </button>
   ),
-  TabsContent: ({ children, value }: { children: React.ReactNode; value: string }) => (
-    <div data-testid={`content-${value}`}>{children}</div>
-  ),
+  TabsContent: ({
+    children,
+    value,
+  }: {
+    children: React.ReactNode
+    value: string
+  }) => <div data-testid={`content-${value}`}>{children}</div>,
 }))
 
 // Define the component logic separately for testing
@@ -101,7 +115,7 @@ describe("Settings Page", () => {
       render(
         <QueryClientProvider client={queryClient}>
           <UserSettingsForTest userRole="student" />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       )
 
       // Password tab should not be present
@@ -118,7 +132,7 @@ describe("Settings Page", () => {
       render(
         <QueryClientProvider client={queryClient}>
           <UserSettingsForTest userRole="teacher" />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       )
 
       // Password tab should be present for teachers
@@ -129,7 +143,7 @@ describe("Settings Page", () => {
       render(
         <QueryClientProvider client={queryClient}>
           <UserSettingsForTest userRole="admin" />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       )
 
       // Password tab should be present for admins
@@ -140,7 +154,7 @@ describe("Settings Page", () => {
       render(
         <QueryClientProvider client={queryClient}>
           <UserSettingsForTest userRole="publisher" />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       )
 
       // Password tab should be present for publishers
@@ -151,7 +165,7 @@ describe("Settings Page", () => {
       render(
         <QueryClientProvider client={queryClient}>
           <UserSettingsForTest userRole="student" />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       )
 
       const tabs = screen.getAllByRole("tab")
@@ -162,7 +176,7 @@ describe("Settings Page", () => {
       render(
         <QueryClientProvider client={queryClient}>
           <UserSettingsForTest userRole="teacher" />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       )
 
       const tabs = screen.getAllByRole("tab")

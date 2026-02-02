@@ -15,7 +15,6 @@ import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
 import {
   CalendarDays,
-  Clock,
   FileText,
   Grid3X3,
   Layers,
@@ -620,19 +619,6 @@ export function ActivitySelectionTabs({
           )}
         </div>
       </div>
-
-      {/* Story 20.4: Time Planning Mode Indicator */}
-      {timePlanningEnabled && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-2 shrink-0">
-          <div className="flex items-center gap-2 text-blue-700">
-            <Clock className="h-4 w-4" />
-            <span className="font-medium text-sm">Time Planning Mode</span>
-          </div>
-          <p className="text-sm text-blue-600 mt-1">
-            Activities will be selected based on time sessions, not manually.
-          </p>
-        </div>
-      )}
 
       {/* Main Content - Tabs, Date List (when enabled), and Summary */}
       <div className="flex gap-3 flex-1 min-h-0 overflow-hidden h-full">

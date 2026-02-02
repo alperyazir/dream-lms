@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useSoundContext } from "@/hooks/useSoundEffects"
 import type { PuzzleFindWordsActivity } from "@/lib/mockData"
 import { generateWordSearch } from "@/lib/wordSearchGenerator"
 
@@ -45,6 +46,7 @@ export function PuzzleFindWordsPlayer({
     Array<{ row: number; col: number }>
   >([])
   const [isSelecting, setIsSelecting] = useState(false)
+  const { play: playSound } = useSoundContext()
 
   // Keyboard navigation state
   const [_focusedCell, setFocusedCell] = useState<{
@@ -171,6 +173,7 @@ export function PuzzleFindWordsPlayer({
 
         if (forward || backward) {
           // Word found!
+          playSound("correct")
           const newFoundWords = new Set(foundWords)
           newFoundWords.add(placement.word)
           setFoundWords(newFoundWords)
@@ -281,13 +284,14 @@ export function PuzzleFindWordsPlayer({
                             aria-label={`Cell ${letter} at row ${rowIndex + 1}, column ${colIndex + 1}`}
                             className={`
                               h-10 w-10 cursor-pointer text-center text-base font-bold transition-all duration-150 rounded-lg border-2
-                              md:h-12 md:w-12 md:text-lg select-none
+                              md:h-12 md:w-12 md:text-lg select-none text-gray-800 dark:text-gray-100
                               ${cellColor || (inSelection ? "bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-600" : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600")}
                               ${inSelection ? "scale-105 shadow-lg" : "hover:scale-105 hover:shadow-md"}
                               ${!cellColor && !inSelection ? "hover:bg-gray-100 dark:hover:bg-gray-600" : ""}
                             `}
                             style={{
                               userSelect: "none",
+                              color: "#1f2937",
                             }}
                           >
                             {letter}

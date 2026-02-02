@@ -100,7 +100,7 @@ export async function getAssignments(): Promise<AssignmentListItem[]> {
 export async function createAssignment(
   data: AssignmentCreateRequest,
 ): Promise<AssignmentResponse> {
-  const url = `/api/v1/assignments`
+  const url = `/api/v1/assignments/`
   const response = await apiClient.post<AssignmentResponse>(url, data)
   return response.data
 }

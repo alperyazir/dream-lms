@@ -22,10 +22,7 @@ vi.mock("@/hooks/useCustomToast", () => ({
   }),
 }))
 
-import {
-  getStudentPassword,
-  setStudentPassword,
-} from "@/services/studentsApi"
+import { getStudentPassword, setStudentPassword } from "@/services/studentsApi"
 
 const mockGetStudentPassword = vi.mocked(getStudentPassword)
 const mockSetStudentPassword = vi.mocked(setStudentPassword)
@@ -60,7 +57,7 @@ describe("StudentPasswordModal", () => {
     return render(
       <QueryClientProvider client={queryClient}>
         <StudentPasswordModal {...defaultProps} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     )
   }
 
@@ -128,14 +125,14 @@ describe("StudentPasswordModal", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Password was set before this feature was enabled")
+        screen.getByText("Password was set before this feature was enabled"),
       ).toBeInTheDocument()
     })
   })
 
   it("should show loading state while fetching password", () => {
     mockGetStudentPassword.mockImplementation(
-      () => new Promise(() => {}) // Never resolves
+      () => new Promise(() => {}), // Never resolves
     )
 
     renderModal()
@@ -185,7 +182,7 @@ describe("StudentPasswordModal", () => {
 
     // Try to submit - find button with Save icon
     const saveButtons = screen.getAllByRole("button")
-    const saveButton = saveButtons.find(btn => {
+    const saveButton = saveButtons.find((btn) => {
       const svg = btn.querySelector("svg")
       return svg?.classList.contains("lucide-save")
     })
@@ -227,8 +224,8 @@ describe("StudentPasswordModal", () => {
 
     // Find and click the save button (the one with gradient background)
     const buttons = screen.getAllByRole("button")
-    const saveButton = buttons.find(btn =>
-      btn.className.includes("bg-gradient")
+    const saveButton = buttons.find((btn) =>
+      btn.className.includes("bg-gradient"),
     )
 
     if (saveButton) {
@@ -238,7 +235,7 @@ describe("StudentPasswordModal", () => {
     await waitFor(() => {
       expect(mockSetStudentPassword).toHaveBeenCalledWith(
         "test-student-id",
-        "newpassword123"
+        "newpassword123",
       )
     })
   })
@@ -262,7 +259,9 @@ describe("StudentPasswordModal", () => {
     // Click close button (the footer one with explicit "Close" text)
     const closeButtons = screen.getAllByRole("button", { name: /close/i })
     // Get the button in the DialogFooter (the one with "Close" as direct text)
-    const footerCloseButton = closeButtons.find(btn => btn.textContent === "Close")
+    const footerCloseButton = closeButtons.find(
+      (btn) => btn.textContent === "Close",
+    )
     if (footerCloseButton) {
       fireEvent.click(footerCloseButton)
     }

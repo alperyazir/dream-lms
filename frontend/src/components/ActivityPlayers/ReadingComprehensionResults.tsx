@@ -67,7 +67,12 @@ export function ReadingComprehensionResults({
   }
 
   return (
-    <div className={cn("mx-auto flex max-w-3xl flex-col gap-6", !hideSummary && "p-4")}>
+    <div
+      className={cn(
+        "mx-auto flex max-w-3xl flex-col gap-6",
+        !hideSummary && "p-4",
+      )}
+    >
       {/* Score summary card - hidden when embedded */}
       {!hideSummary && (
         <Card className="overflow-hidden shadow-lg">
@@ -84,7 +89,9 @@ export function ReadingComprehensionResults({
             <h2 className="mb-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
               Activity Complete!
             </h2>
-            <div className={cn("text-5xl font-bold", getScoreColor(percentage))}>
+            <div
+              className={cn("text-5xl font-bold", getScoreColor(percentage))}
+            >
               {correctCount}/{totalCount}
             </div>
             <p

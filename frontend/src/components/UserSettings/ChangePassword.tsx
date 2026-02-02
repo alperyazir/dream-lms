@@ -48,7 +48,9 @@ const ChangePassword = () => {
           <KeyRound className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Change Password</h3>
+          <h3 className="text-lg font-semibold text-foreground">
+            Change Password
+          </h3>
           <p className="text-sm text-muted-foreground">
             Update your password to keep your account secure
           </p>
@@ -65,7 +67,9 @@ const ChangePassword = () => {
             placeholder="Enter your current password"
           />
           {errors.current_password && (
-            <p className="text-sm text-destructive">{errors.current_password.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.current_password.message}
+            </p>
           )}
         </div>
 
@@ -78,7 +82,9 @@ const ChangePassword = () => {
             placeholder="Enter your new password"
           />
           {errors.new_password && (
-            <p className="text-sm text-destructive">{errors.new_password.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.new_password.message}
+            </p>
           )}
         </div>
 
@@ -91,7 +97,9 @@ const ChangePassword = () => {
             placeholder="Confirm your new password"
           />
           {errors.confirm_password && (
-            <p className="text-sm text-destructive">{errors.confirm_password.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.confirm_password.message}
+            </p>
           )}
         </div>
 

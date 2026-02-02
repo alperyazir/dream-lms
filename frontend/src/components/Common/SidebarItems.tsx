@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link as RouterLink, useLocation } from "@tanstack/react-router"
+import { AnimatePresence, motion } from "framer-motion"
 import type { LucideIcon } from "lucide-react"
 import { Sparkles } from "lucide-react"
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import {
   FiActivity,
   FiBarChart2,
@@ -102,14 +102,22 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiTrendingUp, title: "Classrooms", path: "/teacher/classrooms" },
     { icon: FiUsers, title: "Students", path: "/teacher/students" },
     { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments" },
-    { icon: FiMessageSquare, title: "Announcements", path: "/teacher/announcements" },
+    {
+      icon: FiMessageSquare,
+      title: "Announcements",
+      path: "/teacher/announcements",
+    },
     { icon: FiBarChart2, title: "Reports", path: "/teacher/reports" },
   ],
   student: [
     { icon: FiHome, title: "Dashboard", path: "/student/dashboard" },
     { icon: FiCalendar, title: "Calendar", path: "/student/calendar" },
     { icon: FiClipboard, title: "Assignments", path: "/student/assignments" },
-    { icon: FiMessageSquare, title: "Announcements", path: "/student/announcements" },
+    {
+      icon: FiMessageSquare,
+      title: "Announcements",
+      path: "/student/announcements",
+    },
     { icon: FiTrendingUp, title: "My Progress", path: "/student/progress" },
   ],
 }
@@ -249,14 +257,8 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     return <>{children}</>
   }
 
-  const renderMenuItem = (item: Item, index: number) => {
-    const {
-      icon: IconComponent,
-      title,
-      path,
-      comingSoon,
-      children,
-    } = item
+  const renderMenuItem = (item: Item, _index: number) => {
+    const { icon: IconComponent, title, path, comingSoon, children } = item
     const isActive = location.pathname === path
     const hasActiveChild = isChildActive(children)
     const isExpanded = expandedMenus[title] || hasActiveChild
@@ -269,9 +271,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
           type="button"
           onClick={() => !isCollapsed && toggleMenu(title)}
           className={`w-full flex items-center text-sm transition-all duration-200 rounded-lg mx-2 ${
-            isCollapsed
-              ? "justify-center py-3 px-0 w-12"
-              : "gap-3 px-4 py-2.5"
+            isCollapsed ? "justify-center py-3 px-0 w-12" : "gap-3 px-4 py-2.5"
           } ${
             hasActiveChild
               ? "bg-primary/10 text-primary"
@@ -290,7 +290,9 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <span className={`flex-1 text-left whitespace-nowrap ${hasActiveChild ? "font-medium" : ""}`}>
+                <span
+                  className={`flex-1 text-left whitespace-nowrap ${hasActiveChild ? "font-medium" : ""}`}
+                >
                   {title}
                 </span>
                 <motion.div
@@ -334,9 +336,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     const content = (
       <motion.div
         className={`flex items-center text-sm transition-all duration-200 rounded-lg mx-2 relative ${
-          isCollapsed
-            ? "justify-center py-3 px-0 w-12"
-            : "gap-3 px-4 py-2.5"
+          isCollapsed ? "justify-center py-3 px-0 w-12" : "gap-3 px-4 py-2.5"
         } ${
           isActive
             ? "bg-primary/10 text-primary font-medium border-l-[3px] border-primary"
@@ -387,7 +387,10 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     if (comingSoon) {
       return (
         <div key={title} className="mb-1">
-          <MenuItemWrapper title={`${title} (Coming Soon)`} isCollapsed={isCollapsed}>
+          <MenuItemWrapper
+            title={`${title} (Coming Soon)`}
+            isCollapsed={isCollapsed}
+          >
             {content}
           </MenuItemWrapper>
         </div>

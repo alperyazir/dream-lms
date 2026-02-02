@@ -30,7 +30,7 @@ export function PageContainer({
         "w-full p-6 space-y-6",
         maxWidth === "narrow" && "max-w-4xl",
         maxWidth === "medium" && "max-w-6xl",
-        className
+        className,
       )}
     >
       {children}
@@ -63,7 +63,7 @@ export function PageHeader({
     <div
       className={cn(
         "flex flex-col gap-4 md:flex-row md:items-center md:justify-between",
-        className
+        className,
       )}
     >
       <div>

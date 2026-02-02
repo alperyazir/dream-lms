@@ -101,6 +101,7 @@ export function CirclePlayer({
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [imageError, setImageError] = useState(false)
   const [imageScale, setImageScale] = useState({ x: 1, y: 1 })
+  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 })
   const imageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -153,15 +154,20 @@ export function CirclePlayer({
 
     // Calculate painted (rendered) dimensions with object-contain
     let paintedWidth: number, paintedHeight: number
+    let xOffset: number, yOffset: number
 
     if (imageAspect > containerAspect) {
       // Image is wider - constrained by width, letterboxing top/bottom
       paintedWidth = container.clientWidth
       paintedHeight = container.clientWidth / imageAspect
+      xOffset = 0
+      yOffset = (container.clientHeight - paintedHeight) / 2
     } else {
       // Image is taller - constrained by height, pillarboxing left/right
       paintedHeight = container.clientHeight
       paintedWidth = container.clientHeight * imageAspect
+      xOffset = (container.clientWidth - paintedWidth) / 2
+      yOffset = 0
     }
 
     // Calculate scale factors based on painted dimensions
@@ -190,13 +196,16 @@ export function CirclePlayer({
       return { x: roundedXScale, y: roundedYScale }
     })
 
+    // Update offset for positioning
+    setImageOffset({ x: xOffset, y: yOffset })
+
     // Pre-calculate all button positions and cache them
-    // Note: No offset needed since overlays are positioned relative to the image wrapper
+    // Include offset for proper centering within container
     scaledCoordsCache.current.clear()
     activity.answer.forEach((answer, answerIndex) => {
       const coords = {
-        left: Math.round(answer.coords.x * roundedXScale * 100) / 100,
-        top: Math.round(answer.coords.y * roundedYScale * 100) / 100,
+        left: Math.round((xOffset + answer.coords.x * roundedXScale) * 100) / 100,
+        top: Math.round((yOffset + answer.coords.y * roundedYScale) * 100) / 100,
         width: Math.round(answer.coords.w * roundedXScale * 100) / 100,
         height: Math.round(answer.coords.h * roundedYScale * 100) / 100,
       }
@@ -386,13 +395,13 @@ export function CirclePlayer({
       // Fallback: calculate on the fly (shouldn't happen if image is loaded)
       const answer = activity.answer[answerIndex]
       return {
-        left: answer.coords.x * imageScale.x,
-        top: answer.coords.y * imageScale.y,
+        left: imageOffset.x + answer.coords.x * imageScale.x,
+        top: imageOffset.y + answer.coords.y * imageScale.y,
         width: answer.coords.w * imageScale.x,
         height: answer.coords.h * imageScale.y,
       }
     },
-    [activity.answer, imageScale],
+    [activity.answer, imageScale, imageOffset],
   )
 
   return (
@@ -400,17 +409,7 @@ export function CirclePlayer({
       {/* Background Image with Selectable Areas - fills remaining height */}
       <div
         ref={containerRef}
-        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800"
-        style={{
-          willChange: "auto",
-          height: lockedContainerHeight ? `${lockedContainerHeight}px` : "auto",
-          minHeight: lockedContainerHeight
-            ? `${lockedContainerHeight}px`
-            : "auto",
-          maxHeight: lockedContainerHeight
-            ? `${lockedContainerHeight}px`
-            : "auto",
-        }}
+        className="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800"
       >
         {/* Loading state */}
         {!imageUrl && !imageError && (
@@ -433,33 +432,19 @@ export function CirclePlayer({
           </div>
         )}
 
-        {/* Image wrapper - positions overlays relative to the image */}
+        {/* Image with Overlay Container - positions overlays relative to container */}
         {imageUrl && (
-          <div
-            className="relative"
-            style={{
-              width: lockedImageDimensions
-                ? `${lockedImageDimensions.width}px`
-                : "auto",
-              height: lockedImageDimensions
-                ? `${lockedImageDimensions.height}px`
-                : "auto",
-            }}
-          >
+          <div className="relative h-full w-full">
             {/* Image */}
             <img
               ref={imageRef}
               src={imageUrl}
               alt="Activity background"
-              className="block"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-              }}
+              className="h-full w-full object-contain"
+              onLoad={updateImageScale}
             />
 
-            {/* Selectable Areas Overlay - positioned relative to image wrapper */}
+            {/* Selectable Areas Overlay - positioned relative to container with offset */}
             {activity.answer.map((_answer, answerIndex) => {
               const selected = isSelected(answerIndex)
               const correct = isCorrect(answerIndex)

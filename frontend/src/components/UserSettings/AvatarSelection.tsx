@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Check, RefreshCw, Sparkles, Trash2, User } from "lucide-react"
-import { useState, useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import useAuth from "@/hooks/useAuth"
@@ -10,7 +10,11 @@ import { avatarsApi } from "@/services/avatarsApi"
 
 // DiceBear styles with display names
 const DICEBEAR_STYLES = [
-  { id: "adventurer", name: "Adventurer", description: "Cute illustrated characters" },
+  {
+    id: "adventurer",
+    name: "Adventurer",
+    description: "Cute illustrated characters",
+  },
   { id: "avataaars", name: "Avataaars", description: "Cartoon-style people" },
   { id: "lorelei", name: "Lorelei", description: "Stylish portraits" },
   { id: "notionists", name: "Notionists", description: "Notion-style avatars" },
@@ -105,12 +109,14 @@ const AvatarSelection = () => {
 
   const isProcessing = selectMutation.isPending || removeMutation.isPending
   const currentAvatarUrl = currentUser?.avatar_url
-  const currentStyleInfo = DICEBEAR_STYLES.find(s => s.id === selectedStyle)
+  const currentStyleInfo = DICEBEAR_STYLES.find((s) => s.id === selectedStyle)
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-foreground">Profile Avatar</h3>
+        <h3 className="text-lg font-semibold text-foreground">
+          Profile Avatar
+        </h3>
         <p className="text-sm text-muted-foreground">
           Choose from thousands of unique avatars powered by DiceBear
         </p>
@@ -177,7 +183,9 @@ const AvatarSelection = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <p className="text-sm font-medium text-foreground">Choose a style</p>
+            <p className="text-sm font-medium text-foreground">
+              Choose a style
+            </p>
           </div>
           <Button
             variant="ghost"
@@ -203,7 +211,7 @@ const AvatarSelection = () => {
                   "border-2 hover:border-primary/50",
                   selectedStyle === style.id
                     ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-card text-foreground border-border hover:bg-accent"
+                    : "bg-card text-foreground border-border hover:bg-accent",
                 )}
               >
                 {style.name}
@@ -239,7 +247,7 @@ const AvatarSelection = () => {
                 isSelected
                   ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background scale-105 shadow-lg"
                   : "border-border/50",
-                isProcessing && "opacity-50 cursor-not-allowed"
+                isProcessing && "opacity-50 cursor-not-allowed",
               )}
             >
               <img

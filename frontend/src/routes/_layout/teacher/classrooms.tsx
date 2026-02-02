@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { BarChart3, Edit, Plus, Trash2, TrendingUp, UserPlus } from "lucide-react"
+import {
+  BarChart3,
+  Edit,
+  Plus,
+  Trash2,
+  TrendingUp,
+  UserPlus,
+} from "lucide-react"
 import { useState } from "react"
 import { FiTrendingUp } from "react-icons/fi"
 import {
@@ -217,8 +224,7 @@ function TeacherClassroomsPage() {
 
   // Delete class mutation
   const deleteClassMutation = useMutation({
-    mutationFn: (classId: string) =>
-      TeachersService.deleteClass({ classId }),
+    mutationFn: (classId: string) => TeachersService.deleteClass({ classId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
       setIsDeleteDialogOpen(false)
@@ -380,7 +386,9 @@ function TeacherClassroomsPage() {
             <TableBody>
               {filteredClasses.map((classItem) => (
                 <TableRow key={classItem.id}>
-                  <TableCell className="font-medium">{classItem.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {classItem.name}
+                  </TableCell>
                   <TableCell>
                     {classItem.subject ? (
                       <Badge

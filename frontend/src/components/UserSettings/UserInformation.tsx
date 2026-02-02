@@ -67,8 +67,12 @@ const UserInformation = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Personal Information</h3>
-          <p className="text-sm text-muted-foreground">Update your personal details</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            Personal Information
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Update your personal details
+          </p>
         </div>
         {!editMode && (
           <Button variant="outline" size="sm" onClick={toggleEditMode}>
@@ -92,7 +96,9 @@ const UserInformation = () => {
               />
             ) : (
               <div className="h-10 px-3 py-2 rounded-md bg-muted/50 text-foreground flex items-center">
-                {currentUser?.full_name || <span className="text-muted-foreground">Not set</span>}
+                {currentUser?.full_name || (
+                  <span className="text-muted-foreground">Not set</span>
+                )}
               </div>
             )}
           </div>
@@ -112,7 +118,9 @@ const UserInformation = () => {
                   placeholder="Enter your email"
                 />
                 {errors.email && (
-                  <p className="text-sm text-destructive mt-1">{errors.email.message}</p>
+                  <p className="text-sm text-destructive mt-1">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
             ) : (
@@ -133,7 +141,11 @@ const UserInformation = () => {
               <Save className="h-4 w-4 mr-2" />
               {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
-            <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>

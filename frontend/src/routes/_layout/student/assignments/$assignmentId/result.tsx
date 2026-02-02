@@ -24,12 +24,7 @@ import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQu
 import { WordBuilderResults } from "@/components/ActivityPlayers/WordBuilderResults"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   parseAIQuizResult,
   parseReadingComprehensionResult,
@@ -97,13 +92,16 @@ function AssignmentResultDetailPage() {
     if (parsedResult) {
       if ("question_results" in parsedResult) {
         // AI Quiz or Reading Comprehension
-        const correct = parsedResult.question_results.filter((r) => r.is_correct).length
+        const correct = parsedResult.question_results.filter(
+          (r) => r.is_correct,
+        ).length
         return {
           correct,
           incorrect: parsedResult.total - correct,
           total: parsedResult.total,
         }
-      } else if ("results" in parsedResult) {
+      }
+      if ("results" in parsedResult) {
         // Vocabulary Quiz
         const correct = parsedResult.results.filter((r) => r.is_correct).length
         return {
@@ -111,15 +109,19 @@ function AssignmentResultDetailPage() {
           incorrect: parsedResult.total - correct,
           total: parsedResult.total,
         }
-      } else if ("sentence_results" in parsedResult) {
+      }
+      if ("sentence_results" in parsedResult) {
         // Sentence Builder
-        const correct = parsedResult.sentence_results.filter((r) => r.is_correct).length
+        const correct = parsedResult.sentence_results.filter(
+          (r) => r.is_correct,
+        ).length
         return {
           correct,
           incorrect: parsedResult.total - correct,
           total: parsedResult.total,
         }
-      } else if ("word_results" in parsedResult) {
+      }
+      if ("word_results" in parsedResult) {
         // Word Builder
         return {
           correct: parsedResult.correct_count,
@@ -230,12 +232,15 @@ function AssignmentResultDetailPage() {
           <div className="text-right">
             {(() => {
               // Calculate actual score from correct/incorrect if we have parsed results
-              const calculatedScore = answerStats && answerStats.total > 0
-                ? Math.round((answerStats.correct / answerStats.total) * 100)
-                : Math.round(result.score)
+              const calculatedScore =
+                answerStats && answerStats.total > 0
+                  ? Math.round((answerStats.correct / answerStats.total) * 100)
+                  : Math.round(result.score)
               return (
                 <>
-                  <div className={`text-5xl font-bold ${getScoreColor(calculatedScore)}`}>
+                  <div
+                    className={`text-5xl font-bold ${getScoreColor(calculatedScore)}`}
+                  >
                     {calculatedScore}%
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -291,7 +296,10 @@ function AssignmentResultDetailPage() {
             <div className="text-2xl font-bold">
               {(() => {
                 // Use time_spent_seconds for precise display
-                const totalSeconds = result.time_spent_seconds || (result.time_spent_minutes * 60) || 0
+                const totalSeconds =
+                  result.time_spent_seconds ||
+                  result.time_spent_minutes * 60 ||
+                  0
 
                 if (totalSeconds === 0) {
                   return "< 1 sec"
@@ -315,21 +323,58 @@ function AssignmentResultDetailPage() {
       {parsedResult && supportsDetailedReview(result.activity_type) && (
         <div className="mt-6">
           <h2 className="text-xl font-semibold mb-4">Detailed Answer Review</h2>
-          {result.activity_type === "ai_quiz" && "question_results" in parsedResult && (
-            <AIQuizResults result={parsedResult as ReturnType<typeof parseAIQuizResult> & object} hideSummary />
-          )}
-          {result.activity_type === "vocabulary_quiz" && "results" in parsedResult && (
-            <VocabularyQuizResults result={parsedResult as ReturnType<typeof parseVocabularyQuizResult> & object} hideSummary />
-          )}
-          {result.activity_type === "reading_comprehension" && "question_results" in parsedResult && (
-            <ReadingComprehensionResults result={parsedResult as ReturnType<typeof parseReadingComprehensionResult> & object} hideSummary />
-          )}
-          {result.activity_type === "sentence_builder" && "sentence_results" in parsedResult && (
-            <SentenceBuilderResults result={parsedResult as ReturnType<typeof parseSentenceBuilderResult> & object} hideSummary />
-          )}
-          {result.activity_type === "word_builder" && "word_results" in parsedResult && (
-            <WordBuilderResults result={parsedResult as ReturnType<typeof parseWordBuilderResult> & object} />
-          )}
+          {result.activity_type === "ai_quiz" &&
+            "question_results" in parsedResult && (
+              <AIQuizResults
+                result={
+                  parsedResult as ReturnType<typeof parseAIQuizResult> & object
+                }
+                hideSummary
+              />
+            )}
+          {result.activity_type === "vocabulary_quiz" &&
+            "results" in parsedResult && (
+              <VocabularyQuizResults
+                result={
+                  parsedResult as ReturnType<typeof parseVocabularyQuizResult> &
+                    object
+                }
+                hideSummary
+              />
+            )}
+          {result.activity_type === "reading_comprehension" &&
+            "question_results" in parsedResult && (
+              <ReadingComprehensionResults
+                result={
+                  parsedResult as ReturnType<
+                    typeof parseReadingComprehensionResult
+                  > &
+                    object
+                }
+                hideSummary
+              />
+            )}
+          {result.activity_type === "sentence_builder" &&
+            "sentence_results" in parsedResult && (
+              <SentenceBuilderResults
+                result={
+                  parsedResult as ReturnType<
+                    typeof parseSentenceBuilderResult
+                  > &
+                    object
+                }
+                hideSummary
+              />
+            )}
+          {result.activity_type === "word_builder" &&
+            "word_results" in parsedResult && (
+              <WordBuilderResults
+                result={
+                  parsedResult as ReturnType<typeof parseWordBuilderResult> &
+                    object
+                }
+              />
+            )}
         </div>
       )}
 
@@ -339,8 +384,9 @@ function AssignmentResultDetailPage() {
           <CardContent className="pt-6">
             <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Note:</strong> Detailed answer review is not available for this activity type.
-                Your submission has been recorded and graded.
+                <strong>Note:</strong> Detailed answer review is not available
+                for this activity type. Your submission has been recorded and
+                graded.
               </p>
             </div>
           </CardContent>

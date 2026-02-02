@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
-import { getBooks } from "@/services/booksApi"
+import { getAuthenticatedCoverUrl, getBooks } from "@/services/booksApi"
 import { type AIModuleSummary, getBookAIModules } from "@/services/dcsAiDataApi"
 import type { Book } from "@/types/book"
 
@@ -38,6 +38,22 @@ export function SourceSelector({
   const [isLoadingModules, setIsLoadingModules] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [bookSearch, setBookSearch] = useState("")
+  const [coverUrls, setCoverUrls] = useState<Record<number, string>>({})
+
+  // Load cover URLs for books
+  useEffect(() => {
+    const loadCovers = async () => {
+      const urls: Record<number, string> = {}
+      for (const book of books) {
+        if (book.cover_image_url) {
+          const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+          if (url) urls[book.id] = url
+        }
+      }
+      setCoverUrls(urls)
+    }
+    if (books.length > 0) loadCovers()
+  }, [books])
 
   // Filter books based on search
   const filteredBooks = useMemo(() => {
@@ -172,9 +188,9 @@ export function SourceSelector({
               >
                 {/* Book Cover */}
                 <div className="aspect-[3/4] w-full rounded overflow-hidden bg-muted">
-                  {book.cover_image_url ? (
+                  {coverUrls[book.id] ? (
                     <img
-                      src={book.cover_image_url}
+                      src={coverUrls[book.id]}
                       alt={book.title}
                       className="w-full h-full object-cover"
                     />

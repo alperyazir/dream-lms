@@ -21,6 +21,7 @@ from app.schemas.book import (
     ActivityCoords,
     ActivityMarker,
     ActivityResponse,
+    AudioMarker,
     BookListResponse,
     BookPagesDetailResponse,
     BookPagesResponse,
@@ -29,6 +30,9 @@ from app.schemas.book import (
     BookStructureResponse,
     BookSyncResponse,
     BookVideosResponse,
+    BundleRequest,
+    BundleResponse,
+    FillAnswerMarker,
     ModuleInfo,
     ModulePages,
     ModuleWithActivities,
@@ -37,6 +41,7 @@ from app.schemas.book import (
     PageInfo,
     PageWithActivities,
     VideoInfo,
+    VideoMarker,
 )
 from app.services import book_assignment_service
 from app.services.book_service_v2 import get_book_service
@@ -299,6 +304,7 @@ async def list_books(
             id=book.id,
             title=book.title,
             book_name=book.name,
+            publisher_id=book.publisher_id,
             publisher_name=book.publisher_name,
             language=None,
             category=None,
@@ -464,6 +470,121 @@ def _extract_page_image_paths(config_json: dict) -> dict[tuple[str, int], str]:
     return page_paths
 
 
+def _normalize_media_path(media_path: str) -> str:
+    """
+    Normalize a media path from config.json to API-compatible format.
+
+    Config paths look like: "./books/SwitchtoCLIL/audio/08.mp3"
+    We need: "audio/08.mp3"
+    """
+    if not media_path:
+        return ""
+
+    # Remove leading ./ or /
+    clean_path = media_path
+    if clean_path.startswith("./"):
+        clean_path = clean_path[2:]
+    if clean_path.startswith("/"):
+        clean_path = clean_path[1:]
+
+    # Remove books/{bookName}/ prefix if present
+    # e.g., "books/SwitchtoCLIL/audio/08.mp3" -> "audio/08.mp3"
+    parts = clean_path.split("/")
+    if parts[0] == "books" and len(parts) > 2:
+        clean_path = "/".join(parts[2:])
+
+    return clean_path
+
+
+def _extract_audio_video_fill_from_sections(sections: list, book_id: int, page_number: int) -> tuple[list[AudioMarker], list[VideoMarker], list[FillAnswerMarker]]:
+    """
+    Extract audio, video, and fill answer markers from page sections.
+
+    Args:
+        sections: List of sections from a page in config.json
+        book_id: DCS book ID
+        page_number: Page number for generating unique IDs
+
+    Returns:
+        Tuple of (audio_markers, video_markers, fill_answer_markers)
+    """
+    audio_markers: list[AudioMarker] = []
+    video_markers: list[VideoMarker] = []
+    fill_markers: list[FillAnswerMarker] = []
+    audio_idx = 0
+    video_idx = 0
+    fill_idx = 0
+
+    def build_media_url(media_path: str) -> str:
+        """Build full API URL for media file."""
+        normalized = _normalize_media_path(media_path)
+        if normalized:
+            return f"/api/v1/books/{book_id}/media/{normalized}"
+        return ""
+
+    for section_idx, section in enumerate(sections):
+        section_type = section.get("type", "")
+
+        # Extract standalone audio sections
+        if section_type == "audio":
+            audio_path = section.get("audio_path", "") or section.get("audio", "")
+            if audio_path:
+                coords = section.get("coords", {})
+                audio_markers.append(AudioMarker(
+                    id=f"audio-{page_number}-{audio_idx}",
+                    src=build_media_url(audio_path),
+                    x=coords.get("x", 50),
+                    y=coords.get("y", 50),
+                    width=coords.get("w", coords.get("width", 44)),
+                    height=coords.get("h", coords.get("height", 44)),
+                ))
+                audio_idx += 1
+
+        # Extract standalone video sections
+        elif section_type == "video":
+            video_path = section.get("video_path", "") or section.get("video", "")
+            if video_path:
+                coords = section.get("coords", {})
+                video_url = build_media_url(video_path)
+                # Check for subtitle file (same name with .srt extension)
+                normalized_path = _normalize_media_path(video_path)
+                subtitle_url = f"/api/v1/books/{book_id}/media/{normalized_path.rsplit('.', 1)[0]}.srt" if "." in normalized_path else None
+                poster_path = section.get("poster", "")
+                video_markers.append(VideoMarker(
+                    id=f"video-{page_number}-{video_idx}",
+                    src=video_url,
+                    poster=build_media_url(poster_path) if poster_path else None,
+                    subtitle_src=subtitle_url,
+                    x=coords.get("x", 50),
+                    y=coords.get("y", 50),
+                    width=coords.get("w", coords.get("width", 44)),
+                    height=coords.get("h", coords.get("height", 44)),
+                ))
+                video_idx += 1
+
+        # Extract fill answer sections (type: "fill" with answer array)
+        elif section_type == "fill":
+            answers = section.get("answer", [])
+            for answer in answers:
+                answer_coords = answer.get("coords", {})
+                answer_text = answer.get("text", "")
+                if answer_coords and answer_text:
+                    fill_markers.append(FillAnswerMarker(
+                        id=f"fill-{page_number}-{section_idx}-{fill_idx}",
+                        x=answer_coords.get("x", 0),
+                        y=answer_coords.get("y", 0),
+                        width=answer_coords.get("w", answer_coords.get("width", 50)),
+                        height=answer_coords.get("h", answer_coords.get("height", 20)),
+                        text=answer_text,
+                    ))
+                    fill_idx += 1
+
+        # Note: audio_extra is handled by ActivityToolbar when activity opens,
+        # not as a page-level audio marker
+
+    return audio_markers, video_markers, fill_markers
+
+
 def _extract_all_pages_from_config(config_json: dict, book_id: int) -> tuple[list[dict], list[ModuleInfo]]:
     """
     Extract ALL pages from config.json (not just pages with activities).
@@ -473,7 +594,7 @@ def _extract_all_pages_from_config(config_json: dict, book_id: int) -> tuple[lis
         book_id: DCS book ID (integer)
 
     Returns:
-        - List of page dicts: {module_name, page_number, image_url}
+        - List of page dicts: {module_name, page_number, image_url, audio, video}
         - List of ModuleInfo for navigation shortcuts
     """
     all_pages: list[dict] = []
@@ -497,6 +618,7 @@ def _extract_all_pages_from_config(config_json: dict, book_id: int) -> tuple[lis
         for page in pages:
             page_number = page.get("page_number")
             image_path = page.get("image_path", "")
+            sections = page.get("sections", [])
 
             if page_number is not None:
                 # Extract asset path from full path
@@ -517,10 +639,16 @@ def _extract_all_pages_from_config(config_json: dict, book_id: int) -> tuple[lis
                     module_folder = _module_name_to_folder(module_name)
                     image_url = f"/api/v1/books/{book_id}/assets/images/HB/modules/{module_folder}/pages/{page_number:02d}.png"
 
+                # Extract audio, video, and fill answers from sections
+                audio_markers, video_markers, fill_markers = _extract_audio_video_fill_from_sections(sections, book_id, page_number)
+
                 all_pages.append({
                     "module_name": module_name,
                     "page_number": page_number,
-                    "image_url": image_url
+                    "image_url": image_url,
+                    "audio": audio_markers,
+                    "video": video_markers,
+                    "fill_answers": fill_markers,
                 })
                 page_index += 1
 
@@ -820,6 +948,9 @@ async def get_book_pages_detail(
         module_name = page_info["module_name"]
         page_number = page_info["page_number"]
         image_url = page_info["image_url"]
+        audio_markers = page_info.get("audio", [])
+        video_markers = page_info.get("video", [])
+        fill_markers = page_info.get("fill_answers", [])
 
         # Get activities for this page
         page_activities = activities_lookup.get((module_name, page_number), [])
@@ -828,12 +959,43 @@ async def get_book_pages_detail(
         activity_markers: list[ActivityMarker] = []
         for activity in page_activities:
             coords = _extract_activity_coords(activity.config_json or {})
+            # Build enriched config with section_image_url and audio_extra_url
+            config = dict(activity.config_json or {})
+            # Convert section_path to full API URL if present
+            if "section_path" in config and config["section_path"]:
+                section_path = config["section_path"]
+                # Remove leading ./ if present
+                if section_path.startswith("./"):
+                    section_path = section_path[2:]
+                # Remove books/{book_name}/ prefix if present (assets endpoint adds this)
+                if section_path.startswith("books/"):
+                    # Format: books/{book_name}/images/... -> images/...
+                    parts = section_path.split("/", 2)  # Split into ['books', 'book_name', 'rest']
+                    if len(parts) >= 3:
+                        section_path = parts[2]
+                config["section_image_url"] = f"/api/v1/books/{book_id}/assets/{section_path}"
+
+            # Convert audio_extra.path to full API URL if present
+            if "audio_extra" in config and isinstance(config["audio_extra"], dict):
+                audio_extra = config["audio_extra"]
+                if "path" in audio_extra and audio_extra["path"]:
+                    audio_path = audio_extra["path"]
+                    # Remove leading ./ if present
+                    if audio_path.startswith("./"):
+                        audio_path = audio_path[2:]
+                    # Remove books/{book_name}/ prefix if present
+                    if audio_path.startswith("books/"):
+                        parts = audio_path.split("/", 2)
+                        if len(parts) >= 3:
+                            audio_path = parts[2]
+                    config["audio_extra"]["url"] = f"/api/v1/books/{book_id}/media/{audio_path}"
             activity_markers.append(ActivityMarker(
                 id=activity.id,
                 title=activity.title,
                 activity_type=activity.activity_type,
                 section_index=activity.section_index,
-                coords=coords
+                coords=coords,
+                config=config
             ))
             total_activities += 1
 
@@ -841,7 +1003,10 @@ async def get_book_pages_detail(
             page_number=page_number,
             image_url=image_url,
             module_name=module_name,
-            activities=activity_markers
+            activities=activity_markers,
+            audio=audio_markers,
+            video=video_markers,
+            fill_answers=fill_markers,
         ))
 
     return BookPagesDetailResponse(
@@ -1224,3 +1389,80 @@ async def import_book_activities(
         "supported_imported": created_count,
         "unsupported_skipped": len(activity_data_list) - created_count,
     }
+
+
+# --- Story 29.3: Book Bundle Download ---
+
+
+VALID_PLATFORMS = {"mac", "win", "win7-8", "linux"}
+
+
+@router.post(
+    "/{book_id}/bundle",
+    response_model=BundleResponse,
+    summary="Request book bundle download URL",
+    description="Generates a download URL for a standalone app bundle of the book for the specified platform."
+)
+async def request_book_bundle(
+    *,
+    session: AsyncSessionDep,
+    book_id: int,
+    bundle_request: BundleRequest,
+    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
+) -> BundleResponse:
+    """
+    Request a standalone app bundle download URL for a book.
+
+    Story 29.3: Book Preview and Download Actions
+
+    This endpoint calls DCS to generate a signed download URL for the book bundle.
+    The bundle is a standalone application that can be run offline.
+
+    Platforms:
+    - mac: macOS application
+    - win: Windows 10/11 application
+    - win7-8: Windows 7/8 legacy application
+    - linux: Linux application
+
+    Access control:
+    - Admin: Can download all books
+    - Supervisor: Can download all books
+    - Publisher: Can download all books
+    - Teacher: Must have access through BookAssignment
+    """
+    # Validate platform
+    if bundle_request.platform not in VALID_PLATFORMS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid platform: {bundle_request.platform}. Must be one of: {', '.join(VALID_PLATFORMS)}"
+        )
+
+    # Verify access based on role
+    if current_user.role == UserRole.teacher:
+        await _verify_teacher_book_access(session, current_user, book_id)
+    else:
+        # Admin/Supervisor/Publisher - verify book exists in DCS
+        await _verify_book_exists(book_id)
+
+    # Request bundle from DCS
+    try:
+        dcs_client = await get_dream_storage_client()
+        bundle_data = await dcs_client.request_book_bundle(book_id, bundle_request.platform)
+
+        return BundleResponse(
+            download_url=bundle_data["download_url"],
+            file_name=bundle_data["file_name"],
+            file_size=bundle_data["file_size"],
+            expires_at=bundle_data.get("expires_at"),
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Failed to request bundle for book {book_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate download URL. Please try again later."
+        )

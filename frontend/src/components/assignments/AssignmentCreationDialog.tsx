@@ -157,6 +157,7 @@ export function AssignmentCreationDialog({
           id: Number(existingAssignment.book_id),
           dream_storage_id: existingAssignment.book_name,
           title: existingAssignment.book_title,
+          publisher_id: 0, // Not available in edit response, use placeholder
           publisher_name: existingAssignment.publisher_name,
           description: null,
           cover_image_url: existingAssignment.book_cover_url,

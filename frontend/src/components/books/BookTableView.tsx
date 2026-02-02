@@ -1,4 +1,4 @@
-import { BookOpen, Eye } from "lucide-react"
+import { BookOpen, Download, ExternalLink, Eye } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { getAuthenticatedCoverUrl } from "@/services/booksApi"
 import type { Book } from "@/types/book"
 
@@ -17,6 +23,8 @@ interface BookTableViewProps {
   books: Book[]
   onViewDetails?: (book: Book) => void
   onAssign?: (book: Book) => void
+  onOpenFlowbook?: (book: Book) => void
+  onDownload?: (book: Book) => void
   showAssignButton?: boolean
   showViewDetails?: boolean
 }
@@ -73,6 +81,8 @@ export function BookTableView({
   books,
   onViewDetails,
   onAssign,
+  onOpenFlowbook,
+  onDownload,
   showAssignButton = false,
   showViewDetails = true,
 }: BookTableViewProps) {
@@ -118,31 +128,72 @@ export function BookTableView({
                   <Badge variant="outline">{book.activity_count}</Badge>
                 </TableCell>
                 <TableCell className="text-right space-x-2">
-                  {showViewDetails && onViewDetails && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onViewDetails(book)
-                      }}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Details
-                    </Button>
-                  )}
-                  {showAssignButton && onAssign && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onAssign(book)
-                      }}
-                    >
-                      Assign
-                    </Button>
-                  )}
+                  <TooltipProvider>
+                    {onOpenFlowbook && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onOpenFlowbook(book)
+                            }}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Open with Flowbook</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {onDownload && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDownload(book)
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Download Book</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {showViewDetails && onViewDetails && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onViewDetails(book)
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Details
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>View Book Details</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {showAssignButton && onAssign && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onAssign(book)
+                        }}
+                      >
+                        Assign
+                      </Button>
+                    )}
+                  </TooltipProvider>
                 </TableCell>
               </TableRow>
             ))

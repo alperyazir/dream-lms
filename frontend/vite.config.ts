@@ -25,6 +25,6 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    allowedHosts: ['flowbook.uk'],
+    allowedHosts: ["flowbook.uk"],
   },
 })

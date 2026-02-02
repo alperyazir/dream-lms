@@ -13,10 +13,11 @@ import {
   Volume2,
   XCircle,
 } from "lucide-react"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { useSoundContext } from "@/hooks/useSoundEffects"
 import { cn } from "@/lib/utils"
 import type {
   SentenceBuilderResult,
@@ -43,12 +44,20 @@ export function SentenceBuilderResults({
 }: SentenceBuilderResultsProps) {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const { play: playSound } = useSoundContext()
 
   const correctCount = result.sentence_results.filter(
     (r) => r.is_correct,
   ).length
   const totalCount = result.total
   const percentage = result.percentage
+
+  // Play completion sound on mount
+  useEffect(() => {
+    if (percentage >= 60) {
+      playSound("complete")
+    }
+  }, [percentage, playSound])
 
   // Determine score color
   const getScoreColor = (pct: number) => {
@@ -92,56 +101,63 @@ export function SentenceBuilderResults({
   }, [])
 
   return (
-    <div className={cn("mx-auto flex max-w-2xl flex-col gap-6", !hideSummary && "p-4")}>
+    <div
+      className={cn(
+        "mx-auto flex max-w-2xl flex-col gap-6",
+        !hideSummary && "p-4",
+      )}
+    >
       {/* Score summary card - hidden when embedded */}
       {!hideSummary && (
-      <Card className="overflow-hidden shadow-lg">
-        <div
-          className={cn(
-            "p-6 text-center",
-            percentage >= 80
-              ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50"
-              : percentage >= 60
-                ? "bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/50 dark:to-amber-950/50"
-                : "bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/50 dark:to-rose-950/50",
-          )}
-        >
-          <h2 className="mb-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
-            Sentence Builder Complete!
-          </h2>
-          <p className="mb-2 text-sm text-muted-foreground">
-            {DIFFICULTY_LABELS[
-              result.difficulty as keyof typeof DIFFICULTY_LABELS
-            ] || result.difficulty}
-          </p>
-          <div className={cn("text-5xl font-bold", getScoreColor(percentage))}>
-            {correctCount}/{totalCount}
-          </div>
-          <p
+        <Card className="overflow-hidden shadow-lg">
+          <div
             className={cn(
-              "mt-1 text-2xl font-medium",
-              getScoreColor(percentage),
+              "p-6 text-center",
+              percentage >= 80
+                ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50"
+                : percentage >= 60
+                  ? "bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/50 dark:to-amber-950/50"
+                  : "bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/50 dark:to-rose-950/50",
             )}
           >
-            {percentage.toFixed(0)}%
-          </p>
-          <Progress
-            value={percentage}
-            className={cn(
-              "mx-auto mt-4 h-3 max-w-[200px]",
-              getProgressClass(percentage),
-            )}
-          />
+            <h2 className="mb-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
+              Sentence Builder Complete!
+            </h2>
+            <p className="mb-2 text-sm text-muted-foreground">
+              {DIFFICULTY_LABELS[
+                result.difficulty as keyof typeof DIFFICULTY_LABELS
+              ] || result.difficulty}
+            </p>
+            <div
+              className={cn("text-5xl font-bold", getScoreColor(percentage))}
+            >
+              {correctCount}/{totalCount}
+            </div>
+            <p
+              className={cn(
+                "mt-1 text-2xl font-medium",
+                getScoreColor(percentage),
+              )}
+            >
+              {percentage.toFixed(0)}%
+            </p>
+            <Progress
+              value={percentage}
+              className={cn(
+                "mx-auto mt-4 h-3 max-w-[200px]",
+                getProgressClass(percentage),
+              )}
+            />
 
-          <p className="mt-4 text-sm text-muted-foreground">
-            {percentage >= 80
-              ? "Excellent work! You've mastered sentence building."
-              : percentage >= 60
-                ? "Good effort! Keep practicing to improve."
-                : "Keep studying! Practice makes perfect."}
-          </p>
-        </div>
-      </Card>
+            <p className="mt-4 text-sm text-muted-foreground">
+              {percentage >= 80
+                ? "Excellent work! You've mastered sentence building."
+                : percentage >= 60
+                  ? "Good effort! Keep practicing to improve."
+                  : "Keep studying! Practice makes perfect."}
+            </p>
+          </div>
+        </Card>
       )}
 
       {/* Detailed results */}

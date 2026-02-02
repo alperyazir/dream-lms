@@ -74,7 +74,12 @@ export function WordBuilderResults({
   }
 
   return (
-    <div className={cn("mx-auto flex max-w-2xl flex-col gap-6", !hideSummary && "p-4")}>
+    <div
+      className={cn(
+        "mx-auto flex max-w-2xl flex-col gap-6",
+        !hideSummary && "p-4",
+      )}
+    >
       {/* Detailed results */}
       <div className="space-y-3">
         {!hideSummary && (
@@ -87,7 +92,9 @@ export function WordBuilderResults({
             <span className="font-medium text-gray-700 dark:text-gray-300">
               {result.correct_count}/{result.total} words correct
             </span>
-            <span className={cn("font-semibold", getScoreColor(result.percentage))}>
+            <span
+              className={cn("font-semibold", getScoreColor(result.percentage))}
+            >
               {result.percentage}%
             </span>
           </div>

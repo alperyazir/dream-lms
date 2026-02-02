@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
 } from "react"
+import { useSoundContext } from "@/hooks/useSoundEffects"
 import type { MatchTheWordsActivity } from "@/lib/mockData"
 import { getActivityImageUrl } from "@/services/booksApi"
 
@@ -65,6 +66,7 @@ export function MatchTheWordsPlayer({
   const dragCircleRefs = useRef<(HTMLDivElement | null)[]>([])
   const dropCircleRefs = useRef<(HTMLDivElement | null)[]>([])
   const validDropOccurred = useRef(false)
+  const { play: playSound } = useSoundContext()
 
   // Create invisible drag image once
   const invisibleDragImage = useRef<HTMLImageElement | null>(null)
@@ -218,6 +220,7 @@ export function MatchTheWordsPlayer({
 
   // Handle drag start
   const handleDragStart = (e: React.DragEvent, word: string, index: number) => {
+    playSound("drag")
     setDraggedWord(word)
     setDraggedIndex(index)
     validDropOccurred.current = false // Reset flag for new drag
@@ -281,6 +284,7 @@ export function MatchTheWordsPlayer({
     // Check if this drop circle is already occupied
     if (matchedSentences.has(sentenceIndex)) return
 
+    playSound("drop")
     validDropOccurred.current = true // Mark that a valid drop happened
 
     const newMatches = new Map(matches)

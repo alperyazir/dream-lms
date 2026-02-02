@@ -760,11 +760,18 @@ function TeacherStudentsPage() {
                 <Input
                   id="student-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder={autoGeneratePassword ? "Will be auto-generated" : "Enter password"}
+                  placeholder={
+                    autoGeneratePassword
+                      ? "Will be auto-generated"
+                      : "Enter password"
+                  }
                   value={newStudent.password || ""}
                   disabled={autoGeneratePassword}
                   onChange={(e) =>
-                    setNewStudent({ ...newStudent, password: e.target.value || undefined })
+                    setNewStudent({
+                      ...newStudent,
+                      password: e.target.value || undefined,
+                    })
                   }
                   className="pr-10"
                 />

@@ -46,6 +46,7 @@ export interface Book {
   id: number // Changed from string to number (DCS book ID)
   dream_storage_id: string
   title: string
+  publisher_id: number // DCS publisher ID for logo URL
   publisher_name: string
   description: string | null
   cover_image_url: string | null
@@ -199,6 +200,45 @@ export interface ActivityMarker {
   activity_type: ActivityType
   section_index: number
   coords: ActivityCoords | null
+  config: Record<string, unknown>
+}
+
+/**
+ * Audio marker for page viewer
+ */
+export interface AudioMarker {
+  id: string
+  src: string
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/**
+ * Video marker for page viewer
+ */
+export interface VideoMarker {
+  id: string
+  src: string
+  poster: string | null
+  subtitle_src: string | null
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/**
+ * Fill answer marker for page viewer (clickable answer areas)
+ */
+export interface FillAnswerMarker {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  text: string
 }
 
 /**
@@ -209,6 +249,9 @@ export interface PageDetail {
   image_url: string
   module_name: string
   activities: ActivityMarker[]
+  audio?: AudioMarker[]
+  video?: VideoMarker[]
+  fill_answers?: FillAnswerMarker[]
 }
 
 /**

@@ -65,7 +65,9 @@ export function AIGeneratingAnimation({
         <div className="text-center space-y-2">
           <h3 className="text-lg font-medium bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
             {getActivityMessage()}
-            <span className="inline-block w-6 text-left text-muted-foreground">{dots}</span>
+            <span className="inline-block w-6 text-left text-muted-foreground">
+              {dots}
+            </span>
           </h3>
           <p className="text-sm text-muted-foreground">
             This may take a few seconds

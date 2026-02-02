@@ -488,7 +488,9 @@ export function ActivityPlayer({
               if (userAnswer) {
                 try {
                   const userWords = JSON.parse(userAnswer)
-                  const userSentence = Array.isArray(userWords) ? userWords.join(" ") : userAnswer
+                  const userSentence = Array.isArray(userWords)
+                    ? userWords.join(" ")
+                    : userAnswer
                   // Compare with correct_sentence (string) or correct_order/words (array)
                   if (s.correct_sentence) {
                     if (userSentence === s.correct_sentence) {
@@ -496,7 +498,9 @@ export function ActivityPlayer({
                     }
                   } else {
                     const correctWords = s.correct_order || s.words
-                    if (JSON.stringify(userWords) === JSON.stringify(correctWords)) {
+                    if (
+                      JSON.stringify(userWords) === JSON.stringify(correctWords)
+                    ) {
                       correctCount++
                     }
                   }
@@ -523,15 +527,22 @@ export function ActivityPlayer({
         let correctCount = 0
 
         if (content?.words) {
-          content.words.forEach((w: { item_id?: string; word_id?: string; correct_word?: string; word?: string }) => {
-            // Support both item_id and word_id, and both correct_word and word
-            const wordId = w.item_id || w.word_id || ""
-            const correctWord = w.correct_word || w.word || ""
-            const userAnswer = userAnswers.get(wordId)
-            if (userAnswer?.toLowerCase() === correctWord?.toLowerCase()) {
-              correctCount++
-            }
-          })
+          content.words.forEach(
+            (w: {
+              item_id?: string
+              word_id?: string
+              correct_word?: string
+              word?: string
+            }) => {
+              // Support both item_id and word_id, and both correct_word and word
+              const wordId = w.item_id || w.word_id || ""
+              const correctWord = w.correct_word || w.word || ""
+              const userAnswer = userAnswers.get(wordId)
+              if (userAnswer?.toLowerCase() === correctWord?.toLowerCase()) {
+                correctCount++
+              }
+            },
+          )
           calculatedScore =
             content.words.length > 0
               ? Math.round((correctCount / content.words.length) * 100)
@@ -740,7 +751,7 @@ export function ActivityPlayer({
             const answerIndex = userAnswer?.startsWith("index:")
               ? parseInt(userAnswer.substring(6), 10)
               : parseInt(userAnswer || "", 10)
-            if (!isNaN(answerIndex) && answerIndex === q.correct_index) {
+            if (!Number.isNaN(answerIndex) && answerIndex === q.correct_index) {
               correctCount++
               correctSet.add(q.question_id)
             }
@@ -748,7 +759,10 @@ export function ActivityPlayer({
         )
       }
       score = {
-        score: totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+        score:
+          totalQuestions > 0
+            ? Math.round((correctCount / totalQuestions) * 100)
+            : 0,
         correct: correctCount,
         total: totalQuestions,
         breakdown: { activity_type: "ai_quiz" },
@@ -775,7 +789,10 @@ export function ActivityPlayer({
         )
       }
       score = {
-        score: totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+        score:
+          totalQuestions > 0
+            ? Math.round((correctCount / totalQuestions) * 100)
+            : 0,
         correct: correctCount,
         total: totalQuestions,
         breakdown: { activity_type: "vocabulary_quiz" },
@@ -817,7 +834,10 @@ export function ActivityPlayer({
               const answerIndex = userAnswer?.startsWith("index:")
                 ? parseInt(userAnswer.substring(6), 10)
                 : parseInt(userAnswer || "", 10)
-              if (!isNaN(answerIndex) && answerIndex === q.correct_index) {
+              if (
+                !Number.isNaN(answerIndex) &&
+                answerIndex === q.correct_index
+              ) {
                 correctCount++
                 correctSet.add(q.question_id)
               }
@@ -826,7 +846,10 @@ export function ActivityPlayer({
         )
       }
       score = {
-        score: totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+        score:
+          totalQuestions > 0
+            ? Math.round((correctCount / totalQuestions) * 100)
+            : 0,
         correct: correctCount,
         total: totalQuestions,
         breakdown: { activity_type: "reading_comprehension" },
@@ -855,7 +878,9 @@ export function ActivityPlayer({
             if (userAnswer) {
               try {
                 const userWords = JSON.parse(userAnswer)
-                const userSentence = Array.isArray(userWords) ? userWords.join(" ") : userAnswer
+                const userSentence = Array.isArray(userWords)
+                  ? userWords.join(" ")
+                  : userAnswer
                 if (s.correct_sentence) {
                   if (userSentence === s.correct_sentence) {
                     correctCount++
@@ -863,7 +888,9 @@ export function ActivityPlayer({
                   }
                 } else {
                   const correctWords = s.correct_order || s.words
-                  if (JSON.stringify(userWords) === JSON.stringify(correctWords)) {
+                  if (
+                    JSON.stringify(userWords) === JSON.stringify(correctWords)
+                  ) {
                     correctCount++
                     correctSet.add(sentenceId)
                   }
@@ -879,7 +906,10 @@ export function ActivityPlayer({
         )
       }
       score = {
-        score: totalSentences > 0 ? Math.round((correctCount / totalSentences) * 100) : 0,
+        score:
+          totalSentences > 0
+            ? Math.round((correctCount / totalSentences) * 100)
+            : 0,
         correct: correctCount,
         total: totalSentences,
         breakdown: { activity_type: "sentence_builder" },
@@ -894,20 +924,28 @@ export function ActivityPlayer({
       let totalWords = 0
 
       if (content?.words) {
-        content.words.forEach((w: { item_id?: string; word_id?: string; correct_word?: string; word?: string }) => {
-          const wordId = w.item_id || w.word_id || ""
-          const correctWord = w.correct_word || w.word || ""
-          const userAnswer = userAnswers.get(wordId)
-          totalWords++
+        content.words.forEach(
+          (w: {
+            item_id?: string
+            word_id?: string
+            correct_word?: string
+            word?: string
+          }) => {
+            const wordId = w.item_id || w.word_id || ""
+            const correctWord = w.correct_word || w.word || ""
+            const userAnswer = userAnswers.get(wordId)
+            totalWords++
 
-          if (userAnswer?.toLowerCase() === correctWord?.toLowerCase()) {
-            correctCount++
-            correctSet.add(wordId)
-          }
-        })
+            if (userAnswer?.toLowerCase() === correctWord?.toLowerCase()) {
+              correctCount++
+              correctSet.add(wordId)
+            }
+          },
+        )
       }
       score = {
-        score: totalWords > 0 ? Math.round((correctCount / totalWords) * 100) : 0,
+        score:
+          totalWords > 0 ? Math.round((correctCount / totalWords) * 100) : 0,
         correct: correctCount,
         total: totalWords,
         breakdown: { activity_type: "word_builder" },
@@ -960,7 +998,8 @@ export function ActivityPlayer({
       if (newAnswers instanceof Map && prevAnswers instanceof Map) {
         if (newAnswers.size !== prevAnswers.size) return newAnswers
         for (const [key, value] of newAnswers) {
-          if ((prevAnswers as Map<unknown, unknown>).get(key) !== value) return newAnswers
+          if ((prevAnswers as Map<unknown, unknown>).get(key) !== value)
+            return newAnswers
         }
         return prevAnswers // Same content, keep reference
       }

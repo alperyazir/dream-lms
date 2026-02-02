@@ -30,7 +30,6 @@ import type {
   ReadingComprehensionActivityPublic,
   ReadingComprehensionAnswer,
 } from "@/types/reading-comprehension"
-import { getDifficultyLabel } from "@/types/reading-comprehension"
 
 interface ReadingComprehensionPlayerProps {
   /** The activity to display */

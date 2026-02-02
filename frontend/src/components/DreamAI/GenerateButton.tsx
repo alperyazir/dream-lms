@@ -57,7 +57,10 @@ export function GenerateButton({
             <p className="text-sm text-muted-foreground">
               This may take up to {estimatedTime} seconds
             </p>
-            <Progress value={undefined} className="h-2 [&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-violet-500" />
+            <Progress
+              value={undefined}
+              className="h-2 [&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-violet-500"
+            />
           </div>
         )}
 

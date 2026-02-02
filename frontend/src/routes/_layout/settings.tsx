@@ -1,20 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
-import {
-  Bell,
-  Image,
-  Lock,
-  Mail,
-  Palette,
-  Shield,
-  User,
-} from "lucide-react"
+import { Bell, Image, Lock, Mail, Palette, Shield, User, Volume2 } from "lucide-react"
 import { FiSettings } from "react-icons/fi"
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import Appearance from "@/components/UserSettings/Appearance"
 import AvatarSelection from "@/components/UserSettings/AvatarSelection"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
 import NotificationSettings from "@/components/UserSettings/NotificationSettings"
+import SoundSettings from "@/components/UserSettings/SoundSettings"
 import UserInformation from "@/components/UserSettings/UserInformation"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -50,6 +43,12 @@ const tabsConfig = [
     component: NotificationSettings,
   },
   {
+    value: "sounds",
+    title: "Sounds",
+    icon: Volume2,
+    component: SoundSettings,
+  },
+  {
     value: "appearance",
     title: "Appearance",
     icon: Palette,
@@ -64,13 +63,30 @@ export const Route = createFileRoute("/_layout/settings")({
 // Helper to get role display info
 function getRoleInfo(role: string) {
   const roleMap: Record<string, { label: string; color: string }> = {
-    admin: { label: "Administrator", color: "bg-red-500/10 text-red-500 border-red-500/20" },
-    supervisor: { label: "Supervisor", color: "bg-orange-500/10 text-orange-500 border-orange-500/20" },
-    publisher: { label: "Publisher", color: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
-    teacher: { label: "Teacher", color: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
-    student: { label: "Student", color: "bg-primary/10 text-primary border-primary/20" },
+    admin: {
+      label: "Administrator",
+      color: "bg-red-500/10 text-red-500 border-red-500/20",
+    },
+    supervisor: {
+      label: "Supervisor",
+      color: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+    },
+    publisher: {
+      label: "Publisher",
+      color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+    },
+    teacher: {
+      label: "Teacher",
+      color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    },
+    student: {
+      label: "Student",
+      color: "bg-primary/10 text-primary border-primary/20",
+    },
   }
-  return roleMap[role] || { label: role, color: "bg-muted text-muted-foreground" }
+  return (
+    roleMap[role] || { label: role, color: "bg-muted text-muted-foreground" }
+  )
 }
 
 function UserSettings() {
@@ -89,12 +105,13 @@ function UserSettings() {
   })
 
   const roleInfo = getRoleInfo(currentUser.role || "student")
-  const initials = currentUser.full_name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U"
+  const initials =
+    currentUser.full_name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U"
 
   return (
     <PageContainer>
@@ -111,7 +128,10 @@ function UserSettings() {
             {/* Avatar */}
             <div className="relative">
               <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
-                <AvatarImage src={currentUser.avatar_url || undefined} alt={currentUser.full_name || "User"} />
+                <AvatarImage
+                  src={currentUser.avatar_url || undefined}
+                  alt={currentUser.full_name || "User"}
+                />
                 <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
                   {initials}
                 </AvatarFallback>

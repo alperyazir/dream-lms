@@ -7,11 +7,13 @@
  * - Filter options (publisher, activity type)
  * - Pagination
  * - Loading and empty states
+ * - Book opens in FlowbookViewer in new tab (Story 29.3)
+ * - Book download with platform selection (Story 29.3)
  */
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { FiBook } from "react-icons/fi"
 import { useDebouncedCallback } from "use-debounce"
 import { BookCard } from "@/components/books/BookCard"
@@ -22,6 +24,7 @@ import {
   LibraryFilters,
   type LibraryFiltersState,
 } from "@/components/library/LibraryFilters"
+import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
 import { useViewPreference } from "@/hooks/useViewPreference"
@@ -46,6 +49,9 @@ function TeacherBooksPage() {
   const navigate = useNavigate()
   // View preference from localStorage
   const [viewMode, setViewMode] = useViewPreference("teacher-library", "grid")
+
+  // State for download - Story 29.3
+  const [downloadBook, setDownloadBook] = useState<Book | null>(null)
 
   // Parse filters from URL
   const filters: LibraryFiltersState = useMemo(
@@ -102,6 +108,22 @@ function TeacherBooksPage() {
     const unique = [...new Set(books.map((b: Book) => b.publisher_name))]
     return unique.sort()
   }, [books])
+
+  // Handle open in FlowbookViewer - Opens in new tab
+  const handleOpenFlowbook = useCallback((book: Book) => {
+    // Open FlowbookViewer in a new tab
+    window.open(`/viewer/${book.id}`, "_blank")
+  }, [])
+
+  // Handle download click - Story 29.3
+  const handleDownload = useCallback((book: Book) => {
+    setDownloadBook(book)
+  }, [])
+
+  // Close download dialog - Story 29.3
+  const handleCloseDownload = useCallback(() => {
+    setDownloadBook(null)
+  }, [])
 
   return (
     <PageContainer>
@@ -167,7 +189,12 @@ function TeacherBooksPage() {
         (viewMode === "grid" ? (
           <div className="grid gap-6 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
             {books.map((book) => (
-              <BookCard key={book.id} book={book} />
+              <BookCard
+                key={book.id}
+                book={book}
+                onOpenFlowbook={handleOpenFlowbook}
+                onDownload={handleDownload}
+              />
             ))}
           </div>
         ) : (
@@ -181,8 +208,20 @@ function TeacherBooksPage() {
                 params: { bookId: String(book.id) },
               })
             }
+            onOpenFlowbook={handleOpenFlowbook}
+            onDownload={handleDownload}
           />
         ))}
+
+      {/* Platform Select Dialog for Download - Story 29.3 */}
+      {downloadBook && (
+        <PlatformSelectDialog
+          bookId={downloadBook.id}
+          bookTitle={downloadBook.title || ""}
+          isOpen={!!downloadBook}
+          onClose={handleCloseDownload}
+        />
+      )}
     </PageContainer>
   )
 }

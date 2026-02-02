@@ -517,7 +517,14 @@ export function MultiActivityPlayer({
     } finally {
       setIsSubmitting(false)
     }
-  }, [activities, activityStates, assignmentId, elapsedSeconds, onSubmitSuccess, toast])
+  }, [
+    activities,
+    activityStates,
+    assignmentId,
+    elapsedSeconds,
+    onSubmitSuccess,
+    toast,
+  ])
 
   // Confirm and submit assignment
   // Story 9.7: In preview mode, calculate local results without backend call
