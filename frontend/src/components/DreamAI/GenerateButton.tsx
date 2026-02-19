@@ -24,6 +24,10 @@ const ESTIMATED_TIMES: Record<ActivityType, number> = {
   vocabulary_quiz: 10,
   ai_quiz: 15,
   reading_comprehension: 20,
+  listening_quiz: 10,
+  listening_fill_blank: 10,
+  grammar_fill_blank: 10,
+  writing_fill_blank: 10,
   sentence_builder: 12,
   word_builder: 10,
 }

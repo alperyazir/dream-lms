@@ -25,6 +25,8 @@ export { GenerationOptions } from "./GenerationOptions"
 export { GenerationPreview, GenerationPreviewEmpty } from "./GenerationPreview"
 export { LanguageIndicator } from "./LanguageIndicator"
 export { LibraryFilters } from "./LibraryFilters"
+// Passage Audio Player (Edge TTS with word highlighting)
+export { PassageAudioPlayer } from "./PassageAudioPlayer"
 export { QuickAddButton } from "./QuickAddButton"
 export { ReadingComprehensionContainer } from "./ReadingComprehensionContainer"
 // Reading Comprehension (Story 27.10)
@@ -34,6 +36,12 @@ export { SentenceBuilderContainer } from "./SentenceBuilderContainer"
 export { SentenceBuilderForm } from "./SentenceBuilderForm"
 // Question Generator (Story 27.17)
 export { SourceSelector } from "./SourceSelector"
+// Skill Selection (Story 30.9)
+export { SkillCard } from "./SkillCard"
+export { SkillSelectionGrid } from "./SkillSelectionGrid"
+// Format Selection & Config (Story 30.10)
+export { FormatSelectionPanel } from "./FormatSelectionPanel"
+export { GenerationConfigPanel } from "./GenerationConfigPanel"
 // Vocabulary Explorer (Story 27.18)
 export { VocabularyFilters } from "./VocabularyFilters"
 export { VocabularyQuizContainer } from "./VocabularyQuizContainer"

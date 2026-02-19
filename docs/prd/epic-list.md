@@ -241,3 +241,37 @@ Enable admin, supervisor, publisher, and teacher users to browse DCS book librar
 **Deliverable:** Privileged users can browse, preview, and download books from DCS libraries within LMS
 
 ---
+
+## Epic 30: Skill-Based AI Assignment Generation & Reporting
+
+**Estimated Effort:** 4-6 weeks | **Status:** Draft
+
+Restructure AI-generated assignments from activity-type-first to skill-first model. Teachers select a primary language skill (Listening, Reading, Writing, Vocabulary, Grammar) then choose an activity format. Includes Mix mode for balanced multi-skill assignments and full skill-based analytics (radar charts, heatmaps, trend tracking).
+
+**What Currently Exists:** Epic 27 DreamAI with 5 activity types (vocabulary_quiz, ai_quiz, reading_comprehension, sentence_builder, word_builder), no skill classification
+**What We Build:** Skill-first generation flow + new formats (Listening Quiz/Fill-blank, Grammar Fill-blank, Writing variants) + Mix mode + skill-based reporting
+
+**Dependencies:** Epic 27 (DreamAI), DCS AI-Data Pipeline, TTS Provider Layer
+
+**Stories:**
+- 30.1: Skill Category & Activity Format Data Model
+- 30.2: Extend Assignment Model for Skill Classification
+- 30.3: Refactor AI Generation API to Skill-First Model
+- 30.4: Listening Skill — Quiz Format (Audio + MCQ)
+- 30.5: Listening Skill — Fill-in-the-Blank Format
+- 30.6: Grammar Skill — Fill-in-the-Blank Format
+- 30.7: Writing Skill — Sentence Builder & Fill-Blank Formats
+- 30.8: Mix Mode Generation
+- 30.9: Skill Selection Step UI
+- 30.10: Format Selection & Configuration Step
+- 30.11: Activity Player Updates for New Formats
+- 30.12: Skill Score Attribution Engine
+- 30.13: Assignment Skill Breakdown View (Teacher)
+- 30.14: Student Skill Profile with Radar Chart
+- 30.15: Class Skill Heatmap (Teacher)
+- 30.16: Skill Trend Over Time (Teacher & Student)
+- 30.17: Student Skill Summary (Student-Facing)
+
+**Deliverable:** Pedagogically-driven AI assignment generation with skill-based reporting, enabling targeted language skill development and proficiency tracking
+
+---

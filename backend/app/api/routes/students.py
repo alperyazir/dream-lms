@@ -51,6 +51,17 @@ from app.schemas.student_import import (
     ImportRowStatus,
     ImportValidationResponse,
 )
+from app.models import (
+    SkillCategory,
+    StudentSkillScore,
+)
+from app.schemas.skill import (
+    SkillProfileItem,
+    SkillTrendLine,
+    SkillTrendPoint,
+    StudentSkillProfileResponse,
+    StudentSkillTrendsResponse,
+)
 from app.services import analytics_service, feedback_service
 from app.services.book_service_v2 import get_book_service
 from app.utils import (
@@ -1474,3 +1485,389 @@ def download_credentials(
             "Content-Disposition": f"attachment; filename=student_credentials_{timestamp}.xlsx"
         },
     )
+
+
+# =============================================================================
+# Student Skill Profile Endpoints (Story 30.14)
+# =============================================================================
+
+
+async def _build_skill_profile(
+    student_id: uuid.UUID,
+    student_name: str,
+    session: AsyncSessionDep,
+) -> StudentSkillProfileResponse:
+    """Build skill profile for a student from StudentSkillScore data."""
+    from sqlalchemy import case, distinct
+
+    # Count total AI assignments completed (assignments with skill scores)
+    total_query = await session.execute(
+        select(func.count(distinct(StudentSkillScore.assignment_id)))
+        .where(StudentSkillScore.student_id == student_id)
+    )
+    total_ai_assignments = total_query.scalar() or 0
+
+    # Get all active skills to show all 5 axes even if no data
+    skills_result = await session.execute(
+        select(SkillCategory).where(SkillCategory.is_active == True)
+    )
+    all_skills = skills_result.scalars().all()
+
+    # Get aggregated scores per skill
+    scores_query = await session.execute(
+        select(
+            StudentSkillScore.skill_id,
+            func.sum(StudentSkillScore.attributed_score).label("total_score"),
+            func.sum(StudentSkillScore.attributed_max_score).label("total_max"),
+            func.count().label("data_points"),
+        )
+        .where(StudentSkillScore.student_id == student_id)
+        .group_by(StudentSkillScore.skill_id)
+    )
+    score_map = {}
+    for row in scores_query.all():
+        score_map[row.skill_id] = {
+            "total_score": float(row.total_score),
+            "total_max": float(row.total_max),
+            "data_points": int(row.data_points),
+        }
+
+    # Build trend data for skills with enough data points
+    trend_map: dict[uuid.UUID, str | None] = {}
+    for skill_id, data in score_map.items():
+        if data["data_points"] >= 6:
+            # Get last 6 scores ordered by recorded_at
+            trend_query = await session.execute(
+                select(
+                    StudentSkillScore.attributed_score,
+                    StudentSkillScore.attributed_max_score,
+                )
+                .where(
+                    StudentSkillScore.student_id == student_id,
+                    StudentSkillScore.skill_id == skill_id,
+                )
+                .order_by(StudentSkillScore.recorded_at.desc())
+                .limit(6)
+            )
+            recent_scores = trend_query.all()
+            if len(recent_scores) >= 6:
+                # Recent 3 vs previous 3
+                recent_3 = [
+                    (s.attributed_score / s.attributed_max_score * 100)
+                    if s.attributed_max_score > 0 else 0
+                    for s in recent_scores[:3]
+                ]
+                prev_3 = [
+                    (s.attributed_score / s.attributed_max_score * 100)
+                    if s.attributed_max_score > 0 else 0
+                    for s in recent_scores[3:6]
+                ]
+                recent_avg = sum(recent_3) / 3
+                prev_avg = sum(prev_3) / 3
+                diff = recent_avg - prev_avg
+                if diff > 5:
+                    trend_map[skill_id] = "improving"
+                elif diff < -5:
+                    trend_map[skill_id] = "declining"
+                else:
+                    trend_map[skill_id] = "stable"
+            else:
+                trend_map[skill_id] = None
+        else:
+            trend_map[skill_id] = None
+
+    # Build profile items
+    profile_items: list[SkillProfileItem] = []
+    for skill in all_skills:
+        data = score_map.get(skill.id)
+        if data and data["data_points"] > 0:
+            dp = data["data_points"]
+            proficiency = (
+                (data["total_score"] / data["total_max"] * 100)
+                if data["total_max"] > 0 else None
+            )
+            if dp < 3:
+                confidence = "insufficient"
+                proficiency = None  # Not enough data to show
+            elif dp <= 5:
+                confidence = "low"
+            elif dp <= 10:
+                confidence = "moderate"
+            else:
+                confidence = "high"
+        else:
+            dp = 0
+            proficiency = None
+            confidence = "insufficient"
+
+        profile_items.append(SkillProfileItem(
+            skill_id=skill.id,
+            skill_name=skill.name,
+            skill_slug=skill.slug,
+            skill_color=skill.color,
+            skill_icon=skill.icon,
+            proficiency=round(proficiency, 1) if proficiency is not None else None,
+            data_points=dp,
+            confidence=confidence,
+            trend=trend_map.get(skill.id),
+        ))
+
+    return StudentSkillProfileResponse(
+        student_id=student_id,
+        student_name=student_name,
+        skills=profile_items,
+        total_ai_assignments_completed=total_ai_assignments,
+    )
+
+
+@router.get(
+    "/me/skill-profile",
+    response_model=StudentSkillProfileResponse,
+    summary="Get own skill profile (Story 30.14)",
+)
+async def get_my_skill_profile(
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.student),
+) -> StudentSkillProfileResponse:
+    """
+    Get skill profile for the authenticated student.
+
+    Returns radar chart data with per-skill proficiency, confidence, and trend.
+    """
+    result = await session.execute(
+        select(Student).where(Student.user_id == current_user.id)
+    )
+    student = result.scalar_one_or_none()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found"
+        )
+
+    return await _build_skill_profile(
+        student_id=student.id,
+        student_name=current_user.full_name,
+        session=session,
+    )
+
+
+@router.get(
+    "/{student_id}/skill-profile",
+    response_model=StudentSkillProfileResponse,
+    summary="Get student skill profile (Story 30.14)",
+)
+async def get_student_skill_profile(
+    student_id: uuid.UUID,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),
+) -> StudentSkillProfileResponse:
+    """
+    Get skill profile for a student.
+
+    **Authorization:** Teacher must have access to student via their classes.
+    Admin/Supervisor have full access.
+    """
+    # Verify student exists
+    student_result = await session.execute(
+        select(Student, User)
+        .join(User, Student.user_id == User.id)
+        .where(Student.id == student_id)
+    )
+    row = student_result.first()
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+    student, student_user = row
+
+    # Teacher access check
+    if current_user.role == UserRole.teacher:
+        teacher_result = await session.execute(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        )
+        teacher = teacher_result.scalar_one_or_none()
+
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Teacher record not found"
+            )
+
+        access_check = await session.execute(
+            select(ClassStudent.id)
+            .join(Class, ClassStudent.class_id == Class.id)
+            .where(
+                Class.teacher_id == teacher.id,
+                ClassStudent.student_id == student_id,
+            )
+            .limit(1)
+        )
+        if access_check.scalar_one_or_none() is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this student's data"
+            )
+
+    return await _build_skill_profile(
+        student_id=student.id,
+        student_name=student_user.full_name,
+        session=session,
+    )
+
+
+# =============================================================================
+# Student Skill Trend Endpoints (Story 30.16)
+# =============================================================================
+
+
+async def _build_skill_trends(
+    student_id: uuid.UUID,
+    period: str,
+    session: AsyncSessionDep,
+) -> StudentSkillTrendsResponse:
+    """Build skill trend lines for a student."""
+    from datetime import timedelta
+
+    # Calculate start date from period
+    now = datetime.now(UTC)
+    if period == "30d":
+        start_date = now - timedelta(days=30)
+    elif period == "3m":
+        start_date = now - timedelta(days=90)
+    elif period == "semester":
+        # Academic semester: Fall=Sep-Jan, Spring=Feb-Jun
+        month = now.month
+        if 2 <= month <= 6:
+            start_date = now.replace(month=2, day=1, hour=0, minute=0, second=0)
+        elif 9 <= month <= 12:
+            start_date = now.replace(month=9, day=1, hour=0, minute=0, second=0)
+        else:  # Jan
+            start_date = now.replace(year=now.year - 1, month=9, day=1, hour=0, minute=0, second=0)
+    else:  # "all"
+        start_date = datetime(2000, 1, 1, tzinfo=UTC)
+
+    # Get all active skills
+    skills_result = await session.execute(
+        select(SkillCategory).where(SkillCategory.is_active == True)
+    )
+    all_skills = {s.id: s for s in skills_result.scalars().all()}
+
+    # Query scores with assignment names
+    query = (
+        select(
+            StudentSkillScore.skill_id,
+            StudentSkillScore.attributed_score,
+            StudentSkillScore.attributed_max_score,
+            StudentSkillScore.recorded_at,
+            StudentSkillScore.cefr_level,
+            Assignment.title.label("assignment_name"),
+        )
+        .join(Assignment, StudentSkillScore.assignment_id == Assignment.id)
+        .where(
+            StudentSkillScore.student_id == student_id,
+            StudentSkillScore.recorded_at >= start_date,
+        )
+        .order_by(StudentSkillScore.recorded_at.asc())
+    )
+    result = await session.execute(query)
+    rows = result.all()
+
+    # Group by skill
+    skill_points: dict[uuid.UUID, list[SkillTrendPoint]] = {
+        sid: [] for sid in all_skills
+    }
+    for row in rows:
+        if row.skill_id not in all_skills:
+            continue
+        score = (
+            (row.attributed_score / row.attributed_max_score * 100)
+            if row.attributed_max_score > 0 else 0
+        )
+        skill_points[row.skill_id].append(SkillTrendPoint(
+            date=row.recorded_at.strftime("%Y-%m-%d"),
+            score=round(score, 1),
+            assignment_name=row.assignment_name,
+            cefr_level=row.cefr_level,
+        ))
+
+    # Build trend lines
+    trends: list[SkillTrendLine] = []
+    for skill_id, skill in all_skills.items():
+        points = skill_points[skill_id]
+        trends.append(SkillTrendLine(
+            skill_id=skill_id,
+            skill_name=skill.name,
+            skill_slug=skill.slug,
+            skill_color=skill.color,
+            data_points=points,
+            has_sufficient_data=len(points) >= 3,
+        ))
+
+    return StudentSkillTrendsResponse(
+        student_id=student_id,
+        period=period,
+        trends=trends,
+    )
+
+
+@router.get(
+    "/me/skill-trends",
+    response_model=StudentSkillTrendsResponse,
+    summary="Get own skill trends (Story 30.16)",
+)
+async def get_my_skill_trends(
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.student),
+    period: str = Query(default="3m", description="Time period: 30d, 3m, semester, all"),
+) -> StudentSkillTrendsResponse:
+    """Get skill trend lines for the authenticated student."""
+    result = await session.execute(
+        select(Student).where(Student.user_id == current_user.id)
+    )
+    student = result.scalar_one_or_none()
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student record not found")
+
+    return await _build_skill_trends(student.id, period, session)
+
+
+@router.get(
+    "/{student_id}/skill-trends",
+    response_model=StudentSkillTrendsResponse,
+    summary="Get student skill trends (Story 30.16)",
+)
+async def get_student_skill_trends(
+    student_id: uuid.UUID,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),
+    period: str = Query(default="3m", description="Time period: 30d, 3m, semester, all"),
+) -> StudentSkillTrendsResponse:
+    """Get skill trend lines for a student. Teacher must have access via classes."""
+    # Verify student exists
+    student_result = await session.execute(
+        select(Student).where(Student.id == student_id)
+    )
+    if not student_result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+
+    # Teacher access check
+    if current_user.role == UserRole.teacher:
+        teacher_result = await session.execute(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        )
+        teacher = teacher_result.scalar_one_or_none()
+        if not teacher:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Teacher record not found")
+
+        access_check = await session.execute(
+            select(ClassStudent.id)
+            .join(Class, ClassStudent.class_id == Class.id)
+            .where(Class.teacher_id == teacher.id, ClassStudent.student_id == student_id)
+            .limit(1)
+        )
+        if access_check.scalar_one_or_none() is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this student's data")
+
+    return await _build_skill_trends(student_id, period, session)

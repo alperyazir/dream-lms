@@ -16,13 +16,19 @@ import type {
   CircleActivity,
   DragDropPictureActivity,
   DragDropPictureGroupActivity,
+  // Story 30.11: New skill-based activity types for scoring
+  GrammarFillBlankActivity,
+  ListeningFillBlankActivity,
+  ListeningQuizActivity,
   MatchTheWordsActivity,
   PuzzleFindWordsActivity,
   ReadingComprehensionActivity,
   SentenceBuilderActivity,
   VocabularyQuizActivity,
   WordBuilderActivity,
+  WritingFillBlankActivity,
 } from "@/lib/mockData"
+import { isAnswerAcceptable } from "@/lib/answerMatching"
 import {
   scoreCircle,
   scoreDragDrop,
@@ -46,6 +52,13 @@ import { SentenceBuilderPlayerAdapter } from "./SentenceBuilderPlayerAdapter"
 // Story 27.20: AI-generated activity player adapters
 import { VocabularyQuizPlayerAdapter } from "./VocabularyQuizPlayerAdapter"
 import { WordBuilderPlayerAdapter } from "./WordBuilderPlayerAdapter"
+// Story 30.11: New skill-based activity player adapters
+import { GrammarFillBlankPlayerAdapter } from "./GrammarFillBlankPlayerAdapter"
+import { ListeningFillBlankPlayerAdapter } from "./ListeningFillBlankPlayerAdapter"
+import { ListeningQuizPlayerAdapter } from "./ListeningQuizPlayerAdapter"
+import { WritingFillBlankPlayerAdapter } from "./WritingFillBlankPlayerAdapter"
+import { ListeningSentenceBuilderPlayerAdapter } from "./ListeningSentenceBuilderPlayerAdapter"
+import { ListeningWordBuilderPlayerAdapter } from "./ListeningWordBuilderPlayerAdapter"
 
 interface ActivityPlayerProps {
   activityConfig: ActivityConfig
@@ -67,6 +80,11 @@ interface ActivityPlayerProps {
     | "reading_comprehension"
     | "sentence_builder"
     | "word_builder"
+    // Story 30.11: New skill-based activity types
+    | "listening_quiz"
+    | "listening_fill_blank"
+    | "grammar_fill_blank"
+    | "writing_fill_blank"
   timeLimit?: number // minutes
   onExit: () => void
   initialProgress?: Record<string, any> | null // Story 4.8: Saved progress from backend
@@ -136,7 +154,12 @@ export function restoreProgressFromJson(
       activityType === "ai_quiz" ||
       activityType === "reading_comprehension" ||
       activityType === "sentence_builder" ||
-      activityType === "word_builder"
+      activityType === "word_builder" ||
+      // Story 30.11: New skill-based types
+      activityType === "listening_quiz" ||
+      activityType === "listening_fill_blank" ||
+      activityType === "grammar_fill_blank" ||
+      activityType === "writing_fill_blank"
     ) {
       // Convert object back to Map<string, string>
       const map = new Map<string, string>(
@@ -549,6 +572,192 @@ export function ActivityPlayer({
               : 0
         }
         answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "listening_quiz") {
+        // Story 30.11: Listening Quiz scoring (MCQ with correct_index)
+        const config = activityConfig as ListeningQuizActivity
+        const content = (config as any).content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (content?.questions) {
+          content.questions.forEach(
+            (q: { question_id: string; correct_index?: number }) => {
+              const userAnswer = userAnswers.get(q.question_id)
+              if (
+                userAnswer !== undefined &&
+                parseInt(userAnswer, 10) === q.correct_index
+              ) {
+                correctCount++
+              }
+            },
+          )
+          calculatedScore =
+            content.questions.length > 0
+              ? Math.round((correctCount / content.questions.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "listening_fill_blank") {
+        // Story 30.11: Listening Fill-blank scoring
+        const config = activityConfig as ListeningFillBlankActivity
+        const content = (config as any).content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (content?.items) {
+          content.items.forEach(
+            (item: {
+              item_id: string
+              missing_word?: string
+              missing_words?: string[]
+              acceptable_answers?: string[] | string[][]
+            }) => {
+              const userAnswer = userAnswers.get(item.item_id)
+              if (!userAnswer) return
+
+              // Multi-blank: missing_words + acceptable_answers as array of arrays
+              if (item.missing_words && item.missing_words.length > 0) {
+                let filledWords: string[] = []
+                try { filledWords = JSON.parse(userAnswer) } catch { return }
+                if (!Array.isArray(filledWords)) return
+                const allCorrect = item.missing_words.every((word, idx) => {
+                  const filled = filledWords[idx]
+                  if (!filled) return false
+                  const perBlank = Array.isArray(item.acceptable_answers?.[idx])
+                    ? (item.acceptable_answers[idx] as string[])
+                    : []
+                  const acceptable = perBlank.length > 0 ? perBlank : [word]
+                  return isAnswerAcceptable(filled, acceptable)
+                })
+                if (allCorrect) correctCount++
+              } else if (item.missing_word) {
+                // Legacy single-blank fallback
+                const allAcceptable = [
+                  item.missing_word,
+                  ...((item.acceptable_answers as string[]) || []),
+                ]
+                if (isAnswerAcceptable(userAnswer, allAcceptable)) {
+                  correctCount++
+                }
+              }
+            },
+          )
+          calculatedScore =
+            content.items.length > 0
+              ? Math.round((correctCount / content.items.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "grammar_fill_blank") {
+        // Story 30.11: Grammar Fill-blank scoring
+        const config = activityConfig as GrammarFillBlankActivity
+        const content = (config as any).content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (content?.items) {
+          content.items.forEach(
+            (item: { item_id: string; correct_answer?: string }) => {
+              const userAnswer = userAnswers.get(item.item_id)
+              if (userAnswer && item.correct_answer) {
+                if (isAnswerAcceptable(userAnswer, [item.correct_answer])) {
+                  correctCount++
+                }
+              }
+            },
+          )
+          calculatedScore =
+            content.items.length > 0
+              ? Math.round((correctCount / content.items.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "writing_fill_blank") {
+        // Story 30.11: Writing Fill-blank scoring
+        const config = activityConfig as WritingFillBlankActivity
+        const content = (config as any).content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (content?.items) {
+          content.items.forEach(
+            (item: {
+              item_id: string
+              correct_answer?: string
+              acceptable_answers?: string[]
+            }) => {
+              const userAnswer = userAnswers.get(item.item_id)
+              if (userAnswer && item.correct_answer) {
+                const allAcceptable = [
+                  item.correct_answer,
+                  ...(item.acceptable_answers || []),
+                ]
+                if (isAnswerAcceptable(userAnswer, allAcceptable)) {
+                  correctCount++
+                }
+              }
+            },
+          )
+          calculatedScore =
+            content.items.length > 0
+              ? Math.round((correctCount / content.items.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "listening_sentence_builder") {
+        // Listening Sentence Builder scoring
+        const content = (activityConfig as any).content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (content?.sentences) {
+          content.sentences.forEach(
+            (item: { item_id: string; correct_sentence: string; words: string[] }) => {
+              const userAnswer = userAnswers.get(item.item_id)
+              if (!userAnswer) return
+              try {
+                const placedWords = JSON.parse(userAnswer)
+                if (!Array.isArray(placedWords)) return
+                const correctWords = item.correct_sentence.split(/\s+/)
+                if (
+                  placedWords.length === correctWords.length &&
+                  placedWords.every((w: string, i: number) => w === correctWords[i])
+                ) {
+                  correctCount++
+                }
+              } catch { /* ignore */ }
+            },
+          )
+          calculatedScore =
+            content.sentences.length > 0
+              ? Math.round((correctCount / content.sentences.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "listening_word_builder") {
+        // Listening Word Builder scoring
+        const content = (activityConfig as any).content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (content?.words) {
+          content.words.forEach(
+            (item: { item_id: string; correct_word: string }) => {
+              const userAnswer = userAnswers.get(item.item_id)
+              if (
+                userAnswer &&
+                userAnswer.toLowerCase() === item.correct_word.toLowerCase()
+              ) {
+                correctCount++
+              }
+            },
+          )
+          calculatedScore =
+            content.words.length > 0
+              ? Math.round((correctCount / content.words.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
       }
 
       // Report score to parent using ref (avoids infinite loop)
@@ -951,6 +1160,236 @@ export function ActivityPlayer({
         breakdown: { activity_type: "word_builder" },
       }
       answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "listening_quiz") {
+      // Story 30.11: Listening Quiz scoring (MCQ with correct_index)
+      const config = activityConfig as ListeningQuizActivity
+      const content = (config as any).content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalQuestions = 0
+
+      if (content?.questions) {
+        content.questions.forEach(
+          (q: { question_id: string; correct_index?: number }) => {
+            const userAnswer = userAnswers.get(q.question_id)
+            totalQuestions++
+            if (
+              userAnswer !== undefined &&
+              parseInt(userAnswer, 10) === q.correct_index
+            ) {
+              correctCount++
+              correctSet.add(q.question_id)
+            }
+          },
+        )
+      }
+      score = {
+        score:
+          totalQuestions > 0
+            ? Math.round((correctCount / totalQuestions) * 100)
+            : 0,
+        correct: correctCount,
+        total: totalQuestions,
+        breakdown: { activity_type: "listening_quiz" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "listening_fill_blank") {
+      // Story 30.11: Listening Fill-blank scoring
+      const config = activityConfig as ListeningFillBlankActivity
+      const content = (config as any).content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalItems = 0
+
+      if (content?.items) {
+        content.items.forEach(
+          (item: {
+            item_id: string
+            missing_word?: string
+            missing_words?: string[]
+            acceptable_answers?: string[] | string[][]
+          }) => {
+            const userAnswer = userAnswers.get(item.item_id)
+            totalItems++
+            if (!userAnswer) return
+
+            // Multi-blank: missing_words + acceptable_answers as array of arrays
+            if (item.missing_words && item.missing_words.length > 0) {
+              let filledWords: string[] = []
+              try { filledWords = JSON.parse(userAnswer) } catch { return }
+              if (!Array.isArray(filledWords)) return
+              const allCorrect = item.missing_words.every((word, idx) => {
+                const filled = filledWords[idx]
+                if (!filled) return false
+                const perBlank = Array.isArray(item.acceptable_answers?.[idx])
+                  ? (item.acceptable_answers[idx] as string[])
+                  : []
+                const acceptable = perBlank.length > 0 ? perBlank : [word]
+                return isAnswerAcceptable(filled, acceptable)
+              })
+              if (allCorrect) {
+                correctCount++
+                correctSet.add(item.item_id)
+              }
+            } else if (item.missing_word) {
+              // Legacy single-blank fallback
+              const allAcceptable = [
+                item.missing_word,
+                ...((item.acceptable_answers as string[]) || []),
+              ]
+              if (isAnswerAcceptable(userAnswer, allAcceptable)) {
+                correctCount++
+                correctSet.add(item.item_id)
+              }
+            }
+          },
+        )
+      }
+      score = {
+        score:
+          totalItems > 0
+            ? Math.round((correctCount / totalItems) * 100)
+            : 0,
+        correct: correctCount,
+        total: totalItems,
+        breakdown: { activity_type: "listening_fill_blank" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "grammar_fill_blank") {
+      // Story 30.11: Grammar Fill-blank scoring
+      const config = activityConfig as GrammarFillBlankActivity
+      const content = (config as any).content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalItems = 0
+
+      if (content?.items) {
+        content.items.forEach(
+          (item: { item_id: string; correct_answer?: string }) => {
+            const userAnswer = userAnswers.get(item.item_id)
+            totalItems++
+            if (userAnswer && item.correct_answer) {
+              if (isAnswerAcceptable(userAnswer, [item.correct_answer])) {
+                correctCount++
+                correctSet.add(item.item_id)
+              }
+            }
+          },
+        )
+      }
+      score = {
+        score:
+          totalItems > 0
+            ? Math.round((correctCount / totalItems) * 100)
+            : 0,
+        correct: correctCount,
+        total: totalItems,
+        breakdown: { activity_type: "grammar_fill_blank" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "writing_fill_blank") {
+      // Story 30.11: Writing Fill-blank scoring
+      const config = activityConfig as WritingFillBlankActivity
+      const content = (config as any).content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalItems = 0
+
+      if (content?.items) {
+        content.items.forEach(
+          (item: {
+            item_id: string
+            correct_answer?: string
+            acceptable_answers?: string[]
+          }) => {
+            const userAnswer = userAnswers.get(item.item_id)
+            totalItems++
+            if (userAnswer && item.correct_answer) {
+              const allAcceptable = [
+                item.correct_answer,
+                ...(item.acceptable_answers || []),
+              ]
+              if (isAnswerAcceptable(userAnswer, allAcceptable)) {
+                correctCount++
+                correctSet.add(item.item_id)
+              }
+            }
+          },
+        )
+      }
+      score = {
+        score:
+          totalItems > 0
+            ? Math.round((correctCount / totalItems) * 100)
+            : 0,
+        correct: correctCount,
+        total: totalItems,
+        breakdown: { activity_type: "writing_fill_blank" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "listening_sentence_builder") {
+      const content = (activityConfig as any).content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalSentences = 0
+
+      if (content?.sentences) {
+        content.sentences.forEach(
+          (item: { item_id: string; correct_sentence: string }) => {
+            const userAnswer = userAnswers.get(item.item_id)
+            totalSentences++
+            if (userAnswer) {
+              try {
+                const placedWords = JSON.parse(userAnswer)
+                const correctWords = item.correct_sentence.split(/\s+/)
+                if (
+                  Array.isArray(placedWords) &&
+                  placedWords.length === correctWords.length &&
+                  placedWords.every((w: string, i: number) => w === correctWords[i])
+                ) {
+                  correctCount++
+                  correctSet.add(item.item_id)
+                }
+              } catch { /* ignore */ }
+            }
+          },
+        )
+      }
+      score = {
+        score: totalSentences > 0 ? Math.round((correctCount / totalSentences) * 100) : 0,
+        correct: correctCount,
+        total: totalSentences,
+        breakdown: { activity_type: "listening_sentence_builder" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "listening_word_builder") {
+      const content = (activityConfig as any).content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalWords = 0
+
+      if (content?.words) {
+        content.words.forEach(
+          (item: { item_id: string; correct_word: string }) => {
+            const userAnswer = userAnswers.get(item.item_id)
+            totalWords++
+            if (
+              userAnswer &&
+              userAnswer.toLowerCase() === item.correct_word.toLowerCase()
+            ) {
+              correctCount++
+              correctSet.add(item.item_id)
+            }
+          },
+        )
+      }
+      score = {
+        score: totalWords > 0 ? Math.round((correctCount / totalWords) * 100) : 0,
+        correct: correctCount,
+        total: totalWords,
+        breakdown: { activity_type: "listening_word_builder" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
     } else {
       // Mock score for other activity types (to be implemented)
       score = {
@@ -1206,6 +1645,97 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentWordIndex={currentQuestionIndex}
             onWordIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      // Story 30.11: New skill-based activity players
+      case "listening_quiz":
+        return (
+          <ListeningQuizPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "listening_fill_blank":
+        return (
+          <ListeningFillBlankPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "grammar_fill_blank":
+        return (
+          <GrammarFillBlankPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "writing_fill_blank":
+        return (
+          <WritingFillBlankPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "listening_sentence_builder":
+        return (
+          <ListeningSentenceBuilderPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "listening_word_builder":
+        return (
+          <ListeningWordBuilderPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
             onNavigationStateChange={onNavigationStateChange}
           />
         )

@@ -35,6 +35,11 @@ class ContentItemPublic(BaseModel):
     used_in_assignments: int = Field(default=0, description="Times used in assignments")
     is_shared: bool = Field(description="True if book-based (shared), False if material-based (private)")
     created_by: ContentCreator
+    # Skill classification (Epic 30 - Story 30.3)
+    skill_id: UUID | None = Field(default=None, description="SkillCategory ID if generated via V2")
+    skill_name: str | None = Field(default=None, description="Skill category name")
+    format_id: UUID | None = Field(default=None, description="ActivityFormat ID if generated via V2")
+    format_name: str | None = Field(default=None, description="Activity format name")
 
 
 class ContentItemDetail(ContentItemPublic):

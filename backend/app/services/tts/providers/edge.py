@@ -6,11 +6,13 @@ Supports Turkish and English languages with neural voices.
 """
 
 import asyncio
+import base64
 import logging
 import time
 from typing import ClassVar
 
 import edge_tts
+from pydantic import BaseModel
 
 from app.services.tts.base import (
     AudioFormat,
@@ -28,6 +30,36 @@ from app.services.tts.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class WordTimestamp(BaseModel):
+    """A single word with its start/end time in seconds."""
+
+    word: str
+    start: float
+    end: float
+
+
+class PassageAudioResult(BaseModel):
+    """Result of passage-level audio generation with word timestamps."""
+
+    audio_base64: str
+    word_timestamps: list[WordTimestamp]
+    duration_seconds: float
+    voice_id: str
+    latency_ms: int
+
+
+# Curated voices for natural reading narration
+READING_VOICES: list[dict[str, str]] = [
+    {"id": "en-US-JennyNeural", "name": "Jenny", "gender": "female", "accent": "US"},
+    {"id": "en-US-AriaNeural", "name": "Aria", "gender": "female", "accent": "US"},
+    {"id": "en-US-GuyNeural", "name": "Guy", "gender": "male", "accent": "US"},
+    {"id": "en-GB-SoniaNeural", "name": "Sonia", "gender": "female", "accent": "GB"},
+    {"id": "en-GB-RyanNeural", "name": "Ryan", "gender": "male", "accent": "GB"},
+]
+
+DEFAULT_READING_RATE = "-10%"
 
 
 class EdgeTTSProvider(TTSProvider):
@@ -394,3 +426,143 @@ class EdgeTTSProvider(TTSProvider):
             success_count=success_count,
             failure_count=failure_count,
         )
+
+    @staticmethod
+    def _attach_punctuation(
+        text: str, word_timestamps: list[WordTimestamp]
+    ) -> list[WordTimestamp]:
+        """
+        Walk through the original text and re-attach trailing punctuation
+        to each word timestamp. Edge TTS WordBoundary events emit bare words
+        (e.g. "Hello" instead of "Hello,"), so we recover punctuation here.
+        """
+        pos = 0
+        result: list[WordTimestamp] = []
+
+        for wt in word_timestamps:
+            # Find this word in the remaining text
+            idx = text.find(wt.word, pos)
+            if idx == -1:
+                # Try case-insensitive search
+                idx = text.lower().find(wt.word.lower(), pos)
+
+            if idx == -1:
+                result.append(wt)
+                continue
+
+            word_end = idx + len(wt.word)
+
+            # Capture trailing punctuation characters
+            trailing = ""
+            while word_end < len(text) and text[word_end] in '.,;:!?\'")-]}>…':
+                trailing += text[word_end]
+                word_end += 1
+
+            if trailing:
+                result.append(
+                    WordTimestamp(
+                        word=wt.word + trailing,
+                        start=wt.start,
+                        end=wt.end,
+                    )
+                )
+            else:
+                result.append(wt)
+
+            pos = word_end
+
+        return result
+
+    async def generate_passage_audio(
+        self,
+        text: str,
+        voice: str = "en-US-JennyNeural",
+        rate: str = DEFAULT_READING_RATE,
+    ) -> PassageAudioResult:
+        """
+        Generate narration audio for a passage with word-level timestamps.
+
+        Uses Edge TTS WordBoundary events to produce timing data suitable
+        for synchronized word highlighting in the UI.
+
+        Args:
+            text: The passage text to narrate.
+            voice: Edge TTS voice name (e.g. 'en-US-JennyNeural').
+            rate: Speech rate string (e.g. '-10%', '+0%').
+
+        Returns:
+            PassageAudioResult with base64 audio and word timestamps.
+        """
+        start_time = time.time()
+
+        try:
+            communicate = edge_tts.Communicate(
+                text,
+                voice,
+                rate=rate,
+                boundary="WordBoundary",
+            )
+
+            audio_chunks: list[bytes] = []
+            word_timestamps: list[WordTimestamp] = []
+
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    audio_chunks.append(chunk["data"])
+                elif chunk["type"] == "WordBoundary":
+                    # offset and duration are in 100-nanosecond ticks
+                    offset_sec = chunk["offset"] / 10_000_000
+                    duration_sec = chunk["duration"] / 10_000_000
+                    word_timestamps.append(
+                        WordTimestamp(
+                            word=chunk["text"],
+                            start=round(offset_sec, 3),
+                            end=round(offset_sec + duration_sec, 3),
+                        )
+                    )
+
+            audio_data = b"".join(audio_chunks)
+            latency_ms = int((time.time() - start_time) * 1000)
+
+            if not audio_data:
+                raise TTSAudioGenerationError(
+                    "Edge TTS returned empty audio data for passage",
+                    details={"text": text[:50], "voice": voice},
+                )
+
+            audio_b64 = base64.b64encode(audio_data).decode("utf-8")
+
+            # Reattach punctuation from original text to word timestamps
+            word_timestamps = self._attach_punctuation(text, word_timestamps)
+
+            duration_seconds = 0.0
+            if word_timestamps:
+                duration_seconds = word_timestamps[-1].end
+
+            logger.info(
+                f"Passage audio generated: {len(audio_data)} bytes, "
+                f"{len(word_timestamps)} words, voice={voice}, latency={latency_ms}ms"
+            )
+
+            return PassageAudioResult(
+                audio_base64=audio_b64,
+                word_timestamps=word_timestamps,
+                duration_seconds=round(duration_seconds, 3),
+                voice_id=voice,
+                latency_ms=latency_ms,
+            )
+
+        except TTSAudioGenerationError:
+            raise
+        except Exception as e:
+            error_str = str(e).lower()
+            if "connection" in error_str or "timeout" in error_str:
+                raise TTSConnectionError(
+                    f"Failed to connect to Edge TTS: {e}",
+                    details={"original_error": str(e)},
+                ) from e
+
+            raise TTSAudioGenerationError(
+                f"Edge TTS passage generation failed: {e}",
+                details={"text": text[:50], "voice": voice, "error": str(e)},
+            ) from e

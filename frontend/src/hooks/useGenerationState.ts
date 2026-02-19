@@ -17,8 +17,16 @@ export type ActivityType =
   | "vocabulary_quiz"
   | "ai_quiz"
   | "reading_comprehension"
+  | "listening_quiz"
+  | "listening_fill_blank"
+  | "grammar_fill_blank"
+  | "writing_fill_blank"
   | "sentence_builder"
   | "word_builder"
+  | "listening_sentence_builder"
+  | "listening_word_builder"
+  | "listening_sentence_builder"
+  | "listening_word_builder"
 
 export type GeneratedActivity =
   | AIQuiz
@@ -31,6 +39,10 @@ export interface GeneratorFormState {
   // Source (books only)
   bookId: number | null
   moduleIds: number[]
+
+  // Skill (Epic 30)
+  skillSlug: string | null
+  formatSlug: string | null
 
   // Activity
   activityType: ActivityType | null
@@ -48,6 +60,8 @@ export interface GenerationState {
 const DEFAULT_FORM_STATE: GeneratorFormState = {
   bookId: null,
   moduleIds: [],
+  skillSlug: null,
+  formatSlug: null,
   activityType: null,
   options: {},
 }
@@ -109,6 +123,27 @@ export function useGenerationState() {
   // Update module selection
   const setModuleIds = useCallback((moduleIds: number[]) => {
     setFormState((prev) => ({ ...prev, moduleIds }))
+  }, [])
+
+  // Update skill selection (Epic 30)
+  const setSkillSlug = useCallback((skillSlug: string | null) => {
+    setFormState((prev) => ({
+      ...prev,
+      skillSlug,
+      // Reset format and activity type when skill changes
+      formatSlug: null,
+      activityType: null,
+      options: {},
+    }))
+  }, [])
+
+  // Update format selection (Epic 30)
+  const setFormatSlug = useCallback((formatSlug: string | null) => {
+    setFormState((prev) => ({
+      ...prev,
+      formatSlug,
+      options: {},
+    }))
   }, [])
 
   // Update activity type
@@ -191,6 +226,8 @@ export function useGenerationState() {
     formState,
     setBookId,
     setModuleIds,
+    setSkillSlug,
+    setFormatSlug,
     setActivityType,
     setOptions,
     setOption,

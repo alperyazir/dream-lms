@@ -85,6 +85,7 @@ services:
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
       EMAILS_FROM_EMAIL: "noreply@example.com"
+      DREAM_CENTRAL_STORAGE_URL: "http://host.docker.internal:8081"
 
   # Using external MailHog instead - access web UI at http://localhost:8025
   # mailcatcher:
@@ -100,7 +101,7 @@ services:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+        - VITE_API_URL=
         - NODE_ENV=production
 
   playwright:

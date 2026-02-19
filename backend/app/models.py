@@ -396,6 +396,11 @@ class SetStudentPasswordRequest(SQLModel):
     password: str = Field(min_length=1, max_length=50)
 
 
+class ChangePublisherPasswordRequest(SQLModel):
+    """Request body for admin setting a publisher's password"""
+    password: str = Field(min_length=8, max_length=40)
+
+
 # Response for user creation endpoints with temporary password
 class UserCreationResponse(SQLModel):
     """Response schema for role-specific user creation endpoints.
@@ -932,6 +937,14 @@ class Assignment(AssignmentBase, table=True):
     activity_id: uuid.UUID | None = Field(default=None, foreign_key="activities.id", index=True, ondelete="CASCADE")
     # DCS book reference (no foreign key - books table removed)
     dcs_book_id: int = Field(index=True)
+    # Skill classification (Epic 30 - Story 30.2)
+    primary_skill_id: uuid.UUID | None = Field(
+        default=None, foreign_key="skill_categories.id", index=True
+    )
+    activity_format_id: uuid.UUID | None = Field(
+        default=None, foreign_key="activity_formats.id", index=True
+    )
+    is_mix_mode: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -942,6 +955,13 @@ class Assignment(AssignmentBase, table=True):
     assignment_students: list["AssignmentStudent"] = Relationship(back_populates="assignment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     # New relationship for multi-activity support
     assignment_activities: list["AssignmentActivity"] = Relationship(back_populates="assignment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    # Skill classification relationships (Epic 30)
+    primary_skill: Optional["SkillCategory"] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[Assignment.primary_skill_id]"}
+    )
+    activity_format: Optional["ActivityFormat"] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[Assignment.activity_format_id]"}
+    )
 
     @property
     def activities(self) -> list["Activity"]:
@@ -1776,6 +1796,10 @@ class TeacherGeneratedContent(SQLModel, table=True):
     title: str = Field(max_length=255)  # Generated activity title
     content: dict = Field(default_factory=dict, sa_column=Column(JSON))  # Activity data
 
+    # Skill classification (Epic 30 - Story 30.3)
+    skill_id: uuid.UUID | None = Field(default=None, foreign_key="skill_categories.id")
+    format_id: uuid.UUID | None = Field(default=None, foreign_key="activity_formats.id")
+
     # Usage tracking
     is_used: bool = Field(default=False)  # True if used in assignment
     assignment_id: uuid.UUID | None = Field(default=None)  # Link to assignment if used
@@ -1787,6 +1811,131 @@ class TeacherGeneratedContent(SQLModel, table=True):
     # Relationships
     teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
     material: "TeacherMaterial" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+
+
+# ============================================================================
+# Skill & Format Classification Models (Epic 30 - Story 30.1)
+# ============================================================================
+
+
+class SkillCategory(SQLModel, table=True):
+    """Language skill category for AI assignment classification."""
+    __tablename__ = "skill_categories"
+    __table_args__ = (
+        Index("ix_skill_categories_is_active", "is_active"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(unique=True, max_length=100)
+    slug: str = Field(unique=True, max_length=50, index=True)
+    description: str | None = Field(default=None, max_length=500)
+    icon: str = Field(max_length=50)  # Lucide icon name
+    color: str = Field(max_length=50)  # Tailwind color key
+    display_order: int = Field(default=0, ge=0)
+    is_active: bool = Field(default=True)
+    parent_id: uuid.UUID | None = Field(
+        default=None, foreign_key="skill_categories.id", ondelete="SET NULL"
+    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    format_combinations: list["SkillFormatCombination"] = Relationship(
+        back_populates="skill",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+
+
+class ActivityFormat(SQLModel, table=True):
+    """Activity format type for AI-generated assignments."""
+    __tablename__ = "activity_formats"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(unique=True, max_length=100)
+    slug: str = Field(unique=True, max_length=50, index=True)
+    description: str | None = Field(default=None, max_length=500)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    skill_combinations: list["SkillFormatCombination"] = Relationship(
+        back_populates="format",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+
+
+class SkillFormatCombination(SQLModel, table=True):
+    """Valid skill-format pairs with availability and prompt mapping."""
+    __tablename__ = "skill_format_combinations"
+    __table_args__ = (
+        UniqueConstraint("skill_id", "format_id", name="uq_skill_format"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    skill_id: uuid.UUID = Field(foreign_key="skill_categories.id", index=True, ondelete="CASCADE")
+    format_id: uuid.UUID = Field(foreign_key="activity_formats.id", index=True, ondelete="CASCADE")
+    is_available: bool = Field(default=True)
+    display_order: int = Field(default=0)
+    generation_prompt_key: str | None = Field(default=None, max_length=100)
+
+    # Relationships
+    skill: SkillCategory = Relationship(
+        back_populates="format_combinations",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    format: ActivityFormat = Relationship(
+        back_populates="skill_combinations",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+
+
+class StudentSkillScore(SQLModel, table=True):
+    """Attributed skill score record for a student's assignment completion.
+
+    Epic 30 - Story 30.12: Skill Score Attribution Engine.
+    Links student performance to specific language skills for proficiency reporting.
+    """
+
+    __tablename__ = "student_skill_scores"
+    __table_args__ = (
+        Index("ix_student_skill_scores_student_skill", "student_id", "skill_id"),
+        Index("ix_student_skill_scores_student_recorded", "student_id", "recorded_at"),
+        UniqueConstraint(
+            "assignment_student_id", "skill_id",
+            name="uq_student_skill_score_assignment_skill",
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    student_id: uuid.UUID = Field(
+        foreign_key="students.id", index=True, ondelete="CASCADE"
+    )
+    skill_id: uuid.UUID = Field(
+        foreign_key="skill_categories.id", index=True, ondelete="CASCADE"
+    )
+    assignment_id: uuid.UUID = Field(
+        foreign_key="assignments.id", index=True, ondelete="CASCADE"
+    )
+    assignment_student_id: uuid.UUID = Field(
+        foreign_key="assignment_students.id", index=True, ondelete="CASCADE"
+    )
+    attributed_score: float = Field(ge=0)
+    attributed_max_score: float = Field(ge=0)
+    weight: float = Field(default=1.0, ge=0, le=1.0)
+    cefr_level: str | None = Field(default=None, max_length=5)
+    recorded_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # Relationships
+    student: "Student" = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[StudentSkillScore.student_id]"}
+    )
+    skill: "SkillCategory" = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[StudentSkillScore.skill_id]"}
+    )
+    assignment: "Assignment" = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[StudentSkillScore.assignment_id]"}
+    )
+    assignment_student: "AssignmentStudent" = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[StudentSkillScore.assignment_student_id]"}
+    )
 
 
 class AIUsageLog(SQLModel, table=True):

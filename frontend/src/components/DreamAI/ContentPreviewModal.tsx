@@ -12,10 +12,13 @@ import {
   BookOpen,
   Check,
   FileText,
+  Headphones,
   Loader2,
+  Pencil,
   Plus,
   Save,
   Trash2,
+  X,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -43,7 +46,10 @@ import {
   getActivityTypeColorClasses,
   getActivityTypeConfig,
 } from "@/lib/activityTypeConfig"
+import { cn } from "@/lib/utils"
 import type { ContentItem } from "@/types/content-library"
+import { generatePassageAudio } from "@/services/passageAudioApi"
+import { PassageAudioPlayer } from "./PassageAudioPlayer"
 
 interface ContentPreviewModalProps {
   open: boolean
@@ -73,6 +79,9 @@ export function ContentPreviewModal({
   const [editedTitle, setEditedTitle] = useState("")
   const [editedContent, setEditedContent] = useState<Record<string, any>>({})
   const [hasChanges, setHasChanges] = useState(false)
+  const [isRegeneratingAudio, setIsRegeneratingAudio] = useState(false)
+  const [generatingLFBAudioIdx, setGeneratingLFBAudioIdx] = useState<number | null>(null)
+  const [editingLFBItemIdx, setEditingLFBItemIdx] = useState<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Scroll to bottom helper
@@ -337,10 +346,35 @@ export function ContentPreviewModal({
     scrollToBottom()
   }
 
-  // Reading comprehension passage
-  const updatePassage = (value: string) => {
-    setEditedContent({ ...editedContent, passage: value })
-    markChanged()
+  // Regenerate passage audio with a different voice
+  const handleRegenerateAudio = async (voiceId: string) => {
+    const passageText = editedContent.passage || ""
+    if (!passageText) return
+
+    try {
+      setIsRegeneratingAudio(true)
+      const audioResult = await generatePassageAudio({
+        text: passageText,
+        voice_id: voiceId,
+      })
+      setEditedContent({
+        ...editedContent,
+        passage_audio: {
+          audio_base64: audioResult.audio_base64,
+          word_timestamps: audioResult.word_timestamps,
+          duration_seconds: audioResult.duration_seconds,
+        },
+      })
+      markChanged()
+    } catch (err: any) {
+      toast({
+        title: "Audio regeneration failed",
+        description: err.response?.data?.detail || err.message || "Unknown error",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRegeneratingAudio(false)
+    }
   }
 
   // =========================================================================
@@ -404,9 +438,233 @@ export function ContentPreviewModal({
     scrollToBottom()
   }
 
+  // =========================================================================
+  // Listening Fill-Blank handlers (items with multi-blank + word bank)
+  // =========================================================================
+  /** Update a single listening fill-blank item with all derived fields */
+  const updateLFBItemFull = (idx: number, updatedItem: any) => {
+    const items = [...(editedContent.items || [])]
+    if (updatedItem.full_sentence && updatedItem.full_sentence !== items[idx]?.full_sentence) {
+      const lang = editedContent.language || "en"
+      updatedItem.audio_url = `/api/v1/ai/tts/audio?text=${encodeURIComponent(updatedItem.full_sentence)}&lang=${lang}`
+      updatedItem.audio_status = "ready"
+      updatedItem.audio_data = undefined
+    }
+    items[idx] = { ...items[idx], ...updatedItem }
+    setEditedContent({ ...editedContent, items })
+    markChanged()
+  }
+
+  /** Generate TTS audio for a specific listening fill-blank item */
+  const generateLFBAudio = async (idx: number) => {
+    const item = (editedContent.items || [])[idx]
+    if (!item?.full_sentence) return
+    try {
+      setGeneratingLFBAudioIdx(idx)
+      const audioResult = await generatePassageAudio({ text: item.full_sentence })
+      const items = [...(editedContent.items || [])]
+      items[idx] = {
+        ...items[idx],
+        audio_data: {
+          audio_base64: audioResult.audio_base64,
+          word_timestamps: audioResult.word_timestamps,
+          duration_seconds: audioResult.duration_seconds,
+        },
+        audio_status: "ready",
+      }
+      setEditedContent({ ...editedContent, items })
+      markChanged()
+    } catch {
+      // Silently handle - user can retry
+    } finally {
+      setGeneratingLFBAudioIdx(null)
+    }
+  }
+
+  const removeLFBItem = (idx: number) => {
+    const items = (editedContent.items || []).filter((_: any, i: number) => i !== idx)
+    setEditedContent({ ...editedContent, items, total_items: items.length })
+    markChanged()
+  }
+
+  const addLFBItem = () => {
+    const items = [
+      ...(editedContent.items || []),
+      {
+        item_id: `item_${Date.now()}`,
+        full_sentence: "",
+        display_sentence: "",
+        missing_words: [],
+        acceptable_answers: [],
+        word_bank: [],
+        audio_url: null,
+        audio_status: "pending",
+        difficulty: "A2",
+      },
+    ]
+    setEditedContent({ ...editedContent, items, total_items: items.length })
+    markChanged()
+    scrollToBottom()
+  }
+
   // Render content based on activity type
   const renderContent = () => {
     if (!detailedContent?.content) return null
+
+    // Listening Sentence Builder - audio + shuffled words
+    if (content.activity_type === "listening_sentence_builder") {
+      const sentences = editedContent.sentences || []
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-sm text-muted-foreground">
+              Sentences ({sentences.length})
+            </h4>
+          </div>
+          {sentences.map((sentence: any, idx: number) => (
+            <div key={idx} className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                  {idx + 1}
+                </span>
+                {isEditing ? (
+                  <Input
+                    value={sentence.correct_sentence || ""}
+                    onChange={(e) => {
+                      const newSentences = [...sentences]
+                      const text = e.target.value
+                      const words = text.split(/\s+/).filter(Boolean)
+                      const shuffled = [...words].sort(() => Math.random() - 0.5)
+                      if (JSON.stringify(shuffled) === JSON.stringify(words) && words.length >= 2) {
+                        [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]]
+                      }
+                      const lang = editedContent.language || "en"
+                      newSentences[idx] = {
+                        ...sentence,
+                        correct_sentence: text,
+                        words: shuffled,
+                        word_count: words.length,
+                        audio_url: text ? `/api/v1/ai/tts/audio?text=${encodeURIComponent(text)}&lang=${lang}` : null,
+                        audio_status: text ? "ready" : "pending",
+                      }
+                      setEditedContent({ ...editedContent, sentences: newSentences })
+                      markChanged()
+                    }}
+                    placeholder="Enter sentence..."
+                    className="h-8 text-sm flex-1"
+                  />
+                ) : (
+                  <span className="font-medium">{sentence.correct_sentence}</span>
+                )}
+                <Badge variant="outline" className="text-xs">{sentence.word_count || (sentence.words || []).length} words</Badge>
+              </div>
+
+              {/* Shuffled word cards */}
+              {sentence.words && sentence.words.length > 0 && (
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Shuffled Words</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sentence.words.map((word: string, wIdx: number) => (
+                      <span key={wIdx} className="px-2.5 py-1 rounded-md text-xs font-medium border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600">
+                        {word}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Listening Word Builder - audio + scrambled letters
+    if (content.activity_type === "listening_word_builder") {
+      const words = editedContent.words || []
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-sm text-muted-foreground">
+              Words ({words.length})
+            </h4>
+          </div>
+          {words.map((word: any, idx: number) => (
+            <div key={idx} className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                  {idx + 1}
+                </span>
+                {isEditing ? (
+                  <Input
+                    value={word.correct_word || ""}
+                    onChange={(e) => {
+                      const newWords = [...words]
+                      const text = e.target.value.toLowerCase().trim()
+                      const letters = text.split("")
+                      const scrambled = [...letters].sort(() => Math.random() - 0.5)
+                      if (JSON.stringify(scrambled) === JSON.stringify(letters) && letters.length >= 2) {
+                        [scrambled[0], scrambled[1]] = [scrambled[1], scrambled[0]]
+                      }
+                      const lang = editedContent.language || "en"
+                      newWords[idx] = {
+                        ...word,
+                        correct_word: text,
+                        letters: scrambled,
+                        letter_count: letters.length,
+                        audio_url: text ? `/api/v1/ai/tts/audio?text=${encodeURIComponent(text)}&lang=${lang}` : null,
+                        audio_status: text ? "ready" : "pending",
+                      }
+                      setEditedContent({ ...editedContent, words: newWords })
+                      markChanged()
+                    }}
+                    placeholder="Enter word..."
+                    className="h-8 text-sm font-medium w-48"
+                  />
+                ) : (
+                  <span className="font-medium text-lg">{word.correct_word}</span>
+                )}
+                <Badge variant="outline" className="text-xs">{word.letter_count || (word.letters || []).length} letters</Badge>
+              </div>
+
+              {/* Scrambled letter cards */}
+              {word.letters && word.letters.length > 0 && (
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Scrambled Letters</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {word.letters.map((letter: string, lIdx: number) => (
+                      <div key={lIdx} className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-primary/30 bg-primary/5 text-lg font-bold text-primary uppercase">
+                        {letter}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Definition */}
+              {isEditing ? (
+                <Input
+                  value={word.definition || ""}
+                  onChange={(e) => {
+                    const newWords = [...words]
+                    newWords[idx] = { ...word, definition: e.target.value }
+                    setEditedContent({ ...editedContent, words: newWords })
+                    markChanged()
+                  }}
+                  placeholder="Definition..."
+                  className="h-8 text-sm"
+                />
+              ) : (
+                word.definition && (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">Definition:</span> {word.definition}
+                  </p>
+                )
+              )}
+            </div>
+          ))}
+        </div>
+      )
+    }
 
     // Word Builder - show word with letters in cards
     if (content.activity_type === "word_builder") {
@@ -854,16 +1112,53 @@ export function ContentPreviewModal({
         <div className="space-y-4">
           {/* Passage */}
           <div className="space-y-2">
-            <h4 className="font-medium text-sm text-muted-foreground">
-              Passage
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-sm text-muted-foreground">
+                Passage
+              </h4>
+              {!isEditing && editedContent.passage_audio && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Pencil className="h-3 w-3" />
+                  Edit text
+                </button>
+              )}
+            </div>
             {isEditing ? (
-              <Textarea
-                value={passage}
-                onChange={(e) => updatePassage(e.target.value)}
-                rows={6}
-                placeholder="Enter the reading passage..."
-                className="resize-none"
+              <>
+                <Textarea
+                  value={passage}
+                  onChange={(e) => {
+                    if (editedContent.passage_audio) {
+                      // Remove stale audio when text changes
+                      const { passage_audio: _, ...rest } = editedContent
+                      setEditedContent({ ...rest, passage: e.target.value })
+                    } else {
+                      setEditedContent({ ...editedContent, passage: e.target.value })
+                    }
+                    markChanged()
+                  }}
+                  rows={6}
+                  placeholder="Enter the reading passage..."
+                  className="resize-none"
+                />
+                {!editedContent.passage_audio && (
+                  <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    Audio removed — regenerate after saving your edits.
+                  </div>
+                )}
+              </>
+            ) : editedContent.passage_audio ? (
+              <PassageAudioPlayer
+                audioBase64={editedContent.passage_audio.audio_base64}
+                wordTimestamps={editedContent.passage_audio.word_timestamps}
+                durationSeconds={editedContent.passage_audio.duration_seconds}
+                onRegenerateAudio={handleRegenerateAudio}
+                isRegenerating={isRegeneratingAudio}
               />
             ) : (
               <div className="rounded-lg border bg-card p-3">
@@ -1005,6 +1300,299 @@ export function ContentPreviewModal({
               </div>
             ))}
           </div>
+        </div>
+      )
+    }
+
+    // Listening Fill-Blank — multi-blank items with word bank
+    if (content.activity_type === "listening_fill_blank") {
+      const items = editedContent.items || []
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-sm text-muted-foreground">
+              Items ({items.length})
+            </h4>
+            {isEditing && (
+              <Button size="sm" variant="outline" onClick={() => { addLFBItem(); setEditingLFBItemIdx(items.length) }}>
+                <Plus className="mr-1 h-3 w-3" />
+                Add Item
+              </Button>
+            )}
+          </div>
+          {items.map((item: any, idx: number) => {
+            const fullSentence: string = item.full_sentence || ""
+            const missingWords: string[] = item.missing_words || []
+            const missingSet = new Set(missingWords.map((w: string) => w.toLowerCase()))
+            const blankCount = missingWords.length
+            const isEditingThis = isEditing && editingLFBItemIdx === idx
+
+            // ---- READ-ONLY CARD ----
+            if (!isEditingThis) {
+              return (
+                <div key={item.item_id || idx} className="space-y-2 p-4 rounded-lg border bg-card group">
+                  {/* Header: #N | N blanks + edit/delete */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-muted-foreground">
+                        #{idx + 1}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        {blankCount} blank{blankCount !== 1 ? "s" : ""}
+                      </Badge>
+                    </div>
+                    {isEditing && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingLFBItemIdx(idx)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => removeLFBItem(idx)}
+                          disabled={items.length <= 1}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Audio section — full_sentence */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">
+                      Audio (full sentence spoken to student)
+                    </label>
+                    {generatingLFBAudioIdx === idx ? (
+                      <div className="flex items-center gap-3 p-4 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-900/10">
+                        <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                        <p className="text-sm text-teal-700 dark:text-teal-300">
+                          Generating audio...
+                        </p>
+                      </div>
+                    ) : item.audio_data ? (
+                      <PassageAudioPlayer
+                        audioBase64={item.audio_data.audio_base64}
+                        wordTimestamps={item.audio_data.word_timestamps}
+                        durationSeconds={item.audio_data.duration_seconds}
+                        onRegenerateAudio={(_v) => generateLFBAudio(idx)}
+                        isRegenerating={generatingLFBAudioIdx === idx}
+                      />
+                    ) : (
+                      <>
+                        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                          <p className="text-sm leading-relaxed">
+                            {fullSentence}
+                          </p>
+                        </div>
+                        {isEditing && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => generateLFBAudio(idx)}
+                            disabled={generatingLFBAudioIdx !== null}
+                            className="text-teal-600 border-teal-300 hover:bg-teal-50 dark:text-teal-400 dark:border-teal-700 dark:hover:bg-teal-900/20"
+                          >
+                            <Headphones className="h-4 w-4 mr-1.5" />
+                            Generate Audio
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Display sentence with blanks highlighted */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">
+                      Student sees
+                    </label>
+                    <p className="text-sm font-medium leading-relaxed">
+                      {(item.display_sentence || fullSentence || "").split("_______").map((part: string, pIdx: number, arr: string[]) => (
+                        <span key={pIdx}>
+                          {part}
+                          {pIdx < arr.length - 1 && (
+                            <span className="inline-block mx-1 px-3 py-0.5 rounded bg-teal-100 dark:bg-teal-900/30 border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 text-xs font-semibold">
+                              blank {pIdx + 1}
+                            </span>
+                          )}
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+
+                  {/* Word bank chips */}
+                  {item.word_bank && item.word_bank.length > 0 && (
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">
+                        Word Bank
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.word_bank.map((word: string, wIdx: number) => {
+                          const isCorrect = missingSet.has(word.toLowerCase())
+                          return (
+                            <span
+                              key={wIdx}
+                              className={cn(
+                                "px-2.5 py-1 rounded-md text-xs font-medium border",
+                                isCorrect
+                                  ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                                  : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+                              )}
+                            >
+                              {word}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Answers — per-blank */}
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">Answers:</span>
+                    {missingWords.map((word: string, wIdx: number) => (
+                      <Badge key={wIdx} variant="outline" className="text-green-600 border-green-300">
+                        {wIdx + 1}. {word}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )
+            }
+
+            // ---- EDIT MODE ----
+            const tokens: string[] = fullSentence.match(/[\w'-]+|[^\w\s]|\s+/g) || []
+            const rebuildFromSelection = (newFull: string, newMissing: string[]) => {
+              const newMissingLower = new Set(newMissing.map(w => w.toLowerCase()))
+              let display = newFull
+              for (const word of newMissing) {
+                if (!word) continue
+                const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+                display = display.replace(regex, '_______')
+              }
+              const oldCorrect = new Set((item.missing_words || []).map((w: string) => w.toLowerCase()))
+              const distractors = (item.word_bank || []).filter(
+                (w: string) => !oldCorrect.has(w.toLowerCase()) && !newMissingLower.has(w.toLowerCase())
+              )
+              updateLFBItemFull(idx, {
+                full_sentence: newFull, missing_words: newMissing, display_sentence: display,
+                word_bank: [...newMissing, ...distractors], acceptable_answers: newMissing.map((w: string) => [w]),
+              })
+            }
+            const toggleWord = (word: string) => {
+              const currentMissing: string[] = item.missing_words || []
+              const isSelected = currentMissing.some(w => w.toLowerCase() === word.toLowerCase())
+              rebuildFromSelection(fullSentence, isSelected
+                ? currentMissing.filter(w => w.toLowerCase() !== word.toLowerCase())
+                : [...currentMissing, word])
+            }
+            const distractors = (item.word_bank || []).filter((w: string) => !missingSet.has(w.toLowerCase()))
+
+            return (
+              <div key={item.item_id || idx} className="rounded-lg border p-4 space-y-3">
+                {/* Editable sentence */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">Sentence</label>
+                  <Textarea value={fullSentence} onChange={(e) => {
+                    const newFull = e.target.value
+                    const kept = (item.missing_words || []).filter((w: string) =>
+                      new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(newFull))
+                    rebuildFromSelection(newFull, kept)
+                  }} rows={2} placeholder="Type the full sentence here..." className="resize-none text-sm" />
+                </div>
+
+                {/* Word picker */}
+                {fullSentence.trim() && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium">Tap words to mark as blanks</label>
+                    <div className="flex flex-wrap gap-1 p-3 rounded-lg border bg-card min-h-[44px]">
+                      {tokens.map((token, tIdx) => {
+                        const isWord = /^[\w'-]+$/.test(token)
+                        if (!isWord) return <span key={tIdx} className="text-sm">{token}</span>
+                        const isBlank = missingSet.has(token.toLowerCase())
+                        return (
+                          <button key={tIdx} type="button" onClick={() => toggleWord(token)}
+                            className={cn(
+                              "px-2 py-0.5 rounded text-sm font-medium transition-all border cursor-pointer",
+                              isBlank
+                                ? "bg-teal-500 text-white border-teal-600 shadow-sm"
+                                : "bg-transparent border-transparent hover:bg-muted hover:border-muted-foreground/20"
+                            )}>
+                            {token}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {blankCount} blank(s) selected
+                      {blankCount > 0 && (
+                        <> — {missingWords.join(", ")}</>
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                {/* Distractors */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">
+                    Distractors <span className="font-normal text-muted-foreground">(extra wrong words for word bank, comma-separated)</span>
+                  </label>
+                  <Input value={distractors.join(", ")} onChange={(e) => {
+                    const newD = e.target.value.split(",").map((w: string) => w.trim()).filter(Boolean)
+                    updateLFBItemFull(idx, { word_bank: [...(item.missing_words || []), ...newD] })
+                  }} placeholder="dog, park, house" />
+                </div>
+
+                {/* Word bank preview */}
+                {(item.word_bank || []).length > 0 && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium">Word Bank Preview</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(item.word_bank || []).map((word: string, wIdx: number) => {
+                        const isCorrect = missingSet.has(word.toLowerCase())
+                        return (
+                          <span
+                            key={wIdx}
+                            className={cn(
+                              "px-2.5 py-1 rounded-md text-xs font-medium border",
+                              isCorrect
+                                ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                                : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-muted-foreground"
+                            )}
+                          >
+                            {word}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cancel + Save Changes buttons */}
+                <div className="flex justify-end gap-2 pt-3 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingLFBItemIdx(null)}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setEditingLFBItemIdx(null)
+                      if (fullSentence.trim() && !item.audio_data) generateLFBAudio(idx)
+                    }}
+                    className="bg-teal-600 hover:bg-teal-700"
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )
     }

@@ -138,7 +138,18 @@ function normalizeActivityType(
   | "matchTheWords"
   | "circle"
   | "markwithx"
-  | "puzzleFindWords" {
+  | "puzzleFindWords"
+  // Story 27.20: AI-generated types
+  | "vocabulary_quiz"
+  | "ai_quiz"
+  | "reading_comprehension"
+  | "sentence_builder"
+  | "word_builder"
+  // Story 30.11: New skill-based types
+  | "listening_quiz"
+  | "listening_fill_blank"
+  | "grammar_fill_blank"
+  | "writing_fill_blank" {
   const typeMap: Record<string, string> = {
     dragdroppicture: "dragdroppicture",
     dragdroppicturegroup: "dragdroppicturegroup",
@@ -149,6 +160,19 @@ function normalizeActivityType(
     markwithx: "markwithx",
     puzzlefindwords: "puzzleFindWords",
     puzzleFindWords: "puzzleFindWords",
+    // AI-generated types (pass through)
+    vocabulary_quiz: "vocabulary_quiz",
+    ai_quiz: "ai_quiz",
+    reading_comprehension: "reading_comprehension",
+    sentence_builder: "sentence_builder",
+    word_builder: "word_builder",
+    // Story 30.11: New skill-based types
+    listening_quiz: "listening_quiz",
+    listening_fill_blank: "listening_fill_blank",
+    grammar_fill_blank: "grammar_fill_blank",
+    writing_fill_blank: "writing_fill_blank",
+    // writing_sentence_builder reuses sentence_builder
+    writing_sentence_builder: "sentence_builder",
   }
   return (typeMap[type.toLowerCase()] || type) as ReturnType<
     typeof normalizeActivityType

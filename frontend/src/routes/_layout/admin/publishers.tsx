@@ -6,6 +6,7 @@ import {
   Edit,
   KeyRound,
   Loader2,
+  Lock,
   Mail,
   Plus,
   Search,
@@ -32,6 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { PublisherLogo } from "@/components/ui/publisher-logo"
 import {
@@ -85,6 +87,17 @@ function AdminPublishers() {
     userId: string
     userName: string
   } | null>(null)
+
+  // Change password dialog states
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] =
+    useState(false)
+  const [accountToChangePassword, setAccountToChangePassword] = useState<{
+    userId: string
+    userName: string
+  } | null>(null)
+  const [newPassword, setNewPassword] = useState("")
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("")
+  const [changePasswordError, setChangePasswordError] = useState("")
 
   // Password result state
   const [passwordResult, setPasswordResult] = useState<{
@@ -214,6 +227,33 @@ function AdminPublishers() {
     },
   })
 
+  // Change password mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: ({ userId, password }: { userId: string; password: string }) =>
+      AdminService.changePublisherPassword({
+        userId,
+        requestBody: { password },
+      }),
+    onSuccess: () => {
+      setIsChangePasswordDialogOpen(false)
+      setPasswordResult({
+        passwordEmailed: false,
+        temporaryPassword: newPassword,
+        message: "Password has been changed successfully.",
+      })
+      setIsPasswordResultDialogOpen(true)
+      setNewPassword("")
+      setNewPasswordConfirm("")
+      setChangePasswordError("")
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
+    },
+    onError: (error: any) => {
+      showErrorToast(
+        error.body?.detail || "Failed to change password. Please try again.",
+      )
+    },
+  })
+
   // Helper functions
   const resetNewAccountForm = () => {
     setNewAccount({
@@ -289,6 +329,34 @@ function AdminPublishers() {
     }
   }
 
+  const handleOpenChangePasswordDialog = (account: PublisherAccountPublic) => {
+    setAccountToChangePassword({
+      userId: account.id,
+      userName: account.full_name || account.username,
+    })
+    setNewPassword("")
+    setNewPasswordConfirm("")
+    setChangePasswordError("")
+    setIsChangePasswordDialogOpen(true)
+  }
+
+  const confirmChangePassword = () => {
+    if (!accountToChangePassword) return
+    if (newPassword.length < 8) {
+      setChangePasswordError("Password must be at least 8 characters.")
+      return
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setChangePasswordError("Passwords do not match.")
+      return
+    }
+    setChangePasswordError("")
+    changePasswordMutation.mutate({
+      userId: accountToChangePassword.userId,
+      password: newPassword,
+    })
+  }
+
   const handleCopyPassword = async () => {
     if (passwordResult?.temporaryPassword) {
       await navigator.clipboard.writeText(passwordResult.temporaryPassword)
@@ -302,6 +370,7 @@ function AdminPublishers() {
     setIsPasswordResultDialogOpen(false)
     setPasswordResult(null)
     setAccountToResetPassword(null)
+    setAccountToChangePassword(null)
     setPasswordCopied(false)
   }
 
@@ -467,6 +536,16 @@ function AdminPublishers() {
                           title="Reset Password"
                         >
                           <KeyRound className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenChangePasswordDialog(account)}
+                          disabled={changePasswordMutation.isPending}
+                          className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                          title="Change Password"
+                        >
+                          <Lock className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -775,6 +854,77 @@ function AdminPublishers() {
         isLoading={resetPasswordMutation.isPending}
       />
 
+      {/* Change Password Dialog */}
+      <Dialog
+        open={isChangePasswordDialogOpen}
+        onOpenChange={setIsChangePasswordDialogOpen}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-purple-500" />
+              Change Password
+            </DialogTitle>
+            <DialogDescription>
+              Set a new password for &ldquo;{accountToChangePassword?.userName}&rdquo;. The
+              publisher will be required to change it on next login.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="change-password">New Password</Label>
+              <PasswordInput
+                id="change-password"
+                placeholder="Enter new password (min 8 characters)"
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value)
+                  setChangePasswordError("")
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="change-password-confirm">Confirm Password</Label>
+              <PasswordInput
+                id="change-password-confirm"
+                placeholder="Confirm new password"
+                value={newPasswordConfirm}
+                onChange={(e) => {
+                  setNewPasswordConfirm(e.target.value)
+                  setChangePasswordError("")
+                }}
+              />
+            </div>
+            {changePasswordError && (
+              <p className="text-sm text-destructive">{changePasswordError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsChangePasswordDialogOpen(false)}
+              disabled={changePasswordMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmChangePassword}
+              disabled={changePasswordMutation.isPending}
+              className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white"
+            >
+              {changePasswordMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Changing...
+                </>
+              ) : (
+                "Change Password"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Password Result Dialog */}
       <Dialog
         open={isPasswordResultDialogOpen}
@@ -784,7 +934,7 @@ function AdminPublishers() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-green-500" />
-              Password {accountToResetPassword ? "Reset" : "Generated"}
+              Password {accountToChangePassword ? "Changed" : accountToResetPassword ? "Reset" : "Generated"}
             </DialogTitle>
             <DialogDescription>{passwordResult?.message}</DialogDescription>
           </DialogHeader>

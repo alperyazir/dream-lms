@@ -25,6 +25,11 @@ interface ActivityHeaderProps {
     | "reading_comprehension"
     | "sentence_builder"
     | "word_builder"
+    // Story 30.11: New skill-based activity types
+    | "listening_quiz"
+    | "listening_fill_blank"
+    | "grammar_fill_blank"
+    | "writing_fill_blank"
   timeLimit?: number // in minutes
   onTimeExpired?: () => void
   /** Activity config object (may contain audio_extra) */
@@ -83,6 +88,11 @@ export const ActivityHeader = memo(function ActivityHeader({
     circle: "Circle Activity",
     markwithx: "Mark with X",
     puzzleFindWords: "Word Search",
+    // Story 30.11: New skill-based activity labels
+    listening_quiz: "Listening Quiz",
+    listening_fill_blank: "Listening Fill-blank",
+    grammar_fill_blank: "Grammar Fill-blank",
+    writing_fill_blank: "Writing Fill-blank",
   }
 
   // Time warning colors

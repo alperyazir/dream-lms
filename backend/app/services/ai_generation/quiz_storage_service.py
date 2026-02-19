@@ -42,6 +42,40 @@ from app.schemas.word_builder import (
     WordBuilderResult,
     WordBuilderSubmission,
 )
+from app.schemas.grammar_fill_blank import (
+    GrammarFillBlankActivity,
+    GrammarFillBlankActivityPublic,
+    GrammarFillBlankItemPublic,
+)
+from app.schemas.writing_fill_blank import (
+    WritingFillBlankActivity,
+    WritingFillBlankActivityPublic,
+    WritingFillBlankItemPublic,
+)
+from app.schemas.listening_fill_blank import (
+    ListeningFillBlankActivity,
+    ListeningFillBlankActivityPublic,
+    ListeningFillBlankItemPublic,
+)
+from app.schemas.mix_mode import (
+    MixModeActivity,
+    MixModeActivityPublic,
+)
+from app.schemas.listening_quiz import (
+    ListeningQuizActivity,
+    ListeningQuizActivityPublic,
+    ListeningQuizQuestionPublic,
+)
+from app.schemas.listening_sentence_builder import (
+    ListeningSentenceBuilderActivity,
+    ListeningSentenceBuilderActivityPublic,
+    ListeningSentenceBuilderItemPublic,
+)
+from app.schemas.listening_word_builder import (
+    ListeningWordBuilderActivity,
+    ListeningWordBuilderActivityPublic,
+    ListeningWordBuilderItemPublic,
+)
 from app.schemas.vocabulary_quiz import (
     QuestionResult,
     VocabularyQuiz,
@@ -100,6 +134,20 @@ class QuizStorageService:
         # Word builder activity storage
         self._word_builder_activities: dict[str, tuple[WordBuilderActivity, datetime]] = {}
         self._word_builder_submissions: dict[str, dict[str, WordBuilderResult]] = {}
+        # Listening quiz activity storage (Story 30.4)
+        self._listening_activities: dict[str, tuple[ListeningQuizActivity, datetime]] = {}
+        # Listening fill-blank activity storage (Story 30.5)
+        self._listening_fb_activities: dict[str, tuple[ListeningFillBlankActivity, datetime]] = {}
+        # Grammar fill-blank activity storage (Story 30.6)
+        self._grammar_fb_activities: dict[str, tuple[GrammarFillBlankActivity, datetime]] = {}
+        # Writing fill-blank activity storage (Story 30.7)
+        self._writing_fb_activities: dict[str, tuple[WritingFillBlankActivity, datetime]] = {}
+        # Listening sentence builder activity storage
+        self._listening_sb_activities: dict[str, tuple[ListeningSentenceBuilderActivity, datetime]] = {}
+        # Listening word builder activity storage
+        self._listening_wb_activities: dict[str, tuple[ListeningWordBuilderActivity, datetime]] = {}
+        # Mix mode activity storage (Story 30.8)
+        self._mix_mode_activities: dict[str, tuple[MixModeActivity, datetime]] = {}
         logger.info(
             f"QuizStorageService initialized with TTL={ttl_seconds}s"
         )
@@ -1071,6 +1119,372 @@ class QuizStorageService:
         self._word_builder_submissions.pop(activity_id, None)
         logger.debug(f"Word builder activity removed: activity_id={activity_id}")
 
+    # ---- Grammar Fill-Blank (Story 30.6) ----
+
+    async def save_grammar_fill_blank_activity(
+        self, activity: GrammarFillBlankActivity
+    ) -> str:
+        """Save a grammar fill-blank activity."""
+        await self._cleanup_expired()
+        self._grammar_fb_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Grammar fill-blank saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_grammar_fill_blank_activity(
+        self, activity_id: str
+    ) -> GrammarFillBlankActivity | None:
+        entry = self._grammar_fb_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._grammar_fb_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_grammar_fill_blank_activity_public(
+        self, activity_id: str
+    ) -> GrammarFillBlankActivityPublic | None:
+        activity = await self.get_grammar_fill_blank_activity(activity_id)
+        if activity is None:
+            return None
+        public_items = [
+            GrammarFillBlankItemPublic(
+                item_id=item.item_id,
+                sentence=item.sentence,
+                word_bank=item.word_bank,
+                grammar_topic=item.grammar_topic,
+                grammar_hint=item.grammar_hint,
+                difficulty=item.difficulty,
+            )
+            for item in activity.items
+        ]
+        return GrammarFillBlankActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            mode=activity.mode,
+            items=public_items,
+            total_items=activity.total_items,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            created_at=activity.created_at,
+        )
+
+    # ---- Writing Fill-Blank (Story 30.7) ----
+
+    async def save_writing_fill_blank_activity(
+        self, activity: WritingFillBlankActivity
+    ) -> str:
+        """Save a writing fill-blank activity."""
+        await self._cleanup_expired()
+        self._writing_fb_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Writing fill-blank saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_writing_fill_blank_activity(
+        self, activity_id: str
+    ) -> WritingFillBlankActivity | None:
+        entry = self._writing_fb_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._writing_fb_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_writing_fill_blank_activity_public(
+        self, activity_id: str
+    ) -> WritingFillBlankActivityPublic | None:
+        activity = await self.get_writing_fill_blank_activity(activity_id)
+        if activity is None:
+            return None
+        public_items = [
+            WritingFillBlankItemPublic(
+                item_id=item.item_id,
+                context=item.context,
+                sentence=item.sentence,
+                difficulty=item.difficulty,
+            )
+            for item in activity.items
+        ]
+        return WritingFillBlankActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            items=public_items,
+            total_items=activity.total_items,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            created_at=activity.created_at,
+        )
+
+    # ---- Listening Fill-Blank (Story 30.5) ----
+
+    async def save_listening_fill_blank_activity(
+        self, activity: ListeningFillBlankActivity
+    ) -> str:
+        """Save a listening fill-blank activity."""
+        await self._cleanup_expired()
+        self._listening_fb_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Listening fill-blank saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_listening_fill_blank_activity(
+        self, activity_id: str
+    ) -> ListeningFillBlankActivity | None:
+        entry = self._listening_fb_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._listening_fb_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_listening_fill_blank_activity_public(
+        self, activity_id: str
+    ) -> ListeningFillBlankActivityPublic | None:
+        activity = await self.get_listening_fill_blank_activity(activity_id)
+        if activity is None:
+            return None
+        public_items = [
+            ListeningFillBlankItemPublic(
+                item_id=item.item_id,
+                display_sentence=item.display_sentence,
+                audio_url=item.audio_url,
+                audio_status=item.audio_status,
+                difficulty=item.difficulty,
+            )
+            for item in activity.items
+        ]
+        return ListeningFillBlankActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            items=public_items,
+            total_items=activity.total_items,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            created_at=activity.created_at,
+        )
+
+    # ---- Listening Quiz (Story 30.4) ----
+
+    async def save_listening_activity(
+        self, activity: ListeningQuizActivity
+    ) -> str:
+        """Save a listening quiz activity to storage."""
+        await self._cleanup_expired()
+        self._listening_activities[activity.activity_id] = (
+            activity,
+            datetime.now(timezone.utc),
+        )
+        logger.info(f"Listening activity saved: activity_id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_listening_activity(
+        self, activity_id: str
+    ) -> ListeningQuizActivity | None:
+        """Get a listening activity by ID (internal version with answers + audio_text)."""
+        entry = self._listening_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._listening_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_listening_activity_public(
+        self, activity_id: str
+    ) -> ListeningQuizActivityPublic | None:
+        """Get a listening activity by ID (public version — no audio_text, no answers)."""
+        activity = await self.get_listening_activity(activity_id)
+        if activity is None:
+            return None
+        public_questions = [
+            ListeningQuizQuestionPublic(
+                question_id=q.question_id,
+                audio_url=q.audio_url,
+                audio_status=q.audio_status,
+                question_text=q.question_text,
+                options=q.options,
+                sub_skill=q.sub_skill,
+                difficulty=q.difficulty,
+            )
+            for q in activity.questions
+        ]
+        return ListeningQuizActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            questions=public_questions,
+            total_questions=activity.total_questions,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            created_at=activity.created_at,
+        )
+
+    # ---- Mix Mode (Story 30.8) ----
+
+    async def save_mix_mode_activity(
+        self, activity: MixModeActivity
+    ) -> str:
+        """Save a mix mode activity."""
+        await self._cleanup_expired()
+        self._mix_mode_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Mix mode activity saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_mix_mode_activity(
+        self, activity_id: str
+    ) -> MixModeActivity | None:
+        entry = self._mix_mode_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._mix_mode_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_mix_mode_activity_public(
+        self, activity_id: str
+    ) -> MixModeActivityPublic | None:
+        activity = await self.get_mix_mode_activity(activity_id)
+        if activity is None:
+            return None
+        return MixModeActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            is_mix_mode=activity.is_mix_mode,
+            skill_distribution=activity.skill_distribution,
+            questions=activity.questions,
+            total_questions=activity.total_questions,
+            skills_covered=activity.skills_covered,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            created_at=activity.created_at,
+        )
+
+    # ---- Listening Sentence Builder ----
+
+    async def save_listening_sentence_builder_activity(
+        self, activity: ListeningSentenceBuilderActivity
+    ) -> str:
+        """Save a listening sentence builder activity."""
+        await self._cleanup_expired()
+        self._listening_sb_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Listening sentence builder saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_listening_sentence_builder_activity(
+        self, activity_id: str
+    ) -> ListeningSentenceBuilderActivity | None:
+        entry = self._listening_sb_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._listening_sb_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_listening_sentence_builder_activity_public(
+        self, activity_id: str
+    ) -> ListeningSentenceBuilderActivityPublic | None:
+        activity = await self.get_listening_sentence_builder_activity(activity_id)
+        if activity is None:
+            return None
+        public_items = [
+            ListeningSentenceBuilderItemPublic(
+                item_id=item.item_id,
+                words=item.words,
+                word_count=item.word_count,
+                audio_url=item.audio_url,
+                audio_status=item.audio_status,
+                difficulty=item.difficulty,
+            )
+            for item in activity.sentences
+        ]
+        return ListeningSentenceBuilderActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            sentences=public_items,
+            total_items=activity.total_items,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            created_at=activity.created_at,
+        )
+
+    # ---- Listening Word Builder ----
+
+    async def save_listening_word_builder_activity(
+        self, activity: ListeningWordBuilderActivity
+    ) -> str:
+        """Save a listening word builder activity."""
+        await self._cleanup_expired()
+        self._listening_wb_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Listening word builder saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_listening_word_builder_activity(
+        self, activity_id: str
+    ) -> ListeningWordBuilderActivity | None:
+        entry = self._listening_wb_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._listening_wb_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_listening_word_builder_activity_public(
+        self, activity_id: str
+    ) -> ListeningWordBuilderActivityPublic | None:
+        activity = await self.get_listening_word_builder_activity(activity_id)
+        if activity is None:
+            return None
+        public_items = [
+            ListeningWordBuilderItemPublic(
+                item_id=item.item_id,
+                letters=item.letters,
+                letter_count=item.letter_count,
+                definition=item.definition,
+                audio_url=item.audio_url,
+                audio_status=item.audio_status,
+                difficulty=item.difficulty,
+            )
+            for item in activity.words
+        ]
+        return ListeningWordBuilderActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            words=public_items,
+            total_items=activity.total_items,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            created_at=activity.created_at,
+        )
+
     def _is_expired(self, stored_at: datetime) -> bool:
         """Check if a quiz has expired based on its stored timestamp."""
         age = (datetime.now(timezone.utc) - stored_at).total_seconds()
@@ -1119,12 +1533,76 @@ class QuizStorageService:
         for activity_id in expired_reading:
             await self._remove_reading_activity(activity_id)
 
-        total_expired = len(expired) + len(expired_ai) + len(expired_reading)
+        # Cleanup listening activities
+        expired_listening = [
+            activity_id
+            for activity_id, (_, stored_at) in self._listening_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_listening:
+            self._listening_activities.pop(activity_id, None)
+
+        # Cleanup listening fill-blank activities
+        expired_lfb = [
+            activity_id
+            for activity_id, (_, stored_at) in self._listening_fb_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_lfb:
+            self._listening_fb_activities.pop(activity_id, None)
+
+        # Cleanup grammar fill-blank activities
+        expired_gfb = [
+            activity_id
+            for activity_id, (_, stored_at) in self._grammar_fb_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_gfb:
+            self._grammar_fb_activities.pop(activity_id, None)
+
+        # Cleanup writing fill-blank activities
+        expired_wfb = [
+            activity_id
+            for activity_id, (_, stored_at) in self._writing_fb_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_wfb:
+            self._writing_fb_activities.pop(activity_id, None)
+
+        # Cleanup listening sentence builder activities
+        expired_lsb = [
+            activity_id
+            for activity_id, (_, stored_at) in self._listening_sb_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_lsb:
+            self._listening_sb_activities.pop(activity_id, None)
+
+        # Cleanup listening word builder activities
+        expired_lwb = [
+            activity_id
+            for activity_id, (_, stored_at) in self._listening_wb_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_lwb:
+            self._listening_wb_activities.pop(activity_id, None)
+
+        # Cleanup mix mode activities
+        expired_mix = [
+            activity_id
+            for activity_id, (_, stored_at) in self._mix_mode_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_mix:
+            self._mix_mode_activities.pop(activity_id, None)
+
+        total_expired = len(expired) + len(expired_ai) + len(expired_reading) + len(expired_listening) + len(expired_lfb) + len(expired_gfb) + len(expired_wfb) + len(expired_lsb) + len(expired_lwb) + len(expired_mix)
         if total_expired:
             logger.info(
                 f"Cleaned up {len(expired)} vocabulary quizzes, "
                 f"{len(expired_ai)} AI quizzes, "
-                f"{len(expired_reading)} reading activities"
+                f"{len(expired_reading)} reading activities, "
+                f"{len(expired_listening)} listening activities"
             )
 
         return total_expired

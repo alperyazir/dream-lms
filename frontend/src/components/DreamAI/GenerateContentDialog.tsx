@@ -12,6 +12,8 @@ import {
   AlertCircle,
   BookOpen,
   Check,
+  Eye,
+  Headphones,
   Loader2,
   Pencil,
   RotateCw,
@@ -33,23 +35,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { useMyAIUsage } from "@/hooks/useAIUsage"
 import { useCustomToast } from "@/hooks/useCustomToast"
 import type { ActivityType } from "@/hooks/useGenerationState"
 import { useGenerationState } from "@/hooks/useGenerationState"
-import { generateActivity } from "@/lib/generateActivity"
+import {
+  generateActivity,
+  generateActivityV2,
+  generateActivityV2Stream,
+} from "@/lib/generateActivity"
+import type { GenerationResponseV2 } from "@/services/generationV2Api"
 import { cn } from "@/lib/utils"
 import { getAuthenticatedCoverUrl, getBooks } from "@/services/booksApi"
 import { contentReviewApi } from "@/services/contentReviewApi"
@@ -61,6 +71,13 @@ import {
 } from "./ActivityTypeSelector"
 import { AIGeneratingAnimation } from "./AIGeneratingAnimation"
 import { GenerationOptions } from "./GenerationOptions"
+import { FormatSelectionPanel } from "./FormatSelectionPanel"
+import { GenerationConfigPanel } from "./GenerationConfigPanel"
+import { PassageAudioPlayer } from "./PassageAudioPlayer"
+import { SkillSelectionGrid } from "./SkillSelectionGrid"
+import type { SkillWithFormats } from "@/types/skill"
+import { getSkills } from "@/services/skillsApi"
+import { generatePassageAudio } from "@/services/passageAudioApi"
 
 interface GenerateContentDialogProps {
   open: boolean
@@ -71,8 +88,9 @@ interface GenerateContentDialogProps {
 const STEPS = [
   { number: 0, label: "Select Book" },
   { number: 1, label: "Select Modules" },
-  { number: 2, label: "Activity Type" },
-  { number: 3, label: "Review & Save" },
+  { number: 2, label: "Select Skill" },
+  { number: 3, label: "Activity Type" },
+  { number: 4, label: "Review & Save" },
 ]
 
 export function GenerateContentDialog({
@@ -87,6 +105,8 @@ export function GenerateContentDialog({
     formState,
     setBookId,
     setModuleIds,
+    setSkillSlug,
+    setFormatSlug,
     setActivityType,
     setOptions,
     setOption,
@@ -106,7 +126,12 @@ export function GenerateContentDialog({
   const [isSaving, setIsSaving] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showBackConfirm, setShowBackConfirm] = useState(false)
+  // SSE streaming state for reading comprehension
+  const [streamingPassages, setStreamingPassages] = useState<any[]>([])
+  const [streamingTotal, setStreamingTotal] = useState(0)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
+  // Passage audio generation state
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
 
   // Book/Module state
   const [books, setBooks] = useState<Book[]>([])
@@ -116,6 +141,10 @@ export function GenerateContentDialog({
   const [bookSearch, setBookSearch] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [coverUrls, setCoverUrls] = useState<Record<number, string>>({})
+
+  // Skills state (Epic 30)
+  const [skills, setSkills] = useState<SkillWithFormats[]>([])
+  const [isLoadingSkills, setIsLoadingSkills] = useState(false)
 
   // Load cover URLs for books
   useEffect(() => {
@@ -195,6 +224,24 @@ export function GenerateContentDialog({
     loadModules()
   }, [formState.bookId])
 
+  // Load skills on dialog open (Epic 30)
+  useEffect(() => {
+    if (open && skills.length === 0) {
+      const loadSkills = async () => {
+        try {
+          setIsLoadingSkills(true)
+          const data = await getSkills()
+          setSkills(data)
+        } catch (err) {
+          console.error("Failed to load skills:", err)
+        } finally {
+          setIsLoadingSkills(false)
+        }
+      }
+      loadSkills()
+    }
+  }, [open, skills.length])
+
   // Reset dialog when closed
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
@@ -212,6 +259,8 @@ export function GenerateContentDialog({
         setDescription("")
         clearGeneration()
         setIsGenerating(false)
+        setStreamingPassages([])
+        setStreamingTotal(0)
         setEditingIndex(null)
         setEditedItem(null)
       }
@@ -233,7 +282,10 @@ export function GenerateContentDialog({
     setTitle("")
     setDescription("")
     clearGeneration()
+    setV2Response(null)
     setIsGenerating(false)
+    setStreamingPassages([])
+    setStreamingTotal(0)
     setEditingIndex(null)
     setEditedItem(null)
     resetForm()
@@ -257,6 +309,12 @@ export function GenerateContentDialog({
       case 1:
         return formState.moduleIds.length > 0
       case 2:
+        return !!formState.skillSlug
+      case 3:
+        // Skill-based flow: need formatSlug; Legacy flow: need activityType
+        if (formState.skillSlug) {
+          return !!formState.formatSlug
+        }
         return !!formState.activityType
       default:
         return true
@@ -273,13 +331,31 @@ export function GenerateContentDialog({
       showErrorToast("Please select at least one module")
       return
     }
-    if (currentStep === 2 && !formState.activityType) {
-      showErrorToast("Please select an activity type")
+    if (currentStep === 2 && !formState.skillSlug) {
+      showErrorToast("Please select a skill")
+      return
+    }
+    if (currentStep === 3) {
+      // Skill-based flow: need formatSlug; Legacy flow: need activityType
+      if (formState.skillSlug && !formState.formatSlug) {
+        showErrorToast("Please select an activity format")
+        return
+      }
+      if (!formState.skillSlug && !formState.activityType) {
+        showErrorToast("Please select an activity type")
+        return
+      }
+    }
+
+    // If Mix is selected at step 2, skip format step → go to generation
+    if (currentStep === 2 && formState.skillSlug === "mix") {
+      setOptions({ count: 10, difficulty: "auto" })
+      await handleGenerate()
       return
     }
 
     // If on activity type step and clicking next, generate content
-    if (currentStep === 2) {
+    if (currentStep === 3) {
       await handleGenerate()
       return
     }
@@ -293,7 +369,7 @@ export function GenerateContentDialog({
   const handleBack = () => {
     if (currentStep > 0) {
       // If going back from result step, show confirmation first
-      if (currentStep === 3 && generationState.result) {
+      if (currentStep === 4 && generationState.result) {
         setShowBackConfirm(true)
         return
       }
@@ -305,6 +381,9 @@ export function GenerateContentDialog({
   const handleConfirmBack = () => {
     setShowBackConfirm(false)
     clearGeneration()
+    setV2Response(null)
+    setStreamingPassages([])
+    setStreamingTotal(0)
     setTitle("")
     setDescription("")
     setEditingIndex(null)
@@ -312,29 +391,331 @@ export function GenerateContentDialog({
     setCurrentStep((prev) => prev - 1)
   }
 
+  // V2 response state (stores skill metadata from V2 endpoint)
+  const [v2Response, setV2Response] = useState<GenerationResponseV2 | null>(
+    null,
+  )
+
+  // Effective activity type — v2 response takes priority over form state
+  const effectiveActivityType: ActivityType | null =
+    (v2Response?.activity_type as ActivityType) || formState.activityType
+
+  // Check if this is a multi-passage reading comprehension request
+  const isStreamableRC = () => {
+    const passageCount = formState.options.passage_count || 1
+    // Format slug is "comprehension" from skill-format selection (reading + comprehension)
+    return formState.skillSlug === "reading" && passageCount > 1
+  }
+
+  // Handle passage audio generation
+  // contentOverride: pass in the content object directly when calling from
+  // handleGenerate to avoid reading stale generationState.result
+  const handleGenerateAudio = async (
+    passageText: string,
+    passageIndex?: number,
+    contentOverride?: any,
+    voiceOverride?: string,
+    questionIndex?: number,
+    itemIndex?: number,
+  ) => {
+    try {
+      setIsGeneratingAudio(true)
+      const audioResult = await generatePassageAudio({
+        text: passageText,
+        voice_id: voiceOverride || formState.options.voice_id || undefined,
+      })
+      const audioData = {
+        audio_base64: audioResult.audio_base64,
+        word_timestamps: audioResult.word_timestamps,
+        duration_seconds: audioResult.duration_seconds,
+      }
+
+      // Use contentOverride if provided (from auto-trigger), else current state
+      const base = contentOverride ?? generationState.result
+      const result = { ...(base as any) }
+
+      if (itemIndex !== undefined && result.items) {
+        // Fill blank: attach audio_data to specific item
+        result.items = [...result.items]
+        result.items[itemIndex] = {
+          ...result.items[itemIndex],
+          audio_data: audioData,
+          audio_status: "ready",
+        }
+      } else if (questionIndex !== undefined && result.questions) {
+        // Listening quiz: attach audio_data to specific question
+        result.questions = [...result.questions]
+        result.questions[questionIndex] = {
+          ...result.questions[questionIndex],
+          audio_data: audioData,
+          audio_status: "ready",
+        }
+      } else if (passageIndex !== undefined && result.passages) {
+        // Multi-passage: attach to specific passage
+        result.passages = [...result.passages]
+        result.passages[passageIndex] = {
+          ...result.passages[passageIndex],
+          passage_audio: audioData,
+        }
+      } else {
+        // Single passage
+        result.passage_audio = audioData
+      }
+
+      setGenerationResult(result)
+    } catch (error: any) {
+      console.error("Audio generation failed:", error)
+      const message =
+        error.response?.data?.detail || error.message || "Audio generation failed"
+      showErrorToast(`Audio generation failed: ${message}`)
+    } finally {
+      setIsGeneratingAudio(false)
+    }
+  }
+
+  /** Auto-generate audio for all listening quiz questions sequentially */
+  const handleGenerateListeningAudio = async (
+    questions: any[],
+    contentOverride: any,
+  ) => {
+    let currentContent = { ...contentOverride }
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i]
+      if (!q.audio_text) continue
+      try {
+        setIsGeneratingAudio(true)
+        const audioResult = await generatePassageAudio({
+          text: q.audio_text,
+          voice_id: formState.options.voice_id || undefined,
+        })
+        const audioData = {
+          audio_base64: audioResult.audio_base64,
+          word_timestamps: audioResult.word_timestamps,
+          duration_seconds: audioResult.duration_seconds,
+        }
+        currentContent = { ...currentContent }
+        currentContent.questions = [...currentContent.questions]
+        currentContent.questions[i] = {
+          ...currentContent.questions[i],
+          audio_data: audioData,
+          audio_status: "ready",
+        }
+        setGenerationResult(currentContent)
+      } catch (error: any) {
+        console.error(`Audio generation failed for question ${i}:`, error)
+        // Mark as failed but continue with remaining questions
+        currentContent = { ...currentContent }
+        currentContent.questions = [...currentContent.questions]
+        currentContent.questions[i] = {
+          ...currentContent.questions[i],
+          audio_status: "failed",
+        }
+        setGenerationResult(currentContent)
+      }
+    }
+    setIsGeneratingAudio(false)
+  }
+
+  /** Auto-generate audio for all listening fill blank items sequentially */
+  const handleGenerateListeningFillBlankAudio = async (
+    items: any[],
+    contentOverride: any,
+    textKey: string = "full_sentence",
+  ) => {
+    // Determine which key holds the items array in the content object
+    const arrayKey = contentOverride.items
+      ? "items"
+      : contentOverride.sentences
+        ? "sentences"
+        : contentOverride.words
+          ? "words"
+          : "items"
+    let currentContent = { ...contentOverride }
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const text = item[textKey]
+      if (!text) continue
+      try {
+        setIsGeneratingAudio(true)
+        const audioResult = await generatePassageAudio({
+          text,
+          voice_id: formState.options.voice_id || undefined,
+        })
+        const audioData = {
+          audio_base64: audioResult.audio_base64,
+          word_timestamps: audioResult.word_timestamps,
+          duration_seconds: audioResult.duration_seconds,
+        }
+        currentContent = { ...currentContent }
+        currentContent[arrayKey] = [...currentContent[arrayKey]]
+        currentContent[arrayKey][i] = {
+          ...currentContent[arrayKey][i],
+          audio_data: audioData,
+          audio_status: "ready",
+        }
+        setGenerationResult(currentContent)
+      } catch (error: any) {
+        console.error(`Audio generation failed for item ${i}:`, error)
+        currentContent = { ...currentContent }
+        currentContent[arrayKey] = [...currentContent[arrayKey]]
+        currentContent[arrayKey][i] = {
+          ...currentContent[arrayKey][i],
+          audio_status: "failed",
+        }
+        setGenerationResult(currentContent)
+      }
+    }
+    setIsGeneratingAudio(false)
+  }
+
   // Handle generation
   const handleGenerate = async () => {
     try {
       setIsGenerating(true)
       startGeneration()
-      const result = await generateActivity(formState)
-      setGenerationResult(result)
 
-      // Generate default title
-      const activityConfig = formState.activityType
-        ? getActivityTypeConfig(formState.activityType)
-        : null
-      const itemCount = getItemCount(result)
-      setTitle(`${activityConfig?.name || "Activity"} - ${itemCount} items`)
+      if (formState.skillSlug && isStreamableRC()) {
+        // SSE streaming path for multi-passage reading comprehension
+        setStreamingPassages([])
+        setStreamingTotal(formState.options.passage_count || 1)
+        setCurrentStep(4) // Move to result step immediately to show progress
 
-      setCurrentStep(3) // Move to result step
+        await generateActivityV2Stream(formState, {
+          onPassage: (passage) => {
+            setStreamingPassages((prev) => {
+              const updated = [...prev, passage]
+              // Sort by passage title (Passage 1, Passage 2, etc.)
+              updated.sort((a, b) => (a.module_title || "").localeCompare(b.module_title || ""))
+              return updated
+            })
+          },
+          onComplete: (data) => {
+            // Build final content from streamed data
+            const passages = data.passages || []
+            passages.sort((a: any, b: any) => (a.module_title || "").localeCompare(b.module_title || ""))
+            const allQuestions = passages.flatMap((p: any) => p.questions)
+
+            const content: any = {
+              activity_id: data.content_id,
+              book_id: data.book_id,
+              passages,
+              questions: allQuestions,
+              difficulty: data.difficulty,
+              created_at: data.created_at,
+            }
+
+            setGenerationResult(content)
+            setV2Response({
+              content_id: data.content_id,
+              activity_type: data.activity_type,
+              content,
+              skill_id: data.skill_id,
+              skill_slug: data.skill_slug,
+              skill_name: data.skill_name,
+              format_id: data.format_id,
+              format_slug: data.format_slug,
+              format_name: data.format_name,
+              source_type: data.source_type,
+              book_id: data.book_id,
+              difficulty: data.difficulty,
+              item_count: data.item_count,
+              created_at: data.created_at,
+            })
+            setTitle(
+              `${data.skill_name} - ${data.format_name} - ${data.item_count} items`,
+            )
+            setStreamingPassages([]) // Clear streaming state
+            setStreamingTotal(0)
+            setIsGenerating(false)
+
+            // Auto-generate audio for each passage if enabled
+            if (formState.options.generate_audio && passages.length > 0) {
+              for (let i = 0; i < passages.length; i++) {
+                handleGenerateAudio(passages[i].passage, i, content)
+              }
+            }
+          },
+          onError: (error) => {
+            console.error("Stream error:", error)
+            showErrorToast(`Generation error: ${error}`)
+          },
+        })
+      } else if (formState.skillSlug) {
+        // V2 skill-first path (non-streaming)
+        const response = await generateActivityV2(formState)
+        setV2Response(response)
+
+        // Extract inner content as the GeneratedActivity for preview
+        const content = response.content as any
+        setGenerationResult(content)
+
+        // Generate default title from skill metadata
+        const itemCount = getItemCount(content)
+        setTitle(
+          `${response.skill_name} - ${response.format_name} - ${itemCount} items`,
+        )
+        setCurrentStep(4) // Move to result step
+        setIsGenerating(false)
+
+        // Auto-generate audio for single-passage reading comprehension
+        if (
+          formState.options.generate_audio &&
+          response.activity_type === "reading_comprehension" &&
+          content.passage
+        ) {
+          handleGenerateAudio(content.passage, undefined, content)
+        }
+
+        // Auto-generate audio for listening quiz questions
+        if (
+          response.activity_type === "listening_quiz" &&
+          content.questions?.length > 0
+        ) {
+          handleGenerateListeningAudio(content.questions, content)
+        }
+
+        // Auto-generate audio for listening fill blank items
+        if (
+          response.activity_type === "listening_fill_blank" &&
+          content.items?.length > 0
+        ) {
+          handleGenerateListeningFillBlankAudio(content.items, content)
+        }
+
+        // Auto-generate audio for listening sentence builder
+        if (
+          response.activity_type === "listening_sentence_builder" &&
+          content.sentences?.length > 0
+        ) {
+          handleGenerateListeningFillBlankAudio(content.sentences, content, "correct_sentence")
+        }
+
+        // Auto-generate audio for listening word builder
+        if (
+          response.activity_type === "listening_word_builder" &&
+          content.words?.length > 0
+        ) {
+          handleGenerateListeningFillBlankAudio(content.words, content, "correct_word")
+        }
+      } else {
+        // Legacy V1 path
+        const result = await generateActivity(formState)
+        setGenerationResult(result)
+
+        const activityConfig = formState.activityType
+          ? getActivityTypeConfig(formState.activityType)
+          : null
+        const itemCount = getItemCount(result)
+        setTitle(`${activityConfig?.name || "Activity"} - ${itemCount} items`)
+        setCurrentStep(4) // Move to result step
+        setIsGenerating(false)
+      }
     } catch (error: any) {
       console.error("Generation failed:", error)
       const message =
         error.response?.data?.detail || error.message || "Generation failed"
       setGenerationError(message)
       showErrorToast(`Generation failed: ${message}`)
-    } finally {
       setIsGenerating(false)
     }
   }
@@ -342,6 +723,9 @@ export function GenerateContentDialog({
   // Handle regenerate
   const handleRegenerate = () => {
     clearGeneration()
+    setV2Response(null)
+    setStreamingPassages([])
+    setStreamingTotal(0)
     setTitle("")
     setEditingIndex(null)
     setEditedItem(null)
@@ -378,7 +762,8 @@ export function GenerateContentDialog({
 
       await contentReviewApi.saveToLibrary({
         quiz_id: result.quiz_id || result.activity_id || "",
-        activity_type: formState.activityType || "",
+        activity_type:
+          v2Response?.activity_type || formState.activityType || "",
         title: title.trim(),
         description: description.trim() || undefined,
         content: result,
@@ -390,6 +775,9 @@ export function GenerateContentDialog({
       setTitle("")
       setDescription("")
       clearGeneration()
+      setV2Response(null)
+      setStreamingPassages([])
+      setStreamingTotal(0)
       resetForm()
       onOpenChange(false)
       onSaveSuccess?.()
@@ -408,7 +796,7 @@ export function GenerateContentDialog({
     if (!generationState.result) return
 
     const result = { ...generationState.result } as any
-    const itemsKey = getItemsKey(formState.activityType)
+    const itemsKey = getItemsKey(effectiveActivityType)
 
     if (itemsKey && result[itemsKey]) {
       result[itemsKey] = result[itemsKey].filter(
@@ -428,13 +816,75 @@ export function GenerateContentDialog({
   const handleSaveEdit = () => {
     if (editingIndex === null || !editedItem || !generationState.result) return
 
+    const savedIndex = editingIndex
     const result = { ...generationState.result } as any
-    const itemsKey = getItemsKey(formState.activityType)
+    const itemsKey = getItemsKey(effectiveActivityType)
 
     if (itemsKey && result[itemsKey]) {
       result[itemsKey] = [...result[itemsKey]]
-      result[itemsKey][editingIndex] = editedItem
+      const item = { ...editedItem }
+      // Auto-set audio_url for listening items
+      const listeningTextKey =
+        effectiveActivityType === "listening_sentence_builder" ? "correct_sentence"
+        : effectiveActivityType === "listening_word_builder" ? "correct_word"
+        : effectiveActivityType === "listening_fill_blank" ? "full_sentence"
+        : effectiveActivityType === "listening_quiz" ? "audio_text"
+        : null
+      if (listeningTextKey && item[listeningTextKey]) {
+        const text = item[listeningTextKey] || ""
+        const lang = result.language || "en"
+        item.audio_url = `/api/v1/ai/tts/audio?text=${encodeURIComponent(text)}&lang=${lang}`
+        item.audio_status = "ready"
+        item.audio_data = undefined
+
+        // Auto-recalculate shuffled words/scrambled letters on text change
+        if (effectiveActivityType === "listening_sentence_builder") {
+          const words = text.split(/\s+/).filter(Boolean)
+          const shuffled = [...words].sort(() => Math.random() - 0.5)
+          // Ensure not same order
+          if (JSON.stringify(shuffled) === JSON.stringify(words) && words.length >= 2) {
+            [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]]
+          }
+          item.words = shuffled
+          item.word_count = words.length
+        } else if (effectiveActivityType === "listening_word_builder") {
+          const letters = text.toLowerCase().split("")
+          const scrambled = [...letters].sort(() => Math.random() - 0.5)
+          if (JSON.stringify(scrambled) === JSON.stringify(letters) && letters.length >= 2) {
+            [scrambled[0], scrambled[1]] = [scrambled[1], scrambled[0]]
+          }
+          item.letters = scrambled
+          item.letter_count = letters.length
+        }
+      }
+      result[itemsKey][editingIndex] = item
       setGenerationResult(result)
+
+      // Auto-generate audio for listening items after save
+      if (listeningTextKey && item[listeningTextKey]) {
+        const text = item[listeningTextKey] || ""
+        const isListeningFB = effectiveActivityType === "listening_fill_blank"
+        const isListeningSB = effectiveActivityType === "listening_sentence_builder"
+        const isListeningWB = effectiveActivityType === "listening_word_builder"
+        if (isListeningSB || isListeningWB) {
+          // Use the fill-blank audio handler for sentence/word builder too
+          const itemsArr = [item]
+          handleGenerateListeningFillBlankAudio(
+            itemsArr,
+            result,
+            listeningTextKey,
+          )
+        } else {
+          handleGenerateAudio(
+            text,
+            undefined, // passageIndex
+            result,    // contentOverride (use updated result)
+            undefined, // voiceOverride
+            isListeningFB ? undefined : savedIndex, // questionIndex (for listening_quiz)
+            isListeningFB ? savedIndex : undefined, // itemIndex (for listening_fill_blank)
+          )
+        }
+      }
     }
 
     setEditingIndex(null)
@@ -452,12 +902,12 @@ export function GenerateContentDialog({
     if (!generationState.result) return
 
     const result = { ...generationState.result } as any
-    const itemsKey = getItemsKey(formState.activityType)
+    const itemsKey = getItemsKey(effectiveActivityType)
 
     // Create empty template based on activity type
     let newItem: any = {}
 
-    switch (formState.activityType) {
+    switch (effectiveActivityType) {
       case "vocabulary_quiz":
         newItem = {
           question_id: `q_new_${Date.now()}`,
@@ -495,6 +945,19 @@ export function GenerateContentDialog({
           passage_reference: "",
         }
         break
+      case "listening_fill_blank":
+        newItem = {
+          item_id: `lfb_new_${Date.now()}`,
+          full_sentence: "",
+          display_sentence: "",
+          missing_words: [],
+          acceptable_answers: [],
+          word_bank: [],
+          audio_url: null,
+          audio_status: "pending",
+          difficulty: "A2",
+        }
+        break
       case "sentence_builder":
         newItem = {
           item_id: `s_new_${Date.now()}`,
@@ -509,6 +972,29 @@ export function GenerateContentDialog({
           correct_word: "",
           definition: "",
           scrambled_letters: [],
+        }
+        break
+      case "listening_sentence_builder":
+        newItem = {
+          item_id: `lsb_new_${Date.now()}`,
+          correct_sentence: "",
+          words: [],
+          word_count: 0,
+          audio_url: null,
+          audio_status: "pending",
+          difficulty: "medium",
+        }
+        break
+      case "listening_word_builder":
+        newItem = {
+          item_id: `lwb_new_${Date.now()}`,
+          correct_word: "",
+          letters: [],
+          letter_count: 0,
+          definition: "",
+          audio_url: null,
+          audio_status: "pending",
+          difficulty: "medium",
         }
         break
       default:
@@ -529,6 +1015,7 @@ export function GenerateContentDialog({
   // Get item count from result
   const getItemCount = (result: any): number => {
     if (result.questions) return result.questions.length
+    if (result.items) return result.items.length
     if (result.pairs) return result.pairs.length
     if (result.sentences) return result.sentences.length
     if (result.words) return result.words.length
@@ -541,10 +1028,17 @@ export function GenerateContentDialog({
       case "vocabulary_quiz":
       case "ai_quiz":
       case "reading_comprehension":
+      case "listening_quiz":
         return "questions"
+      case "listening_fill_blank":
+      case "grammar_fill_blank":
+      case "writing_fill_blank":
+        return "items"
       case "sentence_builder":
+      case "listening_sentence_builder":
         return "sentences"
       case "word_builder":
+      case "listening_word_builder":
         return "words"
       default:
         return null
@@ -556,10 +1050,17 @@ export function GenerateContentDialog({
       case "vocabulary_quiz":
       case "ai_quiz":
       case "reading_comprehension":
+      case "listening_quiz":
         return "questions"
+      case "listening_fill_blank":
+      case "grammar_fill_blank":
+      case "writing_fill_blank":
+        return "items"
       case "sentence_builder":
+      case "listening_sentence_builder":
         return "sentences"
       case "word_builder":
+      case "listening_word_builder":
         return "words"
       default:
         return "items"
@@ -586,26 +1087,28 @@ export function GenerateContentDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent
-          className="max-w-[95vw] w-[1100px] h-[90vh] max-h-[900px] overflow-hidden flex flex-col"
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
+      <Sheet open={open} onOpenChange={handleOpenChange}>
+        <SheetContent
+          side="right"
+          className="w-[70vw] max-w-[1100px] sm:max-w-[70vw] p-0 flex flex-col"
         >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+            <SheetTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-purple-500" />
               Generate AI Content
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              AI Content Generation Wizard
+            </SheetDescription>
+          </SheetHeader>
 
           {/* Step Indicator */}
-          <div className="relative mb-4 shrink-0">
+          <div className="relative px-6 pt-4 pb-2 shrink-0">
             {/* Progress Bar Background */}
-            <div className="absolute top-2.5 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700" />
+            <div className="absolute top-6 left-6 right-6 h-0.5 bg-gray-200 dark:bg-gray-700" />
             {/* Progress Bar Fill */}
             <div
-              className="absolute top-2.5 left-0 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300"
+              className="absolute top-6 left-6 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300"
               style={{
                 width: `${(currentStep / (STEPS.length - 1)) * 100}%`,
               }}
@@ -666,7 +1169,7 @@ export function GenerateContentDialog({
           </div>
 
           {/* Step Content */}
-          <div className="flex-1 overflow-hidden min-h-0">
+          <div className="flex-1 overflow-hidden min-h-0 px-6">
             {/* Step 0: Select Book */}
             {currentStep === 0 && (
               <StepSelectBook
@@ -698,21 +1201,58 @@ export function GenerateContentDialog({
               />
             )}
 
-            {/* Step 2: Activity Type & Options */}
+            {/* Step 2: Select Skill (Epic 30) */}
             {currentStep === 2 && !isGenerating && (
               <ScrollArea className="h-full pr-4">
-                <div className="space-y-6">
-                  <ActivityTypeSelector
-                    selectedType={formState.activityType}
-                    onSelect={handleActivityTypeSelect}
-                  />
+                <SkillSelectionGrid
+                  skills={skills}
+                  selectedSkillSlug={formState.skillSlug}
+                  onSelect={(slug) => setSkillSlug(slug)}
+                  isLoading={isLoadingSkills}
+                />
+              </ScrollArea>
+            )}
 
-                  {formState.activityType && (
-                    <GenerationOptions
-                      activityType={formState.activityType}
-                      options={formState.options}
-                      onOptionChange={setOption}
-                    />
+            {/* Step 3: Format Selection & Configuration */}
+            {currentStep === 3 && !isGenerating && (
+              <ScrollArea className="h-full pr-4">
+                <div className="space-y-6">
+                  {formState.skillSlug ? (
+                    <>
+                      {/* Skill-based flow: format selection + config */}
+                      <FormatSelectionPanel
+                        formats={
+                          skills.find(
+                            (s) => s.skill.slug === formState.skillSlug,
+                          )?.formats || []
+                        }
+                        selectedFormatSlug={formState.formatSlug}
+                        onSelect={(slug) => setFormatSlug(slug)}
+                      />
+                      {formState.formatSlug && (
+                        <GenerationConfigPanel
+                          skillSlug={formState.skillSlug}
+                          formatSlug={formState.formatSlug}
+                          options={formState.options}
+                          onOptionChange={setOption}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* Fallback: old activity type selector */}
+                      <ActivityTypeSelector
+                        selectedType={formState.activityType}
+                        onSelect={handleActivityTypeSelect}
+                      />
+                      {formState.activityType && (
+                        <GenerationOptions
+                          activityType={formState.activityType}
+                          options={formState.options}
+                          onOptionChange={setOption}
+                        />
+                      )}
+                    </>
                   )}
 
                   <p className="text-xs text-center text-muted-foreground">
@@ -723,17 +1263,71 @@ export function GenerateContentDialog({
               </ScrollArea>
             )}
 
-            {/* Generating Animation */}
-            {isGenerating && (
+            {/* Generating Animation (non-streaming) */}
+            {isGenerating && streamingTotal === 0 && (
               <div className="h-full flex items-center justify-center">
                 <AIGeneratingAnimation activityType={formState.activityType} />
               </div>
             )}
 
-            {/* Step 3: Result/Preview */}
-            {currentStep === 3 && !isGenerating && generationState.result && (
+            {/* Streaming Progress: show passages as they arrive */}
+            {isGenerating && streamingTotal > 0 && currentStep === 4 && (
+              <ScrollArea className="h-full pr-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-purple-500" />
+                    <span className="text-sm font-medium">
+                      Generating passages... {streamingPassages.length} / {streamingTotal} ready
+                    </span>
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                        style={{ width: `${(streamingPassages.length / streamingTotal) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {streamingPassages.map((p, idx) => (
+                    <div
+                      key={p.passage_id}
+                      className="border rounded-lg p-4 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <h4 className="font-medium text-sm">{p.module_title || `Passage ${idx + 1}`}</h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {p.questions?.length || 0} questions
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-3">
+                        {p.passage?.slice(0, 200)}...
+                      </p>
+                    </div>
+                  ))}
+
+                  {/* Placeholder cards for pending passages */}
+                  {Array.from({ length: streamingTotal - streamingPassages.length }).map((_, idx) => (
+                    <div
+                      key={`pending-${idx}`}
+                      className="border border-dashed rounded-lg p-4 flex items-center gap-3"
+                    >
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Generating passage {streamingPassages.length + idx + 1}...
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+
+            {/* Step 4: Result/Preview */}
+            {currentStep === 4 && !isGenerating && generationState.result && (
               <StepResultPreview
-                activityType={formState.activityType}
+                activityType={
+                  (v2Response?.activity_type as ActivityType) ||
+                  formState.activityType
+                }
                 result={generationState.result}
                 editingIndex={editingIndex}
                 editedItem={editedItem}
@@ -745,12 +1339,49 @@ export function GenerateContentDialog({
                 onAddItem={handleAddItem}
                 getItemLabel={getItemLabel}
                 getItemCount={getItemCount}
+                onGenerateAudio={handleGenerateAudio}
+                onRegenerateAudio={(text, voiceId, pIdx) =>
+                  handleGenerateAudio(text, pIdx, undefined, voiceId)
+                }
+                onGenerateQuestionAudio={(text, qIdx) =>
+                  handleGenerateAudio(text, undefined, undefined, undefined, qIdx)
+                }
+                onRegenerateQuestionAudio={(text, voiceId, qIdx) =>
+                  handleGenerateAudio(text, undefined, undefined, voiceId, qIdx)
+                }
+                onGenerateItemAudio={(text, iIdx) =>
+                  handleGenerateAudio(text, undefined, undefined, undefined, undefined, iIdx)
+                }
+                onRegenerateItemAudio={(text, voiceId, iIdx) =>
+                  handleGenerateAudio(text, undefined, undefined, voiceId, undefined, iIdx)
+                }
+                onUpdatePassage={(newText, pIdx) => {
+                  const base = { ...(generationState.result as any) }
+                  if (pIdx !== undefined && base.passages) {
+                    base.passages = [...base.passages]
+                    const { passage_audio: _, ...rest } = base.passages[pIdx]
+                    base.passages[pIdx] = { ...rest, passage: newText }
+                  } else {
+                    delete base.passage_audio
+                    base.passage = newText
+                  }
+                  setGenerationResult(base)
+                }}
+                onUpdateQuestion={(qIdx, updates) => {
+                  const base = { ...(generationState.result as any) }
+                  if (base.questions) {
+                    base.questions = [...base.questions]
+                    base.questions[qIdx] = { ...base.questions[qIdx], ...updates }
+                    setGenerationResult(base)
+                  }
+                }}
+                isGeneratingAudio={isGeneratingAudio}
               />
             )}
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-4 border-t mt-4 shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-t shrink-0">
             {/* Left side: Quota display */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Sparkles className="h-4 w-4 text-purple-500" />
@@ -767,7 +1398,7 @@ export function GenerateContentDialog({
 
             {/* Right side: Action buttons */}
             <div className="flex items-center gap-2">
-              {currentStep === 3 ? (
+              {currentStep === 4 ? (
                 <>
                   <Button
                     variant="outline"
@@ -827,10 +1458,15 @@ export function GenerateContentDialog({
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Generating...
                       </>
-                    ) : currentStep === 2 ? (
+                    ) : currentStep === 3 ? (
                       <>
                         <Sparkles className="h-4 w-4 mr-2" />
                         Generate
+                      </>
+                    ) : currentStep === 2 && formState.skillSlug === "mix" ? (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate Mix
                       </>
                     ) : (
                       "Next"
@@ -840,8 +1476,8 @@ export function GenerateContentDialog({
               )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
@@ -1040,7 +1676,7 @@ function StepSelectBook({
 
                 {/* Selected Indicator */}
                 {selectedBookId === book.id && (
-                  <div className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-purple-500 flex items-center justify-center">
+                  <div className="absolute top-1 right-1 h-5 w-5 rounded-full bg-purple-500 flex items-center justify-center shadow-sm">
                     <Check className="h-3 w-3 text-white" />
                   </div>
                 )}
@@ -1191,6 +1827,15 @@ interface StepResultPreviewProps {
   onAddItem: () => void
   getItemLabel: (type: ActivityType | null) => string
   getItemCount: (result: any) => number
+  onGenerateAudio?: (passageText: string, passageIndex?: number) => void
+  onRegenerateAudio?: (passageText: string, voiceId: string, passageIndex?: number) => void
+  onUpdatePassage?: (newText: string, passageIndex?: number) => void
+  onGenerateQuestionAudio?: (audioText: string, questionIndex: number) => void
+  onRegenerateQuestionAudio?: (audioText: string, voiceId: string, questionIndex: number) => void
+  onUpdateQuestion?: (questionIndex: number, updates: Record<string, any>) => void
+  onGenerateItemAudio?: (text: string, itemIndex: number) => void
+  onRegenerateItemAudio?: (text: string, voiceId: string, itemIndex: number) => void
+  isGeneratingAudio?: boolean
 }
 
 function StepResultPreview({
@@ -1206,13 +1851,33 @@ function StepResultPreview({
   onAddItem,
   getItemLabel,
   getItemCount,
+  onGenerateAudio,
+  onRegenerateAudio,
+  onUpdatePassage,
+  onGenerateQuestionAudio,
+  onRegenerateQuestionAudio,
+  onUpdateQuestion,
+  onGenerateItemAudio,
+  onRegenerateItemAudio,
+  isGeneratingAudio,
 }: StepResultPreviewProps) {
+  const [editingPassage, setEditingPassage] = useState<number | "single" | null>(null)
+  const [editingPassageText, setEditingPassageText] = useState("")
+  // Listening quiz question editing state
+  const [editingQuestionIdx, setEditingQuestionIdx] = useState<number | null>(null)
+  const [editingQuestion, setEditingQuestion] = useState<{
+    question_text: string
+    audio_text: string
+    options: string[]
+    correct_index: number
+  } | null>(null)
+
   const activityConfig = activityType
     ? getActivityTypeConfig(activityType)
     : null
 
   const items =
-    result.questions || result.pairs || result.sentences || result.words || []
+    result.questions || result.items || result.pairs || result.sentences || result.words || []
   const itemCount = getItemCount(result)
   const itemLabel = getItemLabel(activityType)
 
@@ -1222,68 +1887,911 @@ function StepResultPreview({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Summary Header */}
-      <div className="flex items-center gap-3 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 mb-4">
-        <div className="p-2 rounded-md bg-green-500/10">
-          <Check className="h-6 w-6 text-green-600" />
-        </div>
-        <div>
-          <div className="font-medium text-green-800 dark:text-green-200">
-            Content Generated Successfully
+      <ScrollArea className="flex-1">
+        <div className="space-y-4 pr-4">
+          {/* Summary Header */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+            <Check className="h-4 w-4 text-green-600 shrink-0" />
+            <span className="text-sm font-medium text-green-800 dark:text-green-200">
+              {activityConfig?.name || "Activity"} • {itemCount} {itemLabel}
+            </span>
           </div>
-          <div className="text-sm text-green-600 dark:text-green-400">
-            {activityConfig?.name} • {itemCount} {itemLabel}
-          </div>
-        </div>
-      </div>
 
-      {/* Reading Comprehension Passage */}
-      {activityType === "reading_comprehension" &&
-        (result.passage || result.passage_text) && (
-          <div className="mb-4">
-            <Label className="mb-2 block">Reading Passage</Label>
-            <ScrollArea className="h-[150px]">
-              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {result.passage || result.passage_text}
-                </p>
+          {/* Multi-passage Reading Comprehension */}
+          {activityType === "reading_comprehension" && result.passages && result.passages.length > 1 ? (
+            <div className="space-y-4">
+              <Label>
+                {result.passages.length} Passages • {itemCount} Questions Total
+              </Label>
+              <div className="space-y-6">
+                {result.passages.map((passage: any, pIdx: number) => (
+                  <div key={pIdx} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          Passage {pIdx + 1}
+                        </Badge>
+                        <span className="text-sm font-medium text-muted-foreground">
+                          {passage.module_title}
+                        </span>
+                      </div>
+                      {editingPassage !== pIdx && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingPassage(pIdx)
+                            setEditingPassageText(passage.passage || "")
+                          }}
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                    {editingPassage === pIdx ? (
+                      <>
+                        <Textarea
+                          value={editingPassageText}
+                          onChange={(e) => setEditingPassageText(e.target.value)}
+                          rows={12}
+                          placeholder="Enter the reading passage..."
+                          className="min-h-[200px]"
+                        />
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingPassage(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              onUpdatePassage?.(editingPassageText, pIdx)
+                              setEditingPassage(null)
+                              onGenerateAudio?.(editingPassageText, pIdx)
+                            }}
+                            disabled={isGeneratingAudio}
+                            className="bg-teal-600 hover:bg-teal-700 text-white"
+                          >
+                            <Save className="h-3.5 w-3.5 mr-1.5" />
+                            Save &amp; Generate Audio
+                          </Button>
+                        </div>
+                      </>
+                    ) : isGeneratingAudio && !passage.passage_audio ? (
+                      <div className="flex flex-col items-center justify-center gap-3 p-8 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-900/10">
+                        <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-teal-700 dark:text-teal-300">Generating audio narration...</p>
+                          <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+                        </div>
+                      </div>
+                    ) : passage.passage_audio ? (
+                      <PassageAudioPlayer
+                        audioBase64={passage.passage_audio.audio_base64}
+                        wordTimestamps={passage.passage_audio.word_timestamps}
+                        durationSeconds={passage.passage_audio.duration_seconds}
+                        onRegenerateAudio={
+                          onRegenerateAudio
+                            ? (voiceId) => onRegenerateAudio(passage.passage, voiceId, pIdx)
+                            : undefined
+                        }
+                        isRegenerating={isGeneratingAudio}
+                      />
+                    ) : (
+                      <>
+                        <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {passage.passage}
+                          </p>
+                        </div>
+                        {onGenerateAudio && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onGenerateAudio(passage.passage, pIdx)}
+                            disabled={isGeneratingAudio}
+                            className="text-teal-600 border-teal-300 hover:bg-teal-50 dark:text-teal-400 dark:border-teal-700 dark:hover:bg-teal-900/20"
+                          >
+                            <Headphones className="h-4 w-4 mr-1.5" />
+                            Generate Audio
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    <Label className="text-xs text-muted-foreground">
+                      Questions ({passage.questions?.length || 0})
+                    </Label>
+                    <div className="space-y-2 pl-2">
+                      {(passage.questions || []).map((item: any, qIdx: number) => (
+                        <div key={qIdx} className="p-3 rounded-md bg-muted/50 border">
+                          <div className="font-medium text-muted-foreground mb-1 text-xs">
+                            #{qIdx + 1}
+                          </div>
+                          <PreviewItemContent
+                            activityType={activityType}
+                            item={item}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {pIdx < result.passages.length - 1 && (
+                      <Separator />
+                    )}
+                  </div>
+                ))}
               </div>
-            </ScrollArea>
+            </div>
+          ) : (
+          <>
+          {/* Single Reading Comprehension Passage */}
+          {activityType === "reading_comprehension" &&
+            (result.passage || result.passage_text) && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Reading Passage</Label>
+                  {editingPassage !== "single" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingPassage("single")
+                        setEditingPassageText(result.passage || result.passage_text || "")
+                      }}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </button>
+                  )}
+                </div>
+                {editingPassage === "single" ? (
+                  <>
+                    <Textarea
+                      value={editingPassageText}
+                      onChange={(e) => setEditingPassageText(e.target.value)}
+                      rows={12}
+                      placeholder="Enter the reading passage..."
+                      className="min-h-[200px]"
+                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingPassage(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          onUpdatePassage?.(editingPassageText)
+                          setEditingPassage(null)
+                          onGenerateAudio?.(editingPassageText)
+                        }}
+                        disabled={isGeneratingAudio}
+                        className="bg-teal-600 hover:bg-teal-700 text-white"
+                      >
+                        <Save className="h-3.5 w-3.5 mr-1.5" />
+                        Save &amp; Generate Audio
+                      </Button>
+                    </div>
+                  </>
+                ) : isGeneratingAudio && !result.passage_audio ? (
+                  <div className="flex flex-col items-center justify-center gap-3 p-8 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-900/10">
+                    <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-teal-700 dark:text-teal-300">Generating audio narration...</p>
+                      <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+                    </div>
+                  </div>
+                ) : result.passage_audio ? (
+                  <PassageAudioPlayer
+                    audioBase64={result.passage_audio.audio_base64}
+                    wordTimestamps={result.passage_audio.word_timestamps}
+                    durationSeconds={result.passage_audio.duration_seconds}
+                    onRegenerateAudio={
+                      onRegenerateAudio
+                        ? (voiceId) => onRegenerateAudio(result.passage || result.passage_text, voiceId)
+                        : undefined
+                    }
+                    isRegenerating={isGeneratingAudio}
+                  />
+                ) : (
+                  <>
+                    <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {result.passage || result.passage_text}
+                      </p>
+                    </div>
+                    {onGenerateAudio && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onGenerateAudio(result.passage || result.passage_text)}
+                        disabled={isGeneratingAudio}
+                        className="text-teal-600 border-teal-300 hover:bg-teal-50 dark:text-teal-400 dark:border-teal-700 dark:hover:bg-teal-900/20"
+                      >
+                        <Headphones className="h-4 w-4 mr-1.5" />
+                        Generate Audio
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+          {/* Listening Quiz — per-question audio preview */}
+          {activityType === "listening_quiz" && result.questions && (
+            <div className="space-y-4">
+              <Label>
+                Listening Quiz — {result.questions.length} Questions
+              </Label>
+              <div className="space-y-4">
+                {result.questions.map((q: any, qIdx: number) => (
+                  <div
+                    key={q.question_id || qIdx}
+                    className="space-y-2 p-4 rounded-lg border bg-card"
+                  >
+                    {/* Question header with sub_skill badge + actions */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-muted-foreground">
+                          #{qIdx + 1}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-xs capitalize",
+                            q.sub_skill === "gist" && "border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400",
+                            q.sub_skill === "detail" && "border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400",
+                            q.sub_skill === "discrimination" && "border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-400",
+                          )}
+                        >
+                          {q.sub_skill}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {/* Hint toggle */}
+                        <button
+                          type="button"
+                          onClick={() => onUpdateQuestion?.(qIdx, { hint_enabled: !q.hint_enabled })}
+                          className={cn(
+                            "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors",
+                            q.hint_enabled
+                              ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+                              : "border-muted text-muted-foreground hover:border-amber-300 hover:text-amber-600",
+                          )}
+                          title="When enabled, students can reveal the audio text as a hint"
+                        >
+                          <Eye className="h-3 w-3" />
+                          Hint
+                        </button>
+                        {/* Edit button */}
+                        {editingQuestionIdx !== qIdx && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingQuestionIdx(qIdx)
+                              setEditingQuestion({
+                                question_text: q.question_text,
+                                audio_text: q.audio_text,
+                                options: [...q.options],
+                                correct_index: q.correct_index,
+                              })
+                            }}
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+                          >
+                            <Pencil className="h-3 w-3" />
+                            Edit
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {editingQuestionIdx === qIdx && editingQuestion ? (
+                      /* ---- EDIT MODE ---- */
+                      <div className="space-y-3 pt-1">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Audio Text</Label>
+                          <Textarea
+                            value={editingQuestion.audio_text}
+                            onChange={(e) => setEditingQuestion({ ...editingQuestion, audio_text: e.target.value })}
+                            rows={2}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Question</Label>
+                          <Input
+                            value={editingQuestion.question_text}
+                            onChange={(e) => setEditingQuestion({ ...editingQuestion, question_text: e.target.value })}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Options (click to set correct answer)</Label>
+                          <div className="space-y-1.5">
+                            {editingQuestion.options.map((opt, oIdx) => (
+                              <div key={oIdx} className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingQuestion({ ...editingQuestion, correct_index: oIdx })}
+                                  className={cn(
+                                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium transition-colors",
+                                    oIdx === editingQuestion.correct_index
+                                      ? "border-green-500 bg-green-500 text-white"
+                                      : "border-muted text-muted-foreground hover:border-green-400",
+                                  )}
+                                >
+                                  {String.fromCharCode(65 + oIdx)}
+                                </button>
+                                <Input
+                                  value={opt}
+                                  onChange={(e) => {
+                                    const newOptions = [...editingQuestion.options]
+                                    newOptions[oIdx] = e.target.value
+                                    setEditingQuestion({ ...editingQuestion, options: newOptions })
+                                  }}
+                                  className="text-sm h-8"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingQuestionIdx(null)
+                              setEditingQuestion(null)
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const audioTextChanged = editingQuestion.audio_text !== q.audio_text
+                              onUpdateQuestion?.(qIdx, {
+                                question_text: editingQuestion.question_text,
+                                audio_text: editingQuestion.audio_text,
+                                options: editingQuestion.options,
+                                correct_index: editingQuestion.correct_index,
+                                correct_answer: editingQuestion.options[editingQuestion.correct_index],
+                                // Clear audio if audio_text was edited
+                                ...(audioTextChanged ? { audio_data: undefined, audio_status: "pending" } : {}),
+                              })
+                              setEditingQuestionIdx(null)
+                              setEditingQuestion(null)
+                              // Regenerate audio if audio text changed
+                              if (audioTextChanged) {
+                                onGenerateQuestionAudio?.(editingQuestion.audio_text, qIdx)
+                              }
+                            }}
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                          >
+                            <Save className="h-3.5 w-3.5 mr-1.5" />
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* ---- VIEW MODE ---- */
+                      <>
+                        {/* Audio text section */}
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">
+                            Audio Text (spoken to student)
+                          </Label>
+                          {isGeneratingAudio && !q.audio_data ? (
+                            <div className="flex items-center gap-3 p-4 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-900/10">
+                              <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                              <p className="text-sm text-teal-700 dark:text-teal-300">
+                                Generating audio...
+                              </p>
+                            </div>
+                          ) : q.audio_data ? (
+                            <PassageAudioPlayer
+                              audioBase64={q.audio_data.audio_base64}
+                              wordTimestamps={q.audio_data.word_timestamps}
+                              durationSeconds={q.audio_data.duration_seconds}
+                              onRegenerateAudio={
+                                onRegenerateQuestionAudio
+                                  ? (voiceId) => onRegenerateQuestionAudio(q.audio_text, voiceId, qIdx)
+                                  : undefined
+                              }
+                              isRegenerating={isGeneratingAudio}
+                            />
+                          ) : (
+                            <>
+                              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                                <p className="text-sm leading-relaxed">
+                                  {q.audio_text}
+                                </p>
+                              </div>
+                              {onGenerateQuestionAudio && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => onGenerateQuestionAudio(q.audio_text, qIdx)}
+                                  disabled={isGeneratingAudio}
+                                  className="text-teal-600 border-teal-300 hover:bg-teal-50 dark:text-teal-400 dark:border-teal-700 dark:hover:bg-teal-900/20"
+                                >
+                                  <Headphones className="h-4 w-4 mr-1.5" />
+                                  Generate Audio
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Hint enabled indicator */}
+                        {q.hint_enabled && (
+                          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                            <Eye className="h-3 w-3" />
+                            <span>Hint enabled — students can reveal the audio text</span>
+                          </div>
+                        )}
+
+                        {/* Question text */}
+                        <div className="space-y-1 pt-1">
+                          <Label className="text-xs text-muted-foreground">
+                            Question
+                          </Label>
+                          <p className="text-sm font-medium">{q.question_text}</p>
+                        </div>
+
+                        {/* MCQ options */}
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          {q.options?.map((opt: string, oIdx: number) => (
+                            <div
+                              key={oIdx}
+                              className={cn(
+                                "flex items-center gap-2 p-2 rounded-md border text-sm",
+                                oIdx === q.correct_index
+                                  ? "border-green-300 bg-green-50 text-green-800 dark:border-green-700 dark:bg-green-900/20 dark:text-green-300"
+                                  : "border-muted bg-muted/30",
+                              )}
+                            >
+                              <span className="font-medium text-xs text-muted-foreground">
+                                {String.fromCharCode(65 + oIdx)}.
+                              </span>
+                              <span>{opt}</span>
+                              {oIdx === q.correct_index && (
+                                <Check className="h-3.5 w-3.5 ml-auto text-green-600 shrink-0" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Explanation */}
+                        {q.explanation && (
+                          <p className="text-xs text-muted-foreground italic pt-1">
+                            {q.explanation}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Listening Fill Blank — per-item audio preview with edit/delete */}
+          {activityType === "listening_fill_blank" && result.items && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>
+                  Listening Fill Blank — {result.items.length} Items
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddItem}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                >
+                  <svg
+                    className="h-4 w-4 mr-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Add Item
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {result.items.map((item: any, iIdx: number) => (
+                  <div
+                    key={item.item_id || iIdx}
+                    className="relative"
+                  >
+                    {editingIndex === iIdx ? (
+                      <EditableItemForm
+                        activityType={activityType}
+                        item={editedItem}
+                        onChange={onEditedItemChange}
+                        onSave={onSaveEdit}
+                        onCancel={onCancelEdit}
+                      />
+                    ) : (
+                    <div className="space-y-2 p-4 rounded-lg border bg-card group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            #{iIdx + 1}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {(item.missing_words || [item.missing_word]).length} blank{(item.missing_words || [item.missing_word]).length > 1 ? "s" : ""}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => onStartEdit(iIdx, item)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => onDeleteItem(iIdx)}
+                            disabled={result.items.length <= 1}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Audio section — full_sentence */}
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">
+                          Audio (full sentence spoken to student)
+                        </Label>
+                        {isGeneratingAudio && !item.audio_data ? (
+                          <div className="flex items-center gap-3 p-4 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-900/10">
+                            <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                            <p className="text-sm text-teal-700 dark:text-teal-300">
+                              Generating audio...
+                            </p>
+                          </div>
+                        ) : item.audio_data ? (
+                          <PassageAudioPlayer
+                            audioBase64={item.audio_data.audio_base64}
+                            wordTimestamps={item.audio_data.word_timestamps}
+                            durationSeconds={item.audio_data.duration_seconds}
+                            onRegenerateAudio={
+                              onRegenerateItemAudio
+                                ? (voiceId) => onRegenerateItemAudio(item.full_sentence, voiceId, iIdx)
+                                : undefined
+                            }
+                            isRegenerating={isGeneratingAudio}
+                          />
+                        ) : (
+                          <>
+                            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                              <p className="text-sm leading-relaxed">
+                                {item.full_sentence}
+                              </p>
+                            </div>
+                            {onGenerateItemAudio && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onGenerateItemAudio(item.full_sentence, iIdx)}
+                                disabled={isGeneratingAudio}
+                                className="text-teal-600 border-teal-300 hover:bg-teal-50 dark:text-teal-400 dark:border-teal-700 dark:hover:bg-teal-900/20"
+                              >
+                                <Headphones className="h-4 w-4 mr-1.5" />
+                                Generate Audio
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Display sentence with blanks highlighted */}
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">
+                          Student sees
+                        </Label>
+                        <p className="text-sm font-medium leading-relaxed">
+                          {item.display_sentence.split("_______").map((part: string, pIdx: number, arr: string[]) => (
+                            <span key={pIdx}>
+                              {part}
+                              {pIdx < arr.length - 1 && (
+                                <span className="inline-block mx-1 px-3 py-0.5 rounded bg-teal-100 dark:bg-teal-900/30 border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 text-xs font-semibold">
+                                  blank {pIdx + 1}
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </p>
+                      </div>
+
+                      {/* Word bank chips */}
+                      {item.word_bank && item.word_bank.length > 0 && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">
+                            Word Bank
+                          </Label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {item.word_bank.map((word: string, wIdx: number) => {
+                              const isCorrect = (item.missing_words || []).some(
+                                (mw: string) => mw.toLowerCase() === word.toLowerCase()
+                              )
+                              return (
+                                <span
+                                  key={wIdx}
+                                  className={cn(
+                                    "px-2.5 py-1 rounded-md text-xs font-medium border",
+                                    isCorrect
+                                      ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                                      : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+                                  )}
+                                >
+                                  {word}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Answers — per-blank */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">Answers:</span>
+                        {(item.missing_words || [item.missing_word]).map((word: string, wIdx: number) => (
+                          <Badge key={wIdx} variant="outline" className="text-green-600 border-green-300">
+                            {wIdx + 1}. {word}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Listening Sentence Builder preview */}
+          {activityType === "listening_sentence_builder" && result.sentences && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>
+                  Generated Sentences ({result.sentences.length})
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddItem}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                >
+                  <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Sentence
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {result.sentences.map((item: any, idx: number) => (
+                  <div key={item.item_id || idx} className="relative">
+                    {editingIndex === idx ? (
+                      <EditableItemForm
+                        activityType={activityType}
+                        item={editedItem}
+                        onChange={onEditedItemChange}
+                        onSave={onSaveEdit}
+                        onCancel={onCancelEdit}
+                      />
+                    ) : (
+                    <div className="group rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">#{idx + 1}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {item.word_count} words
+                          </Badge>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onStartEdit(idx, item)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDeleteItem(idx)} disabled={result.sentences.length <= 1}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Audio */}
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Audio (student hears this)</label>
+                        {item.audio_data ? (
+                          <PassageAudioPlayer
+                            audioBase64={item.audio_data.audio_base64}
+                            wordTimestamps={item.audio_data.word_timestamps}
+                            durationSeconds={item.audio_data.duration_seconds}
+                            onRegenerateAudio={
+                              onRegenerateItemAudio
+                                ? (voiceId) => onRegenerateItemAudio(item.correct_sentence, voiceId, idx)
+                                : undefined
+                            }
+                            isRegenerating={isGeneratingAudio}
+                          />
+                        ) : (
+                          <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                            <p className="text-sm">{item.correct_sentence}</p>
+                          </div>
+                        )}
+                      </div>
+                      {/* Shuffled words */}
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Shuffled Words (student sees)</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(item.words || []).map((word: string, wIdx: number) => (
+                            <span key={wIdx} className="px-2.5 py-1 rounded-md text-xs font-medium border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600">
+                              {word}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Correct answer (teacher view) */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">Correct:</span>
+                        <span className="text-green-600 font-medium">{item.correct_sentence}</span>
+                      </div>
+                    </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Listening Word Builder preview */}
+          {activityType === "listening_word_builder" && result.words && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>
+                  Generated Words ({result.words.length})
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddItem}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                >
+                  <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Word
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {result.words.map((item: any, idx: number) => (
+                  <div key={item.item_id || idx} className="relative">
+                    {editingIndex === idx ? (
+                      <EditableItemForm
+                        activityType={activityType}
+                        item={editedItem}
+                        onChange={onEditedItemChange}
+                        onSave={onSaveEdit}
+                        onCancel={onCancelEdit}
+                      />
+                    ) : (
+                    <div className="group rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">#{idx + 1}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {item.letter_count} letters
+                          </Badge>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onStartEdit(idx, item)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDeleteItem(idx)} disabled={result.words.length <= 1}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Audio */}
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Audio (student hears this)</label>
+                        {item.audio_data ? (
+                          <PassageAudioPlayer
+                            audioBase64={item.audio_data.audio_base64}
+                            wordTimestamps={item.audio_data.word_timestamps}
+                            durationSeconds={item.audio_data.duration_seconds}
+                            onRegenerateAudio={
+                              onRegenerateItemAudio
+                                ? (voiceId) => onRegenerateItemAudio(item.correct_word, voiceId, idx)
+                                : undefined
+                            }
+                            isRegenerating={isGeneratingAudio}
+                          />
+                        ) : (
+                          <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                            <p className="text-sm">{item.correct_word}</p>
+                          </div>
+                        )}
+                      </div>
+                      {/* Scrambled letters */}
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Scrambled Letters (student sees)</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(item.letters || []).map((letter: string, lIdx: number) => (
+                            <span key={lIdx} className="px-2.5 py-1 rounded-md text-xs font-medium border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 uppercase">
+                              {letter}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Definition hint */}
+                      {item.definition && (
+                        <div className="text-xs text-muted-foreground">
+                          <span className="font-medium">Definition:</span> {item.definition}
+                        </div>
+                      )}
+                      {/* Correct answer (teacher view) */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">Correct:</span>
+                        <span className="text-green-600 font-medium">{item.correct_word}</span>
+                      </div>
+                    </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Items Header with Add Button — hidden for types that have their own preview above */}
+          {activityType !== "listening_quiz" && activityType !== "listening_fill_blank" && activityType !== "listening_sentence_builder" && activityType !== "listening_word_builder" && (<>
+          <div className="flex items-center justify-between">
+            <Label>
+              Generated {itemLabel} ({itemCount})
+            </Label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onAddItem}
+              className="text-purple-600 border-purple-300 hover:bg-purple-50"
+            >
+              <svg
+                className="h-4 w-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add {itemLabel.slice(0, -1)}
+            </Button>
           </div>
-        )}
 
-      {/* Items Header with Add Button */}
-      <div className="flex items-center justify-between mb-2">
-        <Label>
-          Generated {itemLabel} ({itemCount})
-        </Label>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onAddItem}
-          className="text-purple-600 border-purple-300 hover:bg-purple-50"
-        >
-          <svg
-            className="h-4 w-4 mr-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          Add {itemLabel.slice(0, -1)}
-        </Button>
-      </div>
-
-      {/* Items List */}
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full border rounded-lg">
-          <div className="p-4 space-y-3">
+          {/* Items List */}
+          <div className="space-y-3">
             {items.map((item: any, index: number) => (
               <div key={index} className="relative">
                 {editingIndex === index ? (
@@ -1401,8 +2909,11 @@ function StepResultPreview({
               </div>
             ))}
           </div>
-        </ScrollArea>
-      </div>
+          </>)}
+          </>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   )
 }
@@ -1437,24 +2948,27 @@ function PreviewItemContent({
   }
 
   // Common options display component with correct answer highlighting
+  const optionLetters = ["A", "B", "C", "D", "E", "F"]
   const renderOptions = (options: any[]) => (
-    <div className="mt-2 flex flex-wrap gap-1.5">
+    <div className="mt-2 space-y-1.5">
       {options.map((opt: any, i: number) => {
         const isCorrect = isCorrectOption(opt, i)
         const optText = typeof opt === "object" ? opt.text : opt
         return (
-          <span
+          <div
             key={i}
             className={cn(
-              "text-xs px-2 py-1 rounded-md border",
+              "flex items-start gap-2 text-xs px-3 py-2 rounded-md border",
               isCorrect
                 ? "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-200 dark:border-green-700 font-medium"
                 : "bg-muted/50 text-muted-foreground border-muted",
             )}
           >
-            {isCorrect && <Check className="h-3 w-3 inline mr-1" />}
-            {optText}
-          </span>
+            <span className="shrink-0 font-semibold">
+              {isCorrect ? <Check className="h-3.5 w-3.5 inline" /> : optionLetters[i] + "."}
+            </span>
+            <span>{optText}</span>
+          </div>
         )
       })}
     </div>
@@ -1501,10 +3015,57 @@ function PreviewItemContent({
           )}
         </div>
       )
+    case "listening_fill_blank":
+      return (
+        <div>
+          <div className="text-sm">{item.display_sentence}</div>
+          <div className="mt-1 text-xs">
+            <span className="text-muted-foreground">Answers: </span>
+            {(item.missing_words || [item.missing_word]).map((word: string, wIdx: number) => (
+              <span key={wIdx} className="font-medium text-green-600">
+                {wIdx > 0 && ", "}
+                {wIdx + 1}. {word}
+              </span>
+            ))}
+          </div>
+          {item.word_bank && item.word_bank.length > 0 && (
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              Word bank: {item.word_bank.join(", ")}
+            </div>
+          )}
+        </div>
+      )
+    case "grammar_fill_blank":
+    case "writing_fill_blank":
+      return (
+        <div>
+          <div className="text-sm">{item.display_sentence}</div>
+          <div className="mt-1 text-xs">
+            <span className="text-muted-foreground">Answer: </span>
+            <span className="font-medium text-green-600">{item.missing_word}</span>
+          </div>
+          {item.acceptable_answers && item.acceptable_answers.length > 1 && (
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              Also accepted: {item.acceptable_answers.filter((a: string) => a.toLowerCase() !== item.missing_word.toLowerCase()).join(", ")}
+            </div>
+          )}
+          {item.word_type && (
+            <div className="mt-0.5 text-xs text-muted-foreground capitalize">
+              Type: {item.word_type}
+            </div>
+          )}
+        </div>
+      )
     case "sentence_builder":
+    case "listening_sentence_builder":
       return (
         <div>
           <div className="text-sm">{item.correct_sentence}</div>
+          {item.words && (
+            <div className="text-xs text-muted-foreground mt-1">
+              Words: {item.words.join(" | ")}
+            </div>
+          )}
           {item.translation && (
             <div className="text-xs text-muted-foreground mt-1">
               Translation: {item.translation}
@@ -1513,15 +3074,16 @@ function PreviewItemContent({
         </div>
       )
     case "word_builder":
+    case "listening_word_builder":
       return (
         <div>
           <div className="font-medium">{item.correct_word}</div>
           <div className="text-sm text-muted-foreground">
             {item.definition || item.hint}
           </div>
-          {item.scrambled_letters && (
+          {(item.letters || item.scrambled_letters) && (
             <div className="text-xs text-muted-foreground mt-1">
-              Letters: {item.scrambled_letters.join(", ")}
+              Letters: {(item.letters || item.scrambled_letters).join(", ")}
             </div>
           )}
         </div>
@@ -1827,6 +3389,364 @@ function EditableItemForm({
         </>
       )}
 
+      {/* Listening Fill Blank — word-picker UI */}
+      {activityType === "listening_fill_blank" && (() => {
+        // Split sentence into tokens preserving punctuation attached to words
+        const fullSentence: string = item.full_sentence || ""
+        const missingSet = new Set((item.missing_words || []).map((w: string) => w.toLowerCase()))
+
+        // Tokenize: split into words and whitespace/punctuation segments
+        // e.g. "Hello, world!" → ["Hello", ",", " ", "world", "!"]
+        const tokens: string[] = fullSentence.match(/[\w'-]+|[^\w\s]|\s+/g) || []
+
+        // Helper to rebuild all derived fields from a new missing words list
+        const rebuildFromSelection = (newMissing: string[]) => {
+          // Rebuild display_sentence
+          const newMissingLower = new Set(newMissing.map(w => w.toLowerCase()))
+          let display = fullSentence
+          for (const word of newMissing) {
+            if (!word) continue
+            const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+            display = display.replace(regex, '_______')
+          }
+          // Rebuild word bank: new correct words + existing distractors
+          const oldCorrect = new Set((item.missing_words || []).map((w: string) => w.toLowerCase()))
+          const distractors = (item.word_bank || []).filter(
+            (w: string) => !oldCorrect.has(w.toLowerCase()) && !newMissingLower.has(w.toLowerCase())
+          )
+          onChange({
+            ...item,
+            missing_words: newMissing,
+            display_sentence: display,
+            word_bank: [...newMissing, ...distractors],
+            acceptable_answers: newMissing.map((w: string) => [w]),
+          })
+        }
+
+        // Toggle a word as blank / not blank
+        const toggleWord = (word: string) => {
+          const currentMissing: string[] = item.missing_words || []
+          const isSelected = currentMissing.some(w => w.toLowerCase() === word.toLowerCase())
+          if (isSelected) {
+            rebuildFromSelection(currentMissing.filter(w => w.toLowerCase() !== word.toLowerCase()))
+          } else {
+            rebuildFromSelection([...currentMissing, word])
+          }
+        }
+
+        // Get distractors (word bank words that are NOT correct answers)
+        const distractors = (item.word_bank || []).filter(
+          (w: string) => !missingSet.has(w.toLowerCase())
+        )
+
+        return (
+        <>
+          {/* Editable sentence */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Sentence</Label>
+            <Textarea
+              value={fullSentence}
+              onChange={(e) => {
+                const newFull = e.target.value
+                const currentMissing: string[] = item.missing_words || []
+                // Keep only missing words that still exist in new sentence
+                const kept = currentMissing.filter(w =>
+                  new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(newFull)
+                )
+                let display = newFull
+                for (const word of kept) {
+                  const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+                  display = display.replace(regex, '_______')
+                }
+                const oldCorrect = new Set(currentMissing.map((w: string) => w.toLowerCase()))
+                const existingDistractors = (item.word_bank || []).filter(
+                  (w: string) => !oldCorrect.has(w.toLowerCase())
+                )
+                onChange({
+                  ...item,
+                  full_sentence: newFull,
+                  missing_words: kept,
+                  display_sentence: display,
+                  word_bank: [...kept, ...existingDistractors],
+                  acceptable_answers: kept.map((w: string) => [w]),
+                  audio_data: undefined,
+                  audio_url: null,
+                  audio_status: "pending",
+                })
+              }}
+              rows={2}
+              placeholder="Type the full sentence here..."
+            />
+          </div>
+
+          {/* Word picker — click words to toggle as blanks */}
+          {fullSentence.trim() && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">
+                Tap words to mark as blanks
+              </Label>
+              <div className="flex flex-wrap gap-1 p-3 rounded-lg border bg-card min-h-[44px]">
+                {tokens.map((token, tIdx) => {
+                  const isWord = /^[\w'-]+$/.test(token)
+                  if (!isWord) {
+                    // Whitespace or punctuation — render as-is
+                    return <span key={tIdx} className="text-sm">{token}</span>
+                  }
+                  const isBlank = missingSet.has(token.toLowerCase())
+                  return (
+                    <button
+                      key={tIdx}
+                      type="button"
+                      onClick={() => toggleWord(token)}
+                      className={cn(
+                        "px-2 py-0.5 rounded text-sm font-medium transition-all border cursor-pointer",
+                        isBlank
+                          ? "bg-teal-500 text-white border-teal-600 shadow-sm"
+                          : "bg-transparent border-transparent hover:bg-muted hover:border-muted-foreground/20"
+                      )}
+                    >
+                      {token}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {(item.missing_words || []).length} blank(s) selected
+                {(item.missing_words || []).length > 0 && (
+                  <> — {(item.missing_words || []).join(", ")}</>
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Distractors — extra wrong words for the word bank */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">
+              Distractors <span className="font-normal text-muted-foreground">(extra wrong words for word bank, comma-separated)</span>
+            </Label>
+            <Input
+              value={distractors.join(", ")}
+              onChange={(e) => {
+                const newDistractors = e.target.value.split(",").map((w: string) => w.trim()).filter(Boolean)
+                const correctWords: string[] = item.missing_words || []
+                onChange({
+                  ...item,
+                  word_bank: [...correctWords, ...newDistractors],
+                })
+              }}
+              placeholder="dog, park, house"
+            />
+          </div>
+
+          {/* Word bank preview */}
+          {(item.word_bank || []).length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Word Bank Preview</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {(item.word_bank || []).map((word: string, wIdx: number) => {
+                  const isCorrect = missingSet.has(word.toLowerCase())
+                  return (
+                    <span
+                      key={wIdx}
+                      className={cn(
+                        "px-2.5 py-1 rounded-md text-xs font-medium border",
+                        isCorrect
+                          ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-muted-foreground"
+                      )}
+                    >
+                      {word}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+        )
+      })()}
+
+      {/* Grammar Fill Blank */}
+      {activityType === "grammar_fill_blank" && (
+        <>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">
+              Sentence (use _______ for blank)
+            </Label>
+            <Textarea
+              value={item.sentence || item.display_sentence || ""}
+              onChange={(e) => {
+                const field = item.sentence !== undefined ? "sentence" : "display_sentence"
+                updateField(field, e.target.value)
+              }}
+              rows={2}
+              placeholder="She _______ to the store."
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Correct Answer</Label>
+            <Input
+              value={item.correct_answer || item.missing_word || ""}
+              onChange={(e) => {
+                const field = item.correct_answer !== undefined ? "correct_answer" : "missing_word"
+                updateField(field, e.target.value)
+              }}
+              placeholder="went"
+            />
+          </div>
+          {item.word_bank && (
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">
+                Word Bank (comma-separated)
+              </Label>
+              <Input
+                value={(item.word_bank || []).join(", ")}
+                onChange={(e) => {
+                  const words = e.target.value.split(",").map((w: string) => w.trim()).filter(Boolean)
+                  onChange({ ...item, word_bank: words })
+                }}
+                placeholder="went, goes, going, gone"
+              />
+            </div>
+          )}
+          {item.grammar_topic && (
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Grammar Topic</Label>
+              <Input
+                value={item.grammar_topic || ""}
+                onChange={(e) => updateField("grammar_topic", e.target.value)}
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Writing Fill Blank */}
+      {activityType === "writing_fill_blank" && (
+        <>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">
+              Sentence (use _______ for blank)
+            </Label>
+            <Textarea
+              value={item.display_sentence || ""}
+              onChange={(e) => updateField("display_sentence", e.target.value)}
+              rows={2}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Missing Word</Label>
+            <Input
+              value={item.missing_word || ""}
+              onChange={(e) => updateField("missing_word", e.target.value)}
+            />
+          </div>
+          {item.acceptable_answers && (
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">
+                Acceptable Answers (comma-separated)
+              </Label>
+              <Input
+                value={(item.acceptable_answers || []).join(", ")}
+                onChange={(e) => {
+                  const answers = e.target.value.split(",").map((a: string) => a.trim()).filter(Boolean)
+                  onChange({ ...item, acceptable_answers: answers })
+                }}
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Listening Sentence Builder */}
+      {activityType === "listening_sentence_builder" && (
+        <>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Sentence (spoken via audio)</Label>
+            <Textarea
+              value={item.correct_sentence || ""}
+              onChange={(e) => {
+                const newSentence = e.target.value
+                const words = newSentence.split(/\s+/).filter(Boolean)
+                const shuffled = [...words].sort(() => Math.random() - 0.5)
+                if (JSON.stringify(shuffled) === JSON.stringify(words) && words.length >= 2) {
+                  [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]]
+                }
+                onChange({
+                  ...item,
+                  correct_sentence: newSentence,
+                  words: shuffled,
+                  word_count: words.length,
+                  audio_data: undefined,
+                  audio_url: null,
+                  audio_status: "pending",
+                })
+              }}
+              rows={2}
+              placeholder="The cat is sleeping on the bed."
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Shuffled Words Preview</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {(item.words || []).map((word: string, wIdx: number) => (
+                <span key={wIdx} className="px-2.5 py-1 rounded-md text-xs font-medium border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600">
+                  {word}
+                </span>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Listening Word Builder */}
+      {activityType === "listening_word_builder" && (
+        <>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Word (spoken via audio)</Label>
+            <Input
+              value={item.correct_word || ""}
+              onChange={(e) => {
+                const newWord = e.target.value.toLowerCase().trim()
+                const letters = newWord.split("")
+                const scrambled = [...letters].sort(() => Math.random() - 0.5)
+                if (JSON.stringify(scrambled) === JSON.stringify(letters) && letters.length >= 2) {
+                  [scrambled[0], scrambled[1]] = [scrambled[1], scrambled[0]]
+                }
+                onChange({
+                  ...item,
+                  correct_word: newWord,
+                  letters: scrambled,
+                  letter_count: letters.length,
+                  audio_data: undefined,
+                  audio_url: null,
+                  audio_status: "pending",
+                })
+              }}
+              placeholder="beautiful"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Definition (optional hint)</Label>
+            <Input
+              value={item.definition || ""}
+              onChange={(e) => updateField("definition", e.target.value)}
+              placeholder="Very attractive or pleasing"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Scrambled Letters Preview</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {(item.letters || []).map((letter: string, lIdx: number) => (
+                <span key={lIdx} className="px-2.5 py-1 rounded-md text-xs font-medium border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 uppercase">
+                  {letter}
+                </span>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Fallback for unknown types - show all editable string fields */}
       {![
         "vocabulary_quiz",
@@ -1834,6 +3754,11 @@ function EditableItemForm({
         "reading_comprehension",
         "sentence_builder",
         "word_builder",
+        "listening_fill_blank",
+        "grammar_fill_blank",
+        "writing_fill_blank",
+        "listening_sentence_builder",
+        "listening_word_builder",
       ].includes(activityType || "") && (
         <div className="space-y-2">
           {Object.entries(item).map(([key, value]) => {

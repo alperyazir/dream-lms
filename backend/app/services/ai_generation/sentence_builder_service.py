@@ -22,6 +22,7 @@ from app.schemas.sentence_builder import (
     SentenceBuilderSubmission,
     SentenceResult,
 )
+from app.services.ai_generation.context_helpers import get_metadata_context
 from app.services.dcs_ai import DCSAIServiceClient
 from app.services.dcs_ai.exceptions import DCSAIDataNotFoundError, DCSAIDataNotReadyError
 from app.services.llm import LLMManager
@@ -143,50 +144,41 @@ class SentenceBuilderService:
                 status=metadata.processing_status,
             )
 
-        # Fetch modules to get vocabulary and topics
-        modules = await self._fetch_modules(request.book_id, request.module_ids)
-
-        if not modules:
-            raise DCSAIDataNotFoundError(
-                message="No modules found for the specified book.",
-                book_id=request.book_id,
-                resource="modules",
-            )
-
-        # Get vocabulary from DCS for the book
-        vocabulary_words = []
-        topic = modules[0].title if modules else "General English"
-
-        try:
-            vocabulary = await self._dcs.get_vocabulary(request.book_id)
-            if vocabulary:
-                # Filter to selected modules if specified
-                if request.module_ids:
-                    vocabulary_words = [
-                        v.word for v in vocabulary
-                        if v.module_id in request.module_ids
-                    ]
-                else:
-                    vocabulary_words = [v.word for v in vocabulary]
-
-                # Limit to reasonable number
-                vocabulary_words = vocabulary_words[:30]
-        except Exception as e:
-            logger.warning(f"Could not fetch vocabulary: {e}")
-
-        # Use LLM to generate educational sentences
+        # Use LLM to generate educational sentences (Tier 1: metadata-only)
         if self._llm:
+            # Tier 1: Use metadata context (topics + vocab, no full text)
+            try:
+                ctx = await get_metadata_context(
+                    self._dcs, request.book_id,
+                    request.module_ids or [],
+                )
+            except ValueError as e:
+                raise DCSAIDataNotFoundError(
+                    message=str(e), book_id=request.book_id, resource="modules"
+                ) from e
+
             sentences = await self._generate_sentences_with_llm(
-                vocabulary=vocabulary_words,
-                topic=topic,
+                vocabulary=ctx.vocabulary_words[:30],
+                topic=ctx.primary_module_title,
                 sentence_count=request.sentence_count,
                 difficulty=request.difficulty,
             )
+            first_module_id = request.module_ids[0] if request.module_ids else 1
+            module_ids = request.module_ids or []
         else:
-            # Fallback: extract sentences from text (less ideal)
+            # Fallback: extract sentences from text (less ideal, needs full text)
+            modules = await self._fetch_modules(request.book_id, request.module_ids)
+            if not modules:
+                raise DCSAIDataNotFoundError(
+                    message="No modules found for the specified book.",
+                    book_id=request.book_id,
+                    resource="modules",
+                )
             sentences = await self._extract_sentences_fallback(
                 modules, request.sentence_count, request.difficulty
             )
+            first_module_id = modules[0].module_id if modules else 1
+            module_ids = request.module_ids or [m.module_id for m in modules]
 
         if not sentences:
             raise SentenceBuilderError(
@@ -198,16 +190,13 @@ class SentenceBuilderService:
         for sentence in sentences:
             sentence_item = await self._create_sentence_item(
                 sentence=sentence,
-                module_id=modules[0].module_id if modules else 1,
+                module_id=first_module_id,
                 page=None,
                 difficulty=request.difficulty,
                 include_audio=request.include_audio,
                 book_id=request.book_id,
             )
             sentence_items.append(sentence_item)
-
-        # Determine module IDs used
-        module_ids = request.module_ids or [m.module_id for m in modules]
 
         activity = SentenceBuilderActivity(
             activity_id=str(uuid4()),

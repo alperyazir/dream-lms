@@ -32,11 +32,17 @@ function AnimatedBorder({
 }) {
   const strokeColor = type === "markwithx" ? "#ef4444" : "#3b82f6"
   const strokeWidth = 4
-  const radius = 6
-  const padding = strokeWidth / 2
 
+  const cx = width / 2
+  const cy = height / 2
+  const rx = cx - strokeWidth / 2
+  const ry = cy - strokeWidth / 2
+
+  // Ramanujan's ellipse perimeter approximation
+  const a = Math.max(rx, 0)
+  const b = Math.max(ry, 0)
   const perimeter =
-    2 * (width - 2 * radius) + 2 * (height - 2 * radius) + 2 * Math.PI * radius
+    Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)))
 
   return (
     <svg
@@ -45,13 +51,11 @@ function AnimatedBorder({
       height="100%"
       style={{ overflow: "visible" }}
     >
-      <rect
-        x={padding}
-        y={padding}
-        width={width - strokeWidth}
-        height={height - strokeWidth}
-        rx={radius}
-        ry={radius}
+      <ellipse
+        cx={cx}
+        cy={cy}
+        rx={a}
+        ry={b}
         fill="none"
         stroke={strokeColor}
         strokeWidth={strokeWidth}
@@ -431,7 +435,7 @@ export function CircleMark({ activity }: CircleMarkProps) {
         )}
         {imageUrl && (
           <div
-            className="relative inline-flex items-center justify-center"
+            className="relative"
             style={{
               opacity: imageLoaded ? 1 : 0,
             }}
@@ -440,7 +444,7 @@ export function CircleMark({ activity }: CircleMarkProps) {
               ref={imageRef}
               src={imageUrl}
               alt="Activity"
-              className="max-h-[calc(100vh-220px)] max-w-full object-contain"
+              className="max-h-[calc(100vh-220px)] max-w-full"
               style={{
                 display: "block",
               }}
@@ -461,7 +465,7 @@ export function CircleMark({ activity }: CircleMarkProps) {
                     onClick={() => handleAreaClick(answerIndex)}
                     disabled={showResults}
                     className={cn(
-                      "absolute rounded-md transition-colors duration-200 box-border",
+                      "absolute rounded-full transition-colors duration-200 box-border",
                       !showResults &&
                         !selected &&
                         "cursor-pointer border-2 border-dashed border-slate-400 bg-white/20 hover:border-slate-500 hover:bg-white/40",

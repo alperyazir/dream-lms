@@ -47,7 +47,7 @@ class GeminiProvider(LLMProvider):
     """
 
     API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-    DEFAULT_MODEL = "gemini-1.5-flash"
+    DEFAULT_MODEL = "gemini-2.5-flash"
 
     def __init__(self, settings: LLMSettings | None = None) -> None:
         """
@@ -161,22 +161,28 @@ class GeminiProvider(LLMProvider):
 
         result = await self.generate(structured_prompt, json_options)
 
-        # Parse JSON response
+        # Parse JSON response with repair for common LLM issues
         try:
             parsed = json.loads(result.content)
-            if not isinstance(parsed, dict):
+        except json.JSONDecodeError:
+            # Try to repair common JSON issues from LLMs
+            repaired = self._repair_json(result.content)
+            try:
+                parsed = json.loads(repaired)
+            except json.JSONDecodeError as e:
                 raise LLMResponseError(
-                    message="Response is not a JSON object",
+                    message=f"Failed to parse JSON response: {e}",
                     provider=self.get_name(),
-                    details={"content": result.content},
-                )
-            return parsed
-        except json.JSONDecodeError as e:
+                    details={"content": result.content[:500], "error": str(e)},
+                ) from e
+
+        if not isinstance(parsed, dict):
             raise LLMResponseError(
-                message=f"Failed to parse JSON response: {e}",
+                message="Response is not a JSON object",
                 provider=self.get_name(),
-                details={"content": result.content, "error": str(e)},
-            ) from e
+                details={"content": result.content[:500]},
+            )
+        return parsed
 
     def get_name(self) -> str:
         """Return provider name."""
@@ -232,6 +238,50 @@ class GeminiProvider(LLMProvider):
             payload["generationConfig"]["stopSequences"] = options.stop
 
         return payload
+
+    @staticmethod
+    def _repair_json(text: str) -> str:
+        """
+        Attempt to repair common JSON issues from LLM output.
+
+        Handles: markdown fences, trailing commas, unescaped newlines in strings.
+        """
+        import re
+
+        s = text.strip()
+
+        # Strip markdown code fences
+        if s.startswith("```"):
+            s = re.sub(r"^```(?:json)?\s*\n?", "", s)
+            s = re.sub(r"\n?```\s*$", "", s)
+
+        # Remove trailing commas before } or ]
+        s = re.sub(r",\s*([}\]])", r"\1", s)
+
+        # Fix unescaped newlines inside string values
+        # Walk through and escape literal newlines that are inside quotes
+        result = []
+        in_string = False
+        escape_next = False
+        for ch in s:
+            if escape_next:
+                result.append(ch)
+                escape_next = False
+                continue
+            if ch == "\\":
+                escape_next = True
+                result.append(ch)
+                continue
+            if ch == '"':
+                in_string = not in_string
+                result.append(ch)
+                continue
+            if in_string and ch == "\n":
+                result.append("\\n")
+                continue
+            result.append(ch)
+
+        return "".join(result)
 
     def _build_structured_prompt(
         self,
@@ -491,8 +541,13 @@ class GeminiProvider(LLMProvider):
                     details={"response": data},
                 )
 
-            # Combine text from all parts
-            content = "".join(part.get("text", "") for part in parts)
+            # Combine text from non-thinking parts only
+            # Gemini 2.5+ models include "thought" parts for reasoning
+            content = "".join(
+                part.get("text", "")
+                for part in parts
+                if not part.get("thought", False)
+            )
 
             # Extract token usage
             usage_metadata = data.get("usageMetadata", {})

@@ -246,6 +246,13 @@ export const QUESTION_NAV_ACTIVITY_TYPES = [
   "reading_comprehension",
   "sentence_builder",
   "word_builder",
+  // Story 30.11: New skill-based activity types
+  "listening_quiz",
+  "listening_fill_blank",
+  "grammar_fill_blank",
+  "writing_fill_blank",
+  "listening_sentence_builder",
+  "listening_word_builder",
 ] as const
 
 export type QuestionNavActivityType =

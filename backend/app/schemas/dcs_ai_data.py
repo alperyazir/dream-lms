@@ -92,6 +92,7 @@ class ModuleMetadata(BaseModel):
     word_count: int = Field(default=0, ge=0)
     topics: list[str] = Field(default_factory=list)
     difficulty_level: str = Field(default="A1")
+    summary: str = Field(default="")
     vocabulary_count: int = Field(default=0, ge=0)
 
 
@@ -163,9 +164,13 @@ class ModuleDetail(BaseModel):
     pages: list[int] = Field(default_factory=list)
     text: str = Field(default="")
     topics: list[str] = Field(default_factory=list)
+    grammar_points: list[str] = Field(default_factory=list)
     vocabulary_ids: list[str] = Field(default_factory=list)
     language: str = Field(default="en")
+    summary: str = Field(default="")
     difficulty: str = Field(default="A1")
+    word_count: int = Field(default=0, ge=0)
+    extracted_at: str | None = Field(default=None)
 
 
 class VocabularyWord(BaseModel):

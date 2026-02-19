@@ -29,6 +29,7 @@ import { ReadingComprehensionResults } from "@/components/ActivityPlayers/Readin
 import { SentenceBuilderResults } from "@/components/ActivityPlayers/SentenceBuilderResults"
 import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQuizResults"
 import { WordBuilderResults } from "@/components/ActivityPlayers/WordBuilderResults"
+import { AssignmentSkillBreakdown } from "@/components/analytics/AssignmentSkillBreakdown"
 import { MultiActivityAnalyticsTable } from "@/components/analytics/MultiActivityAnalyticsTable"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { FeedbackModal } from "@/components/feedback"
@@ -1159,6 +1160,9 @@ function AssignmentDetailContent() {
             <CompletionOverviewCard overview={results.completion_overview} />
             <ScoreStatisticsCard stats={results.score_statistics} />
           </div>
+
+          {/* Skill Breakdown (Story 30.13) */}
+          <AssignmentSkillBreakdown assignmentId={assignmentId} />
 
           {/* Question Analysis */}
           <ActivityTypeAnalysisSection analysis={results.question_analysis} />

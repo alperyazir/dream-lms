@@ -4898,6 +4898,17 @@ export type AdminDeletePublisherAccountData = {
 
 export type AdminDeletePublisherAccountResponse = (void);
 
+export type ChangePublisherPasswordRequest = {
+    password: string;
+};
+
+export type AdminChangePublisherPasswordData = {
+    userId: string;
+    requestBody: ChangePublisherPasswordRequest;
+};
+
+export type AdminChangePublisherPasswordResponse = (ChangePasswordResponse);
+
 export type AdminListAllAssignmentsData = {
     limit?: number;
     search?: (string | null);

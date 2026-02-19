@@ -22,13 +22,21 @@ from app.models import (
     ClassStudent,
     ClassStudentAdd,
     ClassUpdate,
+    SkillCategory,
     Student,
     StudentInClass,
+    StudentSkillScore,
     Teacher,
     User,
     UserRole,
 )
 from app.schemas.analytics import ClassAnalyticsResponse, ClassPeriodType
+from app.schemas.skill import (
+    ClassSkillHeatmapResponse,
+    SkillCategoryPublic,
+    StudentSkillCell,
+    StudentSkillRow,
+)
 from app.schemas.benchmarks import BenchmarkPeriod, ClassBenchmarkResponse
 from app.services.analytics_service import get_class_analytics
 from app.services.benchmark_service import get_class_benchmarks
@@ -614,3 +622,155 @@ async def get_class_benchmarks_endpoint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
+
+
+# =============================================================================
+# Class Skill Heatmap (Story 30.15)
+# =============================================================================
+
+
+@router.get(
+    "/{class_id}/skill-heatmap",
+    response_model=ClassSkillHeatmapResponse,
+    summary="Get class skill heatmap (Story 30.15)",
+)
+async def get_class_skill_heatmap(
+    class_id: uuid.UUID,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),
+) -> ClassSkillHeatmapResponse:
+    """
+    Get students x skills proficiency matrix for a class.
+
+    Returns a heatmap-ready data structure with per-student, per-skill proficiency
+    and class averages.
+    """
+    from sqlalchemy import distinct
+
+    # Teacher access check
+    if current_user.role == UserRole.teacher:
+        teacher = await _get_teacher_from_user(session, current_user)
+        cls = await _verify_class_ownership(session, class_id, teacher.id)
+    else:
+        result = await session.execute(select(Class).where(Class.id == class_id))
+        cls = result.scalar_one_or_none()
+        if not cls:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Class not found"
+            )
+
+    # Get all active skills
+    skills_result = await session.execute(
+        select(SkillCategory).where(SkillCategory.is_active == True)
+    )
+    all_skills = skills_result.scalars().all()
+    skill_columns = [
+        SkillCategoryPublic(
+            id=s.id, name=s.name, slug=s.slug, icon=s.icon,
+            color=s.color, description=s.description, is_active=s.is_active,
+        )
+        for s in all_skills
+    ]
+
+    # Get students in class
+    students_result = await session.execute(
+        select(Student, User)
+        .join(ClassStudent, ClassStudent.student_id == Student.id)
+        .join(User, Student.user_id == User.id)
+        .where(ClassStudent.class_id == class_id)
+        .order_by(User.full_name)
+    )
+    class_students = students_result.all()
+
+    if not class_students:
+        return ClassSkillHeatmapResponse(
+            class_id=class_id,
+            class_name=cls.name,
+            skill_columns=skill_columns,
+            students=[],
+            class_averages={s.slug: None for s in all_skills},
+        )
+
+    student_ids = [s.id for s, _ in class_students]
+
+    # Get aggregated scores: student_id × skill_id
+    scores_result = await session.execute(
+        select(
+            StudentSkillScore.student_id,
+            StudentSkillScore.skill_id,
+            func.sum(StudentSkillScore.attributed_score).label("total_score"),
+            func.sum(StudentSkillScore.attributed_max_score).label("total_max"),
+            func.count().label("data_points"),
+        )
+        .where(StudentSkillScore.student_id.in_(student_ids))
+        .group_by(StudentSkillScore.student_id, StudentSkillScore.skill_id)
+    )
+
+    # Build lookup: (student_id, skill_id) → {score, max, dp}
+    score_lookup: dict[tuple, dict] = {}
+    for row in scores_result.all():
+        score_lookup[(row.student_id, row.skill_id)] = {
+            "total_score": float(row.total_score),
+            "total_max": float(row.total_max),
+            "data_points": int(row.data_points),
+        }
+
+    # Build student rows
+    student_rows: list[StudentSkillRow] = []
+    # For class averages
+    skill_totals: dict[str, list[float]] = {s.slug: [] for s in all_skills}
+
+    for student, user in class_students:
+        skills_dict: dict[str, StudentSkillCell] = {}
+        for skill in all_skills:
+            data = score_lookup.get((student.id, skill.id))
+            if data and data["data_points"] > 0:
+                dp = data["data_points"]
+                proficiency = (
+                    (data["total_score"] / data["total_max"] * 100)
+                    if data["total_max"] > 0 else None
+                )
+                if dp < 3:
+                    confidence = "insufficient"
+                    proficiency = None
+                elif dp <= 5:
+                    confidence = "low"
+                elif dp <= 10:
+                    confidence = "moderate"
+                else:
+                    confidence = "high"
+
+                if proficiency is not None:
+                    skill_totals[skill.slug].append(proficiency)
+            else:
+                dp = 0
+                proficiency = None
+                confidence = "insufficient"
+
+            skills_dict[skill.slug] = StudentSkillCell(
+                proficiency=round(proficiency, 1) if proficiency is not None else None,
+                data_points=dp,
+                confidence=confidence,
+            )
+        student_rows.append(StudentSkillRow(
+            student_id=student.id,
+            student_name=user.full_name,
+            skills=skills_dict,
+        ))
+
+    # Class averages
+    class_averages: dict[str, float | None] = {}
+    for skill in all_skills:
+        values = skill_totals[skill.slug]
+        class_averages[skill.slug] = (
+            round(sum(values) / len(values), 1) if values else None
+        )
+
+    return ClassSkillHeatmapResponse(
+        class_id=class_id,
+        class_name=cls.name,
+        skill_columns=skill_columns,
+        students=student_rows,
+        class_averages=class_averages,
+    )

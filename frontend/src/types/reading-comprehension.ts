@@ -27,13 +27,6 @@ export const READING_MAX_QUESTIONS = 10
 export const READING_DEFAULT_QUESTIONS = 5
 
 /**
- * Passage length constraints (word count)
- */
-export const READING_MIN_PASSAGE_LENGTH = 100
-export const READING_MAX_PASSAGE_LENGTH = 500
-export const READING_DEFAULT_PASSAGE_LENGTH = 200
-
-/**
  * Request payload for generating a reading comprehension activity.
  * The LLM will create an original passage based on module topics/context,
  * then generate comprehension questions about that passage.
@@ -41,10 +34,10 @@ export const READING_DEFAULT_PASSAGE_LENGTH = 200
 export interface ReadingComprehensionRequest {
   book_id: number
   module_id: number
+  module_ids?: number[]
   question_count?: number
   question_types?: ReadingQuestionType[]
   difficulty?: ReadingDifficulty
-  passage_length?: number
 }
 
 /**
@@ -72,6 +65,24 @@ export interface ReadingComprehensionQuestionPublic {
 }
 
 /**
+ * Word-level timestamp for audio synchronization
+ */
+export interface WordTimestamp {
+  word: string
+  start: number
+  end: number
+}
+
+/**
+ * Audio data for a passage narration with word highlighting
+ */
+export interface PassageAudioData {
+  audio_base64: string
+  word_timestamps: WordTimestamp[]
+  duration_seconds: number
+}
+
+/**
  * Full reading comprehension activity with correct answers (teacher view)
  */
 export interface ReadingComprehensionActivity {
@@ -85,6 +96,7 @@ export interface ReadingComprehensionActivity {
   difficulty: string
   language: string
   created_at: string
+  passage_audio?: PassageAudioData | null
 }
 
 /**
@@ -102,6 +114,7 @@ export interface ReadingComprehensionActivityPublic {
   language: string
   created_at: string
   question_count: number
+  passage_audio?: PassageAudioData | null
 }
 
 /**

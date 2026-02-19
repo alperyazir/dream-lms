@@ -108,6 +108,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
       path: "/teacher/announcements",
     },
     { icon: FiBarChart2, title: "Reports", path: "/teacher/reports" },
+    { icon: FiActivity, title: "Skill Analytics", path: "/teacher/analytics/skills" },
   ],
   student: [
     { icon: FiHome, title: "Dashboard", path: "/student/dashboard" },
@@ -143,10 +144,14 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     }))
   }
 
+  // Check if a path matches the current location (exact or sub-route)
+  const isPathActive = (path: string): boolean =>
+    location.pathname === path || location.pathname.startsWith(path + "/")
+
   // Check if any child path is active
   const isChildActive = (children: SubItem[] | undefined): boolean => {
     if (!children) return false
-    return children.some((child) => location.pathname === child.path)
+    return children.some((child) => isPathActive(child.path))
   }
 
   // Fetch real stats for admin users
@@ -207,7 +212,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   // Render a sub-menu item
   const renderSubMenuItem = (subItem: SubItem, index: number) => {
     const { icon: IconComponent, title, path } = subItem
-    const isActive = location.pathname === path
+    const isActive = isPathActive(path)
 
     return (
       <motion.div
@@ -259,7 +264,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
 
   const renderMenuItem = (item: Item, _index: number) => {
     const { icon: IconComponent, title, path, comingSoon, children } = item
-    const isActive = location.pathname === path
+    const isActive = isPathActive(path)
     const hasActiveChild = isChildActive(children)
     const isExpanded = expandedMenus[title] || hasActiveChild
     const itemCount = getItemCount(path)

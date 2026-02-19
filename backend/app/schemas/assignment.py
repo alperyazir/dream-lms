@@ -138,6 +138,11 @@ class AssignmentCreate(BaseModel):
     # Story 27.x: For AI content assignments (required when source_type="ai_content")
     content_id: uuid.UUID | None = None
 
+    # Skill classification (Epic 30 - Story 30.2)
+    skill_id: uuid.UUID | None = None
+    format_id: uuid.UUID | None = None
+    is_mix_mode: bool = False
+
     # Common fields
     name: str
     instructions: str | None = None
@@ -371,6 +376,22 @@ class ActivityInfo(BaseModel):
     order_index: int = 0
 
 
+class SkillInfoCompact(BaseModel):
+    """Compact skill info for assignment responses."""
+    id: uuid.UUID
+    name: str
+    slug: str
+    icon: str
+    color: str
+
+
+class FormatInfoCompact(BaseModel):
+    """Compact format info for assignment responses."""
+    id: uuid.UUID
+    name: str
+    slug: str
+
+
 class AssignmentResponse(BaseModel):
     """Assignment response schema for API."""
 
@@ -396,6 +417,10 @@ class AssignmentResponse(BaseModel):
     status: AssignmentPublishStatus = AssignmentPublishStatus.published
     # Story 10.3: Video attachment
     video_path: str | None = None
+    # Skill classification (Epic 30 - Story 30.2)
+    primary_skill: SkillInfoCompact | None = None
+    activity_format: FormatInfoCompact | None = None
+    is_mix_mode: bool = False
 
 
 class AssignmentListItem(BaseModel):
@@ -429,6 +454,14 @@ class AssignmentListItem(BaseModel):
     # Scheduling fields
     scheduled_publish_date: datetime | None = None
     status: AssignmentPublishStatus = AssignmentPublishStatus.published
+
+    # Skill classification (Epic 30 - Story 30.2)
+    skill_name: str | None = None
+    skill_slug: str | None = None
+    skill_color: str | None = None
+    skill_icon: str | None = None
+    format_name: str | None = None
+    is_mix_mode: bool = False
 
 
 class StudentAssignmentResponse(BaseModel):

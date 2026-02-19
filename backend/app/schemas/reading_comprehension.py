@@ -42,7 +42,11 @@ class ReadingComprehensionRequest(BaseModel):
 
     book_id: int
     module_id: int = Field(
-        description="Module ID - used as context for passage generation.",
+        description="Primary module ID - used as context for passage generation.",
+    )
+    module_ids: list[int] | None = Field(
+        default=None,
+        description="All selected module IDs. If provided, content from all modules is combined as context.",
     )
     question_count: int = Field(
         default=5,
@@ -59,10 +63,16 @@ class ReadingComprehensionRequest(BaseModel):
         description="Difficulty level. 'auto' uses module's CEFR level.",
     )
     passage_length: int = Field(
-        default=200,
-        ge=100,
-        le=500,
-        description="Target word count for the AI-generated passage (100-500).",
+        default=250,
+        description="Target word count for the AI-generated passage.",
+    )
+    passage_index: int | None = Field(
+        default=None,
+        description="Which passage this is (1-based) when generating multiple passages.",
+    )
+    total_passages: int | None = Field(
+        default=None,
+        description="Total number of passages being generated.",
     )
 
 

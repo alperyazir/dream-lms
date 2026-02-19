@@ -246,30 +246,9 @@ function ReadingComprehensionOptions({
   onChange: (key: string, value: any) => void
 }) {
   const questionCount = options.question_count || 5
-  const passageLength = options.passage_length || 200
 
   return (
     <>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="passage-length">Passage Length</Label>
-          <Badge variant="secondary">~{passageLength} words</Badge>
-        </div>
-        <Slider
-          id="passage-length"
-          min={100}
-          max={500}
-          step={50}
-          value={[passageLength]}
-          onValueChange={([value]) => onChange("passage_length", value)}
-        />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Short (100)</span>
-          <span>Medium (300)</span>
-          <span>Long (500)</span>
-        </div>
-      </div>
-
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="rc-question-count">Number of Questions</Label>

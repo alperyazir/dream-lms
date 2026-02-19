@@ -14,6 +14,7 @@ from app.api.deps import (
     can_delete_user,
     require_role,
 )
+from app.services.skill_attribution_service import recalculate_for_assignment
 from app.core.config import settings
 from app.core.security import decrypt_viewable_password, encrypt_viewable_password, get_password_hash
 from app.models import (
@@ -21,6 +22,8 @@ from app.models import (
     AssignmentStudent,
     BulkImportErrorDetail,
     BulkImportResponse,
+    ChangePasswordResponse,
+    ChangePublisherPasswordRequest,
     DashboardStats,
     NotificationType,
     PasswordResetResponse,
@@ -2782,6 +2785,49 @@ def delete_publisher_account(
     session.commit()
 
 
+@router.put(
+    "/publisher-accounts/{user_id}/password",
+    response_model=ChangePasswordResponse,
+    summary="Change publisher account password",
+    description="Set a custom password for a publisher user account.",
+)
+def change_publisher_password(
+    *,
+    session: SessionDep,
+    user_id: uuid.UUID,
+    body: ChangePublisherPasswordRequest,
+    current_user: User = AdminOrSupervisor,
+) -> ChangePasswordResponse:
+    """
+    Set a custom password for a publisher user account.
+
+    **Permissions:** Admin or Supervisor only.
+    Sets must_change_password = True so the publisher must change on next login.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publisher account not found"
+        )
+
+    if user.role != UserRole.publisher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User is not a publisher account"
+        )
+
+    user.hashed_password = get_password_hash(body.password)
+    user.must_change_password = True
+    session.add(user)
+    session.commit()
+
+    return ChangePasswordResponse(
+        success=True,
+        message="Publisher password has been changed successfully.",
+    )
+
+
 # =============================================================================
 # Assignment Management Endpoints (Story 20.1)
 # =============================================================================
@@ -2926,3 +2972,63 @@ def delete_assignment(
         f"Admin {current_user.id} ({current_user.email}) deleted assignment {assignment_id} "
         f"(title: {assignment.name})"
     )
+
+
+# ===== Story 30.12: Skill Score Recalculation =====
+
+
+class SkillScoreRecalculateRequest(SQLModel):
+    """Request to recalculate skill scores for an assignment."""
+    assignment_id: uuid.UUID
+
+
+class SkillScoreRecalculateResponse(SQLModel):
+    """Response from skill score recalculation."""
+    success: bool
+    assignment_id: uuid.UUID
+    records_created: int
+    message: str
+
+
+@router.post(
+    "/skill-scores/recalculate",
+    response_model=SkillScoreRecalculateResponse,
+    summary="Recalculate skill scores for an assignment",
+    description="Delete and recalculate all StudentSkillScore records for a given assignment. Admin only.",
+)
+async def recalculate_skill_scores(
+    *,
+    session: AsyncSessionDep,
+    request: SkillScoreRecalculateRequest,
+    current_user: User = AdminOrSupervisor,
+) -> SkillScoreRecalculateResponse:
+    """
+    Recalculate skill scores for all completed submissions of an assignment.
+
+    Deletes existing records and re-runs attribution for all students.
+    Admin-only access.
+    """
+    try:
+        records_created = await recalculate_for_assignment(
+            request.assignment_id, session
+        )
+        await session.commit()
+
+        logger.info(
+            f"Admin {current_user.id} recalculated skill scores for "
+            f"assignment {request.assignment_id}: {records_created} records"
+        )
+
+        return SkillScoreRecalculateResponse(
+            success=True,
+            assignment_id=request.assignment_id,
+            records_created=records_created,
+            message=f"Recalculated {records_created} skill score records",
+        )
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Skill score recalculation failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Recalculation failed: {str(e)}",
+        )

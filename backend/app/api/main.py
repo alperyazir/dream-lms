@@ -21,6 +21,7 @@ from app.api.routes import (
     publishers,
     reports,
     scheduled_tasks,
+    skills,
     students,
     supervisors,
     teacher_materials,
@@ -59,6 +60,7 @@ api_router.include_router(teacher_materials.router)
 api_router.include_router(ai_generation.router)
 api_router.include_router(ai_usage.router)
 api_router.include_router(vocabulary_explorer.router)
+api_router.include_router(skills.router)
 
 
 if settings.ENVIRONMENT == "local":

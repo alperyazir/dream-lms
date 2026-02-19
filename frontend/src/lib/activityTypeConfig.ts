@@ -12,6 +12,7 @@ import {
   CheckSquare,
   Circle,
   FileQuestion,
+  Headphones,
   HelpCircle,
   Image,
   Link,
@@ -104,6 +105,60 @@ export const ACTIVITY_TYPE_CONFIG: Record<string, ActivityTypeConfig> = {
     icon: Type,
     label: "Word Builder",
     color: "ai-pink",
+    isAI: true,
+  },
+  listening_quiz: {
+    icon: Headphones,
+    label: "Listening Quiz",
+    color: "ai-teal",
+    isAI: true,
+  },
+  listening_fill_blank: {
+    icon: Headphones,
+    label: "Listening Fill Blank",
+    color: "ai-teal",
+    isAI: true,
+  },
+  grammar_fill_blank: {
+    icon: PenLine,
+    label: "Grammar Fill Blank",
+    color: "ai-indigo",
+    isAI: true,
+  },
+  writing_fill_blank: {
+    icon: PenLine,
+    label: "Writing Fill Blank",
+    color: "ai-fuchsia",
+    isAI: true,
+  },
+  listening_sentence_builder: {
+    icon: Headphones,
+    label: "Listening Sentence Builder",
+    color: "ai-teal",
+    isAI: true,
+  },
+  listening_word_builder: {
+    icon: Headphones,
+    label: "Listening Word Builder",
+    color: "ai-teal",
+    isAI: true,
+  },
+  listening_sentence_builder: {
+    icon: Headphones,
+    label: "Listening Sentence Builder",
+    color: "ai-teal",
+    isAI: true,
+  },
+  listening_word_builder: {
+    icon: Headphones,
+    label: "Listening Word Builder",
+    color: "ai-teal",
+    isAI: true,
+  },
+  mix_mode: {
+    icon: CheckSquare,
+    label: "Mix Mode",
+    color: "ai-purple",
     isAI: true,
   },
 }
@@ -231,6 +286,13 @@ export function getActivityTypeColorClasses(color: string): {
       border: "border-pink-400 dark:border-pink-500",
       isAI: true,
       gradient: "from-pink-500 to-purple-600",
+    },
+    "ai-teal": {
+      bg: "bg-gradient-to-br from-teal-500 to-cyan-600 dark:from-teal-600 dark:to-cyan-700",
+      text: "text-white",
+      border: "border-teal-400 dark:border-teal-500",
+      isAI: true,
+      gradient: "from-teal-500 to-cyan-600",
     },
   }
 

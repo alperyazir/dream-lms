@@ -5,7 +5,7 @@
  * Displays content items in a compact table format with sortable columns.
  */
 
-import { BookOpen, Eye, FileText, Pencil, Play, Trash2 } from "lucide-react"
+import { BookOpen, FileText, Pencil, Play, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,7 +30,6 @@ import type { ContentItem } from "@/types/content-library"
 
 interface ContentTableProps {
   items: ContentItem[]
-  onPreview: (content: ContentItem) => void
   onEdit: (content: ContentItem) => void
   onUse: (content: ContentItem) => void
   onDelete: (content: ContentItem) => void
@@ -38,7 +37,6 @@ interface ContentTableProps {
 
 export function ContentTable({
   items,
-  onPreview,
   onEdit,
   onUse,
   onDelete,
@@ -161,21 +159,6 @@ export function ContentTable({
                 <TableCell className="text-right py-2">
                   <TooltipProvider delayDuration={300}>
                     <div className="flex items-center justify-end gap-0.5">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => onPreview(content)}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            <span className="sr-only">Preview</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Preview</TooltipContent>
-                      </Tooltip>
-
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button

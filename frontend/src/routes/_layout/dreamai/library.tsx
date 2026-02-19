@@ -223,7 +223,6 @@ function ContentLibraryPage() {
           ) : (
             <ContentTable
               items={data.items}
-              onPreview={(content) => setPreviewContent(content)}
               onEdit={(content) => setEditContent(content)}
               onUse={(content) => setAssignmentContent(content)}
               onDelete={(content) => setDeleteContent(content)}

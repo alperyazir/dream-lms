@@ -17,6 +17,7 @@ from app.schemas.reading_comprehension import (
     ReadingComprehensionQuestion,
     ReadingComprehensionRequest,
 )
+from app.services.ai_generation.context_helpers import get_metadata_context
 from app.services.ai_generation.prompts import (
     READING_JSON_SCHEMA,
     READING_SYSTEM_PROMPT,
@@ -94,58 +95,68 @@ class ReadingComprehensionService:
             f"passage_length={request.passage_length}"
         )
 
-        # 1. Fetch module content from DCS as context for passage generation
-        module = await self._dcs_client.get_module_detail(
-            request.book_id, request.module_id
-        )
+        # 1. Fetch metadata-only context (topics + vocab, no full text)
+        all_module_ids = request.module_ids or [request.module_id]
 
-        if module is None:
+        try:
+            ctx = await get_metadata_context(
+                self._dcs_client, request.book_id, all_module_ids,
+            )
+        except ValueError as e:
             raise DCSAIDataNotFoundError(
-                message=f"Module {request.module_id} not found in book {request.book_id}",
+                message=str(e),
                 book_id=request.book_id,
-            )
-
-        # Extract context sample - used as inspiration, NOT the actual passage
-        context_sample = module.text
-        if not context_sample or not context_sample.strip():
-            raise ReadingComprehensionError(
-                message=f"Module {request.module_id} has no text content for context."
-            )
-
-        # Extract topics from module (or use title as fallback)
-        topics = module.topics if module.topics else [module.title]
+            ) from e
 
         logger.info(
-            f"Fetched module: title='{module.title}', "
-            f"pages={module.pages}, topics={topics}, context_length={len(context_sample)}"
+            f"Metadata context: modules={len(ctx.module_titles)}, "
+            f"topics={len(ctx.topics)}, vocab={len(ctx.vocabulary_words)}, "
+            f"summaries={len(ctx.module_summaries)}, "
+            f"grammar_points={len(ctx.grammar_points)}"
         )
 
         # 2. Determine difficulty level
         if request.difficulty == "auto":
-            difficulty = map_cefr_to_difficulty(module.difficulty)
+            difficulty = map_cefr_to_difficulty(ctx.difficulty_level)
             logger.info(
-                f"Auto difficulty: CEFR={module.difficulty} -> {difficulty}"
+                f"Auto difficulty: CEFR={ctx.difficulty_level} -> {difficulty}"
             )
         else:
             difficulty = request.difficulty
 
-        # 3. Build the prompt for passage + questions generation
+        # 3. Build combined module title for multi-module awareness
+        if len(ctx.module_titles) == 1:
+            combined_title = ctx.module_titles[0]
+        elif len(ctx.module_titles) <= 4:
+            combined_title = " | ".join(ctx.module_titles)
+        else:
+            combined_title = (
+                f"{ctx.module_titles[0]} and {len(ctx.module_titles) - 1} more modules"
+            )
+
+        # 4. Build the prompt for passage + questions generation
         user_prompt = build_reading_prompt(
-            module_title=module.title,
-            topics=topics,
-            context_sample=context_sample,
+            module_title=combined_title,
+            topics=ctx.topics,
+            context_sample="\n".join(ctx.module_summaries) if ctx.module_summaries else "(Use topics and vocabulary as guidance)",
             question_count=request.question_count,
             question_types=request.question_types,
             difficulty=difficulty,
-            language=module.language,
+            language=ctx.language,
             passage_length=request.passage_length,
+            vocabulary=ctx.vocabulary_words[:30],
+            grammar_points=ctx.grammar_points,
+            passage_index=request.passage_index,
+            total_passages=request.total_passages,
         )
 
-        # 4. Generate passage AND questions via LLM
+        # 5. Generate passage AND questions via LLM
+        full_prompt = f"{READING_SYSTEM_PROMPT}\n\n{user_prompt}"
+
         try:
             logger.info("Calling LLM for passage and question generation")
             response = await self._llm_manager.generate_structured(
-                prompt=f"{READING_SYSTEM_PROMPT}\n\n{user_prompt}",
+                prompt=full_prompt,
                 schema=READING_JSON_SCHEMA,
             )
 
@@ -226,16 +237,22 @@ class ReadingComprehensionService:
             )
 
         # 6. Build and return activity
+        # Use passage index for title if multi-passage, otherwise combined module title
+        if request.passage_index and request.total_passages and request.total_passages > 1:
+            activity_title = f"Passage {request.passage_index}"
+        else:
+            activity_title = combined_title
+
         activity = ReadingComprehensionActivity(
             activity_id=str(uuid4()),
             book_id=request.book_id,
             module_id=request.module_id,
-            module_title=module.title,
+            module_title=activity_title,
             passage=generated_passage,  # AI-generated passage based on module context
-            passage_pages=module.pages,
+            passage_pages=[],
             questions=questions,
             difficulty=difficulty,
-            language=module.language,
+            language=ctx.language,
             created_at=datetime.now(timezone.utc),
         )
 

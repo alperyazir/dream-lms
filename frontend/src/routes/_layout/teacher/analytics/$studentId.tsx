@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { ArrowLeft, Award, Clock, Mail, Target, TrendingUp } from "lucide-react"
 import { useMemo, useState } from "react"
+import { SkillProfileCard } from "@/components/analytics/SkillProfileCard"
+import { SkillTrendChart } from "@/components/analytics/SkillTrendChart"
 import { ActivityBreakdownChart } from "@/components/charts/ActivityBreakdownChart"
 import { ActivityHistoryTable } from "@/components/charts/ActivityHistoryTable"
 import { StudentProgressChart } from "@/components/charts/StudentProgressChart"
@@ -305,6 +307,14 @@ function StudentAnalyticsDetail() {
               )}
             </CardContent>
           </Card>
+
+          {/* Skill Profile Radar Chart (Story 30.14) */}
+          <SkillProfileCard studentId={studentId} size="md" />
+
+          {/* Skill Trend Over Time (Story 30.16) */}
+          <div className="md:col-span-2">
+            <SkillTrendChart studentId={studentId} />
+          </div>
 
           {/* Assignment Status Summary */}
           <Card className="shadow-lg">

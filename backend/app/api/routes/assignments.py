@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.models import (
     Activity,
+    ActivityFormat,
     ActivityType,
     Assignment,
     AssignmentActivity,
@@ -33,7 +34,9 @@ from app.models import (
     Class,
     ClassStudent,
     NotificationType,
+    SkillCategory,
     Student,
+    StudentSkillScore,
     Teacher,
     TeacherGeneratedContent,
     TeacherMaterial,
@@ -45,6 +48,13 @@ from app.schemas.analytics import (
     AssignmentDetailedResultsResponse,
     StudentAnswersResponse,
 )
+from app.schemas.skill import (
+    ActivityFormatPublic,
+    AssignmentSkillBreakdownResponse,
+    SkillBreakdownItem,
+    SkillCategoryPublic,
+)
+from app.services.skill_attribution_service import attribute_skill_scores
 from app.schemas.assignment import (
     ActivityAnalyticsItem,
     ActivityInfo,
@@ -420,7 +430,11 @@ async def list_assignments(
     result = await session.execute(
         select(Assignment, Activity)
         .outerjoin(Activity, Assignment.activity_id == Activity.id)
-        .options(selectinload(Assignment.assignment_students))
+        .options(
+            selectinload(Assignment.assignment_students),
+            selectinload(Assignment.primary_skill),
+            selectinload(Assignment.activity_format),
+        )
         .where(Assignment.teacher_id == teacher.id)
         .order_by(Assignment.created_at.desc())
     )
@@ -474,6 +488,10 @@ async def list_assignments(
             book_id = assignment.dcs_book_id if assignment.dcs_book_id else 0
             book_title_final = book.title or book.name if book else "AI Generated"
 
+        # Skill classification data (Epic 30)
+        skill = assignment.primary_skill
+        fmt = assignment.activity_format
+
         assignment_list.append(
             AssignmentListItem(
                 id=assignment.id,
@@ -491,6 +509,12 @@ async def list_assignments(
                 not_started=not_started,
                 in_progress=in_progress,
                 completed=completed,
+                skill_name=skill.name if skill else None,
+                skill_slug=skill.slug if skill else None,
+                skill_color=skill.color if skill else None,
+                skill_icon=skill.icon if skill else None,
+                format_name=fmt.name if fmt else None,
+                is_mix_mode=assignment.is_mix_mode,
             )
         )
 
@@ -2542,6 +2566,14 @@ async def save_activity_progress(
                 detail="Failed to save progress",
             )
 
+        # Story 30.12: Attribute skill scores on completion (non-blocking)
+        if progress.status == "completed":
+            try:
+                await attribute_skill_scores(assignment_student.id, session)
+                await session.commit()
+            except Exception as e:
+                logger.warning(f"Skill attribution failed (non-blocking): {e}")
+
         return ActivityProgressSaveResponse(
             message="Progress saved successfully",
             activity_id=activity_id,
@@ -2991,6 +3023,13 @@ async def submit_multi_activity_assignment(
             detail="Failed to submit assignment",
         )
 
+    # Story 30.12: Attribute skill scores (non-blocking)
+    try:
+        await attribute_skill_scores(assignment_student.id, session)
+        await session.commit()
+    except Exception as e:
+        logger.warning(f"Skill attribution failed (non-blocking): {e}")
+
     # Calculate total and completed activities count
     if is_content_library:
         # Content Library: single activity
@@ -3238,6 +3277,13 @@ async def submit_assignment(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save submission",
         )
+
+    # Story 30.12: Attribute skill scores (non-blocking)
+    try:
+        await attribute_skill_scores(assignment_student.id, session)
+        await session.commit()
+    except Exception as e:
+        logger.warning(f"Skill attribution failed (non-blocking): {e}")
 
     # Send notification to teacher about student completion (AC: 6, 7)
     try:
@@ -4716,3 +4762,122 @@ async def preview_activity(
     )
 
     return response
+
+
+# ===== Story 30.13: Assignment Skill Breakdown =====
+
+
+@router.get(
+    "/{assignment_id}/skill-breakdown",
+    response_model=AssignmentSkillBreakdownResponse,
+    summary="Get per-skill score breakdown for an assignment",
+)
+async def get_assignment_skill_breakdown(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),
+) -> AssignmentSkillBreakdownResponse:
+    """Get skill-level score breakdown for an assignment."""
+    from sqlalchemy import func as sa_func
+
+    # Get assignment
+    result = await session.execute(
+        select(Assignment).where(Assignment.id == assignment_id)
+    )
+    assignment = result.scalar_one_or_none()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    # Load primary skill and format
+    primary_skill_pub = None
+    activity_format_pub = None
+
+    if assignment.primary_skill_id:
+        result = await session.execute(
+            select(SkillCategory).where(SkillCategory.id == assignment.primary_skill_id)
+        )
+        skill = result.scalar_one_or_none()
+        if skill:
+            primary_skill_pub = SkillCategoryPublic.model_validate(skill)
+
+    if assignment.activity_format_id:
+        result = await session.execute(
+            select(ActivityFormat).where(ActivityFormat.id == assignment.activity_format_id)
+        )
+        fmt = result.scalar_one_or_none()
+        if fmt:
+            activity_format_pub = ActivityFormatPublic.model_validate(fmt)
+
+    # Query skill score aggregation
+    result = await session.execute(
+        select(
+            StudentSkillScore.skill_id,
+            SkillCategory.name,
+            SkillCategory.slug,
+            SkillCategory.color,
+            sa_func.avg(
+                StudentSkillScore.attributed_score
+                / sa_func.nullif(StudentSkillScore.attributed_max_score, 0)
+                * 100
+            ).label("avg_score"),
+            sa_func.count(StudentSkillScore.student_id.distinct()).label("student_count"),
+            sa_func.min(
+                StudentSkillScore.attributed_score
+                / sa_func.nullif(StudentSkillScore.attributed_max_score, 0)
+                * 100
+            ).label("min_score"),
+            sa_func.max(
+                StudentSkillScore.attributed_score
+                / sa_func.nullif(StudentSkillScore.attributed_max_score, 0)
+                * 100
+            ).label("max_score"),
+        )
+        .join(SkillCategory, StudentSkillScore.skill_id == SkillCategory.id)
+        .where(StudentSkillScore.assignment_id == assignment_id)
+        .group_by(
+            StudentSkillScore.skill_id,
+            SkillCategory.name,
+            SkillCategory.slug,
+            SkillCategory.color,
+        )
+    )
+    rows = result.all()
+
+    # Find weakest skill
+    min_avg = None
+    weakest_skill_id = None
+    if rows:
+        for row in rows:
+            avg = row.avg_score or 0
+            if min_avg is None or avg < min_avg:
+                min_avg = avg
+                weakest_skill_id = row.skill_id
+
+    breakdown = []
+    for row in rows:
+        breakdown.append(
+            SkillBreakdownItem(
+                skill_id=row.skill_id,
+                skill_name=row[1],
+                skill_slug=row[2],
+                skill_color=row[3],
+                average_score=round(row.avg_score or 0, 1),
+                student_count=row.student_count,
+                min_score=round(row.min_score or 0, 1),
+                max_score=round(row.max_score or 0, 1),
+                is_weakest=row.skill_id == weakest_skill_id and len(rows) > 1,
+            )
+        )
+
+    return AssignmentSkillBreakdownResponse(
+        assignment_id=assignment_id,
+        primary_skill=primary_skill_pub,
+        activity_format=activity_format_pub,
+        is_mix_mode=assignment.is_mix_mode,
+        skill_breakdown=breakdown,
+    )

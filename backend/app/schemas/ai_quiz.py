@@ -274,6 +274,9 @@ class SaveToLibraryRequest(BaseModel):
         default=None,
         description="Full content data. If provided, used directly instead of storage lookup."
     )
+    # Skill classification (Epic 30 - Story 30.3)
+    skill_id: UUID | None = Field(default=None, description="SkillCategory UUID from V2 generation")
+    format_id: UUID | None = Field(default=None, description="ActivityFormat UUID from V2 generation")
 
 
 class SaveToLibraryResponse(BaseModel):

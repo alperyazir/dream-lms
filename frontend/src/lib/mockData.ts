@@ -239,6 +239,31 @@ export interface WordBuilderActivity extends AIActivityBase {
   type: "word_builder"
 }
 
+// Story 30.11: New skill-based activity types
+export interface ListeningQuizActivity extends AIActivityBase {
+  type: "listening_quiz"
+}
+
+export interface ListeningFillBlankActivity extends AIActivityBase {
+  type: "listening_fill_blank"
+}
+
+export interface GrammarFillBlankActivity extends AIActivityBase {
+  type: "grammar_fill_blank"
+}
+
+export interface WritingFillBlankActivity extends AIActivityBase {
+  type: "writing_fill_blank"
+}
+
+export interface ListeningSentenceBuilderActivity extends AIActivityBase {
+  type: "listening_sentence_builder"
+}
+
+export interface ListeningWordBuilderActivity extends AIActivityBase {
+  type: "listening_word_builder"
+}
+
 export type ActivityConfig =
   | DragDropPictureActivity
   | DragDropPictureGroupActivity
@@ -251,6 +276,13 @@ export type ActivityConfig =
   | ReadingComprehensionActivity
   | SentenceBuilderActivity
   | WordBuilderActivity
+  // Story 30.11: New skill-based activity types
+  | ListeningQuizActivity
+  | ListeningFillBlankActivity
+  | GrammarFillBlankActivity
+  | WritingFillBlankActivity
+  | ListeningSentenceBuilderActivity
+  | ListeningWordBuilderActivity
 
 // ============================================================================
 

@@ -7,10 +7,12 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { FiHome } from "react-icons/fi"
+import { SkillTrendChart } from "@/components/analytics/SkillTrendChart"
 import { AnnouncementWidget } from "@/components/announcements/AnnouncementWidget"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { ProgressSummaryCard } from "@/components/student/ProgressSummaryCard"
+import { StudentSkillSummaryGrid } from "@/components/student/StudentSkillSummaryGrid"
 import { UpcomingAssignmentsList } from "@/components/student/UpcomingAssignmentsList"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useStudentAnnouncements } from "@/hooks/useAnnouncements"
@@ -76,6 +78,12 @@ function StudentDashboard() {
         ) : progress?.stats ? (
           <ProgressSummaryCard stats={progress.stats} />
         ) : null}
+
+        {/* Student Skill Summary (Story 30.17) */}
+        <StudentSkillSummaryGrid />
+
+        {/* Skill Trends (Story 30.16) */}
+        <SkillTrendChart />
 
         {/* Upcoming Assignments */}
         {isLoadingAssignments ? (

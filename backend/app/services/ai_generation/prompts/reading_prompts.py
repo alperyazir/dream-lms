@@ -95,10 +95,14 @@ READING_USER_PROMPT_TEMPLATE = """Create a reading comprehension exercise with a
 
 {difficulty_guidelines}
 
-## Context from Book Module:
-**Module Title:** {module_title}
-**Topics:** {topics}
-**Sample Context:** {context_sample}
+## Module Context (use as thematic inspiration, do NOT copy):
+{summaries}
+
+## Vocabulary Pool (pick 8-10 words for this passage):
+{vocabulary}
+
+## Grammar Structures (demonstrate through usage, NEVER name them):
+{grammar_section}
 
 ## Requirements:
 - **Language:** {language}
@@ -108,12 +112,15 @@ READING_USER_PROMPT_TEMPLATE = """Create a reading comprehension exercise with a
 - **Difficulty level:** {difficulty}
 
 ## Step 1: Create the Passage
-Write an engaging, original passage that:
+{variation_instruction}Write an engaging, original passage. Follow these rules strictly:
 - Is about {passage_length} words long
-- Naturally incorporates the topics: {topics}
+- Use the module context above as **thematic inspiration** — draw on the themes and situations described, but create a completely NEW story with original characters and settings
+- Pick only **8-10 words** from the vocabulary pool and weave them naturally into the story
+- Do NOT try to use every vocabulary word — fewer words used well is better than many words forced in
+- **DEMONSTRATE** grammar structures through natural sentences — NEVER mention grammar rule names (e.g. write "I'm meeting her tomorrow" instead of "She uses Present Continuous for future arrangements")
+- Invent **original characters, settings, and situations** — be creative
 - Is appropriate for {difficulty} difficulty ({language} learners)
-- Tells a coherent story or explains a topic clearly
-- Uses vocabulary and sentence structure matching the difficulty level
+- Reads like a real text, not a vocabulary exercise
 
 ## Step 2: Generate Questions
 Create {question_count} comprehension questions about YOUR passage.
@@ -122,7 +129,7 @@ Create {question_count} comprehension questions about YOUR passage.
 {type_distribution}
 
 ## Critical Requirements:
-1. The passage must be ORIGINAL - do not copy from the context
+1. The passage must read naturally — NOT like a vocabulary list disguised as a story
 2. Every question must include a "passage_reference" - an EXACT quote from YOUR passage
 3. MCQ questions must have exactly 4 options with one correct answer
 4. True/False questions must have exactly 2 options: ["True", "False"]
@@ -198,23 +205,32 @@ def build_reading_prompt(
     question_types: list[str],
     difficulty: str,
     language: str,
-    passage_length: int = 200,
+    passage_length: int = 250,
+    vocabulary: list[str] | None = None,
+    grammar_points: list[str] | None = None,
+    passage_index: int | None = None,
+    total_passages: int | None = None,
 ) -> str:
     """
     Build a complete reading comprehension generation prompt.
 
-    The LLM will create an original passage based on the topics
-    and then generate questions about it.
+    The LLM will create an original passage based on the topics,
+    module summaries, vocabulary, and grammar points,
+    then generate questions about it.
 
     Args:
-        module_title: Title of the source module.
-        topics: List of topics from the module.
-        context_sample: Brief sample of module content for context.
+        module_title: Title of the source module(s).
+        topics: List of topics from the modules.
+        context_sample: Module summaries for context.
         question_count: Number of questions to generate.
         question_types: List of question types to include.
         difficulty: Difficulty level (easy, medium, hard).
         language: Language for the passage and questions.
-        passage_length: Target word count for the passage (100-500).
+        passage_length: Target word count for the passage.
+        vocabulary: Optional list of vocabulary words to incorporate.
+        grammar_points: Optional list of grammar structures to incorporate.
+        passage_index: Which passage this is (1-based) in a multi-passage set.
+        total_passages: Total passages being generated in this set.
 
     Returns:
         Formatted user prompt string.
@@ -238,10 +254,50 @@ def build_reading_prompt(
     # Format topics for display
     topics_str = ", ".join(topics) if topics else "general topics from the module"
 
+    # Format vocabulary for display
+    vocab_str = ", ".join(vocabulary[:30]) if vocabulary else "use topic-appropriate vocabulary"
+
+    # Format grammar points section
+    if grammar_points:
+        grammar_section = ", ".join(grammar_points)
+    else:
+        grammar_section = "(use grammar appropriate for the difficulty level)"
+
+    # Build variation instruction for multi-passage generation
+    PASSAGE_FORMATS = [
+        "a personal email or letter to a friend",
+        "a short newspaper or magazine article",
+        "a diary or journal entry",
+        "a dialogue or conversation between two people",
+        "an informational text or encyclopedia entry",
+        "a travel blog post",
+        "a school essay or report",
+        "an interview transcript",
+        "an advertisement or brochure",
+        "a story about an everyday situation",
+    ]
+
+    if total_passages and total_passages > 1 and passage_index:
+        fmt = PASSAGE_FORMATS[(passage_index - 1) % len(PASSAGE_FORMATS)]
+        variation_instruction = (
+            f"**IMPORTANT: This is passage {passage_index} of {total_passages}.**\n"
+            f"- Write this passage as: **{fmt}**\n"
+            f"- Do NOT use the same characters, setting, or storyline as other passages\n"
+            f"- Pick a DIFFERENT subset of vocabulary words from the list\n\n"
+        )
+    else:
+        variation_instruction = ""
+
+    # Format summaries
+    if context_sample and context_sample.strip() and context_sample != "(Use topics and vocabulary as guidance)":
+        summaries_str = context_sample
+    else:
+        summaries_str = "(No module summaries available — use vocabulary and grammar as guidance)"
+
     return READING_USER_PROMPT_TEMPLATE.format(
-        module_title=module_title,
-        topics=topics_str,
-        context_sample=context_sample[:500] + "..." if len(context_sample) > 500 else context_sample,
+        vocabulary=vocab_str,
+        grammar_section=grammar_section,
+        summaries=summaries_str,
         passage_length=passage_length,
         question_count=question_count,
         question_types=", ".join(question_types),
@@ -249,6 +305,7 @@ def build_reading_prompt(
         difficulty_guidelines=difficulty_guidelines,
         language=language,
         type_distribution=type_distribution,
+        variation_instruction=variation_instruction,
     )
 
 

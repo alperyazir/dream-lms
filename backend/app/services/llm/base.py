@@ -30,7 +30,7 @@ class GenerationOptions(BaseModel):
         description="Controls randomness. Higher = more creative.",
     )
     max_tokens: int = Field(
-        default=2000,
+        default=4096,
         ge=1,
         le=100000,
         description="Maximum tokens to generate.",
