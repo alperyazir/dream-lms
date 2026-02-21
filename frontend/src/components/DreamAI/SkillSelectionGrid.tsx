@@ -3,7 +3,7 @@
  * Story 30.9: Skill Selection Step UI - Task 1
  *
  * Displays skill categories as cards with single-select behavior.
- * Includes a "Mix" card and a disabled "Speaking" card.
+ * Includes a "Mix" card alongside API-driven skill cards.
  */
 
 import { Loader2, Sparkles } from "lucide-react"
@@ -79,19 +79,6 @@ export function SkillSelectionGrid({
           onClick={() => onSelect("mix")}
         />
 
-        {/* Speaking — disabled with "Coming Soon" */}
-        <SkillCard
-          name="Speaking"
-          slug="speaking"
-          icon="mic"
-          color="slate"
-          description="Practice speaking and pronunciation"
-          formatCount={0}
-          isSelected={false}
-          isDisabled={true}
-          disabledLabel="Coming Soon"
-          onClick={() => {}}
-        />
       </div>
     </div>
   )

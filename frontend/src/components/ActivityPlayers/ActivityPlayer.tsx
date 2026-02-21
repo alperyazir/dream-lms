@@ -57,8 +57,12 @@ import { GrammarFillBlankPlayerAdapter } from "./GrammarFillBlankPlayerAdapter"
 import { ListeningFillBlankPlayerAdapter } from "./ListeningFillBlankPlayerAdapter"
 import { ListeningQuizPlayerAdapter } from "./ListeningQuizPlayerAdapter"
 import { WritingFillBlankPlayerAdapter } from "./WritingFillBlankPlayerAdapter"
+import { WritingSentenceCorrectorPlayerAdapter } from "./WritingSentenceCorrectorPlayerAdapter"
+import { WritingFreeResponsePlayerAdapter } from "./WritingFreeResponsePlayerAdapter"
 import { ListeningSentenceBuilderPlayerAdapter } from "./ListeningSentenceBuilderPlayerAdapter"
 import { ListeningWordBuilderPlayerAdapter } from "./ListeningWordBuilderPlayerAdapter"
+import { VocabularyMatchingPlayerAdapter } from "./VocabularyMatchingPlayerAdapter"
+import { SpeakingOpenResponsePlayerAdapter } from "./SpeakingOpenResponsePlayerAdapter"
 
 interface ActivityPlayerProps {
   activityConfig: ActivityConfig
@@ -85,6 +89,10 @@ interface ActivityPlayerProps {
     | "listening_fill_blank"
     | "grammar_fill_blank"
     | "writing_fill_blank"
+    | "writing_sentence_corrector"
+    | "writing_free_response"
+    | "vocabulary_matching"
+    | "speaking_open_response"
   timeLimit?: number // minutes
   onExit: () => void
   initialProgress?: Record<string, any> | null // Story 4.8: Saved progress from backend
@@ -159,7 +167,11 @@ export function restoreProgressFromJson(
       activityType === "listening_quiz" ||
       activityType === "listening_fill_blank" ||
       activityType === "grammar_fill_blank" ||
-      activityType === "writing_fill_blank"
+      activityType === "writing_fill_blank" ||
+      activityType === "writing_sentence_corrector" ||
+      activityType === "writing_free_response" ||
+      activityType === "vocabulary_matching" ||
+      activityType === "speaking_open_response"
     ) {
       // Convert object back to Map<string, string>
       const map = new Map<string, string>(
@@ -704,6 +716,42 @@ export function ActivityPlayer({
               : 0
         }
         answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "writing_sentence_corrector") {
+        // Writing Sentence Corrector scoring
+        const content = (activityConfig as any).content
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+
+        if (content?.items) {
+          content.items.forEach(
+            (item: {
+              item_id: string
+              correct_sentence?: string
+            }) => {
+              const userAnswer = userAnswers.get(item.item_id)
+              if (userAnswer && item.correct_sentence) {
+                if (isAnswerAcceptable(userAnswer, [item.correct_sentence])) {
+                  correctCount++
+                }
+              }
+            },
+          )
+          calculatedScore =
+            content.items.length > 0
+              ? Math.round((correctCount / content.items.length) * 100)
+              : 0
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "writing_free_response") {
+        // Writing Free Response — no auto-scoring
+        const userAnswers = answers as Map<string, string>
+        calculatedScore = -1 // sentinel for "pending teacher review"
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "speaking_open_response") {
+        // Speaking Open Response — no auto-scoring
+        const userAnswers = answers as Map<string, string>
+        calculatedScore = -1 // sentinel for "pending teacher review"
+        answersJson = { answers: Object.fromEntries(userAnswers) }
       } else if (normalizedType === "listening_sentence_builder") {
         // Listening Sentence Builder scoring
         const content = (activityConfig as any).content
@@ -757,6 +805,21 @@ export function ActivityPlayer({
               ? Math.round((correctCount / content.words.length) * 100)
               : 0
         }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "vocabulary_matching") {
+        // Vocabulary Matching scoring: pair_id === def_id means correct
+        const userAnswers = answers as Map<string, string>
+        let correctCount = 0
+        const totalPairs = userAnswers.size
+
+        userAnswers.forEach((defId, pairId) => {
+          if (defId === pairId) correctCount++
+        })
+
+        calculatedScore =
+          totalPairs > 0
+            ? Math.round((correctCount / totalPairs) * 100)
+            : 0
         answersJson = { answers: Object.fromEntries(userAnswers) }
       }
 
@@ -1327,6 +1390,63 @@ export function ActivityPlayer({
         breakdown: { activity_type: "writing_fill_blank" },
       }
       answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "writing_sentence_corrector") {
+      const content = (activityConfig as any).content
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalItems = 0
+
+      if (content?.items) {
+        content.items.forEach(
+          (item: {
+            item_id: string
+            correct_sentence?: string
+          }) => {
+            const userAnswer = userAnswers.get(item.item_id)
+            totalItems++
+            if (userAnswer && item.correct_sentence) {
+              if (isAnswerAcceptable(userAnswer, [item.correct_sentence])) {
+                correctCount++
+                correctSet.add(item.item_id)
+              }
+            }
+          },
+        )
+      }
+      score = {
+        score:
+          totalItems > 0
+            ? Math.round((correctCount / totalItems) * 100)
+            : 0,
+        correct: correctCount,
+        total: totalItems,
+        breakdown: { activity_type: "writing_sentence_corrector" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "writing_free_response") {
+      const content = (activityConfig as any).content
+      const userAnswers = answers as Map<string, string>
+      const totalItems = content?.items?.length || 0
+      // No auto-scoring — pending teacher review
+      score = {
+        score: -1,
+        correct: 0,
+        total: totalItems,
+        breakdown: { activity_type: "writing_free_response", pending_review: true },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "speaking_open_response") {
+      const content = (activityConfig as any).content
+      const userAnswers = answers as Map<string, string>
+      const totalItems = content?.items?.length || 0
+      // No auto-scoring — pending teacher review
+      score = {
+        score: -1,
+        correct: 0,
+        total: totalItems,
+        breakdown: { activity_type: "speaking_open_response", pending_review: true },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
     } else if (activityConfig.type === "listening_sentence_builder") {
       const content = (activityConfig as any).content
       const userAnswers = answers as Map<string, string>
@@ -1388,6 +1508,26 @@ export function ActivityPlayer({
         correct: correctCount,
         total: totalWords,
         breakdown: { activity_type: "listening_word_builder" },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "vocabulary_matching") {
+      // Vocabulary Matching scoring: pair_id === def_id means correct
+      const userAnswers = answers as Map<string, string>
+      let correctCount = 0
+      let totalPairs = 0
+
+      userAnswers.forEach((defId, pairId) => {
+        totalPairs++
+        if (defId === pairId) {
+          correctCount++
+          correctSet.add(pairId)
+        }
+      })
+      score = {
+        score: totalPairs > 0 ? Math.round((correctCount / totalPairs) * 100) : 0,
+        correct: correctCount,
+        total: totalPairs,
+        breakdown: { activity_type: "vocabulary_matching" },
       }
       answersJson = { answers: Object.fromEntries(userAnswers) }
     } else {
@@ -1710,6 +1850,36 @@ export function ActivityPlayer({
           />
         )
 
+      case "writing_sentence_corrector":
+        return (
+          <WritingSentenceCorrectorPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "writing_free_response":
+        return (
+          <WritingFreeResponsePlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
       case "listening_sentence_builder":
         return (
           <ListeningSentenceBuilderPlayerAdapter
@@ -1728,6 +1898,33 @@ export function ActivityPlayer({
       case "listening_word_builder":
         return (
           <ListeningWordBuilderPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        )
+
+      case "vocabulary_matching":
+        return (
+          <VocabularyMatchingPlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+          />
+        )
+
+      case "speaking_open_response":
+        return (
+          <SpeakingOpenResponsePlayerAdapter
             activity={activityConfig}
             onAnswersChange={handleAnswersChange}
             showResults={showResults}

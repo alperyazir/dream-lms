@@ -666,6 +666,37 @@ export function ContentPreviewModal({
       )
     }
 
+    // Vocabulary Matching - show word → definition pairs
+    if (content.activity_type === "vocabulary_matching") {
+      const pairs = editedContent.pairs || []
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-sm text-muted-foreground">
+              Pairs ({pairs.length})
+            </h4>
+          </div>
+          {pairs.map((pair: any, idx: number) => (
+            <div key={idx} className="rounded-lg border bg-card p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                    {idx + 1}
+                  </span>
+                  <div>
+                    <span className="font-medium">{pair.word}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="ml-9 text-sm text-muted-foreground">
+                {pair.definition}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    }
+
     // Word Builder - show word with letters in cards
     if (content.activity_type === "word_builder") {
       const words = editedContent.words || []
@@ -968,6 +999,44 @@ export function ContentPreviewModal({
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Grammar Fill-Blank — read-only preview of items
+    if (content.activity_type === "grammar_fill_blank") {
+      const items = editedContent.items || []
+      return (
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm text-muted-foreground">
+            Items ({items.length})
+          </h4>
+          {items.map((item: any, idx: number) => (
+            <div key={item.item_id || idx} className="rounded-lg border bg-card p-4 space-y-2">
+              <div className="flex items-start gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary mt-0.5">
+                  {idx + 1}
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{item.sentence}</p>
+                  <div className="mt-1 text-xs">
+                    <span className="text-muted-foreground">Answer: </span>
+                    <span className="font-medium text-green-600">{item.correct_answer}</span>
+                  </div>
+                  {item.grammar_topic && (
+                    <div className="mt-0.5 text-xs text-muted-foreground capitalize">
+                      Grammar: {item.grammar_topic}
+                    </div>
+                  )}
+                  {item.word_bank && item.word_bank.length > 0 && (
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      Word bank: {item.word_bank.join(", ")}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -1593,6 +1662,97 @@ export function ContentPreviewModal({
               </div>
             )
           })}
+        </div>
+      )
+    }
+
+    // Writing Sentence Corrector
+    if (content.activity_type === "writing_sentence_corrector") {
+      const items = editedContent.items || []
+      return (
+        <div className="space-y-3">
+          {items.map((item: any, idx: number) => (
+            <div key={idx} className="rounded-lg border p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                  {idx + 1}
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted capitalize">
+                  {(item.error_type || "grammar").replace("_", " ")}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm">
+                  <span className="text-red-600 dark:text-red-400 line-through">{item.incorrect_sentence}</span>
+                </p>
+                <p className="text-sm">
+                  <span className="text-green-600 dark:text-green-400">{item.correct_sentence}</span>
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Writing Free Response
+    if (content.activity_type === "writing_free_response") {
+      const items = editedContent.items || []
+      return (
+        <div className="space-y-3">
+          {items.map((item: any, idx: number) => (
+            <div key={idx} className="rounded-lg border p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                  {idx + 1}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {item.min_words}–{item.max_words} words
+                </span>
+              </div>
+              <p className="text-sm font-medium">{item.prompt}</p>
+              {item.context && (
+                <p className="text-xs text-muted-foreground">{item.context}</p>
+              )}
+              {item.rubric_hints && item.rubric_hints.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium">Rubric: </span>
+                  {item.rubric_hints.join("; ")}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Speaking Open Response
+    if (content.activity_type === "speaking_open_response") {
+      const items = editedContent.items || []
+      return (
+        <div className="space-y-3">
+          {items.map((item: any, idx: number) => (
+            <div key={idx} className="rounded-lg border p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                  {idx + 1}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {item.max_seconds}s
+                </span>
+              </div>
+              <p className="text-sm font-medium">{item.prompt}</p>
+              {item.context && (
+                <p className="text-xs text-muted-foreground">{item.context}</p>
+              )}
+              {item.grading_rubric && item.grading_rubric.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium">Rubric: </span>
+                  {item.grading_rubric.join("; ")}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )
     }

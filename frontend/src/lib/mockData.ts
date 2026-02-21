@@ -256,12 +256,28 @@ export interface WritingFillBlankActivity extends AIActivityBase {
   type: "writing_fill_blank"
 }
 
+export interface WritingSentenceCorrectorActivity extends AIActivityBase {
+  type: "writing_sentence_corrector"
+}
+
+export interface WritingFreeResponseActivity extends AIActivityBase {
+  type: "writing_free_response"
+}
+
 export interface ListeningSentenceBuilderActivity extends AIActivityBase {
   type: "listening_sentence_builder"
 }
 
 export interface ListeningWordBuilderActivity extends AIActivityBase {
   type: "listening_word_builder"
+}
+
+export interface VocabularyMatchingActivity extends AIActivityBase {
+  type: "vocabulary_matching"
+}
+
+export interface SpeakingOpenResponseActivity extends AIActivityBase {
+  type: "speaking_open_response"
 }
 
 export type ActivityConfig =
@@ -281,8 +297,12 @@ export type ActivityConfig =
   | ListeningFillBlankActivity
   | GrammarFillBlankActivity
   | WritingFillBlankActivity
+  | WritingSentenceCorrectorActivity
+  | WritingFreeResponseActivity
   | ListeningSentenceBuilderActivity
   | ListeningWordBuilderActivity
+  | VocabularyMatchingActivity
+  | SpeakingOpenResponseActivity
 
 // ============================================================================
 

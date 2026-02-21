@@ -16,6 +16,7 @@ from app.schemas.skill import (
     SkillCategoryPublic,
     SkillWithFormatsResponse,
 )
+from app.services.skill_generation_dispatcher import GENERATOR_MAP
 
 router = APIRouter(prefix="/skills", tags=["skills"])
 
@@ -56,11 +57,16 @@ def get_skills(
             ).all()
             # Preserve combo display_order
             fmt_map = {f.id: f for f in fmt_models}
-            formats = [
-                ActivityFormatPublic.model_validate(fmt_map[fid])
-                for fid in format_ids
-                if fid in fmt_map
-            ]
+            for fid in format_ids:
+                if fid not in fmt_map:
+                    continue
+                fmt_model = fmt_map[fid]
+                fmt_public = ActivityFormatPublic.model_validate(fmt_model)
+                # Check if generator is implemented
+                map_entry = GENERATOR_MAP.get((skill.slug, fmt_model.slug))
+                if map_entry is not None and map_entry[0] is None:
+                    fmt_public.coming_soon = True
+                formats.append(fmt_public)
 
         results.append(
             SkillWithFormatsResponse(

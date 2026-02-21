@@ -2826,11 +2826,9 @@ async def generate_content_v2(
             item_count = len(quiz.questions)
 
         elif generator_key == "grammar_quiz":
-            # Grammar uses the same AIQuizService but the prompt is different.
-            # For now, route through AIQuizService — the grammar prompt will be
-            # selected by passing a hint in the request.
-            # TODO: In a future iteration, inject the grammar system prompt directly.
+            # Grammar uses AIQuizService with a grammar-focused system prompt
             from app.schemas.ai_quiz import AIQuizGenerationRequest
+            from app.services.ai_generation.prompts import GRAMMAR_MCQ_SYSTEM_PROMPT
             quiz_request = AIQuizGenerationRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
@@ -2839,10 +2837,10 @@ async def generate_content_v2(
                 language=request.language,
             )
             ai_service = AIQuizService(dcs_client, llm_manager)
-            quiz = await ai_service.generate_quiz(quiz_request)
-            # Tag questions with grammar metadata
-            for q in quiz.questions:
-                q.difficulty = f"grammar_{q.difficulty}"
+            quiz = await ai_service.generate_quiz(
+                quiz_request,
+                system_prompt_override=GRAMMAR_MCQ_SYSTEM_PROMPT,
+            )
             await storage.save_ai_quiz(quiz)
             content_data = quiz.model_dump(mode="json")
             content_id = quiz.quiz_id
@@ -2984,22 +2982,24 @@ async def generate_content_v2(
             content_id = activity.activity_id
             item_count = len(activity.items)
 
-        elif generator_key == "writing_sentence_builder":
-            from app.services.ai_generation.writing_sentence_builder_service import (
-                WritingSentenceBuilderService,
+        elif generator_key == "writing_sentence_corrector":
+            from app.schemas.writing_sentence_corrector import WritingSentenceCorrectorRequest
+            from app.services.ai_generation.writing_sentence_corrector_service import (
+                WritingSentenceCorrectorService,
             )
-            wsb_service = WritingSentenceBuilderService(dcs_client, llm_manager)
-            activity = await wsb_service.generate_activity(
+            wsc_request = WritingSentenceCorrectorRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
-                sentence_count=min(request.count, 50),
+                item_count=min(request.count, 20),
                 difficulty=request.difficulty if request.difficulty != "auto" else "auto",
                 language=request.language,
             )
-            await storage.save_sentence_activity(activity)
+            wsc_service = WritingSentenceCorrectorService(dcs_client, llm_manager)
+            activity = await wsc_service.generate_activity(wsc_request)
+            await storage.save_writing_sentence_corrector_activity(activity)
             content_data = activity.model_dump(mode="json")
             content_id = activity.activity_id
-            item_count = len(activity.sentences)
+            item_count = len(activity.items)
 
         elif generator_key == "writing_fill_blank":
             from app.schemas.writing_fill_blank import WritingFillBlankRequest
@@ -3016,6 +3016,44 @@ async def generate_content_v2(
             wfb_service = WritingFillBlankService(dcs_client, llm_manager)
             activity = await wfb_service.generate_activity(wfb_request)
             await storage.save_writing_fill_blank_activity(activity)
+            content_data = activity.model_dump(mode="json")
+            content_id = activity.activity_id
+            item_count = len(activity.items)
+
+        elif generator_key == "writing_free_response":
+            from app.schemas.writing_free_response import WritingFreeResponseRequest
+            from app.services.ai_generation.writing_free_response_service import (
+                WritingFreeResponseService,
+            )
+            wfr_request = WritingFreeResponseRequest(
+                book_id=request.book_id,
+                module_ids=request.module_ids or [],
+                item_count=min(request.count, 10),
+                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                language=request.language,
+            )
+            wfr_service = WritingFreeResponseService(dcs_client, llm_manager)
+            activity = await wfr_service.generate_activity(wfr_request)
+            await storage.save_writing_free_response_activity(activity)
+            content_data = activity.model_dump(mode="json")
+            content_id = activity.activity_id
+            item_count = len(activity.items)
+
+        elif generator_key == "speaking_open_response":
+            from app.schemas.speaking_open_response import SpeakingOpenResponseRequest
+            from app.services.ai_generation.speaking_open_response_service import (
+                SpeakingOpenResponseService,
+            )
+            sor_request = SpeakingOpenResponseRequest(
+                book_id=request.book_id,
+                module_ids=request.module_ids or [],
+                item_count=min(request.count, 10),
+                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                language=request.language,
+            )
+            sor_service = SpeakingOpenResponseService(dcs_client, llm_manager)
+            activity = await sor_service.generate_activity(sor_request)
+            await storage.save_speaking_open_response_activity(activity)
             content_data = activity.model_dump(mode="json")
             content_id = activity.activity_id
             item_count = len(activity.items)
@@ -3057,6 +3095,24 @@ async def generate_content_v2(
             content_data = activity.model_dump(mode="json")
             content_id = activity.activity_id
             item_count = len(activity.words)
+
+        elif generator_key == "vocabulary_matching":
+            from app.schemas.vocabulary_matching import VocabularyMatchingRequest
+            from app.services.ai_generation.vocabulary_matching_service import (
+                VocabularyMatchingService,
+            )
+            vm_request = VocabularyMatchingRequest(
+                book_id=request.book_id,
+                module_ids=request.module_ids,
+                pair_count=min(request.count, 20),
+                include_audio=request.include_audio,
+            )
+            vm_service = VocabularyMatchingService(dcs_client)
+            activity = await vm_service.generate_activity(vm_request)
+            await storage.save_vocabulary_matching_activity(activity)
+            content_data = activity.model_dump(mode="json")
+            content_id = activity.activity_id
+            item_count = len(activity.pairs)
 
         else:
             raise HTTPException(
@@ -3302,7 +3358,7 @@ def _count_activity_items(activity_type: str, content: dict) -> int:
             return len(content.get("questions", []))
         elif activity_type in ["reading", "reading_comprehension"]:
             return len(content.get("questions", []))
-        elif activity_type in ["sentence_builder", "listening_sentence_builder", "writing_sentence_builder"]:
+        elif activity_type in ["sentence_builder", "listening_sentence_builder"]:
             return len(content.get("sentences", []))
         elif activity_type in ["word_builder", "listening_word_builder"]:
             return len(content.get("words", []))
@@ -3312,8 +3368,13 @@ def _count_activity_items(activity_type: str, content: dict) -> int:
             "listening_fill_blank",
             "grammar_fill_blank",
             "writing_fill_blank",
+            "writing_sentence_corrector",
+            "writing_free_response",
+            "speaking_open_response",
         ]:
             return len(content.get("items", []))
+        elif activity_type == "vocabulary_matching":
+            return len(content.get("pairs", []))
         elif activity_type == "mix_mode":
             return len(content.get("questions", []))
         else:

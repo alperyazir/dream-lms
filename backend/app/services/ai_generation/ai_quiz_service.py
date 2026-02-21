@@ -63,7 +63,11 @@ class AIQuizService:
         self._llm_manager = llm_manager
         logger.info("AIQuizService initialized")
 
-    async def generate_quiz(self, request: AIQuizGenerationRequest) -> AIQuiz:
+    async def generate_quiz(
+        self,
+        request: AIQuizGenerationRequest,
+        system_prompt_override: str | None = None,
+    ) -> AIQuiz:
         """
         Generate an AI-powered MCQ quiz from book modules.
 
@@ -74,6 +78,7 @@ class AIQuizService:
 
         Args:
             request: Quiz generation request with configuration.
+            system_prompt_override: Optional system prompt to replace the default MCQ prompt.
 
         Returns:
             AIQuiz with generated questions.
@@ -187,8 +192,9 @@ class AIQuizService:
         # 6. Generate questions via LLM
         try:
             logger.info("Calling LLM for question generation")
+            effective_system_prompt = system_prompt_override or MCQ_SYSTEM_PROMPT
             response = await self._llm_manager.generate_structured(
-                prompt=f"{MCQ_SYSTEM_PROMPT}\n\n{user_prompt}",
+                prompt=f"{effective_system_prompt}\n\n{user_prompt}",
                 schema=MCQ_JSON_SCHEMA,
             )
             logger.info(f"LLM response received: {len(response.get('questions', []))} questions")

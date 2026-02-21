@@ -251,8 +251,11 @@ export const QUESTION_NAV_ACTIVITY_TYPES = [
   "listening_fill_blank",
   "grammar_fill_blank",
   "writing_fill_blank",
+  "writing_sentence_corrector",
+  "writing_free_response",
   "listening_sentence_builder",
   "listening_word_builder",
+  "speaking_open_response",
 ] as const
 
 export type QuestionNavActivityType =

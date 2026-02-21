@@ -23,6 +23,7 @@ class ActivityFormatPublic(SQLModel):
     name: str
     slug: str
     description: str | None = None
+    coming_soon: bool = False
 
 
 class SkillWithFormatsResponse(SQLModel):

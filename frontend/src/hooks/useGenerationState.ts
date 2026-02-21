@@ -21,12 +21,14 @@ export type ActivityType =
   | "listening_fill_blank"
   | "grammar_fill_blank"
   | "writing_fill_blank"
+  | "writing_sentence_corrector"
+  | "writing_free_response"
   | "sentence_builder"
   | "word_builder"
   | "listening_sentence_builder"
   | "listening_word_builder"
-  | "listening_sentence_builder"
-  | "listening_word_builder"
+  | "vocabulary_matching"
+  | "speaking_open_response"
 
 export type GeneratedActivity =
   | AIQuiz

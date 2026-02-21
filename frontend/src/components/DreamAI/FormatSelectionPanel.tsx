@@ -9,6 +9,8 @@ import {
   ClipboardList,
   FileEdit,
   type LucideIcon,
+  MessageSquareText,
+  PenLine,
   Puzzle,
   Type,
 } from "lucide-react"
@@ -51,6 +53,16 @@ const FORMAT_META: Record<
     description: "Read a passage and answer questions",
     gradient: "from-fuchsia-500 to-purple-600",
   },
+  sentence_corrector: {
+    icon: PenLine,
+    description: "Fix intentionally incorrect sentences",
+    gradient: "from-rose-500 to-pink-600",
+  },
+  free_response: {
+    icon: MessageSquareText,
+    description: "Open-ended writing prompts",
+    gradient: "from-emerald-500 to-teal-600",
+  },
 }
 
 const DEFAULT_META = {
@@ -92,27 +104,38 @@ export function FormatSelectionPanel({
           const meta = FORMAT_META[format.slug] || DEFAULT_META
           const IconComp = meta.icon
           const isSelected = selectedFormatSlug === format.slug
+          const isComingSoon = format.coming_soon === true
 
           return (
             <button
               key={format.slug}
-              onClick={() => onSelect(format.slug)}
+              onClick={() => !isComingSoon && onSelect(format.slug)}
+              disabled={isComingSoon}
               className={cn(
-                "group flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
-                "hover:shadow-lg hover:shadow-purple-500/20 hover:-translate-y-0.5",
+                "group relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
                 "focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
-                isSelected
+                isComingSoon
+                  ? "border-muted bg-card/50 opacity-60 cursor-not-allowed"
+                  : "hover:shadow-lg hover:shadow-purple-500/20 hover:-translate-y-0.5",
+                isSelected && !isComingSoon
                   ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20"
-                  : "border-muted bg-card hover:border-purple-400/50",
+                  : !isComingSoon && "border-muted bg-card hover:border-purple-400/50",
               )}
             >
+              {isComingSoon && (
+                <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  Soon
+                </span>
+              )}
               <div
                 className={cn(
                   "p-2.5 rounded-lg bg-gradient-to-br mb-2 transition-all duration-200 shadow-md",
                   meta.gradient,
-                  isSelected
-                    ? "shadow-purple-500/40"
-                    : "shadow-purple-500/20 group-hover:shadow-purple-500/30",
+                  isComingSoon
+                    ? "opacity-50"
+                    : isSelected
+                      ? "shadow-purple-500/40"
+                      : "shadow-purple-500/20 group-hover:shadow-purple-500/30",
                 )}
               >
                 <IconComp className="h-6 w-6 text-white" />

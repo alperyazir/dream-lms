@@ -28,8 +28,14 @@ const ESTIMATED_TIMES: Record<ActivityType, number> = {
   listening_fill_blank: 10,
   grammar_fill_blank: 10,
   writing_fill_blank: 10,
+  writing_sentence_corrector: 10,
+  writing_free_response: 10,
+  speaking_open_response: 10,
   sentence_builder: 12,
   word_builder: 10,
+  listening_sentence_builder: 12,
+  listening_word_builder: 10,
+  vocabulary_matching: 5,
 }
 
 export function GenerateButton({

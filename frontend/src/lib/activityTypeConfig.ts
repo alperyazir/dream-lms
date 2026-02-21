@@ -16,8 +16,10 @@ import {
   HelpCircle,
   Image,
   Link,
+  Mic,
   Palette,
   PenLine,
+  Puzzle,
   Search,
   Type,
   X,
@@ -131,6 +133,18 @@ export const ACTIVITY_TYPE_CONFIG: Record<string, ActivityTypeConfig> = {
     color: "ai-fuchsia",
     isAI: true,
   },
+  writing_sentence_corrector: {
+    icon: PenLine,
+    label: "Sentence Corrector",
+    color: "ai-fuchsia",
+    isAI: true,
+  },
+  writing_free_response: {
+    icon: FileQuestion,
+    label: "Free Response",
+    color: "ai-fuchsia",
+    isAI: true,
+  },
   listening_sentence_builder: {
     icon: Headphones,
     label: "Listening Sentence Builder",
@@ -153,6 +167,18 @@ export const ACTIVITY_TYPE_CONFIG: Record<string, ActivityTypeConfig> = {
     icon: Headphones,
     label: "Listening Word Builder",
     color: "ai-teal",
+    isAI: true,
+  },
+  vocabulary_matching: {
+    icon: Puzzle,
+    label: "Vocabulary Matching",
+    color: "ai-violet",
+    isAI: true,
+  },
+  speaking_open_response: {
+    icon: Mic,
+    label: "Speaking Open Response",
+    color: "ai-purple",
     isAI: true,
   },
   mix_mode: {

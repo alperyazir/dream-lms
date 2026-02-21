@@ -52,6 +52,20 @@ from app.schemas.writing_fill_blank import (
     WritingFillBlankActivityPublic,
     WritingFillBlankItemPublic,
 )
+from app.schemas.writing_sentence_corrector import (
+    WritingSentenceCorrectorActivity,
+    WritingSentenceCorrectorActivityPublic,
+    WritingSentenceCorrectorItemPublic,
+)
+from app.schemas.writing_free_response import (
+    WritingFreeResponseActivity,
+    WritingFreeResponseActivityPublic,
+    WritingFreeResponseItemPublic,
+)
+from app.schemas.speaking_open_response import (
+    SpeakingOpenResponseActivity,
+    SpeakingOpenResponseActivityPublic,
+)
 from app.schemas.listening_fill_blank import (
     ListeningFillBlankActivity,
     ListeningFillBlankActivityPublic,
@@ -75,6 +89,11 @@ from app.schemas.listening_word_builder import (
     ListeningWordBuilderActivity,
     ListeningWordBuilderActivityPublic,
     ListeningWordBuilderItemPublic,
+)
+from app.schemas.vocabulary_matching import (
+    VocabularyMatchingActivity,
+    VocabularyMatchingActivityPublic,
+    to_public as vocab_matching_to_public,
 )
 from app.schemas.vocabulary_quiz import (
     QuestionResult,
@@ -142,10 +161,18 @@ class QuizStorageService:
         self._grammar_fb_activities: dict[str, tuple[GrammarFillBlankActivity, datetime]] = {}
         # Writing fill-blank activity storage (Story 30.7)
         self._writing_fb_activities: dict[str, tuple[WritingFillBlankActivity, datetime]] = {}
+        # Writing sentence corrector activity storage
+        self._writing_sc_activities: dict[str, tuple[WritingSentenceCorrectorActivity, datetime]] = {}
+        # Writing free response activity storage
+        self._writing_fr_activities: dict[str, tuple[WritingFreeResponseActivity, datetime]] = {}
         # Listening sentence builder activity storage
         self._listening_sb_activities: dict[str, tuple[ListeningSentenceBuilderActivity, datetime]] = {}
         # Listening word builder activity storage
         self._listening_wb_activities: dict[str, tuple[ListeningWordBuilderActivity, datetime]] = {}
+        # Vocabulary matching activity storage
+        self._vocab_matching_activities: dict[str, tuple[VocabularyMatchingActivity, datetime]] = {}
+        # Speaking open response activity storage
+        self._speaking_or_activities: dict[str, tuple[SpeakingOpenResponseActivity, datetime]] = {}
         # Mix mode activity storage (Story 30.8)
         self._mix_mode_activities: dict[str, tuple[MixModeActivity, datetime]] = {}
         logger.info(
@@ -1224,6 +1251,112 @@ class QuizStorageService:
             created_at=activity.created_at,
         )
 
+    # ---- Writing Sentence Corrector ----
+
+    async def save_writing_sentence_corrector_activity(
+        self, activity: WritingSentenceCorrectorActivity
+    ) -> str:
+        """Save a writing sentence corrector activity."""
+        await self._cleanup_expired()
+        self._writing_sc_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Writing sentence corrector saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_writing_sentence_corrector_activity(
+        self, activity_id: str
+    ) -> WritingSentenceCorrectorActivity | None:
+        entry = self._writing_sc_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._writing_sc_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_writing_sentence_corrector_activity_public(
+        self, activity_id: str
+    ) -> WritingSentenceCorrectorActivityPublic | None:
+        activity = await self.get_writing_sentence_corrector_activity(activity_id)
+        if activity is None:
+            return None
+        public_items = [
+            WritingSentenceCorrectorItemPublic(
+                item_id=item.item_id,
+                context=item.context,
+                incorrect_sentence=item.incorrect_sentence,
+                error_type=item.error_type,
+                difficulty=item.difficulty,
+            )
+            for item in activity.items
+        ]
+        return WritingSentenceCorrectorActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            items=public_items,
+            total_items=activity.total_items,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            created_at=activity.created_at,
+        )
+
+    # ---- Writing Free Response ----
+
+    async def save_writing_free_response_activity(
+        self, activity: WritingFreeResponseActivity
+    ) -> str:
+        """Save a writing free response activity."""
+        await self._cleanup_expired()
+        self._writing_fr_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Writing free response saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_writing_free_response_activity(
+        self, activity_id: str
+    ) -> WritingFreeResponseActivity | None:
+        entry = self._writing_fr_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._writing_fr_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_writing_free_response_activity_public(
+        self, activity_id: str
+    ) -> WritingFreeResponseActivityPublic | None:
+        activity = await self.get_writing_free_response_activity(activity_id)
+        if activity is None:
+            return None
+        public_items = [
+            WritingFreeResponseItemPublic(
+                item_id=item.item_id,
+                prompt=item.prompt,
+                context=item.context,
+                min_words=item.min_words,
+                max_words=item.max_words,
+                difficulty=item.difficulty,
+            )
+            for item in activity.items
+        ]
+        return WritingFreeResponseActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            items=public_items,
+            total_items=activity.total_items,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            requires_manual_grading=activity.requires_manual_grading,
+            created_at=activity.created_at,
+        )
+
     # ---- Listening Fill-Blank (Story 30.5) ----
 
     async def save_listening_fill_blank_activity(
@@ -1330,6 +1463,82 @@ class QuizStorageService:
             total_questions=activity.total_questions,
             difficulty=activity.difficulty,
             language=activity.language,
+            created_at=activity.created_at,
+        )
+
+    # ---- Vocabulary Matching ----
+
+    async def save_vocabulary_matching_activity(
+        self, activity: VocabularyMatchingActivity
+    ) -> str:
+        """Save a vocabulary matching activity."""
+        await self._cleanup_expired()
+        self._vocab_matching_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Vocabulary matching saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_vocabulary_matching_activity(
+        self, activity_id: str
+    ) -> VocabularyMatchingActivity | None:
+        entry = self._vocab_matching_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._vocab_matching_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_vocabulary_matching_activity_public(
+        self, activity_id: str
+    ) -> VocabularyMatchingActivityPublic | None:
+        activity = await self.get_vocabulary_matching_activity(activity_id)
+        if activity is None:
+            return None
+        return vocab_matching_to_public(activity)
+
+    # ---- Speaking Open Response ----
+
+    async def save_speaking_open_response_activity(
+        self, activity: SpeakingOpenResponseActivity
+    ) -> str:
+        """Save a speaking open response activity."""
+        await self._cleanup_expired()
+        self._speaking_or_activities[activity.activity_id] = (
+            activity, datetime.now(timezone.utc),
+        )
+        logger.info(f"Speaking open response saved: id={activity.activity_id}")
+        return activity.activity_id
+
+    async def get_speaking_open_response_activity(
+        self, activity_id: str
+    ) -> SpeakingOpenResponseActivity | None:
+        entry = self._speaking_or_activities.get(activity_id)
+        if entry is None:
+            return None
+        activity, stored_at = entry
+        if self._is_expired(stored_at):
+            self._speaking_or_activities.pop(activity_id, None)
+            return None
+        return activity
+
+    async def get_speaking_open_response_activity_public(
+        self, activity_id: str
+    ) -> SpeakingOpenResponseActivityPublic | None:
+        activity = await self.get_speaking_open_response_activity(activity_id)
+        if activity is None:
+            return None
+        return SpeakingOpenResponseActivityPublic(
+            activity_id=activity.activity_id,
+            book_id=activity.book_id,
+            module_ids=activity.module_ids,
+            items=activity.items,
+            total_items=activity.total_items,
+            difficulty=activity.difficulty,
+            language=activity.language,
+            requires_manual_grading=activity.requires_manual_grading,
             created_at=activity.created_at,
         )
 
@@ -1569,6 +1778,24 @@ class QuizStorageService:
         for activity_id in expired_wfb:
             self._writing_fb_activities.pop(activity_id, None)
 
+        # Cleanup writing sentence corrector activities
+        expired_wsc = [
+            activity_id
+            for activity_id, (_, stored_at) in self._writing_sc_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_wsc:
+            self._writing_sc_activities.pop(activity_id, None)
+
+        # Cleanup writing free response activities
+        expired_wfr = [
+            activity_id
+            for activity_id, (_, stored_at) in self._writing_fr_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_wfr:
+            self._writing_fr_activities.pop(activity_id, None)
+
         # Cleanup listening sentence builder activities
         expired_lsb = [
             activity_id
@@ -1587,6 +1814,24 @@ class QuizStorageService:
         for activity_id in expired_lwb:
             self._listening_wb_activities.pop(activity_id, None)
 
+        # Cleanup vocabulary matching activities
+        expired_vm = [
+            activity_id
+            for activity_id, (_, stored_at) in self._vocab_matching_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_vm:
+            self._vocab_matching_activities.pop(activity_id, None)
+
+        # Cleanup speaking open response activities
+        expired_sor = [
+            activity_id
+            for activity_id, (_, stored_at) in self._speaking_or_activities.items()
+            if self._is_expired(stored_at)
+        ]
+        for activity_id in expired_sor:
+            self._speaking_or_activities.pop(activity_id, None)
+
         # Cleanup mix mode activities
         expired_mix = [
             activity_id
@@ -1596,7 +1841,7 @@ class QuizStorageService:
         for activity_id in expired_mix:
             self._mix_mode_activities.pop(activity_id, None)
 
-        total_expired = len(expired) + len(expired_ai) + len(expired_reading) + len(expired_listening) + len(expired_lfb) + len(expired_gfb) + len(expired_wfb) + len(expired_lsb) + len(expired_lwb) + len(expired_mix)
+        total_expired = len(expired) + len(expired_ai) + len(expired_reading) + len(expired_listening) + len(expired_lfb) + len(expired_gfb) + len(expired_wfb) + len(expired_lsb) + len(expired_lwb) + len(expired_vm) + len(expired_mix)
         if total_expired:
             logger.info(
                 f"Cleaned up {len(expired)} vocabulary quizzes, "

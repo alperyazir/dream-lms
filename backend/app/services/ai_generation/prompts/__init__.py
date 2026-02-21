@@ -6,6 +6,7 @@ This module contains prompt templates for various AI generation tasks.
 
 from app.services.ai_generation.prompts.mcq_prompts import (
     DIFFICULTY_GUIDELINES,
+    GRAMMAR_MCQ_SYSTEM_PROMPT,
     MCQ_JSON_SCHEMA,
     MCQ_SYSTEM_PROMPT,
     MCQ_USER_PROMPT_TEMPLATE,
@@ -60,6 +61,7 @@ from app.services.ai_generation.prompts.sentence_prompts import (
 __all__ = [
     # MCQ prompts
     "MCQ_SYSTEM_PROMPT",
+    "GRAMMAR_MCQ_SYSTEM_PROMPT",
     "MCQ_USER_PROMPT_TEMPLATE",
     "MCQ_JSON_SCHEMA",
     "DIFFICULTY_GUIDELINES",

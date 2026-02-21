@@ -30,6 +30,10 @@ interface ActivityHeaderProps {
     | "listening_fill_blank"
     | "grammar_fill_blank"
     | "writing_fill_blank"
+    | "writing_sentence_corrector"
+    | "writing_free_response"
+    | "vocabulary_matching"
+    | "speaking_open_response"
   timeLimit?: number // in minutes
   onTimeExpired?: () => void
   /** Activity config object (may contain audio_extra) */
@@ -93,6 +97,7 @@ export const ActivityHeader = memo(function ActivityHeader({
     listening_fill_blank: "Listening Fill-blank",
     grammar_fill_blank: "Grammar Fill-blank",
     writing_fill_blank: "Writing Fill-blank",
+    speaking_open_response: "Speaking",
   }
 
   // Time warning colors

@@ -17,6 +17,7 @@ export interface ActivityFormat {
   name: string
   slug: string
   description: string | null
+  coming_soon?: boolean
 }
 
 export interface SkillWithFormats {

@@ -119,12 +119,6 @@ export function GenerationConfigPanel({
         <ListeningOptions options={options} onOptionChange={onOptionChange} />
       )}
 
-      {!isMixMode && skillSlug === "grammar" && formatSlug === "fill_blank" && (
-        <GrammarFillBlankOptions
-          options={options}
-          onOptionChange={onOptionChange}
-        />
-      )}
     </div>
   )
 }
@@ -285,28 +279,3 @@ const NARRATOR_VOICES = [
   { id: "en-GB-RyanNeural", label: "Ryan — Male, British" },
 ]
 
-/** Grammar fill-blank: word_bank vs free_type */
-function GrammarFillBlankOptions({
-  options,
-  onOptionChange,
-}: {
-  options: Record<string, any>
-  onOptionChange: (key: string, value: any) => void
-}) {
-  const mode = options.grammar_mode || "word_bank"
-
-  return (
-    <div className="space-y-2">
-      <Label>Grammar Mode</Label>
-      <Select value={mode} onValueChange={(v) => onOptionChange("grammar_mode", v)}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="word_bank">Word Bank (easier)</SelectItem>
-          <SelectItem value="free_type">Free Type (harder)</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  )
-}

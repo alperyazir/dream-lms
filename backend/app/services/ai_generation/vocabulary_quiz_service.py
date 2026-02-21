@@ -204,6 +204,20 @@ class VocabularyQuizService:
                 book_id=request.book_id,
             )
 
+        # Filter out words with empty definitions (produces nonsense questions)
+        vocabulary = [w for w in vocabulary if w.definition and w.definition.strip()]
+
+        if len(vocabulary) < request.quiz_length:
+            raise InsufficientVocabularyError(
+                message=(
+                    f"Not enough vocabulary words with definitions. Need {request.quiz_length}, "
+                    f"but only {len(vocabulary)} available."
+                ),
+                available=len(vocabulary),
+                required=request.quiz_length,
+                book_id=request.book_id,
+            )
+
         # Select quiz words randomly
         quiz_words = random.sample(vocabulary, request.quiz_length)
 
@@ -430,7 +444,10 @@ class VocabularyQuizService:
             Simple question string.
         """
         if question_type == "definition":
-            return f"Which word means: \"{word.definition}\"?"
+            definition = (word.definition or "").strip()
+            if not definition:
+                return f"Which word is '{word.word}'?"
+            return f"Which word means '{definition}'?"
         elif question_type == "synonym":
             return f"Which word is similar in meaning to '{word.word}'?"
         else:  # antonym
