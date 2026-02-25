@@ -25,7 +25,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { WaveAnimation } from "@/components/ui/wave-animation"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
-import { passwordRules } from "../utils"
 
 // Type for quick login users response
 interface QuickLoginUser {
@@ -317,7 +316,7 @@ function Login() {
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
-                      {...register("password", passwordRules())}
+                      {...register("password", { required: "Password is required" })}
                       placeholder="Enter password"
                       type={showPassword ? "text" : "password"}
                       className="pl-12 pr-12 h-12 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700 focus:border-teal-500 focus:ring-teal-500/20 transition-all"

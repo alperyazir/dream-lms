@@ -233,7 +233,7 @@ class QuizStorageService:
         if quiz is None:
             return None
 
-        # Convert to public version (strip correct answers)
+        # Convert to public version (include correct_answer for client-side scoring)
         public_questions = [
             VocabularyQuizQuestionPublic(
                 question_id=q.question_id,
@@ -241,6 +241,7 @@ class QuizStorageService:
                 options=q.options,
                 audio_url=q.audio_url,
                 cefr_level=q.cefr_level,
+                correct_answer=q.correct_answer,
             )
             for q in quiz.questions
         ]
@@ -410,7 +411,7 @@ class QuizStorageService:
         if quiz is None:
             return None
 
-        # Convert to public version (strip correct answers)
+        # Convert to public version (include correct_index for client-side scoring)
         public_questions = [
             AIQuizQuestionPublic(
                 question_id=q.question_id,
@@ -418,6 +419,7 @@ class QuizStorageService:
                 options=q.options,
                 source_module_id=q.source_module_id,
                 difficulty=q.difficulty,
+                correct_index=q.correct_index,
             )
             for q in quiz.questions
         ]
@@ -614,13 +616,15 @@ class QuizStorageService:
         if activity is None:
             return None
 
-        # Convert to public version (strip correct answers)
+        # Convert to public version (include correct_index for client-side scoring)
         public_questions = [
             ReadingComprehensionQuestionPublic(
                 question_id=q.question_id,
                 question_type=q.question_type,
                 question_text=q.question_text,
                 options=q.options,
+                correct_index=q.correct_index,
+                correct_answer=q.correct_answer,
             )
             for q in activity.questions
         ]
@@ -1450,6 +1454,7 @@ class QuizStorageService:
                 audio_status=q.audio_status,
                 question_text=q.question_text,
                 options=q.options,
+                correct_index=q.correct_index,
                 sub_skill=q.sub_skill,
                 difficulty=q.difficulty,
             )

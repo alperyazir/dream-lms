@@ -22,6 +22,7 @@ from app.schemas.mix_mode import (
 )
 from app.services.dcs_ai import DCSAIServiceClient
 from app.services.dcs_ai.exceptions import DCSAIDataNotFoundError
+from app.services.dcs_ai_content_client import DCSAIContentClient
 from app.services.llm import LLMManager
 from app.services.tts import TTSManager
 
@@ -55,10 +56,12 @@ class MixModeService:
         dcs_client: DCSAIServiceClient,
         llm_manager: LLMManager,
         tts_manager: TTSManager | None = None,
+        dcs_ai_content_client: DCSAIContentClient | None = None,
     ) -> None:
         self._dcs_client = dcs_client
         self._llm_manager = llm_manager
         self._tts_manager = tts_manager
+        self._dcs_ai_content_client = dcs_ai_content_client
 
     async def generate_activity(
         self,
@@ -165,8 +168,14 @@ class MixModeService:
         # Trim to exact count if we overshot
         all_questions = all_questions[:total_count]
 
-        # Shuffle for variety
-        random.shuffle(all_questions)
+        # Group by skill_slug then format_slug (no shuffle — groups stay together)
+        skill_order = ["vocabulary", "grammar", "reading", "listening", "writing", "speaking"]
+        all_questions.sort(
+            key=lambda q: (
+                skill_order.index(q.skill_slug) if q.skill_slug in skill_order else 99,
+                q.format_slug,
+            )
+        )
 
         # Build skill distribution summary (actual counts)
         skill_distribution: dict[str, dict] = {}
@@ -506,10 +515,64 @@ class MixModeService:
         activity = await service.generate_activity(request)
         # Include passage text with each question for context
         passage_text = activity.passage if hasattr(activity, "passage") else ""
+
+        # Pre-generate passage audio and upload to DCS
+        passage_audio_url: str | None = None
+        word_timestamps: list[dict] | None = None
+        if passage_text and self._dcs_ai_content_client:
+            try:
+                from app.services.tts.providers.edge import EdgeTTSProvider
+
+                provider = EdgeTTSProvider()
+                result = await provider.generate_passage_audio(text=passage_text)
+
+                import base64
+                audio_bytes = base64.b64decode(result.audio_base64)
+
+                # Create DCS content entry for this passage audio
+                dcs_entry = await self._dcs_ai_content_client.create_content(
+                    book_id,
+                    {
+                        "manifest": {
+                            "activity_type": "passage_audio",
+                            "title": "Reading Passage Audio",
+                            "item_count": 1,
+                            "has_audio": True,
+                            "has_passage": True,
+                            "language": language or "en",
+                        },
+                        "content": {
+                            "passage_length": len(passage_text),
+                        },
+                    },
+                )
+                content_id = dcs_entry.get("content_id") or dcs_entry.get("id")
+
+                # Upload audio file
+                await self._dcs_ai_content_client.upload_audio(
+                    book_id, content_id, "passage.mp3", audio_bytes,
+                )
+
+                passage_audio_url = f"/api/v1/ai/content/{book_id}/{content_id}/audio/passage.mp3"
+                word_timestamps = [ts.model_dump() for ts in result.word_timestamps]
+                logger.info(
+                    f"Passage audio uploaded to DCS: book_id={book_id}, content_id={content_id}"
+                )
+            except Exception:
+                logger.warning(
+                    "Failed to pre-generate passage audio for DCS, "
+                    "students will fall back to on-demand TTS",
+                    exc_info=True,
+                )
+
         questions = []
         for q in activity.questions[:count]:
             data = q.model_dump()
             data["passage"] = passage_text
+            if passage_audio_url:
+                data["passage_audio_url"] = passage_audio_url
+            if word_timestamps:
+                data["word_timestamps"] = word_timestamps
             questions.append(MixModeQuestion(
                 question_id=q.question_id, skill_slug="reading",
                 format_slug="comprehension", question_data=data,

@@ -33,8 +33,12 @@ export function useAssignmentSubmission({
       queryClient.invalidateQueries({ queryKey: ["assignment", assignmentId] })
       queryClient.invalidateQueries({ queryKey: ["student", "assignments"] })
 
-      // Show success toast
-      showSuccessToast(`Your score: ${response.score}%`)
+      // Show success toast (skip score for manually graded activities where score=0)
+      showSuccessToast(
+        response.score > 0
+          ? `Your score: ${response.score}%`
+          : "Assignment submitted successfully!",
+      )
 
       // Call optional success callback
       onSuccess?.()

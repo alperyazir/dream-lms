@@ -43,10 +43,15 @@ import { Progress } from "@/components/ui/progress"
 import { useMyFeedback } from "@/hooks/useFeedback"
 import {
   parseAIQuizResult,
+  parseListeningFillBlankResult,
+  parseMixModeResult,
   parseReadingComprehensionResult,
   parseSentenceBuilderResult,
+  parseSentenceCorrectorResult,
+  parseVocabularyMatchingResult,
   parseVocabularyQuizResult,
   parseWordBuilderResult,
+  parseWritingFillBlankResult,
 } from "@/lib/resultParsers"
 import {
   getAssignmentResult,
@@ -112,6 +117,7 @@ function AssignmentDetailContent() {
     let parsedResult = null
     switch (activity_type) {
       case "ai_quiz":
+      case "listening_quiz":
         parsedResult = parseAIQuizResult(config_json, answers_json, score)
         break
       case "vocabulary_quiz":
@@ -129,6 +135,7 @@ function AssignmentDetailContent() {
         )
         break
       case "sentence_builder":
+      case "listening_sentence_builder":
         parsedResult = parseSentenceBuilderResult(
           config_json,
           answers_json,
@@ -136,11 +143,34 @@ function AssignmentDetailContent() {
         )
         break
       case "word_builder":
+      case "listening_word_builder":
         parsedResult = parseWordBuilderResult(config_json, answers_json, score)
+        break
+      case "listening_fill_blank":
+        parsedResult = parseListeningFillBlankResult(config_json, answers_json, score)
+        break
+      case "writing_sentence_corrector":
+        parsedResult = parseSentenceCorrectorResult(config_json, answers_json, score)
+        break
+      case "writing_fill_blank":
+      case "grammar_fill_blank":
+        parsedResult = parseWritingFillBlankResult(config_json, answers_json, score)
+        break
+      case "vocabulary_matching":
+        parsedResult = parseVocabularyMatchingResult(config_json, answers_json, score)
+        break
+      case "mix_mode":
+        parsedResult = parseMixModeResult(config_json, answers_json, score)
         break
     }
 
     if (!parsedResult) return assignment?.score ?? null
+
+    // Mix mode: use auto_scored counts
+    if ("auto_scored" in parsedResult && "auto_correct" in parsedResult) {
+      const mix = parsedResult as { auto_scored: number; auto_correct: number }
+      return mix.auto_scored > 0 ? Math.round((mix.auto_correct / mix.auto_scored) * 100) : (assignment?.score ?? null)
+    }
 
     // Calculate score based on activity type
     let correct = 0
@@ -157,6 +187,9 @@ function AssignmentDetailContent() {
       total = parsedResult.total
     } else if ("word_results" in parsedResult) {
       correct = parsedResult.correct_count
+      total = parsedResult.total
+    } else if ("item_results" in parsedResult) {
+      correct = parsedResult.item_results.filter((r) => r.is_correct).length
       total = parsedResult.total
     }
 

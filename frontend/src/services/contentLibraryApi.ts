@@ -8,6 +8,8 @@
 import axios from "axios"
 import { OpenAPI } from "../client"
 import type {
+  BookContentDetail,
+  BookContentListResponse,
   ContentItemDetail,
   DeleteContentResponse,
   LibraryFilters,
@@ -129,6 +131,47 @@ export async function assignAIContent(
   const response = await apiClient.post<AssignContentResponse>(
     `/api/v1/ai/library/${contentId}/assign`,
     data,
+  )
+  return response.data
+}
+
+// =============================================================================
+// Book-Centric Content Library API
+// =============================================================================
+
+export interface BookContentFilters {
+  activity_type?: string
+  page?: number
+  page_size?: number
+}
+
+export async function listBookContent(
+  bookId: number,
+  filters?: BookContentFilters,
+): Promise<BookContentListResponse> {
+  const response = await apiClient.get<BookContentListResponse>(
+    `/api/v1/ai/books/${bookId}/content`,
+    { params: filters },
+  )
+  return response.data
+}
+
+export async function getBookContentDetail(
+  bookId: number,
+  contentId: string,
+): Promise<BookContentDetail> {
+  const response = await apiClient.get<BookContentDetail>(
+    `/api/v1/ai/books/${bookId}/content/${contentId}`,
+  )
+  return response.data
+}
+
+export async function deleteBookContent(
+  bookId: number,
+  contentId: string,
+): Promise<DeleteContentResponse> {
+  const response = await apiClient.delete<DeleteContentResponse>(
+    `/api/v1/ai/books/${bookId}/content/${contentId}`,
   )
   return response.data
 }

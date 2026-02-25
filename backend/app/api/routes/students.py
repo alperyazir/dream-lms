@@ -1762,7 +1762,7 @@ async def _build_skill_trends(
             StudentSkillScore.attributed_max_score,
             StudentSkillScore.recorded_at,
             StudentSkillScore.cefr_level,
-            Assignment.title.label("assignment_name"),
+            Assignment.name.label("assignment_name"),
         )
         .join(Assignment, StudentSkillScore.assignment_id == Assignment.id)
         .where(

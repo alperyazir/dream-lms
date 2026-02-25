@@ -7,12 +7,18 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
+  deleteBookContent,
   deleteLibraryContent,
+  getBookContentDetail,
   getLibraryContentDetail,
+  listBookContent,
   listLibraryContent,
   updateLibraryContent,
+  type BookContentFilters,
 } from "@/services/contentLibraryApi"
 import type {
+  BookContentDetail,
+  BookContentListResponse,
   ContentItemDetail,
   LibraryFilters,
   LibraryResponse,
@@ -92,6 +98,59 @@ export function useUpdateContent() {
       queryClient.invalidateQueries({
         queryKey: contentLibraryKeys.detail(variables.contentId),
       })
+    },
+  })
+}
+
+// =============================================================================
+// Book-Centric Content Library
+// =============================================================================
+
+export const bookContentKeys = {
+  all: ["bookContent"] as const,
+  lists: () => [...bookContentKeys.all, "list"] as const,
+  list: (bookId: number, filters?: BookContentFilters) =>
+    [...bookContentKeys.lists(), bookId, filters] as const,
+  details: () => [...bookContentKeys.all, "detail"] as const,
+  detail: (bookId: number, contentId: string) =>
+    [...bookContentKeys.details(), bookId, contentId] as const,
+}
+
+/**
+ * Hook to fetch book content from DCS
+ */
+export function useBookContent(
+  bookId: number | null,
+  filters?: BookContentFilters,
+) {
+  return useQuery<BookContentListResponse>({
+    queryKey: bookContentKeys.list(bookId!, filters),
+    queryFn: () => listBookContent(bookId!, filters),
+    enabled: !!bookId,
+  })
+}
+
+/**
+ * Hook to fetch detailed book content from DCS (includes full content data)
+ */
+export function useBookContentDetail(bookId: number | null, contentId: string) {
+  return useQuery<BookContentDetail>({
+    queryKey: bookContentKeys.detail(bookId!, contentId),
+    queryFn: () => getBookContentDetail(bookId!, contentId),
+    enabled: !!bookId && !!contentId,
+  })
+}
+
+/**
+ * Hook to delete book content from DCS
+ */
+export function useDeleteBookContent(bookId: number | null) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (contentId: string) => deleteBookContent(bookId!, contentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bookContentKeys.lists() })
     },
   })
 }

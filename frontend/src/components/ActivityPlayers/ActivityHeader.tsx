@@ -34,6 +34,7 @@ interface ActivityHeaderProps {
     | "writing_free_response"
     | "vocabulary_matching"
     | "speaking_open_response"
+    | "mix_mode"
   timeLimit?: number // in minutes
   onTimeExpired?: () => void
   /** Activity config object (may contain audio_extra) */

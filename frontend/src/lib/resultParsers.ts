@@ -1290,14 +1290,850 @@ export function parseWordBuilderResult(
 }
 
 /**
+ * Listening Fill-in-the-Blank result types
+ */
+export interface ListeningFillBlankItemResult {
+  item_id: string
+  display_sentence: string
+  missing_words: string[]
+  submitted_words: string[]
+  is_correct: boolean
+  audio_url: string | null
+}
+
+export interface ListeningFillBlankResult {
+  activity_id: string
+  score: number
+  total: number
+  percentage: number
+  item_results: ListeningFillBlankItemResult[]
+  submitted_at: string
+}
+
+/**
+ * Parse Listening Fill-in-the-Blank result from config and answers
+ */
+export function parseListeningFillBlankResult(
+  config: Record<string, unknown>,
+  answers: Record<string, unknown>,
+  score: number,
+): ListeningFillBlankResult | null {
+  try {
+    const content = (config.content as Record<string, unknown>) || config
+    const items = content.items as Array<{
+      item_id: string
+      display_sentence: string
+      missing_words?: string[]
+      word_bank: string[]
+      audio_url: string | null
+    }>
+
+    if (!items || !Array.isArray(items)) {
+      console.error("[parseListeningFillBlankResult] No items found in config")
+      return null
+    }
+
+    // Extract answer map: item_id -> JSON stringified array of words
+    let answerMap: Record<string, string> = {}
+
+    console.log(
+      "[parseListeningFillBlankResult] Raw answers:",
+      JSON.stringify(answers, null, 2),
+    )
+
+    const firstKey = Object.keys(answers)[0]
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
+      const activityEntry = answers[firstKey] as Record<string, unknown>
+
+      if (activityEntry.answers && typeof activityEntry.answers === "object") {
+        const outerAnswers = activityEntry.answers as Record<string, unknown>
+        // Look for item IDs as keys
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+
+        // Check if outerAnswers.answers exists (double-nested)
+        if (outerAnswers.answers && typeof outerAnswers.answers === "object") {
+          const inner = outerAnswers.answers as Record<string, unknown>
+          for (const [key, value] of Object.entries(inner)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+
+        if (Object.keys(answerMap).length === 0) {
+          for (const [key, value] of Object.entries(outerAnswers)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+      }
+
+      if (Object.keys(answerMap).length === 0) {
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        for (const [key, value] of Object.entries(activityEntry)) {
+          if (!metadataKeys.includes(key) && typeof value === "string") {
+            answerMap[key] = value
+          }
+        }
+      }
+    } else {
+      // Direct structure
+      const metadataKeys = ["score", "status", "answers", "time_spent"]
+      for (const [key, value] of Object.entries(answers)) {
+        if (!metadataKeys.includes(key) && typeof value === "string") {
+          answerMap[key] = value
+        }
+      }
+    }
+
+    console.log(
+      "[parseListeningFillBlankResult] Final answerMap:",
+      JSON.stringify(answerMap),
+    )
+
+    const itemResults: ListeningFillBlankItemResult[] = items.map((item) => {
+      const rawAnswer = answerMap[item.item_id] || "[]"
+      let submittedWords: string[] = []
+      try {
+        const parsed = JSON.parse(rawAnswer)
+        submittedWords = Array.isArray(parsed) ? parsed : []
+      } catch {
+        submittedWords = []
+      }
+
+      // Derive missing_words from display_sentence blanks count and word_bank
+      const missingWords = item.missing_words || []
+      const blankCount = item.display_sentence.split("_______").length - 1
+
+      // Check correctness: compare submitted words with missing words
+      let isCorrect = false
+      if (missingWords.length > 0) {
+        isCorrect =
+          submittedWords.length === missingWords.length &&
+          submittedWords.every(
+            (w, i) => w.toLowerCase() === missingWords[i].toLowerCase(),
+          )
+      } else {
+        // Fallback: if no missing_words in config, assume correct if all blanks filled
+        isCorrect = submittedWords.filter(Boolean).length === blankCount
+      }
+
+      return {
+        item_id: item.item_id,
+        display_sentence: item.display_sentence,
+        missing_words: missingWords,
+        submitted_words: submittedWords,
+        is_correct: isCorrect,
+        audio_url: item.audio_url,
+      }
+    })
+
+    const correctCount = itemResults.filter((r) => r.is_correct).length
+    const total = itemResults.length
+
+    return {
+      activity_id: (content.activity_id as string) || "result",
+      score: correctCount,
+      total,
+      percentage: Math.round(score),
+      item_results: itemResults,
+      submitted_at: new Date().toISOString(),
+    }
+  } catch (e) {
+    console.error("Failed to parse Listening Fill-in-the-Blank result:", e)
+    return null
+  }
+}
+
+/**
+ * Writing/Grammar Fill-in-the-Blank result types
+ */
+export interface WritingFillBlankItemResult {
+  item_id: string
+  display_sentence: string
+  correct_answer: string
+  acceptable_answers: string[]
+  submitted_answer: string
+  is_correct: boolean
+}
+
+export interface WritingFillBlankResult {
+  activity_id: string
+  score: number
+  total: number
+  percentage: number
+  item_results: WritingFillBlankItemResult[]
+  submitted_at: string
+}
+
+/**
+ * Parse Writing/Grammar Fill-in-the-Blank result from config and answers
+ */
+export function parseWritingFillBlankResult(
+  config: Record<string, unknown>,
+  answers: Record<string, unknown>,
+  score: number,
+): WritingFillBlankResult | null {
+  try {
+    const content = (config.content as Record<string, unknown>) || config
+    const items = content.items as Array<{
+      item_id: string
+      sentence?: string
+      display_sentence?: string
+      correct_answer?: string
+      acceptable_answers?: string[]
+    }>
+
+    if (!items || !Array.isArray(items)) {
+      console.error("[parseWritingFillBlankResult] No items found in config")
+      return null
+    }
+
+    let answerMap: Record<string, string> = {}
+
+    const firstKey = Object.keys(answers)[0]
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
+      const activityEntry = answers[firstKey] as Record<string, unknown>
+      if (activityEntry.answers && typeof activityEntry.answers === "object") {
+        const outerAnswers = activityEntry.answers as Record<string, unknown>
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        if (outerAnswers.answers && typeof outerAnswers.answers === "object") {
+          const inner = outerAnswers.answers as Record<string, unknown>
+          for (const [key, value] of Object.entries(inner)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+        if (Object.keys(answerMap).length === 0) {
+          for (const [key, value] of Object.entries(outerAnswers)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+      }
+      if (Object.keys(answerMap).length === 0) {
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        for (const [key, value] of Object.entries(activityEntry)) {
+          if (!metadataKeys.includes(key) && typeof value === "string") {
+            answerMap[key] = value
+          }
+        }
+      }
+    } else {
+      const metadataKeys = ["score", "status", "answers", "time_spent"]
+      for (const [key, value] of Object.entries(answers)) {
+        if (!metadataKeys.includes(key) && typeof value === "string") {
+          answerMap[key] = value
+        }
+      }
+    }
+
+    const itemResults: WritingFillBlankItemResult[] = items.map((item) => {
+      const submitted = answerMap[item.item_id] || ""
+      const correctAnswer = item.correct_answer || ""
+      const acceptable = [
+        correctAnswer,
+        ...(item.acceptable_answers || []),
+      ].filter(Boolean)
+
+      const isCorrect = acceptable.some(
+        (a) => submitted.trim().toLowerCase() === a.trim().toLowerCase(),
+      )
+
+      // Collect other acceptable answers (exclude the primary correct answer)
+      const otherAcceptable = (item.acceptable_answers || []).filter(
+        (a) => a.trim().toLowerCase() !== correctAnswer.trim().toLowerCase(),
+      )
+
+      return {
+        item_id: item.item_id,
+        display_sentence: item.sentence || item.display_sentence || "",
+        correct_answer: correctAnswer,
+        acceptable_answers: otherAcceptable,
+        submitted_answer: submitted,
+        is_correct: isCorrect,
+      }
+    })
+
+    const correctCount = itemResults.filter((r) => r.is_correct).length
+    const total = itemResults.length
+
+    return {
+      activity_id: (content.activity_id as string) || "result",
+      score: correctCount,
+      total,
+      percentage: total > 0 ? Math.round((correctCount / total) * 100) : 0,
+      item_results: itemResults,
+      submitted_at: new Date().toISOString(),
+    }
+  } catch (e) {
+    console.error("Failed to parse Writing Fill-blank result:", e)
+    return null
+  }
+}
+
+/**
+ * Writing Sentence Corrector result types
+ */
+export interface SentenceCorrectorItemResult {
+  item_id: string
+  incorrect_sentence: string
+  correct_sentence: string
+  submitted_sentence: string
+  is_correct: boolean
+}
+
+export interface SentenceCorrectorResult {
+  activity_id: string
+  score: number
+  total: number
+  percentage: number
+  item_results: SentenceCorrectorItemResult[]
+  submitted_at: string
+}
+
+/**
+ * Parse Writing Sentence Corrector result from config and answers
+ */
+export function parseSentenceCorrectorResult(
+  config: Record<string, unknown>,
+  answers: Record<string, unknown>,
+  score: number,
+): SentenceCorrectorResult | null {
+  try {
+    const content = (config.content as Record<string, unknown>) || config
+    const items = content.items as Array<{
+      item_id: string
+      incorrect_sentence: string
+      correct_sentence: string
+    }>
+
+    if (!items || !Array.isArray(items)) {
+      console.error("[parseSentenceCorrectorResult] No items found in config")
+      return null
+    }
+
+    // Extract answer map: item_id -> submitted sentence text
+    let answerMap: Record<string, string> = {}
+
+    const firstKey = Object.keys(answers)[0]
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
+      const activityEntry = answers[firstKey] as Record<string, unknown>
+
+      if (activityEntry.answers && typeof activityEntry.answers === "object") {
+        const outerAnswers = activityEntry.answers as Record<string, unknown>
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+
+        if (outerAnswers.answers && typeof outerAnswers.answers === "object") {
+          const inner = outerAnswers.answers as Record<string, unknown>
+          for (const [key, value] of Object.entries(inner)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+
+        if (Object.keys(answerMap).length === 0) {
+          for (const [key, value] of Object.entries(outerAnswers)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+      }
+
+      if (Object.keys(answerMap).length === 0) {
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        for (const [key, value] of Object.entries(activityEntry)) {
+          if (!metadataKeys.includes(key) && typeof value === "string") {
+            answerMap[key] = value
+          }
+        }
+      }
+    } else {
+      const metadataKeys = ["score", "status", "answers", "time_spent"]
+      for (const [key, value] of Object.entries(answers)) {
+        if (!metadataKeys.includes(key) && typeof value === "string") {
+          answerMap[key] = value
+        }
+      }
+    }
+
+    const itemResults: SentenceCorrectorItemResult[] = items.map((item) => {
+      const submitted = answerMap[item.item_id] || ""
+      const isCorrect =
+        submitted.trim().toLowerCase() ===
+        item.correct_sentence.trim().toLowerCase()
+
+      return {
+        item_id: item.item_id,
+        incorrect_sentence: item.incorrect_sentence,
+        correct_sentence: item.correct_sentence,
+        submitted_sentence: submitted,
+        is_correct: isCorrect,
+      }
+    })
+
+    const correctCount = itemResults.filter((r) => r.is_correct).length
+    const total = itemResults.length
+
+    return {
+      activity_id: (content.activity_id as string) || "result",
+      score: correctCount,
+      total,
+      percentage: total > 0 ? Math.round((correctCount / total) * 100) : 0,
+      item_results: itemResults,
+      submitted_at: new Date().toISOString(),
+    }
+  } catch (e) {
+    console.error("Failed to parse Sentence Corrector result:", e)
+    return null
+  }
+}
+
+/**
  * Activity types that support detailed result review
  */
+/**
+ * Writing Free Response result types
+ */
+export interface FreeResponseItemResult {
+  item_id: string
+  prompt: string
+  submitted_text: string
+}
+
+export interface FreeResponseResult {
+  activity_id: string
+  total: number
+  item_results: FreeResponseItemResult[]
+  submitted_at: string
+}
+
+/**
+ * Parse Writing Free Response result from config and answers
+ */
+export function parseFreeResponseResult(
+  config: Record<string, unknown>,
+  answers: Record<string, unknown>,
+): FreeResponseResult | null {
+  try {
+    const content = (config.content as Record<string, unknown>) || config
+    const items = content.items as Array<{
+      item_id: string
+      prompt?: string
+    }>
+
+    if (!items || !Array.isArray(items)) {
+      console.error("[parseFreeResponseResult] No items found in config")
+      return null
+    }
+
+    let answerMap: Record<string, string> = {}
+
+    const firstKey = Object.keys(answers)[0]
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
+      const activityEntry = answers[firstKey] as Record<string, unknown>
+      if (activityEntry.answers && typeof activityEntry.answers === "object") {
+        const outerAnswers = activityEntry.answers as Record<string, unknown>
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        if (outerAnswers.answers && typeof outerAnswers.answers === "object") {
+          const inner = outerAnswers.answers as Record<string, unknown>
+          for (const [key, value] of Object.entries(inner)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+        if (Object.keys(answerMap).length === 0) {
+          for (const [key, value] of Object.entries(outerAnswers)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+      }
+      if (Object.keys(answerMap).length === 0) {
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        for (const [key, value] of Object.entries(activityEntry)) {
+          if (!metadataKeys.includes(key) && typeof value === "string") {
+            answerMap[key] = value
+          }
+        }
+      }
+    } else {
+      const metadataKeys = ["score", "status", "answers", "time_spent"]
+      for (const [key, value] of Object.entries(answers)) {
+        if (!metadataKeys.includes(key) && typeof value === "string") {
+          answerMap[key] = value
+        }
+      }
+    }
+
+    const itemResults: FreeResponseItemResult[] = items.map((item) => ({
+      item_id: item.item_id,
+      prompt: item.prompt || "",
+      submitted_text: answerMap[item.item_id] || "",
+    }))
+
+    return {
+      activity_id: (content.activity_id as string) || "result",
+      total: itemResults.length,
+      item_results: itemResults,
+      submitted_at: new Date().toISOString(),
+    }
+  } catch (e) {
+    console.error("Failed to parse Free Response result:", e)
+    return null
+  }
+}
+
+/**
+ * Vocabulary Matching result types
+ */
+export interface VocabularyMatchingItemResult {
+  pair_id: string
+  word: string
+  correct_definition: string
+  matched_definition: string
+  is_correct: boolean
+}
+
+export interface VocabularyMatchingResult {
+  activity_id: string
+  score: number
+  total: number
+  percentage: number
+  item_results: VocabularyMatchingItemResult[]
+  submitted_at: string
+}
+
+/**
+ * Parse Vocabulary Matching result from config and answers
+ */
+export function parseVocabularyMatchingResult(
+  config: Record<string, unknown>,
+  answers: Record<string, unknown>,
+  score: number,
+): VocabularyMatchingResult | null {
+  try {
+    const content = (config.content as Record<string, unknown>) || config
+
+    // Get pairs data (words + definitions)
+    const pairs = (content.pairs as Array<{
+      pair_id: string
+      word: string
+      definition: string
+    }>) || []
+
+    const words = (content.words as Array<{
+      pair_id: string
+      word: string
+    }>) || pairs.map((p) => ({ pair_id: p.pair_id, word: p.word }))
+
+    const definitions = (content.definitions as Array<{
+      def_id: string
+      definition: string
+    }>) || pairs.map((p) => ({ def_id: p.pair_id, definition: p.definition }))
+
+    if (words.length === 0) {
+      console.error("[parseVocabularyMatchingResult] No words/pairs found")
+      return null
+    }
+
+    // Build definition lookup: def_id -> definition text
+    const defLookup: Record<string, string> = {}
+    for (const d of definitions) {
+      defLookup[d.def_id] = d.definition
+    }
+    // Also from pairs
+    for (const p of pairs) {
+      defLookup[p.pair_id] = p.definition
+    }
+
+    // Extract answer map (pair_id -> def_id)
+    let answerMap: Record<string, string> = {}
+
+    const firstKey = Object.keys(answers)[0]
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
+      const activityEntry = answers[firstKey] as Record<string, unknown>
+      if (activityEntry.answers && typeof activityEntry.answers === "object") {
+        const outerAnswers = activityEntry.answers as Record<string, unknown>
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        if (outerAnswers.answers && typeof outerAnswers.answers === "object") {
+          const inner = outerAnswers.answers as Record<string, unknown>
+          for (const [key, value] of Object.entries(inner)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+        if (Object.keys(answerMap).length === 0) {
+          for (const [key, value] of Object.entries(outerAnswers)) {
+            if (!metadataKeys.includes(key) && typeof value === "string") {
+              answerMap[key] = value
+            }
+          }
+        }
+      }
+      if (Object.keys(answerMap).length === 0) {
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        for (const [key, value] of Object.entries(activityEntry)) {
+          if (!metadataKeys.includes(key) && typeof value === "string") {
+            answerMap[key] = value
+          }
+        }
+      }
+    } else {
+      const metadataKeys = ["score", "status", "answers", "time_spent"]
+      for (const [key, value] of Object.entries(answers)) {
+        if (!metadataKeys.includes(key) && typeof value === "string") {
+          answerMap[key] = value
+        }
+      }
+    }
+
+    const itemResults: VocabularyMatchingItemResult[] = words.map((w) => {
+      const matchedDefId = answerMap[w.pair_id] || ""
+      const isCorrect = matchedDefId === w.pair_id
+      return {
+        pair_id: w.pair_id,
+        word: w.word,
+        correct_definition: defLookup[w.pair_id] || "",
+        matched_definition: defLookup[matchedDefId] || "",
+        is_correct: isCorrect,
+      }
+    })
+
+    const correctCount = itemResults.filter((r) => r.is_correct).length
+    const total = itemResults.length
+
+    return {
+      activity_id: (content.activity_id as string) || "result",
+      score: correctCount,
+      total,
+      percentage: total > 0 ? Math.round((correctCount / total) * 100) : 0,
+      item_results: itemResults,
+      submitted_at: new Date().toISOString(),
+    }
+  } catch (e) {
+    console.error("Failed to parse Vocabulary Matching result:", e)
+    return null
+  }
+}
+
+/**
+ * Mix Mode question result
+ */
+export interface MixModeQuestionResult {
+  question_id: string
+  skill_slug: string
+  format_slug: string
+  question_data: Record<string, any>
+  student_answer: string | undefined
+  is_correct: boolean
+  status: "correct" | "incorrect" | "pending_review"
+}
+
+/**
+ * Mix Mode result
+ */
+export interface MixModeResult {
+  activity_id: string
+  total: number
+  auto_scored: number
+  auto_correct: number
+  pending_review: number
+  percentage: number
+  question_results: MixModeQuestionResult[]
+  submitted_at: string
+}
+
+/**
+ * Parse Mix Mode result from config and answers
+ */
+export function parseMixModeResult(
+  config: Record<string, unknown>,
+  answers: Record<string, unknown>,
+  score: number,
+): MixModeResult | null {
+  try {
+    const content = (config.content as Record<string, unknown>) || config
+    const questions = content.questions as Array<{
+      question_id: string
+      skill_slug: string
+      format_slug: string
+      question_data: Record<string, any>
+    }>
+
+    if (!questions || !Array.isArray(questions)) {
+      console.error("[parseMixModeResult] No questions found in config")
+      return null
+    }
+
+    // Extract answer map
+    let answerMap: Record<string, string> = {}
+
+    const firstKey = Object.keys(answers)[0]
+    if (
+      firstKey &&
+      typeof answers[firstKey] === "object" &&
+      answers[firstKey] !== null
+    ) {
+      const activityEntry = answers[firstKey] as Record<string, unknown>
+      if (activityEntry.answers && typeof activityEntry.answers === "object") {
+        const outerAnswers = activityEntry.answers as Record<string, unknown>
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        if (outerAnswers.answers && typeof outerAnswers.answers === "object") {
+          const inner = outerAnswers.answers as Record<string, unknown>
+          for (const [key, value] of Object.entries(inner)) {
+            if (!metadataKeys.includes(key)) answerMap[key] = String(value)
+          }
+        }
+        if (Object.keys(answerMap).length === 0) {
+          for (const [key, value] of Object.entries(outerAnswers)) {
+            if (!metadataKeys.includes(key)) answerMap[key] = String(value)
+          }
+        }
+      }
+      if (Object.keys(answerMap).length === 0) {
+        const metadataKeys = ["score", "status", "answers", "time_spent"]
+        for (const [key, value] of Object.entries(activityEntry)) {
+          if (!metadataKeys.includes(key)) answerMap[key] = String(value)
+        }
+      }
+    } else {
+      const metadataKeys = ["score", "status", "answers", "time_spent"]
+      for (const [key, value] of Object.entries(answers)) {
+        if (!metadataKeys.includes(key)) answerMap[key] = String(value)
+      }
+    }
+
+    const MANUAL_FORMATS = new Set(["free_response", "open_response"])
+
+    let autoCorrect = 0
+    let autoScorable = 0
+    let pendingReview = 0
+
+    const questionResults: MixModeQuestionResult[] = questions.map((q) => {
+      const studentAnswer = answerMap[q.question_id]
+      const d = q.question_data
+
+      if (MANUAL_FORMATS.has(q.format_slug)) {
+        pendingReview++
+        return {
+          question_id: q.question_id,
+          skill_slug: q.skill_slug,
+          format_slug: q.format_slug,
+          question_data: d,
+          student_answer: studentAnswer,
+          is_correct: false,
+          status: "pending_review" as const,
+        }
+      }
+
+      autoScorable++
+      let isCorrect = false
+
+      if (studentAnswer !== undefined) {
+        switch (q.format_slug) {
+          case "mcq":
+          case "multiple_choice":
+          case "comprehension":
+            isCorrect = parseInt(studentAnswer, 10) === d.correct_index
+            break
+          case "fill_blank": {
+            const acceptable = [d.correct_answer, ...(d.acceptable_answers || [])].filter(Boolean)
+            isCorrect = acceptable.some((a: string) => studentAnswer.trim().toLowerCase() === a.trim().toLowerCase())
+            break
+          }
+          case "word_builder":
+            isCorrect = d.word && studentAnswer.toLowerCase() === d.word.toLowerCase()
+            break
+          case "sentence_builder":
+            try {
+              const words = JSON.parse(studentAnswer)
+              isCorrect = Array.isArray(words) && words.join(" ") === d.correct_sentence
+            } catch { /* skip */ }
+            break
+          case "matching":
+            isCorrect = d.definition && studentAnswer.trim().toLowerCase() === d.definition.trim().toLowerCase()
+            break
+          case "sentence_corrector":
+            isCorrect = d.correct_sentence && studentAnswer.trim().toLowerCase() === d.correct_sentence.trim().toLowerCase()
+            break
+        }
+      }
+
+      if (isCorrect) autoCorrect++
+
+      return {
+        question_id: q.question_id,
+        skill_slug: q.skill_slug,
+        format_slug: q.format_slug,
+        question_data: d,
+        student_answer: studentAnswer,
+        is_correct: isCorrect,
+        status: isCorrect ? ("correct" as const) : ("incorrect" as const),
+      }
+    })
+
+    return {
+      activity_id: (content.activity_id as string) || "result",
+      total: questions.length,
+      auto_scored: autoScorable,
+      auto_correct: autoCorrect,
+      pending_review: pendingReview,
+      percentage: autoScorable > 0 ? Math.round((autoCorrect / autoScorable) * 100) : 0,
+      question_results: questionResults,
+      submitted_at: new Date().toISOString(),
+    }
+  } catch (e) {
+    console.error("Failed to parse Mix Mode result:", e)
+    return null
+  }
+}
+
 export const SUPPORTED_ACTIVITY_TYPES = [
   "ai_quiz",
   "vocabulary_quiz",
   "reading_comprehension",
   "sentence_builder",
   "word_builder",
+  "listening_quiz",
+  "listening_fill_blank",
+  "listening_word_builder",
+  "listening_sentence_builder",
+  "writing_sentence_corrector",
+  "writing_fill_blank",
+  "grammar_fill_blank",
+  "writing_free_response",
+  "vocabulary_matching",
+  "speaking_open_response",
+  "mix_mode",
 ] as const
 
 export type SupportedActivityType = (typeof SUPPORTED_ACTIVITY_TYPES)[number]

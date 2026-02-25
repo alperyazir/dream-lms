@@ -15,6 +15,8 @@ interface ActivityFooterProps {
   isSaving?: boolean
   isSubmitting?: boolean
   lastSavedAt?: Date | null
+  /** When false, the submit button is hidden (e.g. not on last question yet) */
+  showSubmit?: boolean
 }
 
 export function ActivityFooter({
@@ -25,9 +27,10 @@ export function ActivityFooter({
   isSaving = false,
   isSubmitting = false,
   lastSavedAt,
+  showSubmit = true,
 }: ActivityFooterProps) {
   return (
-    <footer className="border-t bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-neutral-800">
+    <footer className="sticky bottom-0 z-10 border-t bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-neutral-800">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         {/* Left: Exit button */}
         <Button
@@ -117,58 +120,60 @@ export function ActivityFooter({
             )}
           </Button>
 
-          <Button
-            onClick={onSubmit}
-            disabled={!isComplete || isSubmitting}
-            className="bg-teal-600 shadow-neuro hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
-            aria-label="Submit activity for grading"
-          >
-            {isSubmitting ? (
-              <>
-                <svg
-                  className="mr-2 h-4 w-4 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
+          {showSubmit && (
+            <Button
+              onClick={onSubmit}
+              disabled={!isComplete || isSubmitting}
+              className="bg-teal-600 shadow-neuro hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
+              aria-label="Submit activity for grading"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg
+                    className="mr-2 h-4 w-4 animate-spin"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="mr-2 h-4 w-4"
+                    fill="none"
                     stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Submitting...
-              </>
-            ) : (
-              <>
-                <svg
-                  className="mr-2 h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Submit
-              </>
-            )}
-          </Button>
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  Submit
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </footer>

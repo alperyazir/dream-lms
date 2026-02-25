@@ -6,11 +6,10 @@
  * letter bank to spell vocabulary words. Click-to-place interaction.
  */
 
-import { ArrowRight, Check, Lightbulb, Trash2, Volume2 } from "lucide-react"
+import { ArrowRight, Check, Lightbulb, Loader2, Pause, Play, Trash2 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Card, CardContent } from "@/components/ui/card"
 import { useSoundContext } from "@/hooks/useSoundEffects"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
@@ -21,7 +20,6 @@ import type {
 } from "@/types/word-builder"
 import {
   getFeedbackMessage,
-  getProgressText,
   initializeLettersWithIndices,
 } from "@/types/word-builder"
 
@@ -95,6 +93,8 @@ export function WordBuilderPlayer({
   const [wordStates, setWordStates] = useState<Record<string, WordState>>({})
   const [showSuccess, _setShowSuccess] = useState(false)
   const [isShaking, setIsShaking] = useState(false)
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
+  const [audioLoading, setAudioLoading] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const { play: playSound } = useSoundContext()
 
@@ -183,15 +183,42 @@ export function WordBuilderPlayer({
 
   const currentState = currentWord ? wordStates[currentWord.item_id] : null
 
-  // Play audio if available
+  // Play/pause audio
   const playAudio = useCallback((audioUrl: string | null) => {
-    if (audioUrl && audioRef.current) {
-      audioRef.current.src = audioUrl
-      audioRef.current
+    if (!audioUrl || !audioRef.current) return
+    const audio = audioRef.current
+    if (isAudioPlaying) {
+      audio.pause()
+      setIsAudioPlaying(false)
+    } else {
+      audio.src = audioUrl
+      setAudioLoading(true)
+      audio
         .play()
-        .catch((e) => console.warn("Audio playback failed:", e))
+        .then(() => {
+          setIsAudioPlaying(true)
+          setAudioLoading(false)
+        })
+        .catch(() => setAudioLoading(false))
     }
+  }, [isAudioPlaying])
+
+  // Audio ended handler
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    const onEnded = () => setIsAudioPlaying(false)
+    audio.addEventListener("ended", onEnded)
+    return () => audio.removeEventListener("ended", onEnded)
   }, [])
+
+  // Reset audio state on word change
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      setIsAudioPlaying(false)
+    }
+  }, [currentIndex])
 
   // Handle clicking a letter in the letter bank
   const handleLetterBankClick = useCallback(
@@ -323,8 +350,8 @@ export function WordBuilderPlayer({
 
   if (isCompleted) {
     return (
-      <div className="flex min-h-full flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
+      <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
+        <Card className="w-full shadow-lg">
           <CardContent className="pt-6 text-center">
             <div className="text-4xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold mb-2">Activity Complete!</h2>
@@ -336,145 +363,123 @@ export function WordBuilderPlayer({
   }
 
   return (
-    <div className="flex min-h-full flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
+      <Card className="w-full shadow-lg">
         {/* Hidden audio element for playback */}
         <audio ref={audioRef} />
 
-        <CardHeader>
-          <CardTitle className="text-lg">Word Builder</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Spell the word by clicking letters
-          </p>
-          {/* Progress bar - hide when externally controlled */}
-          {!isExternallyControlled && (
-            <div className="flex items-center gap-4 mt-2">
-              <Progress value={progress} className="flex-1" />
-              <span className="text-sm font-medium">
-                {getProgressText(currentIndex, totalWords)}
-              </span>
-            </div>
-          )}
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {/* Hint Area */}
+        <CardContent className="p-6 space-y-5">
+          {/* Audio + Hint Area */}
           {currentWord && (
-            <div className="bg-muted/50 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Lightbulb className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">
-                    HINT
-                  </h3>
-                  {activity.hint_type !== "audio" && currentWord.definition && (
-                    <p className="text-base">{currentWord.definition}</p>
-                  )}
-                  {(activity.hint_type === "audio" ||
-                    activity.hint_type === "both") &&
-                    currentWord.audio_url && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => playAudio(currentWord.audio_url)}
-                        className="mt-2"
-                      >
-                        <Volume2 className="h-4 w-4 mr-2" />
-                        Listen to pronunciation
-                      </Button>
+            <div className="flex flex-col items-center gap-3">
+              {/* Audio play button */}
+              {(activity.hint_type === "audio" || activity.hint_type === "both") &&
+                currentWord.audio_url && (
+                  <button
+                    onClick={() => playAudio(currentWord.audio_url)}
+                    className={cn(
+                      "flex items-center justify-center w-14 h-14 rounded-full transition-all shadow-md",
+                      isAudioPlaying
+                        ? "bg-teal-600 hover:bg-teal-700 scale-110"
+                        : "bg-teal-500 hover:bg-teal-600",
                     )}
+                  >
+                    {audioLoading ? (
+                      <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    ) : isAudioPlaying ? (
+                      <Pause className="h-6 w-6 text-white" />
+                    ) : (
+                      <Play className="h-6 w-6 text-white ml-0.5" />
+                    )}
+                  </button>
+                )}
+
+              {/* Definition hint */}
+              {activity.hint_type !== "audio" && currentWord.definition && (
+                <div className="rounded-lg bg-gradient-to-r from-teal-50 to-cyan-50 p-4 w-full dark:from-teal-950/50 dark:to-cyan-950/50">
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-base text-gray-800 dark:text-gray-200">{currentWord.definition}</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* Letter Bank */}
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              LETTER BANK
-            </h3>
-            <div
-              className={cn(
-                "flex flex-wrap gap-2 min-h-[60px] p-3 rounded-lg border-2 border-dashed",
-                "bg-muted/30 justify-center items-center content-center",
-              )}
-            >
-              {currentState?.availableLetters.map((letterWithIndex, index) => (
-                <button
-                  key={`${letterWithIndex.letter}-${letterWithIndex.originalIndex}`}
-                  onClick={() => handleLetterBankClick(letterWithIndex, index)}
-                  disabled={showSuccess}
-                  className={cn(
-                    "w-10 h-10 rounded-lg border-2 font-bold text-lg transition-all",
-                    "bg-background hover:bg-primary/10 hover:border-primary",
-                    "active:scale-95 cursor-pointer uppercase",
-                    showSuccess && "opacity-50 cursor-not-allowed",
-                  )}
-                >
-                  {letterWithIndex.letter}
-                </button>
-              ))}
-              {currentState?.availableLetters.length === 0 && (
-                <span className="text-muted-foreground text-sm italic">
-                  All letters placed
-                </span>
-              )}
-            </div>
+          <div
+            className={cn(
+              "flex flex-wrap gap-2 h-[64px] p-3 rounded-xl border-2 border-dashed",
+              "bg-muted/30 justify-center items-center content-center",
+            )}
+          >
+            {currentState?.availableLetters.map((letterWithIndex, index) => (
+              <button
+                key={`${letterWithIndex.letter}-${letterWithIndex.originalIndex}`}
+                onClick={() => handleLetterBankClick(letterWithIndex, index)}
+                disabled={showSuccess}
+                className={cn(
+                  "w-10 h-10 rounded-lg border-2 font-bold text-lg transition-all",
+                  "bg-background hover:bg-primary/10 hover:border-primary",
+                  "active:scale-95 cursor-pointer uppercase",
+                  showSuccess && "opacity-50 cursor-not-allowed",
+                )}
+              >
+                {letterWithIndex.letter}
+              </button>
+            ))}
+            {currentState?.availableLetters.length === 0 && (
+              <span className="text-muted-foreground text-sm italic">
+                All letters placed
+              </span>
+            )}
           </div>
 
-          {/* Divider */}
-          <div className="border-t" />
-
           {/* Spelling Area */}
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              YOUR SPELLING
-            </h3>
-            <div
-              className={cn(
-                "flex flex-wrap gap-2 min-h-[60px] p-3 rounded-lg border-2",
-                "bg-background justify-center items-center content-center",
-                isShaking && "animate-shake",
-                showSuccess &&
-                  "border-green-500 bg-green-50 dark:bg-green-900/20",
-              )}
-            >
-              {currentState?.placedLetters.map((letterWithIndex, index) => (
-                <button
-                  key={`placed-${letterWithIndex.letter}-${letterWithIndex.originalIndex}`}
-                  onClick={() =>
-                    handlePlacedLetterClick(letterWithIndex, index)
-                  }
-                  disabled={showSuccess}
-                  className={cn(
-                    "w-10 h-10 rounded-lg border-2 font-bold text-lg transition-all uppercase",
-                    "bg-primary/10 border-primary text-primary",
-                    "hover:bg-destructive/10 hover:border-destructive hover:text-destructive",
-                    "active:scale-95 cursor-pointer",
-                    showSuccess &&
-                      "border-green-500 bg-green-100 text-green-800 cursor-default",
-                  )}
+          <div
+            className={cn(
+              "flex flex-wrap gap-2 h-[64px] p-3 rounded-xl border-2",
+              "bg-background justify-center items-center content-center",
+              isShaking && "animate-shake",
+              showSuccess &&
+                "border-green-500 bg-green-50 dark:bg-green-900/20",
+            )}
+          >
+            {currentState?.placedLetters.map((letterWithIndex, index) => (
+              <button
+                key={`placed-${letterWithIndex.letter}-${letterWithIndex.originalIndex}`}
+                onClick={() =>
+                  handlePlacedLetterClick(letterWithIndex, index)
+                }
+                disabled={showSuccess}
+                className={cn(
+                  "w-10 h-10 rounded-lg border-2 font-bold text-lg transition-all uppercase",
+                  "bg-primary/10 border-primary text-primary",
+                  "hover:bg-destructive/10 hover:border-destructive hover:text-destructive",
+                  "active:scale-95 cursor-pointer",
+                  showSuccess &&
+                    "border-green-500 bg-green-100 text-green-800 cursor-default",
+                )}
+              >
+                {letterWithIndex.letter}
+              </button>
+            ))}
+            {/* Empty slots indicator */}
+            {currentWord &&
+              currentState &&
+              currentState.placedLetters.length < currentWord.letter_count &&
+              Array.from({
+                length:
+                  currentWord.letter_count -
+                  currentState.placedLetters.length,
+              }).map((_, index) => (
+                <div
+                  key={`slot-${index}`}
+                  className="w-10 h-10 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-muted-foreground/50"
                 >
-                  {letterWithIndex.letter}
-                </button>
+                  _
+                </div>
               ))}
-              {/* Empty slots indicator */}
-              {currentWord &&
-                currentState &&
-                currentState.placedLetters.length < currentWord.letter_count &&
-                Array.from({
-                  length:
-                    currentWord.letter_count -
-                    currentState.placedLetters.length,
-                }).map((_, index) => (
-                  <div
-                    key={`slot-${index}`}
-                    className="w-10 h-10 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-muted-foreground/50"
-                  >
-                    _
-                  </div>
-                ))}
-            </div>
           </div>
 
           {/* Success Message */}

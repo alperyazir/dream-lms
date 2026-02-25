@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import {
+  useBookContentDetail,
   useContentLibraryDetail,
   useUpdateContent,
 } from "@/hooks/useContentLibrary"
@@ -43,6 +44,8 @@ interface EditContentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   content: ContentItem | null
+  /** When provided, fetches detail from DCS book content endpoint */
+  bookId?: number | null
   onSaved?: () => void
 }
 
@@ -50,14 +53,25 @@ export function EditContentModal({
   open,
   onOpenChange,
   content,
+  bookId,
   onSaved,
 }: EditContentModalProps) {
   const { toast } = useToast()
+  // Use DCS endpoint when bookId is available, otherwise library endpoint
   const {
-    data: detailedContent,
-    isLoading,
-    error,
-  } = useContentLibraryDetail(content?.id || "")
+    data: libraryDetail,
+    isLoading: libraryLoading,
+    error: libraryError,
+  } = useContentLibraryDetail(!bookId ? (content?.id || "") : "")
+  const {
+    data: bookDetail,
+    isLoading: bookLoading,
+    error: bookError,
+  } = useBookContentDetail(bookId ?? null, content?.id || "")
+
+  const detailedContent = bookId ? bookDetail : libraryDetail
+  const isLoading = bookId ? bookLoading : libraryLoading
+  const error = bookId ? bookError : libraryError
   const updateMutation = useUpdateContent()
 
   // Local state for editing

@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import type { ActivityConfig } from "@/lib/mockData"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
@@ -137,63 +138,60 @@ export function WritingSentenceCorrectorPlayerAdapter({
   const errorTypeInfo = ERROR_TYPE_LABELS[currentItem.error_type] || ERROR_TYPE_LABELS.mixed
 
   return (
-    <div className="flex flex-col items-center gap-6 p-6 max-w-2xl mx-auto">
-      {/* Error type badge */}
-      <div className="flex items-center gap-2">
-        <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium", errorTypeInfo.color)}>
-          {errorTypeInfo.label} Error
-        </span>
-      </div>
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4 sm:p-6">
+      <Card className="w-full shadow-lg">
+        <CardContent className="p-6">
+          {/* Header */}
+          <p className="text-lg font-semibold text-center mb-6">
+            Fix the sentence below
+          </p>
 
-      {/* Incorrect sentence */}
-      <div className="w-full px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-        <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
-          Incorrect Sentence
-        </p>
-        <p className="text-lg font-medium text-red-800 dark:text-red-200">
-          {currentItem.incorrect_sentence}
-        </p>
-      </div>
+          {/* Incorrect sentence */}
+          <div className="w-full px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 select-none mb-6">
+            <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
+              Incorrect Sentence
+            </p>
+            <p className="text-lg font-medium text-red-800 dark:text-red-200" onCopy={(e) => e.preventDefault()}>
+              {currentItem.incorrect_sentence}
+            </p>
+          </div>
 
-      {/* Input for corrected sentence */}
-      <div className="w-full space-y-2">
-        <label className="text-sm font-medium text-muted-foreground">
-          Type the corrected sentence:
-        </label>
-        <textarea
-          value={userAnswer}
-          onChange={(e) =>
-            handleInputChange(currentItem.item_id, e.target.value)
-          }
-          disabled={showResults}
-          className={cn(
-            "w-full px-4 py-3 border rounded-lg text-base bg-background resize-none outline-none transition-colors min-h-[80px]",
-            "border-gray-300 dark:border-gray-600 focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500",
-            showCorrectAnswers &&
-              correctAnswers.has(currentItem.item_id) &&
-              "border-green-500 bg-green-50 dark:bg-green-900/20",
+          {/* Input for corrected sentence */}
+          <div className="w-full space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">
+              Type the corrected sentence:
+            </label>
+            <textarea
+              value={userAnswer}
+              onChange={(e) =>
+                handleInputChange(currentItem.item_id, e.target.value)
+              }
+              disabled={showResults}
+              className={cn(
+                "w-full px-4 py-3 border rounded-lg text-base bg-background resize-none outline-none transition-colors min-h-[80px]",
+                "border-gray-300 dark:border-gray-600 focus:border-teal-500 focus:ring-1 focus:ring-teal-500",
+                showCorrectAnswers &&
+                  correctAnswers.has(currentItem.item_id) &&
+                  "border-green-500 bg-green-50 dark:bg-green-900/20",
+              )}
+              placeholder="Write the corrected sentence here..."
+              autoFocus
+            />
+          </div>
+
+          {/* Show correct answer when reviewing */}
+          {showCorrectAnswers && currentItem.correct_sentence && (
+            <div className="w-full mt-6 px-4 py-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
+                Correct Answer
+              </p>
+              <p className="text-base text-green-800 dark:text-green-200">
+                {currentItem.correct_sentence}
+              </p>
+            </div>
           )}
-          placeholder="Write the corrected sentence here..."
-          autoFocus
-        />
-      </div>
-
-      {/* Show correct answer when reviewing */}
-      {showCorrectAnswers && currentItem.correct_sentence && (
-        <div className="w-full px-4 py-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-          <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
-            Correct Answer
-          </p>
-          <p className="text-base text-green-800 dark:text-green-200">
-            {currentItem.correct_sentence}
-          </p>
-        </div>
-      )}
-
-      {/* Item counter */}
-      <div className="text-sm text-muted-foreground">
-        Item {qIndex + 1} of {items.length}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -50,7 +50,7 @@ import {
 import { useMemo, useState } from "react"
 import { FiCalendar } from "react-icons/fi"
 import { TeachersService } from "@/client"
-import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
+import { AssignmentWizardSheet } from "@/components/assignments/AssignmentWizardSheet"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import {
@@ -120,13 +120,13 @@ function TeacherCalendarPage() {
   const [classFilter, setClassFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [bookFilter, setBookFilter] = useState<string>("all")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [prefilledDate, setPrefilledDate] = useState<Date | null>(null)
-
   // State for delete dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [assignmentToDelete, setAssignmentToDelete] =
     useState<CalendarAssignmentItem | null>(null)
+  // State for wizard sheet
+  const [isWizardOpen, setIsWizardOpen] = useState(false)
+  const [wizardPublishDate, setWizardPublishDate] = useState<string | null>(null)
 
   // Calculate date range for current view
   const monthStart = startOfMonth(currentDate)
@@ -485,10 +485,9 @@ function TeacherCalendarPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() => {
-                setPrefilledDate(null)
-                setIsCreateDialogOpen(true)
-              }}
+              onClick={() =>
+                { setIsWizardOpen(true) }
+              }
             >
               <BookOpen className="w-4 h-4 mr-2" />
               Book Assignment
@@ -804,10 +803,9 @@ function TeacherCalendarPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem
-                      onClick={() => {
-                        setPrefilledDate(null)
-                        setIsCreateDialogOpen(true)
-                      }}
+                      onClick={() =>
+                        { setIsWizardOpen(true) }
+                      }
                     >
                       <BookOpen className="w-4 h-4 mr-2" />
                       Book Assignment
@@ -875,14 +873,15 @@ function TeacherCalendarPage() {
         </div>
       </div>
 
-      {/* Create Assignment Dialog */}
-      <AssignmentCreationDialog
-        isOpen={isCreateDialogOpen}
-        onClose={() => {
-          setIsCreateDialogOpen(false)
-          setPrefilledDate(null)
+      {/* Assignment Wizard Sheet */}
+      <AssignmentWizardSheet
+        open={isWizardOpen}
+        onOpenChange={(open) => {
+          setIsWizardOpen(open)
+          if (!open) setWizardPublishDate(null)
         }}
-        prefilledPublishDate={prefilledDate}
+        mode="create"
+        prefilledPublishDate={wizardPublishDate}
       />
 
       {/* Delete Confirmation Dialog */}

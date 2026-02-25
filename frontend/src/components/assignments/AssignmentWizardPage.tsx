@@ -1,19 +1,19 @@
 /**
- * Assignment Creation Dialog - Story 3.7, Story 8.2, Story 10.3+
+ * Assignment Wizard Page - Full-page replacement for AssignmentCreationDialog
  *
- * Multi-step wizard for creating assignments:
- * - Step 0: Select Book
- * - Step 1: Select Activities (page-based - Story 8.2)
- * - Step 2: Select Recipients (classes or individual students)
- * - Step 3: Additional Resources (videos with subtitle control - Story 10.3+)
- * - Step 4: Configure Settings (name, due date, time limit, instructions)
+ * Multi-step wizard for creating/editing assignments:
+ * - Step 0: Select a Book
+ * - Step 1: Select Content (Book Activities or AI Content tabs)
+ * - Step 2: Select Recipients
+ * - Step 3: Additional Resources (skipped for AI content)
+ * - Step 4: Configure Settings
  * - Step 5: Review & Create
  */
 
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { format } from "date-fns"
-import { Eye } from "lucide-react"
+import { ClipboardEdit, Eye, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import {
   AlertDialog,
@@ -26,21 +26,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import useCustomToast from "@/hooks/useCustomToast"
+import { useContentLibraryDetail } from "@/hooks/useContentLibrary"
 import { useQuickActivityPreview } from "@/hooks/usePreviewMode"
 import {
   getActivityTypeColorClasses,
   getActivityTypeConfig,
 } from "@/lib/activityTypeConfig"
 import { mapAssignmentForEditToFormData } from "@/lib/assignment-utils"
-import { assignmentsApi } from "@/services/assignmentsApi"
+import { assignmentsApi, getAssignmentForEdit } from "@/services/assignmentsApi"
 import { getDownloadUrl as getMaterialDownloadUrl } from "@/services/materialsApi"
 import type {
   AdditionalResources,
@@ -55,78 +50,88 @@ import type { ContentItem } from "@/types/content-library"
 import { ActivityPreviewModal } from "../preview"
 import { StepAdditionalResources } from "./StepAdditionalResources"
 import { StepConfigureSettings } from "./StepConfigureSettings"
-import { StepPreviewAIContent } from "./StepPreviewAIContent"
 import { StepSelectActivities } from "./StepSelectActivities"
 import { StepSelectRecipients } from "./StepSelectRecipients"
 import { type SourceType, StepSelectSource } from "./StepSelectSource"
 import { TimePlanningWarningDialog } from "./TimePlanningWarningDialog"
 
-interface AssignmentCreationDialogProps {
-  isOpen: boolean
+export interface AssignmentWizardContentProps {
+  mode: "create" | "edit"
+  prefilledPublishDate?: string | null
+  preSelectedContentId?: string | null
+  assignmentId?: string
   onClose: () => void
-  book?: Book // Optional pre-selected book
-  prefilledPublishDate?: Date | null // Optional pre-filled publish date (from calendar click)
-  // Story 20.2: Edit mode support
-  mode?: "create" | "edit"
-  existingAssignment?: AssignmentForEditResponse // Story 20.2: Use for-edit response with recipients
-  // Pre-selected AI content (from library "Use" button)
-  preSelectedAIContent?: ContentItem | null
+}
+
+interface AssignmentWizardPageProps {
+  mode: "create" | "edit"
+  prefilledPublishDate?: string | null
+  preSelectedContentId?: string | null
+  assignmentId?: string
 }
 
 const STEPS = [
   { number: 0, label: "Select Book" },
-  { number: 1, label: "Select Activities" },
-  { number: 2, label: "Select Recipients" },
+  { number: 1, label: "Content" },
+  { number: 2, label: "Recipients" },
   { number: 3, label: "Resources" },
   { number: 4, label: "Settings" },
   { number: 5, label: "Review" },
 ]
 
-export function AssignmentCreationDialog({
-  isOpen,
-  onClose,
-  book: initialBook,
+/**
+ * Core wizard content — used both by the full-page wrapper and the bottom sheet.
+ * The parent is responsible for providing the outer container (fixed overlay or sheet).
+ */
+export function AssignmentWizardContent({
+  mode,
   prefilledPublishDate,
-  mode = "create",
-  existingAssignment,
-  preSelectedAIContent,
-}: AssignmentCreationDialogProps) {
+  preSelectedContentId,
+  assignmentId,
+  onClose,
+}: AssignmentWizardContentProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
-  // Story 20.2: Determine if in edit mode
   const isEditMode = mode === "edit"
 
-  // State for selected book
-  const [selectedBook, setSelectedBook] = useState<Book | null>(
-    initialBook || null,
+  // Fetch existing assignment data for edit mode
+  const { data: existingAssignment } = useQuery<AssignmentForEditResponse>({
+    queryKey: ["assignment-for-edit", assignmentId],
+    queryFn: () => getAssignmentForEdit(assignmentId!),
+    enabled: isEditMode && !!assignmentId,
+  })
+
+  // Fetch pre-selected AI content by ID
+  const { data: preSelectedContentDetail } = useContentLibraryDetail(
+    preSelectedContentId || "",
   )
+  // Convert ContentItemDetail to ContentItem (they extend each other)
+  const preSelectedAIContent: ContentItem | null =
+    preSelectedContentDetail || null
 
-  // State for source type (book or AI content)
-  const [sourceType, setSourceType] = useState<SourceType>("book")
-
-  // State for selected AI content
+  // State
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
     null,
   )
-
-  // State for selected activity IDs (Story 8.2: multi-activity)
   const [selectedActivityIds, setSelectedActivityIds] = useState<string[]>([])
-
-  const [currentStep, setCurrentStep] = useState(initialBook ? 1 : 0)
+  const [currentStep, setCurrentStep] = useState(0)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-
-  // Story 20.4: Time Planning warning state
   const [showTimePlanningWarning, setShowTimePlanningWarning] = useState(false)
+  const [initialized, setInitialized] = useState(false)
 
-  // Story 9.7: Activity preview
+  // Derive sourceType from selections
+  const sourceType: SourceType = selectedContent ? "ai_content" : "book"
+
   const {
     previewActivity,
     isModalOpen: isPreviewModalOpen,
     closePreview,
   } = useQuickActivityPreview()
+
   const [formData, setFormData] = useState<AssignmentFormData>({
     name: "",
     instructions: "",
@@ -135,99 +140,102 @@ export function AssignmentCreationDialog({
     student_ids: [],
     class_ids: [],
     activity_ids: [],
-    scheduled_publish_date: null, // Story 9.6: Scheduled publishing
+    scheduled_publish_date: null,
     time_planning_enabled: false,
     date_groups: [],
-    video_path: null, // Story 10.3: Video attachment (deprecated)
-    resources: null, // Story 10.3+: Additional resources with subtitle control
+    video_path: null,
+    resources: null,
   })
 
-  // Reset state when dialog opens
+  // Initialize state based on mode and props
   useEffect(() => {
-    if (isOpen) {
-      // Story 20.2: Handle edit mode initialization
-      if (isEditMode && existingAssignment) {
-        // Edit mode: pre-populate with existing data (Story 20.2 CRITICAL FIX)
-        const mappedData = mapAssignmentForEditToFormData(existingAssignment)
-        setFormData(mappedData)
-        setSelectedActivityIds(mappedData.activity_ids)
+    if (initialized) return
 
-        // Construct Book object from edit response data
-        const bookFromPreview: Book = {
-          id: Number(existingAssignment.book_id),
-          dream_storage_id: existingAssignment.book_name,
-          title: existingAssignment.book_title,
-          publisher_id: 0, // Not available in edit response, use placeholder
-          publisher_name: existingAssignment.publisher_name,
-          description: null,
-          cover_image_url: existingAssignment.book_cover_url,
-          activity_count: existingAssignment.total_activities,
-        }
-        setSelectedBook(bookFromPreview)
+    if (isEditMode && existingAssignment) {
+      const mappedData = mapAssignmentForEditToFormData(existingAssignment)
+      setFormData(mappedData)
+      setSelectedActivityIds(mappedData.activity_ids)
 
-        // Start at activities step (step 1) in edit mode
-        setCurrentStep(1)
-      } else if (preSelectedAIContent) {
-        // AI Content pre-selected (from library "Use" button)
-        // Start at step 1 with AI content already selected
-        setCurrentStep(1)
-        setSourceType("ai_content")
-        setSelectedContent(preSelectedAIContent)
-        setSelectedBook(null)
-        setSelectedActivityIds([])
-        setFormData({
-          name: preSelectedAIContent.title,
-          instructions: "",
-          due_date: null,
-          time_limit_minutes: null,
-          student_ids: [],
-          class_ids: [],
-          activity_ids: [],
-          scheduled_publish_date: prefilledPublishDate || null,
-          time_planning_enabled: false,
-          date_groups: [],
-          video_path: null,
-          resources: null,
-        })
-      } else {
-        // Create mode: reset to defaults
-        setCurrentStep(initialBook ? 1 : 0)
-        setSelectedBook(initialBook || null)
-        setSourceType("book")
-        setSelectedContent(null)
-        setSelectedActivityIds([])
-        setFormData({
-          name: "",
-          instructions: "",
-          due_date: null,
-          time_limit_minutes: null,
-          student_ids: [],
-          class_ids: [],
-          activity_ids: [],
-          // If prefilledPublishDate is provided (from calendar click), use it
-          scheduled_publish_date: prefilledPublishDate || null,
-          time_planning_enabled: false,
-          date_groups: [],
-          video_path: null, // Story 10.3: Video attachment (deprecated)
-          resources: null, // Story 10.3+: Additional resources
-        })
+      const bookFromPreview: Book = {
+        id: Number(existingAssignment.book_id),
+        dream_storage_id: existingAssignment.book_name,
+        title: existingAssignment.book_title,
+        publisher_id: 0,
+        publisher_name: existingAssignment.publisher_name,
+        description: null,
+        cover_image_url: existingAssignment.book_cover_url,
+        activity_count: existingAssignment.total_activities,
       }
-
-      setValidationError(null)
-      setShowCancelConfirm(false)
+      setSelectedBook(bookFromPreview)
+      setCurrentStep(1)
+      setInitialized(true)
+    } else if (!isEditMode && preSelectedAIContent) {
+      setCurrentStep(1)
+      setSelectedContent(preSelectedAIContent)
+      setSelectedBook(null)
+      setSelectedActivityIds([])
+      setFormData({
+        name: preSelectedAIContent.title,
+        instructions: "",
+        due_date: null,
+        time_limit_minutes: null,
+        student_ids: [],
+        class_ids: [],
+        activity_ids: [],
+        scheduled_publish_date: prefilledPublishDate
+          ? new Date(prefilledPublishDate)
+          : null,
+        time_planning_enabled: false,
+        date_groups: [],
+        video_path: null,
+        resources: null,
+      })
+      setInitialized(true)
+    } else if (!isEditMode && !preSelectedContentId) {
+      // Normal create mode (no pre-selected content to wait for)
+      setFormData((prev) => ({
+        ...prev,
+        scheduled_publish_date: prefilledPublishDate
+          ? new Date(prefilledPublishDate)
+          : null,
+      }))
+      setInitialized(true)
     }
   }, [
-    isOpen,
-    initialBook,
-    prefilledPublishDate,
+    initialized,
     isEditMode,
     existingAssignment,
     preSelectedAIContent,
+    preSelectedContentId,
+    prefilledPublishDate,
   ])
+
+  // Unsaved changes: beforeunload warning
+  const isFormDirty = useCallback((): boolean => {
+    if (currentStep > 0) return true
+    if (selectedActivityIds.length > 0) return true
+    if (selectedContent !== null) return true
+    if (formData.student_ids.length > 0 || formData.class_ids.length > 0)
+      return true
+    if (formData.instructions.trim() !== "") return true
+    if (formData.due_date !== null) return true
+    if (formData.time_limit_minutes !== null) return true
+    if (formData.scheduled_publish_date !== null) return true
+    return false
+  }, [currentStep, selectedActivityIds, selectedContent, formData])
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isFormDirty()) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener("beforeunload", handler)
+    return () => window.removeEventListener("beforeunload", handler)
+  }, [isFormDirty])
 
   // Update form name when activities are selected (only in create mode)
   useEffect(() => {
-    // Story 20.2: Don't auto-generate name in edit mode
     if (!isEditMode && selectedActivityIds.length > 0 && selectedBook) {
       const activityCount = selectedActivityIds.length
       const dateStr = format(new Date(), "MMM dd, yyyy")
@@ -241,7 +249,6 @@ export function AssignmentCreationDialog({
         activity_ids: selectedActivityIds,
       }))
     } else if (isEditMode) {
-      // In edit mode, just update activity_ids
       setFormData((prev) => ({
         ...prev,
         activity_ids: selectedActivityIds,
@@ -249,11 +256,10 @@ export function AssignmentCreationDialog({
     }
   }, [selectedActivityIds, selectedBook, isEditMode])
 
-  // Mutation for creating single assignment
+  // Mutations
   const createAssignmentMutation = useMutation({
     mutationFn: assignmentsApi.createAssignment,
     onSuccess: (data) => {
-      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["assignments"] })
       queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
       queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
@@ -262,10 +268,7 @@ export function AssignmentCreationDialog({
         `Assignment "${data.name}" created successfully for ${data.student_count} student${data.student_count !== 1 ? "s" : ""}`,
       )
 
-      // Close dialog before navigating
       onClose()
-
-      // Navigate to assignment detail page
       navigate({
         to: "/teacher/assignments/$assignmentId",
         params: { assignmentId: data.id },
@@ -279,11 +282,9 @@ export function AssignmentCreationDialog({
     },
   })
 
-  // Mutation for creating bulk assignments (Time Planning mode)
   const createBulkAssignmentsMutation = useMutation({
     mutationFn: assignmentsApi.createBulkAssignments,
     onSuccess: (data) => {
-      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["assignments"] })
       queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
       queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
@@ -292,11 +293,7 @@ export function AssignmentCreationDialog({
         `${data.total_created} assignments created successfully! They will become visible on their scheduled dates.`,
       )
 
-      // Close dialog and navigate to assignments list
       onClose()
-      navigate({
-        to: "/teacher/assignments",
-      })
     },
     onError: (error: any) => {
       console.error("Failed to create bulk assignments:", error)
@@ -306,25 +303,26 @@ export function AssignmentCreationDialog({
     },
   })
 
-  // Story 20.2: Mutation for updating assignment
   const updateAssignmentMutation = useMutation({
     mutationFn: (data: { id: string; data: any }) =>
       assignmentsApi.updateAssignment(data.id, data.data),
     onSuccess: () => {
-      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["assignments"] })
       queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
       queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
-      if (existingAssignment) {
+      if (assignmentId) {
         queryClient.invalidateQueries({
-          queryKey: ["assignment-preview", existingAssignment.assignment_id],
+          queryKey: ["assignment-preview", assignmentId],
         })
       }
 
       showSuccessToast("Assignment updated successfully")
 
-      // Close dialog
       onClose()
+      navigate({
+        to: "/teacher/assignments/$assignmentId",
+        params: { assignmentId: assignmentId! },
+      })
     },
     onError: (error: any) => {
       console.error("Failed to update assignment:", error)
@@ -334,27 +332,22 @@ export function AssignmentCreationDialog({
     },
   })
 
-  // Handler to update form data
+  // Handlers
   const handleFormDataChange = (updates: Partial<AssignmentFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }))
-    // Clear validation error when user makes changes
     if (validationError) {
       setValidationError(null)
     }
   }
 
-  // Story 20.4: Time Planning toggle handler with warning
   const handleTimePlanningToggle = (enabled: boolean) => {
     if (enabled && selectedActivityIds.length > 0) {
-      // Show warning dialog if activities are selected
       setShowTimePlanningWarning(true)
     } else {
-      // No activities selected, safe to enable
       handleFormDataChange({ time_planning_enabled: enabled })
     }
   }
 
-  // Story 20.4: Confirm enabling Time Planning (clears activities)
   const handleTimePlanningWarningConfirm = () => {
     setSelectedActivityIds([])
     handleFormDataChange({
@@ -364,99 +357,66 @@ export function AssignmentCreationDialog({
     setShowTimePlanningWarning(false)
   }
 
-  // Story 20.4: Cancel enabling Time Planning (keep activities)
   const handleTimePlanningWarningCancel = () => {
     setShowTimePlanningWarning(false)
-    // Don't change anything - keep Time Planning off and activities selected
   }
 
-  // Handler for activity IDs change from StepSelectActivities
   const handleActivityIdsChange = useCallback((activityIds: string[]) => {
     setSelectedActivityIds(activityIds)
   }, [])
 
-  // Handler for book selection - auto-advance to Step 2
   const handleBookSelect = useCallback((book: Book | null) => {
     setSelectedBook(book)
     if (book) {
-      // Auto-advance to activities step when book is selected
       setCurrentStep(1)
     }
   }, [])
 
-  // Handler for source type change
-  const handleSourceTypeChange = useCallback((type: SourceType) => {
-    setSourceType(type)
-    // Clear selections when switching source type
-    setSelectedBook(null)
-    setSelectedContent(null)
-    setSelectedActivityIds([])
-    setFormData((prev) => ({
-      ...prev,
-      name: "",
-      activity_ids: [],
-      time_planning_enabled: false,
-      date_groups: [],
-    }))
-  }, [])
-
-  // Handler for AI content selection - auto-advance to preview step
   const handleContentSelect = useCallback((content: ContentItem | null) => {
     setSelectedContent(content)
     if (content) {
-      // Auto-generate name from content
+      setSelectedActivityIds([])
       const dateStr = format(new Date(), "MMM dd, yyyy")
       setFormData((prev) => ({
         ...prev,
         name: `${content.title} - ${dateStr}`,
+        activity_ids: [],
       }))
-      // Auto-advance to preview step when content is selected
-      setCurrentStep(1)
     }
   }, [])
 
   const handleNext = () => {
-    // Validate step 0 (Select Source)
     if (currentStep === 0) {
-      if (sourceType === "book" && !selectedBook) {
+      if (!selectedBook) {
         showErrorToast("Please select a book")
         return
       }
-      if (sourceType === "ai_content" && !selectedContent) {
-        showErrorToast("Please select AI content")
+    }
+
+    if (currentStep === 1) {
+      if (selectedActivityIds.length === 0 && !selectedContent) {
+        showErrorToast(
+          "Please select at least one activity or an AI content item",
+        )
         return
       }
-    }
-
-    // Validate step 1 (Select Activities for book, Preview for AI content)
-    if (currentStep === 1) {
-      // For book source, validate activity selection
-      if (sourceType === "book") {
-        if (selectedActivityIds.length === 0) {
-          showErrorToast("Please select at least one activity")
+      if (selectedActivityIds.length > 0 && formData.time_planning_enabled) {
+        if (formData.date_groups.length === 0) {
+          showErrorToast(
+            "Please add at least one date when Time Planning is enabled",
+          )
           return
         }
-        // Time Planning mode validation
-        if (formData.time_planning_enabled) {
-          if (formData.date_groups.length === 0) {
-            showErrorToast(
-              "Please add at least one date when Time Planning is enabled",
-            )
-            return
-          }
-          const hasEmptyGroup = formData.date_groups.some(
-            (g) => g.activityIds.length === 0,
-          )
-          if (hasEmptyGroup) {
-            showErrorToast("Each date must have at least one activity assigned")
-            return
-          }
+        const hasEmptyGroup = formData.date_groups.some(
+          (g) => g.activityIds.length === 0,
+        )
+        if (hasEmptyGroup) {
+          showErrorToast("Each date must have at least one activity assigned")
+          return
         }
       }
-      // For AI content, no validation needed (preview is read-only)
     }
 
-    // Validate step 2 (Select Recipients)
     if (currentStep === 2) {
       const hasRecipients =
         formData.class_ids.length > 0 || formData.student_ids.length > 0
@@ -466,10 +426,6 @@ export function AssignmentCreationDialog({
       }
     }
 
-    // Validate step 3 (Additional Resources) - optional, no validation needed
-    // Users can skip adding resources
-
-    // Validate step 4 (Configure Settings)
     if (currentStep === 4) {
       if (!formData.name || formData.name.trim() === "") {
         showErrorToast("Please enter an assignment name")
@@ -482,14 +438,11 @@ export function AssignmentCreationDialog({
         showErrorToast("Time limit must be at least 1 minute")
         return
       }
-      // Story 9.6: Validate scheduled publish date if scheduling
       if (formData.scheduled_publish_date) {
-        // Scheduled publish date must be in the future
         if (formData.scheduled_publish_date <= new Date()) {
           showErrorToast("Scheduled publish date must be in the future")
           return
         }
-        // Scheduled publish date must be before or equal to due date (if set)
         if (
           formData.due_date &&
           formData.scheduled_publish_date > formData.due_date
@@ -500,12 +453,10 @@ export function AssignmentCreationDialog({
       }
     }
 
-    // Clear validation error and move to next step
     setValidationError(null)
     if (currentStep < STEPS.length - 1) {
-      // Skip Resources step (3) for AI content
       if (currentStep === 2 && sourceType === "ai_content") {
-        setCurrentStep(4) // Jump to Settings
+        setCurrentStep(4)
       } else {
         setCurrentStep((prev) => prev + 1)
       }
@@ -515,114 +466,45 @@ export function AssignmentCreationDialog({
   const handleBack = () => {
     setValidationError(null)
     if (currentStep > 0) {
-      // When going back from Step 1 to Select Source (step 0),
-      // clear the selection so the user sees the source selection
       if (currentStep === 1) {
-        if (sourceType === "book") {
-          setSelectedBook(null)
-          setSelectedActivityIds([])
-        } else {
+        // If AI content is selected, go back to content list first
+        if (selectedContent) {
           setSelectedContent(null)
+          return
         }
+        setSelectedBook(null)
+        setSelectedActivityIds([])
       }
-      // Skip Resources step (3) for AI content when going back
       if (currentStep === 4 && sourceType === "ai_content") {
-        setCurrentStep(2) // Jump back to Recipients
+        setCurrentStep(2)
       } else {
         setCurrentStep((prev) => prev - 1)
       }
     }
   }
 
-  // Check if form has been modified from initial state
-  const isFormDirty = (): boolean => {
-    // Check if we've progressed beyond initial step
-    if (currentStep > (initialBook ? 1 : 0)) {
-      return true
-    }
-
-    // Check if activities were selected (book source)
-    if (selectedActivityIds.length > 0) {
-      return true
-    }
-
-    // Check if AI content was selected
-    if (selectedContent !== null) {
-      return true
-    }
-
-    // Check if recipients were selected
-    if (formData.student_ids.length > 0 || formData.class_ids.length > 0) {
-      return true
-    }
-
-    // Check if any settings were modified
-    if (formData.instructions.trim() !== "") {
-      return true
-    }
-    if (formData.due_date !== null) {
-      return true
-    }
-    if (formData.time_limit_minutes !== null) {
-      return true
-    }
-    // Story 9.6: Check if scheduled publish date was set
-    if (formData.scheduled_publish_date !== null) {
-      return true
-    }
-
-    return false
-  }
-
   const handleCancelClick = () => {
-    // Show confirmation if form has unsaved changes
     if (isFormDirty()) {
       setShowCancelConfirm(true)
     } else {
-      handleCancel()
+      onClose()
     }
   }
 
   const handleCancel = () => {
-    setCurrentStep(initialBook ? 1 : 0)
-    setValidationError(null)
-    setSelectedBook(initialBook || null)
-    setSourceType("book")
-    setSelectedContent(null)
-    setSelectedActivityIds([])
-    setFormData({
-      name: "",
-      instructions: "",
-      due_date: null,
-      time_limit_minutes: null,
-      student_ids: [],
-      class_ids: [],
-      activity_ids: [],
-      scheduled_publish_date: null, // Story 9.6: Scheduled publishing
-      time_planning_enabled: false,
-      date_groups: [],
-      video_path: null, // Story 10.3: Video attachment (deprecated)
-      resources: null, // Story 10.3+: Additional resources
-    })
     setShowCancelConfirm(false)
     onClose()
   }
 
-  /**
-   * Transform AdditionalResources (form data) to AdditionalResourcesResponse (preview format)
-   * This enables preview mode to display materials without needing server-side data
-   */
   const transformResourcesForPreview = useCallback(
     (
       resources: AdditionalResources | null,
     ): AdditionalResourcesResponse | null => {
       if (!resources) return null
 
-      // Get auth token for video/audio streaming (needs token in URL query param)
       const token = localStorage.getItem("access_token")
       const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
 
-      // Transform teacher_materials to include is_available and download_url
       const transformedMaterials: TeacherMaterialResourceResponse[] = (
         resources.teacher_materials ?? []
       ).map((mat) => {
@@ -632,7 +514,7 @@ export function AssignmentCreationDialog({
             : null
         return {
           ...mat,
-          is_available: true, // Materials are available in preview mode
+          is_available: true,
           file_size: mat.file_size ?? null,
           mime_type: mat.mime_type ?? null,
           url: mat.url ?? null,
@@ -649,38 +531,32 @@ export function AssignmentCreationDialog({
     [],
   )
 
-  // Story 9.7: Open preview in new tab
   const handlePreviewInNewTab = useCallback(() => {
-    // Book assignment preview
     if (sourceType === "book") {
       if (!selectedBook || selectedActivityIds.length === 0) {
         showErrorToast("Please select a book and activities first")
         return
       }
 
-      // Transform resources for preview mode (sets is_available=true and provides download URLs)
       const previewResources = transformResourcesForPreview(formData.resources)
 
-      // Store preview data in sessionStorage
       const previewData = {
         bookId: selectedBook.id,
         bookTitle: selectedBook.title,
-        bookName: selectedBook.title, // Use title as name
+        bookName: selectedBook.title,
         publisherName: selectedBook.publisher_name,
         activityIds: selectedActivityIds,
         assignmentName: formData.name || `${selectedBook.title} Preview`,
         timeLimitMinutes: formData.time_limit_minutes,
-        resources: previewResources, // Include transformed resources for preview
+        resources: previewResources,
       }
       sessionStorage.setItem(
         "assignment-preview-data",
         JSON.stringify(previewData),
       )
 
-      // Open preview in new tab
       window.open("/teacher/assignments/preview", "_blank")
     } else {
-      // AI Content preview - not supported in new tab, content already previewed in Step 1
       showErrorToast(
         "AI content preview is shown in Step 1. Click Back to view.",
       )
@@ -697,9 +573,7 @@ export function AssignmentCreationDialog({
   ])
 
   const handleCreateAssignment = async () => {
-    // Story 20.2: Handle both create and edit modes
-    if (isEditMode && existingAssignment) {
-      // Edit mode: update existing assignment
+    if (isEditMode && assignmentId) {
       const updateData = {
         name: formData.name,
         instructions: formData.instructions || null,
@@ -710,15 +584,13 @@ export function AssignmentCreationDialog({
       }
 
       updateAssignmentMutation.mutate({
-        id: existingAssignment.assignment_id,
+        id: assignmentId,
         data: updateData,
       })
       return
     }
 
-    // Validate based on source type
     if (sourceType === "book") {
-      // Book assignment validations
       if (!selectedBook) {
         showErrorToast("Please select a book")
         return
@@ -729,7 +601,6 @@ export function AssignmentCreationDialog({
         return
       }
 
-      // Time Planning mode: create multiple assignments via bulk endpoint
       if (formData.time_planning_enabled && formData.date_groups.length > 0) {
         const requestData: AssignmentCreateRequest = {
           book_id: selectedBook.id,
@@ -739,7 +610,6 @@ export function AssignmentCreationDialog({
             formData.student_ids.length > 0 ? formData.student_ids : undefined,
           class_ids:
             formData.class_ids.length > 0 ? formData.class_ids : undefined,
-          // Convert date groups to API format
           date_groups: formData.date_groups.map((group) => ({
             scheduled_publish_date: group.date.toISOString(),
             due_date: group.dueDate ? group.dueDate.toISOString() : null,
@@ -747,12 +617,10 @@ export function AssignmentCreationDialog({
             activity_ids: group.activityIds,
           })),
         }
-        // Use bulk creation endpoint for Time Planning mode
         createBulkAssignmentsMutation.mutate(requestData)
         return
       }
 
-      // Normal book assignment
       const requestData: AssignmentCreateRequest = {
         book_id: selectedBook.id,
         name: formData.name,
@@ -773,13 +641,11 @@ export function AssignmentCreationDialog({
 
       createAssignmentMutation.mutate(requestData)
     } else {
-      // AI Content assignment validations
       if (!selectedContent) {
         showErrorToast("Please select AI content")
         return
       }
 
-      // AI Content assignment
       const requestData: AssignmentCreateRequest = {
         source_type: "ai_content",
         content_id: selectedContent.id,
@@ -801,122 +667,137 @@ export function AssignmentCreationDialog({
     }
   }
 
+  const isMutating =
+    createAssignmentMutation.isPending ||
+    createBulkAssignmentsMutation.isPending ||
+    updateAssignmentMutation.isPending
+
   return (
     <>
-      <Dialog
-        open={isOpen}
-        onOpenChange={(open) => !open && setShowCancelConfirm(true)}
-      >
-        <DialogContent
-          className="max-w-[95vw] w-[1400px] h-[85vh] max-h-[850px] overflow-hidden flex flex-col"
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle>
+      <div className="flex flex-col h-full select-none">
+        {/* Top Bar */}
+        <div className="shrink-0 border-b bg-background px-6 py-3">
+          <div className="relative flex items-center justify-center">
+            {/* Title — anchored left */}
+            <h1 className="absolute left-0 flex items-center gap-2.5 text-xl font-bold text-foreground">
+              <ClipboardEdit className="h-6 w-6 text-teal-500" />
               {isEditMode ? "Edit Assignment" : "Create Assignment"}
-            </DialogTitle>
-          </DialogHeader>
+            </h1>
 
-          {/* Step Indicator - Compact Design */}
-          <div className="relative mb-2 shrink-0">
-            {/* Progress Bar Background */}
-            <div className="absolute top-2.5 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700" />
-            {/* Progress Bar Fill */}
-            <div
-              className="absolute top-2.5 left-0 h-0.5 bg-gradient-to-r from-teal-500 to-teal-400 transition-all duration-300"
-              style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
-            />
+            {/* Close button — anchored right */}
+            <button
+              type="button"
+              onClick={handleCancelClick}
+              className="absolute right-0 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-            {/* Steps */}
-            <div className="relative flex justify-between">
-              {STEPS.map((step) => {
-                // Skip Resources step (3) for AI content
-                const isSkipped =
-                  step.number === 3 && sourceType === "ai_content"
-                const isCompleted = currentStep > step.number || isSkipped
-                const isCurrent = currentStep === step.number && !isSkipped
-
-                return (
-                  <div
-                    key={step.number}
-                    className={`flex flex-col items-center ${isSkipped ? "opacity-40" : ""}`}
-                  >
-                    {/* Step Circle */}
+            {/* Step Progress Bar — centered */}
+            <div className="relative w-full max-w-xl">
+              {/* Connecting lines between steps */}
+              <div className="absolute top-4 left-0 right-0 flex justify-between px-4">
+                {STEPS.slice(0, -1).map((step, i) => {
+                  const isSegmentCompleted = currentStep > i
+                  return (
                     <div
-                      className={`relative flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-medium transition-all duration-200 ${
-                        isCompleted
-                          ? "bg-teal-500 text-white shadow-sm"
-                          : isCurrent
-                            ? "bg-teal-500 text-white ring-2 ring-teal-500/20 shadow-md"
-                            : "bg-gray-100 dark:bg-neutral-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600"
+                      key={step.number}
+                      className={`flex-1 h-0.5 mx-2 transition-colors duration-300 ${
+                        isSegmentCompleted
+                          ? "bg-teal-500"
+                          : "bg-gray-200 dark:bg-gray-700"
                       }`}
+                    />
+                  )
+                })}
+              </div>
+
+              {/* Steps */}
+              <div className="relative flex justify-between">
+                {STEPS.map((step) => {
+                  const isSkipped =
+                    step.number === 3 && sourceType === "ai_content"
+                  const isCompleted = currentStep > step.number || isSkipped
+                  const isCurrent = currentStep === step.number && !isSkipped
+
+                  return (
+                    <div
+                      key={step.number}
+                      className={`flex flex-col items-center ${isSkipped ? "opacity-40" : ""}`}
                     >
-                      {isCompleted ? (
-                        <svg
-                          className="w-3 h-3"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={3}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      ) : (
-                        <span>{step.number + 1}</span>
-                      )}
+                      <div
+                        className={`relative flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium transition-all duration-200 ${
+                          isCompleted
+                            ? "bg-teal-500 text-white shadow-sm"
+                            : isCurrent
+                              ? "bg-teal-500 text-white ring-2 ring-teal-500/20 shadow-md"
+                              : "bg-gray-100 dark:bg-neutral-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-600"
+                        }`}
+                      >
+                        {isCompleted ? (
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={3}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        ) : (
+                          <span>{step.number + 1}</span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-xs mt-1.5 font-medium transition-colors ${
+                          isCompleted || isCurrent
+                            ? "text-teal-600 dark:text-teal-400"
+                            : "text-gray-400 dark:text-gray-500"
+                        } ${isSkipped ? "line-through" : ""}`}
+                      >
+                        {step.label}
+                      </span>
                     </div>
-                    {/* Step Label */}
-                    <span
-                      className={`text-[9px] mt-1 font-medium transition-colors ${
-                        isCompleted || isCurrent
-                          ? "text-teal-600 dark:text-teal-400"
-                          : "text-gray-400 dark:text-gray-500"
-                      } ${isSkipped ? "line-through" : ""}`}
-                    >
-                      {step.label}
-                    </span>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Step Content */}
-          <div className="flex-1 overflow-hidden min-w-0 min-h-0">
+        {/* Step Content */}
+        {/* Step 1 needs its own overflow handling (internal scroll in ActivitySelectionTabs) */}
+        {currentStep === 1 && selectedBook && (
+          <div className="flex-1 min-h-0 w-full px-4 py-4">
+            <StepSelectActivities
+              bookId={selectedBook.id}
+              book={selectedBook}
+              selectedActivityIds={selectedActivityIds}
+              onActivityIdsChange={handleActivityIdsChange}
+              selectedContent={selectedContent}
+              onContentSelect={handleContentSelect}
+              timePlanningEnabled={formData.time_planning_enabled}
+              onTimePlanningChange={handleTimePlanningToggle}
+              dateGroups={formData.date_groups}
+              onDateGroupsChange={(groups) =>
+                handleFormDataChange({ date_groups: groups })
+              }
+            />
+          </div>
+        )}
+
+        {/* Other steps scroll normally */}
+        <div className={`flex-1 overflow-y-auto ${currentStep === 1 ? "hidden" : ""}`}>
+          <div className="max-w-5xl mx-auto px-6 py-6 h-full">
             {currentStep === 0 && (
               <StepSelectSource
-                sourceType={sourceType}
-                onSourceTypeChange={handleSourceTypeChange}
                 selectedBook={selectedBook}
                 onSelectBook={handleBookSelect}
-                selectedContent={selectedContent}
-                onSelectContent={handleContentSelect}
-              />
-            )}
-
-            {currentStep === 1 &&
-              sourceType === "ai_content" &&
-              selectedContent && (
-                <StepPreviewAIContent content={selectedContent} />
-              )}
-
-            {currentStep === 1 && sourceType === "book" && selectedBook && (
-              <StepSelectActivities
-                bookId={selectedBook.id}
-                book={selectedBook}
-                selectedActivityIds={selectedActivityIds}
-                onActivityIdsChange={handleActivityIdsChange}
-                timePlanningEnabled={formData.time_planning_enabled}
-                onTimePlanningChange={handleTimePlanningToggle}
-                dateGroups={formData.date_groups}
-                onDateGroupsChange={(groups) =>
-                  handleFormDataChange({ date_groups: groups })
-                }
               />
             )}
 
@@ -950,7 +831,7 @@ export function AssignmentCreationDialog({
             )}
 
             {currentStep === 5 && (selectedBook || selectedContent) && (
-              <StepReviewCreateMulti
+              <StepReviewCreate
                 book={selectedBook}
                 selectedContent={selectedContent}
                 sourceType={sourceType}
@@ -963,9 +844,11 @@ export function AssignmentCreationDialog({
               />
             )}
           </div>
+        </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex items-center justify-between mt-6 pt-4 border-t shrink-0">
+        {/* Bottom Bar */}
+        <div className="shrink-0 border-t bg-background px-6 py-4">
+          <div className="max-w-5xl mx-auto flex items-center justify-between">
             <Button variant="outline" onClick={handleCancelClick}>
               Cancel
             </Button>
@@ -988,7 +871,6 @@ export function AssignmentCreationDialog({
                 </Button>
               ) : (
                 <>
-                  {/* Story 9.7: Preview button on final step (only for book assignments) */}
                   {sourceType === "book" && (
                     <Button
                       variant="outline"
@@ -1001,16 +883,10 @@ export function AssignmentCreationDialog({
                   )}
                   <Button
                     onClick={handleCreateAssignment}
-                    disabled={
-                      createAssignmentMutation.isPending ||
-                      createBulkAssignmentsMutation.isPending ||
-                      updateAssignmentMutation.isPending
-                    }
+                    disabled={isMutating}
                     className="bg-teal-600 hover:bg-teal-700"
                   >
-                    {createAssignmentMutation.isPending ||
-                    createBulkAssignmentsMutation.isPending ||
-                    updateAssignmentMutation.isPending
+                    {isMutating
                       ? isEditMode
                         ? "Updating..."
                         : "Creating..."
@@ -1024,8 +900,8 @@ export function AssignmentCreationDialog({
               )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
@@ -1048,14 +924,14 @@ export function AssignmentCreationDialog({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Story 9.7: Activity Preview Modal */}
+      {/* Activity Preview Modal */}
       <ActivityPreviewModal
         isOpen={isPreviewModalOpen}
         onClose={closePreview}
         activity={previewActivity}
       />
 
-      {/* Story 20.4: Time Planning Warning Dialog */}
+      {/* Time Planning Warning Dialog */}
       <TimePlanningWarningDialog
         open={showTimePlanningWarning}
         onConfirm={handleTimePlanningWarningConfirm}
@@ -1066,9 +942,32 @@ export function AssignmentCreationDialog({
   )
 }
 
-// Story 8.2: Review step for multi-activity assignments
-// Updated for Unified Assignment: Supports both Book and AI Content
-interface StepReviewCreateMultiProps {
+/**
+ * Full-page wrapper — kept for backward compatibility with the old route-based approach.
+ */
+export function AssignmentWizardPage({
+  mode,
+  prefilledPublishDate,
+  preSelectedContentId,
+  assignmentId,
+}: AssignmentWizardPageProps) {
+  const navigate = useNavigate()
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background">
+      <AssignmentWizardContent
+        mode={mode}
+        prefilledPublishDate={prefilledPublishDate}
+        preSelectedContentId={preSelectedContentId}
+        assignmentId={assignmentId}
+        onClose={() => navigate({ to: "/teacher/assignments" })}
+      />
+    </div>
+  )
+}
+
+// Review step component (extracted from dialog's StepReviewCreateMulti)
+interface StepReviewCreateProps {
   book: Book | null
   selectedContent: ContentItem | null
   sourceType: SourceType
@@ -1076,19 +975,18 @@ interface StepReviewCreateMultiProps {
   formData: AssignmentFormData
 }
 
-function StepReviewCreateMulti({
+function StepReviewCreate({
   book,
   selectedContent,
   sourceType,
   activityCount,
   formData,
-}: StepReviewCreateMultiProps) {
+}: StepReviewCreateProps) {
   const recipientCount =
     formData.class_ids.length > 0
       ? `${formData.class_ids.length} class(es)`
       : `${formData.student_ids.length} student(s)`
 
-  // Get activity type config for AI content
   const aiContentConfig = selectedContent
     ? getActivityTypeConfig(selectedContent.activity_type)
     : null
@@ -1111,7 +1009,6 @@ function StepReviewCreateMulti({
             <p className="text-muted-foreground">{formData.name}</p>
           </div>
 
-          {/* Source - Book or AI Content */}
           {sourceType === "book" && book ? (
             <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
               <h4 className="font-medium text-foreground mb-2">Book</h4>
@@ -1141,7 +1038,6 @@ function StepReviewCreateMulti({
             </div>
           ) : null}
 
-          {/* Activities / Items */}
           <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
             <h4 className="font-medium text-foreground mb-2">
               {sourceType === "ai_content" ? "Content Items" : "Activities"}
@@ -1197,7 +1093,6 @@ function StepReviewCreateMulti({
             </div>
           )}
 
-          {/* Story 9.6: Show publishing schedule */}
           <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
             <h4 className="font-medium text-foreground mb-2">Publishing</h4>
             {formData.scheduled_publish_date ? (
@@ -1240,7 +1135,6 @@ function StepReviewCreateMulti({
             </div>
           )}
 
-          {/* Show resources if any */}
           {formData.resources && formData.resources.videos.length > 0 && (
             <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
               <h4 className="font-medium text-foreground mb-2">

@@ -90,10 +90,7 @@ class AIQuizQuestion(BaseModel):
 
 class AIQuizQuestionPublic(BaseModel):
     """
-    Public version of quiz question without the correct answer.
-
-    Used when returning quiz questions to students before submission.
-    The correct_answer, correct_index, and explanation fields are omitted.
+    Public version of quiz question with correct_index for client-side scoring.
 
     Attributes:
         question_id: Unique identifier for the question.
@@ -101,6 +98,7 @@ class AIQuizQuestionPublic(BaseModel):
         options: List of 4 answer options.
         source_module_id: Module ID the question is derived from.
         difficulty: Difficulty level of the question.
+        correct_index: Index of correct answer (for client-side scoring).
     """
 
     question_id: str
@@ -108,6 +106,7 @@ class AIQuizQuestionPublic(BaseModel):
     options: list[str] = Field(min_length=4, max_length=4)
     source_module_id: int
     difficulty: str
+    correct_index: int = Field(ge=0, le=3)
 
 
 class AIQuiz(BaseModel):

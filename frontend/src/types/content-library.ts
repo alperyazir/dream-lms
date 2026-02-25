@@ -64,3 +64,33 @@ export interface UpdateContentResponse {
   content_id: string
   updated_at: string
 }
+
+// =============================================================================
+// Book-Centric Content Library Types
+// =============================================================================
+
+export interface BookContentItem {
+  content_id: string
+  activity_type: string
+  title: string
+  item_count: number
+  has_audio: boolean
+  difficulty: string | null
+  language: string | null
+  created_by_id: string | null
+  created_by_name: string | null
+  book_id: number
+}
+
+export interface BookContentListResponse {
+  items: BookContentItem[]
+  total: number
+  page: number
+  page_size: number
+  has_more: boolean
+  book_id: number
+}
+
+export interface BookContentDetail extends BookContentItem {
+  content: Record<string, any>
+}

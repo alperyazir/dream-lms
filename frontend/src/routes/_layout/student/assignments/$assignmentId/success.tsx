@@ -5,10 +5,24 @@
  * Displays success message with confetti animation after assignment submission
  */
 
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Confetti from "react-confetti"
 import { useWindowSize } from "@/hooks/useWindowSize"
+import {
+  parseAIQuizResult,
+  parseListeningFillBlankResult,
+  parseMixModeResult,
+  parseSentenceCorrectorResult,
+  parseVocabularyMatchingResult,
+  parseVocabularyQuizResult,
+  parseReadingComprehensionResult,
+  parseSentenceBuilderResult,
+  parseWordBuilderResult,
+  parseWritingFillBlankResult,
+} from "@/lib/resultParsers"
+import { getAssignmentResult } from "@/services/assignmentsApi"
 
 export const Route = createFileRoute(
   "/_layout/student/assignments/$assignmentId/success",
@@ -23,9 +37,92 @@ export const Route = createFileRoute(
 function AssignmentSuccessScreen() {
   const { assignmentId } = Route.useParams()
   const navigate = useNavigate()
-  const { score, completedAt } = Route.useSearch()
+  const { score: urlScore, completedAt } = Route.useSearch()
   const { width, height } = useWindowSize()
   const [showConfetti, setShowConfetti] = useState(true)
+
+  // Fetch actual result to recalculate score server-side
+  const { data: resultData } = useQuery({
+    queryKey: ["assignments", assignmentId, "result"],
+    queryFn: () => getAssignmentResult(assignmentId),
+  })
+
+  const MANUALLY_GRADED_TYPES = ["writing_free_response", "speaking_open_response"]
+  const isManuallyGraded = MANUALLY_GRADED_TYPES.includes(resultData?.activity_type || "")
+
+  // Recalculate score from result data if available
+  const score = useMemo(() => {
+    if (!resultData?.config_json || !resultData?.answers_json) return urlScore
+
+    const { activity_type, config_json, answers_json, score: storedScore } = resultData
+    let parsedResult: any = null
+
+    switch (activity_type) {
+      case "ai_quiz":
+      case "listening_quiz":
+        parsedResult = parseAIQuizResult(config_json, answers_json, storedScore)
+        break
+      case "vocabulary_quiz":
+        parsedResult = parseVocabularyQuizResult(config_json, answers_json, storedScore)
+        break
+      case "reading_comprehension":
+        parsedResult = parseReadingComprehensionResult(config_json, answers_json, storedScore)
+        break
+      case "sentence_builder":
+      case "listening_sentence_builder":
+        parsedResult = parseSentenceBuilderResult(config_json, answers_json, storedScore)
+        break
+      case "word_builder":
+      case "listening_word_builder":
+        parsedResult = parseWordBuilderResult(config_json, answers_json, storedScore)
+        break
+      case "listening_fill_blank":
+        parsedResult = parseListeningFillBlankResult(config_json, answers_json, storedScore)
+        break
+      case "writing_sentence_corrector":
+        parsedResult = parseSentenceCorrectorResult(config_json, answers_json, storedScore)
+        break
+      case "writing_fill_blank":
+      case "grammar_fill_blank":
+        parsedResult = parseWritingFillBlankResult(config_json, answers_json, storedScore)
+        break
+      case "vocabulary_matching":
+        parsedResult = parseVocabularyMatchingResult(config_json, answers_json, storedScore)
+        break
+      case "mix_mode":
+        parsedResult = parseMixModeResult(config_json, answers_json, storedScore)
+        break
+    }
+
+    if (!parsedResult) return urlScore
+
+    // Mix mode: use auto_scored counts
+    if ("auto_scored" in parsedResult && "auto_correct" in parsedResult) {
+      const mix = parsedResult as { auto_scored: number; auto_correct: number }
+      return mix.auto_scored > 0 ? Math.round((mix.auto_correct / mix.auto_scored) * 100) : urlScore
+    }
+
+    let correct = 0
+    let total = 0
+    if ("question_results" in parsedResult) {
+      correct = parsedResult.question_results.filter((r: any) => r.is_correct).length
+      total = parsedResult.total
+    } else if ("results" in parsedResult) {
+      correct = parsedResult.results.filter((r: any) => r.is_correct).length
+      total = parsedResult.total
+    } else if ("sentence_results" in parsedResult) {
+      correct = parsedResult.sentence_results.filter((r: any) => r.is_correct).length
+      total = parsedResult.total
+    } else if ("word_results" in parsedResult) {
+      correct = parsedResult.correct_count
+      total = parsedResult.total
+    } else if ("item_results" in parsedResult) {
+      correct = parsedResult.item_results.filter((r: any) => r.is_correct).length
+      total = parsedResult.total
+    }
+
+    return total > 0 ? Math.round((correct / total) * 100) : urlScore
+  }, [resultData, urlScore])
 
   // Stop confetti after 5 seconds
   useEffect(() => {
@@ -82,15 +179,28 @@ function AssignmentSuccessScreen() {
         </h1>
 
         {/* Score Display */}
-        <div className="my-6">
-          <p className="mb-2 text-lg text-gray-600 dark:text-gray-300">
-            Your Score:
-          </p>
-          <p className={`text-6xl font-bold ${scoreStyle.color}`}>{score}%</p>
-          <p className={`mt-2 text-xl font-semibold ${scoreStyle.color}`}>
-            {scoreStyle.message}
-          </p>
-        </div>
+        {isManuallyGraded ? (
+          <div className="my-6">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-2.5 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+              <span className="text-amber-600 dark:text-amber-400 text-sm font-medium">
+                Pending Teacher Review
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+              Your teacher will review and score your responses.
+            </p>
+          </div>
+        ) : (
+          <div className="my-6">
+            <p className="mb-2 text-lg text-gray-600 dark:text-gray-300">
+              Your Score:
+            </p>
+            <p className={`text-6xl font-bold ${scoreStyle.color}`}>{score}%</p>
+            <p className={`mt-2 text-xl font-semibold ${scoreStyle.color}`}>
+              {scoreStyle.message}
+            </p>
+          </div>
+        )}
 
         {/* Completion Time */}
         <p className="mb-8 text-sm text-gray-500 dark:text-gray-400">

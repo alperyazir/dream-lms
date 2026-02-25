@@ -7,8 +7,9 @@
  * Answer format: Map<item_id, joinedLettersString>
  */
 
-import { Eye, EyeOff, Loader2, Pause, Play, RotateCcw, Volume2 } from "lucide-react"
+import { Eye, EyeOff, Loader2, Pause, Play, RotateCcw } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import type { ActivityConfig } from "@/lib/mockData"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
@@ -225,117 +226,115 @@ export function ListeningWordBuilderPlayerAdapter({
   }
 
   return (
-    <div className="flex flex-col items-center gap-6 p-6 max-w-2xl mx-auto">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
       <audio ref={audioRef} preload="auto" />
 
-      {/* Audio Play Button */}
-      <div className="flex flex-col items-center gap-2">
-        {currentItem.audio_url &&
-        currentItem.audio_status === "ready" ? (
-          <button
-            onClick={handlePlayAudio}
-            className={cn(
-              "flex items-center justify-center w-20 h-20 rounded-full transition-all shadow-lg",
-              isPlaying
-                ? "bg-teal-600 hover:bg-teal-700 scale-110"
-                : "bg-teal-500 hover:bg-teal-600",
-            )}
-          >
-            {audioLoading ? (
-              <Loader2 className="h-8 w-8 text-white animate-spin" />
-            ) : isPlaying ? (
-              <Pause className="h-8 w-8 text-white" />
-            ) : (
-              <Play className="h-8 w-8 text-white ml-1" />
-            )}
-          </button>
-        ) : (
-          <div className="text-sm text-muted-foreground flex items-center gap-1">
-            <Volume2 className="h-4 w-4" />
-            Audio not available
-          </div>
-        )}
-        <p className="text-sm text-muted-foreground">
-          Listen and spell the word
-        </p>
-      </div>
+      <Card className="w-full shadow-lg">
+        <CardContent className="p-6">
+          {/* Audio play button — only shown when audio is available */}
+          {currentItem.audio_url &&
+          currentItem.audio_status === "ready" ? (
+            <div className="mb-4 flex flex-col items-center gap-2">
+              <button
+                onClick={handlePlayAudio}
+                className={cn(
+                  "flex items-center justify-center w-12 h-12 rounded-full transition-all shadow-md",
+                  isPlaying
+                    ? "bg-teal-600 hover:bg-teal-700 scale-110"
+                    : "bg-teal-500 hover:bg-teal-600",
+                )}
+              >
+                {audioLoading ? (
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="h-5 w-5 text-white" />
+                ) : (
+                  <Play className="h-5 w-5 text-white ml-0.5" />
+                )}
+              </button>
+              <p className="text-sm text-muted-foreground">
+                Listen and spell the word
+              </p>
+            </div>
+          ) : null}
 
-      {/* Definition hint toggle */}
-      {currentItem.definition && (
-        <button
-          onClick={() => setShowHint(!showHint)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {showHint ? (
-            <EyeOff className="h-3.5 w-3.5" />
-          ) : (
-            <Eye className="h-3.5 w-3.5" />
-          )}
-          {showHint ? "Hide hint" : "Show hint"}
-        </button>
-      )}
-      {showHint && currentItem.definition && (
-        <p className="text-sm text-muted-foreground italic px-4 text-center">
-          {currentItem.definition}
-        </p>
-      )}
-
-      {/* Answer area - placed letters */}
-      <div className="w-full min-h-[56px] p-3 rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/50 dark:bg-teal-900/10 flex flex-wrap gap-1.5 items-center justify-center">
-        {placedLetters.length === 0 || (placedLetters.length === 1 && placedLetters[0] === "") ? (
-          <span className="text-sm text-muted-foreground">
-            Tap letters below to spell the word
-          </span>
-        ) : (
-          placedLetters.map((letter, idx) => (
+          {/* Definition hint toggle - always reserves space */}
+          <div className={cn("mb-3 flex flex-col items-center gap-1", !currentItem.definition && "invisible")}>
             <button
-              key={idx}
-              onClick={() => handlePlacedTap(idx)}
-              className="w-10 h-10 rounded-lg border-2 border-teal-400 bg-teal-100 dark:bg-teal-800/40 text-teal-800 dark:text-teal-200 text-lg font-bold uppercase flex items-center justify-center hover:bg-teal-200 dark:hover:bg-teal-800/60 transition-colors cursor-pointer"
+              onClick={() => setShowHint(!showHint)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              {letter}
+              {showHint ? (
+                <EyeOff className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+              {showHint ? "Hide hint" : "Show hint"}
             </button>
-          ))
-        )}
-      </div>
+            <p className={cn(
+              "text-sm text-muted-foreground italic px-4 text-center min-h-[20px]",
+              !showHint && "invisible",
+            )}>
+              {currentItem.definition || "\u00A0"}
+            </p>
+          </div>
 
-      {/* Reset button */}
-      {placedLetters.length > 0 && placedLetters[0] !== "" && (
-        <button
-          onClick={handleReset}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <RotateCcw className="h-3 w-3" />
-          Reset
-        </button>
-      )}
+          {/* Answer area - placed letters */}
+          <div className="mb-4 w-full h-[64px] p-3 rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/50 dark:bg-teal-900/10 flex flex-wrap gap-1.5 items-center justify-center">
+            {placedLetters.length === 0 || (placedLetters.length === 1 && placedLetters[0] === "") ? (
+              <span className="text-sm text-muted-foreground">
+                Tap letters below to spell the word
+              </span>
+            ) : (
+              placedLetters.map((letter, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handlePlacedTap(idx)}
+                  className="w-10 h-10 rounded-lg border-2 border-teal-400 bg-teal-100 dark:bg-teal-800/40 text-teal-800 dark:text-teal-200 text-lg font-bold uppercase flex items-center justify-center hover:bg-teal-200 dark:hover:bg-teal-800/60 transition-colors cursor-pointer"
+                >
+                  {letter}
+                </button>
+              ))
+            )}
+          </div>
 
-      {/* Letter bank - tappable scrambled letters */}
-      <div className="flex flex-wrap justify-center gap-2">
-        {currentItem.letters.map((letter, lIdx) => {
-          const isUsed = usedIndices.has(lIdx)
-          return (
+          {/* Reset button - always takes space, invisible when nothing placed */}
+          <div className="mb-4 flex justify-end">
             <button
-              key={lIdx}
-              onClick={() => handleLetterTap(letter, lIdx)}
-              disabled={showResults || isUsed}
+              onClick={handleReset}
               className={cn(
-                "w-12 h-12 rounded-lg border-2 text-lg font-bold uppercase flex items-center justify-center transition-all",
-                isUsed
-                  ? "border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 opacity-50 cursor-not-allowed"
-                  : "border-gray-200 dark:border-gray-600 hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-700 dark:text-gray-300 cursor-pointer",
+                "flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors",
+                (placedLetters.length === 0 || (placedLetters.length === 1 && placedLetters[0] === "")) && "invisible",
               )}
             >
-              {letter}
+              <RotateCcw className="h-3 w-3" />
+              Reset
             </button>
-          )
-        })}
-      </div>
+          </div>
 
-      {/* Item counter */}
-      <div className="text-sm text-muted-foreground">
-        Word {qIndex + 1} of {items.length}
-      </div>
+          {/* Letter bank - tappable scrambled letters */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {currentItem.letters.map((letter, lIdx) => {
+              const isUsed = usedIndices.has(lIdx)
+              return (
+                <button
+                  key={lIdx}
+                  onClick={() => handleLetterTap(letter, lIdx)}
+                  disabled={showResults || isUsed}
+                  className={cn(
+                    "w-12 h-12 rounded-lg border-2 text-lg font-bold uppercase flex items-center justify-center transition-all",
+                    isUsed
+                      ? "border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 opacity-50 cursor-not-allowed"
+                      : "border-gray-200 dark:border-gray-600 hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-700 dark:text-gray-300 cursor-pointer",
+                  )}
+                >
+                  {letter}
+                </button>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

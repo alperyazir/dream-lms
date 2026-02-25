@@ -582,7 +582,7 @@ export function ActivitySelectionTabs({
   const activityCount = selectedActivities.size
 
   return (
-    <div className="flex flex-col h-full max-h-[min(600px,72vh)] overflow-hidden w-full max-w-full">
+    <div className="flex flex-col h-full overflow-hidden w-full max-w-full">
       {/* Header with Book Info and Time Planning Toggle - Compact single row */}
       <div className="flex items-center justify-between bg-gray-50 dark:bg-neutral-800/50 rounded-lg px-3 py-1.5 border border-gray-200 dark:border-gray-700 shrink-0 mb-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -864,9 +864,9 @@ export function ActivitySelectionTabs({
                               variant="ghost"
                               size="icon"
                               onClick={() => handleRemoveActivity(activityId)}
-                              className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive transition-colors"
                             >
-                              <X className="h-2 w-2" />
+                              <X className="h-3 w-3" />
                             </Button>
                           </div>
                         )
@@ -948,9 +948,9 @@ export function ActivitySelectionTabs({
                                     onClick={() =>
                                       handleRemoveActivity(activity.id)
                                     }
-                                    className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive transition-colors"
                                   >
-                                    <X className="h-2 w-2" />
+                                    <X className="h-3 w-3" />
                                   </Button>
                                 </div>
                               )

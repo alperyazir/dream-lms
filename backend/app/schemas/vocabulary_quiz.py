@@ -84,10 +84,7 @@ class VocabularyQuizQuestion(BaseModel):
 
 class VocabularyQuizQuestionPublic(BaseModel):
     """
-    Public version of quiz question without the correct answer.
-
-    Used when returning quiz questions to students before submission.
-    The correct_answer field is omitted to prevent cheating.
+    Public version of quiz question with correct_answer for client-side scoring.
 
     Attributes:
         question_id: Unique identifier for the question.
@@ -96,6 +93,7 @@ class VocabularyQuizQuestionPublic(BaseModel):
         audio_url: Optional presigned URL for word pronunciation audio.
         cefr_level: CEFR difficulty level of the word.
         question_type: Type of question (definition, synonym, antonym).
+        correct_answer: The correct answer word (for client-side scoring).
     """
 
     question_id: str
@@ -107,6 +105,7 @@ class VocabularyQuizQuestionPublic(BaseModel):
         default="definition",
         description="Type of question: definition, synonym, or antonym.",
     )
+    correct_answer: str = Field(description="Correct answer for client-side scoring.")
 
 
 class VocabularyQuiz(BaseModel):

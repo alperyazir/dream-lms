@@ -6,7 +6,13 @@
  * and answer MCQ, True/False, and Short Answer questions.
  */
 
-import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+} from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   AlertDialog,
@@ -23,12 +29,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
 import type {
   ReadingComprehensionActivityPublic,
   ReadingComprehensionAnswer,
+  WordTimestamp,
 } from "@/types/reading-comprehension"
 
 interface ReadingComprehensionPlayerProps {
@@ -50,6 +57,78 @@ interface ReadingComprehensionPlayerProps {
   onQuestionIndexChange?: (index: number) => void
   /** Callback to expose navigation state to parent */
   onNavigationStateChange?: (state: QuestionNavigationState) => void
+}
+
+/**
+ * Split passage text into word spans that can be individually highlighted.
+ * Matches words from timestamps by position in the text.
+ */
+function PassageWithHighlight({
+  passage,
+  timestamps,
+  currentTime,
+  isPlaying,
+}: {
+  passage: string
+  timestamps: WordTimestamp[]
+  currentTime: number
+  isPlaying: boolean
+}) {
+  // Find the currently active word index based on audio time
+  const activeWordIndex = useMemo(() => {
+    if (!isPlaying || timestamps.length === 0) return -1
+    for (let i = timestamps.length - 1; i >= 0; i--) {
+      if (currentTime >= timestamps[i].start) {
+        return i
+      }
+    }
+    return -1
+  }, [currentTime, timestamps, isPlaying])
+
+  // Build spans from the passage, matching timestamp words sequentially
+  const spans = useMemo(() => {
+    if (timestamps.length === 0) {
+      return [{ text: passage, wordIndex: -1 }]
+    }
+
+    const result: { text: string; wordIndex: number }[] = []
+    // Split passage into tokens preserving whitespace
+    const tokens = passage.split(/(\s+)/)
+    let tsIdx = 0
+
+    for (const token of tokens) {
+      if (/^\s+$/.test(token)) {
+        // whitespace - just add as-is
+        result.push({ text: token, wordIndex: -1 })
+      } else if (tsIdx < timestamps.length) {
+        // word token - map to the next timestamp
+        result.push({ text: token, wordIndex: tsIdx })
+        tsIdx++
+      } else {
+        result.push({ text: token, wordIndex: -1 })
+      }
+    }
+
+    return result
+  }, [passage, timestamps])
+
+  return (
+    <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
+      {spans.map((span, i) => (
+        <span
+          key={i}
+          className={cn(
+            "transition-colors duration-150",
+            span.wordIndex >= 0 &&
+              span.wordIndex === activeWordIndex &&
+              "rounded-sm bg-teal-200 text-teal-900 dark:bg-teal-700 dark:text-teal-100",
+          )}
+        >
+          {span.text}
+        </span>
+      ))}
+    </p>
+  )
 }
 
 export function ReadingComprehensionPlayer({
@@ -244,32 +323,130 @@ export function ReadingComprehensionPlayer({
   // Get current answer for the question
   const getCurrentAnswer = (questionId: string) => answers.get(questionId)
 
+  // ── Audio player state ──
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [audioProgress, setAudioProgress] = useState(0)
+  const [audioDuration, setAudioDuration] = useState(0)
+
+  const hasAudio = !!activity.passage_audio?.audio_base64
+
+  // Create audio element from base64 data
+  useEffect(() => {
+    if (!activity.passage_audio?.audio_base64) return
+
+    const audio = new Audio(
+      `data:audio/mp3;base64,${activity.passage_audio.audio_base64}`,
+    )
+    audioRef.current = audio
+
+    audio.addEventListener("loadedmetadata", () => {
+      setAudioDuration(audio.duration)
+    })
+    audio.addEventListener("timeupdate", () => {
+      setAudioProgress(audio.currentTime)
+    })
+    audio.addEventListener("ended", () => {
+      setIsPlaying(false)
+      setAudioProgress(0)
+    })
+
+    return () => {
+      audio.pause()
+      audio.removeAttribute("src")
+      audioRef.current = null
+    }
+  }, [activity.passage_audio])
+
+  const toggleAudio = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (isPlaying) {
+      audio.pause()
+    } else {
+      audio.play()
+    }
+    setIsPlaying(!isPlaying)
+  }, [isPlaying])
+
+  const seekAudio = useCallback((value: number[]) => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.currentTime = value[0]
+    setAudioProgress(value[0])
+  }, [])
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = Math.floor(seconds % 60)
+    return `${m}:${s.toString().padStart(2, "0")}`
+  }
+
   return (
     <div className="flex min-h-full flex-col items-center justify-center p-4">
       <div className="flex w-full max-w-6xl flex-col gap-4 lg:flex-row lg:gap-6">
-        {/* Passage Panel */}
-        <Card
+        {/* Passage Panel + Audio */}
+        <div
           className={cn(
-            "flex-1 shadow-lg lg:max-w-[45%]",
-            !showPassage && "hidden lg:block",
+            "flex flex-1 flex-col gap-3 lg:max-w-[45%]",
+            !showPassage && "hidden lg:flex",
           )}
         >
-          <CardContent className="p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-teal-600" />
-              <h2 className="font-semibold text-gray-800 dark:text-gray-200">
-                {activity.module_title}
-              </h2>
-            </div>
-            <ScrollArea className="h-[300px] lg:h-[500px]">
-              <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
-                <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
-                  {activity.passage}
-                </p>
+          <Card className="shadow-lg">
+            <CardContent className="p-4">
+              {/* Passage text with word highlighting */}
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                {hasAudio &&
+                activity.passage_audio?.word_timestamps?.length ? (
+                  <PassageWithHighlight
+                    passage={activity.passage}
+                    timestamps={activity.passage_audio.word_timestamps}
+                    currentTime={audioProgress}
+                    isPlaying={isPlaying}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
+                    {activity.passage}
+                  </p>
+                )}
               </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Inline audio player under the passage */}
+          {hasAudio && (
+            <div className="rounded-xl border bg-gray-50 px-3 py-2.5 shadow-sm dark:bg-gray-900">
+              {/* Seek bar row */}
+              <div className="flex items-center gap-2.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 rounded-full bg-teal-600 text-white hover:bg-teal-700 hover:text-white"
+                  onClick={toggleAudio}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-3.5 w-3.5" />
+                  ) : (
+                    <Play className="ml-0.5 h-3.5 w-3.5" />
+                  )}
+                </Button>
+                <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+                  {formatTime(audioProgress)}
+                </span>
+                <Slider
+                  value={[audioProgress]}
+                  max={audioDuration || 1}
+                  step={0.1}
+                  onValueChange={seekAudio}
+                  className="min-w-0 flex-1"
+                />
+                <span className="w-9 shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                  {formatTime(audioDuration)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Questions Panel */}
         <div className="flex flex-1 flex-col gap-4">
@@ -346,7 +523,7 @@ export function ReadingComprehensionPlayer({
                           isSelected &&
                             "bg-teal-600 hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-700",
                           !isSelected &&
-                            "hover:border-teal-300 hover:bg-teal-50 dark:hover:border-teal-700 dark:hover:bg-teal-950/50",
+                            "hover:border-teal-300 hover:bg-teal-50 hover:text-gray-900 dark:hover:border-teal-700 dark:hover:bg-teal-950/30 dark:hover:text-gray-100",
                         )}
                         onClick={() =>
                           handleSelectOption(currentQuestion.question_id, index)

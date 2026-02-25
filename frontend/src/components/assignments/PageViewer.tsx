@@ -224,12 +224,11 @@ export function PageViewer({
         {/* Pages Container */}
         <div className="flex-1 h-full min-w-0 min-h-0 px-1 py-1 overflow-hidden flex items-center justify-center">
           <div
-            className="flex gap-3 h-full max-h-full justify-center items-center"
-            style={{ maxHeight: "100%" }}
+            className="flex gap-3 justify-center items-center h-full"
           >
-            {visiblePages.map((page) => (
+            {visiblePages.map((page, index) => (
               <PageWithMarkers
-                key={page.page_number}
+                key={index}
                 page={page}
                 selectedActivityIds={selectedActivityIds}
                 onActivityToggle={onActivityToggle}
@@ -278,49 +277,65 @@ function PageWithMarkers({
   const containerRef = useRef<HTMLDivElement>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showSkeleton, setShowSkeleton] = useState(true)
   const [imageDimensions, setImageDimensions] = useState<{
     width: number
     height: number
   } | null>(null)
 
-  // Load page image
+  // Load page image — keep old image visible while new one loads
   useEffect(() => {
     let isMounted = true
+    let skeletonTimer: ReturnType<typeof setTimeout>
 
     const loadImage = async () => {
-      setIsLoading(true)
+      // Only show skeleton if loading takes more than 300ms
+      skeletonTimer = setTimeout(() => {
+        if (isMounted) setShowSkeleton(true)
+      }, 300)
+
       try {
         const url = await booksApi.getPageImageUrl(page.image_url)
         if (isMounted && url) {
           const img = new Image()
           img.onload = () => {
             if (isMounted) {
+              clearTimeout(skeletonTimer)
               setImageDimensions({
                 width: img.naturalWidth,
                 height: img.naturalHeight,
               })
               setImageUrl(url)
               setIsLoading(false)
+              setShowSkeleton(false)
             }
           }
           img.onerror = () => {
             if (isMounted) {
+              clearTimeout(skeletonTimer)
               setIsLoading(false)
+              setShowSkeleton(false)
             }
           }
           img.src = url
         }
       } catch {
         if (isMounted) {
+          clearTimeout(skeletonTimer)
           setIsLoading(false)
+          setShowSkeleton(false)
         }
       }
     }
 
+    // Don't clear imageUrl — keep showing old page while new one loads
+    setIsLoading(true)
+    setShowSkeleton(false)
     loadImage()
 
     return () => {
       isMounted = false
+      clearTimeout(skeletonTimer)
     }
   }, [page.image_url])
 
@@ -377,21 +392,21 @@ function PageWithMarkers({
     <div
       className={`relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-neutral-800 flex flex-col ${
         useSingleSizing
-          ? "h-full max-h-full aspect-[3/4]"
-          : "h-full max-h-full aspect-[3/4] max-w-[48%]"
+          ? "h-full aspect-[3/4] mx-auto"
+          : "aspect-[3/4] max-h-full flex-shrink min-w-0"
       }`}
     >
       <div ref={containerRef} className="relative flex-1 min-h-0">
-        {isLoading ? (
+        {showSkeleton && !imageUrl ? (
           <Skeleton className="absolute inset-0" />
         ) : imageUrl ? (
           <>
             <img
               src={imageUrl}
               alt={`Page ${page.page_number}`}
-              className="w-full h-full object-contain"
+              className={`w-full h-full object-contain transition-opacity duration-150 ${isLoading ? "opacity-60" : "opacity-100"}`}
             />
-            {imageDimensions && renderedDimensions && (
+            {!isLoading && imageDimensions && renderedDimensions && (
               <ActivityMarkersOverlay
                 activities={page.activities}
                 imageDimensions={imageDimensions}

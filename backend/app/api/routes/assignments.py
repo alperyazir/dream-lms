@@ -887,13 +887,22 @@ async def create_assignment(
 
     # Story 27.x: Handle AI content assignments differently
     if assignment_in.source_type == "ai_content":
-        # Fetch TeacherGeneratedContent
+        # Fetch TeacherGeneratedContent by local ID or DCS content ID
         content_result = await session.execute(
             select(TeacherGeneratedContent).where(
                 TeacherGeneratedContent.id == assignment_in.content_id
             )
         )
         content = content_result.scalar_one_or_none()
+
+        # Fallback: look up by dcs_content_id (library page uses DCS IDs)
+        if not content:
+            content_result = await session.execute(
+                select(TeacherGeneratedContent).where(
+                    TeacherGeneratedContent.dcs_content_id == str(assignment_in.content_id)
+                )
+            )
+            content = content_result.scalar_one_or_none()
 
         if not content:
             raise HTTPException(
@@ -2526,15 +2535,19 @@ async def save_activity_progress(
     # For regular multi-activity, reject saves to completed assignments
     if is_content_library:
         # Content Library assignment - save to AssignmentStudent.progress_json
-        # Check if already completed - return success (idempotent)
+        # Check if already completed - only allow saves that revert to in_progress (Save & Exit)
         if assignment_student.status == AssignmentStatus.completed:
-            return ActivityProgressSaveResponse(
-                message="Activity already completed",
-                activity_id=activity_id,
-                status=assignment_student.status.value,
-                score=assignment_student.score,
-                last_saved_at=assignment_student.completed_at or datetime.now(UTC),
-            )
+            if progress.status != "in_progress":
+                return ActivityProgressSaveResponse(
+                    message="Activity already completed",
+                    activity_id=activity_id,
+                    status=assignment_student.status.value,
+                    score=assignment_student.score,
+                    last_saved_at=assignment_student.completed_at or datetime.now(UTC),
+                )
+            # Save & Exit: revert from completed to in_progress
+            assignment_student.status = AssignmentStatus.in_progress
+            assignment_student.completed_at = None
 
         # Update progress in AssignmentStudent
         assignment_student.progress_json = progress.response_data
@@ -2546,8 +2559,19 @@ async def save_activity_progress(
         # Update status
         if progress.status == "completed":
             assignment_student.status = AssignmentStatus.completed
-            assignment_student.score = progress.score
+            # Only set score if provided and valid (manually graded types have no score)
+            if progress.score is not None and progress.score >= 0:
+                assignment_student.score = progress.score
             assignment_student.completed_at = datetime.now(UTC)
+            # Also populate answers_json so result endpoint can serve it
+            if progress.response_data and not assignment_student.answers_json:
+                assignment_student.answers_json = {
+                    "0": {
+                        "answers": progress.response_data,
+                        "score": progress.score,
+                        "status": "completed",
+                    }
+                }
         elif assignment_student.status == AssignmentStatus.not_started:
             assignment_student.status = AssignmentStatus.in_progress
 

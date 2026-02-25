@@ -380,8 +380,8 @@ export function MultiActivityPlayer({
     async (forNavigation = false, forceInProgress = false) => {
       if (!currentActivity || !currentState) return
 
-      // Only save if there's something to save
-      if (!currentState.isDirty && !forNavigation) return
+      // Only save if there's something to save (unless forcing in_progress for Save & Exit)
+      if (!currentState.isDirty && !forNavigation && !forceInProgress) return
 
       // Story 9.7: In preview mode, just mark as not dirty without backend call
       if (previewMode) {
@@ -945,7 +945,7 @@ export function MultiActivityPlayer({
       </div>
 
       {/* Compact footer with navigation and submit */}
-      <footer className="shrink-0 border-t bg-white shadow-sm dark:border-gray-700 dark:bg-neutral-800">
+      <footer className="sticky bottom-0 z-10 shrink-0 border-t bg-white shadow-sm dark:border-gray-700 dark:bg-neutral-800">
         {/* Story 10.2: Audio Player Row - always shown when activity has audio */}
         {audioPath && (
           <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-neutral-900">
@@ -1144,14 +1144,20 @@ export function MultiActivityPlayer({
                   >
                     {isSaving ? "Saving..." : "Save & Exit"}
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmitClick}
-                    disabled={isSubmitting}
-                    className="rounded-md bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit"}
-                  </button>
+                  {/* Show Submit only on the last activity's last question */}
+                  {currentIndex === activities.length - 1 &&
+                    (!questionNavigationState ||
+                      questionIndex ===
+                        questionNavigationState.totalItems - 1) && (
+                    <button
+                      type="button"
+                      onClick={handleSubmitClick}
+                      disabled={isSubmitting}
+                      className="rounded-md bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit"}
+                    </button>
+                  )}
                 </>
               )}
             </div>

@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     admin,
+    ai_content_proxy,
     ai_generation,
     ai_usage,
     announcements,
@@ -58,6 +59,8 @@ api_router.include_router(feedback.router)
 api_router.include_router(avatars.router)
 api_router.include_router(teacher_materials.router)
 api_router.include_router(ai_generation.router)
+api_router.include_router(ai_content_proxy.router)
+api_router.include_router(ai_content_proxy.book_content_router)
 api_router.include_router(ai_usage.router)
 api_router.include_router(vocabulary_explorer.router)
 api_router.include_router(skills.router)

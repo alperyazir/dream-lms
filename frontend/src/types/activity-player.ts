@@ -256,6 +256,7 @@ export const QUESTION_NAV_ACTIVITY_TYPES = [
   "listening_sentence_builder",
   "listening_word_builder",
   "speaking_open_response",
+  "mix_mode",
 ] as const
 
 export type QuestionNavActivityType =

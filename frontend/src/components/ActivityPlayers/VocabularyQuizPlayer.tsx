@@ -237,7 +237,7 @@ export function VocabularyQuizPlayer({
   }, [handlePrevious, handleNext, handleSelectOption, currentQuestion])
 
   return (
-    <div className="mx-auto flex min-h-full max-w-2xl flex-col items-center justify-center gap-6 p-4">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
       {/* Progress bar - hide when externally controlled */}
       {!isExternallyControlled && (
         <div className="w-full space-y-2">
@@ -256,9 +256,9 @@ export function VocabularyQuizPlayer({
       {/* Question card */}
       <Card className="w-full shadow-lg">
         <CardContent className="p-6">
-          {/* Audio button */}
-          <div className="mb-4 flex items-center justify-end">
-            {currentQuestion.audio_url && (
+          {/* Audio button - only show when a valid audio URL is available */}
+          {currentQuestion.audio_url && (
+            <div className="mb-4 flex items-center justify-end">
               <Button
                 variant="ghost"
                 size="icon"
@@ -275,8 +275,8 @@ export function VocabularyQuizPlayer({
                   )}
                 />
               </Button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Definition */}
           <div className="mb-6 rounded-lg bg-gradient-to-r from-teal-50 to-cyan-50 p-6 dark:from-teal-950/50 dark:to-cyan-950/50">
@@ -298,7 +298,7 @@ export function VocabularyQuizPlayer({
                     isSelected &&
                       "bg-teal-600 hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-700",
                     !isSelected &&
-                      "hover:border-teal-300 hover:bg-teal-50 dark:hover:border-teal-700 dark:hover:bg-teal-950/50",
+                      "hover:border-teal-300 hover:bg-teal-50 hover:text-gray-900 dark:hover:border-teal-700 dark:hover:bg-teal-950/50 dark:hover:text-gray-100",
                   )}
                   onClick={() =>
                     handleSelectOption(currentQuestion.question_id, option)
@@ -344,35 +344,35 @@ export function VocabularyQuizPlayer({
             ))}
           </div>
 
-          <Button
-            variant="outline"
-            onClick={handleNext}
-            disabled={currentIndex === totalQuestions - 1}
-          >
-            Next
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* Submit button - hidden when embedded in ActivityPlayer */}
-      {!hideSubmitButton && (
-        <div className="flex justify-center">
-          <Button
-            size="lg"
-            onClick={handleSubmitClick}
-            disabled={!allAnswered || isSubmitting}
-            className="min-w-[200px]"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Submitting...
-              </>
-            ) : (
-              "Submit Quiz"
-            )}
-          </Button>
+          {currentIndex < totalQuestions - 1 ? (
+            <Button
+              variant="outline"
+              onClick={handleNext}
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          ) : !hideSubmitButton ? (
+            <Button
+              onClick={handleSubmitClick}
+              disabled={!allAnswered || isSubmitting}
+              className="bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit"
+              )}
+            </Button>
+          ) : (
+            <Button variant="outline" disabled>
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          )}
         </div>
       )}
 

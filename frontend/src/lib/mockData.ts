@@ -280,6 +280,10 @@ export interface SpeakingOpenResponseActivity extends AIActivityBase {
   type: "speaking_open_response"
 }
 
+export interface MixModeActivity extends AIActivityBase {
+  type: "mix_mode"
+}
+
 export type ActivityConfig =
   | DragDropPictureActivity
   | DragDropPictureGroupActivity
@@ -303,6 +307,7 @@ export type ActivityConfig =
   | ListeningWordBuilderActivity
   | VocabularyMatchingActivity
   | SpeakingOpenResponseActivity
+  | MixModeActivity
 
 // ============================================================================
 

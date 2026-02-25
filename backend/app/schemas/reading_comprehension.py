@@ -114,21 +114,23 @@ class ReadingComprehensionQuestion(BaseModel):
 
 class ReadingComprehensionQuestionPublic(BaseModel):
     """
-    Public version of question without correct answer.
-
-    Used when returning questions to students before submission.
+    Public version of question with correct answer index for client-side scoring.
 
     Attributes:
         question_id: Unique identifier for the question.
         question_type: Type of question.
         question_text: The question or statement text.
         options: Answer options (for MCQ/True-False).
+        correct_index: Index of correct answer (for client-side scoring).
+        correct_answer: Correct answer text (for short_answer scoring).
     """
 
     question_id: str
     question_type: QuestionType
     question_text: str
     options: list[str] | None = Field(default=None)
+    correct_index: int | None = Field(default=None)
+    correct_answer: str | None = Field(default=None)
 
 
 class ReadingComprehensionActivity(BaseModel):

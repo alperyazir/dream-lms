@@ -18,19 +18,32 @@ import {
 } from "lucide-react"
 import { useMemo } from "react"
 import { AIQuizResults } from "@/components/ActivityPlayers/AIQuizResults"
+import { ListeningFillBlankResults } from "@/components/ActivityPlayers/ListeningFillBlankResults"
 import { ReadingComprehensionResults } from "@/components/ActivityPlayers/ReadingComprehensionResults"
+import { SentenceCorrectorResults } from "@/components/ActivityPlayers/SentenceCorrectorResults"
 import { SentenceBuilderResults } from "@/components/ActivityPlayers/SentenceBuilderResults"
 import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQuizResults"
 import { WordBuilderResults } from "@/components/ActivityPlayers/WordBuilderResults"
+import { WritingFillBlankResults } from "@/components/ActivityPlayers/WritingFillBlankResults"
+import { SpeakingOpenResponseResults } from "@/components/ActivityPlayers/SpeakingOpenResponseResults"
+import { VocabularyMatchingResults } from "@/components/ActivityPlayers/VocabularyMatchingResults"
+import { WritingFreeResponseResults } from "@/components/ActivityPlayers/WritingFreeResponseResults"
+import { MixModeResults } from "@/components/ActivityPlayers/MixModeResults"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   parseAIQuizResult,
+  parseFreeResponseResult,
+  parseListeningFillBlankResult,
+  parseMixModeResult,
   parseReadingComprehensionResult,
   parseSentenceBuilderResult,
+  parseSentenceCorrectorResult,
+  parseVocabularyMatchingResult,
   parseVocabularyQuizResult,
   parseWordBuilderResult,
+  parseWritingFillBlankResult,
   supportsDetailedReview,
 } from "@/lib/resultParsers"
 import { getAssignmentResult } from "@/services/assignmentsApi"
@@ -70,15 +83,33 @@ function AssignmentResultDetailPage() {
 
     switch (activity_type) {
       case "ai_quiz":
+      case "listening_quiz":
         return parseAIQuizResult(config_json, answers_json, score)
       case "vocabulary_quiz":
         return parseVocabularyQuizResult(config_json, answers_json, score)
       case "reading_comprehension":
         return parseReadingComprehensionResult(config_json, answers_json, score)
       case "sentence_builder":
+      case "listening_sentence_builder":
         return parseSentenceBuilderResult(config_json, answers_json, score)
       case "word_builder":
+      case "listening_word_builder":
         return parseWordBuilderResult(config_json, answers_json, score)
+      case "listening_fill_blank":
+        return parseListeningFillBlankResult(config_json, answers_json, score)
+      case "writing_sentence_corrector":
+        return parseSentenceCorrectorResult(config_json, answers_json, score)
+      case "writing_fill_blank":
+      case "grammar_fill_blank":
+        return parseWritingFillBlankResult(config_json, answers_json, score)
+      case "writing_free_response":
+        return parseFreeResponseResult(config_json, answers_json)
+      case "vocabulary_matching":
+        return parseVocabularyMatchingResult(config_json, answers_json, score)
+      case "speaking_open_response":
+        return parseFreeResponseResult(config_json, answers_json)
+      case "mix_mode":
+        return parseMixModeResult(config_json, answers_json, score)
       default:
         return null
     }
@@ -90,6 +121,16 @@ function AssignmentResultDetailPage() {
 
     // If we have parsed result, use actual counts
     if (parsedResult) {
+      if ("auto_scored" in parsedResult && "auto_correct" in parsedResult) {
+        // Mix Mode — use auto-scored counts only
+        const mixResult = parsedResult as { auto_scored: number; auto_correct: number; pending_review: number }
+        return {
+          correct: mixResult.auto_correct,
+          incorrect: mixResult.auto_scored - mixResult.auto_correct,
+          total: mixResult.auto_scored,
+          pendingReview: mixResult.pending_review,
+        }
+      }
       if ("question_results" in parsedResult) {
         // AI Quiz or Reading Comprehension
         const correct = parsedResult.question_results.filter(
@@ -126,6 +167,17 @@ function AssignmentResultDetailPage() {
         return {
           correct: parsedResult.correct_count,
           incorrect: parsedResult.total - parsedResult.correct_count,
+          total: parsedResult.total,
+        }
+      }
+      if ("item_results" in parsedResult) {
+        // Listening Fill-in-the-Blank
+        const correct = parsedResult.item_results.filter(
+          (r) => r.is_correct,
+        ).length
+        return {
+          correct,
+          incorrect: parsedResult.total - correct,
           total: parsedResult.total,
         }
       }
@@ -201,6 +253,9 @@ function AssignmentResultDetailPage() {
     )
   }
 
+  // Check if this is a manually-graded activity (no auto-scoring)
+  const isManuallyGraded = result.activity_type === "writing_free_response" || result.activity_type === "speaking_open_response"
+
   // Score color based on performance
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-600 dark:text-green-400"
@@ -230,100 +285,151 @@ function AssignmentResultDetailPage() {
 
           {/* Score Badge - Use calculated score from answerStats when available */}
           <div className="text-right">
-            {(() => {
-              // Calculate actual score from correct/incorrect if we have parsed results
-              const calculatedScore =
-                answerStats && answerStats.total > 0
-                  ? Math.round((answerStats.correct / answerStats.total) * 100)
-                  : Math.round(result.score)
-              return (
-                <>
-                  <div
-                    className={`text-5xl font-bold ${getScoreColor(calculatedScore)}`}
-                  >
-                    {calculatedScore}%
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Your final score
-                  </p>
-                </>
-              )
-            })()}
+            {isManuallyGraded ? (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <span className="text-amber-600 dark:text-amber-400 text-sm font-medium">
+                  Pending Teacher Review
+                </span>
+              </div>
+            ) : (
+              (() => {
+                const calculatedScore =
+                  answerStats && answerStats.total > 0
+                    ? Math.round((answerStats.correct / answerStats.total) * 100)
+                    : Math.round(result.score)
+                return (
+                  <>
+                    <div
+                      className={`text-5xl font-bold ${getScoreColor(calculatedScore)}`}
+                    >
+                      {calculatedScore}%
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your final score
+                    </p>
+                  </>
+                )
+              })()
+            )}
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
-        {/* Correct Answers */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              Correct Answers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {answerStats?.correct || 0}
-            </div>
-          </CardContent>
-        </Card>
+      {isManuallyGraded ? (
+        <div className="grid gap-4 md:grid-cols-2 mb-6">
+          {/* Items Submitted */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                Responses Submitted
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {parsedResult && "item_results" in parsedResult
+                  ? (parsedResult as any).item_results.filter((r: any) => r.submitted_text).length
+                  : "—"}/{parsedResult && "total" in parsedResult ? (parsedResult as any).total : "—"}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Incorrect Answers */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <XCircle className="h-4 w-4 text-red-600" />
-              Incorrect Answers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {answerStats?.incorrect || 0}
-            </div>
-          </CardContent>
-        </Card>
+          {/* Time Spent */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                Time Spent
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {(() => {
+                  const totalSeconds =
+                    result.time_spent_seconds ||
+                    result.time_spent_minutes * 60 ||
+                    0
+                  if (totalSeconds === 0) return "< 1 sec"
+                  const minutes = Math.floor(totalSeconds / 60)
+                  const seconds = totalSeconds % 60
+                  if (minutes === 0) return `${seconds} sec`
+                  return `${minutes} min ${seconds} sec`
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-3 mb-6">
+          {/* Correct Answers */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                Correct Answers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {answerStats?.correct || 0}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Time Spent */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              Time Spent
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {(() => {
-                // Use time_spent_seconds for precise display
-                const totalSeconds =
-                  result.time_spent_seconds ||
-                  result.time_spent_minutes * 60 ||
-                  0
+          {/* Incorrect Answers */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <XCircle className="h-4 w-4 text-red-600" />
+                Incorrect Answers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {answerStats?.incorrect || 0}
+              </div>
+            </CardContent>
+          </Card>
 
-                if (totalSeconds === 0) {
-                  return "< 1 sec"
-                }
+          {/* Time Spent */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                Time Spent
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {(() => {
+                  const totalSeconds =
+                    result.time_spent_seconds ||
+                    result.time_spent_minutes * 60 ||
+                    0
 
-                const minutes = Math.floor(totalSeconds / 60)
-                const seconds = totalSeconds % 60
+                  if (totalSeconds === 0) {
+                    return "< 1 sec"
+                  }
 
-                if (minutes === 0) {
-                  return `${seconds} sec`
-                }
+                  const minutes = Math.floor(totalSeconds / 60)
+                  const seconds = totalSeconds % 60
 
-                return `${minutes} min ${seconds} sec`
-              })()}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  if (minutes === 0) {
+                    return `${seconds} sec`
+                  }
+
+                  return `${minutes} min ${seconds} sec`
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Detailed Answer Review Section */}
       {parsedResult && supportsDetailedReview(result.activity_type) && (
         <div className="mt-6">
           <h2 className="text-xl font-semibold mb-4">Detailed Answer Review</h2>
-          {result.activity_type === "ai_quiz" &&
+          {(result.activity_type === "ai_quiz" || result.activity_type === "listening_quiz") &&
             "question_results" in parsedResult && (
               <AIQuizResults
                 result={
@@ -354,7 +460,7 @@ function AssignmentResultDetailPage() {
                 hideSummary
               />
             )}
-          {result.activity_type === "sentence_builder" &&
+          {(result.activity_type === "sentence_builder" || result.activity_type === "listening_sentence_builder") &&
             "sentence_results" in parsedResult && (
               <SentenceBuilderResults
                 result={
@@ -366,13 +472,91 @@ function AssignmentResultDetailPage() {
                 hideSummary
               />
             )}
-          {result.activity_type === "word_builder" &&
+          {(result.activity_type === "word_builder" || result.activity_type === "listening_word_builder") &&
             "word_results" in parsedResult && (
               <WordBuilderResults
                 result={
                   parsedResult as ReturnType<typeof parseWordBuilderResult> &
                     object
                 }
+              />
+            )}
+          {result.activity_type === "listening_fill_blank" &&
+            "item_results" in parsedResult && (
+              <ListeningFillBlankResults
+                result={
+                  parsedResult as ReturnType<
+                    typeof parseListeningFillBlankResult
+                  > &
+                    object
+                }
+                hideSummary
+              />
+            )}
+          {result.activity_type === "writing_sentence_corrector" &&
+            "item_results" in parsedResult && (
+              <SentenceCorrectorResults
+                result={
+                  parsedResult as ReturnType<
+                    typeof parseSentenceCorrectorResult
+                  > &
+                    object
+                }
+                hideSummary
+              />
+            )}
+          {(result.activity_type === "writing_fill_blank" || result.activity_type === "grammar_fill_blank") &&
+            "item_results" in parsedResult && (
+              <WritingFillBlankResults
+                result={
+                  parsedResult as ReturnType<
+                    typeof parseWritingFillBlankResult
+                  > &
+                    object
+                }
+                hideSummary
+              />
+            )}
+          {result.activity_type === "writing_free_response" &&
+            "item_results" in parsedResult && (
+              <WritingFreeResponseResults
+                result={
+                  parsedResult as ReturnType<typeof parseFreeResponseResult> &
+                    object
+                }
+                hideSummary
+              />
+            )}
+          {result.activity_type === "vocabulary_matching" &&
+            "item_results" in parsedResult && (
+              <VocabularyMatchingResults
+                result={
+                  parsedResult as ReturnType<
+                    typeof parseVocabularyMatchingResult
+                  > &
+                    object
+                }
+                hideSummary
+              />
+            )}
+          {result.activity_type === "speaking_open_response" &&
+            "item_results" in parsedResult && (
+              <SpeakingOpenResponseResults
+                result={
+                  parsedResult as ReturnType<typeof parseFreeResponseResult> &
+                    object
+                }
+                hideSummary
+              />
+            )}
+          {result.activity_type === "mix_mode" &&
+            "question_results" in parsedResult && (
+              <MixModeResults
+                result={
+                  parsedResult as ReturnType<typeof parseMixModeResult> &
+                    object
+                }
+                hideSummary
               />
             )}
         </div>

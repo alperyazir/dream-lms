@@ -2,26 +2,20 @@
  * Step Select Source Component
  * Story 8.2, Story 9.8, Story 27.x (Unified Assignment)
  *
- * Step 0: Source selection for assignment creation
- * Supports both Book Activities and AI Content from library
+ * Step 0: Book selection for assignment creation
+ * Teacher picks a book; content type (book activities vs AI) is chosen in Step 1.
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { BookOpen, FileText, Search, Sparkles } from "lucide-react"
+import { useQuery, useQueries } from "@tanstack/react-query"
+import { BookOpen, Search, Sparkles } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useContentLibrary } from "@/hooks/useContentLibrary"
-import {
-  getActivityTypeColorClasses,
-  getActivityTypeConfig,
-} from "@/lib/activityTypeConfig"
 import { booksApi, getAuthenticatedCoverUrl } from "@/services/booksApi"
+import { listBookContent } from "@/services/contentLibraryApi"
 import type { Book } from "@/types/book"
-import type { ContentItem } from "@/types/content-library"
 
 export type SourceType = "book" | "ai_content"
 
@@ -103,21 +97,13 @@ function BookCoverThumbnail({
 }
 
 interface StepSelectSourceProps {
-  sourceType: SourceType
-  onSourceTypeChange: (type: SourceType) => void
   selectedBook: Book | null
   onSelectBook: (book: Book | null) => void
-  selectedContent: ContentItem | null
-  onSelectContent: (content: ContentItem | null) => void
 }
 
 export function StepSelectSource({
-  sourceType,
-  onSourceTypeChange,
   selectedBook,
   onSelectBook,
-  selectedContent,
-  onSelectContent,
 }: StepSelectSourceProps) {
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -130,38 +116,26 @@ export function StepSelectSource({
         limit: 100,
       }),
     staleTime: 5 * 60 * 1000,
-    enabled: sourceType === "book",
-  })
-
-  // Fetch AI content library
-  const { data: contentData, isLoading: contentLoading } = useContentLibrary({
-    page_size: 100,
   })
 
   const books = booksData?.items ?? []
-  const contentItems = contentData?.items ?? []
 
-  // Filter content items by search term
-  const filteredContent = searchTerm
-    ? contentItems.filter(
-        (item) =>
-          item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.activity_type.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    : contentItems
+  // Fetch AI content counts for all visible books
+  const aiCountQueries = useQueries({
+    queries: books.map((book) => ({
+      queryKey: ["bookContent", "count", book.id],
+      queryFn: () => listBookContent(book.id, { page: 1, page_size: 1 }),
+      staleTime: 5 * 60 * 1000,
+      enabled: books.length > 0,
+    })),
+  })
 
-  // Handle tab change
-  const handleTabChange = (value: string) => {
-    const newSourceType = value as SourceType
-    onSourceTypeChange(newSourceType)
-    setSearchTerm("")
-    // Clear selections when switching tabs
-    if (newSourceType === "book") {
-      onSelectContent(null)
-    } else {
-      onSelectBook(null)
-    }
-  }
+  // Map book id → AI content count
+  const aiContentCounts = new Map<number, number>()
+  books.forEach((book, i) => {
+    const data = aiCountQueries[i]?.data
+    if (data) aiContentCounts.set(book.id, data.total)
+  })
 
   // Render selected book display
   const renderSelectedBook = () => (
@@ -189,6 +163,21 @@ export function StepSelectSource({
                       : "activities"}
                   </Badge>
                 </div>
+                <div className="mt-1.5">
+                  {(aiContentCounts.get(selectedBook!.id) ?? 0) > 0 ? (
+                    <Badge
+                      variant="secondary"
+                      className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 text-xs flex items-center gap-1 w-fit"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      {aiContentCounts.get(selectedBook!.id)} AI Content
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      No AI Content
+                    </span>
+                  )}
+                </div>
                 {selectedBook!.description && (
                   <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                     {selectedBook!.description}
@@ -208,119 +197,30 @@ export function StepSelectSource({
     </Card>
   )
 
-  // Render selected AI content display
-  const renderSelectedContent = () => {
-    const config = getActivityTypeConfig(selectedContent!.activity_type)
-    const colorClasses = getActivityTypeColorClasses(config.color)
-    const IconComponent = config.icon
-
-    return (
-      <Card className="bg-teal-50 dark:bg-teal-950 border-teal-200 dark:border-teal-800">
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-            <div
-              className={`w-20 h-28 rounded flex items-center justify-center ${colorClasses.bg}`}
-            >
-              <IconComponent className={`w-10 h-10 ${colorClasses.text}`} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-semibold text-foreground text-lg">
-                    {selectedContent!.title}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    {config.label}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <Badge variant="outline" className="text-xs">
-                      {selectedContent!.item_count}{" "}
-                      {selectedContent!.item_count === 1 ? "item" : "items"}
-                    </Badge>
-                    {selectedContent!.book_title && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 text-xs"
-                      >
-                        <BookOpen className="w-3 h-3 mr-1" />
-                        {selectedContent!.book_title}
-                      </Badge>
-                    )}
-                    {selectedContent!.material_name && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 text-xs"
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        {selectedContent!.material_name}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => onSelectContent(null)}
-                  className="text-sm text-teal-600 dark:text-teal-400 hover:underline flex-shrink-0 ml-2"
-                >
-                  Change
-                </button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <div className="space-y-4 h-full flex flex-col">
       <div>
         <h3 className="text-lg font-semibold mb-2 text-foreground">
-          Select Content Source
+          Select a Book
         </h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Choose between book activities or AI-generated content from your
-          library
+          Choose a book to create an assignment from its activities or AI content
         </p>
       </div>
 
-      {/* Show selected item if any */}
-      {sourceType === "book" && selectedBook && renderSelectedBook()}
-      {sourceType === "ai_content" &&
-        selectedContent &&
-        renderSelectedContent()}
+      {/* Show selected book if any */}
+      {selectedBook && renderSelectedBook()}
 
       {/* Show selection UI if nothing selected */}
-      {!(
-        (sourceType === "book" && selectedBook) ||
-        (sourceType === "ai_content" && selectedContent)
-      ) && (
-        <Tabs
-          value={sourceType}
-          onValueChange={handleTabChange}
-          className="flex-1 flex flex-col min-h-0"
-        >
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="book" className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4" />
-              Book Activities
-            </TabsTrigger>
-            <TabsTrigger value="ai_content" className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              AI Content
-            </TabsTrigger>
-          </TabsList>
-
+      {!selectedBook && (
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Search */}
           <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder={
-                  sourceType === "book"
-                    ? "Search books..."
-                    : "Search AI content..."
-                }
+                placeholder="Search books..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -328,7 +228,7 @@ export function StepSelectSource({
             </div>
           </div>
 
-          <TabsContent value="book" className="flex-1 overflow-auto mt-0">
+          <div className="flex-1 overflow-auto">
             {booksLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -369,6 +269,21 @@ export function StepSelectSource({
                                 : "activities"}
                             </Badge>
                           </div>
+                          <div className="mt-1.5">
+                            {(aiContentCounts.get(book.id) ?? 0) > 0 ? (
+                              <Badge
+                                variant="secondary"
+                                className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 text-xs flex items-center gap-1 w-fit"
+                              >
+                                <Sparkles className="h-3 w-3" />
+                                {aiContentCounts.get(book.id)} AI Content
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                No AI Content
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -376,87 +291,8 @@ export function StepSelectSource({
                 ))}
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="ai_content" className="flex-1 overflow-auto mt-0">
-            {contentLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16" />
-                ))}
-              </div>
-            ) : filteredContent.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Sparkles className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                <p>No AI content found</p>
-                <p className="text-sm mt-1">
-                  Generate content from the DreamAI section
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {filteredContent.map((content) => {
-                  const config = getActivityTypeConfig(content.activity_type)
-                  const colorClasses = getActivityTypeColorClasses(config.color)
-                  const IconComponent = config.icon
-
-                  return (
-                    <div
-                      key={content.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
-                      onClick={() => onSelectContent(content)}
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses.bg}`}
-                      >
-                        <IconComponent
-                          className={`w-5 h-5 ${colorClasses.text}`}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm text-foreground truncate">
-                          {content.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground">
-                          {config.label}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge variant="outline" className="text-xs">
-                          {content.item_count}{" "}
-                          {content.item_count === 1 ? "item" : "items"}
-                        </Badge>
-                        {content.source_type === "book" &&
-                          content.book_title && (
-                            <Badge
-                              variant="secondary"
-                              className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 text-xs max-w-[120px] truncate"
-                            >
-                              <BookOpen className="w-3 h-3 mr-1 flex-shrink-0" />
-                              <span className="truncate">
-                                {content.book_title}
-                              </span>
-                            </Badge>
-                          )}
-                        {content.material_name && (
-                          <Badge
-                            variant="secondary"
-                            className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 text-xs max-w-[120px] truncate"
-                          >
-                            <FileText className="w-3 h-3 mr-1 flex-shrink-0" />
-                            <span className="truncate">
-                              {content.material_name}
-                            </span>
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       )}
     </div>
   )

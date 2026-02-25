@@ -3,12 +3,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { BookOpen, Plus } from "lucide-react"
 import { useMemo, useState } from "react"
 import { FiClipboard } from "react-icons/fi"
-import { AssignmentCreationDialog } from "@/components/assignments/AssignmentCreationDialog"
 import {
   AssignmentFilters,
   type AssignmentFiltersState,
 } from "@/components/assignments/AssignmentFilters"
 import { AssignmentTableView } from "@/components/assignments/AssignmentTableView"
+import { AssignmentWizardSheet } from "@/components/assignments/AssignmentWizardSheet"
 import { DeleteAssignmentDialog } from "@/components/assignments/DeleteAssignmentDialog"
 import { TeacherAssignmentCard } from "@/components/assignments/TeacherAssignmentCard"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
@@ -31,11 +31,13 @@ function TeacherAssignmentsPage() {
     "teacher-assignments",
     "grid",
   )
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [deletingAssignment, setDeletingAssignment] =
     useState<AssignmentListItem | null>(null)
   const [filters, setFilters] = useState<AssignmentFiltersState>({})
   const [sortBy, setSortBy] = useState<"due_date">("due_date")
+  const [isWizardOpen, setIsWizardOpen] = useState(false)
+  const [wizardMode, setWizardMode] = useState<"create" | "edit">("create")
+  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null)
 
   const {
     data: assignments,
@@ -89,7 +91,15 @@ function TeacherAssignmentsPage() {
   }, [assignments, filters])
 
   const handleCreateAssignment = () => {
-    setIsDialogOpen(true)
+    setWizardMode("create")
+    setEditingAssignmentId(null)
+    setIsWizardOpen(true)
+  }
+
+  const handleEdit = (assignment: AssignmentListItem) => {
+    setWizardMode("edit")
+    setEditingAssignmentId(assignment.id)
+    setIsWizardOpen(true)
   }
 
   const handleView = (assignment: AssignmentListItem) => {
@@ -183,6 +193,7 @@ function TeacherAssignmentsPage() {
               key={assignment.id}
               assignment={assignment}
               onView={() => handleView(assignment)}
+              onEdit={() => handleEdit(assignment)}
               onDelete={() => handleDelete(assignment)}
             />
           ))}
@@ -191,24 +202,32 @@ function TeacherAssignmentsPage() {
         <AssignmentTableView
           assignments={filteredAndSortedAssignments}
           onView={handleView}
+          onEdit={handleEdit}
           onDelete={handleDelete}
           sortBy={sortBy}
           onSort={(column) => setSortBy(column as "due_date")}
         />
       )}
 
-      {/* Assignment Creation Dialog */}
-      <AssignmentCreationDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        mode="create"
-      />
-
       {/* Delete Assignment Dialog */}
       <DeleteAssignmentDialog
         isOpen={!!deletingAssignment}
         onClose={() => setDeletingAssignment(null)}
         assignment={deletingAssignment}
+      />
+
+      {/* Assignment Wizard Sheet */}
+      <AssignmentWizardSheet
+        open={isWizardOpen}
+        onOpenChange={(open) => {
+          setIsWizardOpen(open)
+          if (!open) {
+            setEditingAssignmentId(null)
+            setWizardMode("create")
+          }
+        }}
+        mode={wizardMode}
+        assignmentId={editingAssignmentId ?? undefined}
       />
     </PageContainer>
   )

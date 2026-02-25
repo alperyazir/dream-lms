@@ -379,7 +379,7 @@ def get_tts_manager() -> TTSManager:
     """
     global _manager
     if _manager is None:
-        _manager = TTSManager()
+        _manager = create_default_manager()
     return _manager
 
 
@@ -414,10 +414,13 @@ def create_default_manager(settings: TTSSettings | None = None) -> TTSManager:
 
     # Azure TTS provider (fallback when Edge TTS fails)
     if settings.is_provider_configured(TTSProviderType.AZURE):
-        from app.services.tts.providers.azure import AzureTTSProvider
+        try:
+            from app.services.tts.providers.azure import AzureTTSProvider
 
-        azure = AzureTTSProvider(settings=settings)
-        manager.register_provider(TTSProviderType.AZURE, azure)
+            azure = AzureTTSProvider(settings=settings)
+            manager.register_provider(TTSProviderType.AZURE, azure)
+        except ImportError:
+            logger.warning("Azure TTS SDK not installed, skipping Azure provider")
 
     logger.info(
         f"Created TTS manager with {len(manager.get_available_providers())} providers"

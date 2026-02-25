@@ -776,6 +776,16 @@ class ActivityType(str, Enum):
     sentence_builder = "sentence_builder"
     word_builder = "word_builder"
     vocabulary_matching = "vocabulary_matching"
+    # Epic 30: Listening, Writing, Speaking, Mix Mode
+    listening_quiz = "listening_quiz"
+    listening_fill_blank = "listening_fill_blank"
+    listening_sentence_builder = "listening_sentence_builder"
+    listening_word_builder = "listening_word_builder"
+    writing_fill_blank = "writing_fill_blank"
+    writing_sentence_corrector = "writing_sentence_corrector"
+    writing_free_response = "writing_free_response"
+    speaking_open_response = "speaking_open_response"
+    mix_mode = "mix_mode"
 
 
 class ActivityBase(SQLModel):
@@ -1799,6 +1809,9 @@ class TeacherGeneratedContent(SQLModel, table=True):
     # Skill classification (Epic 30 - Story 30.3)
     skill_id: uuid.UUID | None = Field(default=None, foreign_key="skill_categories.id")
     format_id: uuid.UUID | None = Field(default=None, foreign_key="activity_formats.id")
+
+    # DCS sync
+    dcs_content_id: str | None = Field(default=None)  # DCS-assigned content ID after sync
 
     # Usage tracking
     is_used: bool = Field(default=False)  # True if used in assignment

@@ -6,7 +6,13 @@ Provider implementations:
 - Azure TTS Provider (Story 27.6)
 """
 
-from app.services.tts.providers.azure import AzureTTSProvider
 from app.services.tts.providers.edge import EdgeTTSProvider
 
-__all__ = ["AzureTTSProvider", "EdgeTTSProvider"]
+__all__ = ["EdgeTTSProvider"]
+
+try:
+    from app.services.tts.providers.azure import AzureTTSProvider
+
+    __all__.append("AzureTTSProvider")
+except ImportError:
+    AzureTTSProvider = None  # type: ignore[assignment,misc]

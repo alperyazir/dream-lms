@@ -421,7 +421,7 @@ async def generate_tts_audio(
 )
 async def generate_passage_audio(
     request: dict,
-    current_user: Annotated[User, TeacherOrHigher],
+    current_user: CurrentUser,
 ):
     """
     Generate passage narration audio with word-level timestamps.
@@ -1892,6 +1892,61 @@ async def save_content_to_library(
             f"teacher_id={teacher_id}"
         )
 
+        # Also upload to DCS so it appears in the book-centric library
+        if book_id:
+            try:
+                from app.services.dcs_ai_content_client import get_dcs_ai_content_client
+                from app.services.dream_storage_client import DreamCentralStorageClient
+
+                dcs_ai = get_dcs_ai_content_client(DreamCentralStorageClient())
+
+                # Compute item count from content data
+                item_count = 0
+                if request.activity_type == "mix_mode":
+                    item_count = len(content_data.get("questions", []))
+                else:
+                    for key in ("questions", "items", "sentences", "words", "pairs"):
+                        if key in content_data:
+                            item_count = len(content_data[key])
+                            break
+
+                has_audio = request.activity_type in (
+                    "listening_fill_blank", "listening_quiz",
+                    "listening_sentence_builder", "listening_word_builder",
+                    "vocabulary_matching", "word_builder",
+                )
+                has_passage = request.activity_type in (
+                    "reading_comprehension", "reading", "mix_mode",
+                )
+                dcs_entry = await dcs_ai.create_content(book_id, {
+                    "manifest": {
+                        "activity_type": request.activity_type,
+                        "title": request.title,
+                        "item_count": item_count,
+                        "has_audio": has_audio,
+                        "has_passage": has_passage,
+                        "difficulty": content_data.get("difficulty"),
+                        "language": content_data.get("language", "en"),
+                        "created_by": str(current_user.id),
+                        "created_by_name": current_user.full_name or current_user.email,
+                    },
+                    "content": content_data,
+                })
+                dcs_cid = dcs_entry.get("content_id") or dcs_entry.get("id")
+                if dcs_cid:
+                    generated_content.dcs_content_id = dcs_cid
+                    db.add(generated_content)
+                    await db.commit()
+                logger.info(
+                    f"Content also saved to DCS: book_id={book_id}, "
+                    f"dcs_content_id={dcs_cid}"
+                )
+            except Exception as dcs_err:
+                logger.warning(
+                    f"Failed to save content to DCS (non-fatal): {dcs_err}",
+                    exc_info=True,
+                )
+
         return SaveToLibraryResponse(
             content_id=generated_content.id,
             title=generated_content.title,
@@ -2716,8 +2771,11 @@ async def generate_content_v2(
     if request.skill_slug == "mix":
         try:
             from app.services.ai_generation.mix_mode_service import MixModeService
+            from app.services.dcs_ai_content_client import get_dcs_ai_content_client
+            from app.services.dream_storage_client import DreamCentralStorageClient
 
-            mix_service = MixModeService(dcs_client, llm_manager, tts_manager)
+            dcs_ai_content = get_dcs_ai_content_client(DreamCentralStorageClient())
+            mix_service = MixModeService(dcs_client, llm_manager, tts_manager, dcs_ai_content_client=dcs_ai_content)
             mix_activity = await mix_service.generate_activity(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
@@ -2725,6 +2783,31 @@ async def generate_content_v2(
                 difficulty=request.difficulty,
                 language=request.language,
             )
+
+            # Ensure audio URLs are set for listening/vocabulary questions
+            # Same TTS on-demand pattern used by standalone activities
+            _MIX_AUDIO_MAP: dict[tuple[str, str], tuple[str, str]] = {
+                # (skill_slug, format_slug): (text_field, fallback_field)
+                ("listening", "fill_blank"): ("full_sentence", "display_sentence"),
+                ("listening", "sentence_builder"): ("correct_sentence", ""),
+                ("listening", "word_builder"): ("correct_word", ""),
+                ("vocabulary", "word_builder"): ("correct_word", ""),
+                ("vocabulary", "matching"): ("word", ""),
+            }
+            lang = request.language or "en"
+            for q in mix_activity.questions:
+                key = (q.skill_slug, q.format_slug)
+                if key in _MIX_AUDIO_MAP:
+                    text_field, fallback_field = _MIX_AUDIO_MAP[key]
+                    text = q.question_data.get(text_field) or q.question_data.get(fallback_field, "")
+                    if text:
+                        q.question_data["audio_url"] = (
+                            f"/api/v1/ai/tts/audio"
+                            f"?text={quote(text, safe='')}"
+                            f"&lang={lang}"
+                        )
+                        q.question_data["audio_status"] = "ready"
+
             await storage.save_mix_mode_activity(mix_activity)
 
             rate_limiter.record_usage(str(current_user.id), 1)

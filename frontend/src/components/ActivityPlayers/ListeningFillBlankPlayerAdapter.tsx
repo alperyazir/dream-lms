@@ -6,8 +6,9 @@
  * from the word bank to fill multiple blanks.
  */
 
-import { Loader2, Pause, Play, Volume2 } from "lucide-react"
+import { Loader2, Pause, Play } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import type { ActivityConfig } from "@/lib/mockData"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
@@ -231,92 +232,88 @@ export function ListeningFillBlankPlayerAdapter({
   const sentenceParts = currentItem.display_sentence.split("_______")
 
   return (
-    <div className="flex flex-col items-center gap-6 p-6 max-w-2xl mx-auto">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
       <audio ref={audioRef} preload="auto" />
 
-      {/* Audio Play Button */}
-      <div className="flex flex-col items-center gap-2">
-        {currentItem.audio_url &&
-        currentItem.audio_status === "ready" ? (
-          <button
-            onClick={handlePlayAudio}
-            className={cn(
-              "flex items-center justify-center w-16 h-16 rounded-full transition-all shadow-lg",
-              isPlaying
-                ? "bg-teal-600 hover:bg-teal-700 scale-110"
-                : "bg-teal-500 hover:bg-teal-600",
-            )}
-          >
-            {audioLoading ? (
-              <Loader2 className="h-7 w-7 text-white animate-spin" />
-            ) : isPlaying ? (
-              <Pause className="h-7 w-7 text-white" />
-            ) : (
-              <Play className="h-7 w-7 text-white ml-0.5" />
-            )}
-          </button>
-        ) : (
-          <div className="text-sm text-muted-foreground flex items-center gap-1">
-            <Volume2 className="h-4 w-4" />
-            Audio not available
+      <Card className="w-full shadow-lg">
+        <CardContent className="p-6">
+          {/* Audio play button — only shown when audio is available */}
+          {currentItem.audio_url &&
+          currentItem.audio_status === "ready" && (
+            <div className="mb-4 flex justify-center">
+              <button
+                onClick={handlePlayAudio}
+                className={cn(
+                  "flex items-center justify-center w-12 h-12 rounded-full transition-all shadow-md",
+                  isPlaying
+                    ? "bg-teal-600 hover:bg-teal-700 scale-110"
+                    : "bg-teal-500 hover:bg-teal-600",
+                )}
+              >
+                {audioLoading ? (
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="h-5 w-5 text-white" />
+                ) : (
+                  <Play className="h-5 w-5 text-white ml-0.5" />
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Sentence with inline blank slots */}
+          <div className="mb-6 rounded-lg bg-gradient-to-r from-teal-50 to-cyan-50 p-6 dark:from-teal-950/50 dark:to-cyan-950/50">
+            <p className="text-center text-lg font-medium leading-relaxed text-gray-800 dark:text-gray-200">
+              {sentenceParts.map((part, pIdx) => (
+                <span key={pIdx}>
+                  {part}
+                  {pIdx < sentenceParts.length - 1 && (
+                    <button
+                      onClick={() => handleBlankTap(pIdx)}
+                      disabled={showResults}
+                      className={cn(
+                        "inline-block min-w-[80px] mx-1 px-3 py-0.5 border-b-2 text-center text-lg font-semibold transition-all rounded-t-md",
+                        filledWords[pIdx]
+                          ? "border-teal-500 text-teal-700 dark:text-teal-300 bg-white/60 dark:bg-teal-900/30 hover:bg-white dark:hover:bg-teal-900/40 cursor-pointer"
+                          : "border-gray-300 text-gray-400 cursor-default",
+                        showCorrectAnswers &&
+                          correctAnswers.has(currentItem.item_id) &&
+                          "border-green-500 text-green-700",
+                      )}
+                    >
+                      {filledWords[pIdx] || "___"}
+                    </button>
+                  )}
+                </span>
+              ))}
+            </p>
           </div>
-        )}
-      </div>
 
-      {/* Sentence with inline blank slots */}
-      <div className="text-center text-lg leading-relaxed">
-        {sentenceParts.map((part, pIdx) => (
-          <span key={pIdx}>
-            {part}
-            {pIdx < sentenceParts.length - 1 && (
-              <button
-                onClick={() => handleBlankTap(pIdx)}
-                disabled={showResults}
-                className={cn(
-                  "inline-block min-w-[100px] mx-1 px-3 py-1 border-b-2 text-center text-lg font-medium transition-all rounded-t-md",
-                  filledWords[pIdx]
-                    ? "border-teal-500 text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100 dark:hover:bg-teal-900/30 cursor-pointer"
-                    : "border-gray-300 text-gray-400 cursor-default",
-                  showCorrectAnswers &&
-                    correctAnswers.has(currentItem.item_id) &&
-                    "border-green-500 text-green-700",
-                )}
-              >
-                {filledWords[pIdx] || "___"}
-              </button>
-            )}
-          </span>
-        ))}
-      </div>
-
-      {/* Word bank — tappable buttons */}
-      {currentItem.word_bank && currentItem.word_bank.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2 mt-2">
-          {currentItem.word_bank.map((word, wIdx) => {
-            const isUsed = usedWords.has(word)
-            return (
-              <button
-                key={wIdx}
-                onClick={() => handleWordBankTap(word)}
-                disabled={showResults || isUsed}
-                className={cn(
-                  "px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all",
-                  isUsed
-                    ? "border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 opacity-50 cursor-not-allowed"
-                    : "border-gray-200 dark:border-gray-600 hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-700 dark:text-gray-300 cursor-pointer",
-                )}
-              >
-                {word}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Item counter */}
-      <div className="text-sm text-muted-foreground">
-        Item {qIndex + 1} of {items.length}
-      </div>
+          {/* Word bank */}
+          {currentItem.word_bank && currentItem.word_bank.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2">
+              {currentItem.word_bank.map((word, wIdx) => {
+                const isUsed = usedWords.has(word)
+                return (
+                  <button
+                    key={wIdx}
+                    onClick={() => handleWordBankTap(word)}
+                    disabled={showResults || isUsed}
+                    className={cn(
+                      "px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all",
+                      isUsed
+                        ? "border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 opacity-50 cursor-not-allowed"
+                        : "border-gray-200 dark:border-gray-600 hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-700 dark:text-gray-300 cursor-pointer",
+                    )}
+                  >
+                    {word}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

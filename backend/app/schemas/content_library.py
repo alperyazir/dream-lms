@@ -108,3 +108,40 @@ class AssignContentResponse(BaseModel):
     message: str
     assignment_id: UUID
     student_count: int
+
+
+# =============================================================================
+# Book-Centric Content Library Schemas
+# =============================================================================
+
+
+class BookContentItem(BaseModel):
+    """Content item stored in DCS for a specific book."""
+
+    content_id: str = Field(description="DCS content ID")
+    activity_type: str = Field(description="Type of activity")
+    title: str = Field(description="Activity title")
+    item_count: int = Field(default=0, description="Number of questions/items")
+    has_audio: bool = Field(default=False, description="Whether content has audio")
+    difficulty: str | None = Field(default=None, description="Difficulty level")
+    language: str | None = Field(default=None, description="Content language")
+    created_by_id: str | None = Field(default=None, description="Creator teacher UUID")
+    created_by_name: str | None = Field(default=None, description="Creator display name")
+    book_id: int = Field(description="DCS book ID")
+
+
+class BookContentListResponse(BaseModel):
+    """Paginated response for book content listing."""
+
+    items: list[BookContentItem]
+    total: int
+    page: int
+    page_size: int
+    has_more: bool
+    book_id: int
+
+
+class BookContentDetail(BookContentItem):
+    """Detailed book content with full activity data."""
+
+    content: dict[str, Any] = Field(description="Full activity data")

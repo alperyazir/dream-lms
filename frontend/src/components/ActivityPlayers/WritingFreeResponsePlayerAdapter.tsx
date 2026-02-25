@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import type { ActivityConfig } from "@/lib/mockData"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
@@ -136,68 +137,55 @@ export function WritingFreeResponsePlayerAdapter({
   const isOverMax = wordCount > currentItem.max_words
 
   return (
-    <div className="flex flex-col items-center gap-6 p-6 max-w-2xl mx-auto">
-      {/* Context card */}
-      {currentItem.context && (
-        <div className="w-full px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-          <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
-            Context
-          </p>
-          <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-            {currentItem.context}
-          </p>
-        </div>
-      )}
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4 sm:p-6">
+      <Card className="w-full shadow-lg">
+        <CardContent className="p-6">
+          {/* Prompt */}
+          <div className="w-full text-center mb-6">
+            <p className="text-lg font-medium">
+              {currentItem.prompt}
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Write {currentItem.min_words}–{currentItem.max_words} words
+            </p>
+          </div>
 
-      {/* Prompt */}
-      <div className="w-full text-center">
-        <p className="text-lg font-medium">
-          {currentItem.prompt}
-        </p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Write {currentItem.min_words}–{currentItem.max_words} words
-        </p>
-      </div>
+          {/* Textarea */}
+          <div className="w-full space-y-2">
+            <textarea
+              value={userAnswer}
+              onChange={(e) =>
+                handleInputChange(currentItem.item_id, e.target.value)
+              }
+              disabled={showResults}
+              className={cn(
+                "w-full px-4 py-3 border rounded-lg text-base bg-background resize-none outline-none transition-colors min-h-[160px]",
+                "border-gray-300 dark:border-gray-600 focus:border-teal-500 focus:ring-1 focus:ring-teal-500",
+              )}
+              placeholder="Write your response here..."
+              autoFocus
+            />
 
-      {/* Textarea */}
-      <div className="w-full space-y-2">
-        <textarea
-          value={userAnswer}
-          onChange={(e) =>
-            handleInputChange(currentItem.item_id, e.target.value)
-          }
-          disabled={showResults}
-          className={cn(
-            "w-full px-4 py-3 border rounded-lg text-base bg-background resize-none outline-none transition-colors min-h-[160px]",
-            "border-gray-300 dark:border-gray-600 focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500",
-          )}
-          placeholder="Write your response here..."
-          autoFocus
-        />
-
-        {/* Word counter */}
-        <div className="flex justify-between text-xs">
-          <span
-            className={cn(
-              "font-medium",
-              isUnderMin && "text-amber-600",
-              isOverMax && "text-red-600",
-              !isUnderMin && !isOverMax && wordCount > 0 && "text-green-600",
-              wordCount === 0 && "text-muted-foreground",
-            )}
-          >
-            {wordCount} word{wordCount !== 1 ? "s" : ""}
-          </span>
-          <span className="text-muted-foreground">
-            {currentItem.min_words}–{currentItem.max_words} words
-          </span>
-        </div>
-      </div>
-
-      {/* Item counter */}
-      <div className="text-sm text-muted-foreground">
-        Item {qIndex + 1} of {items.length}
-      </div>
+            {/* Word counter */}
+            <div className="flex justify-between text-xs">
+              <span
+                className={cn(
+                  "font-medium",
+                  isUnderMin && "text-amber-600",
+                  isOverMax && "text-red-600",
+                  !isUnderMin && !isOverMax && wordCount > 0 && "text-green-600",
+                  wordCount === 0 && "text-muted-foreground",
+                )}
+              >
+                {wordCount} word{wordCount !== 1 ? "s" : ""}
+              </span>
+              <span className="text-muted-foreground">
+                {currentItem.min_words}–{currentItem.max_words} words
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

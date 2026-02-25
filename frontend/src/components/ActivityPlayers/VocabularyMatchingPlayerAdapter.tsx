@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Check, RotateCw, Volume2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import type { ActivityConfig, VocabularyMatchingActivity } from "@/lib/mockData"
 
 interface MatchingContent {
@@ -202,41 +203,36 @@ export function VocabularyMatchingPlayerAdapter({
   ).length
 
   return (
-    <div className="mx-auto max-w-5xl p-4 sm:p-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Match Words to Definitions</h2>
-          <p className="text-sm text-muted-foreground">
-            Click a word, then click its matching definition.{" "}
-            {matchedCount}/{totalPairs} matched
-          </p>
-        </div>
-        {!showResults && (
-          <Button variant="outline" size="sm" onClick={handleReset}>
-            <RotateCw className="mr-1 h-4 w-4" />
-            Reset
-          </Button>
-        )}
-      </div>
+    <div className="mx-auto flex max-w-5xl flex-col items-center justify-center min-h-full p-4 sm:p-6">
+      <Card className="w-full shadow-lg">
+        <CardContent className="p-6">
+          {/* Reset button */}
+          {!showResults && (
+            <div className="mb-4 flex justify-end">
+              <Button variant="outline" size="sm" onClick={handleReset}>
+                <RotateCw className="mr-1 h-4 w-4" />
+                Reset
+              </Button>
+            </div>
+          )}
 
-      {/* Results banner */}
-      {showResults && (
-        <div
-          className={`mb-6 rounded-lg p-4 text-center font-medium ${
-            correctCount === totalPairs
-              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-          }`}
-        >
-          {correctCount === totalPairs
-            ? "Perfect! All matches are correct!"
-            : `${correctCount} of ${totalPairs} correct`}
-        </div>
-      )}
+          {/* Results banner */}
+          {showResults && (
+            <div
+              className={`mb-6 rounded-lg p-4 text-center font-medium ${
+                correctCount === totalPairs
+                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+              }`}
+            >
+              {correctCount === totalPairs
+                ? "Perfect! All matches are correct!"
+                : `${correctCount} of ${totalPairs} correct`}
+            </div>
+          )}
 
-      {/* Two column layout */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Two column layout */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Words column */}
         <div>
           <h3 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -265,14 +261,7 @@ export function VocabularyMatchingPlayerAdapter({
                   `}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{w.word}</span>
-                      {w.cefr_level && (
-                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          {w.cefr_level}
-                        </span>
-                      )}
-                    </div>
+                    <span className="font-medium">{w.word}</span>
                     <div className="flex items-center gap-1">
                       {w.audio_url && (
                         <button
@@ -345,27 +334,29 @@ export function VocabularyMatchingPlayerAdapter({
         </div>
       </div>
 
-      {/* Show correct answers in review mode */}
-      {showResults && showCorrectAnswers && (
-        <div className="mt-6 rounded-lg border bg-muted/50 p-4">
-          <h3 className="mb-3 font-medium">Correct Answers</h3>
-          <div className="space-y-2">
-            {words.map((w) => {
-              const correctDef = definitions.find((d) => d.def_id === w.pair_id)
-              return (
-                <div
-                  key={w.pair_id}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <span className="font-medium">{w.word}</span>
-                  <span className="text-muted-foreground">→</span>
-                  <span>{correctDef?.definition}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+          {/* Show correct answers in review mode */}
+          {showResults && showCorrectAnswers && (
+            <div className="mt-6 rounded-lg border bg-muted/50 p-4">
+              <h3 className="mb-3 font-medium">Correct Answers</h3>
+              <div className="space-y-2">
+                {words.map((w) => {
+                  const correctDef = definitions.find((d) => d.def_id === w.pair_id)
+                  return (
+                    <div
+                      key={w.pair_id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <span className="font-medium">{w.word}</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span>{correctDef?.definition}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

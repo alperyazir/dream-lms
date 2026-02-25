@@ -38,6 +38,7 @@ import {
 } from "@/lib/scoring"
 import { saveProgress } from "@/services/assignmentsApi"
 import type { QuestionNavigationState } from "@/types/activity-player"
+import { supportsQuestionNavigation } from "@/types/activity-player"
 import { ActivityFooter } from "./ActivityFooter"
 import { ActivityHeader } from "./ActivityHeader"
 import { ActivityResults, type ScoreResult } from "./ActivityResults"
@@ -63,6 +64,7 @@ import { ListeningSentenceBuilderPlayerAdapter } from "./ListeningSentenceBuilde
 import { ListeningWordBuilderPlayerAdapter } from "./ListeningWordBuilderPlayerAdapter"
 import { VocabularyMatchingPlayerAdapter } from "./VocabularyMatchingPlayerAdapter"
 import { SpeakingOpenResponsePlayerAdapter } from "./SpeakingOpenResponsePlayerAdapter"
+import { MixModePlayerAdapter } from "./MixModePlayerAdapter"
 
 interface ActivityPlayerProps {
   activityConfig: ActivityConfig
@@ -93,6 +95,7 @@ interface ActivityPlayerProps {
     | "writing_free_response"
     | "vocabulary_matching"
     | "speaking_open_response"
+    | "mix_mode"
   timeLimit?: number // minutes
   onExit: () => void
   initialProgress?: Record<string, any> | null // Story 4.8: Saved progress from backend
@@ -113,6 +116,62 @@ interface ActivityPlayerProps {
   currentQuestionIndex?: number
   onQuestionIndexChange?: (index: number) => void
   onNavigationStateChange?: (state: QuestionNavigationState) => void
+}
+
+/**
+ * Score mix_mode questions by format.
+ * Returns { autoCorrect, autoScorable, pendingReview }.
+ */
+function scoreMixModeQuestions(
+  questions: Array<{ question_id: string; format_slug: string; question_data: Record<string, any> }>,
+  userAnswers: Map<string, string>,
+): { autoCorrect: number; autoScorable: number; pendingReview: number } {
+  const MANUAL_FORMATS = new Set(["free_response", "open_response"])
+  let autoCorrect = 0
+  let autoScorable = 0
+  let pendingReview = 0
+
+  for (const q of questions) {
+    const answer = userAnswers.get(q.question_id)
+    if (MANUAL_FORMATS.has(q.format_slug)) {
+      pendingReview++
+      continue
+    }
+    autoScorable++
+    if (answer === undefined) continue
+
+    const d = q.question_data
+    switch (q.format_slug) {
+      case "mcq":
+      case "multiple_choice":
+      case "comprehension":
+        if (parseInt(answer, 10) === d.correct_index) autoCorrect++
+        break
+      case "fill_blank":
+        if (d.correct_answer) {
+          const acceptable = [d.correct_answer, ...(d.acceptable_answers || [])]
+          if (acceptable.some((a: string) => answer.trim().toLowerCase() === a.trim().toLowerCase())) autoCorrect++
+        }
+        break
+      case "word_builder":
+        if (d.word && answer.toLowerCase() === d.word.toLowerCase()) autoCorrect++
+        break
+      case "sentence_builder": {
+        try {
+          const words = JSON.parse(answer)
+          if (Array.isArray(words) && words.join(" ") === d.correct_sentence) autoCorrect++
+        } catch { /* skip */ }
+        break
+      }
+      case "matching":
+        if (d.definition && answer.trim().toLowerCase() === d.definition.trim().toLowerCase()) autoCorrect++
+        break
+      case "sentence_corrector":
+        if (d.correct_sentence && isAnswerAcceptable(answer, [d.correct_sentence])) autoCorrect++
+        break
+    }
+  }
+  return { autoCorrect, autoScorable, pendingReview }
 }
 
 // Type for activity answers - different players use different data structures
@@ -171,7 +230,8 @@ export function restoreProgressFromJson(
       activityType === "writing_sentence_corrector" ||
       activityType === "writing_free_response" ||
       activityType === "vocabulary_matching" ||
-      activityType === "speaking_open_response"
+      activityType === "speaking_open_response" ||
+      activityType === "mix_mode"
     ) {
       // Convert object back to Map<string, string>
       const map = new Map<string, string>(
@@ -236,6 +296,8 @@ export function ActivityPlayer({
     Set<string> | Map<number, number>
   >(new Set())
   const [startTime] = useState<number>(Date.now())
+  const [internalNavState, setInternalNavState] =
+    useState<QuestionNavigationState | null>(null)
   const { toast } = useToast()
 
   // Story 10.3: Track reset trigger to reset answers when parent requests
@@ -253,6 +315,23 @@ export function ActivityPlayer({
       prevResetTriggerRef.current = resetTrigger
     }
   }, [resetTrigger, activityType])
+
+  // Track navigation state internally and forward to parent
+  const handleNavigationStateChange = useCallback(
+    (state: QuestionNavigationState) => {
+      setInternalNavState(state)
+      onNavigationStateChange?.(state)
+    },
+    [onNavigationStateChange],
+  )
+
+  // Show submit only when on last question (for activities with sequential questions)
+  const isOnLastQuestion =
+    internalNavState != null &&
+    internalNavState.currentIndex >= internalNavState.totalItems - 1
+
+  const hasQuestionNav = supportsQuestionNavigation(activityType)
+  const showSubmitInFooter = !hasQuestionNav || isOnLastQuestion
 
   // Calculate time spent (initial + new time)
   // Use Math.ceil so any partial minute counts (e.g., 30 seconds = 1 minute)
@@ -821,6 +900,15 @@ export function ActivityPlayer({
             ? Math.round((correctCount / totalPairs) * 100)
             : 0
         answersJson = { answers: Object.fromEntries(userAnswers) }
+      } else if (normalizedType === "mix_mode") {
+        // Mix Mode: per-question scoring by format
+        const content = (activityConfig as any).content
+        const userAnswers = answers as Map<string, string>
+        if (content?.questions) {
+          const { autoCorrect, autoScorable } = scoreMixModeQuestions(content.questions, userAnswers)
+          calculatedScore = autoScorable > 0 ? Math.round((autoCorrect / autoScorable) * 100) : -1
+        }
+        answersJson = { answers: Object.fromEntries(userAnswers) }
       }
 
       // Report score to parent using ref (avoids infinite loop)
@@ -992,7 +1080,7 @@ export function ActivityPlayer({
       if (!embedded) {
         submit({
           answers_json: answersJson,
-          score: score.score,
+          score: Math.max(0, score.score),
           time_spent_minutes: getTimeSpent(),
         })
       }
@@ -1530,6 +1618,50 @@ export function ActivityPlayer({
         breakdown: { activity_type: "vocabulary_matching" },
       }
       answersJson = { answers: Object.fromEntries(userAnswers) }
+    } else if (activityConfig.type === "mix_mode") {
+      // Mix Mode: per-question scoring by format
+      const content = (activityConfig as any).content
+      const userAnswers = answers as Map<string, string>
+      const questions = content?.questions || []
+      const { autoCorrect, autoScorable, pendingReview } = scoreMixModeQuestions(questions, userAnswers)
+
+      // Mark auto-scored correct questions in correctSet
+      const MANUAL_FORMATS = new Set(["free_response", "open_response"])
+      for (const q of questions) {
+        if (MANUAL_FORMATS.has(q.format_slug)) continue
+        const ans = userAnswers.get(q.question_id)
+        if (ans === undefined) continue
+        const d = q.question_data
+        let correct = false
+        switch (q.format_slug) {
+          case "mcq": case "multiple_choice": case "comprehension":
+            correct = parseInt(ans, 10) === d.correct_index; break
+          case "fill_blank": {
+            const acceptable = [d.correct_answer, ...(d.acceptable_answers || [])].filter(Boolean)
+            correct = acceptable.some((a: string) => ans.trim().toLowerCase() === a.trim().toLowerCase()); break
+          }
+          case "word_builder": correct = d.word && ans.toLowerCase() === d.word.toLowerCase(); break
+          case "sentence_builder":
+            try { const w = JSON.parse(ans); correct = Array.isArray(w) && w.join(" ") === d.correct_sentence } catch {}; break
+          case "matching": correct = d.definition && ans.trim().toLowerCase() === d.definition.trim().toLowerCase(); break
+          case "sentence_corrector": correct = d.correct_sentence && isAnswerAcceptable(ans, [d.correct_sentence]); break
+        }
+        if (correct) correctSet.add(q.question_id)
+      }
+
+      const finalScore = autoScorable > 0 ? Math.round((autoCorrect / autoScorable) * 100) : -1
+      score = {
+        score: finalScore,
+        correct: autoCorrect,
+        total: autoScorable,
+        breakdown: {
+          activity_type: "mix_mode",
+          pending_review: pendingReview > 0 ? true : undefined,
+          auto_scored: autoScorable,
+          pending_count: pendingReview,
+        },
+      }
+      answersJson = { answers: Object.fromEntries(userAnswers) }
     } else {
       // Mock score for other activity types (to be implemented)
       score = {
@@ -1553,10 +1685,11 @@ export function ActivityPlayer({
 
     // Submit to backend (Story 4.8: Use getTimeSpent for initial + new time)
     // Only submit directly if not embedded (parent handles submission for embedded)
+    // Clamp score to 0 minimum — backend rejects negative values (e.g. -1 sentinel for manually graded)
     if (!embedded) {
       submit({
         answers_json: answersJson,
-        score: score.score,
+        score: Math.max(0, score.score),
         time_spent_minutes: getTimeSpent(),
       })
     }
@@ -1725,7 +1858,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1740,7 +1873,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1755,7 +1888,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1770,7 +1903,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentSentenceIndex={currentQuestionIndex}
             onSentenceIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1785,7 +1918,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentWordIndex={currentQuestionIndex}
             onWordIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1801,7 +1934,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1816,7 +1949,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1831,7 +1964,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1846,7 +1979,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1861,7 +1994,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1876,7 +2009,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1891,7 +2024,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1906,7 +2039,7 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -1933,7 +2066,22 @@ export function ActivityPlayer({
             showCorrectAnswers={showCorrectAnswers}
             currentQuestionIndex={currentQuestionIndex}
             onQuestionIndexChange={onQuestionIndexChange}
-            onNavigationStateChange={onNavigationStateChange}
+            onNavigationStateChange={handleNavigationStateChange}
+          />
+        )
+
+      case "mix_mode":
+        return (
+          <MixModePlayerAdapter
+            activity={activityConfig}
+            onAnswersChange={handleAnswersChange}
+            showResults={showResults}
+            correctAnswers={correctAnswers as Set<string>}
+            initialAnswers={answers as Map<string, string>}
+            showCorrectAnswers={showCorrectAnswers}
+            currentQuestionIndex={currentQuestionIndex}
+            onQuestionIndexChange={onQuestionIndexChange}
+            onNavigationStateChange={handleNavigationStateChange}
           />
         )
 
@@ -2096,6 +2244,7 @@ export function ActivityPlayer({
           isSaving={isSaving}
           isSubmitting={isSubmitting}
           lastSavedAt={lastSavedAt}
+          showSubmit={showSubmitInFooter}
         />
       )}
     </div>

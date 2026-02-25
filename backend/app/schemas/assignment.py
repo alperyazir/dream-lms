@@ -136,7 +136,8 @@ class AssignmentCreate(BaseModel):
     activity_ids: list[uuid.UUID] | None = None
 
     # Story 27.x: For AI content assignments (required when source_type="ai_content")
-    content_id: uuid.UUID | None = None
+    # Accepts UUID (LMS record ID) or string (DCS content_id)
+    content_id: str | None = None
 
     # Skill classification (Epic 30 - Story 30.2)
     skill_id: uuid.UUID | None = None
@@ -628,7 +629,7 @@ class AssignmentSaveProgressRequest(BaseModel):
         Story 4.8 QA Fix: Limit payload to 100KB to prevent abuse with large payloads.
         This protects the server from excessive memory usage and database bloat.
         """
-        MAX_PAYLOAD_SIZE_BYTES = 100 * 1024  # 100KB
+        MAX_PAYLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5MB (speaking audio stored as base64)
 
         # Serialize to JSON to get actual byte size
         try:
@@ -638,7 +639,7 @@ class AssignmentSaveProgressRequest(BaseModel):
             if payload_size_bytes > MAX_PAYLOAD_SIZE_BYTES:
                 raise ValueError(
                     f"Progress payload size ({payload_size_bytes} bytes) exceeds "
-                    f"maximum allowed size ({MAX_PAYLOAD_SIZE_BYTES} bytes / 100KB). "
+                    f"maximum allowed size ({MAX_PAYLOAD_SIZE_BYTES} bytes / 5MB). "
                     f"Please reduce the amount of data being saved."
                 )
         except (TypeError, ValueError) as e:
@@ -768,7 +769,7 @@ class ActivityProgressSaveRequest(BaseModel):
     @classmethod
     def validate_payload_size(cls, v: dict) -> dict:
         """Validate response_data payload size to prevent DoS attacks."""
-        MAX_PAYLOAD_SIZE_BYTES = 100 * 1024  # 100KB
+        MAX_PAYLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5MB (speaking audio stored as base64)
 
         try:
             payload_json = json.dumps(v, ensure_ascii=False)
@@ -777,7 +778,7 @@ class ActivityProgressSaveRequest(BaseModel):
             if payload_size_bytes > MAX_PAYLOAD_SIZE_BYTES:
                 raise ValueError(
                     f"Response data size ({payload_size_bytes} bytes) exceeds "
-                    f"maximum allowed size ({MAX_PAYLOAD_SIZE_BYTES} bytes / 100KB)."
+                    f"maximum allowed size ({MAX_PAYLOAD_SIZE_BYTES} bytes / 5MB)."
                 )
         except (TypeError, ValueError) as e:
             if "exceeds maximum" in str(e):

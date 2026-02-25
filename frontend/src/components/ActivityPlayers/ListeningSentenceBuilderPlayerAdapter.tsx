@@ -8,8 +8,9 @@
  * Answer format: Map<item_id, JSON.stringify(orderedWords[])>
  */
 
-import { Loader2, Pause, Play, RotateCcw, Volume2 } from "lucide-react"
+import { Loader2, Pause, Play, RotateCcw } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import type { ActivityConfig } from "@/lib/mockData"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
@@ -73,7 +74,6 @@ export function ListeningSentenceBuilderPlayerAdapter({
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [audioLoading, setAudioLoading] = useState(false)
-
   const qIndex = currentQuestionIndex ?? 0
   const currentItem = items[qIndex]
 
@@ -231,105 +231,104 @@ export function ListeningSentenceBuilderPlayerAdapter({
   }
 
   return (
-    <div className="flex flex-col items-center gap-6 p-6 max-w-2xl mx-auto">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
       <audio ref={audioRef} preload="auto" />
 
-      {/* Audio Play Button */}
-      <div className="flex flex-col items-center gap-2">
-        {currentItem.audio_url &&
-        currentItem.audio_status === "ready" ? (
-          <button
-            onClick={handlePlayAudio}
-            className={cn(
-              "flex items-center justify-center w-20 h-20 rounded-full transition-all shadow-lg",
-              isPlaying
-                ? "bg-teal-600 hover:bg-teal-700 scale-110"
-                : "bg-teal-500 hover:bg-teal-600",
-            )}
-          >
-            {audioLoading ? (
-              <Loader2 className="h-8 w-8 text-white animate-spin" />
-            ) : isPlaying ? (
-              <Pause className="h-8 w-8 text-white" />
+      <Card className="w-full shadow-lg">
+        <CardContent className="p-6">
+          {/* Audio play button — only shown when audio is available */}
+          {currentItem.audio_url &&
+          currentItem.audio_status === "ready" ? (
+            <div className="mb-4 flex flex-col items-center gap-2">
+              <button
+                onClick={handlePlayAudio}
+                className={cn(
+                  "flex items-center justify-center w-12 h-12 rounded-full transition-all shadow-md",
+                  isPlaying
+                    ? "bg-teal-600 hover:bg-teal-700 scale-110"
+                    : "bg-teal-500 hover:bg-teal-600",
+                )}
+              >
+                {audioLoading ? (
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="h-5 w-5 text-white" />
+                ) : (
+                  <Play className="h-5 w-5 text-white ml-0.5" />
+                )}
+              </button>
+              <p className="text-sm text-muted-foreground">
+                Listen and arrange the words
+              </p>
+            </div>
+          ) : (
+            <p className="mb-4 text-center text-sm text-muted-foreground">
+              Arrange the words
+            </p>
+          )}
+
+          {/* Answer area - placed words (fixed height to prevent layout shift) */}
+          <div className="mb-4 w-full h-[64px] p-3 rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/50 dark:bg-teal-900/10 flex flex-wrap gap-2 items-center justify-center">
+            {placedWords.length === 0 ? (
+              <span className="text-sm text-muted-foreground">
+                Tap words below to build the sentence
+              </span>
             ) : (
-              <Play className="h-8 w-8 text-white ml-1" />
+              placedWords.map((word, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handlePlacedTap(idx)}
+                  className="px-3 py-1.5 rounded-lg border-2 border-teal-400 bg-teal-100 dark:bg-teal-800/40 text-teal-800 dark:text-teal-200 text-sm font-medium hover:bg-teal-200 dark:hover:bg-teal-800/60 transition-colors cursor-pointer"
+                >
+                  {word}
+                </button>
+              ))
             )}
-          </button>
-        ) : (
-          <div className="text-sm text-muted-foreground flex items-center gap-1">
-            <Volume2 className="h-4 w-4" />
-            Audio not available
           </div>
-        )}
-        <p className="text-sm text-muted-foreground">
-          Listen and arrange the words
-        </p>
-      </div>
 
-      {/* Answer area - placed words */}
-      <div className="w-full min-h-[56px] p-3 rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/50 dark:bg-teal-900/10 flex flex-wrap gap-2 items-center justify-center">
-        {placedWords.length === 0 ? (
-          <span className="text-sm text-muted-foreground">
-            Tap words below to build the sentence
-          </span>
-        ) : (
-          placedWords.map((word, idx) => (
+          {/* Reset button - always reserves space */}
+          <div className="mb-4 flex justify-end">
             <button
-              key={idx}
-              onClick={() => handlePlacedTap(idx)}
-              className="px-3 py-1.5 rounded-lg border-2 border-teal-400 bg-teal-100 dark:bg-teal-800/40 text-teal-800 dark:text-teal-200 text-sm font-medium hover:bg-teal-200 dark:hover:bg-teal-800/60 transition-colors cursor-pointer"
-            >
-              {word}
-            </button>
-          ))
-        )}
-      </div>
-
-      {/* Reset button */}
-      {placedWords.length > 0 && (
-        <button
-          onClick={handleReset}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <RotateCcw className="h-3 w-3" />
-          Reset
-        </button>
-      )}
-
-      {/* Word bank - tappable shuffled words */}
-      <div className="flex flex-wrap justify-center gap-2">
-        {currentItem.words.map((word, wIdx) => {
-          // Check if this specific index's word is still available
-          const availableCount = remainingWords.filter((w) => w === word).length
-          // For the nth occurrence of this word, is it used?
-          let occurrenceSoFar = 0
-          for (let i = 0; i <= wIdx; i++) {
-            if (currentItem.words[i] === word) occurrenceSoFar++
-          }
-          const thisOneUsed = occurrenceSoFar > availableCount
-
-          return (
-            <button
-              key={wIdx}
-              onClick={() => handleWordTap(word)}
-              disabled={showResults || thisOneUsed}
+              onClick={handleReset}
               className={cn(
-                "px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all",
-                thisOneUsed
-                  ? "border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 opacity-50 cursor-not-allowed"
-                  : "border-gray-200 dark:border-gray-600 hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-700 dark:text-gray-300 cursor-pointer",
+                "flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors",
+                placedWords.length === 0 && "invisible",
               )}
             >
-              {word}
+              <RotateCcw className="h-3 w-3" />
+              Reset
             </button>
-          )
-        })}
-      </div>
+          </div>
 
-      {/* Item counter */}
-      <div className="text-sm text-muted-foreground">
-        Sentence {qIndex + 1} of {items.length}
-      </div>
+          {/* Word bank - tappable shuffled words */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {currentItem.words.map((word, wIdx) => {
+              const availableCount = remainingWords.filter((w) => w === word).length
+              let occurrenceSoFar = 0
+              for (let i = 0; i <= wIdx; i++) {
+                if (currentItem.words[i] === word) occurrenceSoFar++
+              }
+              const thisOneUsed = occurrenceSoFar > availableCount
+
+              return (
+                <button
+                  key={wIdx}
+                  onClick={() => handleWordTap(word)}
+                  disabled={showResults || thisOneUsed}
+                  className={cn(
+                    "px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all",
+                    thisOneUsed
+                      ? "border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 opacity-50 cursor-not-allowed"
+                      : "border-gray-200 dark:border-gray-600 hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-700 dark:text-gray-300 cursor-pointer",
+                  )}
+                >
+                  {word}
+                </button>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

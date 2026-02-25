@@ -247,8 +247,8 @@ export function StudentAssignmentCard({
               return (
                 <div className="flex items-center gap-2">
                   <Badge
-                    variant="outline"
-                    className={`text-xs ${colorClasses.text} ${colorClasses.border}`}
+                    variant={colorClasses.isAI ? "default" : "outline"}
+                    className={`text-xs ${colorClasses.isAI ? colorClasses.bg + " " + colorClasses.text + " border-0" : colorClasses.text + " " + colorClasses.border}`}
                   >
                     <IconComponent className="mr-1 h-3 w-3" />
                     {config.label}

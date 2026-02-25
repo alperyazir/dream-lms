@@ -86,6 +86,7 @@ class ListeningQuizQuestionPublic(BaseModel):
     audio_status: str = "ready"
     question_text: str
     options: list[str] = Field(min_length=4, max_length=4)
+    correct_index: int = Field(ge=0, le=3)
     sub_skill: ListeningSubSkill
     difficulty: str
 

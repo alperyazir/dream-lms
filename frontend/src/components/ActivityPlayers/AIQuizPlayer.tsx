@@ -227,9 +227,9 @@ export function AIQuizPlayer({
                   className={cn(
                     "h-auto min-h-[3rem] justify-start whitespace-normal py-3 px-4 text-left text-base transition-all",
                     isSelected &&
-                      "bg-teal-600 hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-700",
+                      "bg-teal-600 text-white hover:bg-teal-700 hover:text-white dark:bg-teal-600 dark:hover:bg-teal-700",
                     !isSelected &&
-                      "hover:border-teal-300 hover:bg-teal-50 dark:hover:border-teal-700 dark:hover:bg-teal-950/50",
+                      "hover:border-teal-300 hover:bg-teal-50 hover:text-gray-900 dark:hover:border-teal-700 dark:hover:bg-teal-950/50 dark:hover:text-gray-100",
                   )}
                   onClick={() =>
                     handleSelectOption(currentQuestion.question_id, index)

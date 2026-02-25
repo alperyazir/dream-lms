@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import type { ActivityConfig } from "@/lib/mockData"
 import { cn } from "@/lib/utils"
 import type { QuestionNavigationState } from "@/types/activity-player"
@@ -128,44 +129,33 @@ export function WritingFillBlankPlayerAdapter({
   const userAnswer = answers.get(currentItem.item_id) || ""
 
   return (
-    <div className="flex flex-col items-center gap-6 p-6 max-w-2xl mx-auto">
-      {/* Context prompt card */}
-      <div className="w-full px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-        <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
-          Context
-        </p>
-        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-          {currentItem.context}
-        </p>
-      </div>
-
-      {/* Sentence with blank */}
-      <div className="text-center text-lg leading-relaxed">
-        {parts[0]}
-        <input
-          type="text"
-          value={userAnswer}
-          onChange={(e) =>
-            handleInputChange(currentItem.item_id, e.target.value)
-          }
-          disabled={showResults}
-          className={cn(
-            "inline-block w-40 mx-1 px-3 py-1 border-b-2 text-center text-lg font-medium bg-transparent outline-none transition-colors",
-            "border-blue-400 focus:border-blue-600",
-            showCorrectAnswers &&
-              correctAnswers.has(currentItem.item_id) &&
-              "border-green-500 text-green-700",
-          )}
-          placeholder="..."
-          autoFocus
-        />
-        {parts[1] || ""}
-      </div>
-
-      {/* Item counter */}
-      <div className="text-sm text-muted-foreground">
-        Item {qIndex + 1} of {items.length}
-      </div>
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4 sm:p-6">
+      <Card className="w-full shadow-lg">
+        <CardContent className="p-6">
+          {/* Sentence with blank */}
+          <div className="text-center text-lg leading-relaxed">
+            {parts[0]}
+            <input
+              type="text"
+              value={userAnswer}
+              onChange={(e) =>
+                handleInputChange(currentItem.item_id, e.target.value)
+              }
+              disabled={showResults}
+              className={cn(
+                "inline-block w-40 mx-1 px-3 py-1 border-b-2 text-center text-lg font-medium bg-transparent outline-none transition-colors",
+                "border-teal-400 focus:border-teal-600",
+                showCorrectAnswers &&
+                  correctAnswers.has(currentItem.item_id) &&
+                  "border-green-500 text-green-700",
+              )}
+              placeholder="..."
+              autoFocus
+            />
+            {parts[1] || ""}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
