@@ -49,6 +49,7 @@ function AssignmentSuccessScreen() {
 
   const MANUALLY_GRADED_TYPES = ["writing_free_response", "speaking_open_response"]
   const isManuallyGraded = MANUALLY_GRADED_TYPES.includes(resultData?.activity_type || "")
+  const isLoadingResult = !resultData
 
   // Recalculate score from result data if available
   const score = useMemo(() => {
@@ -179,7 +180,11 @@ function AssignmentSuccessScreen() {
         </h1>
 
         {/* Score Display */}
-        {isManuallyGraded ? (
+        {isLoadingResult ? (
+          <div className="my-6">
+            <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-teal-600 border-r-transparent" />
+          </div>
+        ) : isManuallyGraded ? (
           <div className="my-6">
             <div className="inline-flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-2.5 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
               <span className="text-amber-600 dark:text-amber-400 text-sm font-medium">

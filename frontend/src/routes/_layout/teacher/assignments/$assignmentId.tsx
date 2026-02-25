@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   BarChart3,
   CheckCircle,
+  ClipboardCheck,
   Clock,
   Eye,
   Hourglass,
@@ -27,12 +28,15 @@ import {
 import { AIQuizResults } from "@/components/ActivityPlayers/AIQuizResults"
 import { ReadingComprehensionResults } from "@/components/ActivityPlayers/ReadingComprehensionResults"
 import { SentenceBuilderResults } from "@/components/ActivityPlayers/SentenceBuilderResults"
+import { SpeakingOpenResponseResults } from "@/components/ActivityPlayers/SpeakingOpenResponseResults"
 import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQuizResults"
 import { WordBuilderResults } from "@/components/ActivityPlayers/WordBuilderResults"
-import { AssignmentSkillBreakdown } from "@/components/analytics/AssignmentSkillBreakdown"
+import { WritingFreeResponseResults } from "@/components/ActivityPlayers/WritingFreeResponseResults"
 import { MultiActivityAnalyticsTable } from "@/components/analytics/MultiActivityAnalyticsTable"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { FeedbackModal } from "@/components/feedback"
+import { GradingPanel } from "@/components/grading/GradingPanel"
+import { InlineFeedback } from "@/components/grading/InlineFeedback"
 import { TestModePlayer } from "@/components/preview"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -62,6 +66,7 @@ import {
 import { useQuickAssignmentTest } from "@/hooks/usePreviewMode"
 import {
   parseAIQuizResult,
+  parseFreeResponseResult,
   parseReadingComprehensionResult,
   parseSentenceBuilderResult,
   parseVocabularyQuizResult,
@@ -78,6 +83,11 @@ export const Route = createFileRoute(
   "/_layout/teacher/assignments/$assignmentId",
 )({
   component: AssignmentDetailPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    gradeStudentId: (search.gradeStudentId as string) || undefined,
+    tab: (search.tab as string) || undefined,
+    openGrade: search.openGrade === true || search.openGrade === "true" || undefined,
+  }),
 })
 
 function AssignmentDetailPage() {
@@ -211,16 +221,12 @@ function ScoreStatisticsCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-3 rounded-lg bg-muted/50">
             <div className="text-2xl font-bold text-teal-600">
               {stats.avg_score.toFixed(1)}%
             </div>
             <div className="text-xs text-muted-foreground">Average</div>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <div className="text-2xl font-bold">{stats.median_score}%</div>
-            <div className="text-xs text-muted-foreground">Median</div>
           </div>
           <div className="text-center p-3 rounded-lg bg-muted/50">
             <div className="text-2xl font-bold text-green-600">
@@ -477,17 +483,27 @@ function StudentResultsTable({
   assignmentId,
   assignmentName,
   activityType,
+  initialGradeStudentId,
+  openGrade,
 }: {
   students: StudentResultItem[]
   assignmentId: string
   assignmentName: string
   activityType: string
+  initialGradeStudentId?: string
+  openGrade?: boolean
 }) {
+  // If openGrade is true but no specific student, pick the first completed student with no score
+  const autoGradeStudentId = initialGradeStudentId ??
+    (openGrade
+      ? students.find((s) => s.status === "completed" && s.score == null)?.student_id
+      : undefined)
+
   const [statusFilter, setStatusFilter] = useState<StudentStatus>("all")
   const [sortBy, setSortBy] = useState<SortBy>("name")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
-    null,
+    autoGradeStudentId ?? null,
   )
   const [feedbackStudent, setFeedbackStudent] = useState<{
     id: string
@@ -650,6 +666,15 @@ function StudentResultsTable({
                           >
                             {student.score}%
                           </span>
+                        ) : student.status === "completed" &&
+                          (activityType === "writing_free_response" ||
+                            activityType === "speaking_open_response") ? (
+                          <Badge
+                            variant="outline"
+                            className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-400 text-xs"
+                          >
+                            Waiting for Review
+                          </Badge>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -727,8 +752,20 @@ function StudentResultsTable({
                             }}
                             disabled={student.status === "not_started"}
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
+                            {student.status === "completed" &&
+                            student.score === null &&
+                            (activityType === "writing_free_response" ||
+                              activityType === "speaking_open_response") ? (
+                              <>
+                                <ClipboardCheck className="h-4 w-4 mr-1" />
+                                Grade
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </>
+                            )}
                           </Button>
                           <Button
                             type="button"
@@ -968,6 +1005,40 @@ function StudentAnswersDialog({
                         )
                       }
                     }
+
+                    // Writing Free Response
+                    if (responseActivityType === "writing_free_response") {
+                      const parsedResult = parseFreeResponseResult(
+                        configJson,
+                        answers.answers_json,
+                      )
+                      if (parsedResult) {
+                        return (
+                          <WritingFreeResponseResults
+                            result={parsedResult}
+                            hideSummary
+                            score={answers.score}
+                          />
+                        )
+                      }
+                    }
+
+                    // Speaking Open Response
+                    if (responseActivityType === "speaking_open_response") {
+                      const parsedResult = parseFreeResponseResult(
+                        configJson,
+                        answers.answers_json,
+                      )
+                      if (parsedResult) {
+                        return (
+                          <SpeakingOpenResponseResults
+                            result={parsedResult}
+                            hideSummary
+                            score={answers.score}
+                          />
+                        )
+                      }
+                    }
                   }
 
                   // Fallback: show raw JSON for unsupported types or missing config
@@ -981,6 +1052,32 @@ function StudentAnswersDialog({
                 })()}
               </div>
             )}
+
+            {/* Teacher Grading Panel for writing/speaking activities */}
+            {(() => {
+              const responseActivityType =
+                answers.activity_type || activityType
+              if (
+                responseActivityType === "writing_free_response" ||
+                responseActivityType === "speaking_open_response"
+              ) {
+                return (
+                  <>
+                    <GradingPanel
+                      assignmentId={assignmentId}
+                      studentId={studentId!}
+                      currentScore={answers.score}
+                      onScoreSaved={() => {}}
+                    />
+                    <InlineFeedback
+                      assignmentId={assignmentId}
+                      studentId={studentId!}
+                    />
+                  </>
+                )
+              }
+              return null
+            })()}
           </div>
         ) : (
           <p className="text-muted-foreground text-center py-8">
@@ -994,7 +1091,10 @@ function StudentAnswersDialog({
 
 function AssignmentDetailContent() {
   const { assignmentId } = Route.useParams()
-  const [activeTab, setActiveTab] = useState("results")
+  const { gradeStudentId, tab, openGrade } = Route.useSearch()
+  const [activeTab, setActiveTab] = useState(
+    gradeStudentId || openGrade ? "students" : tab === "students" ? "students" : "results"
+  )
 
   // Fetch assignment results from API
   const { results, isLoading, error } = useAssignmentResults({
@@ -1161,9 +1261,6 @@ function AssignmentDetailContent() {
             <ScoreStatisticsCard stats={results.score_statistics} />
           </div>
 
-          {/* Skill Breakdown (Story 30.13) */}
-          <AssignmentSkillBreakdown assignmentId={assignmentId} />
-
           {/* Question Analysis */}
           <ActivityTypeAnalysisSection analysis={results.question_analysis} />
         </TabsContent>
@@ -1175,6 +1272,8 @@ function AssignmentDetailContent() {
             assignmentId={assignmentId}
             assignmentName={results.assignment_name}
             activityType={results.activity_type}
+            initialGradeStudentId={gradeStudentId}
+            openGrade={openGrade}
           />
         </TabsContent>
 

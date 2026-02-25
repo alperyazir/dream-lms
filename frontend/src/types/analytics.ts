@@ -313,6 +313,45 @@ export interface StudentAnswersResponse {
   // Added for detailed result review
   activity_type: string | null
   config_json: Record<string, unknown> | null
+  // Rubric hints for teacher grading (writing/speaking activities)
+  rubric_hints?: string[] | null
+}
+
+/**
+ * Teacher grade request
+ */
+export interface TeacherGradeRequest {
+  score: number
+  activity_id?: string
+}
+
+/**
+ * Teacher grade response
+ */
+export interface TeacherGradeResponse {
+  success: boolean
+  activity_score: number
+  overall_score: number | null
+}
+
+/**
+ * Pending review item for grading queue
+ */
+export interface PendingReviewItem {
+  assignment_id: string
+  assignment_name: string
+  activity_type: string
+  student_id: string
+  student_name: string
+  completed_at: string | null
+}
+
+/**
+ * Pending reviews response
+ */
+export interface PendingReviewsResponse {
+  items: PendingReviewItem[]
+  total: number
 }
 
 /**

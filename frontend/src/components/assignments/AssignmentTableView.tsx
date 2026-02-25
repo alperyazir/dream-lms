@@ -1,4 +1,6 @@
-import { Eye, Pencil, Trash2 } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import { ClipboardCheck, Eye, Pencil, Trash2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -101,6 +103,22 @@ export function AssignmentTableView({
                       <span className="text-xs text-muted-foreground min-w-[3rem]">
                         {assignment.completed}/{assignment.total_students}
                       </span>
+                      {(assignment.pending_reviews_count ?? 0) > 0 && (
+                        <Link
+                          to="/teacher/assignments/$assignmentId"
+                          params={{ assignmentId: assignment.id }}
+                          search={{ tab: "students", openGrade: true, gradeStudentId: undefined }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Badge
+                            variant="outline"
+                            className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-400 gap-1 text-xs cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                          >
+                            <ClipboardCheck className="h-3 w-3" />
+                            {assignment.pending_reviews_count}
+                          </Badge>
+                        </Link>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

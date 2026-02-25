@@ -48,6 +48,12 @@ from app.schemas.analytics import (
     AssignmentDetailedResultsResponse,
     StudentAnswersResponse,
 )
+from app.schemas.assignment import (
+    PendingReviewItem,
+    PendingReviewsResponse,
+    TeacherGradeRequest,
+    TeacherGradeResponse,
+)
 from app.schemas.skill import (
     ActivityFormatPublic,
     AssignmentSkillBreakdownResponse,
@@ -473,6 +479,15 @@ async def list_assignments(
             1 for s in assignment_students if s.status == AssignmentStatus.completed
         )
 
+        # Count pending reviews (completed but ungraded) for manual-grading activities
+        pending_reviews_count = 0
+        act_type_val = assignment.activity_type.value if assignment.activity_type else None
+        if act_type_val in ("writing_free_response", "speaking_open_response"):
+            pending_reviews_count = sum(
+                1 for s in assignment_students
+                if s.status == AssignmentStatus.completed and s.score is None
+            )
+
         # Handle Content Library assignments (no activity record)
         if activity:
             activity_id = activity.id
@@ -515,6 +530,7 @@ async def list_assignments(
                 skill_icon=skill.icon if skill else None,
                 format_name=fmt.name if fmt else None,
                 is_mix_mode=assignment.is_mix_mode,
+                pending_reviews_count=pending_reviews_count,
             )
         )
 
@@ -2598,6 +2614,43 @@ async def save_activity_progress(
             except Exception as e:
                 logger.warning(f"Skill attribution failed (non-blocking): {e}")
 
+            # Send notification to teacher about student completion
+            try:
+                teacher_result = await session.execute(
+                    select(Teacher).where(Teacher.id == assignment.teacher_id)
+                )
+                teacher = teacher_result.scalar_one_or_none()
+
+                await session.refresh(student, ["user"])
+                student_name = student.user.full_name if student.user else "A student"
+
+                if teacher and teacher.user_id:
+                    is_manual_grading = assignment.activity_type and assignment.activity_type.value in (
+                        "writing_free_response", "speaking_open_response"
+                    )
+
+                    if is_manual_grading:
+                        await notification_service.create_notification(
+                            db=session,
+                            user_id=teacher.user_id,
+                            notification_type=NotificationType.student_completed,
+                            title=f"Needs grading: {student_name} submitted {assignment.name}",
+                            message=f"{student_name}'s submission is ready for your review.",
+                            link=f"/teacher/assignments/{assignment_id}?tab=students&gradeStudentId={student.id}",
+                        )
+                    else:
+                        await notification_service.create_notification(
+                            db=session,
+                            user_id=teacher.user_id,
+                            notification_type=NotificationType.student_completed,
+                            title=f"Student completed: {student_name} finished {assignment.name}",
+                            message=f"Score: {assignment_student.score:.0f}%" if assignment_student.score else "Completed",
+                            link=f"/teacher/assignments/{assignment_id}?tab=students",
+                        )
+                    await session.commit()
+            except Exception as e:
+                logger.warning(f"Failed to send completion notification (Content Library): {str(e)}")
+
         return ActivityProgressSaveResponse(
             message="Progress saved successfully",
             activity_id=activity_id,
@@ -3067,6 +3120,42 @@ async def submit_multi_activity_assignment(
             if ap.status == AssignmentStudentActivityStatus.completed
         )
 
+    # Send notification to teacher about student completion
+    try:
+        teacher_result = await session.execute(
+            select(Teacher).where(Teacher.id == assignment.teacher_id)
+        )
+        teacher = teacher_result.scalar_one_or_none()
+
+        await session.refresh(student, ["user"])
+        student_name = student.user.full_name if student.user else "A student"
+
+        if teacher and teacher.user_id:
+            is_manual_grading = assignment.activity_type and assignment.activity_type.value in (
+                "writing_free_response", "speaking_open_response"
+            )
+
+            if is_manual_grading:
+                await notification_service.create_notification(
+                    db=session,
+                    user_id=teacher.user_id,
+                    notification_type=NotificationType.student_completed,
+                    title=f"Needs grading: {student_name} submitted {assignment.name}",
+                    message=f"{student_name}'s submission is ready for your review.",
+                    link=f"/teacher/assignments/{assignment_id}?tab=students&gradeStudentId={student.id}",
+                )
+            else:
+                await notification_service.create_notification(
+                    db=session,
+                    user_id=teacher.user_id,
+                    notification_type=NotificationType.student_completed,
+                    title=f"Student completed: {student_name} finished {assignment.name}",
+                    message=f"Score: {combined_score:.0f}%",
+                    link=f"/teacher/assignments/{assignment_id}?tab=students",
+                )
+    except Exception as e:
+        logger.warning(f"Failed to send completion notification: {str(e)}")
+
     return MultiActivitySubmitResponse(
         success=True,
         message="Assignment submitted successfully",
@@ -3329,14 +3418,29 @@ async def submit_assignment(
             student_name = student.user.full_name if student.user else "A student"
 
             if teacher and teacher.user_id:
-                await notification_service.create_notification(
-                    db=session,
-                    user_id=teacher.user_id,
-                    notification_type=NotificationType.student_completed,
-                    title=f"Student completed: {student_name} finished {assignment.name}",
-                    message=f"Score: {submission.score}%",
-                    link=f"/teacher/assignments/{assignment_id}",
+                # Check if this is a manual-grading activity (writing/speaking)
+                is_manual_grading = assignment.activity_type and assignment.activity_type.value in (
+                    "writing_free_response", "speaking_open_response"
                 )
+
+                if is_manual_grading:
+                    await notification_service.create_notification(
+                        db=session,
+                        user_id=teacher.user_id,
+                        notification_type=NotificationType.student_completed,
+                        title=f"Needs grading: {student_name} submitted {assignment.name}",
+                        message=f"{student_name}'s submission is ready for your review.",
+                        link=f"/teacher/assignments/{assignment_id}?tab=students&gradeStudentId={student.id}",
+                    )
+                else:
+                    await notification_service.create_notification(
+                        db=session,
+                        user_id=teacher.user_id,
+                        notification_type=NotificationType.student_completed,
+                        title=f"Student completed: {student_name} finished {assignment.name}",
+                        message=f"Score: {submission.score}%",
+                        link=f"/teacher/assignments/{assignment_id}?tab=students",
+                    )
     except Exception as e:
         # Log but don't fail the submission if notification fails
         logger.warning(f"Failed to send completion notification: {str(e)}")
@@ -4905,3 +5009,177 @@ async def get_assignment_skill_breakdown(
         is_mix_mode=assignment.is_mix_mode,
         skill_breakdown=breakdown,
     )
+
+
+# ===== Teacher Grading for Writing/Speaking Activities =====
+
+
+@router.post(
+    "/{assignment_id}/students/{student_id}/grade",
+    response_model=TeacherGradeResponse,
+    summary="Grade a student's writing or speaking submission",
+    description="Teacher assigns a score (0-100) to a manually-graded activity submission",
+)
+async def grade_student_submission(
+    *,
+    session: AsyncSessionDep,
+    assignment_id: uuid.UUID,
+    student_id: uuid.UUID,
+    body: TeacherGradeRequest,
+    current_user: User = require_role(UserRole.teacher),
+) -> TeacherGradeResponse:
+    """
+    Grade a student's writing or speaking submission.
+
+    If activity_id is provided (multi-activity assignment), updates the per-activity
+    score and recalculates the combined score.
+    If no activity_id, updates AssignmentStudent.score directly.
+    """
+    # Get teacher record
+    result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = result.scalar_one_or_none()
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found",
+        )
+
+    # Verify teacher owns the assignment
+    result = await session.execute(
+        select(Assignment).where(Assignment.id == assignment_id)
+    )
+    assignment = result.scalar_one_or_none()
+    if not assignment or assignment.teacher_id != teacher.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    # Get AssignmentStudent record with activity_progress eagerly loaded
+    result = await session.execute(
+        select(AssignmentStudent)
+        .options(selectinload(AssignmentStudent.activity_progress))
+        .where(
+            AssignmentStudent.assignment_id == assignment_id,
+            AssignmentStudent.student_id == student_id,
+        )
+    )
+    asgn_student = result.scalar_one_or_none()
+    if not asgn_student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student submission not found",
+        )
+
+    if body.activity_id:
+        # Multi-activity: update the specific activity score
+        activity_progress = None
+        for ap in asgn_student.activity_progress:
+            if ap.activity_id == body.activity_id:
+                activity_progress = ap
+                break
+
+        if not activity_progress:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Activity progress not found for this student",
+            )
+
+        activity_progress.score = body.score
+        session.add(activity_progress)
+
+        # Recalculate combined score
+        overall_score = asgn_student.calculate_combined_score()
+        asgn_student.score = overall_score
+        session.add(asgn_student)
+        await session.commit()
+
+        logger.info(
+            f"Teacher {teacher.id} graded activity {body.activity_id} "
+            f"for student {student_id}: score={body.score}, overall={overall_score}"
+        )
+
+        return TeacherGradeResponse(
+            success=True,
+            activity_score=body.score,
+            overall_score=overall_score,
+        )
+    else:
+        # Single-activity: update AssignmentStudent.score directly
+        asgn_student.score = body.score
+        session.add(asgn_student)
+        await session.commit()
+
+        logger.info(
+            f"Teacher {teacher.id} graded assignment {assignment_id} "
+            f"for student {student_id}: score={body.score}"
+        )
+
+        return TeacherGradeResponse(
+            success=True,
+            activity_score=body.score,
+            overall_score=body.score,
+        )
+
+
+@router.get(
+    "/pending-reviews",
+    response_model=PendingReviewsResponse,
+    summary="Get submissions pending teacher review",
+    description="Returns completed submissions that require manual grading (writing/speaking)",
+)
+async def get_pending_reviews(
+    *,
+    session: AsyncSessionDep,
+    current_user: User = require_role(UserRole.teacher),
+) -> PendingReviewsResponse:
+    """
+    Get all completed submissions awaiting teacher grading.
+    Returns items sorted by completed_at (oldest first).
+    """
+    # Get teacher record
+    result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
+    teacher = result.scalar_one_or_none()
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher record not found",
+        )
+
+    # Manual grading activity types
+    manual_grading_types = [ActivityType.writing_free_response, ActivityType.speaking_open_response]
+
+    # Query: completed submissions with no score where assignment has manual-grading activity type
+    result = await session.execute(
+        select(AssignmentStudent, Student, User, Assignment)
+        .join(Student, AssignmentStudent.student_id == Student.id)
+        .join(User, Student.user_id == User.id)
+        .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+        .where(
+            Assignment.teacher_id == teacher.id,
+            AssignmentStudent.status == AssignmentStatus.completed,
+            AssignmentStudent.score.is_(None),  # type: ignore[union-attr]
+            Assignment.activity_type.in_(manual_grading_types),  # type: ignore[union-attr]
+        )
+        .order_by(AssignmentStudent.completed_at.asc())  # type: ignore[union-attr]
+    )
+    rows = result.all()
+
+    items = []
+    for asgn_student, student, user, assignment in rows:
+        items.append(
+            PendingReviewItem(
+                assignment_id=str(assignment.id),
+                assignment_name=assignment.name,
+                activity_type=assignment.activity_type.value if assignment.activity_type else "unknown",
+                student_id=str(student.id),
+                student_name=user.full_name or user.email,
+                completed_at=asgn_student.completed_at,
+            )
+        )
+
+    return PendingReviewsResponse(items=items, total=len(items))

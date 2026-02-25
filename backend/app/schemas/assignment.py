@@ -464,6 +464,9 @@ class AssignmentListItem(BaseModel):
     format_name: str | None = None
     is_mix_mode: bool = False
 
+    # Pending reviews count for manual-grading activities
+    pending_reviews_count: int = 0
+
 
 class StudentAssignmentResponse(BaseModel):
     """Student-facing assignment response with enriched data."""
@@ -1182,3 +1185,46 @@ class AssignmentListResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+# --- Teacher Grading Schemas ---
+
+
+class TeacherGradeRequest(BaseModel):
+    """Request schema for teacher grading a writing/speaking submission."""
+
+    score: float
+    activity_id: uuid.UUID | None = None
+
+    @field_validator("score")
+    @classmethod
+    def validate_score_range(cls, v: float) -> float:
+        if v < 0 or v > 100:
+            raise ValueError("Score must be between 0 and 100")
+        return v
+
+
+class TeacherGradeResponse(BaseModel):
+    """Response schema after teacher grades a submission."""
+
+    success: bool
+    activity_score: float
+    overall_score: float | None = None
+
+
+class PendingReviewItem(BaseModel):
+    """A single item in the pending reviews queue."""
+
+    assignment_id: str
+    assignment_name: str
+    activity_type: str
+    student_id: str
+    student_name: str
+    completed_at: datetime | None
+
+
+class PendingReviewsResponse(BaseModel):
+    """Response for pending reviews endpoint."""
+
+    items: list[PendingReviewItem]
+    total: int

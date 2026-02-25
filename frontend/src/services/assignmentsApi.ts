@@ -10,7 +10,10 @@ import axios from "axios"
 import { OpenAPI } from "../client"
 import type {
   AssignmentDetailedResultsResponse,
+  PendingReviewsResponse,
   StudentAnswersResponse,
+  TeacherGradeRequest,
+  TeacherGradeResponse,
 } from "../types/analytics"
 import type {
   ActivityPreviewResponse,
@@ -523,6 +526,39 @@ async function attachMaterial(
   return response.data
 }
 
+// =============================================================================
+// Teacher Grading APIs
+// =============================================================================
+
+/**
+ * Grade a student's writing or speaking submission
+ *
+ * @param assignmentId - Assignment ID
+ * @param studentId - Student ID
+ * @param data - Grade data (score, optional activity_id)
+ * @returns Promise with grade response
+ */
+export async function gradeActivity(
+  assignmentId: string,
+  studentId: string,
+  data: TeacherGradeRequest,
+): Promise<TeacherGradeResponse> {
+  const url = `/api/v1/assignments/${assignmentId}/students/${studentId}/grade`
+  const response = await apiClient.post<TeacherGradeResponse>(url, data)
+  return response.data
+}
+
+/**
+ * Get pending reviews (completed submissions awaiting teacher grading)
+ *
+ * @returns Promise with pending reviews list
+ */
+export async function getPendingReviews(): Promise<PendingReviewsResponse> {
+  const url = `/api/v1/assignments/pending-reviews`
+  const response = await apiClient.get<PendingReviewsResponse>(url)
+  return response.data
+}
+
 export const assignmentsApi = {
   getAssignments,
   createAssignment,
@@ -554,6 +590,9 @@ export const assignmentsApi = {
   getAssignmentResult,
   // Teacher Materials APIs (Story 21.3)
   attachMaterial,
+  // Teacher Grading APIs
+  gradeActivity,
+  getPendingReviews,
 }
 
 export default assignmentsApi

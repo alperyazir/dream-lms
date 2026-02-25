@@ -294,6 +294,9 @@ export interface AssignmentListItem {
   // Scheduling fields (Story 9.6)
   scheduled_publish_date: string | null // ISO 8601 datetime string
   status: AssignmentPublishStatus
+
+  // Pending reviews for manual-grading activities
+  pending_reviews_count?: number
 }
 
 /**

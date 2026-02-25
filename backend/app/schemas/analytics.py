@@ -293,6 +293,8 @@ class StudentAnswersResponse(BaseModel):
     # Added for detailed result review (questions, correct answers, etc.)
     activity_type: str | None = None
     config_json: dict[str, Any] | None = None
+    # Rubric hints for teacher grading (writing/speaking activities)
+    rubric_hints: list[str] | None = None
 
 
 class AssignmentDetailedResultsResponse(BaseModel):

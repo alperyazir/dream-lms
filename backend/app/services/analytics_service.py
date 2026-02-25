@@ -849,6 +849,53 @@ async def get_assignment_detailed_results(
     )
 
 
+def _extract_rubric_hints(config_json: dict, activity_type: str) -> list[str] | None:
+    """Extract rubric hints from activity config for writing/speaking activities."""
+    hints = []
+    content = config_json.get("content", config_json)
+
+    if activity_type == "writing_free_response":
+        # Writing activities store rubric_hints at content level or per-item
+        if isinstance(content, dict):
+            if "rubric_hints" in content and isinstance(content["rubric_hints"], list):
+                hints.extend(content["rubric_hints"])
+            items = content.get("items", [])
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict) and "rubric_hints" in item:
+                        item_hints = item["rubric_hints"]
+                        if isinstance(item_hints, list):
+                            hints.extend(item_hints)
+                        elif isinstance(item_hints, str):
+                            hints.append(item_hints)
+
+    elif activity_type == "speaking_open_response":
+        # Speaking activities store grading_rubric at content level or per-item
+        if isinstance(content, dict):
+            if "grading_rubric" in content and isinstance(content["grading_rubric"], list):
+                hints.extend(content["grading_rubric"])
+            elif "rubric_hints" in content and isinstance(content["rubric_hints"], list):
+                hints.extend(content["rubric_hints"])
+            items = content.get("items", [])
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict):
+                        if "grading_rubric" in item:
+                            rubric = item["grading_rubric"]
+                            if isinstance(rubric, list):
+                                hints.extend(rubric)
+                            elif isinstance(rubric, str):
+                                hints.append(rubric)
+                        elif "rubric_hints" in item:
+                            item_hints = item["rubric_hints"]
+                            if isinstance(item_hints, list):
+                                hints.extend(item_hints)
+                            elif isinstance(item_hints, str):
+                                hints.append(item_hints)
+
+    return hints if hints else None
+
+
 async def get_student_assignment_answers(
     assignment_id: uuid.UUID,
     student_id: uuid.UUID,
@@ -911,6 +958,11 @@ async def get_student_assignment_answers(
                 "content": assignment.activity_content,
             }
 
+    # Extract rubric hints for manual-grading activities
+    rubric_hints = None
+    if activity_type_str in ("writing_free_response", "speaking_open_response") and config_json:
+        rubric_hints = _extract_rubric_hints(config_json, activity_type_str)
+
     return StudentAnswersResponse(
         student_id=str(student.id),
         name=user.full_name or user.email,
@@ -923,6 +975,7 @@ async def get_student_assignment_answers(
         answers_json=asgn_student.answers_json,
         activity_type=activity_type_str,
         config_json=config_json,
+        rubric_hints=rubric_hints,
     )
 
 
