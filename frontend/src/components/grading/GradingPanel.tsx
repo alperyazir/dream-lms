@@ -4,7 +4,7 @@
  * Displays a score input with slider and save button.
  */
 
-import { CheckCircle, ClipboardList, Lightbulb, Save } from "lucide-react"
+import { CheckCircle, ClipboardList, Save } from "lucide-react"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,6 @@ interface GradingPanelProps {
   studentId: string
   activityId?: string
   currentScore?: number | null
-  rubricHints?: string[] | null
   onScoreSaved?: (score: number, overallScore: number | null) => void
 }
 
@@ -28,7 +27,6 @@ export function GradingPanel({
   studentId,
   activityId,
   currentScore,
-  rubricHints,
   onScoreSaved,
 }: GradingPanelProps) {
   const [score, setScore] = useState<number>(currentScore ?? 0)
@@ -91,22 +89,6 @@ export function GradingPanel({
           </Badge>
         )}
       </div>
-
-      {rubricHints && rubricHints.length > 0 && (
-        <div className="rounded-md bg-muted/50 p-3 space-y-1.5">
-          <span className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
-            <Lightbulb className="h-3.5 w-3.5" />
-            Rubric Criteria
-          </span>
-          <ul className="space-y-1 pl-5 list-disc">
-            {rubricHints.map((hint, i) => (
-              <li key={i} className="text-xs text-muted-foreground">
-                {hint}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <div className="space-y-3">
         <Label className="text-xs text-muted-foreground">Score (0-100)</Label>
