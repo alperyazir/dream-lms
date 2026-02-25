@@ -182,7 +182,7 @@ function PendingReviewsCard({
                         <Link
                           to="/teacher/assignments/$assignmentId"
                           params={{ assignmentId: item.assignment_id }}
-                          search={{ gradeStudentId: item.student_id }}
+                          search={{ gradeStudentId: item.student_id, tab: undefined, openGrade: undefined }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Grade

@@ -1067,6 +1067,7 @@ function StudentAnswersDialog({
                       assignmentId={assignmentId}
                       studentId={studentId!}
                       currentScore={answers.score}
+                      rubricHints={answers.rubric_hints}
                       onScoreSaved={() => {}}
                     />
                     <InlineFeedback
