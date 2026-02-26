@@ -14,7 +14,7 @@ from app.api.deps import (
     can_delete_user,
     require_role,
 )
-from app.services.skill_attribution_service import recalculate_for_assignment
+from app.services.skill_attribution_service import backfill_all_skill_scores, recalculate_for_assignment
 from app.core.config import settings
 from app.core.security import decrypt_viewable_password, encrypt_viewable_password, get_password_hash
 from app.models import (
@@ -3031,4 +3031,51 @@ async def recalculate_skill_scores(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Recalculation failed: {str(e)}",
+        )
+
+
+class SkillScoreBackfillResponse(SQLModel):
+    """Response from skill score backfill."""
+    success: bool
+    assignments_processed: int
+    records_created: int
+    message: str
+
+
+@router.post(
+    "/skill-scores/backfill",
+    response_model=SkillScoreBackfillResponse,
+    summary="Backfill skill scores for all AI content assignments",
+    description="Attribute skill scores for all completed AI content assignments that are missing them. Admin only.",
+)
+async def backfill_skill_scores(
+    *,
+    session: AsyncSessionDep,
+    current_user: User = AdminOrSupervisor,
+) -> SkillScoreBackfillResponse:
+    """
+    One-time backfill: attribute skill scores for completed AI content
+    assignments that have no StudentSkillScore records yet.
+    """
+    try:
+        records_created, assignments_processed = await backfill_all_skill_scores(session)
+        await session.commit()
+
+        logger.info(
+            f"Admin {current_user.id} backfilled skill scores: "
+            f"{records_created} records from {assignments_processed} submissions"
+        )
+
+        return SkillScoreBackfillResponse(
+            success=True,
+            assignments_processed=assignments_processed,
+            records_created=records_created,
+            message=f"Backfilled {records_created} skill score records from {assignments_processed} submissions",
+        )
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Skill score backfill failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Backfill failed: {str(e)}",
         )

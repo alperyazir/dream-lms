@@ -102,12 +102,13 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiTrendingUp, title: "Classrooms", path: "/teacher/classrooms" },
     { icon: FiUsers, title: "Students", path: "/teacher/students" },
     { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments" },
+    { icon: FiBarChart2, title: "Analytics", path: "/teacher/analytics" },
     {
       icon: FiMessageSquare,
       title: "Announcements",
       path: "/teacher/announcements",
     },
-    { icon: FiBarChart2, title: "Reports", path: "/teacher/reports" },
+    { icon: FiTrendingUp, title: "Reports", path: "/teacher/reports" },
   ],
   student: [
     { icon: FiHome, title: "Dashboard", path: "/student/dashboard" },

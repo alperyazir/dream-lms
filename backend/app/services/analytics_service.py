@@ -174,7 +174,7 @@ async def get_student_analytics(
     completed_query = (
         select(AssignmentStudent, Assignment, Activity)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(Activity, Assignment.activity_id == Activity.id)
         .where(
             AssignmentStudent.student_id == student_id,
             AssignmentStudent.status == AssignmentStatus.completed,
@@ -192,7 +192,7 @@ async def get_student_analytics(
     # Calculate summary metrics
     total_completed = len(completed_assignments)
     avg_score = (
-        sum(asgn.score for asgn, _, _ in completed_assignments if asgn.score) /
+        sum(asgn.score for asgn, _, _ in completed_assignments if asgn.score is not None) /
         total_completed
         if total_completed > 0
         else 0.0
@@ -252,13 +252,14 @@ async def get_student_analytics(
 
     # Activity type breakdown
     activity_breakdown_data: dict[str, tuple[list[int], int]] = {}
-    for asgn, _, activity in completed_assignments:
+    for asgn, assignment, activity in completed_assignments:
         if asgn.score is not None:
-            if activity.activity_type not in activity_breakdown_data:
-                activity_breakdown_data[activity.activity_type] = ([], 0)
-            scores, count = activity_breakdown_data[activity.activity_type]
+            act_type = activity.activity_type if activity else (assignment.activity_type.value if assignment.activity_type else "unknown")
+            if act_type not in activity_breakdown_data:
+                activity_breakdown_data[act_type] = ([], 0)
+            scores, count = activity_breakdown_data[act_type]
             scores.append(asgn.score)
-            activity_breakdown_data[activity.activity_type] = (scores, count + 1)
+            activity_breakdown_data[act_type] = (scores, count + 1)
 
     activity_breakdown = [
         ActivityBreakdownItem(
@@ -445,7 +446,7 @@ async def get_class_analytics(
     submissions_query = (
         select(AssignmentStudent, Assignment, Activity, Student, User)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(Activity, Assignment.activity_id == Activity.id)
         .join(Student, AssignmentStudent.student_id == Student.id)
         .join(User, Student.user_id == User.id)
         .where(AssignmentStudent.student_id.in_(enrolled_student_ids))
@@ -610,21 +611,27 @@ async def get_class_analytics(
         for aid, (name, scores, total, times) in assignment_data.items()
     ]
 
-    # Activity type performance
-    activity_type_data: dict[str, list[float]] = {}
-    for asgn_student, _, activity, _, _ in completed_submissions:
+    # Activity type performance — grouped by skill
+    from app.services.skill_attribution_service import _ACTIVITY_TYPE_SKILL_SLUG
+
+    skill_perf_data: dict[str, list[float]] = {}
+    for asgn_student, assignment, activity, _, _ in completed_submissions:
         if asgn_student.score is not None:
-            if activity.activity_type not in activity_type_data:
-                activity_type_data[activity.activity_type] = []
-            activity_type_data[activity.activity_type].append(asgn_student.score)
+            act_type = activity.activity_type if activity else (assignment.activity_type.value if assignment.activity_type else "unknown")
+            skill_name = _ACTIVITY_TYPE_SKILL_SLUG.get(act_type, act_type)
+            # Capitalize skill name for display
+            display_name = skill_name.replace("_", " ").title()
+            if display_name not in skill_perf_data:
+                skill_perf_data[display_name] = []
+            skill_perf_data[display_name].append(asgn_student.score)
 
     activity_type_performance = [
         ActivityTypePerformanceItem(
-            activity_type=act_type,
+            activity_type=skill_name,
             avg_score=round(sum(scores) / len(scores), 1),
             count=len(scores),
         )
-        for act_type, scores in activity_type_data.items()
+        for skill_name, scores in sorted(skill_perf_data.items())
     ]
 
     # Trend analysis

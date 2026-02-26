@@ -21,6 +21,7 @@ from app.models import (
     Assignment,
     AssignmentActivity,
     AssignmentPublishStatus,
+    AssignmentStatus,
     AssignmentStudent,
     Class,
     ClassStudent,
@@ -63,6 +64,7 @@ from app.schemas.skill import (
     StudentSkillTrendsResponse,
 )
 from app.services import analytics_service, feedback_service
+from app.services.skill_attribution_service import _ACTIVITY_TYPE_SKILL_SLUG
 from app.services.book_service_v2 import get_book_service
 from app.utils import (
     ensure_unique_username,
@@ -1497,7 +1499,9 @@ async def _build_skill_profile(
     student_name: str,
     session: AsyncSessionDep,
 ) -> StudentSkillProfileResponse:
-    """Build skill profile for a student from StudentSkillScore data."""
+    """Build skill profile for a student from StudentSkillScore data,
+    with fallback to deriving from AssignmentStudent scores when no
+    StudentSkillScore records exist."""
     from sqlalchemy import case, distinct
 
     # Count total AI assignments completed (assignments with skill scores)
@@ -1512,69 +1516,100 @@ async def _build_skill_profile(
         select(SkillCategory).where(SkillCategory.is_active == True)
     )
     all_skills = skills_result.scalars().all()
+    skill_by_slug: dict[str, SkillCategory] = {s.slug: s for s in all_skills}
 
-    # Get aggregated scores per skill
-    scores_query = await session.execute(
-        select(
-            StudentSkillScore.skill_id,
-            func.sum(StudentSkillScore.attributed_score).label("total_score"),
-            func.sum(StudentSkillScore.attributed_max_score).label("total_max"),
-            func.count().label("data_points"),
-        )
-        .where(StudentSkillScore.student_id == student_id)
-        .group_by(StudentSkillScore.skill_id)
-    )
-    score_map = {}
-    for row in scores_query.all():
-        score_map[row.skill_id] = {
-            "total_score": float(row.total_score),
-            "total_max": float(row.total_max),
-            "data_points": int(row.data_points),
-        }
-
-    # Build trend data for skills with enough data points
+    score_map: dict[uuid.UUID, dict] = {}
     trend_map: dict[uuid.UUID, str | None] = {}
-    for skill_id, data in score_map.items():
-        if data["data_points"] >= 6:
-            # Get last 6 scores ordered by recorded_at
-            trend_query = await session.execute(
-                select(
-                    StudentSkillScore.attributed_score,
-                    StudentSkillScore.attributed_max_score,
-                )
-                .where(
-                    StudentSkillScore.student_id == student_id,
-                    StudentSkillScore.skill_id == skill_id,
-                )
-                .order_by(StudentSkillScore.recorded_at.desc())
-                .limit(6)
+
+    if total_ai_assignments > 0:
+        # Primary path: use StudentSkillScore records
+        scores_query = await session.execute(
+            select(
+                StudentSkillScore.skill_id,
+                func.sum(StudentSkillScore.attributed_score).label("total_score"),
+                func.sum(StudentSkillScore.attributed_max_score).label("total_max"),
+                func.count().label("data_points"),
             )
-            recent_scores = trend_query.all()
-            if len(recent_scores) >= 6:
-                # Recent 3 vs previous 3
-                recent_3 = [
-                    (s.attributed_score / s.attributed_max_score * 100)
-                    if s.attributed_max_score > 0 else 0
-                    for s in recent_scores[:3]
-                ]
-                prev_3 = [
-                    (s.attributed_score / s.attributed_max_score * 100)
-                    if s.attributed_max_score > 0 else 0
-                    for s in recent_scores[3:6]
-                ]
-                recent_avg = sum(recent_3) / 3
-                prev_avg = sum(prev_3) / 3
-                diff = recent_avg - prev_avg
-                if diff > 5:
-                    trend_map[skill_id] = "improving"
-                elif diff < -5:
-                    trend_map[skill_id] = "declining"
+            .where(StudentSkillScore.student_id == student_id)
+            .group_by(StudentSkillScore.skill_id)
+        )
+        for row in scores_query.all():
+            score_map[row.skill_id] = {
+                "total_score": float(row.total_score),
+                "total_max": float(row.total_max),
+                "data_points": int(row.data_points),
+            }
+
+        # Build trend data for skills with enough data points
+        for skill_id, data in score_map.items():
+            if data["data_points"] >= 6:
+                trend_query = await session.execute(
+                    select(
+                        StudentSkillScore.attributed_score,
+                        StudentSkillScore.attributed_max_score,
+                    )
+                    .where(
+                        StudentSkillScore.student_id == student_id,
+                        StudentSkillScore.skill_id == skill_id,
+                    )
+                    .order_by(StudentSkillScore.recorded_at.desc())
+                    .limit(6)
+                )
+                recent_scores = trend_query.all()
+                if len(recent_scores) >= 6:
+                    recent_3 = [
+                        (s.attributed_score / s.attributed_max_score * 100)
+                        if s.attributed_max_score > 0 else 0
+                        for s in recent_scores[:3]
+                    ]
+                    prev_3 = [
+                        (s.attributed_score / s.attributed_max_score * 100)
+                        if s.attributed_max_score > 0 else 0
+                        for s in recent_scores[3:6]
+                    ]
+                    diff = sum(recent_3) / 3 - sum(prev_3) / 3
+                    if diff > 5:
+                        trend_map[skill_id] = "improving"
+                    elif diff < -5:
+                        trend_map[skill_id] = "declining"
+                    else:
+                        trend_map[skill_id] = "stable"
                 else:
-                    trend_map[skill_id] = "stable"
+                    trend_map[skill_id] = None
             else:
                 trend_map[skill_id] = None
-        else:
-            trend_map[skill_id] = None
+    else:
+        # Fallback: derive from completed AI content assignments directly
+        fallback_query = await session.execute(
+            select(AssignmentStudent.score, Assignment.activity_type)
+            .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+            .where(
+                AssignmentStudent.student_id == student_id,
+                AssignmentStudent.status == AssignmentStatus.completed,
+                AssignmentStudent.score.isnot(None),
+                Assignment.activity_type.isnot(None),
+            )
+        )
+        fallback_rows = fallback_query.all()
+
+        if fallback_rows:
+            total_ai_assignments = len(fallback_rows)
+
+            # Aggregate by inferred skill
+            for row in fallback_rows:
+                act_type_val = row.activity_type.value if hasattr(row.activity_type, 'value') else str(row.activity_type)
+                skill_slug = _ACTIVITY_TYPE_SKILL_SLUG.get(act_type_val)
+                if not skill_slug:
+                    continue
+                skill = skill_by_slug.get(skill_slug)
+                if not skill:
+                    continue
+
+                if skill.id not in score_map:
+                    score_map[skill.id] = {"total_score": 0.0, "total_max": 0.0, "data_points": 0}
+                score_map[skill.id]["total_score"] += float(row.score)
+                score_map[skill.id]["total_max"] += 100.0
+                score_map[skill.id]["data_points"] += 1
 
     # Build profile items
     profile_items: list[SkillProfileItem] = []
@@ -1727,7 +1762,9 @@ async def _build_skill_trends(
     period: str,
     session: AsyncSessionDep,
 ) -> StudentSkillTrendsResponse:
-    """Build skill trend lines for a student."""
+    """Build skill trend lines for a student, with fallback to
+    deriving from AssignmentStudent scores when no StudentSkillScore
+    records exist."""
     from datetime import timedelta
 
     # Calculate start date from period
@@ -1753,8 +1790,9 @@ async def _build_skill_trends(
         select(SkillCategory).where(SkillCategory.is_active == True)
     )
     all_skills = {s.id: s for s in skills_result.scalars().all()}
+    skill_by_slug: dict[str, SkillCategory] = {s.slug: s for s in all_skills.values()}
 
-    # Query scores with assignment names
+    # Query scores with assignment names from StudentSkillScore
     query = (
         select(
             StudentSkillScore.skill_id,
@@ -1778,19 +1816,56 @@ async def _build_skill_trends(
     skill_points: dict[uuid.UUID, list[SkillTrendPoint]] = {
         sid: [] for sid in all_skills
     }
-    for row in rows:
-        if row.skill_id not in all_skills:
-            continue
-        score = (
-            (row.attributed_score / row.attributed_max_score * 100)
-            if row.attributed_max_score > 0 else 0
+
+    if rows:
+        # Primary path: use StudentSkillScore records
+        for row in rows:
+            if row.skill_id not in all_skills:
+                continue
+            score = (
+                (row.attributed_score / row.attributed_max_score * 100)
+                if row.attributed_max_score > 0 else 0
+            )
+            skill_points[row.skill_id].append(SkillTrendPoint(
+                date=row.recorded_at.strftime("%Y-%m-%d"),
+                score=round(score, 1),
+                assignment_name=row.assignment_name,
+                cefr_level=row.cefr_level,
+            ))
+    else:
+        # Fallback: derive from completed AI content assignments directly
+        fallback_query = await session.execute(
+            select(
+                AssignmentStudent.score,
+                AssignmentStudent.completed_at,
+                Assignment.activity_type,
+                Assignment.name,
+            )
+            .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+            .where(
+                AssignmentStudent.student_id == student_id,
+                AssignmentStudent.status == AssignmentStatus.completed,
+                AssignmentStudent.score.isnot(None),
+                AssignmentStudent.completed_at.isnot(None),
+                AssignmentStudent.completed_at >= start_date,
+                Assignment.activity_type.isnot(None),
+            )
+            .order_by(AssignmentStudent.completed_at.asc())
         )
-        skill_points[row.skill_id].append(SkillTrendPoint(
-            date=row.recorded_at.strftime("%Y-%m-%d"),
-            score=round(score, 1),
-            assignment_name=row.assignment_name,
-            cefr_level=row.cefr_level,
-        ))
+        for row in fallback_query.all():
+            act_type_val = row.activity_type.value if hasattr(row.activity_type, 'value') else str(row.activity_type)
+            skill_slug = _ACTIVITY_TYPE_SKILL_SLUG.get(act_type_val)
+            if not skill_slug:
+                continue
+            skill = skill_by_slug.get(skill_slug)
+            if not skill:
+                continue
+            skill_points[skill.id].append(SkillTrendPoint(
+                date=row.completed_at.strftime("%Y-%m-%d"),
+                score=round(float(row.score), 1),
+                assignment_name=row.name,
+                cefr_level=None,
+            ))
 
     # Build trend lines
     trends: list[SkillTrendLine] = []

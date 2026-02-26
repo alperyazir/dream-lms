@@ -25,13 +25,6 @@ import {
   YAxis,
 } from "recharts"
 import { type StudentPublic, TeachersService } from "@/client"
-import {
-  ActivityBenchmarkTable,
-  BenchmarkCard,
-  BenchmarkComparisonChart,
-  BenchmarkDisabledMessage,
-  BenchmarkMessage,
-} from "@/components/benchmarks"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -51,10 +44,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useClassBenchmarks } from "@/hooks/useBenchmarks"
 import { useClassAnalytics } from "@/hooks/useClassAnalytics"
 import type { ClassPeriodType, TrendData } from "@/types/analytics"
-import type { BenchmarkPeriod } from "@/types/benchmarks"
 
 export const Route = createFileRoute("/_layout/teacher/classrooms_/$classId")({
   component: ClassDetailPage,
@@ -102,26 +93,12 @@ function ClassDetailPage() {
   const params = useParams({ from: "/_layout/teacher/classrooms_/$classId" })
   const classId = params.classId
   const [period, setPeriod] = useState<ClassPeriodType>("monthly")
-  const [benchmarkPeriod, setBenchmarkPeriod] =
-    useState<BenchmarkPeriod>("monthly")
   const [activeTab, setActiveTab] = useState("analytics")
 
   // Fetch class details
   const { data: classDetail, isLoading: isLoadingClass } = useQuery({
     queryKey: ["classDetail", classId],
     queryFn: () => TeachersService.getClassDetails({ classId }),
-  })
-
-  // Fetch benchmarks
-  const {
-    benchmarks,
-    isLoading: isLoadingBenchmarks,
-    isDisabled: isBenchmarkingDisabled,
-    disabledMessage,
-  } = useClassBenchmarks({
-    classId,
-    period: benchmarkPeriod,
-    enabled: activeTab === "benchmarks",
   })
 
   // Fetch class students separately
@@ -155,7 +132,7 @@ function ClassDetailPage() {
   const activityTypeData = useMemo(() => {
     if (!analytics) return []
     return analytics.activity_type_performance.map((item) => ({
-      name: item.activity_type.replace(/([A-Z])/g, " $1").trim(), // CamelCase to spaces
+      name: item.activity_type,
       avgScore: item.avg_score,
       count: item.count,
     }))
@@ -233,22 +210,14 @@ function ClassDetailPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 max-w-lg">
+        <TabsList className="grid w-full grid-cols-2 max-w-sm">
           <TabsTrigger value="students" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Students
           </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            Assignments
-          </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
-          </TabsTrigger>
-          <TabsTrigger value="benchmarks" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Benchmarks
           </TabsTrigger>
         </TabsList>
 
@@ -295,61 +264,6 @@ function ClassDetailPage() {
           </Card>
         </TabsContent>
 
-        {/* Assignments Tab */}
-        <TabsContent value="assignments" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Class Assignments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {analytics.assignment_performance.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Assignment</TableHead>
-                      <TableHead className="text-right">Avg Score</TableHead>
-                      <TableHead className="text-right">Completion</TableHead>
-                      <TableHead className="text-right">Avg Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {analytics.assignment_performance.map((assignment) => (
-                      <TableRow key={assignment.assignment_id}>
-                        <TableCell className="font-medium">
-                          {assignment.name}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge
-                            variant={
-                              assignment.avg_score >= 80
-                                ? "default"
-                                : assignment.avg_score >= 60
-                                  ? "secondary"
-                                  : "destructive"
-                            }
-                          >
-                            {assignment.avg_score.toFixed(0)}%
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {(assignment.completion_rate * 100).toFixed(0)}%
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {assignment.avg_time_spent.toFixed(0)} min
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <p className="text-gray-500 text-center py-8">
-                  No assignments created for this class yet.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="mt-6 space-y-6">
           {/* Period Selector */}
@@ -384,7 +298,7 @@ function ClassDetailPage() {
                 <div className="text-2xl font-bold">
                   {analytics.summary.avg_score.toFixed(1)}%
                 </div>
-                {scoreTrend && <TrendIndicator trend={scoreTrend} />}
+                {scoreTrend && scoreTrend.change_percent !== 0 && <TrendIndicator trend={scoreTrend} />}
               </CardContent>
             </Card>
 
@@ -399,7 +313,7 @@ function ClassDetailPage() {
                 <div className="text-2xl font-bold">
                   {(analytics.summary.completion_rate * 100).toFixed(0)}%
                 </div>
-                {completionTrend && <TrendIndicator trend={completionTrend} />}
+                {completionTrend && completionTrend.change_percent !== 0 && <TrendIndicator trend={completionTrend} />}
               </CardContent>
             </Card>
 
@@ -466,7 +380,7 @@ function ClassDetailPage() {
             {/* Activity Type Performance */}
             <Card>
               <CardHeader>
-                <CardTitle>Performance by Activity Type</CardTitle>
+                <CardTitle>Performance by Skill</CardTitle>
               </CardHeader>
               <CardContent>
                 {activityTypeData.length > 0 ? (
@@ -481,7 +395,7 @@ function ClassDetailPage() {
                   </ResponsiveContainer>
                 ) : (
                   <p className="text-gray-500 text-center py-12">
-                    No activity data available yet.
+                    No skill data available yet.
                   </p>
                 )}
               </CardContent>
@@ -658,95 +572,6 @@ function ClassDetailPage() {
           </Card>
         </TabsContent>
 
-        {/* Benchmarks Tab */}
-        <TabsContent value="benchmarks" className="mt-6 space-y-6">
-          {/* Loading state */}
-          {isLoadingBenchmarks && (
-            <div className="text-center py-12">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-teal-600 border-r-transparent" />
-              <p className="text-gray-600 dark:text-gray-400 mt-4">
-                Loading benchmark data...
-              </p>
-            </div>
-          )}
-
-          {/* Disabled state */}
-          {!isLoadingBenchmarks && isBenchmarkingDisabled && (
-            <BenchmarkDisabledMessage message={disabledMessage} />
-          )}
-
-          {/* Benchmark data */}
-          {!isLoadingBenchmarks && !isBenchmarkingDisabled && benchmarks && (
-            <>
-              {/* Period selector */}
-              <div className="flex justify-end">
-                <Select
-                  value={benchmarkPeriod}
-                  onValueChange={(value) =>
-                    setBenchmarkPeriod(value as BenchmarkPeriod)
-                  }
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="semester">Semester</SelectItem>
-                    <SelectItem value="all">All Time</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Performance Message */}
-              {benchmarks.message && (
-                <BenchmarkMessage message={benchmarks.message} />
-              )}
-
-              {/* Benchmark Comparison Card */}
-              <BenchmarkCard
-                classMetrics={benchmarks.class_metrics}
-                schoolBenchmark={benchmarks.school_benchmark}
-                publisherBenchmark={benchmarks.publisher_benchmark}
-              />
-
-              {/* Charts Row */}
-              <div className="grid gap-6 lg:grid-cols-2">
-                {/* Trend Chart */}
-                <BenchmarkComparisonChart
-                  trendData={benchmarks.comparison_over_time}
-                  periodType={
-                    benchmarkPeriod === "weekly" ? "weekly" : "monthly"
-                  }
-                />
-
-                {/* Activity Type Table */}
-                <ActivityBenchmarkTable
-                  activityBenchmarks={benchmarks.activity_benchmarks}
-                  showSchoolBenchmark={
-                    benchmarks.school_benchmark?.is_available ?? false
-                  }
-                />
-              </div>
-            </>
-          )}
-
-          {/* No data state */}
-          {!isLoadingBenchmarks && !isBenchmarkingDisabled && !benchmarks && (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
-                  No Benchmark Data Available
-                </h3>
-                <p className="text-muted-foreground">
-                  Benchmark comparisons will appear once enough data is
-                  collected from assignments.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
       </Tabs>
     </div>
   )

@@ -11,7 +11,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -66,11 +66,32 @@ async def attribute_skill_scores(
             return []
 
         # AC7: No attribution for book-based (DCS) assignments
+        # For AI content assignments, infer skill from activity_type if primary_skill_id is not set
         if assignment.primary_skill_id is None:
-            logger.debug(
-                f"Skill attribution: Skipping assignment {assignment.id} - no primary_skill_id (book-based)"
-            )
-            return []
+            if assignment.is_mix_mode:
+                # Mix mode uses per-question skill tags, doesn't need primary_skill_id
+                pass
+            elif assignment.activity_type:
+                inferred_skill_id = await _infer_skill_from_activity_type(
+                    assignment.activity_type.value, session
+                )
+                if inferred_skill_id:
+                    assignment.primary_skill_id = inferred_skill_id
+                    logger.info(
+                        f"Skill attribution: Inferred primary_skill_id from activity_type "
+                        f"'{assignment.activity_type.value}' for assignment {assignment.id}"
+                    )
+                else:
+                    logger.debug(
+                        f"Skill attribution: Skipping assignment {assignment.id} - "
+                        f"could not infer skill from activity_type '{assignment.activity_type.value}'"
+                    )
+                    return []
+            else:
+                logger.debug(
+                    f"Skill attribution: Skipping assignment {assignment.id} - no primary_skill_id (book-based)"
+                )
+                return []
 
         # Only attribute completed submissions
         if assignment_student.status != AssignmentStatus.completed:
@@ -162,6 +183,38 @@ async def recalculate_for_assignment(
         total_records += len(records)
 
     return total_records
+
+
+async def backfill_all_skill_scores(session: AsyncSession) -> tuple[int, int]:
+    """
+    Backfill skill scores for all completed AI content assignments
+    that don't yet have StudentSkillScore records.
+    """
+    # Find completed AssignmentStudents with no existing skill scores
+    subq = (
+        select(StudentSkillScore.id)
+        .where(StudentSkillScore.assignment_student_id == AssignmentStudent.id)
+        .correlate(AssignmentStudent)
+        .exists()
+    )
+
+    result = await session.execute(
+        select(AssignmentStudent.id)
+        .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+        .where(
+            AssignmentStudent.status == AssignmentStatus.completed,
+            Assignment.activity_type.isnot(None),  # AI content assignments
+            ~subq,  # No existing skill scores
+        )
+    )
+    assignment_student_ids = result.scalars().all()
+
+    total_records = 0
+    for asn_student_id in assignment_student_ids:
+        records = await attribute_skill_scores(asn_student_id, session)
+        total_records += len(records)
+
+    return total_records, len(assignment_student_ids)
 
 
 async def _attribute_single_skill(
@@ -400,3 +453,51 @@ async def _resolve_skill_ids(
             logger.warning(f"Skill attribution: Unknown skill slug '{skill_key}'")
 
     return resolved
+
+
+# Mapping from activity_type value to skill slug
+_ACTIVITY_TYPE_SKILL_SLUG: dict[str, str] = {
+    # AI-generated activity types
+    "listening_quiz": "listening",
+    "listening_fill_blank": "listening",
+    "listening_sentence_builder": "listening",
+    "listening_word_builder": "listening",
+    "reading_comprehension": "reading",
+    "writing_fill_blank": "writing",
+    "writing_sentence_corrector": "writing",
+    "writing_free_response": "writing",
+    "speaking_open_response": "speaking",
+    "vocabulary_quiz": "vocabulary",
+    "vocabulary_matching": "vocabulary",
+    "word_builder": "vocabulary",
+    "ai_quiz": "grammar",
+    "sentence_builder": "grammar",
+    # DCS book activity types
+    "matchTheWords": "book_activities",
+    "dragdroppicture": "book_activities",
+    "dragdroppicturegroup": "book_activities",
+    "fillSentencesWithDots": "book_activities",
+    "fillpicture": "book_activities",
+    "circle": "book_activities",
+    "puzzleFindWords": "book_activities",
+    "markwithx": "book_activities",
+}
+
+
+async def _infer_skill_from_activity_type(
+    activity_type: str,
+    session: AsyncSession,
+) -> uuid.UUID | None:
+    """
+    Infer the primary skill ID from an assignment's activity_type.
+
+    Used for AI content assignments that were created without primary_skill_id.
+    """
+    skill_slug = _ACTIVITY_TYPE_SKILL_SLUG.get(activity_type)
+    if not skill_slug:
+        return None
+
+    result = await session.execute(
+        select(SkillCategory.id).where(SkillCategory.slug == skill_slug)
+    )
+    return result.scalar_one_or_none()

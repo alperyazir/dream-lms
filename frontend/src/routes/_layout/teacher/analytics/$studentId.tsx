@@ -1,9 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Award, Clock, Mail, Target, TrendingUp } from "lucide-react"
+import { ArrowLeft, Award, Clock, Mail, Target } from "lucide-react"
 import { useMemo, useState } from "react"
 import { SkillProfileCard } from "@/components/analytics/SkillProfileCard"
-import { SkillTrendChart } from "@/components/analytics/SkillTrendChart"
-import { ActivityBreakdownChart } from "@/components/charts/ActivityBreakdownChart"
 import { ActivityHistoryTable } from "@/components/charts/ActivityHistoryTable"
 import { StudentProgressChart } from "@/components/charts/StudentProgressChart"
 import { ComposeMessageModal } from "@/components/messaging/ComposeMessageModal"
@@ -44,13 +42,6 @@ function StudentAnalyticsDetail() {
     const scores = analytics.performance_trend.map((point) => point.score)
     const dates = analytics.performance_trend.map((point) => point.date)
 
-    // Transform activity breakdown for ActivityBreakdownChart
-    const activityBreakdown = analytics.activity_breakdown.map((item) => ({
-      name: item.activity_type,
-      count: item.count,
-      avgScore: item.avg_score,
-    }))
-
     // Transform recent activity for ActivityHistoryTable
     const activityHistory = analytics.recent_activity.map((item) => ({
       date: item.completed_at,
@@ -65,7 +56,6 @@ function StudentAnalyticsDetail() {
     return {
       scores,
       dates,
-      activityBreakdown,
       activityHistory,
     }
   }, [analytics])
@@ -149,7 +139,7 @@ function StudentAnalyticsDetail() {
         {/* Student Header with Summary */}
         <Card className="shadow-lg">
           <CardContent className="pt-6">
-            <div className="flex items-start gap-6 flex-col md:flex-row">
+            <div className="flex items-center gap-6 flex-col md:flex-row">
               {/* Avatar */}
               <Avatar className="h-20 w-20">
                 <AvatarFallback className="bg-teal-600 text-white text-2xl">
@@ -162,19 +152,13 @@ function StudentAnalyticsDetail() {
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                   {analytics.student.name}
                 </h1>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <span className="font-medium">Student ID:</span>{" "}
-                    {analytics.student.id}
-                  </div>
-                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Summary Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Average Score */}
           <Card>
             <CardHeader className="pb-3">
@@ -212,24 +196,6 @@ function StudentAnalyticsDetail() {
             </CardContent>
           </Card>
 
-          {/* Current Streak */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <TrendingUp className="h-4 w-4 text-teal-600" />
-                Current Streak
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-                {analytics.summary.current_streak}
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Consecutive days
-              </p>
-            </CardContent>
-          </Card>
-
           {/* Time This Week */}
           <Card>
             <CardHeader className="pb-3">
@@ -240,12 +206,9 @@ function StudentAnalyticsDetail() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-                {Math.round(analytics.time_analytics.total_time_this_week / 60)}
-                h
+                {Math.floor(analytics.time_analytics.total_time_this_week / 60)}h{" "}
+                {analytics.time_analytics.total_time_this_week % 60}m
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {analytics.time_analytics.total_time_this_week} minutes
-              </p>
             </CardContent>
           </Card>
         </div>
@@ -292,108 +255,88 @@ function StudentAnalyticsDetail() {
             </CardContent>
           </Card>
 
-          {/* Activity Type Breakdown */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg">Activity Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {chartData && chartData.activityBreakdown.length > 0 ? (
-                <ActivityBreakdownChart data={chartData.activityBreakdown} />
-              ) : (
-                <p className="text-center text-gray-500 py-8">
-                  No activity data available
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Skill Profile Radar Chart (Story 30.14) */}
           <SkillProfileCard studentId={studentId} size="md" />
 
-          {/* Skill Trend Over Time (Story 30.16) */}
-          <div className="md:col-span-2">
-            <SkillTrendChart studentId={studentId} />
+          {/* Right column: Assignment Status + Time Analytics stacked */}
+          <div className="flex flex-col gap-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg">Assignment Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Not Started
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {analytics.status_summary.not_started}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      In Progress
+                    </span>
+                    <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                      {analytics.status_summary.in_progress}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Completed
+                    </span>
+                    <span className="text-lg font-semibold text-green-600 dark:text-green-400">
+                      {analytics.status_summary.completed}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Past Due
+                    </span>
+                    <span className="text-lg font-semibold text-red-600 dark:text-red-400">
+                      {analytics.status_summary.past_due}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg">Time Analytics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Avg Per Assignment
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {analytics.time_analytics.avg_time_per_assignment} min
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Total This Week
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {analytics.time_analytics.total_time_this_week} min
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Total This Month
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {analytics.time_analytics.total_time_this_month} min
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-
-          {/* Assignment Status Summary */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg">Assignment Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Not Started
-                  </span>
-                  <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {analytics.status_summary.not_started}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    In Progress
-                  </span>
-                  <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                    {analytics.status_summary.in_progress}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Completed
-                  </span>
-                  <span className="text-lg font-semibold text-green-600 dark:text-green-400">
-                    {analytics.status_summary.completed}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Past Due
-                  </span>
-                  <span className="text-lg font-semibold text-red-600 dark:text-red-400">
-                    {analytics.status_summary.past_due}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-
-        {/* Time Analytics */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg">Time Analytics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Average Time Per Assignment
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {analytics.time_analytics.avg_time_per_assignment} min
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Total Time This Week
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {analytics.time_analytics.total_time_this_week} min
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Total Time This Month
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {analytics.time_analytics.total_time_this_month} min
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Recent Activity */}
         <Card className="shadow-lg">
