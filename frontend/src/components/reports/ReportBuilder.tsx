@@ -2,15 +2,20 @@
  * Report Builder Component
  * Story 5.6: Time-Based Reporting & Trend Analysis
  *
- * Form for configuring and generating reports with:
- * - Report type selection
- * - Time period selection
- * - Target selection (class/student)
- * - Format selection (PDF/Excel)
+ * Stepped form for configuring and generating reports.
  */
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ClipboardList, Search, User, Users, X } from "lucide-react"
+import {
+  Calendar,
+  CheckCircle2,
+  FileText,
+  Loader2,
+  Search,
+  User,
+  Users,
+  X,
+} from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -21,7 +26,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -32,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 import type {
   ReportGenerateRequest,
   ReportTemplateType,
@@ -39,10 +44,9 @@ import type {
 } from "@/types/reports"
 import { REPORT_PERIOD_LABELS } from "@/types/reports"
 
-// Form validation schema
 const reportFormSchema = z
   .object({
-    report_type: z.enum(["student", "class", "assignment"]),
+    report_type: z.enum(["student", "class"]),
     period: z.enum(["week", "month", "semester", "custom"]),
     start_date: z.string().optional(),
     end_date: z.string().optional(),
@@ -73,23 +77,38 @@ const reportFormSchema = z
 
 type ReportFormData = z.infer<typeof reportFormSchema>
 
-interface ClassOption {
-  id: string
-  name: string
-}
-
-interface StudentOption {
+interface NamedOption {
   id: string
   name: string
 }
 
 interface ReportBuilderProps {
-  classes: ClassOption[]
-  students: StudentOption[]
+  classes: NamedOption[]
+  students: NamedOption[]
   onGenerate: (config: ReportGenerateRequest) => void
   isGenerating?: boolean
   selectedTemplate?: ReportTemplateType | null
 }
+
+const reportTypes: {
+  value: "student" | "class"
+  label: string
+  description: string
+  icon: React.ComponentType<{ className?: string }>
+}[] = [
+  {
+    value: "student",
+    label: "Student",
+    description: "Individual performance",
+    icon: User,
+  },
+  {
+    value: "class",
+    label: "Class",
+    description: "Classroom overview",
+    icon: Users,
+  },
+]
 
 export function ReportBuilder({
   classes,
@@ -99,24 +118,17 @@ export function ReportBuilder({
   selectedTemplate = null,
 }: ReportBuilderProps) {
   const [reportType, setReportType] = useState<ReportType>("student")
-  const [studentSearch, setStudentSearch] = useState("")
-  const [classSearch, setClassSearch] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
-  // Filter and sort students based on search query (alphabetically)
-  const filteredStudents = useMemo(() => {
-    const sorted = [...students].sort((a, b) => a.name.localeCompare(b.name))
-    if (!studentSearch.trim()) return sorted
-    const query = studentSearch.toLowerCase()
-    return sorted.filter((s) => s.name.toLowerCase().includes(query))
-  }, [students, studentSearch])
+  const filteredOptions = useMemo(() => {
+    const source = reportType === "student" ? students : classes
+    const sorted = [...source].sort((a, b) => a.name.localeCompare(b.name))
+    if (!searchQuery.trim()) return sorted
+    const q = searchQuery.toLowerCase()
+    return sorted.filter((item) => item.name.toLowerCase().includes(q))
+  }, [reportType, students, classes, searchQuery])
 
-  // Filter and sort classes based on search query (alphabetically)
-  const filteredClasses = useMemo(() => {
-    const sorted = [...classes].sort((a, b) => a.name.localeCompare(b.name))
-    if (!classSearch.trim()) return sorted
-    const query = classSearch.toLowerCase()
-    return sorted.filter((c) => c.name.toLowerCase().includes(query))
-  }, [classes, classSearch])
+  const totalCount = reportType === "student" ? students.length : classes.length
 
   const form = useForm<ReportFormData>({
     resolver: zodResolver(reportFormSchema),
@@ -130,6 +142,10 @@ export function ReportBuilder({
   })
 
   const currentPeriod = form.watch("period")
+  const currentTargetId = form.watch("target_id")
+
+  const isStep2Complete = !!currentTargetId
+  const isStep3Complete = !!currentPeriod
 
   const handleSubmit = (data: ReportFormData) => {
     const config: ReportGenerateRequest = {
@@ -144,219 +160,223 @@ export function ReportBuilder({
     onGenerate(config)
   }
 
-  const handleReportTypeChange = (value: ReportType) => {
+  const handleReportTypeChange = (value: "student" | "class") => {
     setReportType(value)
     form.setValue("report_type", value)
-    form.setValue("target_id", "") // Reset target when type changes
-    setStudentSearch("") // Clear search when switching
-    setClassSearch("")
+    form.setValue("target_id", "")
+    setSearchQuery("")
   }
 
-  const getTargetOptions = () => {
-    if (reportType === "class") {
-      return filteredClasses.map((c) => ({ id: c.id, name: c.name }))
-    }
-    if (reportType === "student") {
-      return filteredStudents.map((s) => ({ id: s.id, name: s.name }))
-    }
-    // For assignment reports, use an empty target or teacher ID
-    return []
-  }
+  const targetLabel =
+    reportType === "student" ? "Select Student" : "Select Class"
 
-  const getSearchValue = () => {
-    return reportType === "student" ? studentSearch : classSearch
-  }
-
-  const setSearchValue = (value: string) => {
-    if (reportType === "student") {
-      setStudentSearch(value)
-    } else {
-      setClassSearch(value)
-    }
-  }
-
-  const clearSearch = () => {
-    if (reportType === "student") {
-      setStudentSearch("")
-    } else {
-      setClassSearch("")
-    }
-  }
-
-  const getTargetLabel = () => {
-    switch (reportType) {
-      case "class":
-        return "Select Class"
-      case "student":
-        return "Select Student"
-      default:
-        return "Select Target"
-    }
-  }
+  const searchPlaceholder =
+    reportType === "student" ? "Search students..." : "Search classes..."
 
   return (
-    <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">Configure Report</h3>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        {/* Step 1 - Report Type */}
+        <Card className="p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+              1
+            </div>
+            <h3 className="font-semibold">Choose report type</h3>
+          </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          {/* Report Type Selection */}
           <FormField
             control={form.control}
             name="report_type"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Report Type</FormLabel>
-                <div className="grid grid-cols-3 gap-3">
-                  <Button
-                    type="button"
-                    variant={field.value === "student" ? "default" : "outline"}
-                    className="flex flex-col h-auto py-4 gap-2"
-                    onClick={() => handleReportTypeChange("student")}
-                  >
-                    <User className="h-5 w-5" />
-                    <span className="text-xs">Student</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={field.value === "class" ? "default" : "outline"}
-                    className="flex flex-col h-auto py-4 gap-2"
-                    onClick={() => handleReportTypeChange("class")}
-                  >
-                    <Users className="h-5 w-5" />
-                    <span className="text-xs">Class</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={
-                      field.value === "assignment" ? "default" : "outline"
-                    }
-                    className="flex flex-col h-auto py-4 gap-2"
-                    onClick={() => handleReportTypeChange("assignment")}
-                  >
-                    <ClipboardList className="h-5 w-5" />
-                    <span className="text-xs">Assignment</span>
-                  </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  {reportTypes.map((type) => {
+                    const isActive = field.value === type.value
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => handleReportTypeChange(type.value)}
+                        className={cn(
+                          "relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all",
+                          isActive
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border hover:border-primary/40 hover:bg-muted/50",
+                        )}
+                      >
+                        {isActive && (
+                          <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />
+                        )}
+                        <div
+                          className={cn(
+                            "flex h-10 w-10 items-center justify-center rounded-lg",
+                            isActive
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          <type.icon className="h-5 w-5" />
+                        </div>
+                        <div className="text-center">
+                          <p
+                            className={cn(
+                              "text-sm font-medium",
+                              isActive && "text-primary",
+                            )}
+                          >
+                            {type.label}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                            {type.description}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
                 <FormMessage />
               </FormItem>
             )}
           />
+        </Card>
 
-          {/* Target Selection (for student and class reports) */}
-          {reportType !== "assignment" && (
-            <FormField
-              control={form.control}
-              name="target_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{getTargetLabel()}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={getTargetLabel()} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {/* Search Input inside dropdown */}
-                      <div className="sticky top-0 bg-popover p-2 border-b">
-                        <div className="relative">
-                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder={`Search ${reportType === "student" ? "students" : "classes"}...`}
-                            value={getSearchValue()}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              setSearchValue(e.target.value)
-                            }}
-                            onKeyDown={(e) => e.stopPropagation()}
-                            className="pl-8 pr-8 h-8 text-sm"
-                          />
-                          {getSearchValue() && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                clearSearch()
-                              }}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                        {/* Search result count */}
-                        {getSearchValue() && (
-                          <p className="text-xs text-muted-foreground mt-1.5 px-0.5">
-                            {getTargetOptions().length} of{" "}
-                            {reportType === "student"
-                              ? students.length
-                              : classes.length}{" "}
-                            {reportType === "student" ? "students" : "classes"}
-                          </p>
-                        )}
-                      </div>
-                      {/* List of options */}
-                      <div className="max-h-[200px] overflow-y-auto">
-                        {getTargetOptions().length === 0 ? (
-                          <div className="py-6 text-center text-sm text-muted-foreground">
-                            {getSearchValue()
-                              ? `No ${reportType === "student" ? "students" : "classes"} found`
-                              : `No ${reportType === "student" ? "students" : "classes"} available`}
-                          </div>
-                        ) : (
-                          getTargetOptions().map((option) => (
-                            <SelectItem key={option.id} value={option.id}>
-                              {option.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </div>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+        {/* Step 2 - Target Selection */}
+        <Card className="p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className={cn(
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                isStep2Complete
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground",
               )}
-            />
-          )}
+            >
+              {isStep2Complete ? <CheckCircle2 className="h-4 w-4" /> : "2"}
+            </div>
+            <h3 className="font-semibold">{targetLabel}</h3>
+          </div>
 
-          {/* Time Period Selection */}
           <FormField
             control={form.control}
-            name="period"
+            name="target_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Time Period</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder={targetLabel} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Object.entries(REPORT_PERIOD_LABELS).map(
-                      ([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ),
-                    )}
+                    <div className="sticky top-0 bg-popover p-2 border-b">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder={searchPlaceholder}
+                          value={searchQuery}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            setSearchQuery(e.target.value)
+                          }}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          className="pl-8 pr-8 h-8 text-sm"
+                        />
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSearchQuery("")
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      {searchQuery && (
+                        <p className="text-xs text-muted-foreground mt-1.5 px-0.5">
+                          {filteredOptions.length} of {totalCount} results
+                        </p>
+                      )}
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto">
+                      {filteredOptions.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          {searchQuery
+                            ? "No results found"
+                            : "No options available"}
+                        </div>
+                      ) : (
+                        filteredOptions.map((option) => (
+                          <SelectItem key={option.id} value={option.id}>
+                            {option.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </div>
                   </SelectContent>
                 </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
+        </Card>
 
-          {/* Custom Date Range */}
+        {/* Step 3 - Time Period */}
+        <Card className="p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className={cn(
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                isStep3Complete
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
+              {isStep3Complete ? <CheckCircle2 className="h-4 w-4" /> : "3"}
+            </div>
+            <h3 className="font-semibold">Time period</h3>
+          </div>
+
+          <FormField
+            control={form.control}
+            name="period"
+            render={({ field }) => (
+              <FormItem>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(REPORT_PERIOD_LABELS).map(
+                    ([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => field.onChange(value)}
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-all",
+                          field.value === value
+                            ? "border-primary bg-primary/5 text-primary font-medium"
+                            : "border-border hover:border-primary/40 hover:bg-muted/50 text-muted-foreground",
+                        )}
+                      >
+                        <Calendar className="h-4 w-4 shrink-0" />
+                        {label}
+                      </button>
+                    ),
+                  )}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           {currentPeriod === "custom" && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 mt-4">
               <FormField
                 control={form.control}
                 name="start_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Date</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -369,7 +389,6 @@ export function ReportBuilder({
                 name="end_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End Date</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -379,17 +398,30 @@ export function ReportBuilder({
               />
             </div>
           )}
+        </Card>
 
-          {/* Format is always PDF - hidden field */}
-          <input type="hidden" {...form.register("format")} value="pdf" />
+        <input type="hidden" {...form.register("format")} value="pdf" />
 
-          {/* Generate Button */}
-          <Button type="submit" className="w-full" disabled={isGenerating}>
-            {isGenerating ? "Generating..." : "Generate Report"}
-          </Button>
-        </form>
-      </Form>
-    </Card>
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full gap-2"
+          disabled={isGenerating}
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <FileText className="h-4 w-4" />
+              Generate Report
+            </>
+          )}
+        </Button>
+      </form>
+    </Form>
   )
 }
 

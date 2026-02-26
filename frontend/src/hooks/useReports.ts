@@ -5,6 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
+  deleteReportHistoryItem,
   deleteReportTemplate,
   downloadReport,
   generateReport,
@@ -121,6 +122,26 @@ export function useReportHistory() {
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
+  }
+}
+
+/**
+ * Hook for deleting a report history item
+ */
+export function useDeleteReportHistory() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (jobId: string) => deleteReportHistoryItem(jobId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: REPORT_HISTORY_QUERY_KEY })
+    },
+  })
+
+  return {
+    deleteReport: mutation.mutate,
+    isDeleting: mutation.isPending,
+    error: mutation.error,
   }
 }
 

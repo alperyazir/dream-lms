@@ -26,6 +26,7 @@ from app.schemas.reports import (
 )
 from app.services.report_service import (
     create_report_job,
+    delete_report_job,
     delete_report_template,
     fail_job,
     generate_report_filename,
@@ -467,3 +468,31 @@ async def remove_report_template(
         )
 
     logger.info(f"Report template deleted: id={template_id}")
+
+
+@router.delete(
+    "/history/{job_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete report history item",
+    description="Delete a report from the history.",
+)
+async def remove_report_history_item(
+    *,
+    session: AsyncSessionDep,
+    job_id: uuid.UUID,
+    current_user: User = require_role(UserRole.teacher),
+) -> None:
+    """
+    Delete a report history item.
+    """
+    teacher_id = await _get_teacher_id(session, current_user)
+
+    deleted = await delete_report_job(session, job_id, teacher_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report not found or access denied",
+        )
+
+    logger.info(f"Report history item deleted: id={job_id}")

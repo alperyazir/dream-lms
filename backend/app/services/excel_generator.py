@@ -203,26 +203,26 @@ def _create_student_data_sheet(wb: Workbook, data: dict) -> None:
 
     row = 1
 
-    # Activity Breakdown
-    activity_breakdown = data.get("activity_breakdown", [])
-    if activity_breakdown:
-        ws[f"A{row}"] = "Performance by Activity Type"
+    # Skill Breakdown
+    skill_breakdown = data.get("skill_breakdown", [])
+    if skill_breakdown:
+        ws[f"A{row}"] = "Skill Performance"
         ws[f"A{row}"].font = SECTION_FONT
         row += 1
 
-        headers = ["Activity Type", "Average Score", "Completed"]
+        headers = ["Skill", "Average Score", "Activities"]
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=row, column=col, value=header)
             cell.fill = HEADER_FILL
             cell.font = HEADER_FONT
             cell.border = BORDER
 
-        for i, item in enumerate(activity_breakdown):
+        for i, item in enumerate(skill_breakdown):
             row += 1
             ws.cell(
                 row=row,
                 column=1,
-                value=item.get("label", item.get("activity_type", "Unknown")),
+                value=item.get("skill_name", "Unknown"),
             ).border = BORDER
             ws.cell(
                 row=row, column=2, value=f"{item.get('avg_score', 0):.1f}%"
@@ -498,45 +498,51 @@ def _create_assignment_data_sheet(wb: Workbook, data: dict) -> None:
 
 def _create_charts_sheet(wb: Workbook, data: dict, report_type: str) -> None:
     """Create charts sheet with Excel native charts."""
-    # Get activity breakdown data
+    # Use skill breakdown for student/class, fallback to activity_type_comparison for assignment
     if report_type in ("student", "class"):
-        activity_data = data.get("activity_breakdown", [])
+        chart_data = data.get("skill_breakdown", [])
+        chart_title = "Average Score by Skill"
+        x_title = "Skill"
+        label_key = "skill_name"
     else:
-        activity_data = data.get("activity_type_comparison", [])
+        chart_data = data.get("activity_type_comparison", [])
+        chart_title = "Average Score by Activity Type"
+        x_title = "Activity Type"
+        label_key = "label"
 
-    if not activity_data:
+    if not chart_data:
         return
 
     ws = wb.create_sheet("Charts")
 
-    # Set up data for chart
-    ws["A1"] = "Activity Type Performance"
+    # Set up data for book/activity chart
+    ws["A1"] = chart_title
     ws["A1"].font = SECTION_FONT
 
-    ws["A3"] = "Activity Type"
+    ws["A3"] = x_title
     ws["B3"] = "Average Score"
     ws["A3"].fill = HEADER_FILL
     ws["A3"].font = HEADER_FONT
     ws["B3"].fill = HEADER_FILL
     ws["B3"].font = HEADER_FONT
 
-    for i, item in enumerate(activity_data, 4):
-        label = item.get("label", item.get("activity_type", "Unknown"))
+    for i, item in enumerate(chart_data, 4):
+        label = item.get(label_key, item.get("activity_type", "Unknown"))
         score = item.get("avg_score", 0)
         ws[f"A{i}"] = label
         ws[f"B{i}"] = score
 
     # Create bar chart
-    if len(activity_data) > 0:
+    if len(chart_data) > 0:
         chart = BarChart()
         chart.type = "col"
         chart.style = 10
-        chart.title = "Average Score by Activity Type"
+        chart.title = chart_title
         chart.y_axis.title = "Score (%)"
-        chart.x_axis.title = "Activity Type"
+        chart.x_axis.title = x_title
 
-        data_ref = Reference(ws, min_col=2, min_row=3, max_row=3 + len(activity_data))
-        cats_ref = Reference(ws, min_col=1, min_row=4, max_row=3 + len(activity_data))
+        data_ref = Reference(ws, min_col=2, min_row=3, max_row=3 + len(chart_data))
+        cats_ref = Reference(ws, min_col=1, min_row=4, max_row=3 + len(chart_data))
 
         chart.add_data(data_ref, titles_from_data=True)
         chart.set_categories(cats_ref)
@@ -550,7 +556,7 @@ def _create_charts_sheet(wb: Workbook, data: dict, report_type: str) -> None:
     if report_type == "class":
         score_dist = data.get("score_distribution", [])
         if score_dist:
-            start_row = 4 + len(activity_data) + 3
+            start_row = 4 + len(chart_data) + 3
 
             ws[f"A{start_row}"] = "Score Distribution"
             ws[f"A{start_row}"].font = SECTION_FONT

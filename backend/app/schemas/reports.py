@@ -165,9 +165,11 @@ class StudentReportData(BaseModel):
     summary: ReportSummaryStats
     trend: TrendAnalysis
     score_trend: list[dict]  # [{date, score, assignment_name}]
-    activity_breakdown: list[dict]  # [{activity_type, avg_score, count, label}]
+    skill_breakdown: list[dict]  # [{skill_name, avg_score, count}]
     assignments: list[dict]  # [{name, score, completed_at, time_spent}]
     narrative: str
+    # Kept for backward compat - will be empty
+    activity_breakdown: list[dict] = []
 
 
 class ClassReportData(BaseModel):
@@ -185,8 +187,10 @@ class ClassReportData(BaseModel):
     top_students: list[dict]  # [{name, avg_score, rank}]
     struggling_students: list[dict]  # [{name, avg_score, alert_reason}]
     assignments: list[dict]  # [{name, avg_score, completion_rate}]
-    activity_breakdown: list[dict]  # [{activity_type, avg_score, count}]
+    skill_breakdown: list[dict]  # [{skill_name, avg_score, count}]
     narrative: str
+    # Kept for backward compat - will be empty
+    activity_breakdown: list[dict] = []
 
 
 class AssignmentReportData(BaseModel):

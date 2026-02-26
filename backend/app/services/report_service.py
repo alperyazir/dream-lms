@@ -184,12 +184,13 @@ def get_period_dates(
     Returns:
         Tuple of (current_start, current_end, previous_start, previous_end)
     """
-    now = datetime.now(UTC)
+    # Use naive datetimes (no timezone) to match DB columns (timestamp without time zone)
+    now = datetime.utcnow()
 
     if period == ReportPeriod.CUSTOM and start_date and end_date:
-        current_start = datetime.fromisoformat(start_date).replace(tzinfo=UTC)
+        current_start = datetime.fromisoformat(start_date).replace(tzinfo=None)
         current_end = datetime.fromisoformat(end_date).replace(
-            hour=23, minute=59, second=59, tzinfo=UTC
+            hour=23, minute=59, second=59, tzinfo=None
         )
         # Previous period is same duration before current_start
         duration = current_end - current_start
@@ -285,25 +286,21 @@ def generate_narrative_summary(
     else:
         parts.append("This is the first reporting period with available data.")
 
-    # Activity type insights
-    activity_breakdown = data.get("activity_breakdown", [])
-    if activity_breakdown:
-        # Find best and worst activity types
-        sorted_activities = sorted(
-            activity_breakdown, key=lambda x: x.get("avg_score", 0), reverse=True
+    # Skill performance insights
+    skill_breakdown = data.get("skill_breakdown", [])
+    if skill_breakdown:
+        sorted_skills = sorted(
+            skill_breakdown, key=lambda x: x.get("avg_score", 0), reverse=True
         )
-        if sorted_activities:
-            best = sorted_activities[0]
-            label = best.get("label", best.get("activity_type", "Unknown"))
+        if sorted_skills:
+            best_skill = sorted_skills[0]
             parts.append(
-                f"Strongest performance was in {label} activities with an average of {best.get('avg_score', 0):.0f}%."
+                f"Strongest skill: {best_skill.get('skill_name', 'Unknown')} with an average of {best_skill.get('avg_score', 0):.0f}%."
             )
-
-        if len(sorted_activities) > 1:
-            worst = sorted_activities[-1]
-            label = worst.get("label", worst.get("activity_type", "Unknown"))
+        if len(sorted_skills) > 1:
+            worst_skill = sorted_skills[-1]
             parts.append(
-                f"Area for improvement: {label} activities averaged {worst.get('avg_score', 0):.0f}%."
+                f"Area for improvement: {worst_skill.get('skill_name', 'Unknown')} averaged {worst_skill.get('avg_score', 0):.0f}%."
             )
 
     # Completion rate commentary
@@ -591,6 +588,28 @@ async def get_report_templates(
     ]
 
 
+async def delete_report_job(
+    session: AsyncSession,
+    job_id: uuid.UUID,
+    teacher_id: uuid.UUID,
+) -> bool:
+    """Delete a report history item. Returns True if deleted, False if not found."""
+    result = await session.execute(
+        select(ReportJob).where(
+            ReportJob.id == job_id,
+            ReportJob.teacher_id == teacher_id,
+        )
+    )
+    job = result.scalar_one_or_none()
+
+    if not job:
+        return False
+
+    await session.delete(job)
+    await session.commit()
+    return True
+
+
 async def delete_report_template(
     session: AsyncSession,
     template_id: uuid.UUID,
@@ -684,8 +703,8 @@ async def generate_student_report_data(
         if a["score"] is not None
     ]
 
-    # Activity breakdown
-    activity_breakdown = _calculate_activity_breakdown(current_assignments)
+    # Skill breakdown - infer from assignment name or primary_skill_id
+    skill_breakdown = _calculate_skill_breakdown_from_assignments(current_assignments)
 
     # Format assignments list
     assignments = [
@@ -709,7 +728,7 @@ async def generate_student_report_data(
         summary=current_summary,
         trend=trend,
         score_trend=score_trend,
-        activity_breakdown=activity_breakdown,
+        skill_breakdown=skill_breakdown,
         assignments=assignments,
         narrative="",  # Will be generated after
     )
@@ -767,9 +786,9 @@ async def generate_class_report_data(
     student_ids = [s.id for s, _ in students]
 
     # Get assignments that have been assigned to students in this class
-    # Assignments are linked to students via AssignmentStudent junction table
-    assignments_result = await session.execute(
-        select(Assignment)
+    # Use subquery for DISTINCT on ID only (avoids JSON column comparison issue)
+    assignment_ids_result = await session.execute(
+        select(Assignment.id)
         .distinct()
         .join(AssignmentStudent, AssignmentStudent.assignment_id == Assignment.id)
         .where(
@@ -778,14 +797,18 @@ async def generate_class_report_data(
             Assignment.created_at <= current_end,
         )
     )
+    assignment_ids = [a[0] for a in assignment_ids_result.all()]
+
+    assignments_result = await session.execute(
+        select(Assignment).where(Assignment.id.in_(assignment_ids))
+    )
     assignments = assignments_result.scalars().all()
-    assignment_ids = [a.id for a in assignments]
 
     # Get all student submissions for these assignments
+    # Use only Assignment join (no Activity) since most assignments are multi-activity
     submissions_result = await session.execute(
-        select(AssignmentStudent, Assignment, Activity)
+        select(AssignmentStudent, Assignment)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Activity, Assignment.activity_id == Activity.id)
         .where(
             AssignmentStudent.student_id.in_(student_ids),
             AssignmentStudent.assignment_id.in_(assignment_ids),
@@ -795,7 +818,7 @@ async def generate_class_report_data(
     submissions = submissions_result.all()
 
     # Calculate class average
-    current_scores = [sub.score for sub, _, _ in submissions if sub.score is not None]
+    current_scores = [sub.score for sub, _ in submissions if sub.score is not None]
     current_avg = sum(current_scores) / len(current_scores) if current_scores else 0
 
     # Get previous period for trend
@@ -836,12 +859,9 @@ async def generate_class_report_data(
         total_assigned=total_expected,
     )
 
-    # Score distribution
-    score_distribution = _calculate_score_distribution(current_scores)
-
-    # Top/struggling students
+    # Per-student averages (used for distribution, top/struggling)
     student_avgs = {}
-    for sub, _, _ in submissions:
+    for sub, _ in submissions:
         if sub.student_id not in student_avgs:
             student_avgs[sub.student_id] = []
         if sub.score is not None:
@@ -851,6 +871,10 @@ async def generate_class_report_data(
         (sid, sum(scores) / len(scores)) for sid, scores in student_avgs.items() if scores
     ]
     student_scores.sort(key=lambda x: x[1], reverse=True)
+
+    # Score distribution based on per-student averages (not individual submissions)
+    student_avg_scores = [avg for _, avg in student_scores]
+    score_distribution = _calculate_score_distribution(student_avg_scores)
 
     # Get student names
     student_names = {s.id: u.full_name or u.email for s, u in students}
@@ -873,7 +897,7 @@ async def generate_class_report_data(
     # Assignment performance
     assignment_perf = []
     for assignment in assignments:
-        assignment_subs = [sub for sub, a, _ in submissions if a.id == assignment.id]
+        assignment_subs = [sub for sub, a in submissions if a.id == assignment.id]
         if assignment_subs:
             avg = sum(s.score for s in assignment_subs if s.score) / len(assignment_subs)
             comp_rate = len(assignment_subs) / len(student_ids) if student_ids else 0
@@ -883,22 +907,12 @@ async def generate_class_report_data(
                 "completion_rate": round(comp_rate, 2),
             })
 
-    # Activity breakdown
-    activity_breakdown = []
-    activity_scores: dict[str, list[int]] = {}
-    for sub, _, activity in submissions:
-        if sub.score is not None:
-            if activity.activity_type not in activity_scores:
-                activity_scores[activity.activity_type] = []
-            activity_scores[activity.activity_type].append(sub.score)
-
-    for act_type, scores in activity_scores.items():
-        activity_breakdown.append({
-            "activity_type": act_type,
-            "avg_score": round(sum(scores) / len(scores), 1),
-            "count": len(scores),
-            "label": ACTIVITY_TYPE_LABELS.get(act_type, act_type),
-        })
+    # Skill breakdown - infer from assignment names
+    class_assignments_list = [
+        {"name": assignment.name, "score": sub.score}
+        for sub, assignment in submissions
+    ]
+    skill_breakdown = _calculate_skill_breakdown_from_assignments(class_assignments_list)
 
     data = ClassReportData(
         class_name=class_obj.name,
@@ -913,7 +927,7 @@ async def generate_class_report_data(
         top_students=top_students,
         struggling_students=struggling_students,
         assignments=assignment_perf,
-        activity_breakdown=activity_breakdown,
+        skill_breakdown=skill_breakdown,
         narrative="",
     )
 
@@ -1100,10 +1114,10 @@ async def _get_completed_assignments(
     end_date: datetime,
 ) -> list[dict]:
     """Get completed assignments for a student in a date range."""
+    # Use LEFT JOIN on Activity since many assignments are multi-activity (activity_id=NULL)
     result = await session.execute(
-        select(AssignmentStudent, Assignment, Activity)
+        select(AssignmentStudent, Assignment)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Activity, Assignment.activity_id == Activity.id)
         .where(
             AssignmentStudent.student_id == student_id,
             AssignmentStudent.status == AssignmentStatus.completed,
@@ -1119,9 +1133,10 @@ async def _get_completed_assignments(
             "score": sub.score,
             "completed_at": sub.completed_at,
             "time_spent": sub.time_spent_minutes or 0,
-            "activity_type": activity.activity_type,
+            "dcs_book_id": assignment.dcs_book_id,
+            "assignment_student_id": str(sub.id),
         }
-        for sub, assignment, activity in result.all()
+        for sub, assignment in result.all()
     ]
 
 
@@ -1139,26 +1154,63 @@ def _calculate_summary(assignments: list[dict]) -> ReportSummaryStats:
 
 
 def _calculate_activity_breakdown(assignments: list[dict]) -> list[dict]:
-    """Calculate activity type breakdown from assignment list."""
-    breakdown: dict[str, list[int]] = {}
+    """Calculate activity type breakdown from assignment list. (Legacy, kept for compat)"""
+    return []
+
+
+def _infer_skill_from_name(name: str) -> str | None:
+    """Infer skill category from assignment name prefix.
+
+    Assignment names follow patterns like:
+      'Listening - Quiz (MCQ) - 5 items'
+      'Writing - Free Response - 5 items'
+      'Reading Comprehension'
+      'Mix Mode - Multi-Skill Mix'
+    """
+    name_lower = name.lower().strip()
+    skill_prefixes = [
+        ("listening", "Listening"),
+        ("reading", "Reading"),
+        ("writing", "Writing"),
+        ("speaking", "Speaking"),
+        ("vocabulary", "Vocabulary"),
+        ("grammar", "Grammar"),
+    ]
+    for prefix, label in skill_prefixes:
+        if name_lower.startswith(prefix):
+            return label
+
+    # Mix mode counts as mixed/general
+    if name_lower.startswith("mix mode"):
+        return "Mix Mode"
+
+    return "Other"
+
+
+def _calculate_skill_breakdown_from_assignments(assignments: list[dict]) -> list[dict]:
+    """Calculate skill-based breakdown by inferring skill from assignment names."""
+    breakdown: dict[str, list[float]] = {}
 
     for a in assignments:
-        act_type = a["activity_type"]
-        if act_type not in breakdown:
-            breakdown[act_type] = []
-        if a["score"] is not None:
-            breakdown[act_type].append(a["score"])
+        if a.get("score") is None:
+            continue
+        skill = _infer_skill_from_name(a["name"])
+        if skill not in breakdown:
+            breakdown[skill] = []
+        breakdown[skill].append(a["score"])
 
-    return [
+    result = [
         {
-            "activity_type": act_type,
+            "skill_name": skill,
             "avg_score": round(sum(scores) / len(scores), 1),
             "count": len(scores),
-            "label": ACTIVITY_TYPE_LABELS.get(act_type, act_type),
         }
-        for act_type, scores in breakdown.items()
+        for skill, scores in breakdown.items()
         if scores
     ]
+    # Sort by avg_score descending
+    result.sort(key=lambda x: x["avg_score"], reverse=True)
+    return result
 
 
 def _calculate_score_distribution(scores: list[int]) -> list[dict]:

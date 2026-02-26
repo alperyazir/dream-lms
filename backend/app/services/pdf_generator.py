@@ -11,6 +11,8 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from reportlab.graphics.shapes import Drawing, String
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
@@ -277,7 +279,8 @@ def _create_summary_section(data: dict, heading_style, body_style) -> list:
                     ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2c5282")),
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                     ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTNAME", (0, 0), (-1, 0), UNICODE_FONT_BOLD),
+                    ("FONTNAME", (0, 1), (-1, -1), UNICODE_FONT),
                     ("FONTSIZE", (0, 0), (-1, -1), 10),
                     ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
                     ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#f7fafc")),
@@ -350,7 +353,8 @@ def _create_trend_section(data: dict, heading_style, body_style) -> list:
                         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4a5568")),
                         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTNAME", (0, 0), (-1, 0), UNICODE_FONT_BOLD),
+                        ("FONTNAME", (0, 1), (-1, -1), UNICODE_FONT),
                         ("FONTSIZE", (0, 0), (-1, -1), 10),
                         ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
                         ("BACKGROUND", (0, 1), (-1, -1), colors.white),
@@ -366,19 +370,67 @@ def _create_trend_section(data: dict, heading_style, body_style) -> list:
     return elements
 
 
+def _create_skill_chart(skill_breakdown: list[dict], width: float = 460, height: float = 220) -> Drawing:
+    """Create a bar chart for skill performance."""
+    drawing = Drawing(width, height)
+
+    chart = VerticalBarChart()
+    chart.x = 50
+    chart.y = 30
+    chart.width = width - 80
+    chart.height = height - 60
+
+    labels = [item.get("skill_name", "?") for item in skill_breakdown]
+    scores = [item.get("avg_score", 0) for item in skill_breakdown]
+
+    chart.data = [scores]
+    chart.categoryAxis.categoryNames = labels
+    chart.categoryAxis.labels.angle = 0
+    chart.categoryAxis.labels.fontSize = 8
+    chart.categoryAxis.labels.fontName = UNICODE_FONT
+    chart.valueAxis.valueMin = 0
+    chart.valueAxis.valueMax = 100
+    chart.valueAxis.valueStep = 20
+    chart.valueAxis.labels.fontSize = 8
+    chart.valueAxis.labels.fontName = UNICODE_FONT
+
+    # Bar styling
+    chart.bars[0].fillColor = colors.HexColor("#3b5998")
+    chart.bars[0].strokeColor = colors.HexColor("#2d4373")
+    chart.barWidth = 24
+    chart.groupSpacing = 10
+
+    # Score labels on top of bars
+    chart.barLabelFormat = "%.0f%%"
+    chart.barLabels.fontSize = 7
+    chart.barLabels.nudge = 6
+
+    # Title
+    title = String(width / 2, height - 12, "Skill Performance", textAnchor="middle", fontSize=11, fontName=UNICODE_FONT_BOLD)
+    drawing.add(title)
+    drawing.add(chart)
+
+    return drawing
+
+
 def _create_student_sections(data: dict, heading_style, body_style, styles) -> list:
     """Create student-specific report sections."""
     elements = []
 
-    # Activity breakdown
-    activity_breakdown = data.get("activity_breakdown", [])
-    if activity_breakdown:
-        elements.append(Paragraph("Performance by Activity Type", heading_style))
+    # Skill breakdown chart + table
+    skill_breakdown = data.get("skill_breakdown", [])
+    if skill_breakdown:
+        # Chart
+        chart = _create_skill_chart(skill_breakdown)
+        elements.append(chart)
+        elements.append(Spacer(1, 0.2 * inch))
 
-        table_data = [["Activity Type", "Average Score", "Completed"]]
-        for item in activity_breakdown:
+        # Table
+        elements.append(Paragraph("Skill Details", heading_style))
+        table_data = [["Skill", "Average Score", "Assignments"]]
+        for item in skill_breakdown:
             table_data.append([
-                item.get("label", item.get("activity_type", "Unknown")),
+                item.get("skill_name", "Unknown"),
                 f"{item.get('avg_score', 0):.1f}%",
                 str(item.get("count", 0)),
             ])
@@ -463,15 +515,20 @@ def _create_class_sections(data: dict, heading_style, body_style, styles) -> lis
         elements.append(table)
         elements.append(Spacer(1, 0.3 * inch))
 
-    # Activity breakdown
-    activity_breakdown = data.get("activity_breakdown", [])
-    if activity_breakdown:
-        elements.append(Paragraph("Performance by Activity Type", heading_style))
+    # Skill breakdown chart + table
+    skill_breakdown = data.get("skill_breakdown", [])
+    if skill_breakdown:
+        # Chart
+        chart = _create_skill_chart(skill_breakdown)
+        elements.append(chart)
+        elements.append(Spacer(1, 0.2 * inch))
 
-        table_data = [["Activity Type", "Average Score", "Count"]]
-        for item in activity_breakdown:
+        # Table
+        elements.append(Paragraph("Skill Details", heading_style))
+        table_data = [["Skill", "Average Score", "Assignments"]]
+        for item in skill_breakdown:
             table_data.append([
-                item.get("label", item.get("activity_type", "Unknown")),
+                item.get("skill_name", "Unknown"),
                 f"{item.get('avg_score', 0):.1f}%",
                 str(item.get("count", 0)),
             ])
@@ -592,7 +649,8 @@ def _create_data_table(data: list, col_widths: list) -> Table:
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("ALIGN", (0, 0), (-1, -1), "LEFT"),
                 ("ALIGN", (1, 1), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 0), (-1, 0), UNICODE_FONT_BOLD),
+                ("FONTNAME", (0, 1), (-1, -1), UNICODE_FONT),
                 ("FONTSIZE", (0, 0), (-1, -1), 9),
                 ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
                 ("TOPPADDING", (0, 0), (-1, 0), 10),

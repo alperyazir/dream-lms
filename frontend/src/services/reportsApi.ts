@@ -197,6 +197,15 @@ export async function deleteReportTemplate(templateId: string): Promise<void> {
 }
 
 /**
+ * Delete a report history item
+ *
+ * @param jobId - Report job UUID
+ */
+export async function deleteReportHistoryItem(jobId: string): Promise<void> {
+  await apiClient.delete(`/api/v1/reports/history/${jobId}`)
+}
+
+/**
  * Reports API object for easier imports
  */
 export const reportsApi = {
@@ -207,6 +216,7 @@ export const reportsApi = {
   saveReportTemplate,
   getReportTemplates,
   deleteReportTemplate,
+  deleteReportHistoryItem,
 }
 
 export default reportsApi
