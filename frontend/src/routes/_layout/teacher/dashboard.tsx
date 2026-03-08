@@ -9,7 +9,7 @@ import {
   Users,
 } from "lucide-react"
 import { FiHome } from "react-icons/fi"
-import { TeachersService } from "@/client"
+import { AssignmentsService, TeachersService } from "@/client"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { StatCard } from "@/components/dashboard/StatCard"
@@ -46,10 +46,16 @@ function TeacherDashboard() {
     queryFn: () => TeachersService.listMyClasses(),
   })
 
-  // Fetch students
-  const { data: students = [] } = useQuery({
-    queryKey: ["teacherStudents"],
-    queryFn: () => TeachersService.listMyStudents(),
+  // Fetch student count (limit=1, we only need the total)
+  const { data: studentsResponse } = useQuery({
+    queryKey: ["teacherStudentsCount"],
+    queryFn: () => TeachersService.listMyStudentsPaginated({ limit: 1, offset: 0 }),
+  })
+
+  // Fetch assignment count (limit=1, we only need the total)
+  const { data: assignmentsResponse } = useQuery({
+    queryKey: ["teacherAssignmentsCount"],
+    queryFn: () => AssignmentsService.listAssignmentsPaginated({ limit: 1, offset: 0 }),
   })
 
   // Fetch pending reviews
@@ -73,12 +79,12 @@ function TeacherDashboard() {
         <StatCard
           icon={<Users className="w-6 h-6" />}
           label="Total Students"
-          value={students.length}
+          value={studentsResponse?.total ?? 0}
         />
         <StatCard
           icon={<BookOpen className="w-6 h-6" />}
           label="Assignments"
-          value={0}
+          value={assignmentsResponse?.total ?? 0}
         />
         <StatCard
           icon={<ClipboardCheck className="w-6 h-6" />}

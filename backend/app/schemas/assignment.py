@@ -128,8 +128,8 @@ class AssignmentCreate(BaseModel):
     # Story 27.x: Source type - "book" (default) or "ai_content"
     source_type: Literal["book", "ai_content"] = "book"
 
-    # For book assignments (required when source_type="book")
-    book_id: int | None = None  # DCS book ID (changed from UUID in Epic 24)
+    # Required for both book and AI content assignments
+    book_id: int | None = None  # DCS book ID
     # Backward compatible: single activity (legacy)
     activity_id: uuid.UUID | None = None
     # Multi-activity: list of activities with order
@@ -224,9 +224,9 @@ class AssignmentCreate(BaseModel):
         if self.source_type == "ai_content":
             if self.content_id is None:
                 raise ValueError("content_id is required for AI content assignments")
-            # AI content doesn't use book_id, activity_id, activity_ids, or date_groups
-            if self.book_id is not None:
-                raise ValueError("book_id should not be provided for AI content assignments")
+            if self.book_id is None:
+                raise ValueError("book_id is required for AI content assignments")
+            # AI content doesn't use activity_id, activity_ids, or date_groups
             if self.activity_id is not None or (self.activity_ids is not None and len(self.activity_ids) > 0):
                 raise ValueError("activity_id/activity_ids should not be provided for AI content assignments")
             if self.date_groups is not None and len(self.date_groups) > 0:
@@ -532,6 +532,16 @@ class StudentAssignmentResponse(BaseModel):
         due_date_aware = self.due_date if self.due_date.tzinfo else self.due_date.replace(tzinfo=UTC)
         delta = due_date_aware - datetime.now(UTC)
         return delta.days
+
+
+class StudentAssignmentListResponse(BaseModel):
+    """Paginated response for student assignment list."""
+
+    items: list[StudentAssignmentResponse]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool
 
 
 class ActivityStartResponse(BaseModel):
@@ -906,6 +916,15 @@ class MultiActivityAnalyticsResponse(BaseModel):
     expanded_students: list[StudentActivityScore] | None = None  # Populated when expand_activity_id provided
 
 
+class ActivityReviewItem(BaseModel):
+    """A single question/item review showing student vs correct answer."""
+
+    question: str
+    student_answer: str | None
+    correct_answer: str
+    is_correct: bool
+
+
 class ActivityScoreItem(BaseModel):
     """Per-activity score item for student result view."""
 
@@ -917,6 +936,9 @@ class ActivityScoreItem(BaseModel):
     score: float | None
     max_score: float
     status: str
+    review_items: list[ActivityReviewItem] | None = None
+    config_json: dict | None = None
+    response_data: dict | None = None
 
 
 class StudentAssignmentResultResponse(BaseModel):
@@ -926,6 +948,7 @@ class StudentAssignmentResultResponse(BaseModel):
 
     assignment_id: uuid.UUID
     assignment_name: str
+    book_id: int | None = None
     total_score: float | None
     completed_at: datetime | None
     activity_scores: list[ActivityScoreItem]

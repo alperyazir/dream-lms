@@ -15,6 +15,7 @@ from sqlmodel import select
 
 from app.api.deps import AsyncSessionDep, CurrentUser, require_role
 from app.models import User, UserRole
+from app.services.redis_cache import cache_get, cache_set
 from app.services.usage_analytics_service import UsageAnalyticsService
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,12 @@ async def get_my_usage(
     """
     from app.models import Teacher
     from app.core.config import settings
+
+    # Cache AI usage (changes only when teacher generates content)
+    cache_key = f"user:{current_user.id}:ai_usage"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
 
     # Monthly quota from environment config
     monthly_quota = settings.AI_MONTHLY_QUOTA
@@ -68,11 +75,13 @@ async def get_my_usage(
         await session.commit()
         await session.refresh(teacher)
 
-    return {
+    result = {
         "total_generations": teacher.ai_generations_used,
         "monthly_quota": monthly_quota,
         "remaining_quota": max(0, monthly_quota - teacher.ai_generations_used),
     }
+    await cache_set(cache_key, result, ttl=300)
+    return result
 
 
 @router.get("/summary")

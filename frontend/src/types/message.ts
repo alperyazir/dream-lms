@@ -6,6 +6,26 @@
 /**
  * Message interface with all fields from API
  */
+/**
+ * System message categories for icon/color mapping
+ */
+export type MessageCategory =
+  | "assignment_created"
+  | "student_completed"
+  | "feedback_received"
+
+/**
+ * Icon and color config for system message categories
+ */
+export const MESSAGE_CATEGORY_CONFIG: Record<
+  MessageCategory,
+  { icon: string; color: string; bgColor: string }
+> = {
+  assignment_created: { icon: "FileText", color: "text-blue-600", bgColor: "bg-blue-50" },
+  student_completed: { icon: "CheckCircle", color: "text-green-600", bgColor: "bg-green-50" },
+  feedback_received: { icon: "MessageSquare", color: "text-emerald-600", bgColor: "bg-emerald-50" },
+}
+
 export interface Message {
   id: string
   sender_id: string
@@ -19,6 +39,10 @@ export interface Message {
   parent_message_id: string | null
   is_read: boolean
   sent_at: string // ISO 8601 datetime string
+  is_system: boolean
+  context_type: string | null
+  context_id: string | null
+  message_category: MessageCategory | null
 }
 
 /**

@@ -21,7 +21,6 @@ if TYPE_CHECKING:
         ClassStudent,
         DirectMessage,
         Feedback,
-        Notification,
         School,
         Student,
         Teacher,
@@ -67,7 +66,7 @@ def validate_username_format(username: str | None) -> str | None:
 
 # Shared properties
 class UserBase(SQLModel):
-    email: EmailStr | None = Field(default=None, unique=True, index=True, max_length=255)
+    email: str | None = Field(default=None, unique=True, index=True, max_length=255)
     username: str = Field(
         unique=True,
         index=True,
@@ -93,6 +92,7 @@ class UserBase(SQLModel):
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
+    email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
     password: str = Field(min_length=1, max_length=40)
 
 
@@ -293,7 +293,6 @@ class Teacher(TeacherBase, table=True):
     school: School = Relationship(back_populates="teachers", sa_relationship_kwargs={"passive_deletes": True})
     classes: list["Class"] = Relationship(back_populates="teacher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     assignments: list["Assignment"] = Relationship(back_populates="teacher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    announcements: list["Announcement"] = Relationship(sa_relationship_kwargs={"cascade": "all, delete-orphan", "passive_deletes": True})
 
 
 class TeacherPublic(TeacherBase):
@@ -365,6 +364,7 @@ class StudentPublic(StudentBase):
     user_full_name: str
     created_by_teacher_id: uuid.UUID | None = None
     created_by_teacher_name: str | None = None
+    classroom_names: list[str] = []
     created_at: datetime
     updated_at: datetime
 
@@ -535,6 +535,12 @@ class ClassPublic(ClassBase):
 class ClassResponse(ClassPublic):
     """Class response with computed student count"""
     student_count: int = Field(default=0, description="Number of enrolled students")
+
+
+class ClassListItem(ClassBase):
+    """Slim class response for list views (no timestamps or foreign keys)"""
+    id: uuid.UUID
+    student_count: int = Field(default=0)
 
 
 class StudentInClass(SQLModel):
@@ -1111,16 +1117,16 @@ class AssignmentStudent(AssignmentStudentBase, table=True):
     feedback: Optional["Feedback"] = Relationship(back_populates="assignment_student", sa_relationship_kwargs={"uselist": False, "cascade": "all, delete-orphan"})
 
     def calculate_combined_score(self) -> float | None:
-        """Calculate combined score from child activity progress as percentage (0-100)"""
+        """Calculate combined score from ALL activities as percentage (0-100).
+
+        Skipped/incomplete activities count as 0 — the score reflects
+        performance across the entire assignment, not just completed parts.
+        """
         if not self.activity_progress:
             return None
 
-        completed_activities = [ap for ap in self.activity_progress if ap.score is not None]
-        if not completed_activities:
-            return None
-
-        total_score = sum(ap.score for ap in completed_activities)
-        total_max_score = sum(ap.max_score for ap in completed_activities)
+        total_score = sum(ap.score or 0 for ap in self.activity_progress)
+        total_max_score = sum(ap.max_score for ap in self.activity_progress)
 
         if total_max_score == 0:
             return None
@@ -1477,25 +1483,6 @@ class SavedReportConfig(SQLModel, table=True):
 
 
 # =============================================================================
-# Notification Models (Story 6.1)
-# =============================================================================
-
-
-class NotificationType(str, Enum):
-    """Notification type enumeration"""
-    assignment_created = "assignment_created"
-    deadline_approaching = "deadline_approaching"
-    feedback_received = "feedback_received"
-    message_received = "message_received"
-    student_completed = "student_completed"
-    past_due = "past_due"
-    material_shared = "material_shared"
-    system_announcement = "system_announcement"
-    password_reset = "password_reset"
-    announcement = "announcement"
-
-
-# =============================================================================
 # Teacher Materials Models (Story 13.1)
 # =============================================================================
 
@@ -1510,26 +1497,6 @@ class MaterialType(str, Enum):
     text_note = "text_note"
 
 
-class Notification(SQLModel, table=True):
-    """Notification database model for in-app notifications."""
-
-    __tablename__ = "notifications"
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
-    type: NotificationType = Field(
-        sa_column=Column(SAEnum(NotificationType, name="notification_type"), nullable=False)
-    )
-    title: str = Field(max_length=500)
-    message: str
-    link: str | None = Field(default=None, max_length=500)
-    is_read: bool = Field(default=False, index=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
-
-    # Relationship
-    user: "User" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
-
-
 # =============================================================================
 # Direct Messaging Models (Story 6.3)
 # =============================================================================
@@ -1540,7 +1507,10 @@ class DirectMessage(SQLModel, table=True):
 
     __tablename__ = "direct_messages"
     __table_args__ = (
-        CheckConstraint("sender_id != recipient_id", name="no_self_messaging"),
+        CheckConstraint(
+            "sender_id != recipient_id OR is_system = true",
+            name="no_self_messaging",
+        ),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -1553,6 +1523,12 @@ class DirectMessage(SQLModel, table=True):
     )
     is_read: bool = Field(default=False, index=True)
     sent_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
+
+    # System message fields
+    is_system: bool = Field(default=False, index=True)
+    context_type: str | None = Field(default=None, max_length=50)
+    context_id: uuid.UUID | None = Field(default=None, index=True)
+    message_category: str | None = Field(default=None, max_length=50)
 
     # Relationships
     sender: "User" = Relationship(
@@ -1613,113 +1589,6 @@ class Feedback(SQLModel, table=True):
 # =============================================================================
 
 
-class Announcement(SQLModel, table=True):
-    """Announcement database model for teacher announcements."""
-
-    __tablename__ = "announcements"
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
-    title: str = Field(max_length=200)
-    content: str  # Sanitized HTML
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    deleted_at: datetime | None = Field(default=None, index=True)  # Soft delete
-
-    # Relationships
-    teacher: "Teacher" = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True, "overlaps": "announcements"}
-    )
-    recipients: list["AnnouncementRecipient"] = Relationship(
-        back_populates="announcement",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan", "passive_deletes": True}
-    )
-    reads: list["AnnouncementRead"] = Relationship(
-        back_populates="announcement",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan", "passive_deletes": True}
-    )
-
-
-class AnnouncementRecipient(SQLModel, table=True):
-    """Announcement recipient database model linking announcements to students."""
-
-    __tablename__ = "announcement_recipients"
-    __table_args__ = (
-        Index('idx_student_created', 'student_id', 'created_at'),
-    )
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    announcement_id: uuid.UUID = Field(foreign_key="announcements.id", index=True, ondelete="CASCADE")
-    student_id: uuid.UUID = Field(foreign_key="students.id", index=True, ondelete="CASCADE")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    # Relationships
-    announcement: "Announcement" = Relationship(
-        back_populates="recipients",
-        sa_relationship_kwargs={"passive_deletes": True}
-    )
-    student: "Student" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
-
-
-class AnnouncementRead(SQLModel, table=True):
-    """Announcement read tracking model for student read status."""
-
-    __tablename__ = "announcement_reads"
-    __table_args__ = (
-        UniqueConstraint('announcement_id', 'student_id', name='uq_announcement_read'),
-        Index('idx_student_read_at', 'student_id', 'read_at'),
-    )
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    announcement_id: uuid.UUID = Field(foreign_key="announcements.id", index=True, ondelete="CASCADE")
-    student_id: uuid.UUID = Field(foreign_key="students.id", index=True, ondelete="CASCADE")
-    read_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    # Relationships
-    announcement: "Announcement" = Relationship(
-        back_populates="reads",
-        sa_relationship_kwargs={"passive_deletes": True}
-    )
-    student: "Student" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
-
-
-# =============================================================================
-# Notification Preferences Models (Story 6.8)
-# =============================================================================
-
-
-class NotificationPreference(SQLModel, table=True):
-    """User notification preference settings for each notification type."""
-
-    __tablename__ = "notification_preferences"
-    __table_args__ = (
-        UniqueConstraint("user_id", "notification_type", name="uq_user_notification_type"),
-    )
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
-    notification_type: NotificationType = Field(
-        sa_column=Column(SAEnum(NotificationType, name="notification_type", create_type=False), nullable=False)
-    )
-    enabled: bool = Field(default=True)
-    email_enabled: bool = Field(default=False)
-
-    # Relationship
-    user: "User" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
-
-
-class NotificationMute(SQLModel, table=True):
-    """Global notification mute setting for temporary silence."""
-
-    __tablename__ = "notification_mutes"
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", unique=True, index=True, ondelete="CASCADE")
-    muted_until: datetime
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    # Relationship
-    user: "User" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 # =============================================================================

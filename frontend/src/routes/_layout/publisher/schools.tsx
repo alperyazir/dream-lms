@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Book, Building2, Check } from "lucide-react"
+import { AlertTriangle, Building2 } from "lucide-react"
 import { useState } from "react"
 import { FiTrendingUp } from "react-icons/fi"
 import { PublishersService, type SchoolCreateByPublisher } from "@/client"
@@ -10,7 +10,6 @@ import { SchoolCard } from "@/components/schools/SchoolCard"
 import { SchoolDetailsDialog } from "@/components/schools/SchoolDetailsDialog"
 import { SchoolListView } from "@/components/schools/SchoolListView"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -21,12 +20,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
 import useCustomToast from "@/hooks/useCustomToast"
 import { useViewPreference } from "@/hooks/useViewPreference"
-import { createBulkBookAssignments } from "@/services/bookAssignmentsApi"
-import { booksApi } from "@/services/booksApi"
 
 export const Route = createFileRoute("/_layout/publisher/schools")({
   component: () => (
@@ -46,8 +42,12 @@ function PublisherSchoolsPage() {
     address: "",
     contact_info: "",
   })
-  const [selectedBookIds, setSelectedBookIds] = useState<number[]>([])
   const [selectedSchool, setSelectedSchool] = useState<any>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [schoolToDelete, setSchoolToDelete] = useState<{
+    id: string
+    name: string
+  } | null>(null)
 
   // Fetch schools from API
   const {
@@ -59,54 +59,23 @@ function PublisherSchoolsPage() {
     queryFn: () => PublishersService.listMySchools(),
   })
 
-  // Fetch books for assignment selection
-  const { data: booksData } = useQuery({
-    queryKey: ["publisherBooks"],
-    queryFn: () => booksApi.getBooks({ limit: 100 }),
-    staleTime: 5 * 60 * 1000,
-  })
-  const books = booksData?.items ?? []
-
   // Create school mutation
   const createSchoolMutation = useMutation({
     mutationFn: async (data: SchoolCreateByPublisher) => {
-      // Create the school first
-      const school = await PublishersService.createMySchool({
+      return await PublishersService.createMySchool({
         requestBody: data,
       })
-
-      // If books were selected, assign them to the new school
-      if (selectedBookIds.length > 0) {
-        await Promise.all(
-          selectedBookIds.map((bookId) =>
-            createBulkBookAssignments({
-              book_id: bookId,
-              school_id: school.id,
-              assign_to_all_teachers: true,
-            }),
-          ),
-        )
-      }
-
-      return school
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["publisherSchools"] })
       queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
-      queryClient.invalidateQueries({ queryKey: ["bookAssignments"] })
       setIsAddDialogOpen(false)
       setNewSchool({
         name: "",
         address: "",
         contact_info: "",
       })
-      setSelectedBookIds([])
-      const bookCount = selectedBookIds.length
-      showSuccessToast(
-        bookCount > 0
-          ? `School created with ${bookCount} book${bookCount > 1 ? "s" : ""} assigned!`
-          : "School created successfully!",
-      )
+      showSuccessToast("School created successfully!")
     },
     onError: (error: any) => {
       let errorMessage = "Failed to create school. Please try again."
@@ -123,6 +92,41 @@ function PublisherSchoolsPage() {
       showErrorToast(errorMessage)
     },
   })
+
+  // Delete school mutation
+  const deleteSchoolMutation = useMutation({
+    mutationFn: async (schoolId: string) => {
+      await PublishersService.deleteMySchool({ schoolId })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publisherSchools"] })
+      queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
+      setDeleteDialogOpen(false)
+      setSchoolToDelete(null)
+      showSuccessToast("School deleted successfully!")
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to delete school. Please try again."
+      if (error.body?.detail) {
+        errorMessage =
+          typeof error.body.detail === "string"
+            ? error.body.detail
+            : "Failed to delete school"
+      }
+      showErrorToast(errorMessage)
+    },
+  })
+
+  const handleDeleteClick = (school: { id: string; name: string }) => {
+    setSchoolToDelete(school)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (schoolToDelete) {
+      deleteSchoolMutation.mutate(schoolToDelete.id)
+    }
+  }
 
   const handleAddSchool = () => {
     if (!newSchool.name) {
@@ -177,29 +181,26 @@ function PublisherSchoolsPage() {
               key={school.id}
               school={school}
               onViewDetails={() => setSelectedSchool(school)}
+              onDelete={() => handleDeleteClick(school)}
             />
           ))}
         </div>
       ) : (
         /* Schools List */
-        <SchoolListView schools={schools} onViewDetails={setSelectedSchool} />
+        <SchoolListView
+          schools={schools}
+          onViewDetails={setSelectedSchool}
+          onDelete={(school) => handleDeleteClick(school)}
+        />
       )}
 
       {/* Add School Dialog */}
-      <Dialog
-        open={isAddDialogOpen}
-        onOpenChange={(open) => {
-          setIsAddDialogOpen(open)
-          if (!open) {
-            setSelectedBookIds([])
-          }
-        }}
-      >
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Add New School</DialogTitle>
             <DialogDescription>
-              Create a new school and optionally assign books
+              Create a new school for your organization
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -242,63 +243,6 @@ function PublisherSchoolsPage() {
               />
             </div>
 
-            {/* Book Assignment Section */}
-            {books.length > 0 && (
-              <div className="space-y-2 pt-2 border-t">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <Book className="h-4 w-4" />
-                    Assign Books
-                  </Label>
-                  {selectedBookIds.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      {selectedBookIds.length} selected
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  All teachers in this school will have access to selected books
-                </p>
-                <ScrollArea className="h-[150px] border rounded-md">
-                  <div className="p-2 space-y-1">
-                    {books.map((book) => (
-                      <label
-                        key={book.id}
-                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          selectedBookIds.includes(book.id)
-                            ? "bg-teal-50 dark:bg-teal-900/20"
-                            : "hover:bg-muted"
-                        }`}
-                      >
-                        <Checkbox
-                          checked={selectedBookIds.includes(book.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedBookIds([...selectedBookIds, book.id])
-                            } else {
-                              setSelectedBookIds(
-                                selectedBookIds.filter((id) => id !== book.id),
-                              )
-                            }
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">
-                            {book.title}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {book.activity_count} activities
-                          </div>
-                        </div>
-                        {selectedBookIds.includes(book.id) && (
-                          <Check className="h-4 w-4 text-teal-600" />
-                        )}
-                      </label>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button
@@ -314,6 +258,39 @@ function PublisherSchoolsPage() {
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
             >
               {createSchoolMutation.isPending ? "Creating..." : "Create School"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete School
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <strong>{schoolToDelete?.name}</strong>? This action cannot be
+              undone and will remove all associated data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleteSchoolMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteSchoolMutation.isPending}
+            >
+              {deleteSchoolMutation.isPending ? "Deleting..." : "Delete School"}
             </Button>
           </DialogFooter>
         </DialogContent>

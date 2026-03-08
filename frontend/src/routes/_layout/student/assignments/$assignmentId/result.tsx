@@ -29,6 +29,7 @@ import { SpeakingOpenResponseResults } from "@/components/ActivityPlayers/Speaki
 import { VocabularyMatchingResults } from "@/components/ActivityPlayers/VocabularyMatchingResults"
 import { WritingFreeResponseResults } from "@/components/ActivityPlayers/WritingFreeResponseResults"
 import { MixModeResults } from "@/components/ActivityPlayers/MixModeResults"
+import { StudentScoreBreakdown } from "@/components/analytics/StudentScoreBreakdown"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -46,7 +47,10 @@ import {
   parseWritingFillBlankResult,
   supportsDetailedReview,
 } from "@/lib/resultParsers"
-import { getAssignmentResult } from "@/services/assignmentsApi"
+import {
+  getAssignmentResult,
+  getStudentAssignmentResult,
+} from "@/services/assignmentsApi"
 
 export const Route = createFileRoute(
   "/_layout/student/assignments/$assignmentId/result",
@@ -69,6 +73,17 @@ function AssignmentResultDetailPage() {
     retry: false,
     staleTime: 0, // Always fetch fresh data
   })
+
+  // Also fetch multi-activity breakdown (for book assignments with multiple activities)
+  const { data: multiResult } = useQuery({
+    queryKey: ["assignments", assignmentId, "multi-result"],
+    queryFn: () => getStudentAssignmentResult(assignmentId),
+    retry: false,
+    staleTime: 0,
+  })
+
+  // Detect multi-activity book assignment
+  const isMultiActivity = (multiResult?.total_activities ?? 0) > 1
 
   // Parse result data based on activity type for detailed review
   const parsedResult = useMemo(() => {
@@ -197,14 +212,6 @@ function AssignmentResultDetailPage() {
     }
   }, [result, parsedResult])
 
-  // Handle navigation back
-  const handleBack = () => {
-    navigate({
-      to: "/student/assignments/$assignmentId",
-      params: { assignmentId },
-    })
-  }
-
   // Loading state
   if (isLoading) {
     return (
@@ -268,22 +275,17 @@ function AssignmentResultDetailPage() {
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Header */}
       <div className="mb-6">
-        <Button variant="ghost" onClick={handleBack} className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Assignment
-        </Button>
-
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2">
               {result.assignment_name}
             </h1>
             <p className="text-muted-foreground">
-              {result.book_name} • {result.activity_title || "Activity Review"}
+              {result.book_name} • {isMultiActivity ? `${multiResult!.total_activities} activities` : (result.activity_title || "Activity Review")}
             </p>
           </div>
 
-          {/* Score Badge - Use calculated score from answerStats when available */}
+          {/* Score Badge */}
           <div className="text-right">
             {isManuallyGraded ? (
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
@@ -293,8 +295,10 @@ function AssignmentResultDetailPage() {
               </div>
             ) : (
               (() => {
-                const calculatedScore =
-                  answerStats && answerStats.total > 0
+                // For multi-activity, use the combined score from the multi-result endpoint
+                const calculatedScore = isMultiActivity && multiResult?.total_score != null
+                  ? Math.round(multiResult.total_score)
+                  : answerStats && answerStats.total > 0
                     ? Math.round((answerStats.correct / answerStats.total) * 100)
                     : Math.round(result.score)
                 return (
@@ -315,8 +319,65 @@ function AssignmentResultDetailPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      {isManuallyGraded ? (
+      {/* Multi-activity book assignment: show per-activity breakdown */}
+      {isMultiActivity && multiResult ? (
+        <>
+          {/* Time Spent */}
+          <div className="grid gap-4 md:grid-cols-3 mb-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  Activities Completed
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {multiResult.completed_activities} / {multiResult.total_activities}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <XCircle className="h-4 w-4 text-red-600" />
+                  Skipped
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  {multiResult.total_activities - multiResult.completed_activities}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  Time Spent
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {(() => {
+                    const totalSeconds =
+                      result.time_spent_seconds ||
+                      result.time_spent_minutes * 60 ||
+                      0
+                    if (totalSeconds === 0) return "< 1 sec"
+                    const minutes = Math.floor(totalSeconds / 60)
+                    const seconds = totalSeconds % 60
+                    if (minutes === 0) return `${seconds} sec`
+                    return `${minutes} min ${seconds} sec`
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Per-activity score breakdown */}
+          <StudentScoreBreakdown assignmentId={assignmentId} />
+        </>
+      ) : isManuallyGraded ? (
         <div className="grid gap-4 md:grid-cols-2 mb-6">
           {/* Items Submitted */}
           <Card>
@@ -425,8 +486,8 @@ function AssignmentResultDetailPage() {
         </div>
       )}
 
-      {/* Detailed Answer Review Section */}
-      {parsedResult && supportsDetailedReview(result.activity_type) && (
+      {/* Detailed Answer Review Section (single-activity only) */}
+      {!isMultiActivity && parsedResult && supportsDetailedReview(result.activity_type) && (
         <div className="mt-6">
           <h2 className="text-xl font-semibold mb-4">Detailed Answer Review</h2>
           {(result.activity_type === "ai_quiz" || result.activity_type === "listening_quiz") &&
@@ -562,8 +623,8 @@ function AssignmentResultDetailPage() {
         </div>
       )}
 
-      {/* Note for unsupported activity types */}
-      {(!parsedResult || !supportsDetailedReview(result.activity_type)) && (
+      {/* Note for unsupported activity types (skip for multi-activity — they have their own breakdown) */}
+      {!isMultiActivity && (!parsedResult || !supportsDetailedReview(result.activity_type)) && (
         <Card className="mt-6">
           <CardContent className="pt-6">
             <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
@@ -579,11 +640,11 @@ function AssignmentResultDetailPage() {
 
       {/* Action Buttons */}
       <div className="mt-6 flex gap-3 justify-end">
-        <Button variant="outline" onClick={handleBack}>
+        <Button variant="outline" onClick={() => navigate({ to: "/student/assignments" })}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Assignment
+          Back to Assignments
         </Button>
-        <Button onClick={() => navigate({ to: "/student/assignments" })}>
+        <Button onClick={() => navigate({ to: "/student/dashboard" })}>
           Go to Dashboard
         </Button>
       </div>

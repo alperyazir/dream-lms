@@ -8,7 +8,16 @@
 
 import axios from "axios"
 import { OpenAPI } from "../client"
+import type { StudentPublic } from "../client"
 import type { Class, Student } from "../types/teacher"
+
+export interface PaginatedStudentsResponse {
+  items: StudentPublic[]
+  total: number
+  limit: number
+  offset: number
+  has_more: boolean
+}
 
 /**
  * Create axios instance with OpenAPI config
@@ -66,7 +75,27 @@ export async function getMyClasses(): Promise<Class[]> {
  */
 export async function getMyStudents(): Promise<Student[]> {
   const url = `/api/v1/teachers/me/students`
-  const response = await apiClient.get<Student[]>(url)
+  const response = await apiClient.get(url)
+  // Handle both paginated response { items: [...] } and legacy array response
+  const data = response.data
+  return Array.isArray(data) ? data : data.items ?? []
+}
+
+/**
+ * Get paginated students for the authenticated teacher
+ *
+ * @param limit - Number of students per page (default 20, max 100)
+ * @param offset - Number of students to skip
+ * @returns Promise with paginated response including items, total, has_more
+ */
+export async function getMyStudentsPaginated(
+  limit = 20,
+  offset = 0,
+): Promise<PaginatedStudentsResponse> {
+  const url = `/api/v1/teachers/me/students`
+  const response = await apiClient.get<PaginatedStudentsResponse>(url, {
+    params: { limit, offset },
+  })
   return response.data
 }
 
@@ -104,6 +133,7 @@ export async function getStudentsForClasses(
 export const teachersApi = {
   getMyClasses,
   getMyStudents,
+  getMyStudentsPaginated,
   getStudentsForClasses,
 }
 

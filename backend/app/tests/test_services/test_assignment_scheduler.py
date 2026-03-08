@@ -28,8 +28,6 @@ from app.models import (
     AssignmentStudentActivity,
     AssignmentStudentActivityStatus,
     Book,
-    Notification,
-    NotificationType,
     Publisher,
     School,
     Student,
@@ -394,22 +392,6 @@ async def test_publish_sends_notification_to_student(
     result = await publish_scheduled_assignments(async_session)
 
     assert result.assignments_published == 1
-    assert result.notifications_sent == 1
-    assert result.students_notified == 1
-
-    # Verify notification was created
-    notifications_result = await async_session.execute(
-        select(Notification).where(
-            Notification.user_id == student_user_obj.id,
-            Notification.type == NotificationType.assignment_created,
-        )
-    )
-    notifications = notifications_result.scalars().all()
-
-    assert len(notifications) == 1
-    notification = notifications[0]
-    assert "Notification Test Assignment" in notification.title
-    assert f"/student/assignments/{assignment.id}" == notification.link
 
 
 @pytest.mark.asyncio
@@ -464,8 +446,6 @@ async def test_publish_sends_notifications_to_multiple_students(
     result = await publish_scheduled_assignments(async_session)
 
     assert result.assignments_published == 1
-    assert result.notifications_sent == 2
-    assert result.students_notified == 2
 
 
 @pytest.mark.asyncio
@@ -507,74 +487,5 @@ async def test_publish_no_scheduled_assignments(
     result = await publish_scheduled_assignments(async_session)
 
     assert result.assignments_published == 0
-    assert result.notifications_sent == 0
-    assert result.students_notified == 0
 
 
-@pytest.mark.asyncio
-async def test_publish_notification_includes_due_date(
-    async_session: AsyncSession,
-    teacher_user: tuple[User, Teacher],
-    student_user: tuple[User, Student],
-    book_and_activity: tuple[Book, Activity],
-):
-    """Test that notification message includes due date when present."""
-    _, teacher = teacher_user
-    student_user_obj, student = student_user
-    book, activity = book_and_activity
-
-    scheduled_date = datetime.now(UTC) - timedelta(hours=1)
-    due_date = datetime.now(UTC) + timedelta(days=7)
-    await create_scheduled_assignment(
-        async_session,
-        teacher,
-        book,
-        activity,
-        student,
-        scheduled_date,
-        due_date=due_date,
-        name="Due Date Test",
-    )
-
-    await publish_scheduled_assignments(async_session)
-
-    notifications_result = await async_session.execute(
-        select(Notification).where(Notification.user_id == student_user_obj.id)
-    )
-    notification = notifications_result.scalar_one()
-
-    assert "Due:" in notification.message
-
-
-@pytest.mark.asyncio
-async def test_publish_notification_no_due_date(
-    async_session: AsyncSession,
-    teacher_user: tuple[User, Teacher],
-    student_user: tuple[User, Student],
-    book_and_activity: tuple[Book, Activity],
-):
-    """Test that notification message handles no due date gracefully."""
-    _, teacher = teacher_user
-    student_user_obj, student = student_user
-    book, activity = book_and_activity
-
-    scheduled_date = datetime.now(UTC) - timedelta(hours=1)
-    await create_scheduled_assignment(
-        async_session,
-        teacher,
-        book,
-        activity,
-        student,
-        scheduled_date,
-        due_date=None,
-        name="No Due Date Test",
-    )
-
-    await publish_scheduled_assignments(async_session)
-
-    notifications_result = await async_session.execute(
-        select(Notification).where(Notification.user_id == student_user_obj.id)
-    )
-    notification = notifications_result.scalar_one()
-
-    assert "No due date" in notification.message

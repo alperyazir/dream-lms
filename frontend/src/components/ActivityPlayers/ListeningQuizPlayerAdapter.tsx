@@ -16,6 +16,7 @@ import type { QuestionNavigationState } from "@/types/activity-player"
 interface ListeningQuizQuestion {
   question_id: string
   audio_url: string | null
+  audio_data?: { audio_base64?: string }
   audio_status: string
   question_text: string
   options: string[]
@@ -112,7 +113,10 @@ export function ListeningQuizPlayerAdapter({
 
   // Audio controls
   const handlePlayAudio = useCallback(() => {
-    if (!currentQuestion?.audio_url) return
+    const audioSrc = currentQuestion?.audio_data?.audio_base64
+      ? `data:audio/mpeg;base64,${currentQuestion.audio_data.audio_base64}`
+      : currentQuestion?.audio_url
+    if (!audioSrc) return
     const audio = audioRef.current
     if (!audio) return
 
@@ -120,7 +124,7 @@ export function ListeningQuizPlayerAdapter({
       audio.pause()
       setIsPlaying(false)
     } else {
-      audio.src = currentQuestion.audio_url
+      audio.src = audioSrc
       setAudioLoading(true)
       audio
         .play()

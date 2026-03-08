@@ -389,12 +389,22 @@ function Login() {
                     </p>
                   )}
                   {!isError && quickLoginUsers && (
-                    <div className="space-y-2 max-h-[140px] overflow-y-auto">
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto">
                       {[
                         {
                           key: "admin" as const,
                           label: "Admin",
                           color: "text-amber-600 dark:text-amber-400",
+                        },
+                        {
+                          key: "supervisor" as const,
+                          label: "Supervisor",
+                          color: "text-blue-600 dark:text-blue-400",
+                        },
+                        {
+                          key: "publisher" as const,
+                          label: "Publisher",
+                          color: "text-rose-600 dark:text-rose-400",
                         },
                         {
                           key: "teacher" as const,
@@ -412,12 +422,12 @@ function Login() {
                         return (
                           <div
                             key={role.key}
-                            className="flex flex-wrap gap-1.5"
+                            className="flex flex-wrap items-center gap-1.5"
                           >
-                            <span className={`text-xs ${role.color} w-16`}>
+                            <span className={`text-xs font-medium ${role.color} w-[70px] shrink-0`}>
                               {role.label}:
                             </span>
-                            {users.slice(0, 3).map((user) => (
+                            {users.slice(0, 5).map((user) => (
                               <Button
                                 key={user.username}
                                 type="button"

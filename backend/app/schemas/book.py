@@ -58,8 +58,22 @@ class BookListResponse(BaseModel):
     limit: int = 20
 
 
+class ActivityListResponse(BaseModel):
+    """Slim activity response for list views (no config_json)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    book_id: int
+    module_name: str | None = None
+    page_number: int | None = None
+    activity_type: str
+    title: str | None = None
+    order_index: int = 0
+
+
 class ActivityResponse(BaseModel):
-    """Activity response schema for API."""
+    """Activity response schema for API (includes config_json)."""
 
     model_config = ConfigDict(from_attributes=True)
 

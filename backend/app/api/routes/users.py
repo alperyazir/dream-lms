@@ -26,6 +26,7 @@ from app.models import (
     UserUpdate,
     UserUpdateMe,
 )
+from app.services.cache_events import invalidate_for_event_sync
 from app.utils import generate_new_account_email, send_email
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -103,6 +104,7 @@ def update_user_me(
     session.add(current_user)
     session.commit()
     session.refresh(current_user)
+    invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
     return current_user
 
 
@@ -134,6 +136,7 @@ def update_password_me(
     current_user.must_change_password = False
     session.add(current_user)
     session.commit()
+    invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
     return Message(message="Password updated successfully")
 
 
@@ -176,6 +179,7 @@ def change_initial_password(
     current_user.must_change_password = False
     session.add(current_user)
     session.commit()
+    invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
 
     return ChangePasswordResponse(
         success=True,
@@ -195,6 +199,7 @@ def complete_tour(
     current_user.has_completed_tour = True
     session.add(current_user)
     session.commit()
+    invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
     return Message(message="Tour completed successfully")
 
 
@@ -215,6 +220,7 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
+    invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
     session.delete(current_user)
     session.commit()
     return Message(message="User deleted successfully")
@@ -267,6 +273,7 @@ def update_user(
             )
 
     db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
+    invalidate_for_event_sync("user_profile_updated", user_id=str(user_id))
     return db_user
 
 
@@ -284,6 +291,7 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
+    invalidate_for_event_sync("user_profile_updated", user_id=str(user_id))
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")

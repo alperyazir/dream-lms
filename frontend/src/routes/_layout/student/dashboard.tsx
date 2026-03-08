@@ -8,14 +8,12 @@ import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { FiHome } from "react-icons/fi"
 import { SkillTrendChart } from "@/components/analytics/SkillTrendChart"
-import { AnnouncementWidget } from "@/components/announcements/AnnouncementWidget"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { ProgressSummaryCard } from "@/components/student/ProgressSummaryCard"
 import { StudentSkillSummaryGrid } from "@/components/student/StudentSkillSummaryGrid"
 import { UpcomingAssignmentsList } from "@/components/student/UpcomingAssignmentsList"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useStudentAnnouncements } from "@/hooks/useAnnouncements"
 import useAuth from "@/hooks/useAuth"
 import { useStudentProgress } from "@/hooks/useStudentProgress"
 import { getStudentAssignments } from "@/services/assignmentsApi"
@@ -45,13 +43,6 @@ function StudentDashboard() {
     period: "this_month",
   })
 
-  // Fetch last 3 announcements (all, not just unread) so they stay visible after reading
-  const { data: announcementsData, isLoading: isLoadingAnnouncements } =
-    useStudentAnnouncements({
-      filter: "all",
-      limit: 3,
-    })
-
   return (
     <PageContainer>
       <PageHeader
@@ -62,16 +53,6 @@ function StudentDashboard() {
 
       {/* Cards stack vertically, full width */}
       <div className="space-y-4 md:space-y-6">
-        {/* Announcements Widget - Only show when there are announcements */}
-        {(isLoadingAnnouncements ||
-          (announcementsData?.announcements &&
-            announcementsData.announcements.length > 0)) && (
-          <AnnouncementWidget
-            announcements={announcementsData?.announcements || []}
-            isLoading={isLoadingAnnouncements}
-          />
-        )}
-
         {/* Progress Summary */}
         {isLoadingProgress ? (
           <Skeleton className="h-40 w-full rounded-lg" />

@@ -40,6 +40,7 @@ from app.schemas.skill import (
 from app.schemas.benchmarks import BenchmarkPeriod, ClassBenchmarkResponse
 from app.services.analytics_service import get_class_analytics
 from app.services.benchmark_service import get_class_benchmarks
+from app.services.cache_events import invalidate_for_event
 
 logger = logging.getLogger(__name__)
 
@@ -221,6 +222,7 @@ async def create_class(
     session.add(class_obj)
     await session.commit()
     await session.refresh(class_obj)
+    await invalidate_for_event("teacher_classes_changed", user_id=str(current_user.id))
 
     # Return with student_count = 0
     return ClassResponse(**class_obj.model_dump(), student_count=0)
@@ -386,6 +388,8 @@ async def update_class(
     )
     student_count = count_result.scalar_one()
 
+    await invalidate_for_event("teacher_classes_changed", user_id=str(current_user.id))
+
     return ClassResponse(**class_obj.model_dump(), student_count=student_count)
 
 
@@ -416,6 +420,7 @@ async def archive_class(
     class_obj.is_active = False
     session.add(class_obj)
     await session.commit()
+    await invalidate_for_event("teacher_classes_changed", user_id=str(current_user.id))
 
 
 @router.post(
@@ -475,6 +480,8 @@ async def add_students_to_class(
         enrolled_count += 1
 
     await session.commit()
+    if enrolled_count > 0:
+        await invalidate_for_event("teacher_classes_changed", user_id=str(current_user.id))
 
     return {
         "message": f"Enrolled {enrolled_count} student(s), {skipped_count} already enrolled",
@@ -525,6 +532,7 @@ async def remove_student_from_class(
     # Delete enrollment
     await session.delete(enrollment)
     await session.commit()
+    await invalidate_for_event("teacher_classes_changed", user_id=str(current_user.id))
 
 
 @router.get(

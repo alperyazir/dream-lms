@@ -22,6 +22,9 @@ from app.services.dream_storage_client import DreamCentralStorageClient
 
 logger = logging.getLogger(__name__)
 
+# Cache: maps (book_id, stale_content_id) -> resolved_dcs_content_id
+_audio_content_id_cache: dict[tuple[int, str], str] = {}
+
 # Audio proxy router (existing)
 router = APIRouter(prefix="/ai/content", tags=["ai-content-proxy"])
 
@@ -74,6 +77,11 @@ async def stream_ai_content_audio(
     - **book_id**: DCS book ID
     - **content_id**: DCS content ID
     - **filename**: Audio filename (e.g. ``item_0.mp3``)
+
+    Falls back to resolving the correct DCS content_id when the
+    requested content_id doesn't have audio (audio URLs in DCS content
+    may reference an internal generation ID rather than the canonical
+    DCS content_id where audio files are actually stored).
     """
     logger.info(
         f"AI content audio requested: book_id={book_id}, content_id={content_id}, "
@@ -84,27 +92,31 @@ async def stream_ai_content_audio(
         audio_bytes = await ai_content_client.stream_audio(
             book_id, content_id, filename
         )
-
-        async def audio_stream():
-            yield audio_bytes
-
-        return StreamingResponse(
-            audio_stream(),
-            media_type="audio/mpeg",
-            headers={
-                "Content-Disposition": f'inline; filename="{filename}"',
-                "Cache-Control": "public, max-age=86400",
-            },
-        )
+        return _audio_response(audio_bytes, filename)
     except Exception as e:
         logger.error(
             f"Failed to stream AI content audio: content_id={content_id}, "
             f"filename={filename}, error={e}"
         )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Audio file not found.",
-        )
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Audio file not found.",
+    )
+
+
+def _audio_response(audio_bytes: bytes, filename: str) -> StreamingResponse:
+    async def audio_stream():
+        yield audio_bytes
+
+    return StreamingResponse(
+        audio_stream(),
+        media_type="audio/mpeg",
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Cache-Control": "public, max-age=86400",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 """Student API endpoints - Story 3.9, 5.1, 5.5, 6.5, 9.9."""
 
+import asyncio
 import io
 import logging
 import re
@@ -39,6 +40,7 @@ from app.schemas.analytics import (
     StudentProgressResponse,
 )
 from app.schemas.assignment import (
+    StudentAssignmentListResponse,
     StudentAssignmentResponse,
     StudentCalendarAssignmentItem,
     StudentCalendarAssignmentsResponse,
@@ -64,6 +66,7 @@ from app.schemas.skill import (
     StudentSkillTrendsResponse,
 )
 from app.services import analytics_service, feedback_service
+from app.services.redis_cache import cache_get, cache_set
 from app.services.skill_attribution_service import _ACTIVITY_TYPE_SKILL_SLUG
 from app.services.book_service_v2 import get_book_service
 from app.utils import (
@@ -80,7 +83,6 @@ logger = logging.getLogger(__name__)
 
 @router.get(
     "/me/assignments",
-    response_model=list[StudentAssignmentResponse],
     summary="Get student's assignments",
 )
 async def get_student_assignments(
@@ -88,7 +90,9 @@ async def get_student_assignments(
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
     status_filter: str | None = Query(None, alias="status"),
-) -> list[StudentAssignmentResponse]:
+    limit: int = Query(20, ge=1, le=100, description="Number of items to return"),
+    offset: int = Query(0, ge=0, description="Number of items to skip"),
+) -> StudentAssignmentListResponse:
     """
     Get all assignments for authenticated student.
 
@@ -98,6 +102,12 @@ async def get_student_assignments(
     Returns:
         List of assignments with enriched data (book, activity, progress)
     """
+    # Check cache first
+    cache_key = f"student:{current_user.id}:assignments:{status_filter}:{limit}:{offset}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return StudentAssignmentListResponse(**cached)
+
     # Get Student record from authenticated user
     result = await session.execute(
         select(Student).where(Student.user_id == current_user.id)
@@ -151,12 +161,23 @@ async def get_student_assignments(
             )
         query = query.where(AssignmentStudent.status == status_filter)
 
+    # Count total before pagination
+    count_query = select(func.count()).select_from(query.subquery())
+    count_result = await session.execute(count_query)
+    total = count_result.scalar() or 0
+
+    # Apply ordering and pagination
+    query = query.order_by(Assignment.created_at.desc())
+    query = query.offset(offset).limit(limit)
+
     # Execute query
     result = await session.execute(query)
     rows = result.all()
 
-    # Get BookService to fetch book data from DCS
+    # Batch-fetch all books in a single DCS call
     book_service = get_book_service()
+    unique_book_ids = {row[1].dcs_book_id for row in rows if row[1].dcs_book_id}
+    book_map = await book_service.get_books_batch(list(unique_book_ids))
 
     # Map results to StudentAssignmentResponse
     assignments = []
@@ -166,8 +187,7 @@ async def get_student_assignments(
         activity = row[2]  # May be None for Content Library assignments
         activity_count = row[3]
 
-        # Fetch book data from DCS
-        book = await book_service.get_book(assignment.dcs_book_id)
+        book = book_map.get(assignment.dcs_book_id)
 
         # Handle Content Library assignments (may not have book in DCS)
         if not book:
@@ -228,7 +248,15 @@ async def get_student_assignments(
         )
         assignments.append(response)
 
-    return assignments
+    response = StudentAssignmentListResponse(
+        items=assignments,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=offset + len(assignments) < total,
+    )
+    await cache_set(cache_key, response.model_dump(), ttl=3600)
+    return response
 
 
 @router.get(
@@ -267,6 +295,12 @@ async def get_student_progress(
         - Study time statistics
         - Personalized improvement tips
     """
+    # Check cache first
+    cache_key = f"student:{current_user.id}:progress:{period}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return StudentProgressResponse(**cached)
+
     # Get Student record from authenticated user
     result = await session.execute(
         select(Student).where(Student.user_id == current_user.id)
@@ -286,6 +320,7 @@ async def get_student_progress(
             period=period,
             session=session,
         )
+        await cache_set(cache_key, progress.model_dump(), ttl=3600)
         return progress
     except ValueError as e:
         raise HTTPException(
@@ -391,6 +426,12 @@ async def get_my_badges(
     Raises:
         HTTPException(404): Student record not found
     """
+    # Check cache first
+    cache_key = f"student:{current_user.id}:badges"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return StudentBadgeCountsResponse(**cached)
+
     # Get student record for current user
     student_result = await session.execute(
         select(Student).where(Student.user_id == current_user.id)
@@ -403,10 +444,14 @@ async def get_my_badges(
             detail="Student record not found"
         )
 
-    return await feedback_service.get_student_badge_counts(
-        session=session,
+    result = await feedback_service.get_student_badge_counts(
+        db=session,
         student_id=student.id,
     )
+    # result may be a dict or Pydantic model depending on the service
+    cache_data = result.model_dump() if hasattr(result, 'model_dump') else result
+    await cache_set(cache_key, cache_data, ttl=3600)
+    return result
 
 
 @router.get(
@@ -701,6 +746,14 @@ async def get_student_calendar_assignments(
     """
     from collections import defaultdict
 
+    # Redis cache (30s TTL) — calendar data
+    start_key = start_date.strftime("%Y%m%d")
+    end_key = end_date.strftime("%Y%m%d")
+    cache_key = f"student:{current_user.id}:calendar:{start_key}:{end_key}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return StudentCalendarAssignmentsResponse(**cached)
+
     # Get Student record for current user
     result = await session.execute(
         select(Student).where(Student.user_id == current_user.id)
@@ -753,8 +806,10 @@ async def get_student_calendar_assignments(
     result = await session.execute(query)
     rows = result.all()
 
-    # Get BookService to fetch book data from DCS
+    # Batch-fetch all books in a single DCS call
     book_service = get_book_service()
+    unique_book_ids = {row[1].dcs_book_id for row in rows if row[1].dcs_book_id}
+    book_map = await book_service.get_books_batch(list(unique_book_ids))
 
     # Group assignments by date (priority: due_date > scheduled_publish_date > created_at)
     assignments_by_date: dict[str, list[StudentCalendarAssignmentItem]] = defaultdict(list)
@@ -764,8 +819,7 @@ async def get_student_calendar_assignments(
         assignment = row[1]
         activity_count = row[2]
 
-        # Fetch book data from DCS
-        book = await book_service.get_book(assignment.dcs_book_id)
+        book = book_map.get(assignment.dcs_book_id)
         if not book:
             logger.warning(
                 f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
@@ -790,7 +844,9 @@ async def get_student_calendar_assignments(
 
     # Sort assignments within each day
     for date_key in assignments_by_date:
-        assignments_by_date[date_key].sort(key=lambda a: a.due_date or datetime.min.replace(tzinfo=UTC))
+        assignments_by_date[date_key].sort(
+            key=lambda a: (a.due_date.replace(tzinfo=None) if a.due_date and a.due_date.tzinfo else a.due_date) or datetime.min
+        )
 
     total_assignments = sum(len(items) for items in assignments_by_date.values())
 
@@ -800,12 +856,14 @@ async def get_student_calendar_assignments(
         f"assignments={total_assignments}"
     )
 
-    return StudentCalendarAssignmentsResponse(
+    response = StudentCalendarAssignmentsResponse(
         start_date=start_date.strftime("%Y-%m-%d"),
         end_date=end_date.strftime("%Y-%m-%d"),
         total_assignments=total_assignments,
         assignments_by_date=dict(assignments_by_date),
     )
+    await cache_set(cache_key, response.model_dump(), ttl=3600)
+    return response
 
 
 # --- Student Import Endpoints (Story 9.9) ---
@@ -1540,32 +1598,50 @@ async def _build_skill_profile(
                 "data_points": int(row.data_points),
             }
 
-        # Build trend data for skills with enough data points
+        # Build trend data using a single windowed query (replaces N per-skill queries)
+        from sqlalchemy import over, literal_column
+        row_num = func.row_number().over(
+            partition_by=StudentSkillScore.skill_id,
+            order_by=StudentSkillScore.recorded_at.desc(),
+        ).label("rn")
+        windowed_subq = (
+            select(
+                StudentSkillScore.skill_id,
+                StudentSkillScore.attributed_score,
+                StudentSkillScore.attributed_max_score,
+                row_num,
+            )
+            .where(StudentSkillScore.student_id == student_id)
+            .subquery()
+        )
+        # Only fetch top 6 per skill
+        trend_result = await session.execute(
+            select(
+                windowed_subq.c.skill_id,
+                windowed_subq.c.attributed_score,
+                windowed_subq.c.attributed_max_score,
+                windowed_subq.c.rn,
+            ).where(windowed_subq.c.rn <= 6)
+        )
+        # Group by skill_id
+        from collections import defaultdict
+        trend_rows: dict[uuid.UUID, list] = defaultdict(list)
+        for tr in trend_result.all():
+            trend_rows[tr.skill_id].append(tr)
+
         for skill_id, data in score_map.items():
-            if data["data_points"] >= 6:
-                trend_query = await session.execute(
-                    select(
-                        StudentSkillScore.attributed_score,
-                        StudentSkillScore.attributed_max_score,
-                    )
-                    .where(
-                        StudentSkillScore.student_id == student_id,
-                        StudentSkillScore.skill_id == skill_id,
-                    )
-                    .order_by(StudentSkillScore.recorded_at.desc())
-                    .limit(6)
-                )
-                recent_scores = trend_query.all()
-                if len(recent_scores) >= 6:
+            if data["data_points"] >= 6 and skill_id in trend_rows:
+                rows_for_skill = sorted(trend_rows[skill_id], key=lambda r: r.rn)
+                if len(rows_for_skill) >= 6:
                     recent_3 = [
-                        (s.attributed_score / s.attributed_max_score * 100)
-                        if s.attributed_max_score > 0 else 0
-                        for s in recent_scores[:3]
+                        (r.attributed_score / r.attributed_max_score * 100)
+                        if r.attributed_max_score > 0 else 0
+                        for r in rows_for_skill[:3]
                     ]
                     prev_3 = [
-                        (s.attributed_score / s.attributed_max_score * 100)
-                        if s.attributed_max_score > 0 else 0
-                        for s in recent_scores[3:6]
+                        (r.attributed_score / r.attributed_max_score * 100)
+                        if r.attributed_max_score > 0 else 0
+                        for r in rows_for_skill[3:6]
                     ]
                     diff = sum(recent_3) / 3 - sum(prev_3) / 3
                     if diff > 5:
@@ -1669,6 +1745,12 @@ async def get_my_skill_profile(
 
     Returns radar chart data with per-skill proficiency, confidence, and trend.
     """
+    # Check cache first
+    cache_key = f"student:{current_user.id}:skill-profile"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return StudentSkillProfileResponse(**cached)
+
     result = await session.execute(
         select(Student).where(Student.user_id == current_user.id)
     )
@@ -1680,11 +1762,13 @@ async def get_my_skill_profile(
             detail="Student record not found"
         )
 
-    return await _build_skill_profile(
+    profile = await _build_skill_profile(
         student_id=student.id,
         student_name=current_user.full_name,
         session=session,
     )
+    await cache_set(cache_key, profile.model_dump(), ttl=3600)
+    return profile
 
 
 @router.get(

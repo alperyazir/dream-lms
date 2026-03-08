@@ -47,6 +47,7 @@ export interface VocabularyQuizQuestion {
   correct_answer: string
   options: string[]
   audio_url: string | null
+  audio_data?: { audio_base64?: string }
   vocabulary_id: string
   cefr_level: string
   question_type: QuestionType
@@ -60,6 +61,7 @@ export interface VocabularyQuizQuestionPublic {
   definition: string // The prompt (definition, synonym, or antonym)
   options: string[]
   audio_url: string | null
+  audio_data?: { audio_base64?: string }
   cefr_level: string
   question_type: QuestionType
 }
@@ -105,6 +107,7 @@ export interface QuestionResult {
   user_answer: string
   is_correct: boolean
   audio_url: string | null
+  audio_data?: { audio_base64?: string }
 }
 
 /**

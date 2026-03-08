@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   Edit,
   Plus,
   Trash2,
@@ -17,6 +19,7 @@ import {
   type StudentPublic,
   TeachersService,
 } from "@/client"
+import { getMyStudentsPaginated } from "@/services/teachersApi"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Badge } from "@/components/ui/badge"
@@ -62,6 +65,10 @@ function TeacherClassroomsPage() {
   const [selectedClass, setSelectedClass] = useState<ClassResponse | null>(null)
   const [classToDelete, setClassToDelete] = useState<ClassResponse | null>(null)
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
+  const [selectedClassIds, setSelectedClassIds] = useState<Set<string>>(new Set())
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+  const PAGE_SIZE = 20
+  const [currentPage, setCurrentPage] = useState(1)
 
   const [newClass, setNewClass] = useState<ClassCreateByTeacher>({
     name: "",
@@ -92,7 +99,10 @@ function TeacherClassroomsPage() {
   // Fetch all students
   const { data: allStudents = [] } = useQuery({
     queryKey: ["teacherStudents"],
-    queryFn: () => TeachersService.listMyStudents(),
+    queryFn: async () => {
+      const res = await getMyStudentsPaginated(500, 0)
+      return res.items
+    },
   })
 
   // Fetch students in selected class
@@ -252,6 +262,51 @@ function TeacherClassroomsPage() {
     deleteClassMutation.mutate(classToDelete.id)
   }
 
+  const bulkDeleteClassesMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(
+        ids.map((id) => TeachersService.deleteClass({ classId: id })),
+      )
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
+      setSelectedClassIds(new Set())
+      setIsBulkDeleteDialogOpen(false)
+      showSuccessToast("Selected classes deleted successfully!")
+    },
+    onError: () => {
+      showErrorToast("Failed to delete some classes. Please try again.")
+    },
+  })
+
+  const handleSelectAllClasses = (checked: boolean) => {
+    if (checked) {
+      setSelectedClassIds(new Set(paginatedClasses.map((c) => c.id)))
+    } else {
+      setSelectedClassIds(new Set())
+    }
+  }
+
+  const handleSelectClass = (classId: string, checked: boolean) => {
+    const newSelected = new Set(selectedClassIds)
+    if (checked) {
+      newSelected.add(classId)
+    } else {
+      newSelected.delete(classId)
+    }
+    setSelectedClassIds(newSelected)
+  }
+
+  const handleBulkDeleteClasses = () => {
+    if (selectedClassIds.size > 0) {
+      setIsBulkDeleteDialogOpen(true)
+    }
+  }
+
+  const confirmBulkDeleteClasses = () => {
+    bulkDeleteClassesMutation.mutate(Array.from(selectedClassIds))
+  }
+
   const handleEditClass = (classItem: ClassResponse) => {
     setSelectedClass(classItem)
     setEditClass({
@@ -321,6 +376,13 @@ function TeacherClassroomsPage() {
       classItem.subject?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
+  const totalFilteredCount = filteredClasses.length
+  const totalPages = Math.ceil(totalFilteredCount / PAGE_SIZE)
+  const paginatedClasses = filteredClasses.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  )
+
   return (
     <PageContainer>
       <PageHeader
@@ -344,11 +406,38 @@ function TeacherClassroomsPage() {
             type="search"
             placeholder="Search classes by name or subject..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setCurrentPage(1)
+            }}
             className="w-full"
           />
         </div>
       </div>
+
+      {/* Bulk Actions */}
+      {selectedClassIds.size > 0 && (
+        <div className="flex items-center gap-4 p-3 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-200 dark:border-teal-800">
+          <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+            {selectedClassIds.size} class(es) selected
+          </span>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleBulkDeleteClasses}
+          >
+            <Trash2 className="w-3 h-3 mr-1" />
+            Delete Selected
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setSelectedClassIds(new Set())}
+          >
+            Clear Selection
+          </Button>
+        </div>
+      )}
 
       {/* Loading/Error States */}
       {error ? (
@@ -359,7 +448,7 @@ function TeacherClassroomsPage() {
         <div className="text-center py-12 text-muted-foreground">
           Loading classes...
         </div>
-      ) : filteredClasses.length === 0 ? (
+      ) : totalFilteredCount === 0 ? (
         /* Empty State */
         <div className="text-center py-12">
           <TrendingUp className="w-16 h-16 mx-auto text-gray-400 mb-4" />
@@ -374,6 +463,16 @@ function TeacherClassroomsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={
+                      paginatedClasses.length > 0 &&
+                      selectedClassIds.size === paginatedClasses.length
+                    }
+                    onCheckedChange={handleSelectAllClasses}
+                    aria-label="Select all"
+                  />
+                </TableHead>
                 <TableHead>Class Name</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Grade Level</TableHead>
@@ -384,8 +483,24 @@ function TeacherClassroomsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClasses.map((classItem) => (
-                <TableRow key={classItem.id}>
+              {paginatedClasses.map((classItem) => (
+                <TableRow
+                  key={classItem.id}
+                  className={
+                    selectedClassIds.has(classItem.id)
+                      ? "bg-teal-50 dark:bg-teal-900/20"
+                      : ""
+                  }
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedClassIds.has(classItem.id)}
+                      onCheckedChange={(checked) =>
+                        handleSelectClass(classItem.id, checked as boolean)
+                      }
+                      aria-label={`Select ${classItem.name}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">
                     {classItem.name}
                   </TableCell>
@@ -486,6 +601,40 @@ function TeacherClassroomsPage() {
               ))}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+            {Math.min(currentPage * PAGE_SIZE, totalFilteredCount)} of{" "}
+            {totalFilteredCount} classrooms
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground px-2">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => p + 1)}
+              disabled={currentPage >= totalPages}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
         </div>
       )}
 
@@ -806,6 +955,38 @@ function TeacherClassroomsPage() {
               disabled={deleteClassMutation.isPending}
             >
               {deleteClassMutation.isPending ? "Deleting..." : "Delete Class"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Selected Classes</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedClassIds.size} selected
+              class(es)? This will also remove all student enrollments in these
+              classes. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkDeleteDialogOpen(false)}
+              disabled={bulkDeleteClassesMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmBulkDeleteClasses}
+              disabled={bulkDeleteClassesMutation.isPending}
+            >
+              {bulkDeleteClassesMutation.isPending
+                ? "Deleting..."
+                : `Delete ${selectedClassIds.size} Class(es)`}
             </Button>
           </DialogFooter>
         </DialogContent>

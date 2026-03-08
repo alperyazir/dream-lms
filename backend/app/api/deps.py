@@ -1,19 +1,26 @@
+import logging
 import uuid
 from collections.abc import AsyncGenerator, Generator
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import Session
 
+if TYPE_CHECKING:
+    from arq import ArqRedis
+
 from app.core import security
 from app.core.config import settings
 from app.core.db import async_engine, engine
-from app.models import TokenPayload, User, UserRole
+from app.models import Student, Teacher, TokenPayload, User, UserRole
+from app.services.redis_cache import cache_get_sync, cache_set_sync
+
+logger = logging.getLogger(__name__)
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
@@ -49,11 +56,30 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
         )
     # Convert string UUID to UUID object
     user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+
+    # Try Redis cache for quick is_active check before hitting DB
+    cache_key = f"auth:user:{user_id}"
+    cached = cache_get_sync(cache_key)
+    if cached:
+        if not cached.get("is_active", True):
+            raise HTTPException(status_code=400, detail="Inactive user")
+
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+
+    # Cache basic user info for is_active checks
+    if not cached:
+        try:
+            cache_set_sync(cache_key, {
+                "id": str(user.id),
+                "is_active": user.is_active,
+            }, ttl=3600)
+        except Exception:
+            pass  # Non-critical
+
     return user
 
 
@@ -129,6 +155,11 @@ def can_delete_user(current_user: User, target_user: User) -> bool:
 
     # Other roles cannot delete users
     return False
+
+
+async def get_arq_pool(request: Request) -> "ArqRedis":
+    """Get arq Redis pool from app state for background task enqueueing."""
+    return request.app.state.arq_pool
 
 
 def can_delete_school(current_user: User) -> bool:

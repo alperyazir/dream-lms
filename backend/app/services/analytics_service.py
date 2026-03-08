@@ -1,5 +1,6 @@
 """Analytics service for student performance calculations - Stories 5.1, 5.2, 5.3, 5.4."""
 
+import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -2896,15 +2897,16 @@ async def get_student_progress(
     ]
 
     # Recent assignments (last 5)
-    # Fetch book titles for recent assignments
+    # Batch-fetch book titles in a single DCS call
     book_service = get_book_service()
-    recent_assignments = []
-    for asgn_student, assignment, activity in period_completed[:5]:
-        # Fetch book data from DCS
-        book = await book_service.get_book(assignment.dcs_book_id)
-        book_title = book.title if book else "Unknown Book"
+    recent_5 = period_completed[:5]
+    unique_book_ids = {a.dcs_book_id for _, a, _ in recent_5 if a.dcs_book_id}
+    book_map = await book_service.get_books_batch(list(unique_book_ids))
 
-        has_feedback = False
+    recent_assignments = []
+    for asgn_student, assignment, activity in recent_5:
+        book = book_map.get(assignment.dcs_book_id)
+        book_title = book.title if book else "Unknown Book"
 
         recent_assignments.append(
             ProgressRecentAssignment(
@@ -2912,7 +2914,7 @@ async def get_student_progress(
                 name=assignment.name,
                 score=asgn_student.score or 0,
                 completed_at=asgn_student.completed_at,
-                has_feedback=has_feedback,
+                has_feedback=False,
                 activity_type=activity.activity_type,
                 book_title=book_title,
             )

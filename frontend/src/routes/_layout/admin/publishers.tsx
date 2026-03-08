@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Edit,
   KeyRound,
@@ -12,8 +14,9 @@ import {
   Search,
   Trash2,
   UserPlus,
+  X,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   AdminService,
   type PublisherAccountCreate,
@@ -24,6 +27,7 @@ import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -65,7 +69,12 @@ export const Route = createFileRoute("/_layout/admin/publishers")({
 function AdminPublishers() {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const PAGE_SIZE = 20
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
 
   // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -122,15 +131,34 @@ function AdminPublishers() {
     is_active: null,
   })
 
-  // Fetch publisher USER accounts (not DCS publishers)
+  // Debounce search for server-side filtering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setCurrentPage(1)
+      setSelectedIds(new Set())
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Fetch publisher USER accounts (server-side pagination)
+  const skip = (currentPage - 1) * PAGE_SIZE
   const {
     data: accountsResponse,
     isLoading: isLoadingAccounts,
     error: accountsError,
   } = useQuery({
-    queryKey: ["publisherAccounts"],
-    queryFn: () => AdminService.listPublisherAccounts(),
+    queryKey: ["publisherAccounts", skip, PAGE_SIZE, debouncedSearch],
+    queryFn: () =>
+      AdminService.listPublisherAccountsPaginated({
+        skip,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+      }),
   })
+  const accounts = accountsResponse?.items ?? []
+  const totalAccounts = accountsResponse?.total ?? 0
+  const totalPages = Math.ceil(totalAccounts / PAGE_SIZE)
 
   // Fetch DCS publishers for dropdown
   const { data: dcsPublishers = [], isLoading: isLoadingPublishers } = useQuery(
@@ -253,6 +281,56 @@ function AdminPublishers() {
       )
     },
   })
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) =>
+      Promise.all(
+        ids.map((id) => AdminService.deletePublisherAccount({ userId: id })),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
+      setSelectedIds(new Set())
+      setIsBulkDeleteDialogOpen(false)
+      showSuccessToast(
+        `Successfully deleted ${selectedIds.size} publisher account(s)`,
+      )
+    },
+    onError: () => {
+      showErrorToast(
+        "Failed to delete some publisher accounts. Please try again.",
+      )
+    },
+  })
+
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(accounts.map((a) => a.id)))
+    } else {
+      setSelectedIds(new Set())
+    }
+  }
+
+  const handleSelectItem = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds)
+    if (checked) {
+      newSelected.add(id)
+    } else {
+      newSelected.delete(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size > 0) {
+      setIsBulkDeleteDialogOpen(true)
+    }
+  }
+
+  const confirmBulkDelete = () => {
+    bulkDeleteMutation.mutate(Array.from(selectedIds))
+  }
 
   // Helper functions
   const resetNewAccountForm = () => {
@@ -381,18 +459,6 @@ function AdminPublishers() {
     return publisher?.name || "Unknown"
   }
 
-  // Filter accounts based on search query
-  const accounts = accountsResponse?.data ?? []
-  const filteredAccounts = accounts.filter(
-    (account) =>
-      account.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      account.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      account.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      account.dcs_publisher_name
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()),
-  )
-
   if (accountsError) {
     return (
       <div className="max-w-full p-6">
@@ -437,12 +503,41 @@ function AdminPublishers() {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+              {selectedIds.size} account(s) selected
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-teal-600 hover:text-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleteMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Selected
+          </Button>
+        </div>
+      )}
+
       {/* Accounts Table */}
       <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-teal-500" />
-            All Publisher Accounts ({filteredAccounts.length})
+            All Publisher Accounts ({totalAccounts})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -451,7 +546,7 @@ function AdminPublishers() {
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
               Loading publisher accounts...
             </div>
-          ) : filteredAccounts.length === 0 ? (
+          ) : totalAccounts === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {searchQuery
                 ? "No publisher accounts found matching your search"
@@ -461,6 +556,16 @@ function AdminPublishers() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={
+                        accounts.length > 0 &&
+                        accounts.every((a) => selectedIds.has(a.id))
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>DCS Publisher</TableHead>
@@ -470,8 +575,24 @@ function AdminPublishers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAccounts.map((account) => (
-                  <TableRow key={account.id}>
+                {accounts.map((account) => (
+                  <TableRow
+                    key={account.id}
+                    className={
+                      selectedIds.has(account.id)
+                        ? "bg-teal-50 dark:bg-teal-900/20"
+                        : ""
+                    }
+                  >
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(account.id)}
+                        onCheckedChange={(checked) =>
+                          handleSelectItem(account.id, checked as boolean)
+                        }
+                        aria-label={`Select ${account.full_name}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div>
                         <div className="font-medium">{account.full_name}</div>
@@ -575,6 +696,46 @@ function AdminPublishers() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {skip + 1} to{" "}
+            {Math.min(skip + PAGE_SIZE, totalAccounts)} of{" "}
+            {totalAccounts}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p - 1)
+                setSelectedIds(new Set())
+              }}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p + 1)
+                setSelectedIds(new Set())
+              }}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Add Account Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -924,6 +1085,19 @@ function AdminPublishers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={isBulkDeleteDialogOpen}
+        onOpenChange={setIsBulkDeleteDialogOpen}
+        onConfirm={confirmBulkDelete}
+        title="Delete Selected Publisher Accounts"
+        description={`Are you sure you want to delete ${selectedIds.size} selected account(s)? This action cannot be undone.`}
+        confirmText={`Delete ${selectedIds.size} Account(s)`}
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={bulkDeleteMutation.isPending}
+      />
 
       {/* Password Result Dialog */}
       <Dialog

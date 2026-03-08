@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 
 import sentry_sdk
@@ -16,11 +17,34 @@ from starlette.responses import JSONResponse, Response
 from app.api.main import api_router
 from app.core.config import settings
 from app.core.rate_limit import limiter
+from app.services.redis_cache import close_redis, init_redis
 
 # Note: Publisher sync no longer needed - publishers managed via DCS caching service
 from app.services.webhook_registration import webhook_registration_service
 
 logger = logging.getLogger(__name__)
+
+
+class RequestTimingMiddleware(BaseHTTPMiddleware):
+    """Log slow requests (>500ms) with method, path, status, and duration."""
+
+    SLOW_THRESHOLD_MS = 500
+
+    async def dispatch(self, request: Request, call_next):
+        start = time.perf_counter()
+        response = await call_next(request)
+        duration_ms = (time.perf_counter() - start) * 1000
+
+        if duration_ms > self.SLOW_THRESHOLD_MS:
+            logger.warning(
+                "SLOW %s %s → %d (%.0fms)",
+                request.method,
+                request.url.path,
+                response.status_code,
+                duration_ms,
+            )
+
+        return response
 
 
 class BotBlockerMiddleware(BaseHTTPMiddleware):
@@ -46,6 +70,16 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info("Starting Dream LMS backend...")
+
+    # Connect to Redis cache
+    await init_redis()
+
+    # Create arq pool for background task queue
+    from arq import create_pool
+
+    from app.worker import REDIS_SETTINGS
+
+    app.state.arq_pool = await create_pool(REDIS_SETTINGS)
 
     # Log email configuration status
     if settings.emails_enabled:
@@ -99,6 +133,8 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down Dream LMS backend...")
+    await app.state.arq_pool.close()
+    await close_redis()
 
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
@@ -141,6 +177,9 @@ app.add_middleware(SlowAPIMiddleware)
 
 # Block common bot/scanner paths to reduce log noise
 app.add_middleware(BotBlockerMiddleware)
+
+# Log slow requests (>500ms) — outermost to capture full request time
+app.add_middleware(RequestTimingMiddleware)
 
 # Mount static files directory for serving uploaded content (logos, etc.)
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")

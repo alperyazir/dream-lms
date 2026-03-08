@@ -21,14 +21,14 @@ export function ViewModeToggle({ value, onChange, className }: ViewModeTogglePro
       <ToggleGroupItem
         value="grid"
         aria-label="Grid view"
-        className="data-[state=on]:bg-accent"
+        className="data-[state=on]:bg-teal-600 data-[state=on]:text-white"
       >
         <LayoutGrid className="h-4 w-4" />
       </ToggleGroupItem>
       <ToggleGroupItem
         value="table"
         aria-label="Table view"
-        className="data-[state=on]:bg-accent"
+        className="data-[state=on]:bg-teal-600 data-[state=on]:text-white"
       >
         <List className="h-4 w-4" />
       </ToggleGroupItem>

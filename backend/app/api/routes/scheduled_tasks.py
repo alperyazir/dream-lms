@@ -3,7 +3,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import Header, HTTPException, status
+from fastapi import Header, HTTPException, Request, status
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
 
@@ -221,8 +221,6 @@ class PublishAssignmentsResponse(BaseModel):
 
     success: bool
     assignments_published: int
-    notifications_sent: int
-    students_notified: int
     message: str
 
 
@@ -234,6 +232,7 @@ class PublishAssignmentsResponse(BaseModel):
     "Should be called periodically (e.g., every hour or once daily) by external scheduler.",
 )
 async def run_publish_scheduled_assignments(
+    request: Request,
     *,
     session: AsyncSessionDep,
     x_scheduler_key: Annotated[str | None, Header()] = None,
@@ -261,7 +260,7 @@ async def run_publish_scheduled_assignments(
     logger.info("Starting scheduled assignment publishing")
 
     try:
-        result = await publish_scheduled_assignments(session)
+        result = await publish_scheduled_assignments(session, arq_pool=request.app.state.arq_pool)
     except Exception as e:
         logger.error(f"Error publishing scheduled assignments: {e}")
         raise HTTPException(
@@ -272,8 +271,5 @@ async def run_publish_scheduled_assignments(
     return PublishAssignmentsResponse(
         success=True,
         assignments_published=result.assignments_published,
-        notifications_sent=result.notifications_sent,
-        students_notified=result.students_notified,
-        message=f"Published {result.assignments_published} assignments, "
-        f"sent {result.notifications_sent} notifications",
+        message=f"Published {result.assignments_published} assignments",
     )

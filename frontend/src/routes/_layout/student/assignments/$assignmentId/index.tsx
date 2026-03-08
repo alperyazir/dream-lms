@@ -741,6 +741,23 @@ function AssignmentDetailContent() {
                   </Button>
                 </>
               )}
+              {/* Ask Teacher button — navigates to messaging */}
+              {feedback?.teacher_user_id && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                  onClick={() =>
+                    navigate({
+                      to: "/messaging",
+                      search: { user: feedback.teacher_user_id },
+                    })
+                  }
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Ask Teacher a Question
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

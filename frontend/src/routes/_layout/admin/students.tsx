@@ -12,11 +12,13 @@ import {
   Mail,
   Plus,
   Search,
+  ChevronLeft,
+  ChevronRight,
   Trash2,
   User,
   X,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { FiUsers } from "react-icons/fi"
 import {
   AdminService,
@@ -64,7 +66,11 @@ export const Route = createFileRoute("/_layout/admin/students")({
 function AdminStudents() {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const PAGE_SIZE = 20
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const skip = (currentPage - 1) * PAGE_SIZE
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -119,15 +125,34 @@ function AdminStudents() {
     parent_email: "",
   })
 
-  // Fetch students from API
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setCurrentPage(1)
+      setSelectedStudentIds(new Set())
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Fetch students from API with server-side pagination
   const {
-    data: students = [],
+    data: studentsResponse,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["students"],
-    queryFn: () => AdminService.listStudents(),
+    queryKey: ["students", skip, PAGE_SIZE, debouncedSearch],
+    queryFn: () =>
+      AdminService.listStudents({
+        skip,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+      }),
   })
+
+  const students = studentsResponse?.items ?? []
+  const totalStudents = studentsResponse?.total ?? 0
+  const totalPages = Math.ceil(totalStudents / PAGE_SIZE)
 
   // Create student mutation
   const createStudentMutation = useMutation({
@@ -342,7 +367,7 @@ function AdminStudents() {
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedStudentIds(new Set(filteredStudents.map((s) => s.id)))
+      setSelectedStudentIds(new Set(students.map((s) => s.id)))
     } else {
       setSelectedStudentIds(new Set())
     }
@@ -367,22 +392,6 @@ function AdminStudents() {
   const confirmBulkDelete = () => {
     bulkDeleteMutation.mutate(Array.from(selectedStudentIds))
   }
-
-  const filteredStudents = students.filter(
-    (student) =>
-      student.user_full_name
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      student.user_username
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      student.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.grade_level?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.parent_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.created_by_teacher_name
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()),
-  )
 
   if (error) {
     return (
@@ -465,7 +474,7 @@ function AdminStudents() {
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <GraduationCap className="w-5 h-5 text-teal-500" />
-            All Students ({filteredStudents.length})
+            All Students ({totalStudents})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -473,7 +482,7 @@ function AdminStudents() {
             <div className="text-center py-8 text-muted-foreground">
               Loading students...
             </div>
-          ) : filteredStudents.length === 0 ? (
+          ) : totalStudents === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {searchQuery
                 ? "No students found matching your search"
@@ -486,8 +495,10 @@ function AdminStudents() {
                   <TableHead className="w-12">
                     <Checkbox
                       checked={
-                        filteredStudents.length > 0 &&
-                        selectedStudentIds.size === filteredStudents.length
+                        students.length > 0 &&
+                        students.every((s) =>
+                          selectedStudentIds.has(s.id),
+                        )
                       }
                       onCheckedChange={handleSelectAll}
                       aria-label="Select all"
@@ -504,7 +515,7 @@ function AdminStudents() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents.map((student) => (
+                {students.map((student) => (
                   <TableRow
                     key={student.id}
                     className={
@@ -605,6 +616,46 @@ function AdminStudents() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * PAGE_SIZE + 1} to{" "}
+            {Math.min(currentPage * PAGE_SIZE, totalStudents)} of{" "}
+            {totalStudents}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p - 1)
+                setSelectedStudentIds(new Set())
+              }}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p + 1)
+                setSelectedStudentIds(new Set())
+              }}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Add Student Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

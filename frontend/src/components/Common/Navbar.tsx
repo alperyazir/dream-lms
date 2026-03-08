@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router"
 import { Mail } from "lucide-react"
-import { NotificationBell } from "@/components/notifications"
 import { Button } from "@/components/ui/button"
 import { ColorModeButton } from "@/components/ui/color-mode"
 import { useMessagesUnreadCount } from "@/hooks/useMessages"
@@ -33,8 +32,6 @@ function Navbar() {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            <NotificationBell />
-
             <Link to="/messaging">
               <Button
                 variant="ghost"
@@ -74,8 +71,6 @@ function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-0.5">
-            <NotificationBell size="sm" />
-
             <Link to="/messaging">
               <Button
                 variant="ghost"

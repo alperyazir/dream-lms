@@ -2,10 +2,13 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from sqlmodel import SQLModel, select
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
+from sqlalchemy.orm import aliased
+from sqlmodel import SQLModel, func, select
 
 from app import crud
+from app.services.cache_events import invalidate_for_event_sync
+from app.services.redis_cache import cache_get_sync, cache_set_sync
 from app.api.deps import AsyncSessionDep, SessionDep, require_role
 from app.core.config import settings
 from app.models import (
@@ -14,6 +17,7 @@ from app.models import (
     Class,
     ClassCreateByTeacher,
     ClassPublic,
+    ClassListItem,
     ClassResponse,
     ClassStudent,
     ClassUpdate,
@@ -28,6 +32,7 @@ from app.models import (
     UserPublic,
     UserRole,
 )
+from app.schemas.pagination import StudentListResponse
 from app.services.bulk_import import validate_bulk_import
 from app.utils import (
     generate_new_account_email,
@@ -55,6 +60,7 @@ def create_student(
     *,
     session: SessionDep,
     student_in: StudentCreateAPI,
+    background_tasks: BackgroundTasks,
     current_user: User = require_role(UserRole.teacher)
 ) -> Any:
     """
@@ -125,23 +131,24 @@ def create_student(
     message = ""
 
     if user.email and settings.emails_enabled:
+        # Generate email content synchronously, send in background
         try:
-            # Send password via email - secure path
             email_data = generate_new_account_email(
                 email_to=user.email,
                 username=user.username,
                 password=temp_password,
                 full_name=student_in.full_name
             )
-            send_email(
+            background_tasks.add_task(
+                send_email,
                 email_to=user.email,
                 subject=email_data.subject,
-                html_content=email_data.html_content
+                html_content=email_data.html_content,
             )
             password_emailed = True
-            message = "Password sent via email"
+            message = "Password will be sent via email"
         except Exception as e:
-            logger.error(f"Failed to send welcome email to {user.email}: {e}")
+            logger.error(f"Failed to prepare welcome email for {user.email}: {e}")
             temp_password_for_response = temp_password
             message = "Email delivery failed. Please share the temporary password securely."
     else:
@@ -161,6 +168,8 @@ def create_student(
         created_at=student.created_at,
         updated_at=student.updated_at
     )
+
+    invalidate_for_event_sync("teacher_students_changed", user_id=str(current_user.id))
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
@@ -319,6 +328,8 @@ async def bulk_import_students(
             detail=f"Bulk import failed: {str(e)}"
         )
 
+    invalidate_for_event_sync("teacher_students_changed", user_id=str(current_user.id))
+
     return BulkImportResponse(
         success=True,
         total_rows=len(rows),
@@ -331,15 +342,16 @@ async def bulk_import_students(
 
 @router.get(
     "/me/students",
-    response_model=list[StudentPublic],
     summary="List my students",
     description="Retrieve students created by the current teacher or enrolled in their classes. Teacher only.",
 )
 def list_my_students(
     *,
     session: SessionDep,
-    current_user: User = require_role(UserRole.teacher)
-) -> Any:
+    current_user: User = require_role(UserRole.teacher),
+    limit: int = Query(20, ge=1, le=500, description="Number of items to return"),
+    offset: int = Query(0, ge=0, description="Number of items to skip"),
+) -> StudentListResponse:
     """
     List students accessible to this teacher.
 
@@ -347,6 +359,12 @@ def list_my_students(
     - Created by this teacher, OR
     - Enrolled in any of this teacher's classes
     """
+    # Redis cache (60s TTL) — student list
+    cache_key = f"teacher:{current_user.id}:students:{limit}:{offset}"
+    cached = cache_get_sync(cache_key)
+    if cached is not None:
+        return StudentListResponse(**cached)
+
     # Get Teacher record for current user
     teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
     teacher = session.exec(teacher_statement).first()
@@ -367,28 +385,62 @@ def list_my_students(
         .where(ClassStudent.class_id.in_(teacher_class_ids))
     )
 
-    # Get students: created by teacher OR enrolled in their classes
-    students_statement = (
-        select(Student)
-        .where(
-            (Student.created_by_teacher_id == teacher.id) |
-            (Student.id.in_(enrolled_student_ids))
-        )
-        .distinct()
-    )
-    students = session.exec(students_statement).all()
+    # Single JOIN query: Student + User + (optional) created-by Teacher's User
+    # Replaces 3N+1 queries with 1 query
+    StudentUser = aliased(User, name="student_user")
+    CreatedByTeacher = aliased(Teacher, name="created_by_teacher")
+    CreatedByUser = aliased(User, name="created_by_user")
 
-    # Build response list with user information for each student
+    base_filter = (
+        (Student.created_by_teacher_id == teacher.id) |
+        (Student.id.in_(enrolled_student_ids))
+    )
+
+    # Count total before pagination
+    count_stmt = (
+        select(func.count(Student.id.distinct()))
+        .where(base_filter)
+    )
+    total = session.exec(count_stmt).one()
+
+    # Main query with JOINs (eliminates N+1)
+    students_statement = (
+        select(
+            Student,
+            StudentUser,
+            CreatedByUser.full_name.label("teacher_name"),
+        )
+        .join(StudentUser, Student.user_id == StudentUser.id)
+        .outerjoin(CreatedByTeacher, Student.created_by_teacher_id == CreatedByTeacher.id)
+        .outerjoin(CreatedByUser, CreatedByTeacher.user_id == CreatedByUser.id)
+        .where(base_filter)
+        .distinct()
+        .offset(offset)
+        .limit(limit)
+    )
+    rows = session.exec(students_statement).all()
+
+    # Batch-fetch classroom names for all students in one query
+    student_ids = [row[0].id for row in rows]
+    classroom_map: dict[uuid.UUID, list[str]] = {}
+    if student_ids:
+        classroom_rows = session.exec(
+            select(ClassStudent.student_id, Class.name)
+            .join(Class, ClassStudent.class_id == Class.id)
+            .where(
+                ClassStudent.student_id.in_(student_ids),
+                Class.teacher_id == teacher.id,
+            )
+        ).all()
+        for student_id, class_name in classroom_rows:
+            classroom_map.setdefault(student_id, []).append(class_name)
+
+    # Build response list from JOIN results (no additional queries)
     result = []
-    for s in students:
-        user = session.get(User, s.user_id)
-        # Get teacher name if created_by_teacher_id exists
-        teacher_name = None
-        if s.created_by_teacher_id:
-            created_by_teacher = session.get(Teacher, s.created_by_teacher_id)
-            if created_by_teacher:
-                teacher_user = session.get(User, created_by_teacher.user_id)
-                teacher_name = teacher_user.full_name if teacher_user else None
+    for row in rows:
+        s = row[0]  # Student
+        user = row[1]  # User (student's user)
+        teacher_name = row[2]  # str | None (created-by teacher's full_name)
 
         student_data = StudentPublic(
             grade_level=s.grade_level,
@@ -400,12 +452,21 @@ def list_my_students(
             user_full_name=user.full_name if user and user.full_name else "",
             created_by_teacher_id=s.created_by_teacher_id,
             created_by_teacher_name=teacher_name,
+            classroom_names=classroom_map.get(s.id, []),
             created_at=s.created_at,
             updated_at=s.updated_at
         )
         result.append(student_data)
 
-    return result
+    response = StudentListResponse(
+        items=result,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=offset + len(result) < total,
+    )
+    cache_set_sync(cache_key, response.model_dump(), ttl=3600)
+    return response
 
 
 @router.put(
@@ -523,6 +584,8 @@ def update_student(
     # Get updated user info for response
     user = session.get(User, student.user_id)
 
+    invalidate_for_event_sync("teacher_students_changed", user_id=str(current_user.id))
+
     return StudentPublic(
         grade_level=student.grade_level,
         parent_email=student.parent_email,
@@ -611,6 +674,7 @@ def delete_student(
         session.delete(user)
 
     session.commit()
+    invalidate_for_event_sync("teacher_students_changed", user_id=str(current_user.id))
 
     return {"message": "Student deleted successfully"}
 
@@ -707,6 +771,8 @@ def bulk_delete_students(
             errors.append(f"Failed to delete student {student_id}: {str(e)}")
 
     session.commit()
+    if deleted_count > 0:
+        invalidate_for_event_sync("teacher_students_changed", user_id=str(current_user.id))
 
     return BulkDeleteResponse(
         deleted_count=deleted_count,
@@ -717,7 +783,7 @@ def bulk_delete_students(
 
 @router.get(
     "/me/classes",
-    response_model=list[ClassResponse],
+    response_model=list[ClassListItem],
     summary="List my classes",
     description="Retrieve all classes taught by the authenticated teacher with student counts. Teacher only.",
 )
@@ -731,6 +797,12 @@ def list_my_classes(
 
     Returns list of classes with student_count for each class.
     """
+    # Redis cache (120s TTL) — class list changes rarely
+    cache_key = f"teacher:{current_user.id}:classes"
+    cached = cache_get_sync(cache_key)
+    if cached is not None:
+        return cached
+
     # Get Teacher record for current user
     teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
     teacher = session.exec(teacher_statement).first()
@@ -755,12 +827,21 @@ def list_my_classes(
         .group_by(Class.id)
     ).all()
 
-    # Build response with student counts
+    # Build response with student counts (slim model, no timestamps/foreign keys)
     response_classes = [
-        ClassResponse(**class_obj.model_dump(), student_count=student_count)
+        ClassListItem(
+            id=class_obj.id,
+            name=class_obj.name,
+            grade_level=class_obj.grade_level,
+            subject=class_obj.subject,
+            academic_year=class_obj.academic_year,
+            is_active=class_obj.is_active,
+            student_count=student_count,
+        )
         for class_obj, student_count in classes_with_counts
     ]
 
+    cache_set_sync(cache_key, [r.model_dump() for r in response_classes], ttl=3600)
     return response_classes
 
 
@@ -809,6 +890,7 @@ def create_class(
     session.add(db_class)
     session.commit()
     session.refresh(db_class)
+    invalidate_for_event_sync("teacher_classes_changed", user_id=str(current_user.id))
 
     return ClassPublic.model_validate(db_class)
 
@@ -911,6 +993,7 @@ def update_class(
     session.add(db_class)
     session.commit()
     session.refresh(db_class)
+    invalidate_for_event_sync("teacher_classes_changed", user_id=str(current_user.id))
 
     return ClassPublic.model_validate(db_class)
 
@@ -967,6 +1050,7 @@ def delete_class(
     # Delete the class
     session.delete(db_class)
     session.commit()
+    invalidate_for_event_sync("teacher_classes_changed", user_id=str(current_user.id))
 
 
 @router.post(
@@ -1038,6 +1122,8 @@ def add_students_to_class(
             added_count += 1
 
     session.commit()
+    if added_count > 0:
+        invalidate_for_event_sync("teacher_classes_changed", user_id=str(current_user.id))
 
     return {
         "message": f"Successfully added {added_count} student(s) to class",
@@ -1103,6 +1189,7 @@ def remove_student_from_class(
     # Remove enrollment
     session.delete(class_student)
     session.commit()
+    invalidate_for_event_sync("teacher_classes_changed", user_id=str(current_user.id))
 
     return {"message": "Student removed from class successfully"}
 

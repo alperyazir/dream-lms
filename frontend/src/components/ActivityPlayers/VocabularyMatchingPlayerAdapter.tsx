@@ -18,6 +18,7 @@ interface MatchingContent {
     pair_id: string
     word: string
     audio_url?: string | null
+    audio_data?: { audio_base64?: string }
     cefr_level?: string
   }>
   definitions: Array<{
@@ -29,6 +30,7 @@ interface MatchingContent {
     word: string
     definition: string
     audio_url?: string | null
+    audio_data?: { audio_base64?: string }
     cefr_level?: string
   }>
   pair_count: number
@@ -73,6 +75,7 @@ export function VocabularyMatchingPlayerAdapter({
     pair_id: p.pair_id,
     word: p.word,
     audio_url: p.audio_url,
+    audio_data: p.audio_data,
     cefr_level: p.cefr_level,
   }))
 
@@ -191,8 +194,11 @@ export function VocabularyMatchingPlayerAdapter({
     return defId === pairId
   }
 
-  const playAudio = (audioUrl: string) => {
-    const audio = new Audio(audioUrl)
+  const playAudio = (audioUrl: string, audioData?: { audio_base64?: string }) => {
+    const src = audioData?.audio_base64
+      ? `data:audio/mpeg;base64,${audioData.audio_base64}`
+      : audioUrl
+    const audio = new Audio(src)
     audio.play().catch(() => {})
   }
 
@@ -263,12 +269,12 @@ export function VocabularyMatchingPlayerAdapter({
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{w.word}</span>
                     <div className="flex items-center gap-1">
-                      {w.audio_url && (
+                      {(w.audio_url || w.audio_data?.audio_base64) && (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
-                            playAudio(w.audio_url!)
+                            playAudio(w.audio_url!, w.audio_data)
                           }}
                           className="rounded p-1 hover:bg-muted"
                         >

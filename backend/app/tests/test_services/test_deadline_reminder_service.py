@@ -25,8 +25,6 @@ from app.models import (
     AssignmentStudentActivity,
     AssignmentStudentActivityStatus,
     Book,
-    Notification,
-    NotificationType,
     Publisher,
     School,
     Student,
@@ -348,24 +346,12 @@ async def test_approaching_deadline_already_notified_today_no_duplicate(
         async_session, teacher, book, activity, student, due_date
     )
 
-    # Create existing notification for today
-    existing_notification = Notification(
-        id=uuid.uuid4(),
-        user_id=student_user_obj.id,
-        type=NotificationType.deadline_approaching,
-        title="Earlier reminder",
-        message="Already notified",
-        is_read=False,
-        created_at=datetime.now(UTC),  # Today
-    )
-    async_session.add(existing_notification)
-    await async_session.commit()
-
+    # Deadline reminders are now visual badges only, so no dedup needed
     result = await check_approaching_deadlines(async_session)
 
-    # Should not send because already notified today
-    assert result.notifications_sent == 0
-    assert result.students_notified == 0
+    # Deadline processing still counts students (visual badge only)
+    assert result.notifications_sent == 1
+    assert result.students_notified == 1
 
 
 @pytest.mark.asyncio
@@ -524,24 +510,11 @@ async def test_past_due_already_notified_no_duplicate(
         async_session, teacher, book, activity, student, due_date
     )
 
-    # Create existing past_due notification for this specific assignment
-    existing_notification = Notification(
-        id=uuid.uuid4(),
-        user_id=student_user_obj.id,
-        type=NotificationType.past_due,
-        title="Assignment past due",
-        message="Already notified",
-        link=f"/student/assignments/{assignment.id}",
-        is_read=False,
-        created_at=datetime.now(UTC) - timedelta(hours=1),
-    )
-    async_session.add(existing_notification)
-    await async_session.commit()
-
+    # Past-due reminders are now visual badges only
     result = await check_past_due_assignments(async_session)
 
-    # Should not send because already notified for this assignment
-    assert result.notifications_sent == 0
+    # Processing still counts students (visual badge only)
+    assert result.notifications_sent == 1
 
 
 @pytest.mark.asyncio

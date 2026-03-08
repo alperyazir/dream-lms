@@ -276,8 +276,13 @@ export function AssignmentWizardContent({
     },
     onError: (error: any) => {
       console.error("Failed to create assignment:", error)
+      const detail = error?.response?.data?.detail
       const errorMessage =
-        error?.response?.data?.detail || "Failed to create assignment"
+        typeof detail === "string"
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((e: any) => e.msg || e.message || String(e)).join(", ")
+            : "Failed to create assignment"
       showErrorToast(errorMessage)
     },
   })
@@ -649,6 +654,7 @@ export function AssignmentWizardContent({
       const requestData: AssignmentCreateRequest = {
         source_type: "ai_content",
         content_id: selectedContent.id,
+        book_id: selectedContent.book_id ?? undefined,
         name: formData.name,
         instructions: formData.instructions || null,
         due_date: formData.due_date ? formData.due_date.toISOString() : null,

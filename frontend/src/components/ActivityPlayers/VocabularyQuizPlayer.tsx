@@ -162,8 +162,11 @@ export function VocabularyQuizPlayer({
   }, [currentIndex, totalQuestions, setCurrentIndex])
 
   // Play audio for a word
-  const handlePlayAudio = useCallback((audioUrl: string | null) => {
-    if (!audioUrl) return
+  const handlePlayAudio = useCallback((audioUrl: string | null, audioData?: { audio_base64?: string }) => {
+    const src = audioData?.audio_base64
+      ? `data:audio/mpeg;base64,${audioData.audio_base64}`
+      : audioUrl
+    if (!src) return
 
     // Stop current audio if playing
     if (audioRef.current) {
@@ -171,7 +174,7 @@ export function VocabularyQuizPlayer({
       audioRef.current = null
     }
 
-    const audio = new Audio(audioUrl)
+    const audio = new Audio(src)
     audioRef.current = audio
     setPlayingAudio(audioUrl)
 
@@ -257,12 +260,12 @@ export function VocabularyQuizPlayer({
       <Card className="w-full shadow-lg">
         <CardContent className="p-6">
           {/* Audio button - only show when a valid audio URL is available */}
-          {currentQuestion.audio_url && (
+          {(currentQuestion.audio_url || currentQuestion.audio_data?.audio_base64) && (
             <div className="mb-4 flex items-center justify-end">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handlePlayAudio(currentQuestion.audio_url)}
+                onClick={() => handlePlayAudio(currentQuestion.audio_url, currentQuestion.audio_data)}
                 disabled={playingAudio === currentQuestion.audio_url}
                 className="h-8 w-8"
                 aria-label="Listen to pronunciation"

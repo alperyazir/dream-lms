@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Bell, Image, Lock, Mail, Palette, Shield, User, Volume2 } from "lucide-react"
+import { Image, Lock, Mail, Palette, Shield, User, Volume2 } from "lucide-react"
 import { FiSettings } from "react-icons/fi"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import Appearance from "@/components/UserSettings/Appearance"
 import AvatarSelection from "@/components/UserSettings/AvatarSelection"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
-import NotificationSettings from "@/components/UserSettings/NotificationSettings"
 import SoundSettings from "@/components/UserSettings/SoundSettings"
 import UserInformation from "@/components/UserSettings/UserInformation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -35,12 +34,6 @@ const tabsConfig = [
     title: "Password",
     icon: Lock,
     component: ChangePassword,
-  },
-  {
-    value: "notifications",
-    title: "Notifications",
-    icon: Bell,
-    component: NotificationSettings,
   },
   {
     value: "sounds",

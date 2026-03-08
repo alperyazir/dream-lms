@@ -27,8 +27,7 @@ from app.models import (
     BookStatus,
     Class,
     ClassStudent,
-    Notification,
-    NotificationType,
+    DirectMessage,
     Publisher,
     School,
     Student,
@@ -718,7 +717,7 @@ def test_update_nonexistent_feedback(
     assert response.status_code == 404
 
 
-# Tests for Notification behavior
+# Tests for System Message behavior
 
 
 def test_published_feedback_creates_notification(
@@ -742,25 +741,26 @@ def test_published_feedback_creates_notification(
         headers={"Authorization": f"Bearer {fb_teacher_token}"},
     )
 
-    # Check notification was created
-    query = select(Notification).where(
-        Notification.user_id == student_user.id,
-        Notification.type == NotificationType.feedback_received,
+    # Check system message was created
+    query = select(DirectMessage).where(
+        DirectMessage.recipient_id == student_user.id,
+        DirectMessage.is_system == True,
+        DirectMessage.message_category == "feedback_received",
     )
     result = session.execute(query)
-    notification = result.scalar_one_or_none()
+    sys_msg = result.scalar_one_or_none()
 
-    assert notification is not None
-    assert "Feedback Test Assignment" in notification.message
+    assert sys_msg is not None
+    assert "Feedback Test Assignment" in sys_msg.body
 
 
-def test_draft_feedback_does_not_create_notification(
+def test_draft_feedback_does_not_create_system_message(
     client: TestClient,
     session: Session,
     feedback_setup,
     fb_teacher_token: str,
 ):
-    """Test that saving draft feedback does NOT create a notification."""
+    """Test that saving draft feedback does NOT create a system message."""
     assignment = feedback_setup["assignment"]
     student = feedback_setup["student"]
     student_user = feedback_setup["student_user"]
@@ -775,24 +775,25 @@ def test_draft_feedback_does_not_create_notification(
         headers={"Authorization": f"Bearer {fb_teacher_token}"},
     )
 
-    # Check no notification was created
-    query = select(Notification).where(
-        Notification.user_id == student_user.id,
-        Notification.type == NotificationType.feedback_received,
+    # Check no system message was created
+    query = select(DirectMessage).where(
+        DirectMessage.recipient_id == student_user.id,
+        DirectMessage.is_system == True,
+        DirectMessage.message_category == "feedback_received",
     )
     result = session.execute(query)
-    notification = result.scalar_one_or_none()
+    sys_msg = result.scalar_one_or_none()
 
-    assert notification is None
+    assert sys_msg is None
 
 
-def test_publishing_draft_creates_notification(
+def test_publishing_draft_creates_system_message(
     client: TestClient,
     session: Session,
     feedback_setup,
     fb_teacher_token: str,
 ):
-    """Test that publishing a draft creates a notification."""
+    """Test that publishing a draft creates a system message."""
     assignment = feedback_setup["assignment"]
     student = feedback_setup["student"]
     student_user = feedback_setup["student_user"]
@@ -808,10 +809,11 @@ def test_publishing_draft_creates_notification(
     )
     feedback_id = create_response.json()["id"]
 
-    # Verify no notification yet
-    query = select(Notification).where(
-        Notification.user_id == student_user.id,
-        Notification.type == NotificationType.feedback_received,
+    # Verify no system message yet
+    query = select(DirectMessage).where(
+        DirectMessage.recipient_id == student_user.id,
+        DirectMessage.is_system == True,
+        DirectMessage.message_category == "feedback_received",
     )
     result = session.execute(query)
     assert result.scalar_one_or_none() is None
@@ -825,12 +827,12 @@ def test_publishing_draft_creates_notification(
         headers={"Authorization": f"Bearer {fb_teacher_token}"},
     )
 
-    # Now notification should exist
+    # Now system message should exist
     session.expire_all()  # Refresh session
     result = session.execute(query)
-    notification = result.scalar_one_or_none()
+    sys_msg = result.scalar_one_or_none()
 
-    assert notification is not None
+    assert sys_msg is not None
 
 
 # Tests for XSS Protection
@@ -1184,17 +1186,18 @@ def test_badge_notification_includes_badge_names(
     )
     assert response.status_code == 201
 
-    # Check notification was created with badge name
-    notification = session.exec(
-        select(Notification)
-        .where(Notification.user_id == feedback_setup["student_user"].id)
-        .where(Notification.type == NotificationType.feedback_received)
-        .order_by(Notification.created_at.desc())
+    # Check system message was created with badge name
+    sys_msg = session.exec(
+        select(DirectMessage)
+        .where(DirectMessage.recipient_id == feedback_setup["student_user"].id)
+        .where(DirectMessage.is_system == True)
+        .where(DirectMessage.message_category == "feedback_received")
+        .order_by(DirectMessage.sent_at.desc())
     ).first()
 
-    assert notification is not None
-    assert "Perfect Score" in notification.message
-    assert "badge" in notification.message.lower()
+    assert sys_msg is not None
+    assert "Perfect Score" in sys_msg.body
+    assert "badge" in sys_msg.body.lower()
 
 
 def test_get_feedback_options_endpoint(

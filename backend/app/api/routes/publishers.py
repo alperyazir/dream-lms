@@ -8,7 +8,7 @@ Publisher data is fetched from Dream Central Storage (DCS).
 import logging
 import uuid
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from fastapi.responses import Response
 from sqlalchemy import func
 from sqlmodel import select
@@ -30,6 +30,7 @@ from app.models import (
     UserRole,
 )
 from app.schemas.book import BookPublic
+from app.schemas.pagination import PublisherStudentItem, PublisherStudentListResponse
 from app.schemas.publisher import (
     PublisherProfile,
     PublisherStats,
@@ -166,6 +167,15 @@ async def get_my_stats(
         .where(School.dcs_publisher_id == publisher_id)
     ).one()
 
+    # Count distinct students enrolled in classes at publisher's schools
+    from app.models import Class, ClassStudent
+    students_count = session.exec(
+        select(func.count(func.distinct(ClassStudent.student_id)))
+        .join(Class, ClassStudent.class_id == Class.id)
+        .join(School, Class.school_id == School.id)
+        .where(School.dcs_publisher_id == publisher_id)
+    ).one()
+
     # Get books from DCS
     book_service = get_book_service()
     books = await book_service.list_books(publisher_id=publisher_id)
@@ -173,6 +183,7 @@ async def get_my_stats(
     return PublisherStats(
         schools_count=schools_count,
         teachers_count=teachers_count,
+        students_count=students_count,
         books_count=len(books),
     )
 
@@ -257,6 +268,36 @@ def create_my_school(
     return SchoolPublic.model_validate(school)
 
 
+@router.delete("/me/schools/{school_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_my_school(
+    session: SessionDep,
+    school_id: uuid.UUID,
+    current_user: User = require_role(UserRole.publisher)
+) -> None:
+    """Delete a school belonging to the current publisher."""
+    publisher_id = get_current_publisher_id(current_user)
+
+    school = session.get(School, school_id)
+    if not school:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="School not found"
+        )
+
+    if school.dcs_publisher_id != publisher_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only delete schools belonging to your organization"
+        )
+
+    logger.info(
+        f"Publisher {current_user.username} deleted school {school.name} (ID: {school.id})"
+    )
+
+    session.delete(school)
+    session.commit()
+
+
 @router.get("/me/teachers", response_model=list[TeacherWithCounts])
 def list_my_teachers(
     session: SessionDep,
@@ -318,6 +359,7 @@ def list_my_teachers(
 def create_my_teacher(
     session: SessionDep,
     teacher_in: TeacherCreateAPI,
+    background_tasks: BackgroundTasks,
     current_user: User = require_role(UserRole.publisher)
 ) -> UserCreationResponse:
     """Create teacher in publisher's school."""
@@ -355,7 +397,7 @@ def create_my_teacher(
     )
     session.commit()
 
-    # Try to send welcome email
+    # Send welcome email in background
     password_emailed = False
     if user.email:
         try:
@@ -365,14 +407,15 @@ def create_my_teacher(
                 password=password,
                 full_name=user.full_name or user.username,
             )
-            send_email(
+            background_tasks.add_task(
+                send_email,
                 email_to=user.email,
                 subject=email_data.subject,
                 html_content=email_data.html_content,
             )
             password_emailed = True
         except Exception as e:
-            logger.warning(f"Failed to send welcome email to {user.email}: {e}")
+            logger.warning(f"Failed to prepare welcome email for {user.email}: {e}")
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
@@ -393,6 +436,96 @@ def create_my_teacher(
             ". Password sent via email." if password_emailed
             else ". Please share the temporary password with the teacher."
         ),
+    )
+
+
+@router.get("/me/students", response_model=PublisherStudentListResponse)
+def list_my_students(
+    session: SessionDep,
+    skip: int = 0,
+    limit: int = 20,
+    search: str | None = None,
+    current_user: User = require_role(UserRole.publisher),
+) -> PublisherStudentListResponse:
+    """List students enrolled in classes at publisher's schools."""
+    from sqlalchemy import or_
+    from app.models import Class, ClassStudent, Student
+
+    publisher_id = get_current_publisher_id(current_user)
+
+    # Base query: distinct students in publisher's schools via class enrollments
+    base_query = (
+        select(Student, User)
+        .join(User, Student.user_id == User.id)
+        .join(ClassStudent, ClassStudent.student_id == Student.id)
+        .join(Class, ClassStudent.class_id == Class.id)
+        .join(School, Class.school_id == School.id)
+        .where(School.dcs_publisher_id == publisher_id)
+        .distinct()
+    )
+
+    if search:
+        search_filter = f"%{search}%"
+        base_query = base_query.where(
+            or_(
+                User.full_name.ilike(search_filter),
+                User.email.ilike(search_filter),
+                User.username.ilike(search_filter),
+            )
+        )
+
+    # Count total
+    count_query = select(func.count()).select_from(base_query.subquery())
+    total = session.exec(count_query).one()
+
+    # Fetch paginated results
+    rows = session.exec(
+        base_query.order_by(Student.created_at.desc()).offset(skip).limit(limit)
+    ).all()
+
+    items = []
+    for student, user in rows:
+        # Count classes this student is enrolled in within publisher's schools
+        classroom_count = session.exec(
+            select(func.count(ClassStudent.id))
+            .join(Class, ClassStudent.class_id == Class.id)
+            .join(School, Class.school_id == School.id)
+            .where(
+                ClassStudent.student_id == student.id,
+                School.dcs_publisher_id == publisher_id,
+            )
+        ).one()
+
+        # Get school name from the first class enrollment
+        school_name = session.exec(
+            select(School.name)
+            .join(Class, Class.school_id == School.id)
+            .join(ClassStudent, ClassStudent.class_id == Class.id)
+            .where(
+                ClassStudent.student_id == student.id,
+                School.dcs_publisher_id == publisher_id,
+            )
+            .limit(1)
+        ).first() or "Unknown"
+
+        items.append(PublisherStudentItem(
+            id=student.id,
+            user_id=user.id,
+            user_full_name=user.full_name or "",
+            user_email=user.email,
+            user_username=user.username,
+            grade_level=student.grade_level,
+            school_name=school_name,
+            classroom_count=classroom_count,
+            created_at=student.created_at,
+        ))
+
+    return PublisherStudentListResponse(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=skip,
+        has_more=(skip + limit) < total,
     )
 
 

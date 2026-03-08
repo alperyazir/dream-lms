@@ -6,7 +6,7 @@
  * between activities, shared timer, and per-activity progress tracking.
  */
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -29,6 +29,7 @@ export const Route = createFileRoute(
 function MultiActivityPlayerPage() {
   const { assignmentId } = Route.useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   // Show intro screen before starting (skip for resumed assignments)
   const [showIntro, setShowIntro] = useState(true)
@@ -50,7 +51,9 @@ function MultiActivityPlayerPage() {
   })
 
   // Handle exit - return to assignment detail page
-  const handleExit = () => {
+  const handleExit = async () => {
+    // Invalidate + refetch cache so detail page shows updated status (in_progress)
+    await queryClient.invalidateQueries({ queryKey: ["studentAssignments"] })
     navigate({
       to: "/student/assignments/$assignmentId",
       params: { assignmentId },
@@ -145,7 +148,7 @@ function MultiActivityPlayerPage() {
   }
 
   // Validate we have activities
-  if (!assignment.activities || assignment.activities.length === 0) {
+  if (!assignment.activities?.length) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="w-full max-w-md">

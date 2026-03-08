@@ -1,10 +1,11 @@
 """Assignment API endpoints - Stories 3.7, 5.3."""
 
+import asyncio
 import logging
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 import jwt
 from fastapi import Depends, Header, HTTPException, Query, Request, status
@@ -13,10 +14,13 @@ from fastapi.routing import APIRouter
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
+from sqlalchemy import and_ as sa_and
 from sqlalchemy.orm import selectinload
-from sqlmodel import select
+from sqlmodel import func, select
 
 from app.api.deps import AsyncSessionDep, require_role
+from app.services.cache_events import invalidate_for_event
+from app.services.redis_cache import cache_get, cache_set
 from app.core import security
 from app.core.config import settings
 from app.core.rate_limit import limiter
@@ -33,12 +37,10 @@ from app.models import (
     AssignmentStudentActivityStatus,
     Class,
     ClassStudent,
-    NotificationType,
     SkillCategory,
     Student,
     StudentSkillScore,
     Teacher,
-    TeacherGeneratedContent,
     TeacherMaterial,
     TokenPayload,
     User,
@@ -60,6 +62,7 @@ from app.schemas.skill import (
     SkillBreakdownItem,
     SkillCategoryPublic,
 )
+from app.schemas.pagination import AssignmentListPaginatedResponse
 from app.services.skill_attribution_service import attribute_skill_scores
 from app.schemas.assignment import (
     ActivityAnalyticsItem,
@@ -68,6 +71,7 @@ from app.schemas.assignment import (
     ActivityProgressInfo,
     ActivityProgressSaveRequest,
     ActivityProgressSaveResponse,
+    ActivityReviewItem,
     ActivityScoreItem,
     ActivityStartResponse,
     ActivityWithConfig,
@@ -103,7 +107,7 @@ from app.schemas.feedback import (
     FeedbackStudentView,
     FeedbackUpdate,
 )
-from app.services import book_assignment_service, feedback_service, notification_service
+from app.services import book_assignment_service, feedback_service
 from app.services.analytics_service import (
     get_assignment_detailed_results,
     get_student_assignment_answers,
@@ -173,6 +177,7 @@ async def _verify_activities_access(
             db=session,
             teacher_id=teacher.id,
             book_id=book_id,
+            school_id=teacher.school_id,
         )
         if not has_access:
             raise HTTPException(
@@ -402,7 +407,6 @@ async def _enrich_resources(
 
 @router.get(
     "/",
-    response_model=list[AssignmentListItem],
     summary="List teacher's assignments",
     description="Get all assignments created by the current teacher with enriched data",
 )
@@ -410,7 +414,9 @@ async def list_assignments(
     *,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher),
-) -> list[AssignmentListItem]:
+    limit: int = Query(20, ge=1, le=500, description="Number of items to return"),
+    offset: int = Query(0, ge=0, description="Number of items to skip"),
+) -> AssignmentListPaginatedResponse:
     """
     List all assignments for the current teacher with enriched data.
 
@@ -419,6 +425,12 @@ async def list_assignments(
     - Student completion statistics
     - Sorted by created_at descending (newest first)
     """
+    # Redis cache (30s TTL) — teacher assignment list
+    cache_key = f"teacher:{current_user.id}:assignments:{limit}:{offset}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return AssignmentListPaginatedResponse(**cached)
+
     # Get Teacher record
     result = await session.execute(
         select(Teacher).where(Teacher.user_id == current_user.id)
@@ -431,77 +443,100 @@ async def list_assignments(
             detail="Teacher record not found for this user",
         )
 
-    # Get all assignments for this teacher with activity info
+    # Count total assignments for this teacher
+    count_result = await session.execute(
+        select(func.count()).where(Assignment.teacher_id == teacher.id)
+    )
+    total = count_result.scalar() or 0
+
+    # SQL aggregation subquery — counts by status in DB instead of Python
+    stats_subq = (
+        select(
+            AssignmentStudent.assignment_id,
+            func.count().label("total_students"),
+            func.count()
+            .filter(AssignmentStudent.status == AssignmentStatus.not_started)
+            .label("not_started"),
+            func.count()
+            .filter(AssignmentStudent.status == AssignmentStatus.in_progress)
+            .label("in_progress"),
+            func.count()
+            .filter(AssignmentStudent.status == AssignmentStatus.completed)
+            .label("completed"),
+            func.count()
+            .filter(
+                sa_and(
+                    AssignmentStudent.status == AssignmentStatus.completed,
+                    AssignmentStudent.score.is_(None),
+                )
+            )
+            .label("pending_reviews"),
+        )
+        .group_by(AssignmentStudent.assignment_id)
+        .subquery()
+    )
+
+    # Get assignments for this teacher with activity info (paginated)
     # Use LEFT JOIN (outerjoin) to include Content Library assignments without activity_id
     result = await session.execute(
-        select(Assignment, Activity)
+        select(Assignment, Activity, stats_subq)
         .outerjoin(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(stats_subq, Assignment.id == stats_subq.c.assignment_id)
         .options(
-            selectinload(Assignment.assignment_students),
             selectinload(Assignment.primary_skill),
             selectinload(Assignment.activity_format),
         )
         .where(Assignment.teacher_id == teacher.id)
         .order_by(Assignment.created_at.desc())
+        .offset(offset)
+        .limit(limit)
     )
     assignments_data = result.all()
 
-    # Get BookService to fetch book data from DCS
+    # Batch-fetch all books in a single DCS call
     book_service = get_book_service()
+    unique_book_ids = {row[0].dcs_book_id for row in assignments_data if row[0].dcs_book_id}
+    book_map = await book_service.get_books_batch(list(unique_book_ids))
 
     # Build response with enriched data
     assignment_list = []
-    for assignment, activity in assignments_data:
-        # Fetch book data from DCS
-        book = await book_service.get_book(assignment.dcs_book_id)
+    for row in assignments_data:
+        assignment = row[0]
+        activity = row[1]
+        # SQL aggregation columns from subquery
+        # row[2] is assignment_id from subquery, skip it
+        total_students = row[3] or 0
+        not_started = row[4] or 0
+        in_progress = row[5] or 0
+        completed = row[6] or 0
+        pending_reviews_raw = row[7] or 0
+
+        book = book_map.get(assignment.dcs_book_id)
         if not book:
             logger.warning(
                 f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
             )
-            # For Content Library assignments, create a placeholder book if not found
-            if assignment.activity_content:
-                book_title = "AI Generated"
-            else:
-                continue
 
-        # Use pre-loaded assignment_students relationship (no N+1 query)
-        assignment_students = assignment.assignment_students
-
-        # Count by status
-        total_students = len(assignment_students)
-        not_started = sum(
-            1 for s in assignment_students if s.status == AssignmentStatus.not_started
-        )
-        in_progress = sum(
-            1 for s in assignment_students if s.status == AssignmentStatus.in_progress
-        )
-        completed = sum(
-            1 for s in assignment_students if s.status == AssignmentStatus.completed
-        )
-
-        # Count pending reviews (completed but ungraded) for manual-grading activities
+        # Only show pending reviews for manual-grading activity types
         pending_reviews_count = 0
         act_type_val = assignment.activity_type.value if assignment.activity_type else None
         if act_type_val in ("writing_free_response", "speaking_open_response"):
-            pending_reviews_count = sum(
-                1 for s in assignment_students
-                if s.status == AssignmentStatus.completed and s.score is None
-            )
+            pending_reviews_count = pending_reviews_raw
 
         # Handle Content Library assignments (no activity record)
         if activity:
             activity_id = activity.id
             activity_title = activity.title
             activity_type = activity.activity_type.value if hasattr(activity.activity_type, 'value') else str(activity.activity_type)
-            book_id = book.id
-            book_title_final = book.title or book.name
+            book_id = book.id if book else (assignment.dcs_book_id or 0)
+            book_title_final = (book.title or book.name) if book else "Unknown Book"
         else:
             # Content Library assignment - use assignment's embedded data
             activity_id = assignment.id  # Use assignment id as pseudo activity id
             activity_title = assignment.name
             activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
             book_id = assignment.dcs_book_id if assignment.dcs_book_id else 0
-            book_title_final = book.title or book.name if book else "AI Generated"
+            book_title_final = (book.title or book.name) if book else "AI Generated"
 
         # Skill classification data (Epic 30)
         skill = assignment.primary_skill
@@ -536,7 +571,15 @@ async def list_assignments(
 
     logger.info(f"Listed {len(assignment_list)} assignments for teacher_id={teacher.id}")
 
-    return assignment_list
+    response = AssignmentListPaginatedResponse(
+        items=assignment_list,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=offset + len(assignment_list) < total,
+    )
+    await cache_set(cache_key, response.model_dump(), ttl=3600)
+    return response
 
 
 @router.get(
@@ -559,13 +602,32 @@ async def list_all_assignments_admin(
     - Teacher information
     - Sorted by created_at descending (newest first)
     """
+    # SQL aggregation subquery for admin view
+    stats_subq = (
+        select(
+            AssignmentStudent.assignment_id,
+            func.count().label("total_students"),
+            func.count()
+            .filter(AssignmentStudent.status == AssignmentStatus.not_started)
+            .label("not_started"),
+            func.count()
+            .filter(AssignmentStudent.status == AssignmentStatus.in_progress)
+            .label("in_progress"),
+            func.count()
+            .filter(AssignmentStudent.status == AssignmentStatus.completed)
+            .label("completed"),
+        )
+        .group_by(AssignmentStudent.assignment_id)
+        .subquery()
+    )
+
     # Get all assignments with joins to get activity and teacher info
     result = await session.execute(
-        select(Assignment, Activity, Teacher, User)
+        select(Assignment, Activity, Teacher, User, stats_subq)
         .join(Activity, Assignment.activity_id == Activity.id)
         .join(Teacher, Assignment.teacher_id == Teacher.id)
         .join(User, Teacher.user_id == User.id)
-        .options(selectinload(Assignment.assignment_students))
+        .outerjoin(stats_subq, Assignment.id == stats_subq.c.assignment_id)
         .order_by(Assignment.created_at.desc())
     )
     assignments_data = result.all()
@@ -575,7 +637,16 @@ async def list_all_assignments_admin(
 
     # Build response with enriched data
     assignment_list = []
-    for assignment, activity, teacher, teacher_user in assignments_data:
+    for row in assignments_data:
+        assignment = row[0]
+        activity = row[1]
+        teacher = row[2]
+        teacher_user = row[3]
+        total_students = row[4] or 0
+        not_started = row[5] or 0
+        in_progress = row[6] or 0
+        completed = row[7] or 0
+
         # Fetch book data from DCS
         book = await book_service.get_book(assignment.dcs_book_id)
         if not book:
@@ -583,21 +654,6 @@ async def list_all_assignments_admin(
                 f"Book {assignment.dcs_book_id} not found in DCS for assignment {assignment.id}"
             )
             continue
-
-        # Use pre-loaded assignment_students relationship (no N+1 query)
-        assignment_students = assignment.assignment_students
-
-        # Count by status
-        total_students = len(assignment_students)
-        not_started = sum(
-            1 for as_ in assignment_students if as_.status == AssignmentStatus.not_started
-        )
-        in_progress = sum(
-            1 for as_ in assignment_students if as_.status == AssignmentStatus.in_progress
-        )
-        completed = sum(
-            1 for as_ in assignment_students if as_.status == AssignmentStatus.completed
-        )
 
         assignment_list.append(
             AssignmentListItem(
@@ -796,7 +852,12 @@ async def get_calendar_assignments(
 
     # Sort assignments within each day
     for date_key in assignments_by_date:
-        assignments_by_date[date_key].sort(key=lambda a: a.due_date or a.scheduled_publish_date or datetime.min.replace(tzinfo=UTC))
+        def _sort_key(a):
+            dt = a.due_date or a.scheduled_publish_date
+            if dt is None:
+                return datetime.min
+            return dt.replace(tzinfo=None) if dt.tzinfo else dt
+        assignments_by_date[date_key].sort(key=_sort_key)
 
     total_assignments = sum(len(items) for items in assignments_by_date.values())
 
@@ -822,6 +883,7 @@ async def get_calendar_assignments(
     description="Creates a new assignment and assigns it to specified students/classes. Supports single or multi-activity assignments.",
 )
 async def create_assignment(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_in: AssignmentCreate,
@@ -853,9 +915,11 @@ async def create_assignment(
     **Returns:**
     Assignment object with student_count and activities list
     """
-    # Get Teacher record for current user
+    # Get Teacher record for current user (eager-load school to avoid extra roundtrip)
     result = await session.execute(
-        select(Teacher).where(Teacher.user_id == current_user.id)
+        select(Teacher)
+        .options(selectinload(Teacher.school))
+        .where(Teacher.user_id == current_user.id)
     )
     teacher = result.scalar_one_or_none()
 
@@ -864,9 +928,6 @@ async def create_assignment(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Teacher record not found for this user",
         )
-
-    # Load school relationship for publisher_id access
-    await session.refresh(teacher, ["school"])
 
     # Validate due_date is in future (Pydantic also validates, but double-check)
     _validate_due_date(assignment_in.due_date)
@@ -903,50 +964,74 @@ async def create_assignment(
 
     # Story 27.x: Handle AI content assignments differently
     if assignment_in.source_type == "ai_content":
-        # Fetch TeacherGeneratedContent by local ID or DCS content ID
-        content_result = await session.execute(
-            select(TeacherGeneratedContent).where(
-                TeacherGeneratedContent.id == assignment_in.content_id
-            )
-        )
-        content = content_result.scalar_one_or_none()
+        # Fetch AI content from DCS (Dream Central Storage)
+        from app.services.dream_storage_client import get_dream_storage_client
+        from app.services.dcs_ai_content_client import get_dcs_ai_content_client
 
-        # Fallback: look up by dcs_content_id (library page uses DCS IDs)
-        if not content:
-            content_result = await session.execute(
-                select(TeacherGeneratedContent).where(
-                    TeacherGeneratedContent.dcs_content_id == str(assignment_in.content_id)
-                )
-            )
-            content = content_result.scalar_one_or_none()
+        dcs_client = await get_dream_storage_client()
+        ai_client = get_dcs_ai_content_client(dcs_client)
 
-        if not content:
+        try:
+            dcs_content = await ai_client.get_content(
+                book_id=assignment_in.book_id,
+                content_id=assignment_in.content_id,
+            )
+        except Exception as e:
+            logger.error(f"Failed to fetch AI content from DCS: {e}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="AI content not found",
             )
 
-        # Verify teacher owns the content
-        if content.teacher_id != teacher.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to use this content",
-            )
-
-        # Map content activity_type string to ActivityType enum
+        # DCS returns { content_id, manifest: { activity_type, ... }, content: { ... } }
+        manifest = dcs_content.get("manifest", {})
+        dcs_activity_type = manifest.get("activity_type", "") or dcs_content.get("activity_type", "")
+        logger.info(f"DCS AI content fetched: activity_type={dcs_activity_type}, content_keys={list(dcs_content.get('content', {}).keys()) if isinstance(dcs_content.get('content'), dict) else 'N/A'}")
         try:
-            activity_type_enum = ActivityType(content.activity_type)
+            activity_type_enum = ActivityType(dcs_activity_type)
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid activity type: {content.activity_type}",
-            )
+            logger.warning(f"Unknown DCS activity type '{dcs_activity_type}', falling back to ai_quiz")
+            activity_type_enum = ActivityType.ai_quiz
 
-        # Create Assignment with embedded AI content
+        # Fix audio_url paths: DCS content may have audio URLs referencing
+        # a stale/internal content_id. Rewrite them to use the canonical
+        # DCS content_id so the audio proxy can resolve them.
+        import re as _re
+
+        embedded_content = dcs_content.get("content", {})
+        canonical_content_id = str(assignment_in.content_id)
+        book_id_str = str(assignment_in.book_id)
+
+        def _fix_audio_urls(obj: Any) -> Any:
+            """Recursively rewrite audio_url fields to use the correct DCS content_id."""
+            if isinstance(obj, dict):
+                result = {}
+                for k, v in obj.items():
+                    if k == "audio_url" and isinstance(v, str):
+                        # Replace /api/v1/ai/content/{book_id}/{wrong_id}/audio/
+                        # with    /api/v1/ai/content/{book_id}/{canonical_id}/audio/
+                        result[k] = _re.sub(
+                            rf"/api/v1/ai/content/{book_id_str}/[^/]+/audio/",
+                            f"/api/v1/ai/content/{book_id_str}/{canonical_content_id}/audio/",
+                            v,
+                        )
+                    elif k == "audio_data":
+                        # Strip bulky base64 audio data — not needed for student playback
+                        continue
+                    else:
+                        result[k] = _fix_audio_urls(v)
+                return result
+            elif isinstance(obj, list):
+                return [_fix_audio_urls(item) for item in obj]
+            return obj
+
+        fixed_content = _fix_audio_urls(embedded_content)
+
+        # Create Assignment with embedded AI content from DCS
         assignment = Assignment(
             teacher_id=teacher.id,
             activity_id=None,  # No activity reference for AI content
-            dcs_book_id=content.book_id or 0,  # Use book_id from content or 0 if material-based
+            dcs_book_id=assignment_in.book_id,
             name=assignment_in.name,
             instructions=assignment_in.instructions,
             due_date=assignment_in.due_date,
@@ -957,9 +1042,9 @@ async def create_assignment(
             resources=validated_resources.model_dump(mode="json") if validated_resources else None,
             # AI content fields
             activity_type=activity_type_enum,
-            activity_content=content.content,
-            generation_source="book" if content.book_id else "material",
-            source_id=str(content.book_id) if content.book_id else str(content.material_id),
+            activity_content=fixed_content,
+            generation_source="book",
+            source_id=str(assignment_in.book_id),
             created_at=now,
             updated_at=now,
         )
@@ -982,29 +1067,20 @@ async def create_assignment(
             )
             session.add(assignment_student)
 
-        # Mark the content as used
-        content.is_used = True
-        content.assignment_id = assignment.id
-        content.updated_at = now
-        session.add(content)
-
         await session.commit()
         await session.refresh(assignment)
 
-        # Create notifications for all assigned students
+        # Invalidate teacher assignment cache + per-student assignment caches (batched)
+        invalidation_tasks = [
+            invalidate_for_event("teacher_assignment_changed", user_id=str(current_user.id))
+        ]
         if assignment_status == AssignmentPublishStatus.published:
             for student in students:
-                student_user_id = student.user_id
-                if student_user_id:
-                    await notification_service.create_notification(
-                        db=session,
-                        user_id=student_user_id,
-                        notification_type=NotificationType.assignment_created,
-                        title=f"New Assignment: {assignment.name}",
-                        message=f"You have been assigned '{assignment.name}'. "
-                        + (f"Due: {assignment.due_date.strftime('%b %d, %Y')}" if assignment.due_date else "No due date"),
-                        link=f"/student/assignments/{assignment.id}",
+                if student.user_id:
+                    invalidation_tasks.append(
+                        invalidate_for_event("assignment_assigned", user_id=str(student.user_id))
                     )
+        await asyncio.gather(*invalidation_tasks, return_exceptions=True)
 
         # Build response for AI content assignment
         assignment_response = AssignmentResponse(
@@ -1028,7 +1104,7 @@ async def create_assignment(
 
         logger.info(
             f"AI content assignment created: id={assignment.id}, teacher_id={teacher.id}, "
-            f"content_id={content.id}, activity_type={content.activity_type}, students={len(students)}"
+            f"content_id={assignment_in.content_id}, activity_type={activity_type_enum.value}, students={len(students)}"
         )
 
         return assignment_response
@@ -1071,7 +1147,8 @@ async def create_assignment(
         )
         session.add(assignment_activity)
 
-    # Create AssignmentStudent and AssignmentStudentActivity records
+    # Create AssignmentStudent records (batch insert, single flush)
+    assignment_students = []
     for student in students:
         assignment_student = AssignmentStudent(
             assignment_id=assignment.id,
@@ -1086,9 +1163,12 @@ async def create_assignment(
             last_saved_at=None,
         )
         session.add(assignment_student)
-        await session.flush()  # Get assignment_student.id
+        assignment_students.append(assignment_student)
 
-        # Create per-activity progress records
+    await session.flush()  # Single flush to get all assignment_student.id values
+
+    # Create per-activity progress records (batch)
+    for assignment_student in assignment_students:
         for activity in activities:
             activity_progress = AssignmentStudentActivity(
                 assignment_student_id=assignment_student.id,
@@ -1106,21 +1186,17 @@ async def create_assignment(
     await session.commit()
     await session.refresh(assignment)
 
-    # Create notifications for all assigned students (only for published assignments)
+    # Invalidate teacher assignment cache + per-student assignment caches (batched)
+    invalidation_tasks = [
+        invalidate_for_event("teacher_assignment_changed", user_id=str(current_user.id))
+    ]
     if assignment_status == AssignmentPublishStatus.published:
         for student in students:
-            # Get the user_id for the student
-            student_user_id = student.user_id
-            if student_user_id:
-                await notification_service.create_notification(
-                    db=session,
-                    user_id=student_user_id,
-                    notification_type=NotificationType.assignment_created,
-                    title=f"New Assignment: {assignment.name}",
-                    message=f"You have been assigned '{assignment.name}'. "
-                    + (f"Due: {assignment.due_date.strftime('%b %d, %Y')}" if assignment.due_date else "No due date"),
-                    link=f"/student/assignments/{assignment.id}",
+            if student.user_id:
+                invalidation_tasks.append(
+                    invalidate_for_event("assignment_assigned", user_id=str(student.user_id))
                 )
+    await asyncio.gather(*invalidation_tasks, return_exceptions=True)
 
     # Build response with activities info
     activities_info = [
@@ -1168,6 +1244,7 @@ async def create_assignment(
     description="Creates multiple assignments from date groups. Each date group becomes a separate assignment with its own scheduled publish date.",
 )
 async def create_bulk_assignments(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_in: AssignmentCreate,
@@ -1298,7 +1375,8 @@ async def create_bulk_assignments(
             )
             session.add(assignment_activity)
 
-        # Create AssignmentStudent and AssignmentStudentActivity records
+        # Create AssignmentStudent records (batch insert, single flush)
+        group_assignment_students = []
         for student in students:
             assignment_student = AssignmentStudent(
                 assignment_id=assignment.id,
@@ -1313,9 +1391,12 @@ async def create_bulk_assignments(
                 last_saved_at=None,
             )
             session.add(assignment_student)
-            await session.flush()
+            group_assignment_students.append(assignment_student)
 
-            # Create per-activity progress records
+        await session.flush()  # Single flush to get all IDs
+
+        # Create per-activity progress records (batch)
+        for assignment_student in group_assignment_students:
             for activity in group_activities:
                 activity_progress = AssignmentStudentActivity(
                     assignment_student_id=assignment_student.id,
@@ -1328,20 +1409,6 @@ async def create_bulk_assignments(
                     completed_at=None,
                 )
                 session.add(activity_progress)
-
-        # Send notifications for published assignments
-        if assignment_status == AssignmentPublishStatus.published:
-            for student in students:
-                if student.user_id:
-                    await notification_service.create_notification(
-                        db=session,
-                        user_id=student.user_id,
-                        notification_type=NotificationType.assignment_created,
-                        title=f"New Assignment: {assignment_name}",
-                        message=f"You have been assigned '{assignment_name}'. "
-                        + (f"Due: {group.due_date.strftime('%b %d, %Y')}" if group.due_date else "No due date"),
-                        link=f"/student/assignments/{assignment.id}",
-                    )
 
         created_assignments.append(
             BulkAssignmentCreatedItem(
@@ -1356,6 +1423,17 @@ async def create_bulk_assignments(
 
     # Commit all assignments
     await session.commit()
+
+    # Invalidate teacher + student caches (batched)
+    invalidation_tasks = [
+        invalidate_for_event("teacher_assignment_changed", user_id=str(current_user.id))
+    ]
+    for student in students:
+        if student.user_id:
+            invalidation_tasks.append(
+                invalidate_for_event("assignment_assigned", user_id=str(student.user_id))
+            )
+    await asyncio.gather(*invalidation_tasks, return_exceptions=True)
 
     logger.info(
         f"Bulk assignments created: teacher_id={teacher.id}, "
@@ -1541,6 +1619,22 @@ async def update_assignment(
     assignment_response = AssignmentResponse.model_validate(assignment)
     assignment_response.student_count = student_count
 
+    # Invalidate teacher + assigned student caches (batched)
+    assigned_students_result = await session.execute(
+        select(Student.user_id)
+        .join(AssignmentStudent, AssignmentStudent.student_id == Student.id)
+        .where(AssignmentStudent.assignment_id == assignment.id)
+    )
+    invalidation_tasks = [
+        invalidate_for_event("teacher_assignment_changed", user_id=str(current_user.id))
+    ]
+    for (uid,) in assigned_students_result.all():
+        if uid:
+            invalidation_tasks.append(
+                invalidate_for_event("assignment_assigned", user_id=str(uid))
+            )
+    await asyncio.gather(*invalidation_tasks, return_exceptions=True)
+
     logger.info(
         f"Assignment updated: id={assignment.id}, teacher_id={teacher.id}, "
         f"fields={list(update_data.keys())}"
@@ -1602,9 +1696,29 @@ async def delete_assignment(
             detail="Assignment not found",
         )
 
+    # Query assigned students BEFORE delete for cache invalidation
+    del_students_result = await session.execute(
+        select(AssignmentStudent, Student)
+        .join(Student, AssignmentStudent.student_id == Student.id)
+        .where(AssignmentStudent.assignment_id == assignment.id)
+    )
+    affected_student_user_ids = [
+        str(s.user_id) for _, s in del_students_result.all() if s.user_id
+    ]
+
     # Delete assignment (cascade will remove AssignmentStudent records)
     await session.delete(assignment)
     await session.commit()
+
+    # Invalidate caches after successful delete (batched)
+    invalidation_tasks = [
+        invalidate_for_event("teacher_assignment_changed", user_id=str(current_user.id))
+    ]
+    for uid in affected_student_user_ids:
+        invalidation_tasks.append(
+            invalidate_for_event("assignment_assigned", user_id=uid)
+        )
+    await asyncio.gather(*invalidation_tasks, return_exceptions=True)
 
     logger.info(
         f"Assignment deleted: id={assignment_id}, teacher_id={teacher.id}"
@@ -2104,15 +2218,21 @@ async def start_multi_activity_assignment(
                 )
 
     # Update assignment status if not_started
+    status_changed = False
     if assignment_student.status == AssignmentStatus.not_started:
         assignment_student.status = AssignmentStatus.in_progress
         assignment_student.started_at = datetime.now(UTC)
+        status_changed = True
     elif assignment_student.started_at is None:
         # Fix: Set started_at for resumed assignments that don't have it
         assignment_student.started_at = datetime.now(UTC)
 
     await session.commit()
     await session.refresh(assignment_student)
+
+    # Invalidate student assignment cache when status changes
+    if status_changed:
+        await invalidate_for_event("assignment_progress_updated", user_id=str(current_user.id))
 
     # Story 13.3: Enrich resources with availability status for students
     enriched_resources = await _enrich_resources(session, assignment.resources)
@@ -2551,6 +2671,7 @@ async def save_activity_progress(
     # For regular multi-activity, reject saves to completed assignments
     if is_content_library:
         # Content Library assignment - save to AssignmentStudent.progress_json
+        old_status = assignment_student.status
         # Check if already completed - only allow saves that revert to in_progress (Save & Exit)
         if assignment_student.status == AssignmentStatus.completed:
             if progress.status != "in_progress":
@@ -2614,42 +2735,9 @@ async def save_activity_progress(
             except Exception as e:
                 logger.warning(f"Skill attribution failed (non-blocking): {e}")
 
-            # Send notification to teacher about student completion
-            try:
-                teacher_result = await session.execute(
-                    select(Teacher).where(Teacher.id == assignment.teacher_id)
-                )
-                teacher = teacher_result.scalar_one_or_none()
-
-                await session.refresh(student, ["user"])
-                student_name = student.user.full_name if student.user else "A student"
-
-                if teacher and teacher.user_id:
-                    is_manual_grading = assignment.activity_type and assignment.activity_type.value in (
-                        "writing_free_response", "speaking_open_response"
-                    )
-
-                    if is_manual_grading:
-                        await notification_service.create_notification(
-                            db=session,
-                            user_id=teacher.user_id,
-                            notification_type=NotificationType.student_completed,
-                            title=f"Needs grading: {student_name} submitted {assignment.name}",
-                            message=f"{student_name}'s submission is ready for your review.",
-                            link=f"/teacher/assignments/{assignment_id}?tab=students&gradeStudentId={student.id}",
-                        )
-                    else:
-                        await notification_service.create_notification(
-                            db=session,
-                            user_id=teacher.user_id,
-                            notification_type=NotificationType.student_completed,
-                            title=f"Student completed: {student_name} finished {assignment.name}",
-                            message=f"Score: {assignment_student.score:.0f}%" if assignment_student.score else "Completed",
-                            link=f"/teacher/assignments/{assignment_id}?tab=students",
-                        )
-                    await session.commit()
-            except Exception as e:
-                logger.warning(f"Failed to send completion notification (Content Library): {str(e)}")
+        # Invalidate student assignment cache when status changes
+        if assignment_student.status != old_status:
+            await invalidate_for_event("assignment_progress_updated", user_id=str(current_user.id))
 
         return ActivityProgressSaveResponse(
             message="Progress saved successfully",
@@ -2729,7 +2817,8 @@ async def save_activity_progress(
         activity_progress.status = AssignmentStudentActivityStatus.in_progress
 
     # Also ensure assignment is in_progress
-    if assignment_student.status == AssignmentStatus.not_started:
+    assignment_status_changed = assignment_student.status == AssignmentStatus.not_started
+    if assignment_status_changed:
         assignment_student.status = AssignmentStatus.in_progress
         assignment_student.started_at = datetime.now(UTC)
 
@@ -2748,6 +2837,10 @@ async def save_activity_progress(
             detail="Failed to save progress",
         )
 
+    # Invalidate student assignment cache when assignment status changes
+    if assignment_status_changed:
+        await invalidate_for_event("assignment_progress_updated", user_id=str(current_user.id))
+
     return ActivityProgressSaveResponse(
         message="Progress saved successfully",
         activity_id=activity_id,
@@ -2764,6 +2857,7 @@ async def save_activity_progress(
     description="Submit a multi-activity assignment after completing all activities",
 )
 async def submit_multi_activity_assignment(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -3120,41 +3214,7 @@ async def submit_multi_activity_assignment(
             if ap.status == AssignmentStudentActivityStatus.completed
         )
 
-    # Send notification to teacher about student completion
-    try:
-        teacher_result = await session.execute(
-            select(Teacher).where(Teacher.id == assignment.teacher_id)
-        )
-        teacher = teacher_result.scalar_one_or_none()
-
-        await session.refresh(student, ["user"])
-        student_name = student.user.full_name if student.user else "A student"
-
-        if teacher and teacher.user_id:
-            is_manual_grading = assignment.activity_type and assignment.activity_type.value in (
-                "writing_free_response", "speaking_open_response"
-            )
-
-            if is_manual_grading:
-                await notification_service.create_notification(
-                    db=session,
-                    user_id=teacher.user_id,
-                    notification_type=NotificationType.student_completed,
-                    title=f"Needs grading: {student_name} submitted {assignment.name}",
-                    message=f"{student_name}'s submission is ready for your review.",
-                    link=f"/teacher/assignments/{assignment_id}?tab=students&gradeStudentId={student.id}",
-                )
-            else:
-                await notification_service.create_notification(
-                    db=session,
-                    user_id=teacher.user_id,
-                    notification_type=NotificationType.student_completed,
-                    title=f"Student completed: {student_name} finished {assignment.name}",
-                    message=f"Score: {combined_score:.0f}%",
-                    link=f"/teacher/assignments/{assignment_id}?tab=students",
-                )
-    except Exception as e:
-        logger.warning(f"Failed to send completion notification: {str(e)}")
+    await invalidate_for_event("assignment_submitted", user_id=str(current_user.id))
 
     return MultiActivitySubmitResponse(
         success=True,
@@ -3285,6 +3345,7 @@ async def save_progress(
     description="Submit a completed assignment with answers and score",
 )
 async def submit_assignment(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -3398,52 +3459,7 @@ async def submit_assignment(
     except Exception as e:
         logger.warning(f"Skill attribution failed (non-blocking): {e}")
 
-    # Send notification to teacher about student completion (AC: 6, 7)
-    try:
-        # Get assignment with teacher relationship
-        assignment_result = await session.execute(
-            select(Assignment).where(Assignment.id == assignment_id)
-        )
-        assignment = assignment_result.scalar_one_or_none()
-
-        if assignment:
-            # Get teacher's user_id
-            teacher_result = await session.execute(
-                select(Teacher).where(Teacher.id == assignment.teacher_id)
-            )
-            teacher = teacher_result.scalar_one_or_none()
-
-            # Get student's name from user relationship
-            await session.refresh(student, ["user"])
-            student_name = student.user.full_name if student.user else "A student"
-
-            if teacher and teacher.user_id:
-                # Check if this is a manual-grading activity (writing/speaking)
-                is_manual_grading = assignment.activity_type and assignment.activity_type.value in (
-                    "writing_free_response", "speaking_open_response"
-                )
-
-                if is_manual_grading:
-                    await notification_service.create_notification(
-                        db=session,
-                        user_id=teacher.user_id,
-                        notification_type=NotificationType.student_completed,
-                        title=f"Needs grading: {student_name} submitted {assignment.name}",
-                        message=f"{student_name}'s submission is ready for your review.",
-                        link=f"/teacher/assignments/{assignment_id}?tab=students&gradeStudentId={student.id}",
-                    )
-                else:
-                    await notification_service.create_notification(
-                        db=session,
-                        user_id=teacher.user_id,
-                        notification_type=NotificationType.student_completed,
-                        title=f"Student completed: {student_name} finished {assignment.name}",
-                        message=f"Score: {submission.score}%",
-                        link=f"/teacher/assignments/{assignment_id}?tab=students",
-                    )
-    except Exception as e:
-        # Log but don't fail the submission if notification fails
-        logger.warning(f"Failed to send completion notification: {str(e)}")
+    await invalidate_for_event("assignment_submitted", user_id=str(current_user.id))
 
     return AssignmentSubmissionResponse(
         success=True,
@@ -4021,6 +4037,222 @@ async def get_multi_activity_analytics(
     )
 
 
+def _recalculate_score(
+    activity_type: str, config_json: dict | None, response_data: dict | None
+) -> float | None:
+    """Recalculate activity score from config + response data.
+
+    Resolves item IDs (e.g. 'item-0') back to text for drag-drop activities
+    so scoring is correct even for data saved before the frontend fix.
+    """
+    if not config_json or not response_data:
+        return None
+    answers = response_data.get("answers", {})
+    if not answers:
+        return None
+
+    at = activity_type.lower().replace("activitytype.", "")
+    words = config_json.get("words", [])
+
+    def resolve(val: str) -> str:
+        import re
+        m = re.match(r"^item-(\d+)$", val)
+        if m:
+            idx = int(m.group(1))
+            return words[idx] if 0 <= idx < len(words) else val
+        return val
+
+    try:
+        if at == "dragdroppicture":
+            config_answer = config_json.get("answer", [])
+            if not config_answer:
+                return None
+            correct = 0
+            for ans in config_answer:
+                c = ans.get("coords", {})
+                key = f"{c.get('x', 0)}-{c.get('y', 0)}"
+                user_val = answers.get(key)
+                if user_val and resolve(str(user_val)).strip().lower() == ans.get("text", "").strip().lower():
+                    correct += 1
+            return round((correct / len(config_answer)) * 100)
+
+        if at == "dragdroppicturegroup":
+            config_answer = config_json.get("answer", [])
+            if not config_answer:
+                return None
+            correct = 0
+            for ans in config_answer:
+                c = ans.get("coords", {})
+                key = f"{c.get('x', 0)}-{c.get('y', 0)}"
+                user_val = answers.get(key)
+                if user_val and resolve(str(user_val)) in ans.get("group", []):
+                    correct += 1
+            return round((correct / len(config_answer)) * 100)
+
+        if at == "circle":
+            config_answer = config_json.get("answer", [])
+            if not config_answer:
+                return None
+            circle_count = config_json.get("circleCount", 2) or 2
+            is_multi = circle_count == -1
+            eff = abs(circle_count) if circle_count != 0 else 2
+
+            if is_multi:
+                correct = 0
+                for i, a in enumerate(config_answer):
+                    selected = str(i) in answers
+                    if a.get("isCorrect") == selected:
+                        correct += 1
+                return round((correct / len(config_answer)) * 100)
+            else:
+                q_count = -(-len(config_answer) // eff)  # ceil division
+                correct = 0
+                for qi in range(q_count):
+                    start = qi * eff
+                    end = min(start + eff, len(config_answer))
+                    correct_idx = None
+                    for ai in range(start, end):
+                        if config_answer[ai].get("isCorrect"):
+                            correct_idx = ai
+                            break
+                    selected = answers.get(str(qi))
+                    if selected is not None and selected == correct_idx:
+                        correct += 1
+                return round((correct / q_count) * 100) if q_count > 0 else None
+
+        if at == "matchthewords":
+            sentences = config_json.get("sentences", [])
+            if not sentences:
+                return None
+            correct = 0
+            # Build student matches per sentence index
+            student_by_sent: dict[int, str] = {}
+            for key, word_text in answers.items():
+                parts = key.split("-")
+                if len(parts) >= 2:
+                    student_by_sent[int(parts[0])] = str(word_text)
+            for i, s in enumerate(sentences):
+                if student_by_sent.get(i, "").strip().lower() == s.get("word", "").strip().lower():
+                    correct += 1
+            return round((correct / len(sentences)) * 100)
+
+    except Exception:
+        return None
+
+    return None
+
+
+def _build_review_items(
+    activity_type: str, config_json: dict | None, response_data: dict | None
+) -> list[ActivityReviewItem] | None:
+    """Build normalized review items from activity config and student response.
+
+    Returns a list of {question, student_answer, correct_answer, is_correct}
+    for each item in the activity so students can see their mistakes.
+    """
+    if not config_json or not response_data:
+        return None
+
+    answers = response_data.get("answers", {})
+    if not answers:
+        return None
+
+    items: list[ActivityReviewItem] = []
+    at = activity_type.lower().replace("activitytype.", "")
+
+    try:
+        if at == "dragdroppicture":
+            config_answer = config_json.get("answer", [])
+            words = config_json.get("words", [])
+            # Build map: "x-y" -> correct word
+            correct_map: dict[str, str] = {}
+            for ans in config_answer:
+                c = ans.get("coords", {})
+                key = f"{c.get('x', 0)}-{c.get('y', 0)}"
+                correct_map[key] = ans.get("text", "")
+
+            for coord_key, item_ref in answers.items():
+                correct_word = correct_map.get(coord_key, "?")
+                # item_ref is "item-N" where N is index into words
+                student_word = ""
+                if isinstance(item_ref, str) and item_ref.startswith("item-"):
+                    idx = int(item_ref.split("-")[1])
+                    if 0 <= idx < len(words):
+                        student_word = words[idx]
+                else:
+                    student_word = str(item_ref)
+
+                items.append(ActivityReviewItem(
+                    question=f"Place: {correct_word}",
+                    student_answer=student_word,
+                    correct_answer=correct_word,
+                    is_correct=student_word.strip().lower() == correct_word.strip().lower(),
+                ))
+
+        elif at == "circle":
+            config_answer = config_json.get("answer", [])
+            # Group answers by question (answers are indexed 0,1,2,3...)
+            # config_answer lists all options; response has {questionIdx: selectedOptionIdx}
+            # Determine correct option indices
+            correct_indices = [
+                i for i, a in enumerate(config_answer) if a.get("isCorrect")
+            ]
+            for q_idx_str, selected in answers.items():
+                q_idx = int(q_idx_str)
+                correct_idx = correct_indices[q_idx] if q_idx < len(correct_indices) else None
+                is_correct = selected == correct_idx if correct_idx is not None else False
+                items.append(ActivityReviewItem(
+                    question=f"Question {q_idx + 1}",
+                    student_answer=f"Option {selected + 1}" if isinstance(selected, int) else str(selected),
+                    correct_answer=f"Option {correct_idx + 1}" if correct_idx is not None else "?",
+                    is_correct=is_correct,
+                ))
+
+        elif at == "matchthewords":
+            sentences = config_json.get("sentences", [])
+            # Build correct map: sentence -> correct word
+            correct_matches = {s["sentence"]: s["word"] for s in sentences}
+
+            # response answers: {"sentIdx-wordIdx": "word text"}
+            # Reconstruct student matches per sentence
+            student_matches: dict[str, str] = {}
+            for key, word_text in answers.items():
+                parts = key.split("-")
+                if len(parts) >= 2:
+                    sent_idx = int(parts[0])
+                    if sent_idx < len(sentences):
+                        student_matches[sentences[sent_idx]["sentence"]] = word_text
+
+            for sentence_item in sentences:
+                sentence_text = sentence_item["sentence"]
+                correct_word = sentence_item["word"]
+                student_word = student_matches.get(sentence_text, "—")
+                items.append(ActivityReviewItem(
+                    question=sentence_text,
+                    student_answer=student_word,
+                    correct_answer=correct_word,
+                    is_correct=student_word.strip().lower() == correct_word.strip().lower(),
+                ))
+
+        elif at == "dragdroppicturegroup":
+            config_answer = config_json.get("answer", [])
+            words = config_json.get("words", [])
+            # Groups: each group has a set of correct words
+            # For now, show which words belong to which group
+            for group_idx, group in enumerate(config_answer):
+                group_words = group.get("group", [])
+                items.append(ActivityReviewItem(
+                    question=f"Group {group_idx + 1}",
+                    student_answer="See score",
+                    correct_answer=", ".join(group_words[:5]) + ("..." if len(group_words) > 5 else ""),
+                    is_correct=False,  # Can't determine per-item for groups
+                ))
+    except Exception:
+        return None
+
+    return items if items else None
+
+
 @router.get(
     "/{assignment_id}/students/me/result",
     response_model=StudentAssignmentResultResponse,
@@ -4105,14 +4337,31 @@ async def get_student_assignment_result(
         if ap.status == AssignmentStudentActivityStatus.completed:
             completed_count += 1
 
+        # Build review items for completed activities
+        review_items = _build_review_items(
+            activity.activity_type.value, activity.config_json, ap.response_data
+        ) if ap.status == AssignmentStudentActivityStatus.completed else None
+
+        # Recalculate score from config + response data (fixes stale 0% scores)
+        score = ap.score
+        if ap.status == AssignmentStudentActivityStatus.completed and ap.response_data:
+            recalc = _recalculate_score(
+                activity.activity_type.value, activity.config_json, ap.response_data
+            )
+            if recalc is not None:
+                score = recalc
+
         activity_scores.append(
             ActivityScoreItem(
                 activity_id=activity.id,
                 activity_title=activity.title,
                 activity_type=activity.activity_type.value,
-                score=ap.score,
+                score=score,
                 max_score=ap.max_score,
                 status=ap.status.value,
+                review_items=review_items,
+                config_json=activity.config_json,
+                response_data=ap.response_data,
             )
         )
 
@@ -4121,10 +4370,16 @@ async def get_student_assignment_result(
         f"by student {student.id}, activities={len(activity_scores)}"
     )
 
+    # Recalculate total score from per-activity scores (all activities, skipped = 0)
+    total_score_sum = sum(a.score or 0 for a in activity_scores)
+    total_max_sum = sum(a.max_score for a in activity_scores)
+    recalc_total = round((total_score_sum / total_max_sum) * 100, 1) if total_max_sum > 0 else assignment_student.score
+
     return StudentAssignmentResultResponse(
         assignment_id=assignment_id,
         assignment_name=assignment.name,
-        total_score=assignment_student.score,
+        book_id=assignment.dcs_book_id,
+        total_score=recalc_total,
         completed_at=assignment_student.completed_at,
         activity_scores=activity_scores,
         total_activities=len(activity_scores),
@@ -4143,6 +4398,7 @@ async def get_student_assignment_result(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_or_update_feedback(
+    request: Request,
     assignment_id: uuid.UUID,
     student_id: uuid.UUID,
     feedback_data: FeedbackCreate,
@@ -4223,6 +4479,7 @@ async def create_or_update_feedback(
             is_draft=feedback_data.is_draft,
             badges=feedback_data.badges,
             emoji_reaction=feedback_data.emoji_reaction,
+            arq_pool=request.app.state.arq_pool,
         )
         if not updated_feedback:
             raise HTTPException(
@@ -4240,6 +4497,7 @@ async def create_or_update_feedback(
             is_draft=feedback_data.is_draft,
             badges=feedback_data.badges,
             emoji_reaction=feedback_data.emoji_reaction,
+            arq_pool=request.app.state.arq_pool,
         )
 
     # Build and return public response
@@ -4250,6 +4508,14 @@ async def create_or_update_feedback(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to build feedback response",
         )
+
+    # Resolve student user_id for cache invalidation
+    student_result = await session.execute(
+        select(Student).where(Student.id == student_id)
+    )
+    student_record = student_result.scalar_one_or_none()
+    if student_record and student_record.user_id:
+        await invalidate_for_event("assignment_feedback", user_id=str(student_record.user_id))
 
     logger.info(
         f"Feedback {'updated' if existing_feedback else 'created'} "
@@ -4410,6 +4676,7 @@ async def get_my_feedback(
     response_model=FeedbackPublic,
 )
 async def update_feedback(
+    request: Request,
     feedback_id: uuid.UUID,
     feedback_data: FeedbackUpdate,
     session: AsyncSessionDep,
@@ -4451,6 +4718,7 @@ async def update_feedback(
         is_draft=feedback_data.is_draft,
         badges=feedback_data.badges,
         emoji_reaction=feedback_data.emoji_reaction,
+        arq_pool=request.app.state.arq_pool,
     )
 
     if not updated_feedback:
@@ -5096,6 +5364,12 @@ async def grade_student_submission(
         session.add(asgn_student)
         await session.commit()
 
+        # Resolve student user_id for cache invalidation
+        _student = await session.execute(select(Student).where(Student.id == student_id))
+        _s = _student.scalar_one_or_none()
+        if _s and _s.user_id:
+            await invalidate_for_event("assignment_graded", user_id=str(_s.user_id))
+
         logger.info(
             f"Teacher {teacher.id} graded activity {body.activity_id} "
             f"for student {student_id}: score={body.score}, overall={overall_score}"
@@ -5111,6 +5385,12 @@ async def grade_student_submission(
         asgn_student.score = body.score
         session.add(asgn_student)
         await session.commit()
+
+        # Resolve student user_id for cache invalidation
+        _student = await session.execute(select(Student).where(Student.id == student_id))
+        _s = _student.scalar_one_or_none()
+        if _s and _s.user_id:
+            await invalidate_for_event("assignment_graded", user_id=str(_s.user_id))
 
         logger.info(
             f"Teacher {teacher.id} graded assignment {assignment_id} "

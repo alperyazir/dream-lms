@@ -20,12 +20,14 @@ interface School {
 interface SchoolListViewProps {
   schools: School[]
   onEdit?: (school: School) => void
+  onDelete?: (school: School) => void
   onViewDetails?: (school: School) => void
 }
 
 export function SchoolListView({
   schools,
   onEdit,
+  onDelete,
   onViewDetails,
 }: SchoolListViewProps) {
   return (
@@ -84,6 +86,16 @@ export function SchoolListView({
                       onClick={() => onEdit(school)}
                     >
                       Edit
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(school)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Delete
                     </Button>
                   )}
                 </TableCell>

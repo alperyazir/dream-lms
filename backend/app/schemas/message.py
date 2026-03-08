@@ -23,6 +23,28 @@ class MessageCreate(BaseModel):
         return v
 
 
+class BroadcastCreate(BaseModel):
+    """Schema for broadcasting a message to all students in a class."""
+
+    class_id: uuid.UUID
+    body: str = Field(..., min_length=1)
+
+    @field_validator("body")
+    @classmethod
+    def validate_body_not_empty(cls, v: str) -> str:
+        """Validate body is not empty or whitespace."""
+        if not v.strip():
+            raise ValueError("Message body cannot be empty")
+        return v
+
+
+class BroadcastResponse(BaseModel):
+    """Schema for broadcast response."""
+
+    sent_count: int
+    class_name: str
+
+
 class MessagePublic(BaseModel):
     """Schema for message API response with sender/recipient names."""
 
@@ -31,15 +53,19 @@ class MessagePublic(BaseModel):
     id: uuid.UUID
     sender_id: uuid.UUID
     sender_name: str
-    sender_email: str
+    sender_email: str | None = None
     recipient_id: uuid.UUID
     recipient_name: str
-    recipient_email: str
+    recipient_email: str | None = None
     subject: str | None
     body: str
     parent_message_id: uuid.UUID | None
     is_read: bool
     sent_at: datetime
+    is_system: bool = False
+    context_type: str | None = None
+    context_id: uuid.UUID | None = None
+    message_category: str | None = None
 
 
 class ConversationPublic(BaseModel):
@@ -47,7 +73,7 @@ class ConversationPublic(BaseModel):
 
     participant_id: uuid.UUID
     participant_name: str
-    participant_email: str
+    participant_email: str | None = None
     participant_role: str
     last_message_preview: str
     last_message_timestamp: datetime
@@ -70,7 +96,7 @@ class MessageThreadResponse(BaseModel):
 
     participant_id: uuid.UUID
     participant_name: str
-    participant_email: str
+    participant_email: str | None = None
     participant_role: str
     participant_organization_name: str | None = None  # Publisher organization name
     messages: list[MessagePublic]
@@ -82,7 +108,7 @@ class RecipientPublic(BaseModel):
 
     user_id: uuid.UUID
     name: str
-    email: str
+    email: str | None = None
     role: str
     organization_name: str | None = None  # Publisher organization name (from DCS)
 

@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminUpdatePublisherData, AdminDeletePublisherData, AdminUploadPublisherLogoData, AdminUploadPublisherLogoResponse, AdminDeletePublisherLogoData, AdminDeletePublisherLogoResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminGetStudentPasswordData, AdminGetStudentPasswordResponse, AdminSetStudentPasswordData, AdminSetStudentPasswordResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkDeleteStudentsData, AdminBulkDeleteStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, AdminAdminUpdateUserData, AdminAdminUpdateUserResponse, AdminResetUserPasswordData, AdminResetUserPasswordResponse, AdminGetCacheStatsResponse, AdminClearCacheResponse, AdminTestDreamStorageConnectionResponse, AdminRegisterWebhooksManuallyData, AdminRegisterWebhooksManuallyResponse, AdminGetBenchmarkOverviewEndpointResponse, AdminUpdateSchoolBenchmarkSettingsData, AdminUpdateSchoolBenchmarkSettingsResponse, AdminUpdatePublisherBenchmarkSettingsData, AdminUpdatePublisherBenchmarkSettingsResponse, AdminCreatePublisherAccountData, AdminCreatePublisherAccountResponse, AdminListPublisherAccountsData, AdminListPublisherAccountsResponse, AdminGetPublisherAccountData, AdminGetPublisherAccountResponse, AdminUpdatePublisherAccountData, AdminUpdatePublisherAccountResponse, AdminDeletePublisherAccountData, AdminDeletePublisherAccountResponse, AdminChangePublisherPasswordData, AdminChangePublisherPasswordResponse, AdminListAllAssignmentsData, AdminListAllAssignmentsResponse, AdminDeleteAssignmentData, AdminDeleteAssignmentResponse, AiGenerationGetBookAiStatusData, AiGenerationGetBookAiStatusResponse, AiGenerationGetBookAiModulesData, AiGenerationGetBookAiModulesResponse, AiGenerationGenerateTtsAudioData, AiGenerationGenerateTtsAudioResponse, AiGenerationStreamVocabularyAudioData, AiGenerationStreamVocabularyAudioResponse, AiGenerationGenerateVocabularyQuizData, AiGenerationGenerateVocabularyQuizResponse, AiGenerationGetVocabularyQuizData, AiGenerationGetVocabularyQuizResponse, AiGenerationSubmitVocabularyQuizData, AiGenerationSubmitVocabularyQuizResponse, AiGenerationGetVocabularyQuizResultData, AiGenerationGetVocabularyQuizResultResponse, AiGenerationDebugQuizRequestData, AiGenerationDebugQuizRequestResponse, AiGenerationGenerateAiQuizData, AiGenerationGenerateAiQuizResponse, AiGenerationGetAiQuizData, AiGenerationGetAiQuizResponse, AiGenerationSubmitAiQuizData, AiGenerationSubmitAiQuizResponse, AiGenerationGetAiQuizResultData, AiGenerationGetAiQuizResultResponse, AiGenerationGenerateReadingActivityData, AiGenerationGenerateReadingActivityResponse, AiGenerationGetReadingActivityData, AiGenerationGetReadingActivityResponse, AiGenerationSubmitReadingActivityData, AiGenerationSubmitReadingActivityResponse, AiGenerationGetReadingResultData, AiGenerationGetReadingResultResponse, AiGenerationGenerateSentenceActivityData, AiGenerationGenerateSentenceActivityResponse, AiGenerationGetSentenceActivityData, AiGenerationGetSentenceActivityResponse, AiGenerationSubmitSentenceActivityData, AiGenerationSubmitSentenceActivityResponse, AiGenerationGetSentenceResultData, AiGenerationGetSentenceResultResponse, AiGenerationGenerateWordBuilderActivityData, AiGenerationGenerateWordBuilderActivityResponse, AiGenerationGetWordBuilderActivityData, AiGenerationGetWordBuilderActivityResponse, AiGenerationSubmitWordBuilderActivityData, AiGenerationSubmitWordBuilderActivityResponse, AiGenerationGetWordBuilderResultData, AiGenerationGetWordBuilderResultResponse, AiGenerationRegenerateQuizQuestionData, AiGenerationRegenerateQuizQuestionResponse, AiGenerationSaveContentToLibraryData, AiGenerationSaveContentToLibraryResponse, AiGenerationCreateAssignmentFromContentData, AiGenerationCreateAssignmentFromContentResponse, AiGenerationListLibraryContentData, AiGenerationListLibraryContentResponse, AiGenerationGetLibraryContentDetailData, AiGenerationGetLibraryContentDetailResponse, AiGenerationDeleteLibraryContentData, AiGenerationDeleteLibraryContentResponse, AiGenerationUpdateLibraryContentData, AiGenerationUpdateLibraryContentResponse, AiGenerationAssignLibraryContentData, AiGenerationAssignLibraryContentResponse, AiUsageGetMyUsageResponse, AiUsageGetUsageSummaryData, AiUsageGetUsageSummaryResponse, AiUsageGetUsageByTypeData, AiUsageGetUsageByTypeResponse, AiUsageGetUsageByTeacherData, AiUsageGetUsageByTeacherResponse, AiUsageGetUsageByProviderData, AiUsageGetUsageByProviderResponse, AiUsageGetErrorsData, AiUsageGetErrorsResponse, AiUsageExportUsageDataData, AiUsageExportUsageDataResponse, AnnouncementsGetMyAnnouncementsData, AnnouncementsGetMyAnnouncementsResponse, AnnouncementsCreateAnnouncementData, AnnouncementsCreateAnnouncementResponse, AnnouncementsGetTeacherAnnouncementsData, AnnouncementsGetTeacherAnnouncementsResponse, AnnouncementsGetAnnouncementDetailData, AnnouncementsGetAnnouncementDetailResponse, AnnouncementsUpdateAnnouncementData, AnnouncementsUpdateAnnouncementResponse, AnnouncementsDeleteAnnouncementData, AnnouncementsDeleteAnnouncementResponse, AnnouncementsGetAnnouncementAsStudentData, AnnouncementsGetAnnouncementAsStudentResponse, AnnouncementsMarkAnnouncementAsReadData, AnnouncementsMarkAnnouncementAsReadResponse, AssignmentsListAssignmentsResponse, AssignmentsCreateAssignmentData, AssignmentsCreateAssignmentResponse, AssignmentsListAllAssignmentsAdminResponse, AssignmentsGetCalendarAssignmentsData, AssignmentsGetCalendarAssignmentsResponse, AssignmentsCreateBulkAssignmentsData, AssignmentsCreateBulkAssignmentsResponse, AssignmentsUpdateAssignmentData, AssignmentsUpdateAssignmentResponse, AssignmentsDeleteAssignmentData, AssignmentsDeleteAssignmentResponse, AssignmentsAttachMaterialToAssignmentData, AssignmentsAttachMaterialToAssignmentResponse, AssignmentsStartAssignmentData, AssignmentsStartAssignmentResponse, AssignmentsStartMultiActivityAssignmentData, AssignmentsStartMultiActivityAssignmentResponse, AssignmentsDownloadAssignmentMaterialData, AssignmentsDownloadAssignmentMaterialResponse, AssignmentsSaveActivityProgressData, AssignmentsSaveActivityProgressResponse, AssignmentsSubmitMultiActivityAssignmentData, AssignmentsSubmitMultiActivityAssignmentResponse, AssignmentsSaveProgressData, AssignmentsSaveProgressResponse, AssignmentsSubmitAssignmentData, AssignmentsSubmitAssignmentResponse, AssignmentsGetAssignmentResultData, AssignmentsGetAssignmentResultResponse, AssignmentsGetDetailedResultsData, AssignmentsGetDetailedResultsResponse, AssignmentsGetStudentAnswersData, AssignmentsGetStudentAnswersResponse, AssignmentsGetMultiActivityAnalyticsData, AssignmentsGetMultiActivityAnalyticsResponse, AssignmentsGetStudentAssignmentResultData, AssignmentsGetStudentAssignmentResultResponse, AssignmentsCreateOrUpdateFeedbackData, AssignmentsCreateOrUpdateFeedbackResponse, AssignmentsGetFeedbackData, AssignmentsGetFeedbackResponse, AssignmentsGetMyFeedbackData, AssignmentsGetMyFeedbackResponse, AssignmentsUpdateFeedbackData, AssignmentsUpdateFeedbackResponse, AssignmentsPreviewAssignmentData, AssignmentsPreviewAssignmentResponse, AssignmentsGetAssignmentForEditData, AssignmentsGetAssignmentForEditResponse, AssignmentsPreviewActivityData, AssignmentsPreviewActivityResponse, AvatarsGetPredefinedAvatarsResponse, AvatarsRemoveAvatarResponse, AvatarsSelectPredefinedAvatarData, AvatarsSelectPredefinedAvatarResponse, BookAssetsServeBookAssetData, BookAssetsServeBookAssetResponse, BookAssetsServePageImageData, BookAssetsServePageImageResponse, BookAssignmentsCreateBookAssignmentData, BookAssignmentsCreateBookAssignmentResponse, BookAssignmentsListBookAssignmentsData, BookAssignmentsListBookAssignmentsResponse, BookAssignmentsCreateBulkBookAssignmentsData, BookAssignmentsCreateBulkBookAssignmentsResponse, BookAssignmentsDeleteBookAssignmentData, BookAssignmentsDeleteBookAssignmentResponse, BookAssignmentsGetBookAssignmentsData, BookAssignmentsGetBookAssignmentsResponse, BookMediaStreamMediaData, BookMediaStreamMediaResponse, BooksGetBookCoverData, BooksGetBookCoverResponse, BooksListBooksData, BooksListBooksResponse, BooksGetBookActivitiesData, BooksGetBookActivitiesResponse, BooksGetBookPagesData, BooksGetBookPagesResponse, BooksGetPageActivitiesData, BooksGetPageActivitiesResponse, BooksGetBookPagesDetailData, BooksGetBookPagesDetailResponse, BooksGetBookStructureData, BooksGetBookStructureResponse, BooksListBookVideosData, BooksListBookVideosResponse, BooksImportBookActivitiesData, BooksImportBookActivitiesResponse, ClassesCreateClassData, ClassesCreateClassResponse, ClassesListClassesData, ClassesListClassesResponse, ClassesGetClassDetailData, ClassesGetClassDetailResponse, ClassesUpdateClassData, ClassesUpdateClassResponse, ClassesArchiveClassData, ClassesArchiveClassResponse, ClassesAddStudentsToClassData, ClassesAddStudentsToClassResponse, ClassesRemoveStudentFromClassData, ClassesRemoveStudentFromClassResponse, ClassesGetClassAnalyticsEndpointData, ClassesGetClassAnalyticsEndpointResponse, ClassesGetClassBenchmarksEndpointData, ClassesGetClassBenchmarksEndpointResponse, DevGetQuickLoginUsersResponse, DevResetQuickLoginPasswordsResponse, DevInstantLoginData, DevInstantLoginResponse, FeedbackGetFeedbackOptionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MessagesSendMessageData, MessagesSendMessageResponse, MessagesGetConversationsData, MessagesGetConversationsResponse, MessagesGetMessageThreadData, MessagesGetMessageThreadResponse, MessagesMarkMessageAsReadData, MessagesMarkMessageAsReadResponse, MessagesGetAllowedRecipientsResponse, MessagesGetUnreadMessagesCountResponse, NotificationsGetNotificationsData, NotificationsGetNotificationsResponse, NotificationsGetUnreadCountResponse, NotificationsMarkNotificationAsReadData, NotificationsMarkNotificationAsReadResponse, NotificationsMarkAllNotificationsAsReadResponse, NotificationsGetNotificationPreferencesResponse, NotificationsUpdateNotificationPreferencesData, NotificationsUpdateNotificationPreferencesResponse, NotificationsUpdateSinglePreferenceData, NotificationsUpdateSinglePreferenceResponse, NotificationsGetMuteStatusResponse, NotificationsSetGlobalMuteData, NotificationsSetGlobalMuteResponse, NotificationsCancelGlobalMuteResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersGetPublisherLogoData, PublishersGetPublisherLogoResponse, PublishersGetMyProfileResponse, PublishersGetMyStatsResponse, PublishersListMySchoolsResponse, PublishersCreateMySchoolData, PublishersCreateMySchoolResponse, PublishersListMyTeachersResponse, PublishersCreateMyTeacherData, PublishersCreateMyTeacherResponse, PublishersListMyBooksResponse, ReportsGenerateReportData, ReportsGenerateReportResponse, ReportsCheckReportStatusData, ReportsCheckReportStatusResponse, ReportsPreviewReportData, ReportsPreviewReportResponse, ReportsDownloadReportData, ReportsDownloadReportResponse, ReportsListReportHistoryResponse, ReportsListReportTemplatesResponse, ReportsCreateReportTemplateData, ReportsCreateReportTemplateResponse, ReportsRemoveReportTemplateData, ReportsRemoveReportTemplateResponse, ScheduledTasksRunDeadlineRemindersData, ScheduledTasksRunDeadlineRemindersResponse, ScheduledTasksRunApproachingDeadlinesOnlyData, ScheduledTasksRunApproachingDeadlinesOnlyResponse, ScheduledTasksRunPastDueOnlyData, ScheduledTasksRunPastDueOnlyResponse, ScheduledTasksRunPublishScheduledAssignmentsData, ScheduledTasksRunPublishScheduledAssignmentsResponse, StudentsGetStudentAssignmentsData, StudentsGetStudentAssignmentsResponse, StudentsGetStudentProgressData, StudentsGetStudentProgressResponse, StudentsGetStudentAnalyticsData, StudentsGetStudentAnalyticsResponse, StudentsGetMyBadgesResponse, StudentsGetStudentBadgesData, StudentsGetStudentBadgesResponse, StudentsGetStudentsData, StudentsGetStudentsResponse, StudentsGetUnassignedStudentsResponse, StudentsGetStudentCalendarAssignmentsData, StudentsGetStudentCalendarAssignmentsResponse, StudentsGetImportTemplateResponse, StudentsValidateImportFileData, StudentsValidateImportFileResponse, StudentsExecuteImportData, StudentsExecuteImportResponse, StudentsDownloadCredentialsData, StudentsDownloadCredentialsResponse, SupervisorsListSupervisorsData, SupervisorsListSupervisorsResponse, SupervisorsCreateSupervisorData, SupervisorsCreateSupervisorResponse, SupervisorsGetSupervisorData, SupervisorsGetSupervisorResponse, SupervisorsUpdateSupervisorData, SupervisorsUpdateSupervisorResponse, SupervisorsDeleteSupervisorData, SupervisorsDeleteSupervisorResponse, SupervisorsResetSupervisorPasswordData, SupervisorsResetSupervisorPasswordResponse, TeacherMaterialsUploadMaterialData, TeacherMaterialsUploadMaterialResponse, TeacherMaterialsCreateTextNoteData, TeacherMaterialsCreateTextNoteResponse, TeacherMaterialsUpdateTextNoteData, TeacherMaterialsUpdateTextNoteResponse, TeacherMaterialsCreateUrlLinkData, TeacherMaterialsCreateUrlLinkResponse, TeacherMaterialsListMaterialsData, TeacherMaterialsListMaterialsResponse, TeacherMaterialsGetQuotaResponse, TeacherMaterialsGetMaterialData, TeacherMaterialsGetMaterialResponse, TeacherMaterialsUpdateMaterialData, TeacherMaterialsUpdateMaterialResponse, TeacherMaterialsDeleteMaterialData, TeacherMaterialsDeleteMaterialResponse, TeacherMaterialsGetPresignedUrlData, TeacherMaterialsGetPresignedUrlResponse, TeacherMaterialsDownloadMaterialData, TeacherMaterialsDownloadMaterialResponse, TeacherMaterialsStreamMaterialData, TeacherMaterialsStreamMaterialResponse, TeacherMaterialsUploadPdfForAiData, TeacherMaterialsUploadPdfForAiResponse, TeacherMaterialsCreateTextMaterialForAiData, TeacherMaterialsCreateTextMaterialForAiResponse, TeacherMaterialsListProcessableMaterialsResponse, TeacherMaterialsGetMaterialForAiData, TeacherMaterialsGetMaterialForAiResponse, TeacherMaterialsListGeneratedContentData, TeacherMaterialsListGeneratedContentResponse, TeacherMaterialsGetGeneratedContentData, TeacherMaterialsGetGeneratedContentResponse, TeacherMaterialsDeleteGeneratedContentData, TeacherMaterialsDeleteGeneratedContentResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersBulkDeleteStudentsData, TeachersBulkDeleteStudentsResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersDeleteClassData, TeachersDeleteClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, TeachersGetStudentsForClassesData, TeachersGetStudentsForClassesResponse, TeachersGetMyInsightsResponse, TeachersGetInsightDetailsData, TeachersGetInsightDetailsResponse, TeachersDismissInsightEndpointData, TeachersDismissInsightEndpointResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersChangeInitialPasswordData, UsersChangeInitialPasswordResponse, UsersCompleteTourResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, VocabularyExplorerGetBooksWithVocabularyResponse, VocabularyExplorerGetVocabularyData, VocabularyExplorerGetVocabularyResponse, VocabularyExplorerGetAudioUrlData, VocabularyExplorerGetAudioUrlResponse, WebhooksReceiveDreamStorageWebhookResponse, WebhooksTestDreamStorageWebhookData, WebhooksTestDreamStorageWebhookResponse } from './types.gen';
+import type { AdminListPublishersResponse, AdminCreateSchoolData, AdminCreateSchoolResponse, AdminListSchoolsData, AdminListSchoolsResponse, AdminListSchoolsPaginatedData, AdminListSchoolsPaginatedResponse, AdminUpdatePublisherData, AdminDeletePublisherData, AdminUploadPublisherLogoData, AdminUploadPublisherLogoResponse, AdminDeletePublisherLogoData, AdminDeletePublisherLogoResponse, AdminUpdateSchoolData, AdminUpdateSchoolResponse, AdminDeleteSchoolData, AdminDeleteSchoolResponse, AdminCreateTeacherData, AdminCreateTeacherResponse, AdminListTeachersData, AdminListTeachersResponse, AdminListTeachersPaginatedData, AdminListTeachersPaginatedResponse, AdminUpdateTeacherData, AdminUpdateTeacherResponse, AdminDeleteTeacherData, AdminDeleteTeacherResponse, AdminCreateStudentData, AdminCreateStudentResponse, AdminListStudentsData, AdminListStudentsResponse, AdminGetStudentPasswordData, AdminGetStudentPasswordResponse, AdminSetStudentPasswordData, AdminSetStudentPasswordResponse, AdminUpdateStudentData, AdminUpdateStudentResponse, AdminDeleteStudentData, AdminDeleteStudentResponse, AdminBulkDeleteStudentsData, AdminBulkDeleteStudentsResponse, AdminBulkImportPublishersData, AdminBulkImportPublishersResponse, AdminBulkImportTeachersData, AdminBulkImportTeachersResponse, AdminBulkImportStudentsData, AdminBulkImportStudentsResponse, AdminGetStatsResponse, AdminAdminUpdateUserData, AdminAdminUpdateUserResponse, AdminResetUserPasswordData, AdminResetUserPasswordResponse, AdminGetCacheStatsResponse, AdminClearCacheResponse, AdminTestDreamStorageConnectionResponse, AdminRegisterWebhooksManuallyData, AdminRegisterWebhooksManuallyResponse, AdminGetBenchmarkOverviewEndpointResponse, AdminUpdateSchoolBenchmarkSettingsData, AdminUpdateSchoolBenchmarkSettingsResponse, AdminUpdatePublisherBenchmarkSettingsData, AdminUpdatePublisherBenchmarkSettingsResponse, AdminCreatePublisherAccountData, AdminCreatePublisherAccountResponse, AdminListPublisherAccountsData, AdminListPublisherAccountsResponse, AdminListPublisherAccountsPaginatedData, AdminListPublisherAccountsPaginatedResponse, AdminGetPublisherAccountData, AdminGetPublisherAccountResponse, AdminUpdatePublisherAccountData, AdminUpdatePublisherAccountResponse, AdminDeletePublisherAccountData, AdminDeletePublisherAccountResponse, AdminChangePublisherPasswordData, AdminChangePublisherPasswordResponse, AdminListAllAssignmentsData, AdminListAllAssignmentsResponse, AdminDeleteAssignmentData, AdminDeleteAssignmentResponse, AiGenerationGetBookAiStatusData, AiGenerationGetBookAiStatusResponse, AiGenerationGetBookAiModulesData, AiGenerationGetBookAiModulesResponse, AiGenerationGenerateTtsAudioData, AiGenerationGenerateTtsAudioResponse, AiGenerationStreamVocabularyAudioData, AiGenerationStreamVocabularyAudioResponse, AiGenerationGenerateVocabularyQuizData, AiGenerationGenerateVocabularyQuizResponse, AiGenerationGetVocabularyQuizData, AiGenerationGetVocabularyQuizResponse, AiGenerationSubmitVocabularyQuizData, AiGenerationSubmitVocabularyQuizResponse, AiGenerationGetVocabularyQuizResultData, AiGenerationGetVocabularyQuizResultResponse, AiGenerationDebugQuizRequestData, AiGenerationDebugQuizRequestResponse, AiGenerationGenerateAiQuizData, AiGenerationGenerateAiQuizResponse, AiGenerationGetAiQuizData, AiGenerationGetAiQuizResponse, AiGenerationSubmitAiQuizData, AiGenerationSubmitAiQuizResponse, AiGenerationGetAiQuizResultData, AiGenerationGetAiQuizResultResponse, AiGenerationGenerateReadingActivityData, AiGenerationGenerateReadingActivityResponse, AiGenerationGetReadingActivityData, AiGenerationGetReadingActivityResponse, AiGenerationSubmitReadingActivityData, AiGenerationSubmitReadingActivityResponse, AiGenerationGetReadingResultData, AiGenerationGetReadingResultResponse, AiGenerationGenerateSentenceActivityData, AiGenerationGenerateSentenceActivityResponse, AiGenerationGetSentenceActivityData, AiGenerationGetSentenceActivityResponse, AiGenerationSubmitSentenceActivityData, AiGenerationSubmitSentenceActivityResponse, AiGenerationGetSentenceResultData, AiGenerationGetSentenceResultResponse, AiGenerationGenerateWordBuilderActivityData, AiGenerationGenerateWordBuilderActivityResponse, AiGenerationGetWordBuilderActivityData, AiGenerationGetWordBuilderActivityResponse, AiGenerationSubmitWordBuilderActivityData, AiGenerationSubmitWordBuilderActivityResponse, AiGenerationGetWordBuilderResultData, AiGenerationGetWordBuilderResultResponse, AiGenerationRegenerateQuizQuestionData, AiGenerationRegenerateQuizQuestionResponse, AiGenerationSaveContentToLibraryData, AiGenerationSaveContentToLibraryResponse, AiGenerationCreateAssignmentFromContentData, AiGenerationCreateAssignmentFromContentResponse, AiGenerationListLibraryContentData, AiGenerationListLibraryContentResponse, AiGenerationGetLibraryContentDetailData, AiGenerationGetLibraryContentDetailResponse, AiGenerationDeleteLibraryContentData, AiGenerationDeleteLibraryContentResponse, AiGenerationUpdateLibraryContentData, AiGenerationUpdateLibraryContentResponse, AiGenerationAssignLibraryContentData, AiGenerationAssignLibraryContentResponse, AiUsageGetMyUsageResponse, AiUsageGetUsageSummaryData, AiUsageGetUsageSummaryResponse, AiUsageGetUsageByTypeData, AiUsageGetUsageByTypeResponse, AiUsageGetUsageByTeacherData, AiUsageGetUsageByTeacherResponse, AiUsageGetUsageByProviderData, AiUsageGetUsageByProviderResponse, AiUsageGetErrorsData, AiUsageGetErrorsResponse, AiUsageExportUsageDataData, AiUsageExportUsageDataResponse, AnnouncementsGetMyAnnouncementsData, AnnouncementsGetMyAnnouncementsResponse, AnnouncementsCreateAnnouncementData, AnnouncementsCreateAnnouncementResponse, AnnouncementsGetTeacherAnnouncementsData, AnnouncementsGetTeacherAnnouncementsResponse, AnnouncementsGetAnnouncementDetailData, AnnouncementsGetAnnouncementDetailResponse, AnnouncementsUpdateAnnouncementData, AnnouncementsUpdateAnnouncementResponse, AnnouncementsDeleteAnnouncementData, AnnouncementsDeleteAnnouncementResponse, AnnouncementsGetAnnouncementAsStudentData, AnnouncementsGetAnnouncementAsStudentResponse, AnnouncementsMarkAnnouncementAsReadData, AnnouncementsMarkAnnouncementAsReadResponse, AssignmentsListAssignmentsResponse, AssignmentsCreateAssignmentData, AssignmentsCreateAssignmentResponse, AssignmentsListAllAssignmentsAdminResponse, AssignmentsGetCalendarAssignmentsData, AssignmentsGetCalendarAssignmentsResponse, AssignmentsCreateBulkAssignmentsData, AssignmentsCreateBulkAssignmentsResponse, AssignmentsUpdateAssignmentData, AssignmentsUpdateAssignmentResponse, AssignmentsDeleteAssignmentData, AssignmentsDeleteAssignmentResponse, AssignmentsAttachMaterialToAssignmentData, AssignmentsAttachMaterialToAssignmentResponse, AssignmentsStartAssignmentData, AssignmentsStartAssignmentResponse, AssignmentsStartMultiActivityAssignmentData, AssignmentsStartMultiActivityAssignmentResponse, AssignmentsDownloadAssignmentMaterialData, AssignmentsDownloadAssignmentMaterialResponse, AssignmentsSaveActivityProgressData, AssignmentsSaveActivityProgressResponse, AssignmentsSubmitMultiActivityAssignmentData, AssignmentsSubmitMultiActivityAssignmentResponse, AssignmentsSaveProgressData, AssignmentsSaveProgressResponse, AssignmentsSubmitAssignmentData, AssignmentsSubmitAssignmentResponse, AssignmentsGetAssignmentResultData, AssignmentsGetAssignmentResultResponse, AssignmentsGetDetailedResultsData, AssignmentsGetDetailedResultsResponse, AssignmentsGetStudentAnswersData, AssignmentsGetStudentAnswersResponse, AssignmentsGetMultiActivityAnalyticsData, AssignmentsGetMultiActivityAnalyticsResponse, AssignmentsGetStudentAssignmentResultData, AssignmentsGetStudentAssignmentResultResponse, AssignmentsCreateOrUpdateFeedbackData, AssignmentsCreateOrUpdateFeedbackResponse, AssignmentsGetFeedbackData, AssignmentsGetFeedbackResponse, AssignmentsGetMyFeedbackData, AssignmentsGetMyFeedbackResponse, AssignmentsUpdateFeedbackData, AssignmentsUpdateFeedbackResponse, AssignmentsPreviewAssignmentData, AssignmentsPreviewAssignmentResponse, AssignmentsGetAssignmentForEditData, AssignmentsGetAssignmentForEditResponse, AssignmentsPreviewActivityData, AssignmentsPreviewActivityResponse, AvatarsGetPredefinedAvatarsResponse, AvatarsRemoveAvatarResponse, AvatarsSelectPredefinedAvatarData, AvatarsSelectPredefinedAvatarResponse, BookAssetsServeBookAssetData, BookAssetsServeBookAssetResponse, BookAssetsServePageImageData, BookAssetsServePageImageResponse, BookAssignmentsCreateBookAssignmentData, BookAssignmentsCreateBookAssignmentResponse, BookAssignmentsListBookAssignmentsData, BookAssignmentsListBookAssignmentsResponse, BookAssignmentsCreateBulkBookAssignmentsData, BookAssignmentsCreateBulkBookAssignmentsResponse, BookAssignmentsDeleteBookAssignmentData, BookAssignmentsDeleteBookAssignmentResponse, BookAssignmentsGetBookAssignmentsData, BookAssignmentsGetBookAssignmentsResponse, BookMediaStreamMediaData, BookMediaStreamMediaResponse, BooksGetBookCoverData, BooksGetBookCoverResponse, BooksListBooksData, BooksListBooksResponse, BooksGetBookActivitiesData, BooksGetBookActivitiesResponse, BooksGetBookPagesData, BooksGetBookPagesResponse, BooksGetPageActivitiesData, BooksGetPageActivitiesResponse, BooksGetBookPagesDetailData, BooksGetBookPagesDetailResponse, BooksGetBookStructureData, BooksGetBookStructureResponse, BooksListBookVideosData, BooksListBookVideosResponse, BooksImportBookActivitiesData, BooksImportBookActivitiesResponse, ClassesCreateClassData, ClassesCreateClassResponse, ClassesListClassesData, ClassesListClassesResponse, ClassesGetClassDetailData, ClassesGetClassDetailResponse, ClassesUpdateClassData, ClassesUpdateClassResponse, ClassesArchiveClassData, ClassesArchiveClassResponse, ClassesAddStudentsToClassData, ClassesAddStudentsToClassResponse, ClassesRemoveStudentFromClassData, ClassesRemoveStudentFromClassResponse, ClassesGetClassAnalyticsEndpointData, ClassesGetClassAnalyticsEndpointResponse, ClassesGetClassBenchmarksEndpointData, ClassesGetClassBenchmarksEndpointResponse, DevGetQuickLoginUsersResponse, DevResetQuickLoginPasswordsResponse, DevInstantLoginData, DevInstantLoginResponse, FeedbackGetFeedbackOptionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MessagesSendMessageData, MessagesSendMessageResponse, MessagesGetConversationsData, MessagesGetConversationsResponse, MessagesGetMessageThreadData, MessagesGetMessageThreadResponse, MessagesMarkMessageAsReadData, MessagesMarkMessageAsReadResponse, MessagesGetAllowedRecipientsResponse, MessagesGetUnreadMessagesCountResponse, NotificationsGetNotificationsData, NotificationsGetNotificationsResponse, NotificationsGetUnreadCountResponse, NotificationsMarkNotificationAsReadData, NotificationsMarkNotificationAsReadResponse, NotificationsMarkAllNotificationsAsReadResponse, NotificationsGetNotificationPreferencesResponse, NotificationsUpdateNotificationPreferencesData, NotificationsUpdateNotificationPreferencesResponse, NotificationsUpdateSinglePreferenceData, NotificationsUpdateSinglePreferenceResponse, NotificationsGetMuteStatusResponse, NotificationsSetGlobalMuteData, NotificationsSetGlobalMuteResponse, NotificationsCancelGlobalMuteResponse, PrivateCreateUserData, PrivateCreateUserResponse, PublishersGetPublisherLogoData, PublishersGetPublisherLogoResponse, PublishersGetMyProfileResponse, PublishersGetMyStatsResponse, PublishersListMySchoolsResponse, PublishersCreateMySchoolData, PublishersCreateMySchoolResponse, PublishersListMyTeachersResponse, PublishersCreateMyTeacherData, PublishersCreateMyTeacherResponse, PublishersListMyBooksResponse, PublishersListMyStudentsData, PublishersListMyStudentsResponse, ReportsGenerateReportData, ReportsGenerateReportResponse, ReportsCheckReportStatusData, ReportsCheckReportStatusResponse, ReportsPreviewReportData, ReportsPreviewReportResponse, ReportsDownloadReportData, ReportsDownloadReportResponse, ReportsListReportHistoryResponse, ReportsListReportTemplatesResponse, ReportsCreateReportTemplateData, ReportsCreateReportTemplateResponse, ReportsRemoveReportTemplateData, ReportsRemoveReportTemplateResponse, ScheduledTasksRunDeadlineRemindersData, ScheduledTasksRunDeadlineRemindersResponse, ScheduledTasksRunApproachingDeadlinesOnlyData, ScheduledTasksRunApproachingDeadlinesOnlyResponse, ScheduledTasksRunPastDueOnlyData, ScheduledTasksRunPastDueOnlyResponse, ScheduledTasksRunPublishScheduledAssignmentsData, ScheduledTasksRunPublishScheduledAssignmentsResponse, StudentsGetStudentAssignmentsData, StudentsGetStudentAssignmentsResponse, StudentsGetStudentProgressData, StudentsGetStudentProgressResponse, StudentsGetStudentAnalyticsData, StudentsGetStudentAnalyticsResponse, StudentsGetMyBadgesResponse, StudentsGetStudentBadgesData, StudentsGetStudentBadgesResponse, StudentsGetStudentsData, StudentsGetStudentsResponse, StudentsGetUnassignedStudentsResponse, StudentsGetStudentCalendarAssignmentsData, StudentsGetStudentCalendarAssignmentsResponse, StudentsGetImportTemplateResponse, StudentsValidateImportFileData, StudentsValidateImportFileResponse, StudentsExecuteImportData, StudentsExecuteImportResponse, StudentsDownloadCredentialsData, StudentsDownloadCredentialsResponse, SupervisorsListSupervisorsData, SupervisorsListSupervisorsResponse, SupervisorsListSupervisorsPaginatedData, SupervisorsListSupervisorsPaginatedResponse, SupervisorsCreateSupervisorData, SupervisorsCreateSupervisorResponse, SupervisorsGetSupervisorData, SupervisorsGetSupervisorResponse, SupervisorsUpdateSupervisorData, SupervisorsUpdateSupervisorResponse, SupervisorsDeleteSupervisorData, SupervisorsDeleteSupervisorResponse, SupervisorsResetSupervisorPasswordData, SupervisorsResetSupervisorPasswordResponse, TeacherMaterialsUploadMaterialData, TeacherMaterialsUploadMaterialResponse, TeacherMaterialsCreateTextNoteData, TeacherMaterialsCreateTextNoteResponse, TeacherMaterialsUpdateTextNoteData, TeacherMaterialsUpdateTextNoteResponse, TeacherMaterialsCreateUrlLinkData, TeacherMaterialsCreateUrlLinkResponse, TeacherMaterialsListMaterialsData, TeacherMaterialsListMaterialsResponse, TeacherMaterialsGetQuotaResponse, TeacherMaterialsGetMaterialData, TeacherMaterialsGetMaterialResponse, TeacherMaterialsUpdateMaterialData, TeacherMaterialsUpdateMaterialResponse, TeacherMaterialsDeleteMaterialData, TeacherMaterialsDeleteMaterialResponse, TeacherMaterialsGetPresignedUrlData, TeacherMaterialsGetPresignedUrlResponse, TeacherMaterialsDownloadMaterialData, TeacherMaterialsDownloadMaterialResponse, TeacherMaterialsStreamMaterialData, TeacherMaterialsStreamMaterialResponse, TeacherMaterialsUploadPdfForAiData, TeacherMaterialsUploadPdfForAiResponse, TeacherMaterialsCreateTextMaterialForAiData, TeacherMaterialsCreateTextMaterialForAiResponse, TeacherMaterialsListProcessableMaterialsResponse, TeacherMaterialsGetMaterialForAiData, TeacherMaterialsGetMaterialForAiResponse, TeacherMaterialsListGeneratedContentData, TeacherMaterialsListGeneratedContentResponse, TeacherMaterialsGetGeneratedContentData, TeacherMaterialsGetGeneratedContentResponse, TeacherMaterialsDeleteGeneratedContentData, TeacherMaterialsDeleteGeneratedContentResponse, TeachersListMyStudentsResponse, TeachersCreateStudentData, TeachersCreateStudentResponse, TeachersBulkImportStudentsData, TeachersBulkImportStudentsResponse, TeachersUpdateStudentData, TeachersUpdateStudentResponse, TeachersDeleteStudentData, TeachersDeleteStudentResponse, TeachersBulkDeleteStudentsData, TeachersBulkDeleteStudentsResponse, TeachersListMyClassesResponse, TeachersCreateClassData, TeachersCreateClassResponse, TeachersGetClassDetailsData, TeachersGetClassDetailsResponse, TeachersUpdateClassData, TeachersUpdateClassResponse, TeachersDeleteClassData, TeachersDeleteClassResponse, TeachersAddStudentsToClassData, TeachersAddStudentsToClassResponse, TeachersGetClassStudentsData, TeachersGetClassStudentsResponse, TeachersRemoveStudentFromClassData, TeachersRemoveStudentFromClassResponse, TeachersGetStudentsForClassesData, TeachersGetStudentsForClassesResponse, TeachersGetMyInsightsResponse, TeachersGetInsightDetailsData, TeachersGetInsightDetailsResponse, TeachersDismissInsightEndpointData, TeachersDismissInsightEndpointResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersChangeInitialPasswordData, UsersChangeInitialPasswordResponse, UsersCompleteTourResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, VocabularyExplorerGetBooksWithVocabularyResponse, VocabularyExplorerGetVocabularyData, VocabularyExplorerGetVocabularyResponse, VocabularyExplorerGetAudioUrlData, VocabularyExplorerGetAudioUrlResponse, WebhooksReceiveDreamStorageWebhookResponse, WebhooksTestDreamStorageWebhookData, WebhooksTestDreamStorageWebhookResponse } from './types.gen';
 
 export class AdminService {
     /**
@@ -78,7 +78,22 @@ export class AdminService {
             }
         });
     }
-    
+
+    public static listSchoolsPaginated(data: AdminListSchoolsPaginatedData = {}): CancelablePromise<AdminListSchoolsPaginatedResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/schools/paginated',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                search: data.search
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
     /**
      * Update a publisher (deprecated)
      * Publisher updates are disabled. Publishers are managed in Dream Central Storage.
@@ -255,7 +270,22 @@ export class AdminService {
             }
         });
     }
-    
+
+    public static listTeachersPaginated(data: AdminListTeachersPaginatedData = {}): CancelablePromise<AdminListTeachersPaginatedResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/teachers/paginated',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                search: data.search
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
     /**
      * Update a teacher
      * Update a teacher by ID. Admin only.
@@ -336,7 +366,8 @@ export class AdminService {
             url: '/api/v1/admin/students',
             query: {
                 skip: data.skip,
-                limit: data.limit
+                limit: data.limit,
+                search: data.search
             },
             errors: {
                 422: 'Validation Error'
@@ -746,7 +777,22 @@ export class AdminService {
             }
         });
     }
-    
+
+    public static listPublisherAccountsPaginated(data: AdminListPublisherAccountsPaginatedData = {}): CancelablePromise<AdminListPublisherAccountsPaginatedResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/publisher-accounts/paginated',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                search: data.search
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
     /**
      * Get publisher user account
      * Returns a single publisher user account by ID.
@@ -2038,6 +2084,17 @@ export class AssignmentsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/assignments/'
+        }).then((data: any) => Array.isArray(data) ? data : data.items ?? []);
+    }
+
+    public static listAssignmentsPaginated(data: { limit?: number; offset?: number } = {}): CancelablePromise<{ items: Array<any>; total: number; limit: number; offset: number; has_more: boolean }> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assignments/',
+            query: {
+                limit: data.limit,
+                offset: data.offset
+            }
         });
     }
     
@@ -4015,6 +4072,27 @@ export class PublishersService {
     }
     
     /**
+     * Delete My School
+     * Delete a school belonging to the current publisher.
+     * @param data The data for the request.
+     * @param data.schoolId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteMySchool(data: { schoolId: string }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/publishers/me/schools/{school_id}',
+            path: {
+                school_id: data.schoolId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
      * List My Teachers
      * List teachers in publisher's schools with aggregated counts.
      * @returns TeacherWithCounts Successful Response
@@ -4057,6 +4135,31 @@ export class PublishersService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/publishers/me/books'
+        });
+    }
+
+    /**
+     * List My Students
+     * List students enrolled in classes at publisher's schools.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.search
+     * @returns PublisherStudentListResponse Successful Response
+     * @throws ApiError
+     */
+    public static listMyStudents(data: PublishersListMyStudentsData = {}): CancelablePromise<PublishersListMyStudentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/publishers/me/students',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                search: data.search
+            },
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
 }
@@ -4324,7 +4427,7 @@ export class StudentsService {
             errors: {
                 422: 'Validation Error'
             }
-        });
+        }).then((data: any) => Array.isArray(data) ? data : data.items ?? []);
     }
     
     /**
@@ -4663,7 +4766,22 @@ export class SupervisorsService {
             }
         });
     }
-    
+
+    public static listSupervisorsPaginated(data: SupervisorsListSupervisorsPaginatedData = {}): CancelablePromise<SupervisorsListSupervisorsPaginatedResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/supervisors/paginated',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                search: data.search
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
     /**
      * Create new supervisor
      * Creates a new supervisor user. Admin only.
@@ -5216,6 +5334,17 @@ export class TeachersService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/teachers/me/students'
+        }).then((data: any) => Array.isArray(data) ? data : data.items ?? []);
+    }
+
+    public static listMyStudentsPaginated(data: { limit?: number; offset?: number } = {}): CancelablePromise<{ items: Array<StudentPublic>; total: number; limit: number; offset: number; has_more: boolean }> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/teachers/me/students',
+            query: {
+                limit: data.limit,
+                offset: data.offset
+            }
         });
     }
     

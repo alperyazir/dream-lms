@@ -63,6 +63,7 @@ function getContextInfo(question: MixModeQuestion): {
   text: string | null
   label: string
   audioUrl: string | null
+  audioData: { audio_base64?: string } | null
   passageAudioUrl: string | null
   wordTimestamps: any[] | null
 } {
@@ -74,6 +75,7 @@ function getContextInfo(question: MixModeQuestion): {
         text: d.passage || null,
         label: "Reading Passage",
         audioUrl: d.audio_url || null,
+        audioData: d.audio_data || null,
         passageAudioUrl: d.passage_audio_url || null,
         wordTimestamps: d.word_timestamps || null,
       }
@@ -83,6 +85,7 @@ function getContextInfo(question: MixModeQuestion): {
         text: d.context || d.passage || null,
         label: skill_slug === "vocabulary" ? "Vocabulary" : "Question",
         audioUrl: d.audio_url || null,
+        audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
       }
@@ -91,6 +94,7 @@ function getContextInfo(question: MixModeQuestion): {
         text: d.context || null,
         label: skill_slug === "listening" ? "Listening" : skill_slug === "grammar" ? "Grammar" : "Writing",
         audioUrl: d.audio_url || null,
+        audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
       }
@@ -99,6 +103,7 @@ function getContextInfo(question: MixModeQuestion): {
         text: d.definition || null,
         label: "Definition",
         audioUrl: d.audio_url || null,
+        audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
       }
@@ -107,6 +112,7 @@ function getContextInfo(question: MixModeQuestion): {
         text: d.context || null,
         label: "Sentence Builder",
         audioUrl: d.audio_url || null,
+        audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
       }
@@ -115,6 +121,7 @@ function getContextInfo(question: MixModeQuestion): {
         text: d.context || null,
         label: "Vocabulary Matching",
         audioUrl: d.audio_url || null,
+        audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
       }
@@ -123,6 +130,7 @@ function getContextInfo(question: MixModeQuestion): {
         text: d.context || null,
         label: "Sentence Corrector",
         audioUrl: d.audio_url || null,
+        audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
       }
@@ -131,6 +139,7 @@ function getContextInfo(question: MixModeQuestion): {
         text: d.context || d.instructions || null,
         label: "Writing",
         audioUrl: null,
+        audioData: null,
         passageAudioUrl: null,
         wordTimestamps: null,
       }
@@ -139,11 +148,12 @@ function getContextInfo(question: MixModeQuestion): {
         text: d.context || d.instructions || null,
         label: "Speaking",
         audioUrl: null,
+        audioData: null,
         passageAudioUrl: null,
         wordTimestamps: null,
       }
     default:
-      return { text: null, label: "Activity", audioUrl: null, passageAudioUrl: null, wordTimestamps: null }
+      return { text: null, label: "Activity", audioUrl: null, audioData: null, passageAudioUrl: null, wordTimestamps: null }
   }
 }
 
@@ -443,6 +453,7 @@ function buildSyntheticActivity(
                   display_sentence: data.display_sentence || data.sentence || "",
                   word_bank: data.word_bank || [],
                   audio_url: audioUrl,
+                  audio_data: data.audio_data,
                   audio_status: audioUrl ? "ready" : "pending",
                   difficulty: data.difficulty,
                 },
@@ -523,6 +534,7 @@ function buildSyntheticActivity(
                 letter_count: data.letter_count || word.length || letters.length,
                 definition: data.definition || "",
                 audio_url: null,
+                audio_data: data.audio_data,
                 audio_status: "pending",
               },
             ],
@@ -549,6 +561,7 @@ function buildSyntheticActivity(
                 word_count: data.word_count || words.length,
                 correct_sentence: data.correct_sentence || "",
                 audio_url: sbAudioUrl,
+                audio_data: data.audio_data,
                 audio_status: sbAudioUrl ? "ready" : "pending",
               },
             ],
@@ -572,6 +585,7 @@ function buildSyntheticActivity(
                 word: data.word || "",
                 definition: data.definition || "",
                 audio_url: data.audio_url || ttsUrl(data.word || ""),
+                audio_data: data.audio_data,
               },
             ],
             pair_count: 1,

@@ -334,7 +334,7 @@ export function StepPreviewAIContent({ content, bookId }: StepPreviewAIContentPr
               <div className="flex-1 min-w-0">
                 {item.audio_url && (
                   <div className="mb-3">
-                    <InlineAudioPlayer audioUrl={item.audio_url} fallbackUrl={item.audio_url_fallback} fallbackText={item.audio_text} />
+                    <InlineAudioPlayer audioUrl={item.audio_url} audioBase64={item.audio_data?.audio_base64} fallbackUrl={item.audio_url_fallback} fallbackText={item.audio_text} />
                   </div>
                 )}
                 {!item.audio_url && item.audio_text && (
@@ -390,7 +390,7 @@ export function StepPreviewAIContent({ content, bookId }: StepPreviewAIContentPr
               <div className="flex-1 min-w-0">
                 {item.audio_url && (
                   <div className="mb-3">
-                    <InlineAudioPlayer audioUrl={item.audio_url} fallbackUrl={item.audio_url_fallback} fallbackText={item.full_sentence || item.audio_text} />
+                    <InlineAudioPlayer audioUrl={item.audio_url} audioBase64={item.audio_data?.audio_base64} fallbackUrl={item.audio_url_fallback} fallbackText={item.full_sentence || item.audio_text} />
                   </div>
                 )}
                 {!item.audio_url && (
@@ -439,7 +439,7 @@ export function StepPreviewAIContent({ content, bookId }: StepPreviewAIContentPr
               <div className="flex-1 min-w-0">
                 {item.audio_url && (
                   <div className="mb-3">
-                    <InlineAudioPlayer audioUrl={item.audio_url} fallbackUrl={item.audio_url_fallback} fallbackText={item.correct_sentence} />
+                    <InlineAudioPlayer audioUrl={item.audio_url} audioBase64={item.audio_data?.audio_base64} fallbackUrl={item.audio_url_fallback} fallbackText={item.correct_sentence} />
                   </div>
                 )}
                 {!item.audio_url && (
@@ -485,7 +485,7 @@ export function StepPreviewAIContent({ content, bookId }: StepPreviewAIContentPr
               <div className="flex-1 min-w-0">
                 {item.audio_url && (
                   <div className="mb-3">
-                    <InlineAudioPlayer audioUrl={item.audio_url} fallbackUrl={item.audio_url_fallback} fallbackText={item.correct_word} />
+                    <InlineAudioPlayer audioUrl={item.audio_url} audioBase64={item.audio_data?.audio_base64} fallbackUrl={item.audio_url_fallback} fallbackText={item.correct_word} />
                   </div>
                 )}
                 {!item.audio_url && (
@@ -894,9 +894,11 @@ export function StepPreviewAIContent({ content, bookId }: StepPreviewAIContentPr
  * Compact inline audio player for listening activity previews.
  * Plays audio from a URL with play/pause/replay controls.
  */
-function InlineAudioPlayer({ audioUrl, fallbackUrl, fallbackText }: { audioUrl: string; fallbackUrl?: string; fallbackText?: string }) {
+function InlineAudioPlayer({ audioUrl, audioBase64, fallbackUrl, fallbackText }: { audioUrl: string; audioBase64?: string; fallbackUrl?: string; fallbackText?: string }) {
   const audioRef = useRef<HTMLAudioElement>(null)
-  const [activeSrc, setActiveSrc] = useState(audioUrl)
+  // Prefer inline base64 audio when available (DCS content may have stale audio_url)
+  const primarySrc = audioBase64 ? `data:audio/mpeg;base64,${audioBase64}` : audioUrl
+  const [activeSrc, setActiveSrc] = useState(primarySrc)
   const [triedFallback, setTriedFallback] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLoading, setIsLoading] = useState(false)

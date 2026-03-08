@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router"
 import { ClipboardCheck, Eye, Pencil, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import {
   Table,
@@ -21,6 +22,9 @@ interface AssignmentTableViewProps {
   onDelete: (assignment: AssignmentListItem) => void
   sortBy?: string
   onSort?: (column: string) => void
+  selectedIds?: Set<string>
+  onSelect?: (id: string, checked: boolean) => void
+  onSelectAll?: (checked: boolean) => void
 }
 
 export function AssignmentTableView({
@@ -30,6 +34,9 @@ export function AssignmentTableView({
   onDelete,
   sortBy,
   onSort,
+  selectedIds,
+  onSelect,
+  onSelectAll,
 }: AssignmentTableViewProps) {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "-"
@@ -46,6 +53,18 @@ export function AssignmentTableView({
       <Table>
         <TableHeader>
           <TableRow>
+            {selectedIds && (
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={
+                    assignments.length > 0 &&
+                    selectedIds.size === assignments.length
+                  }
+                  onCheckedChange={onSelectAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
+            )}
             <TableHead>Title</TableHead>
             <TableHead>Recipients</TableHead>
             <TableHead
@@ -63,7 +82,7 @@ export function AssignmentTableView({
           {assignments.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={6}
+                colSpan={selectedIds ? 7 : 6}
                 className="text-center py-8 text-muted-foreground"
               >
                 No assignments found
@@ -79,7 +98,25 @@ export function AssignmentTableView({
                   : 0
 
               return (
-                <TableRow key={assignment.id}>
+                <TableRow
+                  key={assignment.id}
+                  className={
+                    selectedIds?.has(assignment.id)
+                      ? "bg-teal-50 dark:bg-teal-900/20"
+                      : ""
+                  }
+                >
+                  {selectedIds && (
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(assignment.id)}
+                        onCheckedChange={(checked) =>
+                          onSelect?.(assignment.id, checked as boolean)
+                        }
+                        aria-label={`Select ${assignment.name}`}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium max-w-xs">
                     <div className="line-clamp-2">{assignment.name}</div>
                   </TableCell>

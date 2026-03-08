@@ -12,13 +12,39 @@ from app.models import (
     UserRole,
 )
 
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+# Pool settings from environment/config — tune per deployment via .env:
+#   DB_POOL_SIZE, DB_MAX_OVERFLOW, DB_POOL_TIMEOUT, DB_POOL_RECYCLE,
+#   DB_STATEMENT_TIMEOUT, DB_IDLE_TX_TIMEOUT
+
+engine = create_engine(
+    str(settings.SQLALCHEMY_DATABASE_URI),
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
+    pool_timeout=settings.DB_POOL_TIMEOUT,
+    pool_recycle=settings.DB_POOL_RECYCLE,
+    pool_pre_ping=True,
+    connect_args={
+        "connect_timeout": 5,
+        "prepare_threshold": 0,  # Disable prepared statement caching (required for PgBouncer)
+    },
+)
 
 # Async engine for async operations (e.g., BookService)
+# The URI scheme is postgresql+psycopg://, which uses psycopg3 in async mode.
+# psycopg3 uses "options" string (not asyncpg's "server_settings" dict).
 async_engine: AsyncEngine = create_async_engine(
-    str(settings.SQLALCHEMY_DATABASE_URI).replace("postgresql://", "postgresql+asyncpg://"),
+    str(settings.SQLALCHEMY_DATABASE_URI),
     echo=False,
     future=True,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
+    pool_timeout=settings.DB_POOL_TIMEOUT,
+    pool_recycle=settings.DB_POOL_RECYCLE,
+    pool_pre_ping=True,
+    connect_args={
+        "connect_timeout": 5,
+        "prepare_threshold": 0,  # Disable prepared statement caching (required for PgBouncer)
+    },
 )
 
 

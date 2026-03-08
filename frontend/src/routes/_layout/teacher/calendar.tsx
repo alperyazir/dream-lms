@@ -472,35 +472,9 @@ function TeacherCalendarPage() {
       {/* Header */}
       <PageHeader
         icon={FiCalendar}
-        title="Assignment Calendar"
+        title="Calendar"
         description="View and manage your assignment schedule"
-      >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="bg-teal-600 hover:bg-teal-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Assignment
-              <ChevronDown className="w-4 h-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() =>
-                { setIsWizardOpen(true) }
-              }
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              Book Assignment
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => navigate({ to: "/dreamai/generator" })}
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              AI Generated Assignment
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </PageHeader>
+      />
 
       {/* Controls */}
       <Card>

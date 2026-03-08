@@ -1,8 +1,27 @@
-import React, { useRef } from "react"
+import React, { useEffect, useRef } from "react"
+import { Link } from "@tanstack/react-router"
+import {
+  CheckCircle,
+  FileText,
+  MessageSquare,
+  Bot,
+} from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { Message } from "@/types/message"
+import type { Message, MessageCategory } from "@/types/message"
+
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  assignment_created: FileText,
+  student_completed: CheckCircle,
+  feedback_received: MessageSquare,
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  assignment_created: "text-blue-600",
+  student_completed: "text-green-600",
+  feedback_received: "text-emerald-600",
+}
 
 export interface MessageThreadProps {
   messages: Message[]
@@ -16,6 +35,17 @@ export interface MessageThreadProps {
 export const MessageThread = React.memo(
   ({ messages, currentUserId }: MessageThreadProps) => {
     const messagesEndRef = useRef<HTMLDivElement>(null)
+
+    // Scroll to latest message when messages load or change
+    useEffect(() => {
+      const el = messagesEndRef.current
+      if (!el) return
+      // Scroll the nearest scrollable parent instead of the whole page
+      const scrollParent = el.closest("[class*='overflow-y']") as HTMLElement
+      if (scrollParent) {
+        scrollParent.scrollTop = scrollParent.scrollHeight
+      }
+    }, [messages])
 
     // Format timestamp for display
     const formatTimestamp = (sentAt: string): string => {
@@ -62,6 +92,70 @@ export const MessageThread = React.memo(
               const isCurrentUser = message.sender_id === currentUserId
               const senderInitials = getInitials(message.sender_name)
 
+              // System message rendering
+              if (message.is_system) {
+                const CategoryIcon =
+                  CATEGORY_ICONS[message.message_category || ""] || Bot
+                const iconColor =
+                  CATEGORY_COLORS[message.message_category || ""] ||
+                  "text-gray-500"
+
+                const assignmentLink =
+                  message.context_type === "assignment" && message.context_id
+                    ? `/student/assignments/${message.context_id}`
+                    : null
+
+                return (
+                  <div key={message.id} className="flex gap-3">
+                    {/* System Icon */}
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted">
+                      <CategoryIcon className={cn("h-5 w-5", iconColor)} />
+                    </div>
+
+                    {/* System Message Content */}
+                    <div className="flex-1 max-w-[85%]">
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1.5 py-0 font-medium text-muted-foreground"
+                        >
+                          System
+                        </Badge>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatTimestamp(message.sent_at)}
+                        </span>
+                        {!message.is_read && (
+                          <Badge className="bg-blue-600 text-white text-xs px-2 py-0.5">
+                            New
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="rounded-lg px-4 py-3 bg-muted/50 border border-border/50">
+                        {message.subject && (
+                          <div className="font-semibold text-sm mb-1">
+                            {assignmentLink ? (
+                              <Link
+                                to={assignmentLink}
+                                className="hover:underline text-primary"
+                              >
+                                {message.subject}
+                              </Link>
+                            ) : (
+                              message.subject
+                            )}
+                          </div>
+                        )}
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                          {message.body}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
+              // Regular message rendering
               return (
                 <div
                   key={message.id}

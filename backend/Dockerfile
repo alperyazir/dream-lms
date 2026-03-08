@@ -41,4 +41,12 @@ COPY ./tests /app/tests
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync
 
-CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
+CMD ["gunicorn", "app.main:app", \
+     "-w", "4", \
+     "-k", "uvicorn.workers.UvicornWorker", \
+     "--bind", "0.0.0.0:8000", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "50", \
+     "--timeout", "120", \
+     "--graceful-timeout", "30", \
+     "--access-logfile", "-"]

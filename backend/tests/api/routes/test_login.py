@@ -81,6 +81,7 @@ def test_reset_password(client: TestClient, db: Session) -> None:
         email=email,
         full_name="Test User",
         password=password,
+        username=email.split("@")[0] + random_lower_string()[:8],
         is_active=True,
         is_superuser=False,
     )

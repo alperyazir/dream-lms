@@ -27,10 +27,6 @@ vi.mock("@/components/UserSettings/ChangePassword", () => ({
   default: () => <div data-testid="password-component">Password</div>,
 }))
 
-vi.mock("@/components/UserSettings/NotificationSettings", () => ({
-  default: () => <div data-testid="notifications-component">Notifications</div>,
-}))
-
 vi.mock("@/components/UserSettings/UserInformation", () => ({
   default: () => <div data-testid="user-info-component">UserInfo</div>,
 }))
@@ -70,7 +66,7 @@ const tabsConfig = [
   { value: "my-profile", title: "My profile" },
   { value: "avatar", title: "Avatar" },
   { value: "password", title: "Password" },
-  { value: "notifications", title: "Notifications" },
+  { value: "sounds", title: "Sounds" },
   { value: "appearance", title: "Appearance" },
 ]
 
@@ -124,7 +120,7 @@ describe("Settings Page", () => {
       // Other tabs should still be present
       expect(screen.getByTestId("tab-my-profile")).toBeInTheDocument()
       expect(screen.getByTestId("tab-avatar")).toBeInTheDocument()
-      expect(screen.getByTestId("tab-notifications")).toBeInTheDocument()
+      expect(screen.getByTestId("tab-sounds")).toBeInTheDocument()
       expect(screen.getByTestId("tab-appearance")).toBeInTheDocument()
     })
 

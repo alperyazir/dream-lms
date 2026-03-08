@@ -12,11 +12,8 @@ from app.models import (
     Assignment,
     AssignmentStatus,
     AssignmentStudent,
-    Notification,
-    NotificationType,
     Student,
 )
-from app.services import notification_service
 
 logger = logging.getLogger(__name__)
 
@@ -33,58 +30,10 @@ class DeadlineCheckResult:
 async def _has_deadline_notification_today(
     db: AsyncSession,
     user_id: uuid.UUID,
-    notification_type: NotificationType,
+    notification_type: str,
 ) -> bool:
-    """
-    Check if user already received a deadline-related notification today.
-
-    Args:
-        db: Database session
-        user_id: UUID of the user to check
-        notification_type: Type of notification to check for
-
-    Returns:
-        True if user already received this notification type today
-    """
-    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
-
-    query = select(Notification).where(
-        Notification.user_id == user_id,
-        Notification.type == notification_type,
-        Notification.created_at >= today_start,
-    )
-
-    result = await db.execute(query)
-    return result.scalar_one_or_none() is not None
-
-
-async def _has_past_due_notification_for_assignment(
-    db: AsyncSession,
-    user_id: uuid.UUID,
-    assignment_id: uuid.UUID,
-) -> bool:
-    """
-    Check if user already received a past_due notification for this assignment.
-
-    Args:
-        db: Database session
-        user_id: UUID of the user to check
-        assignment_id: UUID of the assignment
-
-    Returns:
-        True if user already received past_due notification for this assignment
-    """
-    # Check if any past_due notification exists with the assignment link
-    link_pattern = f"/student/assignments/{assignment_id}"
-
-    query = select(Notification).where(
-        Notification.user_id == user_id,
-        Notification.type == NotificationType.past_due,
-        Notification.link == link_pattern,
-    )
-
-    result = await db.execute(query)
-    return result.scalar_one_or_none() is not None
+    """Deadline reminders are now visual badges only. Always returns False."""
+    return False
 
 
 async def check_approaching_deadlines(db: AsyncSession) -> DeadlineCheckResult:
@@ -167,7 +116,7 @@ async def check_approaching_deadlines(db: AsyncSession) -> DeadlineCheckResult:
     for user_id, assignments_with_hours in students_to_notify.items():
         # Check if student already received deadline notification today
         if await _has_deadline_notification_today(
-            db, user_id, NotificationType.deadline_approaching
+            db, user_id, "deadline_approaching"
         ):
             logger.debug(f"Student {user_id} already notified today, skipping")
             continue
@@ -191,20 +140,10 @@ async def check_approaching_deadlines(db: AsyncSession) -> DeadlineCheckResult:
             # Link to first assignment
             link = f"/student/assignments/{assignments_with_hours[0][0].id}"
 
-        try:
-            await notification_service.create_notification(
-                db=db,
-                user_id=user_id,
-                notification_type=NotificationType.deadline_approaching,
-                title=title,
-                message=message,
-                link=link,
-            )
-            notifications_sent += 1
-            students_notified += 1
-            logger.info(f"Sent deadline reminder to user {user_id}")
-        except Exception as e:
-            logger.error(f"Failed to send deadline notification to {user_id}: {e}")
+        # Deadline reminders are now visual badges only — no messages sent
+        notifications_sent += 1
+        students_notified += 1
+        logger.debug(f"Deadline approaching for user {user_id} (visual badge only)")
 
     logger.info(
         f"Deadline check complete: {notifications_sent} notifications sent "
@@ -281,38 +220,12 @@ async def check_past_due_assignments(db: AsyncSession) -> DeadlineCheckResult:
             if not student or not student.user_id:
                 continue
 
-            # Check if already notified for this specific assignment
-            if await _has_past_due_notification_for_assignment(
-                db, student.user_id, assignment.id
-            ):
-                logger.debug(
-                    f"Student {student.user_id} already notified for past-due "
-                    f"assignment {assignment.id}, skipping"
-                )
-                continue
-
-            # Format due date nicely
-            due_date_str = assignment.due_date.strftime("%b %d, %Y at %I:%M %p")
-
-            try:
-                await notification_service.create_notification(
-                    db=db,
-                    user_id=student.user_id,
-                    notification_type=NotificationType.past_due,
-                    title=f"Assignment past due: {assignment.name}",
-                    message=f"This assignment was due on {due_date_str}",
-                    link=f"/student/assignments/{assignment.id}",
-                )
-                notifications_sent += 1
-                students_notified_set.add(student.user_id)
-                logger.info(
-                    f"Sent past-due notification to user {student.user_id} "
-                    f"for assignment {assignment.id}"
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to send past-due notification to {student.user_id}: {e}"
-                )
+            # Past-due reminders are now visual badges only — no messages sent
+            notifications_sent += 1
+            students_notified_set.add(student.user_id)
+            logger.debug(
+                f"Past-due for user {student.user_id}, assignment {assignment.id} (visual badge only)"
+            )
 
     logger.info(
         f"Past-due check complete: {notifications_sent} notifications sent "

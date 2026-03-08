@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Edit,
   KeyRound,
@@ -10,8 +12,9 @@ import {
   Search,
   Shield,
   Trash2,
+  X,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   type SupervisorCreateAPI,
   type SupervisorPublic,
@@ -24,6 +27,7 @@ import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -60,7 +64,12 @@ function AdminSupervisors() {
   const isAdmin = currentUser?.role === "admin"
 
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const PAGE_SIZE = 20
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -96,15 +105,34 @@ function AdminSupervisors() {
     is_active: true,
   })
 
-  // Fetch supervisors from API
+  // Debounce search for server-side filtering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setCurrentPage(1)
+      setSelectedIds(new Set())
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Fetch supervisors from API (server-side pagination)
+  const skip = (currentPage - 1) * PAGE_SIZE
   const {
-    data: supervisors = [],
+    data: supervisorsResponse,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["supervisors"],
-    queryFn: () => SupervisorsService.listSupervisors(),
+    queryKey: ["supervisors", skip, PAGE_SIZE, debouncedSearch],
+    queryFn: () =>
+      SupervisorsService.listSupervisorsPaginated({
+        skip,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+      }),
   })
+  const supervisors = supervisorsResponse?.items ?? []
+  const totalSupervisors = supervisorsResponse?.total ?? 0
+  const totalPages = Math.ceil(totalSupervisors / PAGE_SIZE)
 
   // Create supervisor mutation (Admin only)
   const createSupervisorMutation = useMutation({
@@ -201,6 +229,54 @@ function AdminSupervisors() {
     },
   })
 
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) =>
+      Promise.all(
+        ids.map((id) =>
+          SupervisorsService.deleteSupervisor({ supervisorId: id }),
+        ),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supervisors"] })
+      setSelectedIds(new Set())
+      setIsBulkDeleteDialogOpen(false)
+      showSuccessToast(`Successfully deleted ${selectedIds.size} supervisor(s)`)
+    },
+    onError: () => {
+      showErrorToast("Failed to delete some supervisors. Please try again.")
+    },
+  })
+
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(supervisors.map((s) => s.id)))
+    } else {
+      setSelectedIds(new Set())
+    }
+  }
+
+  const handleSelect = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds)
+    if (checked) {
+      newSelected.add(id)
+    } else {
+      newSelected.delete(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size > 0) {
+      setIsBulkDeleteDialogOpen(true)
+    }
+  }
+
+  const confirmBulkDelete = () => {
+    bulkDeleteMutation.mutate(Array.from(selectedIds))
+  }
+
   const handleAddSupervisor = () => {
     if (!newSupervisor.username || !newSupervisor.full_name) {
       showErrorToast(
@@ -282,13 +358,6 @@ function AdminSupervisors() {
     setPasswordCopied(false)
   }
 
-  const filteredSupervisors = supervisors.filter(
-    (supervisor) =>
-      supervisor.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supervisor.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supervisor.email?.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
-
   if (error) {
     return (
       <div className="max-w-full p-6">
@@ -337,12 +406,41 @@ function AdminSupervisors() {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {isAdmin && selectedIds.size > 0 && (
+        <div className="flex items-center justify-between p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+              {selectedIds.size} supervisor(s) selected
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-teal-600 hover:text-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleteMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Selected
+          </Button>
+        </div>
+      )}
+
       {/* Supervisors Table */}
       <Card className="shadow-neuro border-orange-100 dark:border-orange-900">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <Shield className="w-5 h-5 text-orange-500" />
-            All Supervisors ({filteredSupervisors.length})
+            All Supervisors ({totalSupervisors})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -350,7 +448,7 @@ function AdminSupervisors() {
             <div className="text-center py-8 text-muted-foreground">
               Loading supervisors...
             </div>
-          ) : filteredSupervisors.length === 0 ? (
+          ) : totalSupervisors === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {searchQuery
                 ? "No supervisors found matching your search"
@@ -360,6 +458,20 @@ function AdminSupervisors() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {isAdmin && (
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={
+                          supervisors.length > 0 &&
+                          supervisors.every((s) =>
+                            selectedIds.has(s.id),
+                          )
+                        }
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Name</TableHead>
                   <TableHead>Username</TableHead>
                   <TableHead>Email</TableHead>
@@ -371,8 +483,26 @@ function AdminSupervisors() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSupervisors.map((supervisor) => (
-                  <TableRow key={supervisor.id}>
+                {supervisors.map((supervisor) => (
+                  <TableRow
+                    key={supervisor.id}
+                    className={
+                      selectedIds.has(supervisor.id)
+                        ? "bg-teal-50 dark:bg-teal-900/20"
+                        : ""
+                    }
+                  >
+                    {isAdmin && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(supervisor.id)}
+                          onCheckedChange={(checked) =>
+                            handleSelect(supervisor.id, checked as boolean)
+                          }
+                          aria-label={`Select ${supervisor.full_name}`}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="font-medium">
                       {supervisor.full_name || "N/A"}
                     </TableCell>
@@ -463,6 +593,46 @@ function AdminSupervisors() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {skip + 1} to{" "}
+            {Math.min(skip + PAGE_SIZE, totalSupervisors)} of{" "}
+            {totalSupervisors}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p - 1)
+                setSelectedIds(new Set())
+              }}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p + 1)
+                setSelectedIds(new Set())
+              }}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Add Supervisor Dialog (Admin only) */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -681,6 +851,19 @@ function AdminSupervisors() {
         cancelText="Cancel"
         variant="warning"
         isLoading={resetPasswordMutation.isPending}
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={isBulkDeleteDialogOpen}
+        onOpenChange={setIsBulkDeleteDialogOpen}
+        onConfirm={confirmBulkDelete}
+        title="Delete Selected Supervisors"
+        description={`Are you sure you want to delete ${selectedIds.size} selected supervisor(s)? This action cannot be undone.`}
+        confirmText={`Delete ${selectedIds.size} Supervisor(s)`}
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={bulkDeleteMutation.isPending}
       />
 
       {/* Password Result Dialog */}

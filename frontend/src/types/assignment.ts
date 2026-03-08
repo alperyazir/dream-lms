@@ -622,6 +622,13 @@ export interface MultiActivityAnalyticsResponse {
  * Per-activity score item for student result view
  * Story 8.4: Multi-Activity Assignment Analytics
  */
+export interface ActivityReviewItem {
+  question: string
+  student_answer: string | null
+  correct_answer: string
+  is_correct: boolean
+}
+
 export interface ActivityScoreItem {
   activity_id: string
   activity_title: string | null
@@ -629,6 +636,9 @@ export interface ActivityScoreItem {
   score: number | null
   max_score: number
   status: AssignmentStudentActivityStatus
+  review_items?: ActivityReviewItem[] | null
+  config_json?: Record<string, any> | null
+  response_data?: Record<string, any> | null
 }
 
 /**
@@ -638,6 +648,7 @@ export interface ActivityScoreItem {
 export interface StudentAssignmentResultResponse {
   assignment_id: string
   assignment_name: string
+  book_id?: number | null
   total_score: number | null
   completed_at: string | null
   activity_scores: ActivityScoreItem[]

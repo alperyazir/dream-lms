@@ -12,13 +12,12 @@ from app.models import (
     Assignment,
     AssignmentStudent,
     Feedback,
-    NotificationType,
     Student,
     Teacher,
     User,
 )
 from app.schemas.feedback import FeedbackPublic, FeedbackStudentView
-from app.services.notification_service import create_notification
+from app.services.message_service import enqueue_system_message
 
 # HTML sanitization settings for XSS protection (same as message_service)
 ALLOWED_TAGS = ["p", "br", "strong", "em", "ul", "ol", "li", "b", "i"]
@@ -94,6 +93,7 @@ async def create_feedback(
     is_draft: bool = False,
     badges: list[str] | None = None,
     emoji_reaction: str | None = None,
+    arq_pool: object | None = None,
 ) -> Feedback:
     """
     Create new feedback for a student assignment.
@@ -133,7 +133,7 @@ async def create_feedback(
 
     # Send notification if not a draft
     if not is_draft:
-        await _send_feedback_notification(db, feedback, new_badges=badges or [])
+        await _send_feedback_notification(db, feedback, new_badges=badges or [], arq_pool=arq_pool)
 
     return feedback
 
@@ -146,6 +146,7 @@ async def update_feedback(
     is_draft: bool | None = None,
     badges: list[str] | None = None,
     emoji_reaction: str | None = None,
+    arq_pool: object | None = None,
 ) -> Feedback | None:
     """
     Update existing feedback.
@@ -204,7 +205,7 @@ async def update_feedback(
 
     # Send notification if changing from draft to published
     if was_draft and is_draft is False:
-        await _send_feedback_notification(db, feedback, new_badges=new_badges)
+        await _send_feedback_notification(db, feedback, new_badges=new_badges, arq_pool=arq_pool)
 
     return feedback
 
@@ -386,6 +387,7 @@ async def _send_feedback_notification(
     db: AsyncSession,
     feedback: Feedback,
     new_badges: list[str] | None = None,
+    arq_pool: object | None = None,
 ) -> None:
     """
     Send notification to student when feedback is published.
@@ -423,30 +425,40 @@ async def _send_feedback_notification(
     if not assignment:
         return
 
-    # Build notification message (AC: 11 - include badge names)
+    # Get teacher's user_id for the sender
+    teacher_query = select(Teacher).where(Teacher.id == feedback.teacher_id)
+    teacher_result = await db.execute(teacher_query)
+    teacher = teacher_result.scalar_one_or_none()
+
+    if not teacher or not teacher.user_id:
+        return
+
+    # Build message (AC: 11 - include badge names)
     if new_badges:
         badge_names = [BADGE_LABELS.get(b, b) for b in new_badges]
         if len(badge_names) == 1:
-            message = f"You earned '{badge_names[0]}' badge on {assignment.name}!"
+            body = f"You earned '{badge_names[0]}' badge on {assignment.name}!"
         else:
-            # Join with "and" for the last item
             formatted_badges = ", ".join(f"'{b}'" for b in badge_names[:-1])
             formatted_badges += f" and '{badge_names[-1]}'"
-            message = f"You earned {formatted_badges} badges on {assignment.name}!"
-        title = "Badge Earned!"
+            body = f"You earned {formatted_badges} badges on {assignment.name}!"
+        subject = "Badge Earned!"
     else:
-        message = f"You have received feedback on {assignment.name}"
-        title = "Feedback Received"
+        body = f"You have received feedback on {assignment.name}"
+        subject = "Feedback Received"
 
-    # Create notification
-    await create_notification(
-        db=db,
-        user_id=student.user_id,
-        notification_type=NotificationType.feedback_received,
-        title=title,
-        message=message,
-        link=f"/student/assignments/{assignment.id}",
-    )
+    # Enqueue system message via background worker
+    if arq_pool:
+        await enqueue_system_message(
+            arq_pool,
+            sender_id=teacher.user_id,
+            recipient_id=student.user_id,
+            subject=subject,
+            body=body,
+            context_type="feedback",
+            context_id=assignment.id,
+            message_category="feedback_received",
+        )
 
 
 async def get_student_badge_counts(
@@ -469,14 +481,20 @@ async def get_student_badge_counts(
 
     from app.core.feedback_constants import VALID_BADGE_SLUGS
 
-    # Get all assignment_student records for this student
-    as_query = select(AssignmentStudent.id).where(
-        AssignmentStudent.student_id == student_id
+    # Only fetch badges + created_at columns (not full Feedback objects)
+    feedback_query = (
+        select(Feedback.badges, Feedback.created_at)
+        .join(AssignmentStudent, Feedback.assignment_student_id == AssignmentStudent.id)
+        .where(
+            AssignmentStudent.student_id == student_id,
+            Feedback.is_draft == False,  # noqa: E712
+            Feedback.badges.isnot(None),  # skip rows with no badges
+        )
     )
-    as_result = await db.execute(as_query)
-    assignment_student_ids = [row[0] for row in as_result.all()]
+    feedback_result = await db.execute(feedback_query)
+    feedback_rows = feedback_result.all()
 
-    if not assignment_student_ids:
+    if not feedback_rows:
         # Return zero counts for all badge types
         return {
             "badge_counts": {slug: 0 for slug in VALID_BADGE_SLUGS},
@@ -485,26 +503,17 @@ async def get_student_badge_counts(
             "this_month_total": 0,
         }
 
-    # Get all published feedback for this student
-    feedback_query = select(Feedback).where(
-        Feedback.assignment_student_id.in_(assignment_student_ids),
-        Feedback.is_draft == False,  # noqa: E712
-    )
-    feedback_result = await db.execute(feedback_query)
-    feedback_records = feedback_result.scalars().all()
-
     # Count all badges
     all_badges: list[str] = []
     this_month_badges: list[str] = []
     now = datetime.now(UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    for fb in feedback_records:
-        if fb.badges:
-            all_badges.extend(fb.badges)
-            # Check if created this month
-            if fb.created_at and fb.created_at >= month_start:
-                this_month_badges.extend(fb.badges)
+    for badges, created_at in feedback_rows:
+        if badges:
+            all_badges.extend(badges)
+            if created_at and created_at >= month_start:
+                this_month_badges.extend(badges)
 
     # Count by badge type
     badge_counts = Counter(all_badges)

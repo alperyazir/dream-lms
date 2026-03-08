@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 from app.api.deps import AsyncSessionDep, require_role
+from app.services.redis_cache import cache_get, cache_set
 from app.models import (
     Activity,
     Teacher,
@@ -19,6 +20,7 @@ from app.models import (
 )
 from app.schemas.book import (
     ActivityCoords,
+    ActivityListResponse,
     ActivityMarker,
     ActivityResponse,
     AudioMarker,
@@ -81,22 +83,21 @@ async def get_book_cover(book_id: int) -> Any:
     """
     Get book cover image from DCS.
 
-    Fetches the cover image directly from the fixed location:
-    /storage/books/{publisher}/{book_name}/object?path=images/book_cover.png
+    Returns a redirect to a presigned MinIO URL for direct browser download.
+    Falls back to proxying the image if presigned URL generation fails.
 
     Args:
         book_id: DCS book ID
 
     Returns:
-        Image response with cover content
+        RedirectResponse to presigned URL, or proxied image as fallback
 
     Raises:
         HTTPException: 404 if cover not found
     """
-    from fastapi.responses import Response
+    from fastapi.responses import RedirectResponse, Response
 
     try:
-        # Get book service to find book details
         book_service = get_book_service()
         book = await book_service.get_book(book_id)
 
@@ -106,25 +107,31 @@ async def get_book_cover(book_id: int) -> Any:
                 detail="Book not found"
             )
 
-        # Get DCS client and fetch cover from fixed path
         client = await get_dream_storage_client()
 
-        # Book covers are always at: {book}/images/book_cover.png
+        # Try presigned URL first (avoids proxying bytes through LMS)
+        presigned_url = await client.get_presigned_url(
+            book.publisher_name, book.name, "images/book_cover.png", expires=86400
+        )
+        if presigned_url:
+            return RedirectResponse(
+                url=presigned_url,
+                status_code=302,
+                headers={"Cache-Control": "public, max-age=3600"},
+            )
+
+        # Fallback: proxy the image through LMS
         url = f"/storage/books/{book.publisher_name}/{book.name}/object"
         params = {"path": "images/book_cover.png"}
 
         try:
             response = await client._make_request("GET", url, params=params)
-
-            # Get content type from response
             content_type = response.headers.get("content-type", "image/png")
 
             return Response(
                 content=response.content,
                 media_type=content_type,
-                headers={
-                    "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
-                }
+                headers={"Cache-Control": "public, max-age=3600"},
             )
         except Exception as e:
             logger.error(f"Error fetching cover for book {book_id} from DCS: {e}")
@@ -230,6 +237,14 @@ async def list_books(
     - Publisher: Sees all books from DCS (needed for book assignment)
     - Teacher: Sees only assigned books (via BookAssignment)
     """
+    # Redis cache (120s TTL) — book catalog changes rarely
+    search_key = search or ""
+    type_key = activity_type or ""
+    cache_key = f"books:{current_user.role.value}:{current_user.id}:{skip}:{limit}:{search_key}:{type_key}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return BookListResponse(**cached)
+
     # Validate pagination parameters
     if skip < 0:
         raise HTTPException(
@@ -315,17 +330,19 @@ async def list_books(
         for book in books
     ]
 
-    return BookListResponse(
+    response = BookListResponse(
         items=response_items,
         total=total,
         skip=skip,
         limit=limit
     )
+    await cache_set(cache_key, response.model_dump(), ttl=120)
+    return response
 
 
 @router.get(
     "/{book_id}/activities",
-    response_model=list[ActivityResponse],
+    response_model=list[ActivityListResponse],
     summary="Get book activities",
     description="Returns all activities for a specific book (admin/supervisor/publisher see all, teacher must have access)."
 )
@@ -372,14 +389,13 @@ async def get_book_activities(
     )
     activities = result.scalars().all()
 
-    # Build response
+    # Build response (slim list without config_json)
     return [
-        ActivityResponse(
+        ActivityListResponse(
             id=activity.id,
             book_id=activity.dcs_book_id,
             activity_type=activity.activity_type,
             title=activity.title,
-            config_json=activity.config_json or {},
             order_index=activity.order_index,
             module_name=activity.module_name,
             page_number=activity.page_number

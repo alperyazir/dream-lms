@@ -57,6 +57,14 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
 
+    # Connection pool settings (tune per deployment)
+    DB_POOL_SIZE: int = 30              # Base connections per engine
+    DB_MAX_OVERFLOW: int = 20           # Extra connections under burst
+    DB_POOL_TIMEOUT: int = 10           # Seconds to wait for a connection
+    DB_POOL_RECYCLE: int = 300          # Recycle connections after N seconds
+    DB_STATEMENT_TIMEOUT: int = 30000   # Kill queries after N ms
+    DB_IDLE_TX_TIMEOUT: int = 30000     # Kill idle-in-transaction after N ms
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
@@ -114,6 +122,9 @@ class Settings(BaseSettings):
     DCS_CACHE_BOOK_TTL: int = 600  # 10 minutes (books change rarely)
     DCS_CACHE_LOGO_TTL: int = 3600  # 1 hour (logos rarely change)
     DCS_CACHE_WARMUP_ENABLED: bool = False  # Optional: pre-fetch data at startup
+
+    # Redis cache
+    REDIS_URL: str = "redis://localhost:6380/0"
 
     # AI Generation settings
     AI_MONTHLY_QUOTA: int = 100  # Monthly AI generation quota per teacher

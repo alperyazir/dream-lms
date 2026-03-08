@@ -1,7 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Edit, MapPin, Plus, School, Search, Trash2 } from "lucide-react"
-import { useMemo, useState } from "react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  Edit,
+  MapPin,
+  Plus,
+  School,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import {
   AdminService,
   type SchoolCreate,
@@ -13,6 +23,7 @@ import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -51,7 +62,12 @@ export const Route = createFileRoute("/_layout/admin/schools")({
 function AdminSchools() {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const PAGE_SIZE = 20
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -75,15 +91,34 @@ function AdminSchools() {
     dcs_publisher_id: 0,
   })
 
-  // Fetch schools from API
+  // Debounce search for server-side filtering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setCurrentPage(1)
+      setSelectedIds(new Set())
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Fetch schools from API (server-side pagination)
+  const skip = (currentPage - 1) * PAGE_SIZE
   const {
-    data: schools = [],
+    data: schoolsResponse,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["schools"],
-    queryFn: () => AdminService.listSchools(),
+    queryKey: ["schools", skip, PAGE_SIZE, debouncedSearch],
+    queryFn: () =>
+      AdminService.listSchoolsPaginated({
+        skip,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+      }),
   })
+  const schools = schoolsResponse?.items ?? []
+  const totalSchools = schoolsResponse?.total ?? 0
+  const totalPages = Math.ceil(totalSchools / PAGE_SIZE)
 
   // Fetch publishers for dropdown
   const { data: allPublishers = [] } = useQuery({
@@ -213,11 +248,49 @@ function AdminSchools() {
     }
   }
 
-  const filteredSchools = schools.filter(
-    (school) =>
-      school.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.address?.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) =>
+      Promise.all(ids.map((id) => AdminService.deleteSchool({ schoolId: id }))),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schools"] })
+      setSelectedIds(new Set())
+      setIsBulkDeleteDialogOpen(false)
+      showSuccessToast(`Successfully deleted ${selectedIds.size} school(s)`)
+    },
+    onError: () => {
+      showErrorToast("Failed to delete some schools. Please try again.")
+    },
+  })
+
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(schools.map((s) => s.id)))
+    } else {
+      setSelectedIds(new Set())
+    }
+  }
+
+  const handleSelect = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds)
+    if (checked) {
+      newSelected.add(id)
+    } else {
+      newSelected.delete(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size > 0) {
+      setIsBulkDeleteDialogOpen(true)
+    }
+  }
+
+  const confirmBulkDelete = () => {
+    bulkDeleteMutation.mutate(Array.from(selectedIds))
+  }
 
   // Get publisher name by DCS publisher id
   const getPublisherName = (dcsPublisherId: number) => {
@@ -265,12 +338,41 @@ function AdminSchools() {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+              {selectedIds.size} school(s) selected
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-teal-600 hover:text-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleteMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Selected
+          </Button>
+        </div>
+      )}
+
       {/* Schools Table */}
       <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <School className="w-5 h-5 text-teal-500" />
-            All Schools ({filteredSchools.length})
+            All Schools ({totalSchools})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -278,7 +380,7 @@ function AdminSchools() {
             <div className="text-center py-8 text-muted-foreground">
               Loading schools...
             </div>
-          ) : filteredSchools.length === 0 ? (
+          ) : totalSchools === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {searchQuery
                 ? "No schools found matching your search"
@@ -288,6 +390,16 @@ function AdminSchools() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={
+                        schools.length > 0 &&
+                        schools.every((s) => selectedIds.has(s.id))
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead>School Name</TableHead>
                   <TableHead>Address</TableHead>
                   <TableHead>Contact Info</TableHead>
@@ -297,8 +409,24 @@ function AdminSchools() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSchools.map((school) => (
-                  <TableRow key={school.id}>
+                {schools.map((school) => (
+                  <TableRow
+                    key={school.id}
+                    className={
+                      selectedIds.has(school.id)
+                        ? "bg-teal-50 dark:bg-teal-900/20"
+                        : ""
+                    }
+                  >
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(school.id)}
+                        onCheckedChange={(checked) =>
+                          handleSelect(school.id, checked as boolean)
+                        }
+                        aria-label={`Select ${school.name}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{school.name}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-muted-foreground">
@@ -353,6 +481,46 @@ function AdminSchools() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {skip + 1} to{" "}
+            {Math.min(skip + PAGE_SIZE, totalSchools)} of{" "}
+            {totalSchools}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p - 1)
+                setSelectedIds(new Set())
+              }}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p + 1)
+                setSelectedIds(new Set())
+              }}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Add School Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -576,6 +744,19 @@ function AdminSchools() {
         cancelText="Cancel"
         variant="danger"
         isLoading={deleteSchoolMutation.isPending}
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={isBulkDeleteDialogOpen}
+        onOpenChange={setIsBulkDeleteDialogOpen}
+        onConfirm={confirmBulkDelete}
+        title="Delete Selected Schools"
+        description={`Are you sure you want to delete ${selectedIds.size} selected school(s)? This action cannot be undone and will remove all associated data.`}
+        confirmText={`Delete ${selectedIds.size} School(s)`}
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={bulkDeleteMutation.isPending}
       />
     </div>
   )

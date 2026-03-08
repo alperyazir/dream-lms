@@ -39,6 +39,7 @@ class PublisherStats(BaseModel):
 
     schools_count: int
     teachers_count: int
+    students_count: int
     books_count: int
 
 

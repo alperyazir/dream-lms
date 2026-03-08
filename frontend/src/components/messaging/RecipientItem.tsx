@@ -52,7 +52,7 @@ export function RecipientItem({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg transition-colors",
+        "flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors",
         selected
           ? "bg-primary/10 border border-primary"
           : "hover:bg-muted border border-transparent",
@@ -68,34 +68,27 @@ export function RecipientItem({
         }
       }}
     >
-      <Avatar className="h-10 w-10">
-        <AvatarFallback className="bg-teal-600 text-white">
+      <Avatar className="h-7 w-7">
+        <AvatarFallback className="bg-teal-600 text-white text-xs">
           {getInitials(recipient.name)}
         </AvatarFallback>
       </Avatar>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          {getRoleIcon()}
-          <span className="font-medium truncate">{recipient.name}</span>
-        </div>
-
-        {/* Publisher organization info */}
-        {recipient.role === "publisher" && recipient.organization_name && (
-          <p className="text-sm text-muted-foreground truncate">
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        {getRoleIcon()}
+        <span className="text-sm font-medium truncate">{recipient.name}</span>
+        {recipient.role === "publisher" && recipient.organization_name ? (
+          <span className="text-xs text-muted-foreground truncate">
             {recipient.organization_name}
-          </p>
-        )}
-
-        {/* Email as fallback subtitle */}
-        {(!recipient.organization_name || recipient.role !== "publisher") && (
-          <p className="text-sm text-muted-foreground truncate">
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground truncate">
             {recipient.email}
-          </p>
+          </span>
         )}
       </div>
 
-      {selected && <Check className="h-5 w-5 text-primary flex-shrink-0" />}
+      {selected && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
     </div>
   )
 }

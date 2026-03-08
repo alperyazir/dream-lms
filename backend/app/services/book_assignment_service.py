@@ -142,6 +142,7 @@ async def check_teacher_book_access(
     db: AsyncSession,
     teacher_id: uuid.UUID,
     book_id: int,
+    school_id: uuid.UUID | None = None,
 ) -> bool:
     """
     Check if a teacher has access to a specific book.
@@ -150,32 +151,31 @@ async def check_teacher_book_access(
         db: Database session
         teacher_id: UUID of the teacher
         book_id: DCS book ID (int)
+        school_id: Optional school_id (avoids extra DB query if provided)
 
     Returns:
         True if teacher has access, False otherwise
     """
-    # Get teacher's school
-    teacher_result = await db.execute(
-        select(Teacher).where(Teacher.id == teacher_id)
-    )
-    teacher = teacher_result.scalar_one_or_none()
-
-    if not teacher:
-        return False
+    # Resolve school_id if not provided
+    if school_id is None:
+        teacher_result = await db.execute(
+            select(Teacher.school_id).where(Teacher.id == teacher_id)
+        )
+        school_id = teacher_result.scalar_one_or_none()
+        if school_id is None:
+            return False
 
     # Check for direct teacher assignment OR school-level assignment
     result = await db.execute(
-        select(BookAssignment).where(
+        select(BookAssignment.id).where(
             BookAssignment.dcs_book_id == book_id,
             or_(
                 BookAssignment.teacher_id == teacher_id,
-                # School-level assignment (teacher_id is NULL, school_id matches)
-                (BookAssignment.school_id == teacher.school_id) & (BookAssignment.teacher_id.is_(None))
+                (BookAssignment.school_id == school_id) & (BookAssignment.teacher_id.is_(None))
             )
-        )
+        ).limit(1)
     )
-    assignment = result.scalar_one_or_none()
-    return assignment is not None
+    return result.scalar_one_or_none() is not None
 
 
 async def get_accessible_book_ids(

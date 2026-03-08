@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   Edit,
   Eye,
   EyeOff,
@@ -12,7 +14,7 @@ import {
   Users,
   X,
 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { FiUsers } from "react-icons/fi"
 import {
   type StudentCreateAPI,
@@ -20,6 +22,7 @@ import {
   type StudentUpdate,
   TeachersService,
 } from "@/client"
+import { getMyStudentsPaginated } from "@/services/teachersApi"
 import { ImportStudentsDialog } from "@/components/Admin/ImportStudentsDialog"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
@@ -102,24 +105,29 @@ function TeacherStudentsPage() {
     grade_level: undefined,
     parent_email: undefined,
   })
-  const [studentClassroomsMap, setStudentClassroomsMap] = useState<
-    Record<string, string[]>
-  >({})
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
     new Set(),
   )
+  // Pagination state
+  const PAGE_SIZE = 20
+  const [currentPage, setCurrentPage] = useState(1)
 
-  // Fetch students from API
+  // Fetch all students (high limit) for client-side search + pagination
   const {
-    data: students = [],
+    data: paginatedData,
     isLoading,
     error,
   } = useQuery({
     queryKey: ["teacherStudents"],
-    queryFn: () => TeachersService.listMyStudents(),
+    queryFn: async () => {
+      const res = await getMyStudentsPaginated(500, 0)
+      return res.items
+    },
   })
+
+  const students: StudentPublic[] = paginatedData ?? []
 
   // Fetch classes for classroom dropdown
   const { data: classes = [] } = useQuery({
@@ -127,37 +135,6 @@ function TeacherStudentsPage() {
     queryFn: () => TeachersService.listMyClasses(),
   })
 
-  // Fetch classroom information for all students
-  useEffect(() => {
-    const fetchStudentClassrooms = async () => {
-      if (students.length === 0 || classes.length === 0) return
-
-      const classroomsMap: Record<string, string[]> = {}
-
-      for (const classroom of classes) {
-        try {
-          const classStudents = await TeachersService.getClassStudents({
-            classId: classroom.id,
-          })
-          for (const student of classStudents) {
-            if (!classroomsMap[student.id]) {
-              classroomsMap[student.id] = []
-            }
-            classroomsMap[student.id].push(classroom.name)
-          }
-        } catch (error) {
-          console.error(
-            `Failed to fetch students for classroom ${classroom.name}:`,
-            error,
-          )
-        }
-      }
-
-      setStudentClassroomsMap(classroomsMap)
-    }
-
-    fetchStudentClassrooms()
-  }, [students, classes])
 
   // Create student mutation
   const createStudentMutation = useMutation({
@@ -370,8 +347,8 @@ function TeacherStudentsPage() {
       parent_email: student.parent_email,
     })
 
-    // Get classrooms from the map
-    setStudentClassrooms(studentClassroomsMap[student.id] || [])
+    // Get classrooms from the API response
+    setStudentClassrooms((student as any).classroom_names || [])
     setIsEditDialogOpen(true)
   }
 
@@ -397,7 +374,7 @@ function TeacherStudentsPage() {
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedStudentIds(new Set(filteredStudents.map((s) => s.id)))
+      setSelectedStudentIds(new Set(paginatedStudents.map((s) => s.id)))
     } else {
       setSelectedStudentIds(new Set())
     }
@@ -425,11 +402,19 @@ function TeacherStudentsPage() {
 
   const filteredStudents = students.filter(
     (student) =>
+      !searchQuery ||
       student.user_full_name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
       student.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.user_username?.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  const totalFilteredCount = filteredStudents.length
+  const totalPages = Math.ceil(totalFilteredCount / PAGE_SIZE)
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
   )
 
   return (
@@ -462,7 +447,10 @@ function TeacherStudentsPage() {
           type="search"
           placeholder="Search students by name, email, or class..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value)
+            setCurrentPage(1)
+          }}
           className="w-full max-w-md"
         />
       </div>
@@ -505,7 +493,7 @@ function TeacherStudentsPage() {
         <div className="text-center py-12 text-muted-foreground">
           Loading students...
         </div>
-      ) : filteredStudents.length === 0 ? (
+      ) : totalFilteredCount === 0 ? (
         /* Empty State */
         <div className="text-center py-12">
           <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
@@ -523,8 +511,8 @@ function TeacherStudentsPage() {
                 <TableHead className="w-12">
                   <Checkbox
                     checked={
-                      filteredStudents.length > 0 &&
-                      selectedStudentIds.size === filteredStudents.length
+                      paginatedStudents.length > 0 &&
+                      selectedStudentIds.size === paginatedStudents.length
                     }
                     onCheckedChange={handleSelectAll}
                     aria-label="Select all"
@@ -540,7 +528,7 @@ function TeacherStudentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredStudents.map((student) => (
+              {paginatedStudents.map((student) => (
                 <TableRow
                   key={student.id}
                   className={
@@ -585,11 +573,10 @@ function TeacherStudentsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {studentClassroomsMap[student.id] &&
-                    studentClassroomsMap[student.id].length > 0 ? (
+                    {(student as any).classroom_names?.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
-                        {studentClassroomsMap[student.id].map(
-                          (classroom, index) => (
+                        {(student as any).classroom_names.map(
+                          (classroom: string, index: number) => (
                             <Badge
                               key={index}
                               variant="outline"
@@ -665,6 +652,46 @@ function TeacherStudentsPage() {
               ))}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+            {Math.min(currentPage * PAGE_SIZE, totalFilteredCount)} of{" "}
+            {totalFilteredCount} students
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => Math.max(1, p - 1))
+                setSelectedStudentIds(new Set())
+              }}
+              disabled={currentPage <= 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground px-2">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p + 1)
+                setSelectedStudentIds(new Set())
+              }}
+              disabled={currentPage >= totalPages}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
         </div>
       )}
 

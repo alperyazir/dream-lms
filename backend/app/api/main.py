@@ -5,7 +5,6 @@ from app.api.routes import (
     ai_content_proxy,
     ai_generation,
     ai_usage,
-    announcements,
     assignments,
     avatars,
     book_assets,
@@ -17,7 +16,6 @@ from app.api.routes import (
     feedback,
     login,
     messages,
-    notifications,
     private,
     publishers,
     reports,
@@ -51,9 +49,7 @@ api_router.include_router(book_assignments.router)
 api_router.include_router(assignments.router)
 api_router.include_router(reports.router)
 api_router.include_router(webhooks.router)
-api_router.include_router(notifications.router)
 api_router.include_router(messages.router)
-api_router.include_router(announcements.router)
 api_router.include_router(scheduled_tasks.router)
 api_router.include_router(feedback.router)
 api_router.include_router(avatars.router)

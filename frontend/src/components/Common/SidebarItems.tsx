@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link as RouterLink, useLocation } from "@tanstack/react-router"
 import { AnimatePresence, motion } from "framer-motion"
 import type { LucideIcon } from "lucide-react"
-import { Sparkles } from "lucide-react"
+import { GraduationCap, Sparkles } from "lucide-react"
 import { useState } from "react"
 import {
   FiActivity,
@@ -14,7 +14,6 @@ import {
   FiClipboard,
   FiFolder,
   FiHome,
-  FiMessageSquare,
   FiSettings,
   FiShield,
   FiTrendingUp,
@@ -92,6 +91,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiBook, title: "Library", path: "/publisher/library" },
     { icon: FiTrendingUp, title: "Schools", path: "/publisher/schools" },
     { icon: FiUsers, title: "Teachers", path: "/publisher/teachers" },
+    { icon: GraduationCap, title: "Students", path: "/publisher/students" },
   ],
   teacher: [
     { icon: FiHome, title: "Dashboard", path: "/teacher/dashboard" },
@@ -103,22 +103,12 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiUsers, title: "Students", path: "/teacher/students" },
     { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments" },
     { icon: FiBarChart2, title: "Analytics", path: "/teacher/analytics" },
-    {
-      icon: FiMessageSquare,
-      title: "Announcements",
-      path: "/teacher/announcements",
-    },
     { icon: FiTrendingUp, title: "Reports", path: "/teacher/reports" },
   ],
   student: [
     { icon: FiHome, title: "Dashboard", path: "/student/dashboard" },
     { icon: FiCalendar, title: "Calendar", path: "/student/calendar" },
     { icon: FiClipboard, title: "Assignments", path: "/student/assignments" },
-    {
-      icon: FiMessageSquare,
-      title: "Announcements",
-      path: "/student/announcements",
-    },
     { icon: FiTrendingUp, title: "My Progress", path: "/student/progress" },
   ],
 }

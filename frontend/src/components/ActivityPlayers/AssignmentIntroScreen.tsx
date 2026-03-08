@@ -58,7 +58,8 @@ export function AssignmentIntroScreen({
   onBack,
 }: AssignmentIntroScreenProps) {
   const { play: playSound } = useSoundContext()
-  const totalActivities = assignment.activities.length
+  const activities = assignment.activities ?? []
+  const totalActivities = activities.length
   const timeLimit = assignment.time_limit_minutes
 
   const handleStart = () => {
@@ -67,7 +68,7 @@ export function AssignmentIntroScreen({
   }
 
   // Calculate total questions/items across all activities
-  const totalQuestions = assignment.activities.reduce(
+  const totalQuestions = activities.reduce(
     (sum, activity) => sum + getActivityItemCount(activity),
     0,
   )

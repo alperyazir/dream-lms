@@ -533,6 +533,53 @@ class DreamCentralStorageClient:
         except DreamStorageNotFoundError:
             return None
 
+    async def get_books_batch(self, book_ids: list[int]) -> list[BookRead]:
+        """
+        Fetch multiple books by IDs in a single request.
+
+        Args:
+            book_ids: List of book IDs
+
+        Returns:
+            List of BookRead objects for found books
+        """
+        response = await self._make_request(
+            "POST",
+            "/books/batch",
+            json={"ids": book_ids},
+        )
+        return [BookRead(**b) for b in response.json()]
+
+    async def get_presigned_url(
+        self, publisher: str, book_name: str, path: str, expires: int = 3600
+    ) -> str | None:
+        """Get a presigned URL for a book asset from DCS.
+
+        Returns a direct MinIO URL that bypasses the API proxy.
+        Returns None if the asset is not found.
+        """
+        try:
+            url = f"/storage/books/{publisher}/{book_name}/presigned"
+            response = await self._make_request(
+                "GET", url, params={"path": path, "expires": expires}
+            )
+            data = response.json()
+            return data.get("url")
+        except DreamStorageNotFoundError:
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get presigned URL for {publisher}/{book_name}/{path}: {e}")
+            return None
+
+    async def get_bulk_ai_summary(self, book_ids: list[int]) -> list[dict[str, Any]]:
+        """Get AI processing summary for multiple books in a single request."""
+        response = await self._make_request(
+            "POST",
+            "/books/ai-data/summary",
+            json={"book_ids": book_ids},
+        )
+        return response.json()
+
     async def get_book_config(self, publisher: str, book_name: str) -> dict[str, Any]:
         """
         Fetch config.json for a specific book.

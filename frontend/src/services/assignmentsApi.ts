@@ -88,10 +88,34 @@ apiClient.interceptors.request.use(async (config) => {
  *
  * @returns Promise with assignment list
  */
-export async function getAssignments(): Promise<AssignmentListItem[]> {
+export interface AssignmentListPaginatedResponse {
+  items: AssignmentListItem[]
+  total: number
+  limit: number
+  offset: number
+  has_more: boolean
+}
+
+export async function getAssignments(params?: {
+  limit?: number
+  offset?: number
+}): Promise<AssignmentListPaginatedResponse> {
   const url = `/api/v1/assignments/`
-  const response = await apiClient.get<AssignmentListItem[]>(url)
-  return response.data
+  const response = await apiClient.get(url, {
+    params: { limit: params?.limit ?? 20, offset: params?.offset ?? 0 },
+  })
+  const data = response.data
+  // Handle both paginated response and legacy array response
+  if (Array.isArray(data)) {
+    return {
+      items: data,
+      total: data.length,
+      limit: params?.limit ?? 20,
+      offset: params?.offset ?? 0,
+      has_more: false,
+    }
+  }
+  return data
 }
 
 /**
@@ -145,11 +169,12 @@ export async function getStudentAssignments(
   status?: "not_started" | "in_progress" | "completed",
 ): Promise<StudentAssignmentResponse[]> {
   const url = `/api/v1/students/me/assignments`
-  const params = status ? { status } : {}
-  const response = await apiClient.get<StudentAssignmentResponse[]>(url, {
-    params,
-  })
-  return response.data
+  const params: Record<string, string | number> = { limit: 100, offset: 0 }
+  if (status) params.status = status
+  const response = await apiClient.get(url, { params })
+  // Handle both paginated response { items: [...] } and legacy array response
+  const data = response.data
+  return Array.isArray(data) ? data : data.items ?? []
 }
 
 /**

@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useMemo, useState } from "react"
 import { FiClipboard } from "react-icons/fi"
 import { StudentAssignmentCard } from "@/components/assignments/AssignmentCard"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
+import { Button } from "@/components/ui/button"
 import { getStudentAssignments } from "@/services/assignmentsApi"
 import type { StudentAssignmentResponse } from "@/types/assignment"
 
@@ -22,8 +24,11 @@ function StudentAssignmentsPage() {
 
 type TabValue = "todo" | "completed" | "past-due"
 
+const PAGE_SIZE = 12
+
 function StudentAssignmentsContent() {
   const [activeTab, setActiveTab] = useState<TabValue>("todo")
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Fetch student's assignments from API
   const {
@@ -89,6 +94,12 @@ function StudentAssignmentsContent() {
     return { todo, completed, pastDue }
   }, [assignments])
 
+  // Reset page when switching tabs
+  const handleTabChange = (tab: TabValue) => {
+    setActiveTab(tab)
+    setCurrentPage(1)
+  }
+
   const renderAssignmentGrid = (
     items: StudentAssignmentResponse[],
     emptyMessage: string,
@@ -101,15 +112,55 @@ function StudentAssignmentsContent() {
       )
     }
 
+    const totalPages = Math.ceil(items.length / PAGE_SIZE)
+    const paginatedItems = items.slice(
+      (currentPage - 1) * PAGE_SIZE,
+      currentPage * PAGE_SIZE,
+    )
+
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
-        {items.map((assignment) => (
-          <StudentAssignmentCard
-            key={assignment.assignment_id}
-            assignment={assignment}
-          />
-        ))}
-      </div>
+      <>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
+          {paginatedItems.map((assignment) => (
+            <StudentAssignmentCard
+              key={assignment.assignment_id}
+              assignment={assignment}
+            />
+          ))}
+        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6">
+            <p className="text-sm text-muted-foreground">
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+              {Math.min(currentPage * PAGE_SIZE, items.length)} of{" "}
+              {items.length} assignments
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground px-2">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => p + 1)}
+                disabled={currentPage >= totalPages}
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </>
     )
   }
 
@@ -157,7 +208,7 @@ function StudentAssignmentsContent() {
           <nav className="-mb-px flex gap-6" aria-label="Assignment tabs">
             <button
               type="button"
-              onClick={() => setActiveTab("todo")}
+              onClick={() => handleTabChange("todo")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "todo"
                   ? "border-teal-500 text-teal-600"
@@ -172,7 +223,7 @@ function StudentAssignmentsContent() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("completed")}
+              onClick={() => handleTabChange("completed")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "completed"
                   ? "border-teal-500 text-teal-600"
@@ -187,7 +238,7 @@ function StudentAssignmentsContent() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("past-due")}
+              onClick={() => handleTabChange("past-due")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "past-due"
                   ? "border-teal-500 text-teal-600"

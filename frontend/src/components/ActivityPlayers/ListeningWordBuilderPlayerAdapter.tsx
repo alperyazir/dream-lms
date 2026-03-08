@@ -20,6 +20,7 @@ interface ListeningWBItem {
   letter_count: number
   definition?: string
   audio_url: string | null
+  audio_data?: { audio_base64?: string }
   audio_status: string
   difficulty?: string
 }
@@ -161,7 +162,10 @@ export function ListeningWordBuilderPlayerAdapter({
 
   // Audio controls
   const handlePlayAudio = useCallback(() => {
-    if (!currentItem?.audio_url) return
+    const audioSrc = currentItem?.audio_data?.audio_base64
+      ? `data:audio/mpeg;base64,${currentItem.audio_data.audio_base64}`
+      : currentItem?.audio_url
+    if (!audioSrc) return
     const audio = audioRef.current
     if (!audio) return
 
@@ -169,7 +173,7 @@ export function ListeningWordBuilderPlayerAdapter({
       audio.pause()
       setIsPlaying(false)
     } else {
-      audio.src = currentItem.audio_url
+      audio.src = audioSrc
       setAudioLoading(true)
       audio
         .play()
@@ -232,7 +236,7 @@ export function ListeningWordBuilderPlayerAdapter({
       <Card className="w-full shadow-lg">
         <CardContent className="p-6">
           {/* Audio play button — only shown when audio is available */}
-          {currentItem.audio_url &&
+          {(currentItem.audio_url || currentItem.audio_data?.audio_base64) &&
           currentItem.audio_status === "ready" ? (
             <div className="mb-4 flex flex-col items-center gap-2">
               <button

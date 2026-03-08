@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Edit,
   KeyRound,
@@ -10,8 +12,9 @@ import {
   Search,
   Trash2,
   UserCheck,
+  X,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { FiUsers } from "react-icons/fi"
 import {
   AdminService,
@@ -25,6 +28,7 @@ import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -64,7 +68,12 @@ export const Route = createFileRoute("/_layout/admin/teachers")({
 function AdminTeachers() {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const PAGE_SIZE = 20
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -104,15 +113,34 @@ function AdminTeachers() {
     user_full_name: "",
   })
 
-  // Fetch teachers from API
+  // Debounce search for server-side filtering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setCurrentPage(1)
+      setSelectedIds(new Set())
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Fetch teachers from API (server-side pagination)
+  const skip = (currentPage - 1) * PAGE_SIZE
   const {
-    data: teachers = [],
+    data: teachersResponse,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["teachers"],
-    queryFn: () => AdminService.listTeachers(),
+    queryKey: ["teachers", skip, PAGE_SIZE, debouncedSearch],
+    queryFn: () =>
+      AdminService.listTeachersPaginated({
+        skip,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+      }),
   })
+  const teachers = teachersResponse?.items ?? []
+  const totalTeachers = teachersResponse?.total ?? 0
+  const totalPages = Math.ceil(totalTeachers / PAGE_SIZE)
 
   // Fetch schools for dropdown
   const { data: schools = [] } = useQuery({
@@ -213,6 +241,50 @@ function AdminTeachers() {
     },
   })
 
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) =>
+      Promise.all(ids.map((id) => AdminService.deleteTeacher({ teacherId: id }))),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] })
+      setSelectedIds(new Set())
+      setIsBulkDeleteDialogOpen(false)
+      showSuccessToast(`Successfully deleted ${selectedIds.size} teacher(s)`)
+    },
+    onError: () => {
+      showErrorToast("Failed to delete some teachers. Please try again.")
+    },
+  })
+
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(teachers.map((t) => t.id)))
+    } else {
+      setSelectedIds(new Set())
+    }
+  }
+
+  const handleSelect = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds)
+    if (checked) {
+      newSelected.add(id)
+    } else {
+      newSelected.delete(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size > 0) {
+      setIsBulkDeleteDialogOpen(true)
+    }
+  }
+
+  const confirmBulkDelete = () => {
+    bulkDeleteMutation.mutate(Array.from(selectedIds))
+  }
+
   const handleAddTeacher = () => {
     if (
       !newTeacher.username ||
@@ -303,20 +375,6 @@ function AdminTeachers() {
     setPasswordCopied(false)
   }
 
-  const filteredTeachers = teachers.filter(
-    (teacher) =>
-      teacher.subject_specialization
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      teacher.user_full_name
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      teacher.user_username
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      teacher.user_email?.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
-
   // Get school name by id
   const getSchoolName = (schoolId: string) => {
     const school = schools.find((s) => s.id === schoolId)
@@ -362,12 +420,41 @@ function AdminTeachers() {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+              {selectedIds.size} teacher(s) selected
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-teal-600 hover:text-teal-700 hover:bg-teal-100 dark:hover:bg-teal-800"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleteMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Selected
+          </Button>
+        </div>
+      )}
+
       {/* Teachers Table */}
       <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-teal-500" />
-            All Teachers ({filteredTeachers.length})
+            All Teachers ({totalTeachers})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -375,7 +462,7 @@ function AdminTeachers() {
             <div className="text-center py-8 text-muted-foreground">
               Loading teachers...
             </div>
-          ) : filteredTeachers.length === 0 ? (
+          ) : totalTeachers === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {searchQuery
                 ? "No teachers found matching your search"
@@ -385,6 +472,16 @@ function AdminTeachers() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={
+                        teachers.length > 0 &&
+                        teachers.every((t) => selectedIds.has(t.id))
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead>Teacher Name</TableHead>
                   <TableHead>Username</TableHead>
                   <TableHead>Email</TableHead>
@@ -395,8 +492,24 @@ function AdminTeachers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTeachers.map((teacher) => (
-                  <TableRow key={teacher.id}>
+                {teachers.map((teacher) => (
+                  <TableRow
+                    key={teacher.id}
+                    className={
+                      selectedIds.has(teacher.id)
+                        ? "bg-teal-50 dark:bg-teal-900/20"
+                        : ""
+                    }
+                  >
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(teacher.id)}
+                        onCheckedChange={(checked) =>
+                          handleSelect(teacher.id, checked as boolean)
+                        }
+                        aria-label={`Select ${teacher.user_full_name}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {teacher.user_full_name || "N/A"}
                     </TableCell>
@@ -477,6 +590,46 @@ function AdminTeachers() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {skip + 1} to{" "}
+            {Math.min(skip + PAGE_SIZE, totalTeachers)} of{" "}
+            {totalTeachers}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p - 1)
+                setSelectedIds(new Set())
+              }}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((p) => p + 1)
+                setSelectedIds(new Set())
+              }}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Teacher Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -782,6 +935,19 @@ function AdminTeachers() {
         cancelText="Cancel"
         variant="warning"
         isLoading={resetPasswordMutation.isPending}
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={isBulkDeleteDialogOpen}
+        onOpenChange={setIsBulkDeleteDialogOpen}
+        onConfirm={confirmBulkDelete}
+        title="Delete Selected Teachers"
+        description={`Are you sure you want to delete ${selectedIds.size} selected teacher(s)? This action cannot be undone and will remove all associated data.`}
+        confirmText={`Delete ${selectedIds.size} Teacher(s)`}
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={bulkDeleteMutation.isPending}
       />
 
       {/* Password Result Dialog [Story 11.4] */}

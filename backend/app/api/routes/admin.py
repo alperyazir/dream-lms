@@ -25,7 +25,6 @@ from app.models import (
     ChangePasswordResponse,
     ChangePublisherPasswordRequest,
     DashboardStats,
-    NotificationType,
     PasswordResetResponse,
     School,
     SchoolCreate,
@@ -58,6 +57,7 @@ from app.schemas.benchmarks import (
     BenchmarkSettingsResponse,
     BenchmarkSettingsUpdate,
 )
+from app.schemas.pagination import PublisherAccountPaginatedResponse, SchoolListResponse, StudentListResponse, TeacherListResponse
 from app.schemas.publisher import (
     PublisherAccountCreate,
     PublisherAccountCreationResponse,
@@ -66,7 +66,6 @@ from app.schemas.publisher import (
     PublisherAccountUpdate,
     PublisherPublic,
 )
-from app.services import notification_service
 from app.services.benchmark_service import get_admin_benchmark_overview
 from app.services.bulk_import import validate_bulk_import
 from app.services.dcs_cache import get_dcs_cache
@@ -357,6 +356,41 @@ def list_schools(
     return [SchoolPublic.model_validate(s) for s in schools]
 
 
+@router.get(
+    "/schools/paginated",
+    response_model=SchoolListResponse,
+    summary="List all schools (paginated)",
+    description="Retrieve schools with server-side pagination and search.",
+)
+def list_schools_paginated(
+    *,
+    session: SessionDep,
+    current_user: User = AdminOrSupervisor,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: str | None = Query(None),
+) -> Any:
+    base_query = select(School)
+    if search:
+        search_filter = f"%{search.lower()}%"
+        base_query = base_query.where(
+            func.lower(School.name).contains(search_filter)
+            | func.lower(School.address).contains(search_filter)
+            | func.lower(School.contact_info).contains(search_filter)
+        )
+    count_query = select(func.count()).select_from(base_query.subquery())
+    total = session.exec(count_query).one()
+    paginated_query = base_query.order_by(School.created_at.desc()).offset(skip).limit(limit)
+    schools = session.exec(paginated_query).all()
+    return SchoolListResponse(
+        items=[SchoolPublic.model_validate(s) for s in schools],
+        total=total,
+        limit=limit,
+        offset=skip,
+        has_more=(skip + limit) < total,
+    )
+
+
 @router.put(
     "/schools/{school_id}",
     response_model=SchoolPublic,
@@ -632,6 +666,67 @@ def list_teachers(
         )
         result.append(teacher_data)
     return result
+
+
+@router.get(
+    "/teachers/paginated",
+    response_model=TeacherListResponse,
+    summary="List all teachers (paginated)",
+    description="Retrieve all teachers with server-side pagination. Admin only.",
+)
+def list_teachers_paginated(
+    *,
+    session: SessionDep,
+    current_user: User = AdminOrSupervisor,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: str | None = Query(None),
+) -> Any:
+    """
+    List all teachers with server-side pagination and search.
+    """
+    base_query = (
+        select(Teacher, User)
+        .join(User, Teacher.user_id == User.id)
+    )
+
+    if search:
+        search_filter = f"%{search.lower()}%"
+        base_query = base_query.where(
+            (func.lower(User.full_name).contains(search_filter)) |
+            (func.lower(User.username).contains(search_filter)) |
+            (func.lower(User.email).contains(search_filter)) |
+            (func.lower(Teacher.subject_specialization).contains(search_filter))
+        )
+
+    count_query = select(func.count()).select_from(base_query.subquery())
+    total = session.exec(count_query).one()
+
+    paginated_query = base_query.order_by(Teacher.created_at.desc()).offset(skip).limit(limit)
+    rows = session.exec(paginated_query).all()
+
+    result = []
+    for t, user in rows:
+        teacher_data = TeacherPublic(
+            id=t.id,
+            subject_specialization=t.subject_specialization,
+            user_id=t.user_id,
+            user_email=user.email if user else "",
+            user_username=user.username if user else "",
+            user_full_name=(user.full_name or "") if user else "",
+            school_id=t.school_id,
+            created_at=t.created_at,
+            updated_at=t.updated_at
+        )
+        result.append(teacher_data)
+
+    return TeacherListResponse(
+        items=result,
+        total=total,
+        limit=limit,
+        offset=skip,
+        has_more=(skip + limit) < total,
+    )
 
 
 @router.put(
@@ -1153,33 +1248,54 @@ def set_student_password(
 
 @router.get(
     "/students",
-    response_model=list[StudentPublic],
+    response_model=StudentListResponse,
     summary="List all students",
-    description="Retrieve all students with pagination. Admin only.",
+    description="Retrieve all students with server-side pagination. Admin only.",
 )
 def list_students(
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
-    skip: int = 0,
-    limit: int = 100
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: str | None = Query(None),
 ) -> Any:
     """
-    List all students with pagination.
+    List all students with server-side pagination.
 
     - **skip**: Number of records to skip (default: 0)
-    - **limit**: Maximum number of records to return (default: 100)
+    - **limit**: Maximum number of records to return (default: 20, max: 100)
+    - **search**: Optional search by name, username, email, grade, or parent email
 
-    Returns list of students.
+    Returns paginated list of students with total count.
     """
-    statement = select(Student).offset(skip).limit(limit)
-    students = session.exec(statement).all()
+    # Build base query with user join for search
+    base_query = (
+        select(Student, User)
+        .join(User, Student.user_id == User.id)
+    )
+
+    if search:
+        search_filter = f"%{search.lower()}%"
+        base_query = base_query.where(
+            (func.lower(User.full_name).contains(search_filter)) |
+            (func.lower(User.username).contains(search_filter)) |
+            (func.lower(User.email).contains(search_filter)) |
+            (func.lower(Student.grade_level).contains(search_filter)) |
+            (func.lower(Student.parent_email).contains(search_filter))
+        )
+
+    # Get total count
+    count_query = select(func.count()).select_from(base_query.subquery())
+    total = session.exec(count_query).one()
+
+    # Get paginated results
+    paginated_query = base_query.order_by(Student.created_at.desc()).offset(skip).limit(limit)
+    rows = session.exec(paginated_query).all()
 
     # Build response with user information
     result = []
-    for s in students:
-        user = session.get(User, s.user_id)
-
+    for s, user in rows:
         # Get teacher name if student is bound to a teacher
         teacher_name = None
         if s.created_by_teacher_id:
@@ -1202,7 +1318,14 @@ def list_students(
             updated_at=s.updated_at
         )
         result.append(student_data)
-    return result
+
+    return StudentListResponse(
+        items=result,
+        total=total,
+        limit=limit,
+        offset=skip,
+        has_more=(skip + limit) < total,
+    )
 
 
 @router.put(
@@ -2155,19 +2278,6 @@ async def reset_user_password(
         f"by {current_user.role} {current_user.username}"
     )
 
-    # Create notification for user
-    await notification_service.create_notification(
-        db=session,
-        user_id=user.id,
-        notification_type=NotificationType.password_reset,
-        title="Password Reset",
-        message=(
-            "Your password was reset by an administrator. "
-            "Please change your password after logging in."
-        ),
-        link="/settings",
-    )
-
     # Handle password delivery based on email availability
     password_emailed = False
     temp_password_for_response = None
@@ -2610,6 +2720,61 @@ async def list_publisher_accounts(
         ))
 
     return PublisherAccountListResponse(data=accounts, count=total)
+
+
+@router.get(
+    "/publisher-accounts/paginated",
+    response_model=PublisherAccountPaginatedResponse,
+    summary="List publisher accounts (paginated)",
+    description="Retrieve publisher accounts with server-side pagination and search.",
+)
+async def list_publisher_accounts_paginated(
+    *,
+    session: SessionDep,
+    current_user: User = AdminOrSupervisor,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: str | None = Query(None),
+) -> Any:
+    base_query = select(User).where(User.role == UserRole.publisher)
+    if search:
+        search_filter = f"%{search.lower()}%"
+        base_query = base_query.where(
+            func.lower(User.full_name).contains(search_filter)
+            | func.lower(User.email).contains(search_filter)
+            | func.lower(User.username).contains(search_filter)
+        )
+    count_query = select(func.count()).select_from(base_query.subquery())
+    total = session.exec(count_query).one()
+    paginated_query = base_query.offset(skip).limit(limit)
+    users = session.exec(paginated_query).all()
+
+    publisher_service = get_publisher_service()
+    accounts = []
+    for user in users:
+        dcs_publisher_name = None
+        if user.dcs_publisher_id:
+            publisher = await publisher_service.get_publisher(user.dcs_publisher_id)
+            if publisher:
+                dcs_publisher_name = publisher.name
+        accounts.append(PublisherAccountPublic(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            full_name=user.full_name,
+            dcs_publisher_id=user.dcs_publisher_id,
+            dcs_publisher_name=dcs_publisher_name,
+            is_active=user.is_active,
+            created_at=None,
+        ))
+
+    return PublisherAccountPaginatedResponse(
+        items=accounts,
+        total=total,
+        limit=limit,
+        offset=skip,
+        has_more=(skip + limit) < total,
+    )
 
 
 @router.get(

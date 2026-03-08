@@ -9,14 +9,13 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
-from sqlmodel import or_, select
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlmodel import func, or_, select
 
 from app.api.deps import AdminOrSupervisor, AsyncSessionDep, SessionDep, require_role
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models import (
-    NotificationType,
     PasswordResetResponse,
     SupervisorCreateAPI,
     SupervisorCreateResponse,
@@ -26,7 +25,7 @@ from app.models import (
     UserPublic,
     UserRole,
 )
-from app.services import notification_service
+from app.schemas.pagination import SupervisorListResponse
 from app.utils import (
     generate_new_account_email,
     generate_password_reset_by_admin_email,
@@ -95,6 +94,57 @@ def list_supervisors(
         )
         for s in supervisors
     ]
+
+
+@router.get(
+    "/paginated",
+    response_model=SupervisorListResponse,
+    summary="List all supervisors (paginated)",
+    description="Retrieve supervisors with server-side pagination and search.",
+)
+def list_supervisors_paginated(
+    *,
+    session: SessionDep,
+    current_user: User = AdminOrSupervisor,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: str | None = Query(None),
+) -> Any:
+    base_query = select(User).where(User.role == UserRole.supervisor)
+    if search:
+        search_filter = f"%{search.lower()}%"
+        base_query = base_query.where(
+            or_(
+                func.lower(User.full_name).contains(search_filter),
+                func.lower(User.email).contains(search_filter),
+                func.lower(User.username).contains(search_filter),
+            )
+        )
+    count_query = select(func.count()).select_from(base_query.subquery())
+    total = session.exec(count_query).one()
+    paginated_query = base_query.offset(skip).limit(limit)
+    supervisors = session.exec(paginated_query).all()
+
+    items = [
+        SupervisorPublic(
+            id=s.id,
+            full_name=s.full_name,
+            email=s.email,
+            username=s.username,
+            is_active=s.is_active,
+            created_at=None,
+            must_change_password=s.must_change_password,
+        )
+        for s in supervisors
+    ]
+
+    return SupervisorListResponse(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=skip,
+        has_more=(skip + limit) < total,
+    )
 
 
 @router.get(
@@ -440,15 +490,6 @@ async def reset_supervisor_password(
 
     session.add(user)
     await session.commit()
-
-    # Create notification for the user
-    await notification_service.create_notification(
-        db=session,
-        user_id=user.id,
-        notification_type=NotificationType.password_reset,
-        title="Password Reset",
-        message="Your password has been reset by an administrator. Please log in with your new password.",
-    )
 
     # Send email if possible
     password_emailed = False

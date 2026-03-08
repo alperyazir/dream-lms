@@ -118,6 +118,18 @@ export async function markAsRead(
 }
 
 /**
+ * Broadcast a message to all students in a class
+ */
+export async function broadcastToClass(data: {
+  class_id: string
+  body: string
+}): Promise<{ sent_count: number; class_name: string }> {
+  const url = `/api/v1/messages/broadcast`
+  const response = await apiClient.post(url, data)
+  return response.data
+}
+
+/**
  * Get list of allowed recipients for the current user
  *
  * @returns Promise with recipient list
@@ -146,6 +158,7 @@ export const messagesApi = {
   getConversations,
   getThread,
   sendMessage,
+  broadcastToClass,
   markAsRead,
   getRecipients,
   getUnreadCount,

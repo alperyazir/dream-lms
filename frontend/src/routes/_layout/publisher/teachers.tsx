@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { AlertTriangle, Book, Check, User, UserPlus } from "lucide-react"
+import { AlertTriangle, User, UserPlus } from "lucide-react"
 import { useMemo, useState } from "react"
 import { FiUsers } from "react-icons/fi"
 import {
@@ -18,7 +18,6 @@ import {
 } from "@/components/teachers/TeacherFilters"
 import { TeacherListView } from "@/components/teachers/TeacherListView"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -29,7 +28,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Select,
   SelectContent,
@@ -40,8 +38,6 @@ import {
 import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
 import useCustomToast from "@/hooks/useCustomToast"
 import { useViewPreference } from "@/hooks/useViewPreference"
-import { createBulkBookAssignments } from "@/services/bookAssignmentsApi"
-import { booksApi } from "@/services/booksApi"
 import { generateUsername } from "@/utils/usernameGenerator"
 
 export const Route = createFileRoute("/_layout/publisher/teachers")({
@@ -68,7 +64,6 @@ function PublisherTeachersPage() {
     school_id: "",
     subject_specialization: "",
   })
-  const [selectedBookIds, setSelectedBookIds] = useState<number[]>([])
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [teacherToDelete, setTeacherToDelete] = useState<{
     id: string
@@ -92,44 +87,16 @@ function PublisherTeachersPage() {
     queryFn: () => PublishersService.listMySchools(),
   })
 
-  // Fetch books for assignment selection
-  const { data: booksData } = useQuery({
-    queryKey: ["publisherBooks"],
-    queryFn: () => booksApi.getBooks({ limit: 100 }),
-    staleTime: 5 * 60 * 1000,
-  })
-  const books = booksData?.items ?? []
-
   // Create teacher mutation
   const createTeacherMutation = useMutation({
     mutationFn: async (data: TeacherCreateAPI) => {
-      // Create the teacher first
-      const response = await PublishersService.createMyTeacher({
+      return await PublishersService.createMyTeacher({
         requestBody: data,
       })
-
-      // If books were selected, assign them to the new teacher
-      // The role_record contains the teacher record with the ID
-      const teacherId = (response.role_record as { id: string }).id
-      if (selectedBookIds.length > 0 && teacherId) {
-        await Promise.all(
-          selectedBookIds.map((bookId) =>
-            createBulkBookAssignments({
-              book_id: bookId,
-              school_id: data.school_id,
-              assign_to_all_teachers: false,
-              teacher_ids: [teacherId],
-            }),
-          ),
-        )
-      }
-
-      return response
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["publisherTeachers"] })
       queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
-      queryClient.invalidateQueries({ queryKey: ["bookAssignments"] })
       setIsAddDialogOpen(false)
       setNewTeacher({
         username: "",
@@ -138,13 +105,7 @@ function PublisherTeachersPage() {
         school_id: "",
         subject_specialization: "",
       })
-      const bookCount = selectedBookIds.length
-      setSelectedBookIds([])
-      showSuccessToast(
-        bookCount > 0
-          ? `Teacher created with ${bookCount} book${bookCount > 1 ? "s" : ""} assigned!`
-          : "Teacher created successfully!",
-      )
+      showSuccessToast("Teacher created successfully!")
     },
     onError: (error: any) => {
       let errorMessage = "Failed to create teacher. Please try again."
@@ -203,7 +164,6 @@ function PublisherTeachersPage() {
   const handleAddTeacher = () => {
     if (
       !newTeacher.username ||
-      !newTeacher.user_email ||
       !newTeacher.full_name ||
       !newTeacher.school_id
     ) {
@@ -374,12 +334,7 @@ function PublisherTeachersPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">
-                Email{" "}
-                <span className="text-destructive ml-1" aria-hidden="true">
-                  *
-                </span>
-              </Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -430,63 +385,6 @@ function PublisherTeachersPage() {
               />
             </div>
 
-            {/* Book Assignment Section */}
-            {books.length > 0 && (
-              <div className="space-y-2 pt-2 border-t">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <Book className="h-4 w-4" />
-                    Assign Books
-                  </Label>
-                  {selectedBookIds.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      {selectedBookIds.length} selected
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  This teacher will have access to selected books
-                </p>
-                <ScrollArea className="h-[150px] border rounded-md">
-                  <div className="p-2 space-y-1">
-                    {books.map((book) => (
-                      <label
-                        key={book.id}
-                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          selectedBookIds.includes(book.id)
-                            ? "bg-teal-50 dark:bg-teal-900/20"
-                            : "hover:bg-muted"
-                        }`}
-                      >
-                        <Checkbox
-                          checked={selectedBookIds.includes(book.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedBookIds([...selectedBookIds, book.id])
-                            } else {
-                              setSelectedBookIds(
-                                selectedBookIds.filter((id) => id !== book.id),
-                              )
-                            }
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">
-                            {book.title}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {book.activity_count} activities
-                          </div>
-                        </div>
-                        {selectedBookIds.includes(book.id) && (
-                          <Check className="h-4 w-4 text-teal-600" />
-                        )}
-                      </label>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button

@@ -40,6 +40,7 @@ export interface WordBuilderItem {
   letters: string[]
   definition: string
   audio_url: string | null
+  audio_data?: { audio_base64?: string }
   vocabulary_id: string
   cefr_level: string
 }
@@ -52,6 +53,7 @@ export interface WordBuilderItemPublic {
   letters: string[]
   definition: string
   audio_url: string | null
+  audio_data?: { audio_base64?: string }
   letter_count: number
 }
 
@@ -99,6 +101,7 @@ export interface WordResult {
   attempts: number
   points: number
   audio_url: string | null
+  audio_data?: { audio_base64?: string }
   definition: string
 }
 

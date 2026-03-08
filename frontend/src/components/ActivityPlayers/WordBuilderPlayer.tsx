@@ -184,14 +184,17 @@ export function WordBuilderPlayer({
   const currentState = currentWord ? wordStates[currentWord.item_id] : null
 
   // Play/pause audio
-  const playAudio = useCallback((audioUrl: string | null) => {
-    if (!audioUrl || !audioRef.current) return
+  const playAudio = useCallback((audioUrl: string | null, audioData?: { audio_base64?: string }) => {
+    const src = audioData?.audio_base64
+      ? `data:audio/mpeg;base64,${audioData.audio_base64}`
+      : audioUrl
+    if (!src || !audioRef.current) return
     const audio = audioRef.current
     if (isAudioPlaying) {
       audio.pause()
       setIsAudioPlaying(false)
     } else {
-      audio.src = audioUrl
+      audio.src = src
       setAudioLoading(true)
       audio
         .play()
@@ -374,9 +377,9 @@ export function WordBuilderPlayer({
             <div className="flex flex-col items-center gap-3">
               {/* Audio play button */}
               {(activity.hint_type === "audio" || activity.hint_type === "both") &&
-                currentWord.audio_url && (
+                (currentWord.audio_url || currentWord.audio_data?.audio_base64) && (
                   <button
-                    onClick={() => playAudio(currentWord.audio_url)}
+                    onClick={() => playAudio(currentWord.audio_url, currentWord.audio_data)}
                     className={cn(
                       "flex items-center justify-center w-14 h-14 rounded-full transition-all shadow-md",
                       isAudioPlaying

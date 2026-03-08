@@ -57,6 +57,7 @@ from app.services.pdf_processing_service import (
     get_pdf_processing_service,
     PDFProcessingService,
 )
+from app.services.redis_cache import cache_get_sync, cache_set_sync
 from app.services.dream_storage_client import (
     DreamCentralStorageClient,
     DreamStorageError,
@@ -96,6 +97,11 @@ def get_teacher_id(session: SessionDep, current_user: CurrentUser) -> uuid.UUID:
 
     Raises HTTPException if user is not a teacher.
     """
+    # Use cached teacher relationship first (avoids sync DB query)
+    if current_user.teacher:
+        return current_user.teacher.id
+
+    # Fallback to DB query if relationship not cached
     teacher = session.exec(
         select(Teacher).where(Teacher.user_id == current_user.id)
     ).first()
@@ -383,6 +389,12 @@ async def list_materials(
     """
     teacher_id = get_teacher_id(session, current_user)
 
+    type_key = type.value if type else "all"
+    cache_key = f"teacher:{teacher_id}:materials:{type_key}"
+    cached = cache_get_sync(cache_key)
+    if cached is not None:
+        return MaterialListResponse(**cached)
+
     # Build query
     query = select(TeacherMaterial).where(TeacherMaterial.teacher_id == teacher_id)
     if type:
@@ -392,11 +404,13 @@ async def list_materials(
     materials = session.exec(query).all()
     quota = get_or_create_quota(session, teacher_id)
 
-    return MaterialListResponse(
+    response = MaterialListResponse(
         materials=[material_to_response(m) for m in materials],
         total_count=len(materials),
         quota=quota_to_response(quota),
     )
+    cache_set_sync(cache_key, response.model_dump(), ttl=300)
+    return response
 
 
 @router.get(

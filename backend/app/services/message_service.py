@@ -3,8 +3,12 @@
 import logging
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 import bleach
+
+if TYPE_CHECKING:
+    from arq import ArqRedis
 from sqlmodel import and_, case, func, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -14,7 +18,6 @@ from app.models import (
     Class,
     ClassStudent,
     DirectMessage,
-    NotificationType,
     Student,
     Teacher,
     User,
@@ -25,7 +28,7 @@ from app.schemas.message import (
     MessagePublic,
     RecipientPublic,
 )
-from app.services.notification_service import create_notification
+from app.services.cache_events import invalidate_for_event
 from app.services.publisher_service_v2 import get_publisher_service
 
 # HTML sanitization settings for XSS protection
@@ -58,8 +61,8 @@ async def get_allowed_recipients(
     - Admin: Can message all teachers, publishers, and students
     - Supervisor: Can message all users (admin, publisher, teacher, student)
     - Publisher: Can message all admins and all teachers
-    - Teacher: Can message students in their classes + all admins + all publishers
-    - Student: Can only message teachers who have assigned them work
+    - Teacher: Can message only students in their classes
+    - Student: Can message only teachers of their classes
 
     Args:
         db: Database session
@@ -69,6 +72,16 @@ async def get_allowed_recipients(
     Returns:
         List of allowed recipients
     """
+    def _to_recipient(row: Any) -> RecipientPublic:
+        name = row.full_name or (row.email.split("@")[0] if row.email else "Unknown")
+        return RecipientPublic(
+            user_id=row.id,
+            name=name,
+            email=row.email,
+            role=row.role.value,
+            organization_name=None,
+        )
+
     recipients: list[RecipientPublic] = []
 
     if user_role == UserRole.admin:
@@ -77,22 +90,11 @@ async def get_allowed_recipients(
             select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
             .where(
                 User.role.in_([UserRole.teacher, UserRole.publisher, UserRole.student]),
-                User.id != user_id,  # Exclude self
+                User.id != user_id,
             )
         )
         result = await db.execute(query)
-        rows = result.all()
-        recipients = [
-            RecipientPublic(
-                user_id=row.id,
-                name=row.full_name or row.email.split("@")[0],
-                email=row.email,
-                role=row.role.value,
-                organization_name=None,  # Will be populated below for publishers
-            )
-            for row in rows
-            if row.email is not None  # Filter out users without email
-        ]
+        recipients = [_to_recipient(row) for row in result.all()]
 
     elif user_role == UserRole.supervisor:
         # Supervisors can message all users (admin, publisher, teacher, student)
@@ -100,22 +102,11 @@ async def get_allowed_recipients(
             select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
             .where(
                 User.role.in_([UserRole.admin, UserRole.publisher, UserRole.teacher, UserRole.student]),
-                User.id != user_id,  # Exclude self
+                User.id != user_id,
             )
         )
         result = await db.execute(query)
-        rows = result.all()
-        recipients = [
-            RecipientPublic(
-                user_id=row.id,
-                name=row.full_name or row.email.split("@")[0],
-                email=row.email,
-                role=row.role.value,
-                organization_name=None,  # Will be populated below for publishers
-            )
-            for row in rows
-            if row.email is not None  # Filter out users without email
-        ]
+        recipients = [_to_recipient(row) for row in result.all()]
 
     elif user_role == UserRole.publisher:
         # Publishers can message all admins and all teachers
@@ -123,22 +114,11 @@ async def get_allowed_recipients(
             select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
             .where(
                 User.role.in_([UserRole.admin, UserRole.teacher]),
-                User.id != user_id,  # Exclude self
+                User.id != user_id,
             )
         )
         result = await db.execute(query)
-        rows = result.all()
-        recipients = [
-            RecipientPublic(
-                user_id=row.id,
-                name=row.full_name or row.email.split("@")[0],
-                email=row.email,
-                role=row.role.value,
-                organization_name=None,  # Will be populated below for publishers
-            )
-            for row in rows
-            if row.email is not None  # Filter out users without email
-        ]
+        recipients = [_to_recipient(row) for row in result.all()]
 
     elif user_role == UserRole.teacher:
         # Get teacher's ID
@@ -146,7 +126,7 @@ async def get_allowed_recipients(
         teacher_result = await db.execute(teacher_query)
         teacher_id = teacher_result.scalar_one_or_none()
 
-        # Teachers can message students in their classes
+        # Teachers can only message students in their classes
         if teacher_id:
             student_query = (
                 select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
@@ -157,40 +137,7 @@ async def get_allowed_recipients(
                 .distinct()
             )
             student_result = await db.execute(student_query)
-            student_rows = student_result.all()
-            recipients.extend([
-                RecipientPublic(
-                    user_id=row.id,
-                    name=row.full_name or row.email.split("@")[0],
-                    email=row.email,
-                    role=row.role.value,
-                    organization_name=None,  # Will be populated below for publishers
-                )
-                for row in student_rows
-                if row.email is not None  # Filter out users without email
-            ])
-
-        # Teachers can also message admins and publishers
-        admin_pub_query = (
-            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
-            .where(
-                User.role.in_([UserRole.admin, UserRole.publisher]),
-                User.id != user_id,  # Exclude self
-            )
-        )
-        admin_pub_result = await db.execute(admin_pub_query)
-        admin_pub_rows = admin_pub_result.all()
-        recipients.extend([
-            RecipientPublic(
-                user_id=row.id,
-                name=row.full_name or row.email.split("@")[0],
-                email=row.email,
-                role=row.role.value,
-                organization_name=None,  # Will be populated below for publishers
-            )
-            for row in admin_pub_rows
-            if row.email is not None  # Filter out users without email
-        ])
+            recipients.extend([_to_recipient(row) for row in student_result.all()])
 
     elif user_role == UserRole.student:
         # Get student's ID
@@ -201,28 +148,17 @@ async def get_allowed_recipients(
         if not student_id:
             return []
 
-        # Students can only message teachers who have assigned them work
+        # Students can only message teachers of their classes
         query = (
             select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
             .join(Teacher, Teacher.user_id == User.id)
-            .join(Assignment, Assignment.teacher_id == Teacher.id)
-            .join(AssignmentStudent, AssignmentStudent.assignment_id == Assignment.id)
-            .where(AssignmentStudent.student_id == student_id)
+            .join(Class, Class.teacher_id == Teacher.id)
+            .join(ClassStudent, ClassStudent.class_id == Class.id)
+            .where(ClassStudent.student_id == student_id)
             .distinct()
         )
         result = await db.execute(query)
-        rows = result.all()
-        recipients = [
-            RecipientPublic(
-                user_id=row.id,
-                name=row.full_name or row.email.split("@")[0],
-                email=row.email,
-                role=row.role.value,
-                organization_name=None,  # Will be populated below for publishers
-            )
-            for row in rows
-            if row.email is not None  # Filter out users without email
-        ]
+        recipients = [_to_recipient(row) for row in result.all()]
 
     # Enrich publisher recipients with organization names from DCS
     await _enrich_publisher_organization_names(db, recipients)
@@ -237,12 +173,14 @@ async def _enrich_publisher_organization_names(
     """
     Enrich publisher recipients with organization names from DCS.
 
-    Modifies recipients in-place.
+    Modifies recipients in-place. Fetches all publishers concurrently.
 
     Args:
         db: Database session
         recipients: List of recipients to enrich
     """
+    import asyncio
+
     publisher_service = get_publisher_service()
 
     # Find all publisher recipients
@@ -260,21 +198,29 @@ async def _enrich_publisher_organization_names(
     result = await db.execute(query)
     user_publisher_map = {row.id: row.dcs_publisher_id for row in result.all()}
 
-    # Fetch publisher names from DCS for each unique dcs_publisher_id
+    # Batch-fetch all unique publisher names from DCS concurrently
+    unique_dcs_ids = {pid for pid in user_publisher_map.values() if pid is not None}
+    if not unique_dcs_ids:
+        return
+
+    logger = logging.getLogger(__name__)
+    fetch_results = await asyncio.gather(
+        *(publisher_service.get_publisher(pid) for pid in unique_dcs_ids),
+        return_exceptions=True,
+    )
+    publisher_name_map: dict[int, str] = {}
+    for dcs_id, result in zip(unique_dcs_ids, fetch_results):
+        if isinstance(result, BaseException):
+            logger.warning(f"Failed to fetch publisher {dcs_id} name: {result}")
+        elif result is not None:
+            publisher_name_map[dcs_id] = result.name
+
+    # Apply names to recipients
     for recipient in recipients:
         if recipient.role == "publisher":
             dcs_publisher_id = user_publisher_map.get(recipient.user_id)
-            if dcs_publisher_id:
-                try:
-                    publisher = await publisher_service.get_publisher(dcs_publisher_id)
-                    if publisher:
-                        recipient.organization_name = publisher.name
-                except Exception as e:
-                    # Log but don't fail - organization name is optional
-                    logger = logging.getLogger(__name__)
-                    logger.warning(
-                        f"Failed to fetch publisher {dcs_publisher_id} name: {e}"
-                    )
+            if dcs_publisher_id and dcs_publisher_id in publisher_name_map:
+                recipient.organization_name = publisher_name_map[dcs_publisher_id]
 
 
 async def validate_recipient(
@@ -338,23 +284,142 @@ async def create_message(
     await db.commit()
     await db.refresh(message)
 
-    # Get sender's name for notification
-    sender_query = select(User).where(User.id == sender_id)
-    sender_result = await db.execute(sender_query)
-    sender = sender_result.scalar_one_or_none()
-    sender_name = sender.full_name or sender.email.split("@")[0] if sender else "Someone"
-
-    # Create notification for recipient
-    await create_notification(
-        db=db,
-        user_id=recipient_id,
-        notification_type=NotificationType.message_received,
-        title="New Message",
-        message=f"You have a new message from {sender_name}",
-        link=f"/messaging?user={sender_id}",
+    # Invalidate message cache for both parties
+    await invalidate_for_event(
+        "message_sent",
+        sender_id=str(sender_id),
+        recipient_id=str(recipient_id),
     )
 
     return message
+
+
+async def create_system_message(
+    db: AsyncSession,
+    sender_id: uuid.UUID,
+    recipient_id: uuid.UUID,
+    body: str,
+    subject: str | None = None,
+    context_type: str | None = None,
+    context_id: uuid.UUID | None = None,
+    message_category: str | None = None,
+) -> DirectMessage:
+    """Create a system-generated message (no recipient validation, no notification)."""
+    message = DirectMessage(
+        sender_id=sender_id,
+        recipient_id=recipient_id,
+        subject=subject[:500] if subject else None,
+        body=body,
+        is_read=False,
+        sent_at=datetime.now(UTC),
+        is_system=True,
+        context_type=context_type,
+        context_id=context_id,
+        message_category=message_category,
+    )
+    db.add(message)
+    await db.commit()
+    await db.refresh(message)
+
+    await invalidate_for_event(
+        "message_sent",
+        sender_id=str(sender_id),
+        recipient_id=str(recipient_id),
+    )
+
+    return message
+
+
+async def create_system_messages_bulk(
+    db: AsyncSession,
+    sender_id: uuid.UUID,
+    recipient_ids: list[uuid.UUID],
+    body: str,
+    subject: str | None = None,
+    context_type: str | None = None,
+    context_id: uuid.UUID | None = None,
+    message_category: str | None = None,
+) -> int:
+    """Create system messages for multiple recipients in a single batch insert."""
+    if not recipient_ids:
+        return 0
+
+    now = datetime.now(UTC)
+    truncated_subject = subject[:500] if subject else None
+
+    messages = [
+        DirectMessage(
+            sender_id=sender_id,
+            recipient_id=rid,
+            subject=truncated_subject,
+            body=body,
+            is_read=False,
+            sent_at=now,
+            is_system=True,
+            context_type=context_type,
+            context_id=context_id,
+            message_category=message_category,
+        )
+        for rid in recipient_ids
+    ]
+    db.add_all(messages)
+    await db.commit()
+
+    # Invalidate cache for all recipients
+    for rid in recipient_ids:
+        await invalidate_for_event(
+            "message_sent",
+            sender_id=str(sender_id),
+            recipient_id=str(rid),
+        )
+
+    return len(messages)
+
+
+async def enqueue_system_message(
+    arq_pool: "ArqRedis",
+    sender_id: uuid.UUID,
+    recipient_id: uuid.UUID,
+    body: str,
+    subject: str | None = None,
+    context_type: str | None = None,
+    context_id: uuid.UUID | None = None,
+    message_category: str | None = None,
+) -> None:
+    """Enqueue a system message for background creation via arq worker."""
+    await arq_pool.enqueue_job(
+        "task_create_system_message",
+        str(sender_id),
+        str(recipient_id),
+        body,
+        subject=subject,
+        context_type=context_type,
+        context_id=str(context_id) if context_id else None,
+        message_category=message_category,
+    )
+
+
+async def enqueue_system_messages_bulk(
+    arq_pool: "ArqRedis",
+    sender_id: uuid.UUID,
+    recipient_ids: list[uuid.UUID],
+    body: str,
+    subject: str | None = None,
+    context_type: str | None = None,
+    context_id: uuid.UUID | None = None,
+    message_category: str | None = None,
+) -> None:
+    """Enqueue bulk system messages for background creation via arq worker."""
+    await arq_pool.enqueue_job(
+        "task_create_system_messages_bulk",
+        str(sender_id),
+        [str(r) for r in recipient_ids],
+        body,
+        subject=subject,
+        context_type=context_type,
+        context_id=str(context_id) if context_id else None,
+        message_category=message_category,
+    )
 
 
 async def get_conversations(
@@ -480,7 +545,7 @@ async def get_conversations(
     conversations = [
         ConversationPublic(
             participant_id=row.partner_id,
-            participant_name=row.full_name or row.email.split("@")[0],
+            participant_name=row.full_name or (row.email.split("@")[0] if row.email else "Unknown"),
             participant_email=row.email,
             participant_role=row.role.value,
             last_message_preview=row.last_message[:100] if row.last_message else "",
@@ -561,18 +626,21 @@ async def get_thread(
         if unread_messages:
             await db.commit()
 
+    def _name(u: User) -> str:
+        return u.full_name or (u.email.split("@")[0] if u.email else u.username or "Unknown")
+
     # Convert to response format
     message_responses = []
     for msg in messages:
         if msg.sender_id == user_id:
-            sender_name = current_user.full_name or current_user.email.split("@")[0]
+            sender_name = _name(current_user)
             sender_email = current_user.email
-            recipient_name = partner.full_name or partner.email.split("@")[0]
+            recipient_name = _name(partner)
             recipient_email = partner.email
         else:
-            sender_name = partner.full_name or partner.email.split("@")[0]
+            sender_name = _name(partner)
             sender_email = partner.email
-            recipient_name = current_user.full_name or current_user.email.split("@")[0]
+            recipient_name = _name(current_user)
             recipient_email = current_user.email
 
         message_responses.append(
@@ -589,6 +657,10 @@ async def get_thread(
                 parent_message_id=msg.parent_message_id,
                 is_read=msg.is_read,
                 sent_at=msg.sent_at,
+                is_system=msg.is_system,
+                context_type=msg.context_type,
+                context_id=msg.context_id,
+                message_category=msg.message_category,
             )
         )
 

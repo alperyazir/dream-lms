@@ -119,6 +119,29 @@ interface ActivityPlayerProps {
 }
 
 /**
+ * Resolve drag-drop item IDs (e.g. "item-0") back to text using the words array.
+ * Story 23.1 changed DragDropPicturePlayer to store item IDs instead of text,
+ * but the scoring functions compare against answer.text.
+ */
+function resolveItemIdsToText(
+  userAnswers: Map<string, string>,
+  words: string[],
+): Map<string, string> {
+  const resolved = new Map<string, string>()
+  for (const [dropZoneId, value] of userAnswers) {
+    const match = value.match(/^item-(\d+)$/)
+    if (match) {
+      const index = parseInt(match[1], 10)
+      resolved.set(dropZoneId, words[index] ?? value)
+    } else {
+      // Already text (legacy format or restored from backend)
+      resolved.set(dropZoneId, value)
+    }
+  }
+  return resolved
+}
+
+/**
  * Score mix_mode questions by format.
  * Returns { autoCorrect, autoScorable, pendingReview }.
  */
@@ -453,13 +476,16 @@ export function ActivityPlayer({
       if (normalizedType === "dragdroppicture") {
         const config = activityConfig as DragDropPictureActivity
         const userAnswers = answers as Map<string, string>
-        const scoreResult = scoreDragDrop(userAnswers, config.answer)
+        // Resolve item IDs (e.g. "item-0") back to text for scoring
+        const resolved = resolveItemIdsToText(userAnswers, config.words)
+        const scoreResult = scoreDragDrop(resolved, config.answer)
         calculatedScore = scoreResult.score
         answersJson = { answers: Object.fromEntries(userAnswers) }
       } else if (normalizedType === "dragdroppicturegroup") {
         const config = activityConfig as DragDropPictureGroupActivity
         const userAnswers = answers as Map<string, string>
-        const scoreResult = scoreDragDropGroup(userAnswers, config.answer)
+        const resolved = resolveItemIdsToText(userAnswers, config.words)
+        const scoreResult = scoreDragDropGroup(resolved, config.answer)
         calculatedScore = scoreResult.score
         answersJson = { answers: Object.fromEntries(userAnswers) }
       } else if (normalizedType === "matchthewords") {
@@ -974,12 +1000,14 @@ export function ActivityPlayer({
     if (activityConfig.type === "dragdroppicture") {
       const config = activityConfig as DragDropPictureActivity
       const userAnswers = answers as Map<string, string>
-      score = scoreDragDrop(userAnswers, config.answer)
+      // Resolve item IDs back to text for scoring
+      const resolved = resolveItemIdsToText(userAnswers, config.words)
+      score = scoreDragDrop(resolved, config.answer)
 
       // Build correct answers set for results view
       config.answer.forEach((answer) => {
         const dropZoneId = `${answer.coords.x}-${answer.coords.y}`
-        const userAnswer = userAnswers.get(dropZoneId)
+        const userAnswer = resolved.get(dropZoneId)
         if (userAnswer === answer.text) {
           correctSet.add(dropZoneId)
         }
@@ -987,12 +1015,13 @@ export function ActivityPlayer({
     } else if (activityConfig.type === "dragdroppicturegroup") {
       const config = activityConfig as DragDropPictureGroupActivity
       const userAnswers = answers as Map<string, string>
-      score = scoreDragDropGroup(userAnswers, config.answer)
+      const resolved = resolveItemIdsToText(userAnswers, config.words)
+      score = scoreDragDropGroup(resolved, config.answer)
 
       // Build correct answers set for results view (check if answer is in group)
       config.answer.forEach((answer) => {
         const dropZoneId = `${answer.coords.x}-${answer.coords.y}`
-        const userAnswer = userAnswers.get(dropZoneId)
+        const userAnswer = resolved.get(dropZoneId)
         if (userAnswer && answer.group.includes(userAnswer)) {
           correctSet.add(dropZoneId)
         }

@@ -2607,6 +2607,7 @@ export type PublisherPublic = {
 export type PublisherStats = {
     schools_count: number;
     teachers_count: number;
+    students_count: number;
     books_count: number;
 };
 
@@ -4693,6 +4694,20 @@ export type AdminListSchoolsData = {
 
 export type AdminListSchoolsResponse = (Array<SchoolPublic>);
 
+export type AdminListSchoolsPaginatedData = {
+    limit?: number;
+    skip?: number;
+    search?: string | null;
+};
+
+export type AdminListSchoolsPaginatedResponse = {
+    items: Array<SchoolPublic>;
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+};
+
 export type AdminUpdatePublisherData = {
     publisherId: number;
 };
@@ -4741,6 +4756,20 @@ export type AdminListTeachersData = {
 
 export type AdminListTeachersResponse = (Array<TeacherPublic>);
 
+export type AdminListTeachersPaginatedData = {
+    limit?: number;
+    skip?: number;
+    search?: string | null;
+};
+
+export type AdminListTeachersPaginatedResponse = {
+    items: Array<TeacherPublic>;
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+};
+
 export type AdminUpdateTeacherData = {
     requestBody: TeacherUpdate;
     teacherId: string;
@@ -4763,9 +4792,16 @@ export type AdminCreateStudentResponse = (UserCreationResponse);
 export type AdminListStudentsData = {
     limit?: number;
     skip?: number;
+    search?: string | null;
 };
 
-export type AdminListStudentsResponse = (Array<StudentPublic>);
+export type AdminListStudentsResponse = {
+    items: Array<StudentPublic>;
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+};
 
 export type AdminGetStudentPasswordData = {
     studentId: string;
@@ -4878,6 +4914,20 @@ export type AdminListPublisherAccountsData = {
 };
 
 export type AdminListPublisherAccountsResponse = (PublisherAccountListResponse);
+
+export type AdminListPublisherAccountsPaginatedData = {
+    limit?: number;
+    skip?: number;
+    search?: string | null;
+};
+
+export type AdminListPublisherAccountsPaginatedResponse = {
+    items: Array<PublisherAccountPublic>;
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+};
 
 export type AdminGetPublisherAccountData = {
     userId: string;
@@ -5894,6 +5944,34 @@ export type PublishersCreateMyTeacherResponse = (UserCreationResponse);
 
 export type PublishersListMyBooksResponse = (Array<BookPublic>);
 
+export type PublisherStudentItem = {
+    id: string;
+    user_id: string;
+    user_full_name: string;
+    user_email: string | null;
+    user_username: string;
+    grade_level: string | null;
+    school_name: string;
+    classroom_count: number;
+    created_at: string;
+};
+
+export type PublisherStudentListResponse = {
+    items: Array<PublisherStudentItem>;
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+};
+
+export type PublishersListMyStudentsData = {
+    skip?: number;
+    limit?: number;
+    search?: string | null;
+};
+
+export type PublishersListMyStudentsResponse = PublisherStudentListResponse;
+
 export type ReportsGenerateReportData = {
     requestBody: ReportGenerateRequest;
 };
@@ -6058,6 +6136,20 @@ export type SupervisorsListSupervisorsData = {
 };
 
 export type SupervisorsListSupervisorsResponse = (Array<SupervisorPublic>);
+
+export type SupervisorsListSupervisorsPaginatedData = {
+    limit?: number;
+    skip?: number;
+    search?: string | null;
+};
+
+export type SupervisorsListSupervisorsPaginatedResponse = {
+    items: Array<SupervisorPublic>;
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+};
 
 export type SupervisorsCreateSupervisorData = {
     requestBody: SupervisorCreateAPI;

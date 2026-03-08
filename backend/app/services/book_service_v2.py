@@ -108,6 +108,54 @@ class BookService:
             return None
         return self._to_public(dcs_book)
 
+    async def get_books_batch(self, book_ids: list[int]) -> dict[int, BookPublic]:
+        """
+        Get multiple books by ID in a single DCS call.
+
+        Returns a dict mapping book_id -> BookPublic for found books.
+        Falls back to individual fetches if batch endpoint is unavailable.
+        """
+        if not book_ids:
+            return {}
+
+        # Check cache first, collect misses
+        result: dict[int, BookPublic] = {}
+        missing_ids: list[int] = []
+
+        for bid in book_ids:
+            cache_key = CacheKeys.book_by_id(str(bid))
+            cached = await self.cache.get(cache_key)
+            if cached is not None:
+                result[bid] = cached
+            else:
+                missing_ids.append(bid)
+
+        if not missing_ids:
+            return result
+
+        # Fetch missing books via batch endpoint
+        client = await self._get_client()
+        try:
+            dcs_books = await client.get_books_batch(missing_ids)
+            for dcs_book in dcs_books:
+                book_public = self._to_public(dcs_book)
+                result[dcs_book.id] = book_public
+                # Populate individual cache entries
+                cache_key = CacheKeys.book_by_id(str(dcs_book.id))
+                await self.cache.set(cache_key, book_public, ttl=600)
+        except Exception as e:
+            logger.warning(f"Batch book fetch failed, falling back to individual: {e}")
+            import asyncio
+            individual = await asyncio.gather(
+                *(self.get_book(bid) for bid in missing_ids),
+                return_exceptions=True,
+            )
+            for bid, book in zip(missing_ids, individual):
+                if not isinstance(book, BaseException) and book is not None:
+                    result[bid] = book
+
+        return result
+
     async def get_book_config(self, book_id: int) -> dict[str, Any] | None:
         """
         Get book config.json from DCS storage.
