@@ -16,6 +16,22 @@ OpenAPI.TOKEN = async () => {
 const queryClient = new QueryClient()
 
 const handleApiError = (error: Error) => {
+  // Handle rate limit errors (429)
+  if (error instanceof ApiError && error.status === 429) {
+    const retryAfter = (error.body as Record<string, unknown>)?.retry_after ?? 60
+    console.warn(`Rate limit exceeded. Retry after ${retryAfter}s`)
+    // Show a non-intrusive alert — toast not available outside React tree
+    if (!document.querySelector("[data-rate-limit-toast]")) {
+      const el = document.createElement("div")
+      el.setAttribute("data-rate-limit-toast", "")
+      el.style.cssText =
+        "position:fixed;top:16px;right:16px;z-index:9999;padding:12px 20px;background:#ef4444;color:#fff;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.15)"
+      el.textContent = `Too many requests. Please wait ${retryAfter} seconds.`
+      document.body.appendChild(el)
+      setTimeout(() => el.remove(), 5000)
+    }
+    return
+  }
   // Handle auth errors (401, 403) and missing user errors (404)
   // 404 can happen when a user's token is valid but the user was deleted from the database
   if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
@@ -30,8 +46,11 @@ const handleApiError = (error: Error) => {
 queryClient.setDefaultOptions({
   queries: {
     retry: (failureCount, error) => {
-      // Don't retry on auth errors or missing user errors
-      if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
+      // Don't retry on auth errors, missing user errors, or rate limits
+      if (
+        error instanceof ApiError &&
+        [401, 403, 404, 429].includes(error.status)
+      ) {
         return false
       }
       return failureCount < 3

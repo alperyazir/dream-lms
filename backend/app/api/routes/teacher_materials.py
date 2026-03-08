@@ -25,7 +25,7 @@ from sqlmodel import Session, select
 from app.api.deps import CurrentUser, SessionDep, get_db
 from app.core import security
 from app.core.config import settings
-from app.core.rate_limit import limiter
+from app.core.rate_limit import RateLimits, limiter
 from app.models import (
     MaterialType,
     Teacher,
@@ -268,7 +268,9 @@ async def upload_material(
     status_code=status.HTTP_201_CREATED,
     summary="Create a text note",
 )
+@limiter.limit(RateLimits.WRITE)
 async def create_text_note(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -299,7 +301,9 @@ async def create_text_note(
     response_model=MaterialResponse,
     summary="Update a text note",
 )
+@limiter.limit(RateLimits.WRITE)
 async def update_text_note(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -342,7 +346,9 @@ async def update_text_note(
     status_code=status.HTTP_201_CREATED,
     summary="Create a URL link",
 )
+@limiter.limit(RateLimits.WRITE)
 async def create_url_link(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -376,7 +382,9 @@ async def create_url_link(
     response_model=MaterialListResponse,
     summary="List teacher's materials",
 )
+@limiter.limit(RateLimits.READ)
 async def list_materials(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -418,7 +426,9 @@ async def list_materials(
     response_model=StorageQuotaResponse,
     summary="Get storage quota",
 )
+@limiter.limit(RateLimits.READ)
 async def get_quota(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -436,7 +446,9 @@ async def get_quota(
     response_model=MaterialResponse,
     summary="Get material details",
 )
+@limiter.limit(RateLimits.READ)
 async def get_material(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -455,7 +467,9 @@ async def get_material(
     response_model=PresignedUrlResponse,
     summary="Get URL for file access",
 )
+@limiter.limit(RateLimits.READ)
 async def get_presigned_url(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -526,7 +540,9 @@ async def get_presigned_url(
     response_model=MaterialResponse,
     summary="Update material name",
 )
+@limiter.limit(RateLimits.WRITE)
 async def update_material(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -553,7 +569,9 @@ async def update_material(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a material",
 )
+@limiter.limit(RateLimits.WRITE)
 async def delete_material(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -602,7 +620,9 @@ async def delete_material(
     "/{material_id}/download",
     summary="Download a material file",
 )
+@limiter.limit(RateLimits.READ)
 async def download_material(
+    request: Request,
     *,
     session: Annotated[Session, Depends(get_db)],
     dcs_client: DreamCentralStorageClient = Depends(get_dream_storage_client),
@@ -709,11 +729,12 @@ async def download_material(
     "/{material_id}/stream",
     summary="Stream a media file",
 )
+@limiter.limit(RateLimits.READ)
 async def stream_material(
+    request: Request,
     *,
     session: Annotated[Session, Depends(get_db)],
     teacher_id: Annotated[uuid.UUID, Depends(get_media_teacher_id)],
-    request: Request,
     dcs_client: DreamCentralStorageClient = Depends(get_dream_storage_client),
     material_id: uuid.UUID,
 ) -> StreamingResponse:
@@ -907,7 +928,9 @@ async def upload_pdf_for_ai(
     summary="Create material from text",
     description="Create a material from pasted text for AI content generation",
 )
+@limiter.limit(RateLimits.WRITE)
 async def create_text_material_for_ai(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -951,7 +974,9 @@ async def create_text_material_for_ai(
     summary="List AI-processable materials",
     description="List materials with extracted text available for AI generation",
 )
+@limiter.limit(RateLimits.READ)
 async def list_processable_materials(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -982,7 +1007,9 @@ async def list_processable_materials(
     summary="Get material for AI",
     description="Get material details including extracted text for AI",
 )
+@limiter.limit(RateLimits.READ)
 async def get_material_for_ai(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -1016,7 +1043,9 @@ async def get_material_for_ai(
     summary="List generated content",
     description="List teacher's AI-generated content library",
 )
+@limiter.limit(RateLimits.READ)
 async def list_generated_content(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -1076,7 +1105,9 @@ async def list_generated_content(
     response_model=TeacherGeneratedContentResponse,
     summary="Get generated content",
 )
+@limiter.limit(RateLimits.READ)
 async def get_generated_content(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -1129,7 +1160,9 @@ async def get_generated_content(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete generated content",
 )
+@limiter.limit(RateLimits.WRITE)
 async def delete_generated_content(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,

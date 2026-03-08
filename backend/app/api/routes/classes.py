@@ -12,8 +12,10 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
+from starlette.requests import Request
 
 from app.api.deps import AsyncSessionDep, require_role
+from app.core.rate_limit import RateLimits, limiter
 from app.models import (
     Class,
     ClassCreateByTeacher,
@@ -189,7 +191,9 @@ async def _verify_student_ownership(
     summary="Create new class",
     description="Creates a new class owned by the authenticated teacher."
 )
+@limiter.limit(RateLimits.WRITE)
 async def create_class(
+    request: Request,
     *,
     session: AsyncSessionDep,
     class_in: ClassCreateByTeacher,
@@ -234,7 +238,9 @@ async def create_class(
     summary="List teacher's classes",
     description="Returns all active classes owned by the authenticated teacher."
 )
+@limiter.limit(RateLimits.READ)
 async def list_classes(
+    request: Request,
     *,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher),
@@ -295,7 +301,9 @@ async def list_classes(
     summary="Get class details",
     description="Returns detailed class information including enrolled students."
 )
+@limiter.limit(RateLimits.READ)
 async def get_class_detail(
+    request: Request,
     *,
     session: AsyncSessionDep,
     class_id: uuid.UUID,
@@ -346,7 +354,9 @@ async def get_class_detail(
     summary="Update class",
     description="Updates class details (name, grade, subject, academic year)."
 )
+@limiter.limit(RateLimits.WRITE)
 async def update_class(
+    request: Request,
     *,
     session: AsyncSessionDep,
     class_id: uuid.UUID,
@@ -399,7 +409,9 @@ async def update_class(
     summary="Archive class",
     description="Archives a class (soft delete). Marks as inactive."
 )
+@limiter.limit(RateLimits.WRITE)
 async def archive_class(
+    request: Request,
     *,
     session: AsyncSessionDep,
     class_id: uuid.UUID,
@@ -429,7 +441,9 @@ async def archive_class(
     summary="Add students to class",
     description="Enrolls multiple students in a class. Students must belong to the teacher."
 )
+@limiter.limit(RateLimits.WRITE)
 async def add_students_to_class(
+    request: Request,
     *,
     session: AsyncSessionDep,
     class_id: uuid.UUID,
@@ -496,7 +510,9 @@ async def add_students_to_class(
     summary="Remove student from class",
     description="Removes a student from a class enrollment."
 )
+@limiter.limit(RateLimits.WRITE)
 async def remove_student_from_class(
+    request: Request,
     *,
     session: AsyncSessionDep,
     class_id: uuid.UUID,
@@ -541,7 +557,9 @@ async def remove_student_from_class(
     summary="Get class analytics",
     description="Returns aggregated performance analytics for a class."
 )
+@limiter.limit(RateLimits.READ)
 async def get_class_analytics_endpoint(
+    request: Request,
     *,
     session: AsyncSessionDep,
     class_id: uuid.UUID,
@@ -581,7 +599,9 @@ async def get_class_analytics_endpoint(
     summary="Get class benchmarks",
     description="Returns performance benchmarks comparing class against school/publisher averages."
 )
+@limiter.limit(RateLimits.READ)
 async def get_class_benchmarks_endpoint(
+    request: Request,
     *,
     session: AsyncSessionDep,
     class_id: uuid.UUID,
@@ -642,7 +662,9 @@ async def get_class_benchmarks_endpoint(
     response_model=ClassSkillHeatmapResponse,
     summary="Get class skill heatmap (Story 30.15)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_class_skill_heatmap(
+    request: Request,
     class_id: uuid.UUID,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),

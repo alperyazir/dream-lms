@@ -12,6 +12,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import select
+from starlette.requests import Request
+
+from app.core.rate_limit import RateLimits, limiter
 
 from app.api.deps import AsyncSessionDep, CurrentUser, require_role
 from app.models import User, UserRole
@@ -24,7 +27,9 @@ router = APIRouter(prefix="/ai/usage", tags=["ai-usage"])
 
 
 @router.get("/my-usage")
+@limiter.limit(RateLimits.AI)
 async def get_my_usage(
+    request: Request,
     session: AsyncSessionDep,
     current_user: CurrentUser,
 ):
@@ -85,7 +90,9 @@ async def get_my_usage(
 
 
 @router.get("/summary")
+@limiter.limit(RateLimits.ADMIN)
 async def get_usage_summary(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.admin),
     from_date: datetime | None = Query(None, description="Start date (ISO 8601)"),
@@ -124,7 +131,9 @@ async def get_usage_summary(
 
 
 @router.get("/by-type")
+@limiter.limit(RateLimits.ADMIN)
 async def get_usage_by_type(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.admin),
     from_date: datetime | None = Query(None, description="Start date (ISO 8601)"),
@@ -160,7 +169,9 @@ async def get_usage_by_type(
 
 
 @router.get("/by-teacher")
+@limiter.limit(RateLimits.ADMIN)
 async def get_usage_by_teacher(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.admin),
     from_date: datetime | None = Query(None, description="Start date (ISO 8601)"),
@@ -197,7 +208,9 @@ async def get_usage_by_teacher(
 
 
 @router.get("/by-provider")
+@limiter.limit(RateLimits.ADMIN)
 async def get_usage_by_provider(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.admin),
     from_date: datetime | None = Query(None, description="Start date (ISO 8601)"),
@@ -240,7 +253,9 @@ async def get_usage_by_provider(
 
 
 @router.get("/errors")
+@limiter.limit(RateLimits.ADMIN)
 async def get_errors(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.admin),
     from_date: datetime | None = Query(None, description="Start date (ISO 8601)"),
@@ -285,7 +300,9 @@ async def get_errors(
 
 
 @router.get("/export")
+@limiter.limit(RateLimits.ADMIN)
 async def export_usage_data(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.admin),
     from_date: datetime | None = Query(None, description="Start date (ISO 8601)"),

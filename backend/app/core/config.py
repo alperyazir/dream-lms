@@ -126,6 +126,11 @@ class Settings(BaseSettings):
     # Redis cache
     REDIS_URL: str = "redis://localhost:6380/0"
 
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_REDIS_URL: str = "redis://localhost:6380/1"
+    RATE_LIMIT_DEFAULT: str = "200/minute"
+
     # AI Generation settings
     AI_MONTHLY_QUOTA: int = 100  # Monthly AI generation quota per teacher
 

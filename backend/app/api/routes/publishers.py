@@ -10,6 +10,9 @@ import uuid
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from fastapi.responses import Response
+from starlette.requests import Request
+
+from app.core.rate_limit import RateLimits, limiter
 from sqlalchemy import func
 from sqlmodel import select
 
@@ -46,7 +49,8 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/{publisher_id}/logo")
-async def get_publisher_logo(publisher_id: int) -> Response:
+@limiter.limit(RateLimits.READ)
+async def get_publisher_logo(request: Request, publisher_id: int) -> Response:
     """
     Get publisher logo from DCS.
 
@@ -112,7 +116,9 @@ def get_current_publisher_id(current_user: User) -> int:
 
 
 @router.get("/me/profile", response_model=PublisherProfile)
+@limiter.limit(RateLimits.READ)
 async def get_my_profile(
+    request: Request,
     current_user: User = require_role(UserRole.publisher)
 ) -> PublisherProfile:
     """
@@ -143,7 +149,9 @@ async def get_my_profile(
 
 
 @router.get("/me/stats", response_model=PublisherStats)
+@limiter.limit(RateLimits.READ)
 async def get_my_stats(
+    request: Request,
     session: SessionDep,
     current_user: User = require_role(UserRole.publisher)
 ) -> PublisherStats:
@@ -189,7 +197,9 @@ async def get_my_stats(
 
 
 @router.get("/me/schools", response_model=list[SchoolWithCounts])
+@limiter.limit(RateLimits.READ)
 def list_my_schools(
+    request: Request,
     session: SessionDep,
     current_user: User = require_role(UserRole.publisher)
 ) -> list[SchoolWithCounts]:
@@ -247,7 +257,9 @@ def list_my_schools(
 
 
 @router.post("/me/schools", response_model=SchoolPublic, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimits.WRITE)
 def create_my_school(
+    request: Request,
     session: SessionDep,
     school_in: SchoolCreateByPublisher,
     current_user: User = require_role(UserRole.publisher)
@@ -269,7 +281,9 @@ def create_my_school(
 
 
 @router.delete("/me/schools/{school_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(RateLimits.WRITE)
 def delete_my_school(
+    request: Request,
     session: SessionDep,
     school_id: uuid.UUID,
     current_user: User = require_role(UserRole.publisher)
@@ -299,7 +313,9 @@ def delete_my_school(
 
 
 @router.get("/me/teachers", response_model=list[TeacherWithCounts])
+@limiter.limit(RateLimits.READ)
 def list_my_teachers(
+    request: Request,
     session: SessionDep,
     current_user: User = require_role(UserRole.publisher)
 ) -> list[TeacherWithCounts]:
@@ -356,7 +372,9 @@ def list_my_teachers(
 
 
 @router.post("/me/teachers", response_model=UserCreationResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimits.WRITE)
 def create_my_teacher(
+    request: Request,
     session: SessionDep,
     teacher_in: TeacherCreateAPI,
     background_tasks: BackgroundTasks,
@@ -440,7 +458,9 @@ def create_my_teacher(
 
 
 @router.get("/me/students", response_model=PublisherStudentListResponse)
+@limiter.limit(RateLimits.READ)
 def list_my_students(
+    request: Request,
     session: SessionDep,
     skip: int = 0,
     limit: int = 20,
@@ -530,7 +550,9 @@ def list_my_students(
 
 
 @router.get("/me/books", response_model=list[BookPublic])
+@limiter.limit(RateLimits.READ)
 async def list_my_books(
+    request: Request,
     current_user: User = require_role(UserRole.publisher)
 ) -> list[BookPublic]:
     """List books from DCS for publisher."""

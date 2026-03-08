@@ -10,6 +10,9 @@ from datetime import UTC, datetime
 from fastapi import File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from fastapi.routing import APIRouter
+from starlette.requests import Request
+
+from app.core.rate_limit import RateLimits, limiter
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -85,7 +88,9 @@ logger = logging.getLogger(__name__)
     "/me/assignments",
     summary="Get student's assignments",
 )
+@limiter.limit(RateLimits.READ)
 async def get_student_assignments(
+    request: Request,
     *,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
@@ -264,7 +269,9 @@ async def get_student_assignments(
     response_model=StudentProgressResponse,
     summary="Get student's own progress data",
 )
+@limiter.limit(RateLimits.READ)
 async def get_student_progress(
+    request: Request,
     *,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
@@ -334,7 +341,9 @@ async def get_student_progress(
     response_model=StudentAnalyticsResponse,
     summary="Get student performance analytics",
 )
+@limiter.limit(RateLimits.READ)
 async def get_student_analytics(
+    request: Request,
     *,
     session: AsyncSessionDep,
     student_id: uuid.UUID,
@@ -413,7 +422,9 @@ async def get_student_analytics(
     response_model=StudentBadgeCountsResponse,
     summary="Get my badge counts (Story 6.5)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_my_badges(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
 ) -> StudentBadgeCountsResponse:
@@ -459,7 +470,9 @@ async def get_my_badges(
     response_model=StudentBadgeCountsResponse,
     summary="Get student's badge counts (Story 6.5)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_student_badges(
+    request: Request,
     student_id: uuid.UUID,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher, UserRole.student),
@@ -551,7 +564,9 @@ async def get_student_badges(
     response_model=list[StudentPublic],
     summary="Get all students (admin/supervisor) or teacher's students",
 )
+@limiter.limit(RateLimits.READ)
 async def get_students(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.teacher),
     limit: int = Query(100, ge=1, le=500, description="Maximum number of students to return"),
@@ -643,7 +658,9 @@ async def get_students(
     response_model=list[StudentPublic],
     summary="Get students not enrolled in teacher's classes (Story 20.5)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_unassigned_students(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher),
 ) -> list[StudentPublic]:
@@ -726,7 +743,9 @@ async def get_unassigned_students(
     summary="Get student's assignments for calendar view",
     description="Get assignments within a date range for calendar display. Only shows published assignments.",
 )
+@limiter.limit(RateLimits.READ)
 async def get_student_calendar_assignments(
+    request: Request,
     *,
     session: AsyncSessionDep,
     start_date: datetime = Query(..., description="Start date for range (inclusive)"),
@@ -978,7 +997,9 @@ def _create_import_template_workbook() -> Workbook:
         }
     },
 )
+@limiter.limit(RateLimits.READ)
 def get_import_template(
+    request: Request,
     _current_user: User = require_role(UserRole.admin, UserRole.teacher),
 ) -> Response:
     """
@@ -1024,7 +1045,9 @@ def _validate_email_format(email: str) -> bool:
     summary="Validate student import file (Story 9.9)",
     description="Upload and validate Excel file for student import. Returns validation results for each row.",
 )
+@limiter.limit(RateLimits.WRITE)
 async def validate_import_file(
+    request: Request,
     session: SessionDep,
     file: UploadFile = File(..., description="Excel file (.xlsx or .xls)"),
     _current_user: User = require_role(UserRole.admin, UserRole.teacher),
@@ -1190,7 +1213,9 @@ async def validate_import_file(
     summary="Execute student import (Story 9.9, 28.1)",
     description="Import students from validated Excel file. Returns created credentials.",
 )
+@limiter.limit(RateLimits.WRITE)
 async def execute_import(
+    request: Request,
     session: SessionDep,
     file: UploadFile = File(..., description="Excel file (.xlsx or .xls)"),
     school_id: uuid.UUID | None = Query(None, description="School ID (required for Admin)"),
@@ -1481,8 +1506,10 @@ async def execute_import(
         }
     },
 )
+@limiter.limit(RateLimits.WRITE)
 def download_credentials(
-    request: CredentialsDownloadRequest,
+    request: Request,
+    credentials_request: CredentialsDownloadRequest,
     _current_user: User = require_role(UserRole.admin, UserRole.teacher),
 ) -> Response:
     """
@@ -1513,7 +1540,7 @@ def download_credentials(
         cell.alignment = header_alignment
 
     # Data rows
-    for row_num, cred in enumerate(request.credentials, start=2):
+    for row_num, cred in enumerate(credentials_request.credentials, start=2):
         ws.cell(row=row_num, column=1, value=cred.full_name)
         ws.cell(row=row_num, column=2, value=cred.username)
         ws.cell(row=row_num, column=3, value=cred.password)
@@ -1736,7 +1763,9 @@ async def _build_skill_profile(
     response_model=StudentSkillProfileResponse,
     summary="Get own skill profile (Story 30.14)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_my_skill_profile(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
 ) -> StudentSkillProfileResponse:
@@ -1776,7 +1805,9 @@ async def get_my_skill_profile(
     response_model=StudentSkillProfileResponse,
     summary="Get student skill profile (Story 30.14)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_student_skill_profile(
+    request: Request,
     student_id: uuid.UUID,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),
@@ -1976,7 +2007,9 @@ async def _build_skill_trends(
     response_model=StudentSkillTrendsResponse,
     summary="Get own skill trends (Story 30.16)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_my_skill_trends(
+    request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
     period: str = Query(default="3m", description="Time period: 30d, 3m, semester, all"),
@@ -1997,7 +2030,9 @@ async def get_my_skill_trends(
     response_model=StudentSkillTrendsResponse,
     summary="Get student skill trends (Story 30.16)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_student_skill_trends(
+    request: Request,
     student_id: uuid.UUID,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),

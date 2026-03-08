@@ -5,6 +5,9 @@ from typing import Any
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import aliased
 from sqlmodel import SQLModel, func, select
+from starlette.requests import Request
+
+from app.core.rate_limit import RateLimits, limiter
 
 from app import crud
 from app.services.cache_events import invalidate_for_event_sync
@@ -56,7 +59,9 @@ router = APIRouter(prefix="/teachers", tags=["teachers"])
     summary="Create new student",
     description="Creates a new student user. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def create_student(
+    request: Request,
     *,
     session: SessionDep,
     student_in: StudentCreateAPI,
@@ -187,7 +192,9 @@ def create_student(
     summary="Bulk import students from Excel",
     description="Upload Excel file to create multiple student accounts. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 async def bulk_import_students(
+    request: Request,
     *,
     session: SessionDep,
     file: UploadFile = File(...),
@@ -345,7 +352,9 @@ async def bulk_import_students(
     summary="List my students",
     description="Retrieve students created by the current teacher or enrolled in their classes. Teacher only.",
 )
+@limiter.limit(RateLimits.READ)
 def list_my_students(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = require_role(UserRole.teacher),
@@ -475,7 +484,9 @@ def list_my_students(
     summary="Update student",
     description="Update a student's information. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def update_student(
+    request: Request,
     *,
     session: SessionDep,
     student_id: uuid.UUID,
@@ -605,7 +616,9 @@ def update_student(
     summary="Delete student",
     description="Delete a student and remove from all classes. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def delete_student(
+    request: Request,
     *,
     session: SessionDep,
     student_id: uuid.UUID,
@@ -697,10 +710,12 @@ class BulkDeleteResponse(SQLModel):
     summary="Bulk delete students",
     description="Delete multiple students by IDs. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def bulk_delete_students(
+    request: Request,
     *,
     session: SessionDep,
-    request: BulkDeleteRequest,
+    bulk_request: BulkDeleteRequest,
     current_user: User = require_role(UserRole.teacher)
 ) -> BulkDeleteResponse:
     """
@@ -730,7 +745,7 @@ def bulk_delete_students(
     failed_count = 0
     errors: list[str] = []
 
-    for student_id in request.ids:
+    for student_id in bulk_request.ids:
         try:
             student = session.get(Student, student_id)
             if not student:
@@ -787,7 +802,9 @@ def bulk_delete_students(
     summary="List my classes",
     description="Retrieve all classes taught by the authenticated teacher with student counts. Teacher only.",
 )
+@limiter.limit(RateLimits.READ)
 def list_my_classes(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = require_role(UserRole.teacher)
@@ -852,7 +869,9 @@ def list_my_classes(
     summary="Create new class",
     description="Creates a new class for the authenticated teacher. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def create_class(
+    request: Request,
     *,
     session: SessionDep,
     class_in: ClassCreateByTeacher,
@@ -901,7 +920,9 @@ def create_class(
     summary="Get class details",
     description="Retrieve details of a specific class. Teacher only.",
 )
+@limiter.limit(RateLimits.READ)
 def get_class_details(
+    request: Request,
     *,
     session: SessionDep,
     class_id: uuid.UUID,
@@ -946,7 +967,9 @@ def get_class_details(
     summary="Update class",
     description="Update a class's details. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def update_class(
+    request: Request,
     *,
     session: SessionDep,
     class_id: uuid.UUID,
@@ -1004,7 +1027,9 @@ def update_class(
     summary="Delete class",
     description="Delete a class. This will also remove all student enrollments. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def delete_class(
+    request: Request,
     *,
     session: SessionDep,
     class_id: uuid.UUID,
@@ -1059,7 +1084,9 @@ def delete_class(
     summary="Add students to class",
     description="Enroll one or more students in a class. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def add_students_to_class(
+    request: Request,
     *,
     session: SessionDep,
     class_id: uuid.UUID,
@@ -1136,7 +1163,9 @@ def add_students_to_class(
     summary="Remove student from class",
     description="Unenroll a student from a class. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def remove_student_from_class(
+    request: Request,
     *,
     session: SessionDep,
     class_id: uuid.UUID,
@@ -1200,7 +1229,9 @@ def remove_student_from_class(
     summary="Get students in class",
     description="Retrieve all students enrolled in a specific class. Teacher only.",
 )
+@limiter.limit(RateLimits.READ)
 def get_class_students(
+    request: Request,
     *,
     session: SessionDep,
     class_id: uuid.UUID,
@@ -1281,10 +1312,12 @@ class ClassStudentsGroup(SQLModel):
     summary="Get students for multiple classes (Story 20.5)",
     description="Retrieve students for multiple classes at once. Returns students grouped by class ID. Teacher only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def get_students_for_classes(
+    request: Request,
     *,
     session: SessionDep,
-    request: StudentsForClassesRequest,
+    classes_request: StudentsForClassesRequest,
     current_user: User = require_role(UserRole.teacher)
 ) -> Any:
     """
@@ -1309,7 +1342,7 @@ def get_students_for_classes(
 
     # Verify all classes belong to this teacher
     classes_statement = select(Class).where(
-        Class.id.in_(request.class_ids),
+        Class.id.in_(classes_request.class_ids),
         Class.teacher_id == teacher.id
     )
     classes = session.exec(classes_statement).all()
@@ -1317,7 +1350,7 @@ def get_students_for_classes(
     verified_class_ids = {c.id for c in classes}
 
     # If any requested class doesn't belong to teacher, raise error
-    requested_class_ids = set(request.class_ids)
+    requested_class_ids = set(classes_request.class_ids)
     if requested_class_ids != verified_class_ids:
         unauthorized_ids = requested_class_ids - verified_class_ids
         raise HTTPException(
@@ -1330,14 +1363,14 @@ def get_students_for_classes(
         select(Student, ClassStudent.class_id, User)
         .join(ClassStudent, ClassStudent.student_id == Student.id)
         .join(User, User.id == Student.user_id)
-        .where(ClassStudent.class_id.in_(request.class_ids))
+        .where(ClassStudent.class_id.in_(classes_request.class_ids))
         .order_by(ClassStudent.class_id, User.full_name)
     )
     results = session.exec(students_statement).all()
 
     # Group students by class_id
     students_by_class: dict[uuid.UUID, list[StudentPublic]] = {
-        class_id: [] for class_id in request.class_ids
+        class_id: [] for class_id in classes_request.class_ids
     }
 
     for student, class_id, user in results:
@@ -1376,7 +1409,9 @@ def get_students_for_classes(
     summary="Get teacher insights (DEPRECATED)",
     description="This endpoint has been removed. Use /teacher/analytics/{student_id} for student-specific insights.",
 )
+@limiter.limit(RateLimits.READ)
 async def get_my_insights(
+    request: Request,
     *,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher)
@@ -1399,7 +1434,9 @@ async def get_my_insights(
     summary="Get insight details (DEPRECATED)",
     description="This endpoint has been removed.",
 )
+@limiter.limit(RateLimits.READ)
 async def get_insight_details(
+    request: Request,
     *,
     session: AsyncSessionDep,
     insight_id: str,
@@ -1420,7 +1457,9 @@ async def get_insight_details(
     summary="Dismiss insight (DEPRECATED)",
     description="This endpoint has been removed.",
 )
+@limiter.limit(RateLimits.WRITE)
 async def dismiss_insight_endpoint(
+    request: Request,
     *,
     session: AsyncSessionDep,
     insight_id: str,

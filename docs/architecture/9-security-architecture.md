@@ -151,7 +151,7 @@ export const Route = createFileRoute('/_layout/admin/publishers')({
 - ✅ SQL injection prevention via SQLModel parameterized queries
 - ✅ XSS prevention via React's built-in escaping
 - ✅ CORS configured for allowed origins
-- ✅ Rate limiting via Traefik middleware
+- ✅ Application-level rate limiting via slowapi + Redis (see Section 14)
 - ✅ Input validation via Pydantic schemas
 - ✅ Role-based authorization on all protected endpoints
 

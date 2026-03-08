@@ -16,6 +16,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+from starlette.requests import Request
+
+from app.core.rate_limit import RateLimits, limiter
 
 from app.services.dcs_ai_content_client import DCSAIContentClient, get_dcs_ai_content_client
 from app.services.dream_storage_client import DreamCentralStorageClient
@@ -65,7 +68,9 @@ AIContentClientDep = Annotated[DCSAIContentClient, Depends(_get_ai_content_clien
     summary="Stream AI content audio from DCS",
     responses={200: {"content": {"audio/mpeg": {}}}},
 )
+@limiter.limit(RateLimits.AI)
 async def stream_ai_content_audio(
+    request: Request,
     book_id: int,
     content_id: str,
     filename: str,
@@ -128,7 +133,9 @@ def _audio_response(audio_bytes: bytes, filename: str) -> StreamingResponse:
     "/{book_id}/content",
     summary="List AI-generated content for a book",
 )
+@limiter.limit(RateLimits.AI)
 async def list_book_content(
+    request: Request,
     book_id: int,
     ai_content_client: AIContentClientDep,
     activity_type: str | None = Query(None),
@@ -204,7 +211,9 @@ async def list_book_content(
     "/{book_id}/content/{content_id}",
     summary="Get AI-generated content detail",
 )
+@limiter.limit(RateLimits.AI)
 async def get_book_content_detail(
+    request: Request,
     book_id: int,
     content_id: str,
     ai_content_client: AIContentClientDep,
@@ -241,7 +250,9 @@ async def get_book_content_detail(
     "/{book_id}/content/{content_id}",
     summary="Delete AI-generated content",
 )
+@limiter.limit(RateLimits.AI)
 async def delete_book_content(
+    request: Request,
     book_id: int,
     content_id: str,
     ai_content_client: AIContentClientDep,

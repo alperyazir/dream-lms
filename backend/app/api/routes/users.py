@@ -4,6 +4,9 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import func, select
+from starlette.requests import Request
+
+from app.core.rate_limit import RateLimits, limiter
 
 from app import crud
 from app.api.deps import (
@@ -38,7 +41,8 @@ logger = logging.getLogger(__name__)
     dependencies=[Depends(get_current_active_superuser)],
     response_model=UsersPublic,
 )
-def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
+@limiter.limit(RateLimits.READ)
+def read_users(request: Request, session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """
     Retrieve users.
     """
@@ -55,7 +59,8 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
 @router.post(
     "/", dependencies=[Depends(get_current_active_superuser)], response_model=UserPublic
 )
-def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
+@limiter.limit(RateLimits.WRITE)
+def create_user(request: Request, *, session: SessionDep, user_in: UserCreate) -> Any:
     """
     Create new user.
     """
@@ -86,8 +91,9 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
 
 
 @router.patch("/me", response_model=UserPublic)
+@limiter.limit(RateLimits.WRITE)
 def update_user_me(
-    *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
+    request: Request, *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
 ) -> Any:
     """
     Update own user.
@@ -109,8 +115,9 @@ def update_user_me(
 
 
 @router.patch("/me/password", response_model=Message)
+@limiter.limit(RateLimits.WRITE)
 def update_password_me(
-    *, session: SessionDep, body: UpdatePassword, current_user: CurrentUser
+    request: Request, *, session: SessionDep, body: UpdatePassword, current_user: CurrentUser
 ) -> Any:
     """
     Update own password.
@@ -141,7 +148,9 @@ def update_password_me(
 
 
 @router.post("/me/change-initial-password", response_model=ChangePasswordResponse)
+@limiter.limit(RateLimits.WRITE)
 def change_initial_password(
+    request: Request,
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -188,7 +197,9 @@ def change_initial_password(
 
 
 @router.post("/me/complete-tour", response_model=Message)
+@limiter.limit(RateLimits.WRITE)
 def complete_tour(
+    request: Request,
     session: SessionDep,
     current_user: CurrentUser
 ) -> Message:
@@ -204,7 +215,8 @@ def complete_tour(
 
 
 @router.get("/me", response_model=UserPublic)
-def read_user_me(current_user: CurrentUser) -> Any:
+@limiter.limit(RateLimits.READ)
+def read_user_me(request: Request, current_user: CurrentUser) -> Any:
     """
     Get current user.
     """
@@ -212,7 +224,8 @@ def read_user_me(current_user: CurrentUser) -> Any:
 
 
 @router.delete("/me", response_model=Message)
-def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
+@limiter.limit(RateLimits.WRITE)
+def delete_user_me(request: Request, session: SessionDep, current_user: CurrentUser) -> Any:
     """
     Delete own user.
     """
@@ -227,8 +240,9 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
 
 
 @router.get("/{user_id}", response_model=UserPublic)
+@limiter.limit(RateLimits.READ)
 def read_user_by_id(
-    user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
+    request: Request, user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
 ) -> Any:
     """
     Get a specific user by id.
@@ -249,7 +263,9 @@ def read_user_by_id(
     dependencies=[Depends(get_current_active_superuser)],
     response_model=UserPublic,
 )
+@limiter.limit(RateLimits.WRITE)
 def update_user(
+    request: Request,
     *,
     session: SessionDep,
     user_id: uuid.UUID,
@@ -278,8 +294,9 @@ def update_user(
 
 
 @router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
+@limiter.limit(RateLimits.WRITE)
 def delete_user(
-    session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
+    request: Request, session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
 ) -> Message:
     """
     Delete a user.

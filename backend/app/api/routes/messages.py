@@ -5,8 +5,10 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import select
+from starlette.requests import Request
 
 from app.api.deps import AsyncSessionDep, CurrentUser
+from app.core.rate_limit import RateLimits, limiter
 from app.models import Class, ClassStudent, Student, User, UserRole
 from app.schemas.message import (
     BroadcastCreate,
@@ -33,7 +35,9 @@ MESSAGING_ROLES = [UserRole.admin, UserRole.supervisor, UserRole.publisher, User
 
 
 @router.post("", response_model=MessagePublic, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimits.WRITE)
 async def send_message(
+    request: Request,
     db: AsyncSessionDep,
     current_user: CurrentUser,
     message_data: MessageCreate,
@@ -123,7 +127,9 @@ async def send_message(
 
 
 @router.post("/broadcast", response_model=BroadcastResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimits.WRITE)
 async def broadcast_to_class(
+    request: Request,
     db: AsyncSessionDep,
     current_user: CurrentUser,
     data: BroadcastCreate,
@@ -189,7 +195,9 @@ async def broadcast_to_class(
 
 
 @router.get("/conversations", response_model=ConversationListResponse)
+@limiter.limit(RateLimits.READ)
 async def get_conversations(
+    request: Request,
     db: AsyncSessionDep,
     current_user: CurrentUser,
     limit: int = Query(20, ge=1, le=100, description="Number of conversations to return"),
@@ -233,7 +241,9 @@ async def get_conversations(
 
 
 @router.get("/thread/{partner_id}", response_model=MessageThreadResponse)
+@limiter.limit(RateLimits.READ)
 async def get_message_thread(
+    request: Request,
     db: AsyncSessionDep,
     current_user: CurrentUser,
     partner_id: uuid.UUID,
@@ -292,7 +302,9 @@ async def get_message_thread(
 
 
 @router.patch("/{message_id}/read", response_model=MessageReadResponse)
+@limiter.limit(RateLimits.WRITE)
 async def mark_message_as_read(
+    request: Request,
     db: AsyncSessionDep,
     current_user: CurrentUser,
     message_id: uuid.UUID,
@@ -320,7 +332,9 @@ async def mark_message_as_read(
 
 
 @router.get("/recipients", response_model=RecipientListResponse)
+@limiter.limit(RateLimits.READ)
 async def get_allowed_recipients(
+    request: Request,
     db: AsyncSessionDep,
     current_user: CurrentUser,
 ) -> RecipientListResponse:
@@ -360,7 +374,9 @@ async def get_allowed_recipients(
 
 
 @router.get("/unread-count", response_model=UnreadMessagesCountResponse)
+@limiter.limit(RateLimits.READ)
 async def get_unread_messages_count(
+    request: Request,
     db: AsyncSessionDep,
     current_user: CurrentUser,
 ) -> UnreadMessagesCountResponse:

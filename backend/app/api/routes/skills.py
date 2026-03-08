@@ -4,6 +4,9 @@ from collections import defaultdict
 
 from fastapi import APIRouter
 from sqlmodel import select
+from starlette.requests import Request
+
+from app.core.rate_limit import RateLimits, limiter
 
 from app.api.deps import SessionDep, require_role
 from app.models import (
@@ -28,7 +31,9 @@ router = APIRouter(prefix="/skills", tags=["skills"])
     "/",
     response_model=list[SkillWithFormatsResponse],
 )
+@limiter.limit(RateLimits.READ)
 def get_skills(
+    request: Request,
     session: SessionDep,
     current_user: User = require_role(
         UserRole.teacher, UserRole.admin, UserRole.supervisor

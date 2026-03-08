@@ -9,8 +9,10 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
+from starlette.requests import Request
 
 from app.api.deps import AsyncSessionDep, require_role
+from app.core.rate_limit import RateLimits, limiter
 from app.services.redis_cache import cache_get, cache_set
 from app.models import (
     Activity,
@@ -62,7 +64,8 @@ logger = logging.getLogger(__name__)
     description="This endpoint is deprecated. Books are now fetched on-demand from DCS without sync.",
     deprecated=True,
 )
-async def trigger_book_sync() -> BookSyncResponse:
+@limiter.limit(RateLimits.WRITE)
+async def trigger_book_sync(request: Request) -> BookSyncResponse:
     """
     [DEPRECATED] Book sync endpoint is no longer needed.
 
@@ -79,7 +82,8 @@ async def trigger_book_sync() -> BookSyncResponse:
 
 
 @router.get("/{book_id}/cover")
-async def get_book_cover(book_id: int) -> Any:
+@limiter.limit(RateLimits.READ)
+async def get_book_cover(request: Request, book_id: int) -> Any:
     """
     Get book cover image from DCS.
 
@@ -214,7 +218,9 @@ async def _verify_book_exists(book_id: int) -> BookPublic:
     summary="List accessible books",
     description="Returns books accessible to the authenticated user from DCS (admin/supervisor/publisher see all, teacher sees assigned books)."
 )
+@limiter.limit(RateLimits.READ)
 async def list_books(
+    request: Request,
     *,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher),
@@ -346,7 +352,9 @@ async def list_books(
     summary="Get book activities",
     description="Returns all activities for a specific book (admin/supervisor/publisher see all, teacher must have access)."
 )
+@limiter.limit(RateLimits.READ)
 async def get_book_activities(
+    request: Request,
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
@@ -686,7 +694,9 @@ def _extract_all_pages_from_config(config_json: dict, book_id: int) -> tuple[lis
     summary="Get book pages with activities",
     description="Returns pages grouped by module with activity counts and thumbnail URLs."
 )
+@limiter.limit(RateLimits.READ)
 async def get_book_pages(
+    request: Request,
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
@@ -819,7 +829,9 @@ def _module_name_to_folder(module_name: str) -> str:
     summary="Get activities on a specific page",
     description="Returns activities for a specific page, ordered by section_index."
 )
+@limiter.limit(RateLimits.READ)
 async def get_page_activities(
+    request: Request,
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
@@ -898,7 +910,9 @@ def _extract_activity_coords(config_json: dict) -> ActivityCoords | None:
     summary="Get detailed book pages with activity markers",
     description="Returns pages grouped by module with full-size images and activity coordinates for the page viewer."
 )
+@limiter.limit(RateLimits.READ)
 async def get_book_pages_detail(
+    request: Request,
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
@@ -1053,7 +1067,9 @@ SUPPORTED_ACTIVITY_TYPES = {
     summary="Get book structure with modules and pages for activity selection",
     description="Returns book structure with modules and pages including activity IDs for bulk selection in assignment creation."
 )
+@limiter.limit(RateLimits.READ)
 async def get_book_structure(
+    request: Request,
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
@@ -1187,7 +1203,9 @@ async def get_book_structure(
     summary="List available videos for a book",
     description="Returns available videos defined in the book's config.json."
 )
+@limiter.limit(RateLimits.READ)
 async def list_book_videos(
+    request: Request,
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
@@ -1320,7 +1338,9 @@ async def list_book_videos(
     summary="Import activities from DCS config.json into local database",
     description="Admin-only endpoint to sync activities from DCS config.json to local Activity table."
 )
+@limiter.limit(RateLimits.WRITE)
 async def import_book_activities(
+    request: Request,
     *,
     session: AsyncSessionDep,
     book_id: int,
@@ -1419,7 +1439,9 @@ VALID_PLATFORMS = {"mac", "win", "win7-8", "linux"}
     summary="Request book bundle download URL",
     description="Generates a download URL for a standalone app bundle of the book for the specified platform."
 )
+@limiter.limit(RateLimits.WRITE)
 async def request_book_bundle(
+    request: Request,
     *,
     session: AsyncSessionDep,
     book_id: int,

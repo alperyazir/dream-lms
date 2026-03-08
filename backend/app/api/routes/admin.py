@@ -5,8 +5,10 @@ from typing import Any
 import httpx
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from sqlmodel import SQLModel, func, select
+from starlette.requests import Request
 
 from app import crud
+from app.core.rate_limit import RateLimits, limiter
 from app.api.deps import (
     AdminOrSupervisor,
     AsyncSessionDep,
@@ -93,7 +95,9 @@ router = APIRouter(prefix="/admin", tags=["admin"])
     summary="Create new publisher (deprecated)",
     description="Publisher creation is disabled. Publishers are managed in Dream Central Storage.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def create_publisher(
+    request: Request,
     *,
     current_user: User = AdminOrSupervisor
 ) -> Any:
@@ -113,7 +117,9 @@ def create_publisher(
     summary="Create new school",
     description="Creates a new school linked to a publisher. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def create_school(
+    request: Request,
     *,
     session: SessionDep,
     school_in: SchoolCreate,
@@ -153,7 +159,9 @@ async def create_school(
     summary="List all publishers",
     description="Retrieve all publishers from Dream Central Storage. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def list_publishers(
+    request: Request,
     *,
     current_user: User = AdminOrSupervisor
 ) -> Any:
@@ -173,7 +181,9 @@ async def list_publishers(
     summary="Update a publisher (deprecated)",
     description="Publisher updates are disabled. Publishers are managed in Dream Central Storage.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def update_publisher(
+    request: Request,
     *,
     publisher_id: int,
     current_user: User = AdminOrSupervisor
@@ -209,7 +219,9 @@ MAX_LOGO_SIZE = 2 * 1024 * 1024  # 2MB
     summary="Upload publisher logo",
     description="Upload a logo image for a publisher (max 2MB, PNG/JPEG). Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def upload_publisher_logo(
+    request: Request,
     *,
     session: SessionDep,
     publisher_id: uuid.UUID,
@@ -278,7 +290,9 @@ async def upload_publisher_logo(
     summary="Delete publisher logo",
     description="Delete a publisher's logo. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def delete_publisher_logo(
+    request: Request,
     *,
     session: SessionDep,
     publisher_id: uuid.UUID,
@@ -311,7 +325,9 @@ def delete_publisher_logo(
     summary="Delete a publisher (deprecated)",
     description="Publisher deletion is disabled. Publishers are managed in Dream Central Storage.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def delete_publisher(
+    request: Request,
     *,
     publisher_id: int,
     current_user: User = AdminOrSupervisor
@@ -331,7 +347,9 @@ def delete_publisher(
     summary="List all schools",
     description="Retrieve all schools with optional publisher filter. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def list_schools(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -362,7 +380,9 @@ def list_schools(
     summary="List all schools (paginated)",
     description="Retrieve schools with server-side pagination and search.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def list_schools_paginated(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -397,7 +417,9 @@ def list_schools_paginated(
     summary="Update a school",
     description="Update a school by ID. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def update_school(
+    request: Request,
     *,
     session: SessionDep,
     school_id: uuid.UUID,
@@ -456,7 +478,9 @@ async def update_school(
     summary="Delete a school",
     description="Delete a school by ID. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def delete_school(
+    request: Request,
     *,
     session: SessionDep,
     school_id: uuid.UUID,
@@ -498,7 +522,9 @@ def delete_school(
     summary="Create new teacher",
     description="Creates a new teacher user and Teacher record. Admin OR Publisher.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def create_teacher(
+    request: Request,
     *,
     session: SessionDep,
     teacher_in: TeacherCreateAPI,
@@ -626,7 +652,9 @@ def create_teacher(
     summary="List all teachers",
     description="Retrieve all teachers with optional school filter. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def list_teachers(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -674,7 +702,9 @@ def list_teachers(
     summary="List all teachers (paginated)",
     description="Retrieve all teachers with server-side pagination. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def list_teachers_paginated(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -735,7 +765,9 @@ def list_teachers_paginated(
     summary="Update a teacher",
     description="Update a teacher by ID. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def update_teacher(
+    request: Request,
     *,
     session: SessionDep,
     teacher_id: uuid.UUID,
@@ -855,7 +887,9 @@ def update_teacher(
     summary="Delete a teacher",
     description="Delete a teacher by ID. Admin/Supervisor/Publisher.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def delete_teacher(
+    request: Request,
     *,
     session: SessionDep,
     teacher_id: uuid.UUID,
@@ -955,7 +989,9 @@ def delete_teacher(
     summary="Create new student",
     description="Creates a new student user and Student record. Admin, Publisher, OR Teacher.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def create_student(
+    request: Request,
     *,
     session: SessionDep,
     student_in: StudentCreateAPI,
@@ -1073,7 +1109,9 @@ def create_student(
     summary="Get student password (Story 28.1)",
     description="Retrieve viewable password for a student. Teachers can only view their students.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def get_student_password(
+    request: Request,
     *,
     session: SessionDep,
     student_id: uuid.UUID,
@@ -1160,7 +1198,9 @@ def get_student_password(
     summary="Set student password (Story 28.1)",
     description="Set a new password for a student. Updates both login password and viewable password.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def set_student_password(
+    request: Request,
     *,
     session: SessionDep,
     student_id: uuid.UUID,
@@ -1252,7 +1292,9 @@ def set_student_password(
     summary="List all students",
     description="Retrieve all students with server-side pagination. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def list_students(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -1334,7 +1376,9 @@ def list_students(
     summary="Update a student",
     description="Update a student by ID. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def update_student(
+    request: Request,
     *,
     session: SessionDep,
     student_id: uuid.UUID,
@@ -1445,7 +1489,9 @@ def update_student(
     summary="Delete a student",
     description="Delete a student by ID. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def delete_student(
+    request: Request,
     *,
     session: SessionDep,
     student_id: uuid.UUID,
@@ -1528,10 +1574,12 @@ class BulkDeleteResponse(SQLModel):
     summary="Bulk delete students",
     description="Delete multiple students by IDs. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def bulk_delete_students(
+    request: Request,
     *,
     session: SessionDep,
-    request: BulkDeleteRequest,
+    bulk_request: BulkDeleteRequest,
     current_user: User = AdminOrSupervisor
 ) -> BulkDeleteResponse:
     """
@@ -1549,7 +1597,7 @@ def bulk_delete_students(
     failed_count = 0
     errors: list[str] = []
 
-    for student_id in request.ids:
+    for student_id in bulk_request.ids:
         try:
             student = session.get(Student, student_id)
             if not student:
@@ -1602,7 +1650,9 @@ def bulk_delete_students(
     summary="Bulk import publishers from Excel",
     description="Upload Excel file to create multiple publisher accounts. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def bulk_import_publishers(
+    request: Request,
     *,
     session: SessionDep,
     file: UploadFile = File(...),
@@ -1747,7 +1797,9 @@ async def bulk_import_publishers(
     summary="Bulk import teachers from Excel",
     description="Upload Excel file to create multiple teacher accounts. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def bulk_import_teachers(
+    request: Request,
     *,
     session: SessionDep,
     file: UploadFile = File(...),
@@ -1909,7 +1961,9 @@ async def bulk_import_teachers(
     summary="Bulk import students from Excel",
     description="Upload Excel file to create multiple student accounts. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def bulk_import_students(
+    request: Request,
     *,
     session: SessionDep,
     file: UploadFile = File(...),
@@ -2053,7 +2107,9 @@ async def bulk_import_students(
 
 
 @router.get("/stats", response_model=DashboardStats)
+@limiter.limit(RateLimits.ADMIN)
 async def get_stats(
+    request: Request,
     session: SessionDep,
     current_user: User = AdminOrSupervisor
 ) -> DashboardStats:
@@ -2098,7 +2154,9 @@ async def get_stats(
     summary="Edit user",
     description="Update a user's profile information. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def admin_update_user(
+    request: Request,
     *,
     session: SessionDep,
     user_id: uuid.UUID,
@@ -2194,7 +2252,9 @@ async def _is_user_under_publisher(
         "Publisher can reset their teachers/students only."
     ),
 )
+@limiter.limit(RateLimits.ADMIN)
 async def reset_user_password(
+    request: Request,
     *,
     session: AsyncSessionDep,
     user_id: uuid.UUID,
@@ -2317,7 +2377,9 @@ async def reset_user_password(
     summary="Get DCS cache statistics",
     description="Returns cache hit/miss statistics for monitoring. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def get_cache_stats(
+    request: Request,
     _: User = require_role(UserRole.admin),
 ) -> dict[str, Any]:
     """
@@ -2341,7 +2403,9 @@ def get_cache_stats(
     summary="Clear DCS cache",
     description="Clears all cached DCS data. Admin only. Use with caution.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def clear_cache(
+    request: Request,
     _: User = require_role(UserRole.admin),
 ) -> None:
     """
@@ -2358,7 +2422,9 @@ async def clear_cache(
 
 
 @router.get("/test-dream-storage-connection")
+@limiter.limit(RateLimits.ADMIN)
 async def test_dream_storage_connection(
+    request: Request,
     _: User = require_role(UserRole.admin),
 ) -> dict[str, Any]:
     """
@@ -2422,7 +2488,9 @@ async def test_dream_storage_connection(
 
 
 @router.post("/webhooks/register", status_code=status.HTTP_200_OK)
+@limiter.limit(RateLimits.ADMIN)
 async def register_webhooks_manually(
+    request: Request,
     _: User = require_role(UserRole.admin),
     force_recreate: bool = False,
 ) -> dict[str, Any]:
@@ -2461,7 +2529,9 @@ async def register_webhooks_manually(
     summary="Get system-wide benchmark overview",
     description="Returns aggregated benchmark statistics across all schools (admin/supervisor)."
 )
+@limiter.limit(RateLimits.ADMIN)
 async def get_benchmark_overview_endpoint(
+    request: Request,
     *,
     session: AsyncSessionDep,
     _: User = require_role(UserRole.admin, UserRole.supervisor)
@@ -2488,7 +2558,9 @@ async def get_benchmark_overview_endpoint(
     summary="Update school benchmark settings",
     description="Toggle benchmarking for a specific school (admin/supervisor)."
 )
+@limiter.limit(RateLimits.ADMIN)
 def update_school_benchmark_settings(
+    request: Request,
     *,
     session: SessionDep,
     school_id: uuid.UUID,
@@ -2535,7 +2607,9 @@ def update_school_benchmark_settings(
     summary="Update publisher benchmark settings",
     description="Toggle benchmarking for a specific publisher (admin/supervisor)."
 )
+@limiter.limit(RateLimits.ADMIN)
 def update_publisher_benchmark_settings(
+    request: Request,
     *,
     session: SessionDep,
     publisher_id: uuid.UUID,
@@ -2565,7 +2639,9 @@ def update_publisher_benchmark_settings(
     summary="Create publisher user account",
     description="Creates a new user account with publisher role linked to a DCS publisher.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def create_publisher_account(
+    request: Request,
     *,
     session: SessionDep,
     account_in: PublisherAccountCreate,
@@ -2672,7 +2748,9 @@ async def create_publisher_account(
     summary="List all publisher user accounts",
     description="Returns all user accounts with role=publisher, enriched with DCS publisher names.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def list_publisher_accounts(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -2728,7 +2806,9 @@ async def list_publisher_accounts(
     summary="List publisher accounts (paginated)",
     description="Retrieve publisher accounts with server-side pagination and search.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def list_publisher_accounts_paginated(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -2783,7 +2863,9 @@ async def list_publisher_accounts_paginated(
     summary="Get publisher user account",
     description="Returns a single publisher user account by ID.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def get_publisher_account(
+    request: Request,
     *,
     session: SessionDep,
     user_id: uuid.UUID,
@@ -2831,7 +2913,9 @@ async def get_publisher_account(
     summary="Update publisher user account",
     description="Updates a publisher user account's details or DCS link.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def update_publisher_account(
+    request: Request,
     *,
     session: SessionDep,
     user_id: uuid.UUID,
@@ -2917,7 +3001,9 @@ async def update_publisher_account(
     summary="Delete publisher user account",
     description="Deletes a publisher user account.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def delete_publisher_account(
+    request: Request,
     *,
     session: SessionDep,
     user_id: uuid.UUID,
@@ -2956,7 +3042,9 @@ def delete_publisher_account(
     summary="Change publisher account password",
     description="Set a custom password for a publisher user account.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def change_publisher_password(
+    request: Request,
     *,
     session: SessionDep,
     user_id: uuid.UUID,
@@ -3004,7 +3092,9 @@ def change_publisher_password(
     summary="List all assignments (Admin only)",
     description="List all assignments across all teachers with filtering and pagination.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def list_all_assignments(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -3108,7 +3198,9 @@ def list_all_assignments(
     summary="Delete assignment (Admin only)",
     description="Delete an assignment and all related data including student submissions.",
 )
+@limiter.limit(RateLimits.ADMIN)
 def delete_assignment(
+    request: Request,
     *,
     session: SessionDep,
     assignment_id: uuid.UUID,
@@ -3161,10 +3253,12 @@ class SkillScoreRecalculateResponse(SQLModel):
     summary="Recalculate skill scores for an assignment",
     description="Delete and recalculate all StudentSkillScore records for a given assignment. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def recalculate_skill_scores(
+    request: Request,
     *,
     session: AsyncSessionDep,
-    request: SkillScoreRecalculateRequest,
+    recalc_request: SkillScoreRecalculateRequest,
     current_user: User = AdminOrSupervisor,
 ) -> SkillScoreRecalculateResponse:
     """
@@ -3175,18 +3269,18 @@ async def recalculate_skill_scores(
     """
     try:
         records_created = await recalculate_for_assignment(
-            request.assignment_id, session
+            recalc_request.assignment_id, session
         )
         await session.commit()
 
         logger.info(
             f"Admin {current_user.id} recalculated skill scores for "
-            f"assignment {request.assignment_id}: {records_created} records"
+            f"assignment {recalc_request.assignment_id}: {records_created} records"
         )
 
         return SkillScoreRecalculateResponse(
             success=True,
-            assignment_id=request.assignment_id,
+            assignment_id=recalc_request.assignment_id,
             records_created=records_created,
             message=f"Recalculated {records_created} skill score records",
         )
@@ -3213,7 +3307,9 @@ class SkillScoreBackfillResponse(SQLModel):
     summary="Backfill skill scores for all AI content assignments",
     description="Attribute skill scores for all completed AI content assignments that are missing them. Admin only.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def backfill_skill_scores(
+    request: Request,
     *,
     session: AsyncSessionDep,
     current_user: User = AdminOrSupervisor,

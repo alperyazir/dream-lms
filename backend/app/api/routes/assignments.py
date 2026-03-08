@@ -23,7 +23,7 @@ from app.services.cache_events import invalidate_for_event
 from app.services.redis_cache import cache_get, cache_set
 from app.core import security
 from app.core.config import settings
-from app.core.rate_limit import limiter
+from app.core.rate_limit import RateLimits, limiter
 from app.models import (
     Activity,
     ActivityFormat,
@@ -410,7 +410,9 @@ async def _enrich_resources(
     summary="List teacher's assignments",
     description="Get all assignments created by the current teacher with enriched data",
 )
+@limiter.limit(RateLimits.READ)
 async def list_assignments(
+    request: Request,
     *,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher),
@@ -588,7 +590,9 @@ async def list_assignments(
     summary="List all assignments (Admin/Supervisor)",
     description="Get all assignments in the system with enriched data - admin/supervisor access",
 )
+@limiter.limit(RateLimits.READ)
 async def list_all_assignments_admin(
+    request: Request,
     *,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.admin, UserRole.supervisor),
@@ -687,7 +691,9 @@ async def list_all_assignments_admin(
     summary="Get assignments for calendar view",
     description="Get assignments within a date range for calendar display. Teachers see all their assignments, including scheduled ones.",
 )
+@limiter.limit(RateLimits.READ)
 async def get_calendar_assignments(
+    request: Request,
     *,
     session: AsyncSessionDep,
     start_date: datetime = Query(..., description="Start date for range (inclusive)"),
@@ -882,6 +888,7 @@ async def get_calendar_assignments(
     summary="Create new assignment",
     description="Creates a new assignment and assigns it to specified students/classes. Supports single or multi-activity assignments.",
 )
+@limiter.limit(RateLimits.WRITE)
 async def create_assignment(
     request: Request,
     *,
@@ -1243,6 +1250,7 @@ async def create_assignment(
     summary="Create bulk assignments (Time Planning mode)",
     description="Creates multiple assignments from date groups. Each date group becomes a separate assignment with its own scheduled publish date.",
 )
+@limiter.limit(RateLimits.WRITE)
 async def create_bulk_assignments(
     request: Request,
     *,
@@ -1454,7 +1462,9 @@ async def create_bulk_assignments(
     summary="Update assignment",
     description="Update editable fields of an assignment (teacher can only update their own assignments)",
 )
+@limiter.limit(RateLimits.WRITE)
 async def update_assignment(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -1649,7 +1659,9 @@ async def update_assignment(
     summary="Delete assignment",
     description="Delete an assignment (teacher can only delete their own assignments)",
 )
+@limiter.limit(RateLimits.WRITE)
 async def delete_assignment(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -1731,7 +1743,9 @@ async def delete_assignment(
     summary="Attach teacher material to assignment",
     description="Attach a teacher material to an assignment's resources",
 )
+@limiter.limit(RateLimits.WRITE)
 async def attach_material_to_assignment(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -1832,7 +1846,9 @@ async def attach_material_to_assignment(
     summary="Start assignment",
     description="Start an assignment - marks as in_progress and returns full activity configuration",
 )
+@limiter.limit(RateLimits.READ)
 async def start_assignment(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -1996,7 +2012,9 @@ async def start_assignment(
     summary="Start multi-activity assignment",
     description="Start a multi-activity assignment - returns all activities with configs and progress",
 )
+@limiter.limit(RateLimits.READ)
 async def start_multi_activity_assignment(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -2272,7 +2290,9 @@ async def start_multi_activity_assignment(
     summary="Stream teacher material for viewing",
     description="Stream a teacher material attached to an assignment. Students can access materials attached to assignments they're assigned to. Teachers can access materials on their own assignments.",
 )
+@limiter.limit(RateLimits.READ)
 async def download_assignment_material(
+    request: Request,
     *,
     session: AsyncSessionDep,
     dcs_client: DreamCentralStorageClient = Depends(get_dream_storage_client),
@@ -2581,7 +2601,7 @@ async def download_assignment_material(
     summary="Save per-activity progress",
     description="Save progress for a specific activity in a multi-activity assignment (Rate limited: 120 req/hour)",
 )
-@limiter.limit("120/hour")
+@limiter.limit(RateLimits.WRITE)
 async def save_activity_progress(
     request: Request,
     *,
@@ -2856,6 +2876,7 @@ async def save_activity_progress(
     summary="Submit multi-activity assignment",
     description="Submit a multi-activity assignment after completing all activities",
 )
+@limiter.limit(RateLimits.WRITE)
 async def submit_multi_activity_assignment(
     request: Request,
     *,
@@ -3234,7 +3255,7 @@ async def submit_multi_activity_assignment(
     summary="Save assignment progress",
     description="Auto-save or manually save partial assignment progress (Rate limited: 120 req/hour)",
 )
-@limiter.limit("120/hour")
+@limiter.limit(RateLimits.WRITE)
 async def save_progress(
     request: Request,
     *,
@@ -3344,6 +3365,7 @@ async def save_progress(
     summary="Submit completed assignment",
     description="Submit a completed assignment with answers and score",
 )
+@limiter.limit(RateLimits.WRITE)
 async def submit_assignment(
     request: Request,
     *,
@@ -3476,7 +3498,9 @@ async def submit_assignment(
     summary="Get assignment submission result for review",
     description="Retrieve submitted answers and activity config for result review (Story 23.4)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_assignment_result(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -3658,7 +3682,9 @@ async def _verify_assignment_ownership(
     summary="Get detailed assignment results",
     description="Get detailed results for an assignment including completion stats, scores, and question-level analysis",
 )
+@limiter.limit(RateLimits.READ)
 async def get_detailed_results(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -3720,7 +3746,9 @@ async def get_detailed_results(
     summary="Get student's answers for assignment",
     description="Get a specific student's full answers for an assignment",
 )
+@limiter.limit(RateLimits.READ)
 async def get_student_answers(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -3782,7 +3810,9 @@ async def get_student_answers(
     summary="Get multi-activity assignment analytics",
     description="Get per-activity analytics for a multi-activity assignment (teacher view)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_multi_activity_analytics(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -4259,7 +4289,9 @@ def _build_review_items(
     summary="Get student's assignment result",
     description="Get the student's score breakdown for a completed multi-activity assignment",
 )
+@limiter.limit(RateLimits.READ)
 async def get_student_assignment_result(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -4397,6 +4429,7 @@ async def get_student_assignment_result(
     response_model=FeedbackPublic,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit(RateLimits.WRITE)
 async def create_or_update_feedback(
     request: Request,
     assignment_id: uuid.UUID,
@@ -4530,7 +4563,9 @@ async def create_or_update_feedback(
     "/{assignment_id}/students/{student_id}/feedback",
     response_model=FeedbackPublic | FeedbackStudentView | None,
 )
+@limiter.limit(RateLimits.READ)
 async def get_feedback(
+    request: Request,
     assignment_id: uuid.UUID,
     student_id: uuid.UUID,
     session: AsyncSessionDep,
@@ -4634,7 +4669,9 @@ async def get_feedback(
     "/{assignment_id}/my-feedback",
     response_model=FeedbackStudentView | None,
 )
+@limiter.limit(RateLimits.READ)
 async def get_my_feedback(
+    request: Request,
     assignment_id: uuid.UUID,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
@@ -4675,6 +4712,7 @@ async def get_my_feedback(
     "/feedback/{feedback_id}",
     response_model=FeedbackPublic,
 )
+@limiter.limit(RateLimits.WRITE)
 async def update_feedback(
     request: Request,
     feedback_id: uuid.UUID,
@@ -4752,7 +4790,9 @@ async def update_feedback(
     summary="Preview assignment (teacher test mode)",
     description="Get assignment data for teacher preview/test mode. No student data created.",
 )
+@limiter.limit(RateLimits.READ)
 async def preview_assignment(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -4893,7 +4933,9 @@ async def preview_assignment(
     summary="Get assignment for editing",
     description="Get assignment data for editing, including recipients and time planning info.",
 )
+@limiter.limit(RateLimits.READ)
 async def get_assignment_for_edit(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -5051,7 +5093,9 @@ async def get_assignment_for_edit(
     summary="Preview single activity",
     description="Get single activity data for teacher/publisher preview. No submission recorded.",
 )
+@limiter.limit(RateLimits.READ)
 async def preview_activity(
+    request: Request,
     *,
     session: AsyncSessionDep,
     activity_id: uuid.UUID,
@@ -5168,7 +5212,9 @@ async def preview_activity(
     response_model=AssignmentSkillBreakdownResponse,
     summary="Get per-skill score breakdown for an assignment",
 )
+@limiter.limit(RateLimits.READ)
 async def get_assignment_skill_breakdown(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -5288,7 +5334,9 @@ async def get_assignment_skill_breakdown(
     summary="Grade a student's writing or speaking submission",
     description="Teacher assigns a score (0-100) to a manually-graded activity submission",
 )
+@limiter.limit(RateLimits.WRITE)
 async def grade_student_submission(
+    request: Request,
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
@@ -5410,7 +5458,9 @@ async def grade_student_submission(
     summary="Get submissions pending teacher review",
     description="Returns completed submissions that require manual grading (writing/speaking)",
 )
+@limiter.limit(RateLimits.READ)
 async def get_pending_reviews(
+    request: Request,
     *,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher),

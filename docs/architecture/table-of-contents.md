@@ -12,5 +12,7 @@
 10. [Testing Strategy](#10-testing-strategy)
 11. [Scalability Considerations](#11-scalability-considerations)
 12. [Monitoring & Logging](#12-monitoring--logging)
+13. [Implementation Priorities](#13-implementation-priorities)
+14. [Rate Limiting](#14-rate-limiting)
 
 ---

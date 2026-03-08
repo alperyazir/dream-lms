@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from app.api.deps import AsyncSessionDep, require_role
 from app.core.config import settings
+from app.core.rate_limit import RateLimits, limiter
 from app.models import User, UserRole
 from app.services.assignment_scheduler import publish_scheduled_assignments
 from app.services.deadline_reminder_service import (
@@ -76,7 +77,9 @@ async def verify_scheduler_access(
     description="Checks for approaching deadlines and past-due assignments, sending notifications as needed. "
     "Should be called daily by external scheduler (e.g., at 8 AM).",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def run_deadline_reminders(
+    request: Request,
     *,
     session: AsyncSessionDep,
     x_scheduler_key: Annotated[str | None, Header()] = None,
@@ -150,7 +153,9 @@ async def run_deadline_reminders(
     summary="Run approaching deadline check only",
     description="Checks for assignments due within 24 hours and sends reminders.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def run_approaching_deadlines_only(
+    request: Request,
     *,
     session: AsyncSessionDep,
     x_scheduler_key: Annotated[str | None, Header()] = None,
@@ -186,7 +191,9 @@ async def run_approaching_deadlines_only(
     summary="Run past-due check only",
     description="Checks for assignments that became overdue 24-48 hours ago and sends notifications.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def run_past_due_only(
+    request: Request,
     *,
     session: AsyncSessionDep,
     x_scheduler_key: Annotated[str | None, Header()] = None,
@@ -231,6 +238,7 @@ class PublishAssignmentsResponse(BaseModel):
     description="Publishes assignments whose scheduled_publish_date has passed. "
     "Should be called periodically (e.g., every hour or once daily) by external scheduler.",
 )
+@limiter.limit(RateLimits.ADMIN)
 async def run_publish_scheduled_assignments(
     request: Request,
     *,

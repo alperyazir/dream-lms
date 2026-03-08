@@ -4,11 +4,14 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from slowapi.util import get_remote_address
+from starlette.requests import Request
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
 from app.core.config import settings
+from app.core.rate_limit import RateLimits, limiter
 from app.core.security import get_password_hash
 from app.models import Message, NewPassword, Token, UserPublic
 from app.utils import (
@@ -22,8 +25,11 @@ router = APIRouter(tags=["login"])
 
 
 @router.post("/login/access-token")
+@limiter.limit(RateLimits.AUTH, key_func=get_remote_address)
 def login_access_token(
-    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    request: Request,
+    session: SessionDep,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
     """
     OAuth2 compatible token login, get an access token for future requests.
@@ -55,7 +61,8 @@ def test_token(current_user: CurrentUser) -> Any:
 
 
 @router.post("/password-recovery/{email}")
-def recover_password(email: str, session: SessionDep) -> Message:
+@limiter.limit(RateLimits.AUTH, key_func=get_remote_address)
+def recover_password(request: Request, email: str, session: SessionDep) -> Message:
     """
     Password Recovery
     """
@@ -79,7 +86,8 @@ def recover_password(email: str, session: SessionDep) -> Message:
 
 
 @router.post("/reset-password/")
-def reset_password(session: SessionDep, body: NewPassword) -> Message:
+@limiter.limit(RateLimits.AUTH, key_func=get_remote_address)
+def reset_password(request: Request, session: SessionDep, body: NewPassword) -> Message:
     """
     Reset password
     """

@@ -153,11 +153,16 @@ app.state.limiter = limiter
 
 # Rate limit exception handler
 @app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request, exc):
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     """Handle rate limit exceeded errors with proper HTTP 429 response."""
+    retry_after = getattr(exc, "retry_after", 60)
     return JSONResponse(
         status_code=429,
-        content={"detail": "Rate limit exceeded. Please try again later."},
+        content={
+            "detail": f"Rate limit exceeded. Try again in {retry_after} seconds.",
+            "retry_after": retry_after,
+        },
+        headers={"Retry-After": str(retry_after)},
     )
 
 

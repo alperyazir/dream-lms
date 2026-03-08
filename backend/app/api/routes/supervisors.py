@@ -11,6 +11,9 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import func, or_, select
+from starlette.requests import Request
+
+from app.core.rate_limit import RateLimits, limiter
 
 from app.api.deps import AdminOrSupervisor, AsyncSessionDep, SessionDep, require_role
 from app.core.config import settings
@@ -52,7 +55,9 @@ AdminOnly = require_role(UserRole.admin)
     summary="List all supervisors",
     description="Retrieve all supervisors with optional search and pagination. Admin or Supervisor.",
 )
+@limiter.limit(RateLimits.READ)
 def list_supervisors(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -102,7 +107,9 @@ def list_supervisors(
     summary="List all supervisors (paginated)",
     description="Retrieve supervisors with server-side pagination and search.",
 )
+@limiter.limit(RateLimits.READ)
 def list_supervisors_paginated(
+    request: Request,
     *,
     session: SessionDep,
     current_user: User = AdminOrSupervisor,
@@ -153,7 +160,9 @@ def list_supervisors_paginated(
     summary="Get supervisor by ID",
     description="Retrieve a single supervisor by ID. Admin or Supervisor.",
 )
+@limiter.limit(RateLimits.READ)
 def get_supervisor(
+    request: Request,
     *,
     session: SessionDep,
     supervisor_id: uuid.UUID,
@@ -201,7 +210,9 @@ def get_supervisor(
     summary="Create new supervisor",
     description="Creates a new supervisor user. Admin only.",
 )
+@limiter.limit(RateLimits.WRITE)
 async def create_supervisor(
+    request: Request,
     *,
     session: AsyncSessionDep,
     supervisor_in: SupervisorCreateAPI,
@@ -310,7 +321,9 @@ async def create_supervisor(
     summary="Update a supervisor",
     description="Update a supervisor by ID. Admin only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def update_supervisor(
+    request: Request,
     *,
     session: SessionDep,
     supervisor_id: uuid.UUID,
@@ -394,7 +407,9 @@ def update_supervisor(
     summary="Delete a supervisor",
     description="Delete a supervisor by ID. Admin only.",
 )
+@limiter.limit(RateLimits.WRITE)
 def delete_supervisor(
+    request: Request,
     *,
     session: SessionDep,
     supervisor_id: uuid.UUID,
@@ -451,7 +466,9 @@ def delete_supervisor(
     summary="Reset supervisor password",
     description="Reset a supervisor's password. Admin only.",
 )
+@limiter.limit(RateLimits.WRITE)
 async def reset_supervisor_password(
+    request: Request,
     *,
     session: AsyncSessionDep,
     supervisor_id: uuid.UUID,

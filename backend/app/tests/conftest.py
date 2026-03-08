@@ -131,6 +131,10 @@ def client_fixture(session: Session, db_path: str) -> Generator[TestClient, Any,
     app.dependency_overrides[get_db] = get_session_override
     app.dependency_overrides[get_async_db] = get_async_session_override
 
+    # Reset rate limiter state between tests to prevent cross-test interference
+    from app.core.rate_limit import limiter
+    limiter.reset()
+
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()
