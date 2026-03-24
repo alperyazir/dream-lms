@@ -432,8 +432,8 @@ function AssignmentDetailContent() {
             </CardContent>
           </Card>
 
-          {/* Progress Information (if started or completed) */}
-          {assignment.status !== "not_started" && (
+          {/* Progress Information (only for completed assignments) */}
+          {assignment.status === "completed" && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -473,20 +473,6 @@ function AssignmentDetailContent() {
                     </p>
                     <p className="text-lg">
                       {assignment.time_spent_minutes} minutes
-                    </p>
-                  </div>
-                )}
-                {assignment.started_at && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Started At
-                    </p>
-                    <p className="text-lg">
-                      {new Date(assignment.started_at).toLocaleDateString()} at{" "}
-                      {new Date(assignment.started_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
                     </p>
                   </div>
                 )}
