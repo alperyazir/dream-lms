@@ -31,6 +31,9 @@ from app.services.llm import LLMManager
 from app.services.tts.base import AudioGenerationOptions
 from app.services.tts.manager import TTSManager
 
+if __import__("typing").TYPE_CHECKING:
+    from app.services.dcs_ai_content_client import DCSAIContentClient
+
 logger = logging.getLogger(__name__)
 
 _DIFFICULTY_TO_CEFR = {"easy": "A1", "medium": "A2", "hard": "B1"}
@@ -51,10 +54,12 @@ class ListeningFillBlankService:
         dcs_client: DCSAIServiceClient,
         llm_manager: LLMManager,
         tts_manager: TTSManager | None = None,
+        dcs_ai_content_client: "DCSAIContentClient | None" = None,
     ) -> None:
         self._dcs_client = dcs_client
         self._llm_manager = llm_manager
         self._tts_manager = tts_manager
+        self._dcs_ai_content_client = dcs_ai_content_client
 
     async def generate_activity(
         self, request: ListeningFillBlankRequest
@@ -168,11 +173,12 @@ class ListeningFillBlankService:
         if not items:
             raise ListeningFillBlankError("No valid items could be generated.")
 
-        # 5. Generate TTS audio for each item
+        # 5. Generate TTS audio for each item and upload to DCS
+        logger.info(f"TTS manager={'yes' if self._tts_manager else 'no'}, DCS client={'yes' if self._dcs_ai_content_client else 'no'}")
         if self._tts_manager:
             try:
-                await self._generate_audio(items, language)
-                logger.info(f"TTS audio generated for {sum(1 for i in items if i.audio_status == 'ready')}/{len(items)} items")
+                await self._generate_audio(items, language, book_id=request.book_id, content_id=activity_id)
+                logger.info(f"TTS audio generated for {sum(1 for i in items if i.audio_status == 'ready')}/{len(items)} items, sample url={items[0].audio_url if items else 'none'}")
             except Exception as e:
                 logger.warning(f"TTS audio generation failed (non-blocking): {e}")
         else:
@@ -193,20 +199,59 @@ class ListeningFillBlankService:
         return activity
 
     async def _generate_audio(
-        self, items: list[ListeningFillBlankItem], language: str
+        self, items: list[ListeningFillBlankItem], language: str,
+        book_id: int | None = None, content_id: str | None = None,
     ) -> None:
-        """Generate TTS for each item's full_sentence in parallel."""
+        """Generate TTS for each item's full_sentence and upload to DCS."""
+
+        # Try to create a DCS content entry for batch upload
+        dcs_content_id: str | None = None
+        if self._dcs_ai_content_client and book_id:
+            try:
+                dcs_entry = await self._dcs_ai_content_client.create_content(
+                    book_id,
+                    {
+                        "manifest": {
+                            "activity_type": "listening_audio",
+                            "title": "Listening Fill-in-the-Blank Audio",
+                            "item_count": len(items),
+                            "has_audio": True,
+                            "language": language,
+                        },
+                        "content": {"item_count": len(items)},
+                    },
+                )
+                dcs_content_id = dcs_entry.get("content_id") or dcs_entry.get("id")
+                logger.info(f"DCS content entry created for listening FB audio: {dcs_content_id}")
+            except Exception as e:
+                logger.warning(f"Failed to create DCS content entry, will fall back to TTS URLs: {e}")
 
         async def _gen_single(item: ListeningFillBlankItem) -> None:
             options = AudioGenerationOptions(language=language)
             for attempt in range(2):
                 try:
-                    await self._tts_manager.generate_audio(item.full_sentence, options)
-                    item.audio_url = (
-                        f"/api/v1/ai/tts/audio"
-                        f"?text={quote(item.full_sentence, safe='')}"
-                        f"&lang={language}"
-                    )
+                    result = await self._tts_manager.generate_audio(item.full_sentence, options)
+                    # Upload to DCS if available
+                    if dcs_content_id and self._dcs_ai_content_client and book_id:
+                        try:
+                            filename = f"{item.item_id}.mp3"
+                            await self._dcs_ai_content_client.upload_audio(
+                                book_id, dcs_content_id, filename, result.audio_data,
+                            )
+                            item.audio_url = f"/api/v1/ai/content/{book_id}/{dcs_content_id}/audio/{filename}"
+                        except Exception as upload_err:
+                            logger.warning(f"DCS upload failed for {item.item_id}, using TTS URL: {upload_err}")
+                            item.audio_url = (
+                                f"/api/v1/ai/tts/audio"
+                                f"?text={quote(item.full_sentence, safe='')}"
+                                f"&lang={language}"
+                            )
+                    else:
+                        item.audio_url = (
+                            f"/api/v1/ai/tts/audio"
+                            f"?text={quote(item.full_sentence, safe='')}"
+                            f"&lang={language}"
+                        )
                     item.audio_status = "ready"
                     return
                 except Exception as e:

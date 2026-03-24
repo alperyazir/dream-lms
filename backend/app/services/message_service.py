@@ -127,13 +127,19 @@ async def get_allowed_recipients(
         teacher_id = teacher_result.scalar_one_or_none()
 
         # Teachers can only message students in their classes
+        # Filter by teacher_id first, then join to students
         if teacher_id:
             student_query = (
                 select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
                 .join(Student, Student.user_id == User.id)
-                .join(ClassStudent, ClassStudent.student_id == Student.id)
-                .join(Class, Class.id == ClassStudent.class_id)
-                .where(Class.teacher_id == teacher_id)
+                .join(
+                    ClassStudent,
+                    ClassStudent.student_id == Student.id
+                )
+                .join(
+                    Class,
+                    and_(Class.id == ClassStudent.class_id, Class.teacher_id == teacher_id)
+                )
                 .distinct()
             )
             student_result = await db.execute(student_query)
@@ -149,12 +155,14 @@ async def get_allowed_recipients(
             return []
 
         # Students can only message teachers of their classes
+        # Start from ClassStudent filtered by student_id to use index
         query = (
             select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
-            .join(Teacher, Teacher.user_id == User.id)
-            .join(Class, Class.teacher_id == Teacher.id)
-            .join(ClassStudent, ClassStudent.class_id == Class.id)
+            .select_from(ClassStudent)
             .where(ClassStudent.student_id == student_id)
+            .join(Class, Class.id == ClassStudent.class_id)
+            .join(Teacher, Teacher.id == Class.teacher_id)
+            .join(User, User.id == Teacher.user_id)
             .distinct()
         )
         result = await db.execute(query)

@@ -7,15 +7,12 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { FiHome } from "react-icons/fi"
-import { SkillTrendChart } from "@/components/analytics/SkillTrendChart"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { ProgressSummaryCard } from "@/components/student/ProgressSummaryCard"
-import { StudentSkillSummaryGrid } from "@/components/student/StudentSkillSummaryGrid"
 import { UpcomingAssignmentsList } from "@/components/student/UpcomingAssignmentsList"
 import { Skeleton } from "@/components/ui/skeleton"
 import useAuth from "@/hooks/useAuth"
-import { useStudentProgress } from "@/hooks/useStudentProgress"
 import { getStudentAssignments } from "@/services/assignmentsApi"
 
 export const Route = createFileRoute("/_layout/student/dashboard")({
@@ -38,10 +35,6 @@ function StudentDashboard() {
     queryFn: () => getStudentAssignments(),
   })
 
-  // Fetch real progress data
-  const { progress, isLoading: isLoadingProgress } = useStudentProgress({
-    period: "this_month",
-  })
 
   return (
     <PageContainer>
@@ -54,17 +47,20 @@ function StudentDashboard() {
       {/* Cards stack vertically, full width */}
       <div className="space-y-4 md:space-y-6">
         {/* Progress Summary */}
-        {isLoadingProgress ? (
+        {isLoadingAssignments ? (
           <Skeleton className="h-40 w-full rounded-lg" />
-        ) : progress?.stats ? (
-          <ProgressSummaryCard stats={progress.stats} />
-        ) : null}
-
-        {/* Student Skill Summary (Story 30.17) */}
-        <StudentSkillSummaryGrid />
-
-        {/* Skill Trends (Story 30.16) */}
-        <SkillTrendChart />
+        ) : (
+          <ProgressSummaryCard
+            completed={assignments.filter((a) => a.status === "completed").length}
+            inProgress={assignments.filter((a) => a.status === "in_progress").length}
+            pastDue={assignments.filter((a) => a.is_past_due && a.status !== "completed").length}
+            avgScore={(() => {
+              const scored = assignments.filter((a) => a.status === "completed" && a.score != null)
+              if (scored.length === 0) return 0
+              return Math.round(scored.reduce((sum, a) => sum + (a.score ?? 0), 0) / scored.length)
+            })()}
+          />
+        )}
 
         {/* Upcoming Assignments */}
         {isLoadingAssignments ? (

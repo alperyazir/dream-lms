@@ -84,6 +84,33 @@ router = APIRouter(prefix="/students", tags=["students"])
 logger = logging.getLogger(__name__)
 
 
+async def _get_student_for_user(
+    session: AsyncSessionDep, user_id: uuid.UUID
+) -> Student:
+    """Get Student record for a user, with Redis-cached ID lookup to skip DB on hot paths."""
+    cache_key = f"student_id_for_user:{user_id}"
+    cached_id = await cache_get(cache_key)
+    if cached_id:
+        # We have the student ID — load by PK (fastest possible query)
+        student = await session.get(Student, uuid.UUID(cached_id) if isinstance(cached_id, str) else cached_id)
+        if student:
+            return student
+
+    # Fallback: query by user_id
+    result = await session.execute(
+        select(Student).where(Student.user_id == user_id)
+    )
+    student = result.scalar_one_or_none()
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student record not found",
+        )
+    # Cache student_id → avoid this query next time
+    await cache_set(cache_key, str(student.id), ttl=86400)
+    return student
+
+
 @router.get(
     "/me/assignments",
     summary="Get student's assignments",
@@ -113,17 +140,8 @@ async def get_student_assignments(
     if cached is not None:
         return StudentAssignmentListResponse(**cached)
 
-    # Get Student record from authenticated user
-    result = await session.execute(
-        select(Student).where(Student.user_id == current_user.id)
-    )
-    student = result.scalar_one_or_none()
-
-    if not student:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student record not found"
-        )
+    # Get Student record (cached ID lookup)
+    student = await _get_student_for_user(session, current_user.id)
 
     # Subquery to count activities per assignment from AssignmentActivity junction table
     activity_count_subq = (
@@ -136,8 +154,8 @@ async def get_student_assignments(
     )
 
     # Build query: AssignmentStudent → Assignment → Activity + activity count
-    # Only show published assignments to students (not scheduled or draft)
-    # Use LEFT JOIN (outerjoin) to include Content Library assignments without activity_id
+    # Filter by student_id FIRST to use the index on assignment_students(student_id)
+    # before joining larger tables. Only show published assignments.
     query = (
         select(
             AssignmentStudent,
@@ -145,14 +163,14 @@ async def get_student_assignments(
             Activity,
             func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
         )
+        .where(AssignmentStudent.student_id == student.id)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
+        .where(Assignment.status == AssignmentPublishStatus.published)
         .outerjoin(Activity, Assignment.activity_id == Activity.id)
         .outerjoin(
             activity_count_subq,
             activity_count_subq.c.assignment_id == Assignment.id
         )
-        .where(AssignmentStudent.student_id == student.id)
-        .where(Assignment.status == AssignmentPublishStatus.published)
     )
 
     # Apply optional status filter
@@ -308,17 +326,8 @@ async def get_student_progress(
     if cached is not None:
         return StudentProgressResponse(**cached)
 
-    # Get Student record from authenticated user
-    result = await session.execute(
-        select(Student).where(Student.user_id == current_user.id)
-    )
-    student = result.scalar_one_or_none()
-
-    if not student:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student record not found"
-        )
+    # Get Student record (cached ID lookup)
+    student = await _get_student_for_user(session, current_user.id)
 
     # Call analytics service
     try:
@@ -773,17 +782,8 @@ async def get_student_calendar_assignments(
     if cached is not None:
         return StudentCalendarAssignmentsResponse(**cached)
 
-    # Get Student record for current user
-    result = await session.execute(
-        select(Student).where(Student.user_id == current_user.id)
-    )
-    student = result.scalar_one_or_none()
-
-    if not student:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student record not found for this user",
-        )
+    # Get Student record (cached ID lookup)
+    student = await _get_student_for_user(session, current_user.id)
 
     # Subquery to count activities per assignment
     activity_count_subq = (
@@ -1384,7 +1384,8 @@ async def execute_import(
             )
             session.add(enrollment)
 
-    # Import students
+    # Import students in batches to avoid holding the connection too long
+    BATCH_SIZE = 50
     credentials: list[ImportCredential] = []
     errors: list[str] = []
     created_count = 0
@@ -1472,6 +1473,10 @@ async def execute_import(
                 email=email if email else None,
             ))
             created_count += 1
+
+            # Flush in batches to release DB resources periodically
+            if created_count % BATCH_SIZE == 0:
+                session.flush()
 
         except Exception as e:
             logger.error(f"Failed to create student from row {row_num}: {e}")
@@ -1780,16 +1785,7 @@ async def get_my_skill_profile(
     if cached is not None:
         return StudentSkillProfileResponse(**cached)
 
-    result = await session.execute(
-        select(Student).where(Student.user_id == current_user.id)
-    )
-    student = result.scalar_one_or_none()
-
-    if not student:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student record not found"
-        )
+    student = await _get_student_for_user(session, current_user.id)
 
     profile = await _build_skill_profile(
         student_id=student.id,

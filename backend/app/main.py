@@ -5,14 +5,14 @@ from contextlib import asynccontextmanager
 
 import sentry_sdk
 from fastapi import FastAPI
+from fastapi.responses import ORJSONResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse
 
 from app.api.main import api_router
 from app.core.config import settings
@@ -25,37 +25,56 @@ from app.services.webhook_registration import webhook_registration_service
 logger = logging.getLogger(__name__)
 
 
-class RequestTimingMiddleware(BaseHTTPMiddleware):
-    """Log slow requests (>500ms) with method, path, status, and duration."""
+class RequestTimingMiddleware:
+    """Pure ASGI middleware — log slow requests (>500ms) without BaseHTTPMiddleware overhead."""
 
     SLOW_THRESHOLD_MS = 500
 
-    async def dispatch(self, request: Request, call_next):
-        start = time.perf_counter()
-        response = await call_next(request)
-        duration_ms = (time.perf_counter() - start) * 1000
+    def __init__(self, app):
+        self.app = app
 
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        start = time.perf_counter()
+        status_code = 0
+
+        async def send_wrapper(message):
+            nonlocal status_code
+            if message["type"] == "http.response.start":
+                status_code = message["status"]
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+        duration_ms = (time.perf_counter() - start) * 1000
         if duration_ms > self.SLOW_THRESHOLD_MS:
+            request = Request(scope)
             logger.warning(
                 "SLOW %s %s → %d (%.0fms)",
                 request.method,
                 request.url.path,
-                response.status_code,
+                status_code,
                 duration_ms,
             )
 
-        return response
 
-
-class BotBlockerMiddleware(BaseHTTPMiddleware):
-    """Silently block common bot/scanner requests to reduce log noise."""
+class BotBlockerMiddleware:
+    """Pure ASGI middleware — silently block common bot/scanner requests."""
 
     BLOCKED_PATHS = {"/api/clients", "/api/client"}
 
-    async def dispatch(self, request: Request, call_next):
-        if request.url.path in self.BLOCKED_PATHS:
-            return Response(status_code=404)
-        return await call_next(request)
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope["path"] in self.BLOCKED_PATHS:
+            await send({"type": "http.response.start", "status": 404, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+            return
+        await self.app(scope, receive, send)
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -144,6 +163,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
+    default_response_class=ORJSONResponse,
     lifespan=lifespan,
 )
 
@@ -155,6 +175,11 @@ app.state.limiter = limiter
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     """Handle rate limit exceeded errors with proper HTTP 429 response."""
+    # slowapi may pass ConnectionError (Redis down) instead of RateLimitExceeded —
+    # fail open by letting the request through
+    if not hasattr(exc, "detail"):
+        logger.warning("Rate limiter Redis unavailable — failing open")
+        return None  # type: ignore[return-value]
     retry_after = getattr(exc, "retry_after", 60)
     return JSONResponse(
         status_code=429,
@@ -178,7 +203,9 @@ if settings.all_cors_origins:
     )
 
 # Add SlowAPI middleware for rate limiting (Story 4.8 QA Fix)
-app.add_middleware(SlowAPIMiddleware)
+# Skip middleware entirely when disabled — avoids BaseHTTPMiddleware overhead
+if settings.RATE_LIMIT_ENABLED:
+    app.add_middleware(SlowAPIMiddleware)
 
 # Block common bot/scanner paths to reduce log noise
 app.add_middleware(BotBlockerMiddleware)

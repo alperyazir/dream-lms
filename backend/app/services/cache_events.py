@@ -54,19 +54,19 @@ _EVENT_REGISTRY: dict[str, list[str]] = {
     ],
     "assignment_submitted": [
         "student:{user_id}:assignments:*",
-        "progress:*",
-        "calendar:*",
-        "badges",
-        "skill-profile",
+        "student:{user_id}:progress:*",
+        "student:{user_id}:calendar:*",
+        "student:{user_id}:skill-profile",
+        "student:{user_id}:badges",
     ],
     "assignment_feedback": [
         "student:{user_id}:assignments:*",
-        "badges",
-        "skill-profile",
+        "student:{user_id}:skill-profile",
+        "student:{user_id}:badges",
     ],
     "assignment_graded": [
         "student:{user_id}:assignments:*",
-        "progress:*",
+        "student:{user_id}:progress:*",
     ],
 
     # Teacher assignments
@@ -86,6 +86,11 @@ _EVENT_REGISTRY: dict[str, list[str]] = {
     "teacher_classes_changed": [
         "teacher:{user_id}:classes",
         "teacher:{user_id}:students:*",
+    ],
+
+    # Book assignments — invalidate all book list caches (teachers see different books after assign/unassign)
+    "book_assignment_changed": [
+        "books:*",
     ],
 }
 

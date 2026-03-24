@@ -161,7 +161,7 @@ async def list_book_content(
         all_items = all_items.get("results", all_items.get("items", []))
 
     # Exclude internal-only entries (e.g. passage audio storage)
-    _HIDDEN_TYPES = {"passage_audio"}
+    _HIDDEN_TYPES = {"passage_audio", "listening_audio"}
     all_items = [
         item for item in all_items
         if item.get("activity_type") not in _HIDDEN_TYPES
@@ -194,6 +194,7 @@ async def list_book_content(
             "language": item.get("language"),
             "created_by_id": item.get("created_by_id"),
             "created_by_name": item.get("created_by_name"),
+            "created_at": item.get("created_at") or item.get("created") or item.get("last_modified"),
             "book_id": book_id,
         })
 

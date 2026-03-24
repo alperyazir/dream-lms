@@ -337,11 +337,12 @@ function MatchWordsReview({
   const rawAnswers = responseData.answers || responseData
 
   // Reconstruct student matches per sentence
+  // Key format from player: "wordIndex-sentenceIndex" → value is the word text
   const studentMatchBySentence = new Map<number, string>()
   for (const [key, wordText] of Object.entries(rawAnswers)) {
     const parts = key.split("-")
     if (parts.length >= 2) {
-      const sentIdx = parseInt(parts[0], 10)
+      const sentIdx = parseInt(parts[1], 10)
       studentMatchBySentence.set(sentIdx, String(wordText))
     }
   }

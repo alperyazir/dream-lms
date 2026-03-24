@@ -787,16 +787,16 @@ async def get_calendar_assignments(
     if rows:
         assignment_ids = [row[0].id for row in rows]
 
-        # Query class names via AssignmentStudent → Student → ClassStudent → Class
+        # Query class names via AssignmentStudent → ClassStudent → Class
+        # Filter by assignment_ids first to use the index before joining large tables
         class_query = await session.execute(
             select(
                 AssignmentStudent.assignment_id,
                 Class.name
             )
-            .join(Student, AssignmentStudent.student_id == Student.id)
-            .join(ClassStudent, ClassStudent.student_id == Student.id)
-            .join(Class, ClassStudent.class_id == Class.id)
             .where(AssignmentStudent.assignment_id.in_(assignment_ids))
+            .join(ClassStudent, ClassStudent.student_id == AssignmentStudent.student_id)
+            .join(Class, ClassStudent.class_id == Class.id)
             .distinct()
         )
         for assignment_id, class_name in class_query.all():
@@ -1010,18 +1010,30 @@ async def create_assignment(
         book_id_str = str(assignment_in.book_id)
 
         def _fix_audio_urls(obj: Any) -> Any:
-            """Recursively rewrite audio_url fields to use the correct DCS content_id."""
+            """Recursively rewrite audio_url fields to use the correct book_id and content_id."""
             if isinstance(obj, dict):
                 result = {}
                 for k, v in obj.items():
                     if k == "audio_url" and isinstance(v, str):
-                        # Replace /api/v1/ai/content/{book_id}/{wrong_id}/audio/
-                        # with    /api/v1/ai/content/{book_id}/{canonical_id}/audio/
-                        result[k] = _re.sub(
-                            rf"/api/v1/ai/content/{book_id_str}/[^/]+/audio/",
-                            f"/api/v1/ai/content/{book_id_str}/{canonical_content_id}/audio/",
-                            v,
-                        )
+                        # Skip live TTS URLs — they don't need rewriting
+                        if "/ai/tts/audio" not in v:
+                            # Fix AI content audio URLs: only rewrite the book_id
+                            # portion, preserving the DCS content_id (which may
+                            # differ from the activity content_id for separately
+                            # uploaded listening audio).
+                            v = _re.sub(
+                                r"/api/v1/ai/content/[^/]+/",
+                                f"/api/v1/ai/content/{book_id_str}/",
+                                v,
+                                count=1,
+                            )
+                            # Fix book vocabulary/TTS audio URLs: /books/{old_book}/ai-data/audio/
+                            v = _re.sub(
+                                r"/books/[^/]+/ai-data/audio/",
+                                f"/books/{book_id_str}/ai-data/audio/",
+                                v,
+                            )
+                        result[k] = v
                     elif k == "audio_data":
                         # Strip bulky base64 audio data — not needed for student playback
                         continue
@@ -4160,7 +4172,7 @@ def _recalculate_score(
             for key, word_text in answers.items():
                 parts = key.split("-")
                 if len(parts) >= 2:
-                    student_by_sent[int(parts[0])] = str(word_text)
+                    student_by_sent[int(parts[1])] = str(word_text)
             for i, s in enumerate(sentences):
                 if student_by_sent.get(i, "").strip().lower() == s.get("word", "").strip().lower():
                     correct += 1
@@ -4243,13 +4255,13 @@ def _build_review_items(
             # Build correct map: sentence -> correct word
             correct_matches = {s["sentence"]: s["word"] for s in sentences}
 
-            # response answers: {"sentIdx-wordIdx": "word text"}
+            # response answers: {"wordIdx-sentIdx": "word text"}
             # Reconstruct student matches per sentence
             student_matches: dict[str, str] = {}
             for key, word_text in answers.items():
                 parts = key.split("-")
                 if len(parts) >= 2:
-                    sent_idx = int(parts[0])
+                    sent_idx = int(parts[1])
                     if sent_idx < len(sentences):
                         student_matches[sentences[sent_idx]["sentence"]] = word_text
 

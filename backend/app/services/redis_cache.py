@@ -9,11 +9,12 @@ Single-flight locking prevents thundering herd on cold starts:
 """
 
 import asyncio
-import json
 import logging
 import random
 import uuid
 from typing import Any, Callable, Coroutine
+
+import orjson
 
 import redis as redis_sync
 import redis.asyncio as redis
@@ -95,7 +96,7 @@ async def cache_get(key: str) -> Any | None:
         raw = await client.get(key)
         if raw is None:
             return None
-        return json.loads(raw)
+        return orjson.loads(raw)
     except Exception as e:
         logger.debug("Cache get error for %s: %s", key, e)
         return None
@@ -109,7 +110,7 @@ async def cache_set(key: str, value: Any, ttl: int = 3600) -> None:
     try:
         # Add ±20% jitter to prevent all caches expiring simultaneously
         jittered_ttl = int(ttl * (0.8 + random.random() * 0.4))
-        await client.setex(key, max(jittered_ttl, 1), json.dumps(value, default=str))
+        await client.setex(key, max(jittered_ttl, 1), orjson.dumps(value, default=str).decode())
     except Exception as e:
         logger.debug("Cache set error for %s: %s", key, e)
 
@@ -218,7 +219,7 @@ def cache_get_sync(key: str) -> Any | None:
         raw = client.get(key)
         if raw is None:
             return None
-        return json.loads(raw)
+        return orjson.loads(raw)
     except Exception as e:
         logger.debug("Sync cache get error for %s: %s", key, e)
         return None
@@ -231,7 +232,7 @@ def cache_set_sync(key: str, value: Any, ttl: int = 3600) -> None:
         return
     try:
         jittered_ttl = int(ttl * (0.8 + random.random() * 0.4))
-        client.setex(key, max(jittered_ttl, 1), json.dumps(value, default=str))
+        client.setex(key, max(jittered_ttl, 1), orjson.dumps(value, default=str).decode())
     except Exception as e:
         logger.debug("Sync cache set error for %s: %s", key, e)
 

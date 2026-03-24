@@ -188,6 +188,7 @@ function getSkillBadge(question: MixModeQuestion): string {
 // ── Passage Audio Bar (reading comprehension) ────────────────────────
 
 function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00"
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, "0")}`
@@ -196,9 +197,11 @@ function formatTime(seconds: number): string {
 function PassageAudioBar({
   passage,
   passageAudioUrl,
+  onAudioStateChange,
 }: {
   passage: string
   passageAudioUrl?: string | null
+  onAudioStateChange?: (state: { currentTime: number; isPlaying: boolean }) => void
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -207,6 +210,14 @@ function PassageAudioBar({
   const [audioProgress, setAudioProgress] = useState(0)
   const [audioDuration, setAudioDuration] = useState(0)
 
+  const onAudioStateChangeRef = useRef(onAudioStateChange)
+  onAudioStateChangeRef.current = onAudioStateChange
+
+  // Propagate audio state to parent for word highlighting
+  useEffect(() => {
+    onAudioStateChangeRef.current?.({ currentTime: audioProgress, isPlaying })
+  }, [audioProgress, isPlaying])
+
   // Preload audio metadata when a pre-generated URL is available
   useEffect(() => {
     if (!passageAudioUrl || audioDataUrl) return
@@ -214,10 +225,16 @@ function PassageAudioBar({
     audioRef.current = audio
     audio.onended = () => setIsPlaying(false)
     audio.ontimeupdate = () => setAudioProgress(audio.currentTime)
+    const setDur = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        setAudioDuration(audio.duration)
+      }
+    }
     audio.onloadedmetadata = () => {
-      setAudioDuration(audio.duration)
+      setDur()
       setAudioDataUrl(passageAudioUrl)
     }
+    audio.ondurationchange = setDur
     audio.onerror = () => {
       // Pre-generated URL failed — user can still click to fall back to on-demand
       audioRef.current = null
@@ -232,6 +249,7 @@ function PassageAudioBar({
         audio.onended = null
         audio.ontimeupdate = null
         audio.onloadedmetadata = null
+        audio.ondurationchange = null
         audio.onerror = null
       }
     }
@@ -261,7 +279,16 @@ function PassageAudioBar({
       audioRef.current = audio
       audio.onended = () => setIsPlaying(false)
       audio.ontimeupdate = () => setAudioProgress(audio.currentTime)
-      audio.onloadedmetadata = () => setAudioDuration(audio.duration)
+      audio.onloadedmetadata = () => {
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          setAudioDuration(audio.duration)
+        }
+      }
+      audio.ondurationchange = () => {
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          setAudioDuration(audio.duration)
+        }
+      }
       audio.play()
       setIsPlaying(true)
     } catch {
@@ -521,6 +548,10 @@ function buildSyntheticActivity(
         data.letters ||
         data.scrambled_letters ||
         word.split("").sort(() => Math.random() - 0.5)
+      const isListeningWB = question.skill_slug === "listening"
+      const wbAudioUrl = isListeningWB
+        ? data.audio_url || ttsUrl(word)
+        : null
       return {
         activity: {
           type: "listening_word_builder",
@@ -533,9 +564,9 @@ function buildSyntheticActivity(
                 letters: letters,
                 letter_count: data.letter_count || word.length || letters.length,
                 definition: data.definition || "",
-                audio_url: null,
-                audio_data: data.audio_data,
-                audio_status: "pending",
+                audio_url: wbAudioUrl,
+                audio_data: isListeningWB ? data.audio_data : undefined,
+                audio_status: wbAudioUrl ? "ready" : "pending",
               },
             ],
             total_items: 1,
@@ -548,7 +579,10 @@ function buildSyntheticActivity(
 
     case "sentence_builder": {
       const words = data.words || data.scrambled_words || []
-      const sbAudioUrl = data.audio_url || ttsUrl(data.correct_sentence || "")
+      const isListening = question.skill_slug === "listening"
+      const sbAudioUrl = isListening
+        ? data.audio_url || ttsUrl(data.correct_sentence || "")
+        : null
       return {
         activity: {
           type: "listening_sentence_builder",
@@ -561,7 +595,7 @@ function buildSyntheticActivity(
                 word_count: data.word_count || words.length,
                 correct_sentence: data.correct_sentence || "",
                 audio_url: sbAudioUrl,
-                audio_data: data.audio_data,
+                audio_data: isListening ? data.audio_data : undefined,
                 audio_status: sbAudioUrl ? "ready" : "pending",
               },
             ],
@@ -707,6 +741,71 @@ function SentenceBuilderDelegateAdapter(props: any) {
   return <ListeningSentenceBuilderPlayerAdapter {...props} />
 }
 
+// ── Passage Word Highlighting ─────────────────────────────────────────
+
+function MixModePassageHighlight({
+  passage,
+  timestamps,
+  currentTime,
+  isPlaying,
+}: {
+  passage: string
+  timestamps: { word: string; start: number; end: number }[]
+  currentTime: number
+  isPlaying: boolean
+}) {
+  const activeWordIndex = useMemo(() => {
+    if (!isPlaying || timestamps.length === 0) return -1
+    for (let i = timestamps.length - 1; i >= 0; i--) {
+      if (currentTime >= timestamps[i].start) {
+        return i
+      }
+    }
+    return -1
+  }, [currentTime, timestamps, isPlaying])
+
+  const spans = useMemo(() => {
+    if (timestamps.length === 0) {
+      return [{ text: passage, wordIndex: -1 }]
+    }
+
+    const result: { text: string; wordIndex: number }[] = []
+    const tokens = passage.split(/(\s+)/)
+    let tsIdx = 0
+
+    for (const token of tokens) {
+      if (/^\s+$/.test(token)) {
+        result.push({ text: token, wordIndex: -1 })
+      } else if (tsIdx < timestamps.length) {
+        result.push({ text: token, wordIndex: tsIdx })
+        tsIdx++
+      } else {
+        result.push({ text: token, wordIndex: -1 })
+      }
+    }
+
+    return result
+  }, [passage, timestamps])
+
+  return (
+    <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
+      {spans.map((span, i) => (
+        <span
+          key={i}
+          className={cn(
+            "transition-colors duration-150",
+            span.wordIndex >= 0 &&
+              span.wordIndex === activeWordIndex &&
+              "rounded-sm bg-teal-200 text-teal-900 dark:bg-teal-700 dark:text-teal-100",
+          )}
+        >
+          {span.text}
+        </span>
+      ))}
+    </p>
+  )
+}
+
 // ── Component ──────────────────────────────────────────────────────────
 
 export function MixModePlayerAdapter({
@@ -744,6 +843,9 @@ export function MixModePlayerAdapter({
 
   // Mobile: toggle passage visibility
   const [showPassage, setShowPassage] = useState(true)
+
+  // Audio state for word highlighting in reading comprehension
+  const [passageAudioState, setPassageAudioState] = useState({ currentTime: 0, isPlaying: false })
 
   // Sync external index
   useEffect(() => {
@@ -867,9 +969,18 @@ export function MixModePlayerAdapter({
                   </Badge>
                 </div>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
-                    {contextInfo?.text}
-                  </p>
+                  {contextInfo?.wordTimestamps && contextInfo.wordTimestamps.length > 0 ? (
+                    <MixModePassageHighlight
+                      passage={contextInfo.text!}
+                      timestamps={contextInfo.wordTimestamps}
+                      currentTime={passageAudioState.currentTime}
+                      isPlaying={passageAudioState.isPlaying}
+                    />
+                  ) : (
+                    <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
+                      {contextInfo?.text}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -878,6 +989,7 @@ export function MixModePlayerAdapter({
             <PassageAudioBar
               passage={contextInfo?.text || ""}
               passageAudioUrl={contextInfo?.passageAudioUrl}
+              onAudioStateChange={setPassageAudioState}
             />
           </div>
 

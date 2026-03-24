@@ -25,26 +25,6 @@ export function WritingFillBlankResults({
 
   return (
     <div className={cn("mx-auto flex max-w-2xl flex-col gap-4", !hideSummary && "p-4")}>
-      {hideSummary && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            {correctCount}/{result.total} items correct
-          </span>
-          <span
-            className={cn(
-              "font-semibold",
-              actualPercentage >= 80
-                ? "text-green-600"
-                : actualPercentage >= 60
-                  ? "text-yellow-600"
-                  : "text-red-600",
-            )}
-          >
-            {actualPercentage}%
-          </span>
-        </div>
-      )}
-
       <div className="space-y-3">
         {result.item_results.map((item, index) => {
           // Split sentence at blank marker to show inline
@@ -133,8 +113,8 @@ export function WritingFillBlankResults({
                       </div>
                     )}
 
-                    {/* Acceptable answers (shown for incorrect items when alternatives exist) */}
-                    {!item.is_correct && item.acceptable_answers.length > 0 && (
+                    {/* Acceptable answers (shown when alternatives exist) */}
+                    {item.acceptable_answers.length > 0 && (
                       <div className="space-y-1">
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                           Also accepted:

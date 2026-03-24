@@ -167,16 +167,6 @@ export function SentenceBuilderResults({
             Sentence Breakdown
           </h3>
         )}
-        {hideSummary && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              {correctCount}/{totalCount} sentences correct
-            </span>
-            <span className={cn("font-semibold", getScoreColor(percentage))}>
-              {percentage}%
-            </span>
-          </div>
-        )}
         {result.sentence_results.map((sentenceResult, index) => (
           <SentenceResultCard
             key={sentenceResult.item_id}

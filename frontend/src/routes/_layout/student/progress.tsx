@@ -12,7 +12,6 @@ import { FiTrendingUp } from "react-icons/fi"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import {
-  AchievementBadges,
   ActivityBreakdown,
   ProgressScoreChart,
   ProgressStatsCard,
@@ -109,9 +108,6 @@ function StudentProgressPage() {
             </div>
             <StudyTimeCard stats={progress.study_time} />
           </div>
-
-          {/* Achievements */}
-          <AchievementBadges achievements={progress.achievements} />
         </>
       ) : (
         <div className="text-center py-12">
@@ -142,8 +138,6 @@ function ProgressSkeleton() {
         <Skeleton className="h-64 w-full rounded-lg" />
       </div>
 
-      {/* Achievements skeleton */}
-      <Skeleton className="h-48 w-full rounded-lg" />
     </div>
   )
 }

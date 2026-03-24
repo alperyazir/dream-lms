@@ -97,7 +97,7 @@ function TeacherBooksPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["books", backendFilters],
     queryFn: () => booksApi.getBooks(backendFilters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000, // 30 seconds — book assignments can change anytime
   })
 
   const books = data?.items ?? []

@@ -589,7 +589,7 @@ class MixModeService:
     ) -> list[MixModeQuestion]:
         from app.schemas.listening_fill_blank import ListeningFillBlankRequest
         from app.services.ai_generation.listening_fill_blank_service import ListeningFillBlankService
-        service = ListeningFillBlankService(self._dcs_client, self._llm_manager, self._tts_manager)
+        service = ListeningFillBlankService(self._dcs_client, self._llm_manager, self._tts_manager, dcs_ai_content_client=self._dcs_ai_content_client)
         request = ListeningFillBlankRequest(
             book_id=book_id, module_ids=module_ids,
             item_count=max(5, count), difficulty=difficulty, language=language,
@@ -609,7 +609,7 @@ class MixModeService:
     ) -> list[MixModeQuestion]:
         from app.schemas.listening_sentence_builder import ListeningSentenceBuilderRequest
         from app.services.ai_generation.listening_sentence_builder_service import ListeningSentenceBuilderService
-        service = ListeningSentenceBuilderService(self._dcs_client, self._llm_manager, self._tts_manager)
+        service = ListeningSentenceBuilderService(self._dcs_client, self._llm_manager, self._tts_manager, dcs_ai_content_client=self._dcs_ai_content_client)
         request = ListeningSentenceBuilderRequest(
             book_id=book_id, module_ids=module_ids,
             sentence_count=max(3, count), difficulty=difficulty, language=language,
@@ -629,7 +629,7 @@ class MixModeService:
     ) -> list[MixModeQuestion]:
         from app.schemas.listening_word_builder import ListeningWordBuilderRequest
         from app.services.ai_generation.listening_word_builder_service import ListeningWordBuilderService
-        service = ListeningWordBuilderService(self._dcs_client, self._llm_manager, self._tts_manager)
+        service = ListeningWordBuilderService(self._dcs_client, self._llm_manager, self._tts_manager, dcs_ai_content_client=self._dcs_ai_content_client)
         request = ListeningWordBuilderRequest(
             book_id=book_id, module_ids=module_ids,
             word_count=max(3, count), difficulty=difficulty, language=language,

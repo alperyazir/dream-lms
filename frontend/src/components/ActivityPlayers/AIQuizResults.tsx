@@ -136,16 +136,6 @@ export function AIQuizResults({
             Question Breakdown
           </h3>
         )}
-        {hideSummary && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              {correctCount}/{totalCount} questions correct
-            </span>
-            <span className={cn("font-semibold", getScoreColor(percentage))}>
-              {percentage}%
-            </span>
-          </div>
-        )}
         {result.question_results.map((questionResult, index) => (
           <QuestionResultCard
             key={questionResult.question_id}

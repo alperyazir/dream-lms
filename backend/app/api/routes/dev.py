@@ -3,12 +3,15 @@
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select as sa_select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import Session, select
 
-from app.api.deps import get_db
+from app.api.deps import get_async_db, get_db
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash
 from app.models import User, UserRole
+from app.services.redis_cache import cache_get, cache_set
 
 router = APIRouter()
 
@@ -82,8 +85,48 @@ def reset_quick_login_passwords(db: Session = Depends(get_db)) -> dict[str, str 
     }
 
 
+@router.get("/load-test-users")
+def get_load_test_users(
+    role: str = "student",
+    limit: int = 5000,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Get load-test users by role (paginated).
+
+    Returns usernames for load-test users (prefixed with 'lt_').
+    Designed for large-scale load testing with 100k+ users.
+
+    Only accessible when ENVIRONMENT != "production".
+    """
+    if settings.ENVIRONMENT == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    role_map = {"student": UserRole.student, "teacher": UserRole.teacher}
+    user_role = role_map.get(role)
+    if not user_role:
+        raise HTTPException(status_code=400, detail=f"Invalid role: {role}")
+
+    users = db.exec(
+        select(User.username)
+        .where(User.role == user_role, User.username.startswith("lt_"))
+        .offset(offset)
+        .limit(min(limit, 10000))
+    ).all()
+
+    return {
+        "role": role,
+        "count": len(users),
+        "offset": offset,
+        "usernames": list(users),
+    }
+
+
 @router.post("/instant-login/{username}")
-def instant_login(username: str, db: Session = Depends(get_db)) -> dict[str, str]:
+async def instant_login(
+    username: str, db: AsyncSession = Depends(get_async_db)
+) -> dict[str, str]:
     """
     Instant login for development - bypasses password completely.
 
@@ -101,8 +144,15 @@ def instant_login(username: str, db: Session = Depends(get_db)) -> dict[str, str
     if settings.ENVIRONMENT == "production":
         raise HTTPException(status_code=404, detail="Not found")
 
-    # Find user by username
-    user = db.exec(select(User).where(User.username == username)).first()
+    # Check Redis cache first — avoids DB hit on repeated logins
+    cache_key = f"dev:instant_login:{username}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    # Find user by username (async — doesn't block thread pool)
+    result = await db.execute(sa_select(User).where(User.username == username))
+    user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail=f"User '{username}' not found")
 
@@ -110,7 +160,10 @@ def instant_login(username: str, db: Session = Depends(get_db)) -> dict[str, str
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(user.id, expires_delta=access_token_expires)
 
-    return {
+    token_response = {
         "access_token": access_token,
         "token_type": "bearer",
     }
+    # Cache for slightly less than token expiry
+    await cache_set(cache_key, token_response, ttl=min(int(access_token_expires.total_seconds()) - 60, 3600))
+    return token_response

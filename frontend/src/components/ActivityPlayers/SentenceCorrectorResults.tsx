@@ -26,26 +26,6 @@ export function SentenceCorrectorResults({
 
   return (
     <div className={cn("mx-auto flex max-w-2xl flex-col gap-4", !hideSummary && "p-4")}>
-      {hideSummary && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            {correctCount}/{result.total} items correct
-          </span>
-          <span
-            className={cn(
-              "font-semibold",
-              actualPercentage >= 80
-                ? "text-green-600"
-                : actualPercentage >= 60
-                  ? "text-yellow-600"
-                  : "text-red-600",
-            )}
-          >
-            {actualPercentage}%
-          </span>
-        </div>
-      )}
-
       <div className="space-y-3">
         {result.item_results.map((item, index) => (
           <Card

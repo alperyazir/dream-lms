@@ -243,7 +243,7 @@ async def list_books(
     - Publisher: Sees all books from DCS (needed for book assignment)
     - Teacher: Sees only assigned books (via BookAssignment)
     """
-    # Redis cache (120s TTL) — book catalog changes rarely
+    # Redis cache (30s TTL) — book assignments can change frequently
     search_key = search or ""
     type_key = activity_type or ""
     cache_key = f"books:{current_user.role.value}:{current_user.id}:{skip}:{limit}:{search_key}:{type_key}"
@@ -342,7 +342,7 @@ async def list_books(
         skip=skip,
         limit=limit
     )
-    await cache_set(cache_key, response.model_dump(), ttl=120)
+    await cache_set(cache_key, response.model_dump(), ttl=30)
     return response
 
 

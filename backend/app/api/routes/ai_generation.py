@@ -6,7 +6,7 @@ AI-generated MCQ quizzes, and reading comprehension activities.
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 from urllib.parse import quote
 from uuid import UUID
 
@@ -1762,6 +1762,15 @@ async def regenerate_quiz_question(
         )
 
 
+def _strip_audio_data(obj: Any) -> Any:
+    """Recursively remove audio_data keys from nested dicts/lists."""
+    if isinstance(obj, dict):
+        return {k: _strip_audio_data(v) for k, v in obj.items() if k != "audio_data"}
+    elif isinstance(obj, list):
+        return [_strip_audio_data(item) for item in obj]
+    return obj
+
+
 @router.post(
     "/content/save-to-library",
     response_model=SaveToLibraryResponse,
@@ -1854,6 +1863,8 @@ async def save_content_to_library(
             )
 
         # Ensure audio URLs are set for listening activities
+        # If audio_data (base64) is present, we'll upload to DCS later.
+        # For now, set TTS fallback URLs for items without audio.
         _LISTENING_AUDIO_MAP = {
             "listening_fill_blank": ("items", "full_sentence"),
             "listening_quiz": ("questions", "audio_text"),
@@ -1865,7 +1876,7 @@ async def save_content_to_library(
             items_key, text_key = _LISTENING_AUDIO_MAP[request.activity_type]
             for item in content_data.get(items_key, []):
                 sentence = item.get(text_key, "")
-                if sentence:
+                if sentence and not item.get("audio_url"):
                     item["audio_url"] = (
                         f"/api/v1/ai/tts/audio"
                         f"?text={quote(sentence, safe='')}"
@@ -1918,6 +1929,7 @@ async def save_content_to_library(
                 has_passage = request.activity_type in (
                     "reading_comprehension", "reading", "mix_mode",
                 )
+                from datetime import datetime, timezone
                 dcs_entry = await dcs_ai.create_content(book_id, {
                     "manifest": {
                         "activity_type": request.activity_type,
@@ -1929,6 +1941,7 @@ async def save_content_to_library(
                         "language": content_data.get("language", "en"),
                         "created_by": str(current_user.id),
                         "created_by_name": current_user.full_name or current_user.email,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
                     },
                     "content": content_data,
                 })
@@ -1937,6 +1950,64 @@ async def save_content_to_library(
                     generated_content.dcs_content_id = dcs_cid
                     db.add(generated_content)
                     await db.commit()
+
+                    # Upload audio files from audio_data (base64) to DCS
+                    if request.activity_type in _LISTENING_AUDIO_MAP and dcs_cid:
+                        import base64
+                        items_key, _text_key = _LISTENING_AUDIO_MAP[request.activity_type]
+                        audio_uploaded = 0
+                        for item in content_data.get(items_key, []):
+                            audio_b64 = (item.get("audio_data") or {}).get("audio_base64")
+                            item_id = item.get("item_id") or item.get("question_id", "")
+                            if audio_b64 and item_id:
+                                try:
+                                    audio_bytes = base64.b64decode(audio_b64)
+                                    filename = f"{item_id}.mp3"
+                                    await dcs_ai.upload_audio(
+                                        book_id, dcs_cid, filename, audio_bytes,
+                                    )
+                                    item["audio_url"] = (
+                                        f"/api/v1/ai/content/{book_id}/{dcs_cid}/audio/{filename}"
+                                    )
+                                    item["audio_status"] = "ready"
+                                    audio_uploaded += 1
+                                except Exception as audio_err:
+                                    logger.warning(f"Failed to upload audio for {item_id}: {audio_err}")
+                        if audio_uploaded > 0:
+                            # Update content in DB with DCS audio URLs (strip base64 data)
+                            generated_content.content = _strip_audio_data(content_data)
+                            db.add(generated_content)
+                            await db.commit()
+                            logger.info(f"Uploaded {audio_uploaded} audio files to DCS: {dcs_cid}")
+
+                    # Upload audio for mix mode listening questions
+                    if request.activity_type == "mix_mode" and dcs_cid:
+                        import base64
+                        audio_uploaded = 0
+                        for q in content_data.get("questions", []):
+                            qdata = q.get("question_data", {})
+                            audio_b64 = (qdata.get("audio_data") or {}).get("audio_base64")
+                            q_id = q.get("question_id", "")
+                            if audio_b64 and q_id:
+                                try:
+                                    audio_bytes = base64.b64decode(audio_b64)
+                                    filename = f"{q_id}.mp3"
+                                    await dcs_ai.upload_audio(
+                                        book_id, dcs_cid, filename, audio_bytes,
+                                    )
+                                    qdata["audio_url"] = (
+                                        f"/api/v1/ai/content/{book_id}/{dcs_cid}/audio/{filename}"
+                                    )
+                                    qdata["audio_status"] = "ready"
+                                    audio_uploaded += 1
+                                except Exception as audio_err:
+                                    logger.warning(f"Failed to upload mix audio for {q_id}: {audio_err}")
+                        if audio_uploaded > 0:
+                            generated_content.content = _strip_audio_data(content_data)
+                            db.add(generated_content)
+                            await db.commit()
+                            logger.info(f"Uploaded {audio_uploaded} mix mode audio files to DCS: {dcs_cid}")
+
                 logger.info(
                     f"Content also saved to DCS: book_id={book_id}, "
                     f"dcs_content_id={dcs_cid}"
@@ -2854,6 +2925,11 @@ async def generate_content_v2(
         )
     sync_engine.dispose()
 
+    # Create DCS AI content client for audio uploads
+    from app.services.dcs_ai_content_client import get_dcs_ai_content_client
+    from app.services.dream_storage_client import DreamCentralStorageClient as _DCS
+    dcs_ai_content = get_dcs_ai_content_client(_DCS())
+
     # Route to the appropriate generator
     try:
         content_data: dict = {}
@@ -3037,7 +3113,7 @@ async def generate_content_v2(
                 difficulty=request.difficulty if request.difficulty != "auto" else "auto",
                 language=request.language,
             )
-            lfb_service = ListeningFillBlankService(dcs_client, llm_manager, tts_manager)
+            lfb_service = ListeningFillBlankService(dcs_client, llm_manager, tts_manager, dcs_ai_content_client=dcs_ai_content)
             activity = await lfb_service.generate_activity(lfb_request)
             await storage.save_listening_fill_blank_activity(activity)
             content_data = activity.model_dump(mode="json")
@@ -3153,7 +3229,7 @@ async def generate_content_v2(
                 difficulty=request.difficulty if request.difficulty != "auto" else "auto",
                 language=request.language,
             )
-            lsb_service = ListeningSentenceBuilderService(dcs_client, llm_manager, tts_manager)
+            lsb_service = ListeningSentenceBuilderService(dcs_client, llm_manager, tts_manager, dcs_ai_content_client=dcs_ai_content)
             activity = await lsb_service.generate_activity(lsb_request)
             await storage.save_listening_sentence_builder_activity(activity)
             content_data = activity.model_dump(mode="json")
@@ -3172,7 +3248,7 @@ async def generate_content_v2(
                 difficulty=request.difficulty if request.difficulty != "auto" else "auto",
                 language=request.language,
             )
-            lwb_service = ListeningWordBuilderService(dcs_client, llm_manager, tts_manager)
+            lwb_service = ListeningWordBuilderService(dcs_client, llm_manager, tts_manager, dcs_ai_content_client=dcs_ai_content)
             activity = await lwb_service.generate_activity(lwb_request)
             await storage.save_listening_word_builder_activity(activity)
             content_data = activity.model_dump(mode="json")

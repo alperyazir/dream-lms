@@ -25,7 +25,7 @@ engine = create_engine(
     pool_pre_ping=True,
     connect_args={
         "connect_timeout": 5,
-        "prepare_threshold": 0,  # Disable prepared statement caching (required for PgBouncer)
+        "prepare_threshold": None,  # Disable prepared statements (required for PgBouncer transaction pooling)
     },
 )
 
@@ -43,7 +43,7 @@ async_engine: AsyncEngine = create_async_engine(
     pool_pre_ping=True,
     connect_args={
         "connect_timeout": 5,
-        "prepare_threshold": 0,  # Disable prepared statement caching (required for PgBouncer)
+        "prepare_threshold": None,  # Disable prepared statements (required for PgBouncer transaction pooling)
     },
 )
 

@@ -26,6 +26,7 @@ from app.models import (
 )
 from app.services import book_assignment_service
 from app.services.book_service_v2 import get_book_service
+from app.services.cache_events import invalidate_for_event
 
 router = APIRouter(prefix="/book-assignments", tags=["book-assignments"])
 
@@ -132,6 +133,9 @@ async def create_bulk_book_assignments(
         assign_to_all=bulk_in.assign_to_all if hasattr(bulk_in, 'assign_to_all') else False,
     )
 
+    # Invalidate book list cache so teachers see updated assignments immediately
+    await invalidate_for_event("book_assignment_changed")
+
     # Convert to BookAssignmentPublic, mapping dcs_book_id to book_id
     return [
         BookAssignmentPublic(
@@ -223,6 +227,9 @@ async def delete_book_assignment(
     # Delete the assignment
     await db.delete(assignment)
     await db.commit()
+
+    # Invalidate book list cache so teachers see updated assignments immediately
+    await invalidate_for_event("book_assignment_changed")
 
     return None
 

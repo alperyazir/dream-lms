@@ -9,7 +9,7 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
 from sqlmodel import func, or_, select
 from starlette.requests import Request
 
@@ -215,6 +215,7 @@ async def create_supervisor(
     request: Request,
     *,
     session: AsyncSessionDep,
+    background_tasks: BackgroundTasks,
     supervisor_in: SupervisorCreateAPI,
     current_user: User = AdminOnly,
 ) -> Any:
@@ -273,24 +274,21 @@ async def create_supervisor(
     message = ""
 
     if supervisor_in.user_email and settings.emails_enabled:
-        try:
-            email_data = generate_new_account_email(
-                email_to=supervisor_in.user_email,
-                username=supervisor_in.username,
-                password=temp_password,
-                full_name=supervisor_in.full_name,
-            )
-            send_email(
-                email_to=supervisor_in.user_email,
-                subject=email_data.subject,
-                html_content=email_data.html_content,
-            )
-            password_emailed = True
-            message = f"Welcome email sent to {supervisor_in.user_email}"
-            temp_password = None  # Don't return password if emailed
-        except Exception as e:
-            logger.error(f"Failed to send welcome email: {e}")
-            message = "Supervisor created. Email could not be sent - share the password manually."
+        email_data = generate_new_account_email(
+            email_to=supervisor_in.user_email,
+            username=supervisor_in.username,
+            password=temp_password,
+            full_name=supervisor_in.full_name,
+        )
+        background_tasks.add_task(
+            send_email,
+            email_to=supervisor_in.user_email,
+            subject=email_data.subject,
+            html_content=email_data.html_content,
+        )
+        password_emailed = True
+        message = f"Welcome email queued to {supervisor_in.user_email}"
+        temp_password = None  # Don't return password if emailed
     else:
         if not supervisor_in.user_email:
             message = "Supervisor created. No email provided - share the password manually."
@@ -471,6 +469,7 @@ async def reset_supervisor_password(
     request: Request,
     *,
     session: AsyncSessionDep,
+    background_tasks: BackgroundTasks,
     supervisor_id: uuid.UUID,
     current_user: User = AdminOnly,
 ) -> Any:
@@ -514,22 +513,19 @@ async def reset_supervisor_password(
     returned_password = new_password
 
     if user.email and settings.emails_enabled:
-        try:
-            email_content = generate_password_reset_by_admin_email(
-                full_name=user.full_name or user.username,
-                new_password=new_password,
-            )
-            send_email(
-                email_to=user.email,
-                subject=email_content["subject"],
-                html_content=email_content["html_content"],
-            )
-            password_emailed = True
-            message = f"New password sent to {user.email}"
-            returned_password = None  # Don't return password if emailed
-        except Exception as e:
-            logger.error(f"Failed to send password reset email: {e}")
-            message = "Password reset. Email could not be sent - share the password manually."
+        email_content = generate_password_reset_by_admin_email(
+            full_name=user.full_name or user.username,
+            new_password=new_password,
+        )
+        background_tasks.add_task(
+            send_email,
+            email_to=user.email,
+            subject=email_content["subject"],
+            html_content=email_content["html_content"],
+        )
+        password_emailed = True
+        message = f"New password sent to {user.email}"
+        returned_password = None  # Don't return password if emailed
     else:
         if not user.email:
             message = "Password reset. No email on file - share the password manually."

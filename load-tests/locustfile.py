@@ -1,5 +1,5 @@
 """
-Dream LMS Load Tests — Read + Write Mix
+Dream LMS Load Tests — Realistic Read + Write Mix
 
 Run with:
     locust -f locustfile.py --host=http://localhost:8000
@@ -8,9 +8,9 @@ Then open http://localhost:8089 to configure and start the test.
 
 Prerequisites:
     1. Backend running on localhost:8000
-    2. DB has test users (run seed or use existing dev data)
-    3. Run setup first:
-       curl -X POST http://localhost:8000/api/v1/dev/reset-quick-login-passwords
+    2. DB seeded with load test data:
+       cd backend && python scripts/seed_load_test.py
+    3. No password reset needed — uses /dev/instant-login (bypasses password)
 """
 
 import random
@@ -23,44 +23,85 @@ from locust.exception import StopUser
 
 API = "/api/v1"
 
-# Will be populated on test start from the /dev/quick-login-users endpoint
+# Will be populated on test start from /dev/load-test-users
 USER_POOL: dict[str, list[str]] = {
     "student": [],
     "teacher": [],
-    "admin": [],
 }
+
+# Activity IDs available for assignment creation (populated on test start)
+ACTIVITY_IDS: list[str] = []
+DCS_BOOK_ID: int = 46  # Book with activities in the DB
+
+# Track which usernames are already claimed to avoid contention
+_user_index: dict[str, int] = {"student": 0, "teacher": 0}
 
 
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
-    """Fetch available test users before load test begins."""
+    """Fetch available load-test users before the test begins."""
     import requests
 
-    host = "http://localhost:8000"  # Always use backend, not whatever's in the UI
-    print(f"[SETUP] Fetching test users from {host}...")
+    host = environment.host or "http://localhost:8000"
+    print(f"[SETUP] Fetching load-test users from {host}...")
 
-    resp = requests.get(f"{host}{API}/dev/quick-login-users")
-    if resp.status_code != 200:
-        print(f"[SETUP] ERROR: Could not fetch test users: {resp.status_code}")
-        return
+    # Fetch teachers (up to 500)
+    resp = requests.get(f"{host}{API}/dev/load-test-users?role=teacher&limit=500")
+    if resp.status_code == 200:
+        data = resp.json()
+        USER_POOL["teacher"] = data.get("usernames", [])
+    print(f"[SETUP] Teachers: {len(USER_POOL['teacher'])} available")
 
-    data = resp.json()
-    for role, users in data.items():
-        usernames = [u["username"] for u in users if u.get("username")]
-        if role in USER_POOL:
-            USER_POOL[role] = usernames
-        elif role in ("publisher", "supervisor"):
-            pass  # skip for now
-
-    for role, users in USER_POOL.items():
-        print(f"[SETUP] {role}: {len(users)} users available")
+    # Fetch students in batches (up to 10k for the active pool)
+    all_students = []
+    for offset in range(0, 10000, 5000):
+        resp = requests.get(
+            f"{host}{API}/dev/load-test-users?role=student&limit=5000&offset={offset}"
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            batch = data.get("usernames", [])
+            all_students.extend(batch)
+            if len(batch) < 5000:
+                break
+    USER_POOL["student"] = all_students
+    print(f"[SETUP] Students: {len(USER_POOL['student'])} available")
 
     if not USER_POOL["student"] and not USER_POOL["teacher"]:
-        print("[SETUP] WARNING: No test users found! Tests will fail.")
+        print("[SETUP] WARNING: No load-test users found! Run seed_load_test.py first.")
+
+    # Fetch activity IDs for assignment creation
+    # Login as a teacher to fetch activities for the target book
+    if USER_POOL["teacher"]:
+        t_resp = requests.post(f"{host}{API}/dev/instant-login/{USER_POOL['teacher'][0]}")
+        if t_resp.status_code == 200:
+            token = t_resp.json()["access_token"]
+            a_resp = requests.get(
+                f"{host}{API}/books/{DCS_BOOK_ID}/activities",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if a_resp.status_code == 200:
+                activities = a_resp.json()
+                if isinstance(activities, list):
+                    ACTIVITY_IDS.extend([str(a["id"]) for a in activities if a.get("id")])
+                elif isinstance(activities, dict):
+                    items = activities.get("items", activities.get("activities", []))
+                    ACTIVITY_IDS.extend([str(a["id"]) for a in items if a.get("id")])
+    print(f"[SETUP] Activities: {len(ACTIVITY_IDS)} available for book {DCS_BOOK_ID}")
 
 
 def _random_suffix(n=6):
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
+
+
+def _claim_username(role: str) -> str | None:
+    """Get a unique username from the pool (round-robin)."""
+    users = USER_POOL.get(role, [])
+    if not users:
+        return None
+    idx = _user_index.get(role, 0) % len(users)
+    _user_index[role] = idx + 1
+    return users[idx]
 
 
 class LMSUser(HttpUser):
@@ -74,15 +115,14 @@ class LMSUser(HttpUser):
 
     def _login(self):
         """Get auth token via instant-login (dev endpoint)."""
-        users = USER_POOL.get(self.role, [])
-        if not users:
-            print(f"[AUTH] No {self.role} users available, falling back to form login")
+        self.username = _claim_username(self.role)
+        if not self.username:
+            print(f"[AUTH] No {self.role} users in pool")
             return False
 
-        self.username = random.choice(users)
         resp = self.client.post(
             f"{API}/dev/instant-login/{self.username}",
-            name=f"POST /dev/instant-login [as {self.role}]",
+            name="POST /dev/instant-login",
         )
         if resp.status_code == 200:
             self.token = resp.json()["access_token"]
@@ -112,14 +152,6 @@ class LMSUser(HttpUser):
             **kwargs,
         )
 
-    def _patch(self, path: str, name: str | None = None, **kwargs):
-        return self.client.patch(
-            f"{API}{path}",
-            headers=self._headers(),
-            name=name or f"PATCH {path}",
-            **kwargs,
-        )
-
     def _delete(self, path: str, name: str | None = None, **kwargs):
         return self.client.delete(
             f"{API}{path}",
@@ -129,31 +161,45 @@ class LMSUser(HttpUser):
         )
 
 
+# ─────────────────────────────────────────────────────────────
+# Student: Reads + Assignment Submission
+# ─────────────────────────────────────────────────────────────
+
 class StudentUser(LMSUser):
-    """Simulates a student browsing, viewing messages, and checking assignments."""
+    """Simulates a real student: browse assignments, start one, submit answers."""
 
     weight = 7  # 70% of traffic
-    wait_time = between(2, 8)
+    wait_time = between(2, 8)  # Realistic think time
     role = "student"
     _assignment_ids: list[str]
+    _in_progress_ids: list[str]
+    _not_started_ids: list[str]
 
     def on_start(self):
         if not self._login():
             raise StopUser()
         self._assignment_ids = []
-        self._fetch_assignment_ids()
+        self._in_progress_ids = []
+        self._not_started_ids = []
+        self._fetch_assignments()
 
-    def _fetch_assignment_ids(self):
-        """Fetch student's assignment IDs for start-assignment simulation."""
+    def _fetch_assignments(self):
+        """Fetch student's assignments and categorize by status."""
         resp = self._get("/students/me/assignments", name="GET /students/me/assignments [setup]")
         if resp.status_code == 200:
             try:
                 data = resp.json()
                 items = data if isinstance(data, list) else data.get("items", data.get("assignments", []))
                 if isinstance(items, list):
-                    self._assignment_ids = [
-                        str(a["id"]) for a in items if a.get("id")
-                    ][:10]
+                    self._assignment_ids = [str(a["id"]) for a in items if a.get("id")]
+                    self._not_started_ids = [
+                        str(a["id"]) for a in items
+                        if a.get("status") == "not_started"
+                    ]
+                    self._in_progress_ids = [
+                        str(a["id"]) for a in items
+                        if a.get("status") == "in_progress"
+                    ]
             except Exception:
                 pass
 
@@ -164,14 +210,17 @@ class StudentUser(LMSUser):
     def view_assignments(self):
         """Student checks their assignment list."""
         resp = self._get("/students/me/assignments", name="GET /students/me/assignments")
-        # Refresh assignment IDs periodically
         if resp.status_code == 200:
             try:
                 data = resp.json()
                 items = data if isinstance(data, list) else data.get("items", data.get("assignments", []))
                 if isinstance(items, list):
-                    self._assignment_ids = [
-                        str(a["id"]) for a in items if a.get("id")
+                    self._assignment_ids = [str(a["id"]) for a in items if a.get("id")][:20]
+                    self._not_started_ids = [
+                        str(a["id"]) for a in items if a.get("status") == "not_started"
+                    ][:10]
+                    self._in_progress_ids = [
+                        str(a["id"]) for a in items if a.get("status") == "in_progress"
                     ][:10]
             except Exception:
                 pass
@@ -179,7 +228,7 @@ class StudentUser(LMSUser):
     @tag("core", "read")
     @task(3)
     def view_progress(self):
-        """Student checks their progress."""
+        """Student checks their progress dashboard."""
         self._get("/students/me/progress", name="GET /students/me/progress")
 
     @tag("core", "read")
@@ -194,34 +243,16 @@ class StudentUser(LMSUser):
             name="GET /students/me/calendar",
         )
 
-    @tag("core", "read")
-    @task(2)
-    def view_badges(self):
-        """Student checks their badges."""
-        self._get("/students/me/badges", name="GET /students/me/badges")
-
-    @tag("core", "read")
+    @tag("read")
     @task(2)
     def view_skill_profile(self):
         """Student views skill profile."""
         self._get("/students/me/skill-profile", name="GET /students/me/skill-profile")
 
-    @tag("core", "read")
-    @task(3)
-    def start_assignment(self):
-        """Student starts/views an assignment — triggers DCS content fetch."""
-        if not self._assignment_ids:
-            return
-        assignment_id = random.choice(self._assignment_ids)
-        self._get(
-            f"/assignments/{assignment_id}/students/me/start",
-            name="GET /assignments/:id/students/me/start",
-        )
-
     @tag("read")
     @task(1)
     def unread_message_count(self):
-        """Student checks unread message count (replaces notification polling)."""
+        """Student checks unread message count."""
         self._get("/messages/unread-count", name="GET /messages/unread-count")
 
     @tag("read")
@@ -230,19 +261,75 @@ class StudentUser(LMSUser):
         """Student checks message conversations."""
         self._get("/messages/conversations", name="GET /messages/conversations")
 
-    # ── Writes ─────────────────────────────────────────────────
+    # ── Writes: Assignment Flow ────────────────────────────────
 
+    @tag("core", "write")
+    @task(3)
+    def start_assignment(self):
+        """Student starts a not_started assignment (changes status to in_progress)."""
+        if not self._not_started_ids:
+            # Fall back to any assignment
+            if not self._assignment_ids:
+                return
+            assignment_id = random.choice(self._assignment_ids)
+        else:
+            assignment_id = random.choice(self._not_started_ids)
+
+        resp = self._get(
+            f"/assignments/{assignment_id}/students/me/start",
+            name="GET /assignments/:id/students/me/start",
+        )
+        if resp.status_code == 200:
+            # Move from not_started to in_progress
+            if assignment_id in self._not_started_ids:
+                self._not_started_ids.remove(assignment_id)
+            if assignment_id not in self._in_progress_ids:
+                self._in_progress_ids.append(assignment_id)
+
+    @tag("core", "write")
+    @task(2)
+    def submit_assignment(self):
+        """Student submits a completed assignment with realistic score."""
+        if not self._in_progress_ids:
+            return
+        assignment_id = self._in_progress_ids.pop(0)
+
+        score = round(random.gauss(70, 15), 1)  # Normal distribution around 70%
+        score = max(0, min(100, score))
+        time_spent = random.randint(3, 25)
+
+        resp = self._post(
+            f"/assignments/{assignment_id}/submit",
+            name="POST /assignments/:id/submit",
+            json={
+                "answers_json": {
+                    "answers": [
+                        {"question_id": str(uuid.uuid4()), "answer": f"answer_{i}"}
+                        for i in range(random.randint(3, 10))
+                    ]
+                },
+                "score": score,
+                "time_spent_minutes": time_spent,
+            },
+        )
+        if resp.status_code == 200:
+            # Successfully submitted — remove from tracking
+            if assignment_id in self._assignment_ids:
+                self._assignment_ids.remove(assignment_id)
+
+
+# ─────────────────────────────────────────────────────────────
+# Teacher: Reads + Assignment Creation
+# ─────────────────────────────────────────────────────────────
 
 class TeacherUser(LMSUser):
-    """Simulates a teacher managing classes, students, assignments, and announcements."""
+    """Simulates a teacher: manage classes, create assignments, check analytics."""
 
     weight = 3  # 30% of traffic
-    wait_time = between(3, 10)
+    wait_time = between(3, 10)  # Teachers spend more time reading
     role = "teacher"
     _class_ids: list[str]
     _student_ids: list[str]
-    _created_student_ids: list[str]
-    _book_activities: list[dict]  # [{book_id, activity_id}, ...]
     _created_assignment_ids: list[str]
 
     def on_start(self):
@@ -250,28 +337,21 @@ class TeacherUser(LMSUser):
             raise StopUser()
         self._class_ids = []
         self._student_ids = []
-        self._created_student_ids = []
-        self._book_activities = []
         self._created_assignment_ids = []
-        # Fetch teacher's classes and students on start
         self._fetch_classes()
         self._fetch_students()
-        self._fetch_books_and_activities()
 
     def _fetch_classes(self):
-        """Fetch teacher's class IDs for write operations."""
         resp = self._get("/teachers/me/classes", name="GET /teachers/me/classes [setup]")
         if resp.status_code == 200:
             try:
                 data = resp.json()
-                # Handle both list response and paginated response
                 classes = data if isinstance(data, list) else data.get("items", [])
                 self._class_ids = [c["id"] for c in classes if c.get("id")]
             except Exception:
                 pass
 
     def _fetch_students(self):
-        """Fetch teacher's student IDs for write operations."""
         resp = self._get("/teachers/me/students", name="GET /teachers/me/students [setup]")
         if resp.status_code == 200:
             try:
@@ -282,217 +362,59 @@ class TeacherUser(LMSUser):
             except Exception:
                 pass
 
-    def _fetch_books_and_activities(self):
-        """Fetch available books and their activities for assignment creation.
-        Only fetches 1 book to minimize setup load."""
-        resp = self._get("/books", name="GET /books [setup]")
-        if resp.status_code != 200:
-            return
-        try:
-            data = resp.json()
-            books = data if isinstance(data, list) else data.get("items", data.get("books", []))
-            # Only pick 1 random book to keep setup light
-            if not books:
-                return
-            book = random.choice(books[:5])
-            book_id = book.get("id") or book.get("book_id")
-            if not book_id:
-                return
-            resp2 = self._get(
-                f"/books/{book_id}/activities",
-                name="GET /books/:id/activities [setup]",
-            )
-            if resp2.status_code == 200:
-                act_data = resp2.json()
-                activities = act_data if isinstance(act_data, list) else act_data.get("activities", [])
-                for act in activities[:3]:
-                    aid = act.get("id") or act.get("activity_id")
-                    if aid:
-                        self._book_activities.append({"book_id": book_id, "activity_id": str(aid)})
-        except Exception:
-            pass
-
     # ── Reads ──────────────────────────────────────────────────
 
     @tag("core", "read")
     @task(5)
     def view_classes(self):
-        """Teacher views their class list."""
         self._get("/teachers/me/classes", name="GET /teachers/me/classes")
 
     @tag("core", "read")
     @task(3)
     def view_students(self):
-        """Teacher views their student list."""
         self._get("/teachers/me/students", name="GET /teachers/me/students")
 
     @tag("core", "read")
     @task(3)
     def view_assignments(self):
-        """Teacher views assignments."""
         self._get("/assignments/", name="GET /assignments [teacher]")
 
     @tag("read")
     @task(2)
     def list_books(self):
-        """Teacher browses book catalog."""
         self._get("/books", name="GET /books [teacher]")
 
     @tag("read")
     @task(1)
     def view_messages(self):
-        """Teacher checks conversations (includes system messages)."""
         self._get("/messages/conversations", name="GET /messages/conversations [teacher]")
 
     @tag("read")
     @task(1)
-    def view_materials(self):
-        """Teacher views teaching materials."""
-        self._get("/teachers/materials", name="GET /teachers/materials")
-
-    @tag("read")
-    @task(1)
-    def view_report_history(self):
-        """Teacher checks report history."""
-        self._get("/reports/history", name="GET /reports/history")
-
-    @tag("read")
-    @task(1)
-    def view_ai_library(self):
-        """Teacher views AI content library."""
-        self._get("/ai/library", name="GET /ai/library")
-
-    @tag("read")
-    @task(1)
-    def view_ai_usage(self):
-        """Teacher checks their AI usage."""
-        self._get("/ai/usage/my-usage", name="GET /ai/usage/my-usage")
-
-    @tag("read")
-    @task(1)
     def view_skills(self):
-        """Teacher views skills list."""
         self._get("/skills/", name="GET /skills")
 
     # ── Writes ─────────────────────────────────────────────────
 
     @tag("write")
-    @task(1)
-    def create_student(self):
-        """Teacher creates a new student account."""
-        suffix = _random_suffix()
-        resp = self._post(
-            "/teachers/me/students",
-            name="POST /teachers/me/students [create]",
-            json={
-                "username": f"lt_s_{suffix}",
-                "full_name": f"LoadTest Student {suffix}",
-                "password": "TestPass123!",
-            },
-        )
-        if resp.status_code == 201:
-            try:
-                data = resp.json()
-                # Track created student for cleanup/reuse
-                role_record = data.get("role_record", {})
-                sid = role_record.get("id")
-                if sid:
-                    self._created_student_ids.append(sid)
-                    self._student_ids.append(sid)
-            except Exception:
-                pass
-
-    @tag("write")
-    @task(1)
-    def create_class(self):
-        """Teacher creates a new class."""
-        suffix = _random_suffix()
-        resp = self._post(
-            "/teachers/me/classes",
-            name="POST /teachers/me/classes [create]",
-            json={
-                "name": f"LoadTest Class {suffix}",
-                "grade_level": str(random.randint(1, 12)),
-                "subject": random.choice(["Math", "English", "Science", "History"]),
-            },
-        )
-        if resp.status_code == 201:
-            try:
-                data = resp.json()
-                cid = data.get("id")
-                if cid:
-                    self._class_ids.append(cid)
-            except Exception:
-                pass
-
-    @tag("write")
-    @task(1)
-    def add_student_to_class(self):
-        """Teacher adds a student to a class."""
-        if not self._class_ids or not self._student_ids:
-            return
-        class_id = random.choice(self._class_ids)
-        student_id = random.choice(self._student_ids)
-        self._post(
-            f"/teachers/me/classes/{class_id}/students",
-            name="POST /teachers/me/classes/:id/students [add]",
-            json=[str(student_id)],
-        )
-
-    @tag("write")
-    @task(1)
-    def send_message(self):
-        """Teacher sends a message to a student."""
-        if not self._student_ids:
-            return
-        # Get a student's user_id (we need the user_id, not student record id)
-        # Fetch recipients list for valid IDs
-        resp = self._get("/messages/recipients", name="GET /messages/recipients [for write]")
-        if resp.status_code != 200:
-            return
-        try:
-            data = resp.json()
-            recipients = data.get("recipients", [])
-            if not recipients:
-                return
-            recipient = random.choice(recipients)
-            recipient_id = recipient.get("id")
-            if not recipient_id:
-                return
-        except Exception:
-            return
-
-        self._post(
-            "/messages",
-            name="POST /messages [send]",
-            json={
-                "recipient_id": str(recipient_id),
-                "subject": f"Load test msg {_random_suffix()}",
-                "body": "This is an automated load test message.",
-            },
-        )
-
-    @tag("write")
     @task(2)
     def create_assignment(self):
-        """Teacher creates an assignment from a book activity."""
-        if not self._book_activities or not self._student_ids:
+        """Teacher creates an assignment assigned to a class."""
+        if not self._class_ids or not self._student_ids or not ACTIVITY_IDS:
             return
-        ba = random.choice(self._book_activities)
+
         suffix = _random_suffix()
-        # Pick 1-3 random students
-        selected_students = random.sample(
-            self._student_ids, min(3, len(self._student_ids))
-        )
+        # Pick a few random students
+        selected = random.sample(self._student_ids, min(5, len(self._student_ids)))
+
         payload = {
             "source_type": "book",
-            "book_id": ba["book_id"],
-            "activity_id": ba["activity_id"],
-            "name": f"LoadTest Assignment {suffix}",
-            "instructions": "This is an automated load test assignment.",
-            "student_ids": [str(s) for s in selected_students],
+            "book_id": DCS_BOOK_ID,
+            "activity_id": random.choice(ACTIVITY_IDS),
+            "name": f"LT Assignment {suffix}",
+            "student_ids": [str(s) for s in selected],
         }
-        # Optionally add a due date (50% of the time)
+        # Add due date 50% of the time
         if random.random() > 0.5:
             due = datetime.now(timezone.utc) + timedelta(days=random.randint(1, 14))
             payload["due_date"] = due.strftime("%Y-%m-%dT23:59:59+00:00")
@@ -504,8 +426,7 @@ class TeacherUser(LMSUser):
         )
         if resp.status_code in (200, 201):
             try:
-                data = resp.json()
-                aid = data.get("id")
+                aid = resp.json().get("id")
                 if aid:
                     self._created_assignment_ids.append(str(aid))
             except Exception:
@@ -514,7 +435,7 @@ class TeacherUser(LMSUser):
     @tag("write")
     @task(1)
     def delete_created_assignment(self):
-        """Teacher deletes a previously created load-test assignment (cleanup)."""
+        """Clean up previously created assignments."""
         if not self._created_assignment_ids:
             return
         assignment_id = self._created_assignment_ids.pop(0)
@@ -525,94 +446,46 @@ class TeacherUser(LMSUser):
 
     @tag("write")
     @task(1)
-    def delete_created_student(self):
-        """Teacher deletes a previously created load-test student (cleanup)."""
-        if not self._created_student_ids:
+    def send_message(self):
+        """Teacher sends a message."""
+        if not self._student_ids:
             return
-        student_id = self._created_student_ids.pop(0)
-        self._delete(
-            f"/teachers/me/students/{student_id}",
-            name="DELETE /teachers/me/students/:id [cleanup]",
-        )
-        # Also remove from student_ids
-        if student_id in self._student_ids:
-            self._student_ids.remove(student_id)
+        resp = self._get("/messages/recipients", name="GET /messages/recipients [for write]")
+        if resp.status_code != 200:
+            return
+        try:
+            recipients = resp.json().get("recipients", [])
+            if not recipients:
+                return
+            recipient = random.choice(recipients)
+            rid = recipient.get("id")
+            if not rid:
+                return
+        except Exception:
+            return
 
+        self._post(
+            "/messages",
+            name="POST /messages [send]",
+            json={
+                "recipient_id": str(rid),
+                "subject": f"Load test {_random_suffix()}",
+                "body": "Automated load test message.",
+            },
+        )
+
+
+# ─────────────────────────────────────────────────────────────
+# Health Check (disabled by default)
+# ─────────────────────────────────────────────────────────────
 
 class HealthCheckUser(LMSUser):
-    """Lightweight user that only hits the health check — useful as a baseline."""
-
-    weight = 0  # disabled by default, set to 1 to include
+    weight = 0
     wait_time = between(1, 3)
 
     def on_start(self):
-        pass  # no auth needed
+        pass
 
     @task
     def health_check(self):
         self.client.get(f"{API}/utils/health-check/", name="GET /health-check")
-
-
-class RateLimitTester(LMSUser):
-    """
-    Deliberately hammers endpoints to trigger and verify rate limits.
-
-    Fires requests with no wait to exceed limits.
-    Expected: 429 responses should appear in Locust stats after ~5-30 requests.
-
-    Run with:
-        locust -f locustfile.py --host=http://localhost:8000 -t 60s -u 3 -r 3 --tags rate-limit
-    """
-
-    weight = 1  # enabled
-    wait_time = between(0.1, 0.3)  # Fire rapidly
-    role = "teacher"
-    _hit_counts: dict[str, int]
-
-    def on_start(self):
-        if not self._login():
-            raise StopUser()
-        self._hit_counts = {"auth": 0, "read": 0, "write": 0}
-
-    @tag("rate-limit")
-    @task(3)
-    def hammer_login(self):
-        """Hit login endpoint rapidly — AUTH tier: 5/min per IP."""
-        self._hit_counts["auth"] += 1
-        resp = self.client.post(
-            f"{API}/login/access-token",
-            data={"username": "nonexistent", "password": "wrong"},
-            name="[RATE-LIMIT] POST /login (AUTH 5/min)",
-        )
-        if resp.status_code == 429:
-            print(f"[RATE-LIMIT] AUTH 429 after {self._hit_counts['auth']} requests")
-
-    @tag("rate-limit")
-    @task(5)
-    def hammer_read(self):
-        """Hit a read endpoint rapidly — READ tier: 120/min per user."""
-        self._hit_counts["read"] += 1
-        resp = self._get(
-            "/teachers/me/classes",
-            name="[RATE-LIMIT] GET /teachers/me/classes (READ 120/min)",
-        )
-        if resp.status_code == 429:
-            print(f"[RATE-LIMIT] READ 429 after {self._hit_counts['read']} requests")
-
-    @tag("rate-limit")
-    @task(2)
-    def hammer_write(self):
-        """Hit a write endpoint rapidly — WRITE tier: 30/min per user."""
-        self._hit_counts["write"] += 1
-        suffix = _random_suffix()
-        resp = self._post(
-            "/teachers/me/classes",
-            name="[RATE-LIMIT] POST /teachers/me/classes (WRITE 30/min)",
-            json={
-                "name": f"RateTest {suffix}",
-                "grade_level": "5",
-                "subject": "Test",
-            },
-        )
-        if resp.status_code == 429:
-            print(f"[RATE-LIMIT] WRITE 429 after {self._hit_counts['write']} requests")

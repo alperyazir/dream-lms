@@ -79,7 +79,7 @@ function toContentItem(item: BookContentItem): ContentItem {
     material_id: null,
     material_name: null,
     item_count: item.item_count,
-    created_at: "",
+    created_at: item.created_at || "",
     updated_at: null,
     used_in_assignments: 0,
     is_shared: true,

@@ -127,6 +127,7 @@ class BookContentItem(BaseModel):
     language: str | None = Field(default=None, description="Content language")
     created_by_id: str | None = Field(default=None, description="Creator teacher UUID")
     created_by_name: str | None = Field(default=None, description="Creator display name")
+    created_at: str | None = Field(default=None, description="Creation timestamp")
     book_id: int = Field(description="DCS book ID")
 
 

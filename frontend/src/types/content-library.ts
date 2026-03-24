@@ -79,6 +79,7 @@ export interface BookContentItem {
   language: string | null
   created_by_id: string | null
   created_by_name: string | null
+  created_at: string | null
   book_id: number
 }
 

@@ -143,6 +143,7 @@ async def attribute_skill_scores(
             f"Skill attribution error for AssignmentStudent {assignment_student_id}: {e}",
             exc_info=True,
         )
+        await session.rollback()
         return []
 
 
@@ -317,25 +318,40 @@ async def _attribute_mix_mode(
     return records
 
 
+_DIFFICULTY_TO_CEFR: dict[str, str] = {
+    "easy": "A1",
+    "medium": "A2",
+    "hard": "B1",
+    "very_hard": "B2",
+    "advanced": "C1",
+}
+
+
 def _extract_cefr_level(assignment: Assignment) -> str | None:
     """Extract CEFR level from assignment's activity content or difficulty setting."""
     content = assignment.activity_content or {}
 
     # Check nested content for difficulty/cefr_level
+    difficulty = None
     if isinstance(content, dict):
         # Direct difficulty field
         difficulty = content.get("difficulty")
-        if difficulty and difficulty != "auto":
-            return difficulty
 
         # Check inside content.content (V2 response nesting)
-        inner = content.get("content", {})
-        if isinstance(inner, dict):
-            difficulty = inner.get("difficulty")
-            if difficulty and difficulty != "auto":
-                return difficulty
+        if not difficulty or difficulty == "auto":
+            inner = content.get("content", {})
+            if isinstance(inner, dict):
+                difficulty = inner.get("difficulty")
 
-    return None
+    if not difficulty or difficulty == "auto":
+        return None
+
+    # If it's already a valid CEFR level (A1, A2, B1, etc.), return as-is
+    if len(difficulty) <= 5 and difficulty[0].upper() in "ABC":
+        return difficulty.upper()
+
+    # Convert difficulty labels to CEFR levels
+    return _DIFFICULTY_TO_CEFR.get(difficulty.lower())
 
 
 def _build_skill_question_map(

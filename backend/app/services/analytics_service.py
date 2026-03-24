@@ -2801,11 +2801,11 @@ async def get_student_progress(
     period_start_naive = period_start.replace(tzinfo=None) if period_start else None
     now_naive = datetime.now(UTC).replace(tzinfo=None)
 
-    # Get all completed assignments with related data
+    # Get all completed assignments with related data (outerjoin Activity for content-library assignments)
     completed_query = (
         select(AssignmentStudent, Assignment, Activity)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .join(Activity, Assignment.activity_id == Activity.id)
+        .outerjoin(Activity, Assignment.activity_id == Activity.id)
         .where(
             AssignmentStudent.student_id == student_id,
             AssignmentStudent.status == AssignmentStatus.completed,
@@ -2879,7 +2879,7 @@ async def get_student_progress(
     activity_data: dict[str, tuple[list[int], int]] = {}
     for asgn_student, assignment, activity in period_completed:
         if asgn_student.score is not None:
-            act_type = activity.activity_type
+            act_type = activity.activity_type if activity else "content_library"
             if act_type not in activity_data:
                 activity_data[act_type] = ([], 0)
             scores_list, count = activity_data[act_type]
@@ -2903,6 +2903,15 @@ async def get_student_progress(
     unique_book_ids = {a.dcs_book_id for _, a, _ in recent_5 if a.dcs_book_id}
     book_map = await book_service.get_books_batch(list(unique_book_ids))
 
+    # Check which recent assignments have feedback
+    recent_asgn_student_ids = [row[0].id for row in recent_5]
+    feedback_query = select(Feedback.assignment_student_id).where(
+        Feedback.assignment_student_id.in_(recent_asgn_student_ids),
+        Feedback.is_draft == False,  # noqa: E712
+    )
+    feedback_result = await session.execute(feedback_query)
+    feedback_asgn_ids = {row[0] for row in feedback_result.all()}
+
     recent_assignments = []
     for asgn_student, assignment, activity in recent_5:
         book = book_map.get(assignment.dcs_book_id)
@@ -2914,8 +2923,8 @@ async def get_student_progress(
                 name=assignment.name,
                 score=asgn_student.score or 0,
                 completed_at=asgn_student.completed_at,
-                has_feedback=False,
-                activity_type=activity.activity_type,
+                has_feedback=asgn_student.id in feedback_asgn_ids,
+                activity_type=activity.activity_type if activity else "content_library",
                 book_title=book_title,
             )
         )

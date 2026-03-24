@@ -340,8 +340,23 @@ export function ReadingComprehensionPlayer({
     )
     audioRef.current = audio
 
+    // Use duration_seconds from data if available (more reliable than metadata for base64 mp3s)
+    const knownDuration = activity.passage_audio.duration_seconds
+    if (knownDuration && knownDuration > 0) {
+      setAudioDuration(knownDuration)
+    }
+
     audio.addEventListener("loadedmetadata", () => {
-      setAudioDuration(audio.duration)
+      // Only update if we don't already have a known duration, and the value is finite
+      if ((!knownDuration || knownDuration <= 0) && Number.isFinite(audio.duration)) {
+        setAudioDuration(audio.duration)
+      }
+    })
+    // Also listen for durationchange — some browsers resolve Infinity later
+    audio.addEventListener("durationchange", () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        setAudioDuration(audio.duration)
+      }
     })
     audio.addEventListener("timeupdate", () => {
       setAudioProgress(audio.currentTime)
@@ -377,6 +392,7 @@ export function ReadingComprehensionPlayer({
   }, [])
 
   const formatTime = (seconds: number) => {
+    if (!Number.isFinite(seconds) || seconds < 0) return "0:00"
     const m = Math.floor(seconds / 60)
     const s = Math.floor(seconds % 60)
     return `${m}:${s.toString().padStart(2, "0")}`

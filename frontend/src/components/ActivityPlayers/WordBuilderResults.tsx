@@ -87,18 +87,6 @@ export function WordBuilderResults({
             Word Breakdown
           </h3>
         )}
-        {hideSummary && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              {result.correct_count}/{result.total} words correct
-            </span>
-            <span
-              className={cn("font-semibold", getScoreColor(result.percentage))}
-            >
-              {result.percentage}%
-            </span>
-          </div>
-        )}
         {result.word_results.map((wordResult, index) => (
           <WordResultCard
             key={wordResult.item_id}

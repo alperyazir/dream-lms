@@ -62,8 +62,9 @@ export const ProgressScoreChart = React.memo(
       })
     }
 
-    const chartData = data.map((point) => ({
+    const chartData = data.map((point, index) => ({
       ...point,
+      index,
       displayDate: formatDate(point.date),
     }))
 
@@ -92,10 +93,11 @@ export const ProgressScoreChart = React.memo(
                   vertical={false}
                 />
                 <XAxis
-                  dataKey="displayDate"
+                  dataKey="index"
                   tick={{ fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
+                  tickFormatter={(idx) => chartData[idx]?.displayDate ?? ""}
                 />
                 <YAxis
                   domain={[0, 100]}
@@ -111,8 +113,17 @@ export const ProgressScoreChart = React.memo(
                     borderRadius: "8px",
                     padding: "8px",
                   }}
-                  formatter={(value: number) => [`${value}%`, "Score"]}
-                  labelFormatter={(label) => `Date: ${label}`}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.[0]) return null
+                    const point = payload[0].payload
+                    return (
+                      <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-sm text-sm">
+                        <p className="font-medium">{point.assignment_name}</p>
+                        <p className="text-muted-foreground">{point.displayDate}</p>
+                        <p className="text-teal-600 font-semibold">Score: {point.score}%</p>
+                      </div>
+                    )
+                  }}
                 />
                 <ReferenceLine
                   y={average}

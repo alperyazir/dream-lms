@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Check, RotateCw, Volume2, X } from "lucide-react"
+import { Check, RotateCw, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import type { ActivityConfig, VocabularyMatchingActivity } from "@/lib/mockData"
@@ -194,14 +194,6 @@ export function VocabularyMatchingPlayerAdapter({
     return defId === pairId
   }
 
-  const playAudio = (audioUrl: string, audioData?: { audio_base64?: string }) => {
-    const src = audioData?.audio_base64
-      ? `data:audio/mpeg;base64,${audioData.audio_base64}`
-      : audioUrl
-    const audio = new Audio(src)
-    audio.play().catch(() => {})
-  }
-
   const totalPairs = words.length
   const matchedCount = matches.size
   const correctCount = Array.from(matches.entries()).filter(
@@ -267,20 +259,8 @@ export function VocabularyMatchingPlayerAdapter({
                   `}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{w.word}</span>
+                    <span className="font-medium select-none">{w.word}</span>
                     <div className="flex items-center gap-1">
-                      {(w.audio_url || w.audio_data?.audio_base64) && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            playAudio(w.audio_url!, w.audio_data)
-                          }}
-                          className="rounded p-1 hover:bg-muted"
-                        >
-                          <Volume2 className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      )}
                       {showResults && result === true && (
                         <Check className="h-5 w-5 text-green-600" />
                       )}
@@ -332,7 +312,7 @@ export function VocabularyMatchingPlayerAdapter({
                     ${showResults && resultCorrect === false ? "!border-red-500 !bg-red-50 dark:!bg-red-900/20" : ""}
                   `}
                 >
-                  <p className="text-sm">{d.definition}</p>
+                  <p className="text-sm select-none">{d.definition}</p>
                 </button>
               )
             })}

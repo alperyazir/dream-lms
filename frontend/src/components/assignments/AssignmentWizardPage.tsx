@@ -13,8 +13,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { format } from "date-fns"
-import { ClipboardEdit, Eye, X } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { ChevronDown, ClipboardEdit, Eye, Plus, X } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import useCustomToast from "@/hooks/useCustomToast"
 import { useContentLibraryDetail } from "@/hooks/useContentLibrary"
@@ -122,6 +128,7 @@ export function AssignmentWizardContent({
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showTimePlanningWarning, setShowTimePlanningWarning] = useState(false)
   const [initialized, setInitialized] = useState(false)
+  const createAnotherRef = useRef(false)
 
   // Derive sourceType from selections
   const sourceType: SourceType = selectedContent ? "ai_content" : "book"
@@ -256,6 +263,28 @@ export function AssignmentWizardContent({
     }
   }, [selectedActivityIds, selectedBook, isEditMode])
 
+  const resetWizard = useCallback(() => {
+    setSelectedBook(null)
+    setSelectedContent(null)
+    setSelectedActivityIds([])
+    setCurrentStep(0)
+    setValidationError(null)
+    setFormData({
+      name: "",
+      instructions: "",
+      due_date: null,
+      time_limit_minutes: null,
+      student_ids: [],
+      class_ids: [],
+      activity_ids: [],
+      scheduled_publish_date: null,
+      time_planning_enabled: false,
+      date_groups: [],
+      video_path: null,
+      resources: null,
+    })
+  }, [])
+
   // Mutations
   const createAssignmentMutation = useMutation({
     mutationFn: assignmentsApi.createAssignment,
@@ -267,6 +296,11 @@ export function AssignmentWizardContent({
       showSuccessToast(
         `Assignment "${data.name}" created successfully for ${data.student_count} student${data.student_count !== 1 ? "s" : ""}`,
       )
+
+      if (createAnotherRef.current) {
+        resetWizard()
+        return
+      }
 
       onClose()
       navigate({
@@ -297,6 +331,11 @@ export function AssignmentWizardContent({
       showSuccessToast(
         `${data.total_created} assignments created successfully! They will become visible on their scheduled dates.`,
       )
+
+      if (createAnotherRef.current) {
+        resetWizard()
+        return
+      }
 
       onClose()
     },
@@ -887,21 +926,53 @@ export function AssignmentWizardContent({
                       Preview
                     </Button>
                   )}
-                  <Button
-                    onClick={handleCreateAssignment}
-                    disabled={isMutating}
-                    className="bg-teal-600 hover:bg-teal-700"
-                  >
-                    {isMutating
-                      ? isEditMode
-                        ? "Updating..."
-                        : "Creating..."
-                      : isEditMode
-                        ? "Update Assignment"
-                        : formData.time_planning_enabled
-                          ? `Create ${formData.date_groups.length} Assignments`
-                          : "Create Assignment"}
-                  </Button>
+                  {isEditMode ? (
+                    <Button
+                      onClick={handleCreateAssignment}
+                      disabled={isMutating}
+                      className="bg-teal-600 hover:bg-teal-700"
+                    >
+                      {isMutating ? "Updating..." : "Update Assignment"}
+                    </Button>
+                  ) : (
+                    <div className="flex items-center">
+                      <Button
+                        onClick={() => {
+                          createAnotherRef.current = false
+                          handleCreateAssignment()
+                        }}
+                        disabled={isMutating}
+                        className="bg-teal-600 hover:bg-teal-700 rounded-r-none"
+                      >
+                        {isMutating
+                          ? "Creating..."
+                          : formData.time_planning_enabled
+                            ? `Create ${formData.date_groups.length} Assignments`
+                            : "Create Assignment"}
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            disabled={isMutating}
+                            className="bg-teal-600 hover:bg-teal-700 rounded-l-none border-l border-teal-500 px-2"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              createAnotherRef.current = true
+                              handleCreateAssignment()
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create & Start New
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
                 </>
               )}
             </div>

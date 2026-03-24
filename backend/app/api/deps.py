@@ -18,7 +18,7 @@ from app.core import security
 from app.core.config import settings
 from app.core.db import async_engine, engine
 from app.models import Student, Teacher, TokenPayload, User, UserRole
-from app.services.redis_cache import cache_get_sync, cache_set_sync
+from app.services.redis_cache import cache_get, cache_get_sync, cache_set, cache_set_sync
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,9 @@ AsyncSessionDep = Annotated[AsyncSession, Depends(get_async_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
-def get_current_user(session: SessionDep, token: TokenDep) -> User:
+async def get_current_user(
+    session: AsyncSessionDep, token: TokenDep
+) -> User:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
@@ -57,28 +59,47 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
     # Convert string UUID to UUID object
     user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
 
-    # Try Redis cache for quick is_active check before hitting DB
+    # Try Redis cache — return cached User without hitting DB
     cache_key = f"auth:user:{user_id}"
-    cached = cache_get_sync(cache_key)
-    if cached:
+    cached = await cache_get(cache_key)
+    if cached and cached.get("id") and cached.get("role"):
         if not cached.get("is_active", True):
             raise HTTPException(status_code=400, detail="Inactive user")
+        # Reconstruct User from cache — avoids DB query on every request
+        role_val = cached.get("role")
+        user = User(
+            id=uuid.UUID(cached["id"]),
+            email=cached.get("email", ""),
+            username=cached.get("username", ""),
+            full_name=cached.get("full_name"),
+            role=UserRole(role_val) if role_val else None,
+            is_active=cached.get("is_active", True),
+            is_superuser=cached.get("is_superuser", False),
+            dcs_publisher_id=cached.get("dcs_publisher_id"),
+            hashed_password="",
+        )
+        return user
 
-    user = session.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 
-    # Cache basic user info for is_active checks
-    if not cached:
-        try:
-            cache_set_sync(cache_key, {
-                "id": str(user.id),
-                "is_active": user.is_active,
-            }, ttl=3600)
-        except Exception:
-            pass  # Non-critical
+    # Cache full user info to skip DB on subsequent requests
+    try:
+        await cache_set(cache_key, {
+            "id": str(user.id),
+            "email": user.email,
+            "username": user.username,
+            "full_name": user.full_name,
+            "role": user.role.value if user.role else None,
+            "is_active": user.is_active,
+            "is_superuser": user.is_superuser,
+            "dcs_publisher_id": user.dcs_publisher_id,
+        }, ttl=3600)
+    except Exception:
+        pass  # Non-critical
 
     return user
 

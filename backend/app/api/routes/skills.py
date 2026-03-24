@@ -8,7 +8,7 @@ from starlette.requests import Request
 
 from app.core.rate_limit import RateLimits, limiter
 
-from app.api.deps import SessionDep, require_role
+from app.api.deps import AsyncSessionDep, require_role
 from app.models import (
     ActivityFormat,
     SkillCategory,
@@ -21,7 +21,7 @@ from app.schemas.skill import (
     SkillCategoryPublic,
     SkillWithFormatsResponse,
 )
-from app.services.redis_cache import cache_get_sync, cache_set_sync
+from app.services.redis_cache import cache_get, cache_set
 from app.services.skill_generation_dispatcher import GENERATOR_MAP
 
 router = APIRouter(prefix="/skills", tags=["skills"])
@@ -32,9 +32,9 @@ router = APIRouter(prefix="/skills", tags=["skills"])
     response_model=list[SkillWithFormatsResponse],
 )
 @limiter.limit(RateLimits.READ)
-def get_skills(
+async def get_skills(
     request: Request,
-    session: SessionDep,
+    session: AsyncSessionDep,
     current_user: User = require_role(
         UserRole.teacher, UserRole.admin, UserRole.supervisor
     ),
@@ -42,39 +42,41 @@ def get_skills(
     """Return active skills with their available formats, ordered by display_order."""
     # Skills are static reference data — cache aggressively (1 hour)
     cache_key = "skills:all:with_formats"
-    cached = cache_get_sync(cache_key)
+    cached = await cache_get(cache_key)
     if cached is not None:
         return [SkillWithFormatsResponse(**item) for item in cached]
 
     # Single query: load all skills, combos, and formats via JOINs (no N+1)
-    skills = session.exec(
+    skills_result = await session.execute(
         select(SkillCategory)
         .where(SkillCategory.is_active == True)  # noqa: E712
         .order_by(SkillCategory.display_order)
-    ).all()
+    )
+    skills = skills_result.scalars().all()
 
     skill_ids = [s.id for s in skills]
     if not skill_ids:
         return []
 
     # Batch-load all combos for active skills
-    all_combos = session.exec(
+    combos_result = await session.execute(
         select(SkillFormatCombination)
         .where(
             SkillFormatCombination.skill_id.in_(skill_ids),  # type: ignore[attr-defined]
             SkillFormatCombination.is_available == True,  # noqa: E712
         )
         .order_by(SkillFormatCombination.display_order)
-    ).all()
+    )
+    all_combos = combos_result.scalars().all()
 
     # Batch-load all referenced formats in one query
     all_format_ids = {c.format_id for c in all_combos}
     fmt_map = {}
     if all_format_ids:
-        fmt_models = session.exec(
+        fmt_result = await session.execute(
             select(ActivityFormat).where(ActivityFormat.id.in_(all_format_ids))  # type: ignore[attr-defined]
-        ).all()
-        fmt_map = {f.id: f for f in fmt_models}
+        )
+        fmt_map = {f.id: f for f in fmt_result.scalars().all()}
 
     # Group combos by skill_id
     combos_by_skill: dict[str, list] = defaultdict(list)
@@ -102,5 +104,5 @@ def get_skills(
             )
         )
 
-    cache_set_sync(cache_key, [r.model_dump() for r in results], ttl=3600)
+    await cache_set(cache_key, [r.model_dump() for r in results], ttl=3600)
     return results

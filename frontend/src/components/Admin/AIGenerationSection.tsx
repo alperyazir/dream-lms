@@ -96,8 +96,8 @@ export function AIGenerationSection({ period }: AIGenerationProps) {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    label={(entry: Record<string, any>) =>
-                      String(entry.activity_type ?? "").replace(/_/g, " ")
+                    label={({ activity_type }) =>
+                      activity_type.replace(/_/g, " ")
                     }
                   >
                     {data.by_activity_type.map((_: any, i: number) => (

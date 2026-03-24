@@ -11,7 +11,7 @@ from app.core.rate_limit import RateLimits, limiter
 
 from app import crud
 from app.services.cache_events import invalidate_for_event_sync
-from app.services.redis_cache import cache_get_sync, cache_set_sync
+from app.services.redis_cache import cache_get, cache_get_sync, cache_set, cache_set_sync
 from app.api.deps import AsyncSessionDep, SessionDep, require_role
 from app.core.config import settings
 from app.models import (
@@ -353,10 +353,10 @@ async def bulk_import_students(
     description="Retrieve students created by the current teacher or enrolled in their classes. Teacher only.",
 )
 @limiter.limit(RateLimits.READ)
-def list_my_students(
+async def list_my_students(
     request: Request,
     *,
-    session: SessionDep,
+    session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher),
     limit: int = Query(20, ge=1, le=500, description="Number of items to return"),
     offset: int = Query(0, ge=0, description="Number of items to skip"),
@@ -370,13 +370,13 @@ def list_my_students(
     """
     # Redis cache (60s TTL) — student list
     cache_key = f"teacher:{current_user.id}:students:{limit}:{offset}"
-    cached = cache_get_sync(cache_key)
+    cached = await cache_get(cache_key)
     if cached is not None:
         return StudentListResponse(**cached)
 
     # Get Teacher record for current user
-    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
-    teacher = session.exec(teacher_statement).first()
+    teacher_result = await session.execute(select(Teacher).where(Teacher.user_id == current_user.id))
+    teacher = teacher_result.scalar_one_or_none()
 
     if not teacher:
         raise HTTPException(
@@ -385,17 +385,12 @@ def list_my_students(
         )
 
     # Get students created by this teacher OR enrolled in teacher's classes
-    # First, get all class IDs for this teacher
     teacher_class_ids = select(Class.id).where(Class.teacher_id == teacher.id)
-
-    # Get student IDs enrolled in teacher's classes
     enrolled_student_ids = (
         select(ClassStudent.student_id)
         .where(ClassStudent.class_id.in_(teacher_class_ids))
     )
 
-    # Single JOIN query: Student + User + (optional) created-by Teacher's User
-    # Replaces 3N+1 queries with 1 query
     StudentUser = aliased(User, name="student_user")
     CreatedByTeacher = aliased(Teacher, name="created_by_teacher")
     CreatedByUser = aliased(User, name="created_by_user")
@@ -406,13 +401,11 @@ def list_my_students(
     )
 
     # Count total before pagination
-    count_stmt = (
-        select(func.count(Student.id.distinct()))
-        .where(base_filter)
-    )
-    total = session.exec(count_stmt).one()
+    count_stmt = select(func.count(Student.id.distinct())).where(base_filter)
+    count_result = await session.execute(count_stmt)
+    total = count_result.scalar() or 0
 
-    # Main query with JOINs (eliminates N+1)
+    # Main query with JOINs
     students_statement = (
         select(
             Student,
@@ -427,29 +420,29 @@ def list_my_students(
         .offset(offset)
         .limit(limit)
     )
-    rows = session.exec(students_statement).all()
+    rows_result = await session.execute(students_statement)
+    rows = rows_result.all()
 
-    # Batch-fetch classroom names for all students in one query
+    # Batch-fetch classroom names
     student_ids = [row[0].id for row in rows]
     classroom_map: dict[uuid.UUID, list[str]] = {}
     if student_ids:
-        classroom_rows = session.exec(
+        classroom_result = await session.execute(
             select(ClassStudent.student_id, Class.name)
             .join(Class, ClassStudent.class_id == Class.id)
             .where(
                 ClassStudent.student_id.in_(student_ids),
                 Class.teacher_id == teacher.id,
             )
-        ).all()
-        for student_id, class_name in classroom_rows:
+        )
+        for student_id, class_name in classroom_result.all():
             classroom_map.setdefault(student_id, []).append(class_name)
 
-    # Build response list from JOIN results (no additional queries)
     result = []
     for row in rows:
-        s = row[0]  # Student
-        user = row[1]  # User (student's user)
-        teacher_name = row[2]  # str | None (created-by teacher's full_name)
+        s = row[0]
+        user = row[1]
+        teacher_name = row[2]
 
         student_data = StudentPublic(
             grade_level=s.grade_level,
@@ -474,7 +467,7 @@ def list_my_students(
         offset=offset,
         has_more=offset + len(result) < total,
     )
-    cache_set_sync(cache_key, response.model_dump(), ttl=3600)
+    await cache_set(cache_key, response.model_dump(), ttl=3600)
     return response
 
 
@@ -803,10 +796,10 @@ def bulk_delete_students(
     description="Retrieve all classes taught by the authenticated teacher with student counts. Teacher only.",
 )
 @limiter.limit(RateLimits.READ)
-def list_my_classes(
+async def list_my_classes(
     request: Request,
     *,
-    session: SessionDep,
+    session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher)
 ) -> Any:
     """
@@ -816,13 +809,13 @@ def list_my_classes(
     """
     # Redis cache (120s TTL) — class list changes rarely
     cache_key = f"teacher:{current_user.id}:classes"
-    cached = cache_get_sync(cache_key)
+    cached = await cache_get(cache_key)
     if cached is not None:
         return cached
 
     # Get Teacher record for current user
-    teacher_statement = select(Teacher).where(Teacher.user_id == current_user.id)
-    teacher = session.exec(teacher_statement).first()
+    teacher_result = await session.execute(select(Teacher).where(Teacher.user_id == current_user.id))
+    teacher = teacher_result.scalar_one_or_none()
 
     if not teacher:
         raise HTTPException(
@@ -830,11 +823,7 @@ def list_my_classes(
             detail="Teacher record not found for this user"
         )
 
-    # Get all classes for this teacher with student count using LEFT JOIN
-    # This avoids N+1 query problem
-    from sqlmodel import func
-
-    classes_with_counts = session.exec(
+    classes_result = await session.execute(
         select(
             Class,
             func.count(ClassStudent.id).label("student_count")
@@ -842,9 +831,8 @@ def list_my_classes(
         .outerjoin(ClassStudent, Class.id == ClassStudent.class_id)
         .where(Class.teacher_id == teacher.id)
         .group_by(Class.id)
-    ).all()
+    )
 
-    # Build response with student counts (slim model, no timestamps/foreign keys)
     response_classes = [
         ClassListItem(
             id=class_obj.id,
@@ -855,10 +843,10 @@ def list_my_classes(
             is_active=class_obj.is_active,
             student_count=student_count,
         )
-        for class_obj, student_count in classes_with_counts
+        for class_obj, student_count in classes_result.all()
     ]
 
-    cache_set_sync(cache_key, [r.model_dump() for r in response_classes], ttl=3600)
+    await cache_set(cache_key, [r.model_dump() for r in response_classes], ttl=3600)
     return response_classes
 
 
