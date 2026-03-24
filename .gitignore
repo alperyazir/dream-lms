@@ -34,6 +34,13 @@ backend/generated_reports/*.excel
 
 # System files
 .DS_Store
+docs/.DS_Store
 
 # Duplicate directories
 frontend/frontend/
+docker-compose.loadtest.yml
+.gitignore
+backend/scripts/seed_load_test.py
+todo.txt
+load-tests/k6-load-test.js
+load-tests/k6-setup.js
