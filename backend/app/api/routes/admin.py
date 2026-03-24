@@ -3,7 +3,7 @@ import uuid
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
 from sqlmodel import SQLModel, func, select
 from starlette.requests import Request
 
@@ -527,6 +527,7 @@ def create_teacher(
     request: Request,
     *,
     session: SessionDep,
+    background_tasks: BackgroundTasks,
     teacher_in: TeacherCreateAPI,
     current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher)
 ) -> Any:
@@ -600,25 +601,21 @@ def create_teacher(
     message = ""
 
     if user.email and settings.emails_enabled:
-        try:
-            # Send password via email - secure path
-            email_data = generate_new_account_email(
-                email_to=user.email,
-                username=user.username,
-                password=temp_password,
-                full_name=teacher_in.full_name
-            )
-            send_email(
-                email_to=user.email,
-                subject=email_data.subject,
-                html_content=email_data.html_content
-            )
-            password_emailed = True
-            message = "Password sent via email"
-        except Exception as e:
-            logger.error(f"Failed to send welcome email to {user.email}: {e}")
-            temp_password_for_response = temp_password
-            message = "Email delivery failed. Please share the temporary password securely."
+        # Send password via email in background - avoid blocking DB connection
+        email_data = generate_new_account_email(
+            email_to=user.email,
+            username=user.username,
+            password=temp_password,
+            full_name=teacher_in.full_name
+        )
+        background_tasks.add_task(
+            send_email,
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content,
+        )
+        password_emailed = True
+        message = "Password sent via email"
     else:
         # No email or emails disabled - return password once for manual communication
         temp_password_for_response = temp_password
@@ -994,6 +991,7 @@ def create_student(
     request: Request,
     *,
     session: SessionDep,
+    background_tasks: BackgroundTasks,
     student_in: StudentCreateAPI,
     current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
 ) -> Any:
@@ -1054,25 +1052,21 @@ def create_student(
     message = ""
 
     if user.email and settings.emails_enabled:
-        try:
-            # Send password via email - secure path
-            email_data = generate_new_account_email(
-                email_to=user.email,
-                username=user.username,
-                password=password,
-                full_name=student_in.full_name
-            )
-            send_email(
-                email_to=user.email,
-                subject=email_data.subject,
-                html_content=email_data.html_content
-            )
-            password_emailed = True
-            message = "Password sent via email"
-        except Exception as e:
-            logger.error(f"Failed to send welcome email to {user.email}: {e}")
-            password_for_response = password
-            message = "Email delivery failed. Please share the password securely."
+        # Send password via email in background - avoid blocking DB connection
+        email_data = generate_new_account_email(
+            email_to=user.email,
+            username=user.username,
+            password=password,
+            full_name=student_in.full_name
+        )
+        background_tasks.add_task(
+            send_email,
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content,
+        )
+        password_emailed = True
+        message = "Password sent via email"
     else:
         # No email or emails disabled - return password for manual communication
         # Teachers can always view password later via GET /admin/students/{id}/password
@@ -2257,6 +2251,7 @@ async def reset_user_password(
     request: Request,
     *,
     session: AsyncSessionDep,
+    background_tasks: BackgroundTasks,
     user_id: uuid.UUID,
     current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher)
 ) -> PasswordResetResponse:
@@ -2343,16 +2338,17 @@ async def reset_user_password(
     temp_password_for_response = None
 
     if user.email and settings.emails_enabled:
-        # Send password via email - secure path (Story 11.2)
+        # Send password via email in background - avoid blocking DB connection
         email_data = generate_password_reset_by_admin_email(
             email_to=user.email,
             username=user.username,
             password=new_password
         )
-        send_email(
+        background_tasks.add_task(
+            send_email,
             email_to=user.email,
             subject=email_data.subject,
-            html_content=email_data.html_content
+            html_content=email_data.html_content,
         )
         password_emailed = True
         message = f"Password reset successfully. New password sent to {user.email}"
@@ -2644,6 +2640,7 @@ async def create_publisher_account(
     request: Request,
     *,
     session: SessionDep,
+    background_tasks: BackgroundTasks,
     account_in: PublisherAccountCreate,
     current_user: User = AdminOrSupervisor,
 ) -> PublisherAccountCreationResponse:
@@ -2710,25 +2707,21 @@ async def create_publisher_account(
     message = ""
 
     if user.email and settings.emails_enabled:
-        try:
-            # Send password via email - secure path
-            email_data = generate_new_account_email(
-                email_to=user.email,
-                username=user.username,
-                password=temp_password,
-                full_name=account_in.full_name
-            )
-            send_email(
-                email_to=user.email,
-                subject=email_data.subject,
-                html_content=email_data.html_content
-            )
-            password_emailed = True
-            message = "Password sent via email"
-        except Exception as e:
-            logger.error(f"Failed to send welcome email to {user.email}: {e}")
-            temp_password_for_response = temp_password
-            message = "Email delivery failed. Please share the temporary password securely."
+        # Send password via email in background - avoid blocking DB connection
+        email_data = generate_new_account_email(
+            email_to=user.email,
+            username=user.username,
+            password=temp_password,
+            full_name=account_in.full_name
+        )
+        background_tasks.add_task(
+            send_email,
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content,
+        )
+        password_emailed = True
+        message = "Password sent via email"
     else:
         # No email or emails disabled - return password once for manual communication
         temp_password_for_response = temp_password
@@ -3340,3 +3333,82 @@ async def backfill_skill_scores(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Backfill failed: {str(e)}",
         )
+
+
+# --- Platform Analytics Endpoints (Story 26.2) ---
+
+
+from app.schemas.platform_analytics import (
+    AIUsageResponse,
+    AssignmentMetricsResponse,
+    PlatformUsageResponse,
+)
+from app.services.platform_analytics_service import (
+    get_ai_usage,
+    get_assignment_metrics,
+    get_platform_usage,
+)
+from app.services.redis_cache import cache_get_or_fetch
+
+
+@router.get(
+    "/analytics/platform-usage",
+    response_model=PlatformUsageResponse,
+    summary="Platform usage analytics",
+    description="Get active user counts (DAU/WAU/MAU) and activity trends.",
+)
+@limiter.limit(RateLimits.ADMIN)
+async def admin_platform_usage(
+    request: Request,
+    session: AsyncSessionDep,
+    period: str = Query(default="30d", pattern="^(7d|30d|90d)$"),
+    current_user: User = AdminOrSupervisor,
+) -> PlatformUsageResponse:
+    """Get platform usage metrics."""
+    return await cache_get_or_fetch(
+        f"admin:analytics:platform-usage:{period}",
+        lambda: get_platform_usage(session, period),
+        ttl=300,
+    )
+
+
+@router.get(
+    "/analytics/assignment-metrics",
+    response_model=AssignmentMetricsResponse,
+    summary="Assignment metrics analytics",
+    description="Get assignment completion rates, scores, and activity type breakdown.",
+)
+@limiter.limit(RateLimits.ADMIN)
+async def admin_assignment_metrics(
+    request: Request,
+    session: AsyncSessionDep,
+    period: str = Query(default="30d", pattern="^(7d|30d|90d)$"),
+    current_user: User = AdminOrSupervisor,
+) -> AssignmentMetricsResponse:
+    """Get assignment performance metrics."""
+    return await cache_get_or_fetch(
+        f"admin:analytics:assignment-metrics:{period}",
+        lambda: get_assignment_metrics(session, period),
+        ttl=300,
+    )
+
+
+@router.get(
+    "/analytics/ai-usage",
+    response_model=AIUsageResponse,
+    summary="AI generation usage analytics",
+    description="Get AI-generated activity counts and breakdown by type.",
+)
+@limiter.limit(RateLimits.ADMIN)
+async def admin_ai_usage(
+    request: Request,
+    session: AsyncSessionDep,
+    period: str = Query(default="30d", pattern="^(7d|30d|90d)$"),
+    current_user: User = AdminOrSupervisor,
+) -> AIUsageResponse:
+    """Get AI generation usage metrics."""
+    return await cache_get_or_fetch(
+        f"admin:analytics:ai-usage:{period}",
+        lambda: get_ai_usage(session, period),
+        ttl=300,
+    )
