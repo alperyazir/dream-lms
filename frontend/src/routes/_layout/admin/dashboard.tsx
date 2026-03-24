@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import { useState } from "react"
 import {
   Building2,
   GraduationCap,
@@ -9,6 +10,11 @@ import {
 } from "lucide-react"
 import { FiHome } from "react-icons/fi"
 import { AdminService } from "@/client"
+import { AIGenerationSection } from "@/components/Admin/AIGenerationSection"
+import { AssignmentMetricsSection } from "@/components/Admin/AssignmentMetricsSection"
+import { PeriodSelector } from "@/components/Admin/PeriodSelector"
+import { PlatformUsageSection } from "@/components/Admin/PlatformUsageSection"
+import { SystemHealthSection } from "@/components/Admin/SystemHealthSection"
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
 import { StatCard } from "@/components/dashboard/StatCard"
@@ -22,6 +28,8 @@ export const Route = createFileRoute("/_layout/admin/dashboard")({
 })
 
 function AdminDashboard() {
+  const [period, setPeriod] = useState("30d")
+
   // Fetch real stats from API
   const {
     data: stats,
@@ -112,6 +120,46 @@ function AdminDashboard() {
             />
           </div>
         )}
+      </div>
+
+      {/* Period Selector */}
+      <div className="flex items-center gap-4">
+        <h2 className="text-xl font-semibold text-foreground">
+          Analytics
+        </h2>
+        <PeriodSelector value={period} onChange={setPeriod} />
+      </div>
+
+      {/* Platform Usage */}
+      <div>
+        <h2 className="text-xl font-semibold text-foreground mb-4">
+          Platform Usage
+        </h2>
+        <PlatformUsageSection period={period} />
+      </div>
+
+      {/* Assignment Metrics */}
+      <div>
+        <h2 className="text-xl font-semibold text-foreground mb-4">
+          Assignment Performance
+        </h2>
+        <AssignmentMetricsSection period={period} />
+      </div>
+
+      {/* AI Generation Stats */}
+      <div>
+        <h2 className="text-xl font-semibold text-foreground mb-4">
+          AI Generation Stats
+        </h2>
+        <AIGenerationSection period={period} />
+      </div>
+
+      {/* System Health */}
+      <div>
+        <h2 className="text-xl font-semibold text-foreground mb-4">
+          System Health
+        </h2>
+        <SystemHealthSection />
       </div>
     </PageContainer>
   )
