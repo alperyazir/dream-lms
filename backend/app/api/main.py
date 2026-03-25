@@ -66,5 +66,5 @@ if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)
 
 # Development-only endpoints (quick login, etc.)
-if settings.ENVIRONMENT != "production":
+if settings.ENVIRONMENT == "local":
     api_router.include_router(dev.router, prefix="/dev", tags=["dev"])

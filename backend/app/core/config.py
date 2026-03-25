@@ -141,10 +141,10 @@ class Settings(BaseSettings):
     # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     PASSWORD_ENCRYPTION_KEY: str | None = None
 
-    def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
+    def _check_default_secret(self, var_name: str, value: str | None, default: str = "changethis") -> None:
+        if value == default:
             message = (
-                f'The value of {var_name} is "changethis", '
+                f'The value of {var_name} is "{default}", '
                 "for security, please change it, at least for deployments."
             )
             if self.ENVIRONMENT == "local":
@@ -162,6 +162,11 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET",
             self.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET,
+        )
+        self._check_default_secret(
+            "DREAM_CENTRAL_STORAGE_PASSWORD",
+            self.DREAM_CENTRAL_STORAGE_PASSWORD,
+            "admin",
         )
 
         return self

@@ -206,6 +206,19 @@ if settings.all_cors_origins:
         expose_headers=["Content-Disposition"],  # Expose filename header to browser
     )
 
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-XSS-Protection"] = "0"
+    if settings.ENVIRONMENT == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
 # Add SlowAPI middleware for rate limiting (Story 4.8 QA Fix)
 # Skip middleware entirely when disabled — avoids BaseHTTPMiddleware overhead
 if settings.RATE_LIMIT_ENABLED:

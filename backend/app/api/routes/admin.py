@@ -1735,10 +1735,10 @@ async def bulk_import_publishers(
 
     except Exception as e:
         session.rollback()
-        logger.error(f"Bulk import failed: {str(e)}")
+        logger.error(f"Bulk import failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bulk import failed: {str(e)}",
+            detail="Bulk import failed. Please try again.",
         )
 
     return BulkImportResponse(
@@ -1904,10 +1904,10 @@ async def bulk_import_teachers(
 
     except Exception as e:
         session.rollback()
-        logger.error(f"Bulk import failed: {str(e)}")
+        logger.error(f"Bulk import failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bulk import failed: {str(e)}",
+            detail="Bulk import failed. Please try again.",
         )
 
     return BulkImportResponse(
@@ -2056,10 +2056,10 @@ async def bulk_import_students(
 
     except Exception as e:
         session.rollback()
-        logger.error(f"Bulk import failed: {str(e)}")
+        logger.error(f"Bulk import failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bulk import failed: {str(e)}",
+            detail="Bulk import failed. Please try again.",
         )
 
     return BulkImportResponse(
@@ -3262,10 +3262,10 @@ async def recalculate_skill_scores(
         )
     except Exception as e:
         await session.rollback()
-        logger.error(f"Skill score recalculation failed: {e}")
+        logger.error(f"Skill score recalculation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Recalculation failed: {str(e)}",
+            detail="Recalculation failed. Please try again.",
         )
 
 
@@ -3314,8 +3314,8 @@ async def backfill_skill_scores(
         )
     except Exception as e:
         await session.rollback()
-        logger.error(f"Skill score backfill failed: {e}")
+        logger.error(f"Skill score backfill failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Backfill failed: {str(e)}",
+            detail="Backfill failed. Please try again.",
         )

@@ -41,3 +41,5 @@ class WorkerSettings:
     redis_settings = REDIS_SETTINGS
     max_jobs = 20
     job_timeout = 60
+    max_tries = 3
+    retry_delay = 5  # seconds

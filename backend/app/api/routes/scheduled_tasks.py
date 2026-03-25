@@ -112,10 +112,10 @@ async def run_deadline_reminders(
             f"Deadline check complete: {deadline_result.notifications_sent} sent"
         )
     except Exception as e:
-        logger.error(f"Error in approaching deadline check: {e}")
+        logger.error(f"Error in approaching deadline check: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to check approaching deadlines: {str(e)}",
+            detail="Failed to check approaching deadlines. Please try again.",
         )
 
     # Run past-due check
@@ -125,10 +125,10 @@ async def run_deadline_reminders(
             f"Past-due check complete: {past_due_result.notifications_sent} sent"
         )
     except Exception as e:
-        logger.error(f"Error in past-due check: {e}")
+        logger.error(f"Error in past-due check: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to check past-due assignments: {str(e)}",
+            detail="Failed to check past-due assignments. Please try again.",
         )
 
     total_notifications = (
@@ -167,10 +167,10 @@ async def run_approaching_deadlines_only(
     try:
         result = await check_approaching_deadlines(session)
     except Exception as e:
-        logger.error(f"Error in approaching deadline check: {e}")
+        logger.error(f"Error in approaching deadline check: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to check approaching deadlines: {str(e)}",
+            detail="Failed to check approaching deadlines. Please try again.",
         )
 
     return DeadlineCheckResponse(
@@ -205,10 +205,10 @@ async def run_past_due_only(
     try:
         result = await check_past_due_assignments(session)
     except Exception as e:
-        logger.error(f"Error in past-due check: {e}")
+        logger.error(f"Error in past-due check: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to check past-due assignments: {str(e)}",
+            detail="Failed to check past-due assignments. Please try again.",
         )
 
     return DeadlineCheckResponse(
@@ -272,10 +272,10 @@ async def run_publish_scheduled_assignments(
             session, arq_pool=request.app.state.arq_pool
         )
     except Exception as e:
-        logger.error(f"Error publishing scheduled assignments: {e}")
+        logger.error(f"Error publishing scheduled assignments: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to publish scheduled assignments: {str(e)}",
+            detail="Failed to publish scheduled assignments. Please try again.",
         )
 
     return PublishAssignmentsResponse(

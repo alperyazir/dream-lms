@@ -408,10 +408,10 @@ async def generate_tts_audio(
         )
 
     except Exception as e:
-        logger.error(f"TTS generation failed: {e}")
+        logger.error(f"TTS generation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate audio: {str(e)}",
+            detail="Failed to generate audio. Please try again.",
         )
 
 
@@ -465,10 +465,10 @@ async def generate_passage_audio(
             "duration_seconds": result.duration_seconds,
         }
     except Exception as e:
-        logger.error(f"Edge TTS passage audio generation failed: {e}")
+        logger.error(f"Edge TTS passage audio generation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate passage audio: {str(e)}",
+            detail="Failed to generate passage audio. Please try again.",
         )
 
 
@@ -2128,7 +2128,7 @@ async def save_content_to_library(
         logger.error(f"Save to library failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save content to library: {str(e)}",
+            detail="Failed to save content to library. Please try again.",
         )
 
 
@@ -3121,10 +3121,10 @@ async def generate_content_v2(
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Mix mode generation failed: {e}")
+            logger.error(f"Mix mode generation failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Mix mode generation failed: {str(e)}",
+                detail="Mix mode generation failed. Please try again.",
             )
 
     # Dispatch: validate combination and get generator key
@@ -3660,7 +3660,7 @@ async def generate_content_v2(
         logger.error(f"V2 generation failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Generation failed: {str(e)}",
+            detail="Generation failed. Please try again.",
         )
 
 

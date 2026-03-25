@@ -5,7 +5,6 @@
  * Functions to export assignment analytics data to Excel format.
  */
 
-import * as XLSX from "xlsx";
 import type { MultiActivityAnalyticsResponse } from "@/types/assignment";
 
 /**
@@ -14,10 +13,11 @@ import type { MultiActivityAnalyticsResponse } from "@/types/assignment";
  * @param analytics - Analytics data from the API
  * @param assignmentName - Name of the assignment (for filename)
  */
-export function exportMultiActivityAnalytics(
+export async function exportMultiActivityAnalytics(
   analytics: MultiActivityAnalyticsResponse,
   assignmentName?: string,
-): void {
+): Promise<void> {
+  const XLSX = await import("xlsx");
   const wb = XLSX.utils.book_new();
 
   // Summary Sheet

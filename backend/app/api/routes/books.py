@@ -1410,10 +1410,10 @@ async def import_book_activities(
     try:
         activity_data_list = parse_book_config(book_config)
     except Exception as e:
-        logger.error(f"Failed to parse config.json for book {book_id}: {e}")
+        logger.error(f"Failed to parse config.json for book {book_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to parse book configuration: {str(e)}",
+            detail="Failed to parse book configuration. Please try again.",
         )
 
     # Filter for supported activity types only
