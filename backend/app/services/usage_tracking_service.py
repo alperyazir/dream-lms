@@ -7,10 +7,12 @@ Persist AI usage logs to database for analytics and cost monitoring.
 import uuid
 from datetime import UTC, datetime
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.models import AIUsageLog, Teacher
+from app.core.config import settings
+from app.models import AIUsageLog
 from app.services.redis_cache import cache_invalidate
 
 
@@ -67,21 +69,28 @@ class UsageTrackingService:
 
         self.db.add(log_entry)
 
-        # Increment teacher's AI usage counter on successful generation
+        # Atomic check-and-increment: avoids TOCTOU race where concurrent
+        # requests all pass the quota pre-check before any increments land.
+        teacher_user_id = None
         if success:
-            teacher_query = select(Teacher).where(Teacher.id == teacher_id)
-            result = await self.db.execute(teacher_query)
-            teacher = result.scalar_one_or_none()
-            if teacher:
-                teacher.ai_generations_used += 1
-                self.db.add(teacher)
+            result = await self.db.execute(
+                text(
+                    "UPDATE teachers SET ai_generations_used = ai_generations_used + 1 "
+                    "WHERE id = :teacher_id AND ai_generations_used < :quota "
+                    "RETURNING ai_generations_used, user_id"
+                ),
+                {"teacher_id": str(teacher_id), "quota": settings.AI_MONTHLY_QUOTA},
+            )
+            updated = result.fetchone()
+            if updated:
+                teacher_user_id = updated[1]
 
         await self.db.commit()
         await self.db.refresh(log_entry)
 
         # Invalidate cached AI usage so quota updates immediately
-        if success and teacher:
-            await cache_invalidate(f"user:{teacher.user_id}:ai_usage")
+        if success and teacher_user_id:
+            await cache_invalidate(f"user:{teacher_user_id}:ai_usage")
 
         return log_entry
 

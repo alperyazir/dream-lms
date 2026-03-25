@@ -6,7 +6,6 @@
  */
 
 import axios from "axios";
-import { OpenAPI } from "../client";
 import type {
   SentenceBuilderActivity,
   SentenceBuilderActivityPublic,
@@ -14,44 +13,9 @@ import type {
   SentenceBuilderResult,
   SentenceBuilderSubmission,
 } from "../types/sentence-builder";
+import { createApiClient } from "./apiClient";
 
-/**
- * Create axios instance with OpenAPI config
- */
-const apiClient = axios.create({
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Add token interceptor
-apiClient.interceptors.request.use(async (config) => {
-  if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE;
-  }
-
-  const token = OpenAPI.TOKEN;
-  if (token) {
-    const tokenValue =
-      typeof token === "function"
-        ? await token({
-            method: (config.method || "GET") as
-              | "GET"
-              | "POST"
-              | "PUT"
-              | "DELETE"
-              | "PATCH"
-              | "OPTIONS"
-              | "HEAD",
-            url: config.url || "",
-          })
-        : token;
-    if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`;
-    }
-  }
-  return config;
-});
+const apiClient = createApiClient();
 
 /**
  * Generate a new sentence builder activity from book modules

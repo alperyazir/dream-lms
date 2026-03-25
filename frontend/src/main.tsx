@@ -1,3 +1,4 @@
+import type { AxiosResponse } from "axios";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
@@ -11,6 +12,20 @@ OpenAPI.BASE = import.meta.env.VITE_API_URL;
 OpenAPI.TOKEN = async () => {
   return localStorage.getItem("access_token") || "";
 };
+
+// Intercept 401 responses from the generated SDK client to handle expired JWTs
+OpenAPI.interceptors.response.use((response: AxiosResponse) => {
+  if (
+    response.status === 401 &&
+    !response.config?.url?.includes("/login/access-token")
+  ) {
+    localStorage.removeItem("access_token");
+    sessionStorage.removeItem("must_change_password");
+    sessionStorage.removeItem("user_role");
+    window.location.href = "/login";
+  }
+  return response;
+});
 
 // Create queryClient first
 const queryClient = new QueryClient();

@@ -4,8 +4,7 @@
  * API client for content review, regeneration, and save operations.
  */
 
-import axios from "axios";
-import { OpenAPI } from "../client";
+import { createApiClient } from "./apiClient";
 
 export interface RegenerateQuestionRequest {
   quiz_id: string;
@@ -55,42 +54,7 @@ export interface CreateAssignmentResponse {
   redirect_url: string;
 }
 
-/**
- * Create axios instance with OpenAPI config
- */
-const apiClient = axios.create({
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Add token interceptor
-apiClient.interceptors.request.use(async (config) => {
-  if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE;
-  }
-
-  const token = OpenAPI.TOKEN;
-  if (token) {
-    const tokenValue =
-      typeof token === "function"
-        ? await token({
-            method: (config.method || "GET") as
-              | "GET"
-              | "POST"
-              | "PUT"
-              | "DELETE"
-              | "OPTIONS"
-              | "HEAD"
-              | "PATCH",
-            url: config.url || "",
-          })
-        : token;
-    config.headers.Authorization = `Bearer ${tokenValue}`;
-  }
-
-  return config;
-});
+const apiClient = createApiClient();
 
 export const contentReviewApi = {
   /**

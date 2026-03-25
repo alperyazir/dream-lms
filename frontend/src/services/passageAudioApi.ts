@@ -5,8 +5,7 @@
  * via the Edge TTS backend endpoint.
  */
 
-import axios from "axios";
-import { OpenAPI } from "../client";
+import { createApiClient } from "./apiClient";
 
 export interface WordTimestamp {
   word: string;
@@ -25,38 +24,7 @@ export interface PassageAudioResponse {
   duration_seconds: number;
 }
 
-const apiClient = axios.create({
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-apiClient.interceptors.request.use(async (config) => {
-  if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE;
-  }
-
-  const token = OpenAPI.TOKEN;
-  if (token) {
-    const tokenValue =
-      typeof token === "function"
-        ? await token({
-            method: (config.method || "POST") as
-              | "GET"
-              | "POST"
-              | "PUT"
-              | "DELETE"
-              | "OPTIONS"
-              | "HEAD"
-              | "PATCH",
-            url: config.url || "",
-          })
-        : token;
-    config.headers.Authorization = `Bearer ${tokenValue}`;
-  }
-
-  return config;
-});
+const apiClient = createApiClient();
 
 export async function generatePassageAudio(
   request: PassageAudioRequest,

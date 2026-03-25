@@ -6,53 +6,15 @@
  */
 
 import axios from "axios";
-import { OpenAPI } from "../client";
 import type {
   FeedbackCreate,
   FeedbackPublic,
   FeedbackResponse,
   FeedbackUpdate,
 } from "../types/feedback";
+import { createApiClient } from "./apiClient";
 
-/**
- * Create axios instance with OpenAPI config
- */
-const apiClient = axios.create({
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Add token interceptor (async to handle async TOKEN function)
-apiClient.interceptors.request.use(async (config) => {
-  // Set baseURL dynamically to ensure it uses the value set in main.tsx
-  if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE;
-  }
-
-  const token = OpenAPI.TOKEN;
-  if (token) {
-    // Handle both sync and async token functions
-    const tokenValue =
-      typeof token === "function"
-        ? await token({
-            method: (config.method || "GET") as
-              | "GET"
-              | "POST"
-              | "PUT"
-              | "DELETE"
-              | "PATCH"
-              | "OPTIONS"
-              | "HEAD",
-            url: config.url || "",
-          })
-        : token;
-    if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`;
-    }
-  }
-  return config;
-});
+const apiClient = createApiClient();
 
 /**
  * Create or update feedback for a student's assignment
