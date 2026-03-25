@@ -44,18 +44,16 @@ backend/generated_reports/*.excel
 **/.DS_Store
 Thumbs.db
 
-# Duplicate/dev directories
-frontend/frontend/
-
-# Load testing (dev only)
+# Dev-only (lives in development branch)
+.bmad-core/
+.copier/
+.serena/
+docs/
+load-tests/
+frontend/.tanstack/
+frontend/openapi-ts-error-*.log
 docker-compose.loadtest.yml
 backend/scripts/seed_load_test.py
-load-tests/k6-load-test.js
-load-tests/k6-setup.js
-load-tests/k6-setup-data.json
-load-tests/nohup.out
-
-# Dev artifacts
 todo.txt
 *.tmp
 *.swp
