@@ -4,12 +4,16 @@
 
 # Node
 node_modules/
+package.json
+package-lock.json
 
 # Testing
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.pytest_cache/
+.playwright-mcp/
 
 # Python
 venv/
@@ -22,6 +26,7 @@ __pycache__/
 .env.local
 .env.*.local
 .env.prod
+.env.example
 
 # Logs
 *.log
@@ -50,10 +55,21 @@ Thumbs.db
 .serena/
 docs/
 load-tests/
+hooks/
+scripts/
 frontend/.tanstack/
 frontend/openapi-ts-error-*.log
 docker-compose.loadtest.yml
+docker-compose.override.yml
+docker-compose.traefik.yml
 backend/scripts/seed_load_test.py
+copier.yml
+.pre-commit-config.yaml
+.mcp.json
+deployment.md
+development.md
+release-notes.md
+README-LOCAL.md
 todo.txt
 *.tmp
 *.swp
