@@ -18,8 +18,8 @@ import {
   MoreVertical,
   Sparkles,
   Trash2,
-} from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,34 +29,34 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { ScrollArea } from "@/components/ui/scroll-area"
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { cn } from "@/lib/utils"
-import { teacherMaterialsApi } from "@/services/teacherMaterialsApi"
-import type { GeneratedContent } from "@/types/teacher-material"
-import { ACTIVITY_TYPE_LABELS } from "@/types/teacher-material"
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { teacherMaterialsApi } from "@/services/teacherMaterialsApi";
+import type { GeneratedContent } from "@/types/teacher-material";
+import { ACTIVITY_TYPE_LABELS } from "@/types/teacher-material";
 
 // =============================================================================
 // Types
@@ -64,7 +64,7 @@ import { ACTIVITY_TYPE_LABELS } from "@/types/teacher-material"
 
 interface GeneratedContentLibraryProps {
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 // Activity type icons mapping
@@ -75,7 +75,7 @@ const ACTIVITY_ICONS: Record<string, typeof Sparkles> = {
   matching: Sparkles,
   sentence_builder: Sparkles,
   word_builder: Sparkles,
-}
+};
 
 // =============================================================================
 // Component
@@ -85,88 +85,88 @@ export function GeneratedContentLibrary({
   className,
 }: GeneratedContentLibraryProps) {
   // Data state
-  const [contents, setContents] = useState<GeneratedContent[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [contents, setContents] = useState<GeneratedContent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Filter state
   const [filterActivityType, setFilterActivityType] = useState<string | null>(
     null,
-  )
+  );
 
   // Delete state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contentToDelete, setContentToDelete] =
-    useState<GeneratedContent | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+    useState<GeneratedContent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Preview state
-  const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(
     null,
-  )
+  );
 
   // Load content on mount and filter change
   useEffect(() => {
     async function loadContent() {
       try {
-        setIsLoading(true)
-        setError(null)
+        setIsLoading(true);
+        setError(null);
         const response = await teacherMaterialsApi.listGeneratedContent(
           filterActivityType
             ? { activity_type: filterActivityType }
             : undefined,
-        )
-        setContents(response.items)
+        );
+        setContents(response.items);
       } catch (err) {
-        console.error("Failed to load generated content:", err)
-        setError("Failed to load generated content")
+        console.error("Failed to load generated content:", err);
+        setError("Failed to load generated content");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
-    loadContent()
-  }, [filterActivityType])
+    loadContent();
+  }, [filterActivityType]);
 
   // Handle delete click
   const handleDeleteClick = useCallback((content: GeneratedContent) => {
-    setContentToDelete(content)
-    setDeleteDialogOpen(true)
-  }, [])
+    setContentToDelete(content);
+    setDeleteDialogOpen(true);
+  }, []);
 
   // Handle delete confirm
   const handleDeleteConfirm = useCallback(async () => {
-    if (!contentToDelete) return
+    if (!contentToDelete) return;
 
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      await teacherMaterialsApi.deleteGeneratedContent(contentToDelete.id)
-      setContents((prev) => prev.filter((c) => c.id !== contentToDelete.id))
-      setDeleteDialogOpen(false)
-      setContentToDelete(null)
+      await teacherMaterialsApi.deleteGeneratedContent(contentToDelete.id);
+      setContents((prev) => prev.filter((c) => c.id !== contentToDelete.id));
+      setDeleteDialogOpen(false);
+      setContentToDelete(null);
     } catch (err) {
-      console.error("Failed to delete content:", err)
+      console.error("Failed to delete content:", err);
       // Show error but don't close dialog
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }, [contentToDelete])
+  }, [contentToDelete]);
 
   // Handle preview click
   const handlePreviewClick = useCallback((content: GeneratedContent) => {
-    setPreviewContent(content)
-    setPreviewDialogOpen(true)
-  }, [])
+    setPreviewContent(content);
+    setPreviewDialogOpen(true);
+  }, []);
 
   // Get activity type label
   const getActivityLabel = (type: string) => {
-    return ACTIVITY_TYPE_LABELS[type] || type
-  }
+    return ACTIVITY_TYPE_LABELS[type] || type;
+  };
 
   // Get activity type icon
   const getActivityIcon = (type: string) => {
-    return ACTIVITY_ICONS[type] || Sparkles
-  }
+    return ACTIVITY_ICONS[type] || Sparkles;
+  };
 
   // Format date
   const formatDate = (dateStr: string) => {
@@ -176,8 +176,8 @@ export function GeneratedContentLibrary({
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
   // =============================================================================
   // Render
@@ -242,7 +242,7 @@ export function GeneratedContentLibrary({
       ) : (
         <div className="space-y-3">
           {contents.map((content) => {
-            const ActivityIcon = getActivityIcon(content.activity_type)
+            const ActivityIcon = getActivityIcon(content.activity_type);
 
             return (
               <Card
@@ -335,7 +335,7 @@ export function GeneratedContentLibrary({
                   </div>
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </div>
       )}
@@ -411,7 +411,7 @@ export function GeneratedContentLibrary({
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
 
-GeneratedContentLibrary.displayName = "GeneratedContentLibrary"
+GeneratedContentLibrary.displayName = "GeneratedContentLibrary";

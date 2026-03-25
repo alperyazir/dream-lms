@@ -61,9 +61,7 @@ class GrammarFillBlankService:
                 self._dcs_client, request.book_id, request.module_ids
             )
         except ValueError as e:
-            raise DCSAIDataNotFoundError(
-                message=str(e), book_id=request.book_id
-            ) from e
+            raise DCSAIDataNotFoundError(message=str(e), book_id=request.book_id) from e
 
         language = request.language or ctx.language
 
@@ -124,7 +122,12 @@ class GrammarFillBlankService:
                         wb = [correct] + wb[:3]
                     word_bank = wb[:4]
                 else:
-                    word_bank = [correct, f"not_{correct}", f"un{correct}", f"{correct}s"]
+                    word_bank = [
+                        correct,
+                        f"not_{correct}",
+                        f"un{correct}",
+                        f"{correct}s",
+                    ]
 
             items.append(
                 GrammarFillBlankItem(
@@ -133,7 +136,9 @@ class GrammarFillBlankService:
                     correct_answer=correct,
                     word_bank=word_bank,
                     grammar_topic=grammar_topic,
-                    grammar_hint=raw.get("grammar_hint") if request.include_hints else None,
+                    grammar_hint=(
+                        raw.get("grammar_hint") if request.include_hints else None
+                    ),
                     difficulty=raw.get("difficulty", cefr_level),
                 )
             )

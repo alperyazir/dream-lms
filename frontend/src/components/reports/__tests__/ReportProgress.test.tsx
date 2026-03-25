@@ -3,18 +3,18 @@
  * Story 5.6: Time-Based Reporting & Trend Analysis
  */
 
-import { fireEvent, render, screen } from "@testing-library/react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import { ReportProgress } from "../ReportProgress"
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ReportProgress } from "../ReportProgress";
 
 describe("ReportProgress", () => {
-  const mockOnDownload = vi.fn()
-  const mockOnRetry = vi.fn()
-  const mockOnCancel = vi.fn()
+  const mockOnDownload = vi.fn();
+  const mockOnRetry = vi.fn();
+  const mockOnCancel = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   it("renders pending state correctly", () => {
     render(
@@ -26,12 +26,12 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
-    )
+    );
 
-    expect(screen.getByText("Preparing report...")).toBeInTheDocument()
-    expect(screen.getByText("0% complete")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument()
-  })
+    expect(screen.getByText("Preparing report...")).toBeInTheDocument();
+    expect(screen.getByText("0% complete")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
 
   it("renders processing state with progress", () => {
     render(
@@ -43,11 +43,11 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
-    )
+    );
 
-    expect(screen.getByText("Generating report...")).toBeInTheDocument()
-    expect(screen.getByText("50% complete")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Generating report...")).toBeInTheDocument();
+    expect(screen.getByText("50% complete")).toBeInTheDocument();
+  });
 
   it("renders completed state with PDF viewer when jobId is present", () => {
     render(
@@ -59,16 +59,16 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
-    )
+    );
 
-    expect(screen.getByText("Report Ready")).toBeInTheDocument()
+    expect(screen.getByText("Report Ready")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Download/i }),
-    ).toBeInTheDocument()
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "New Report" }),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it("renders failed state with error message and retry button", () => {
     render(
@@ -81,13 +81,13 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
-    )
+    );
 
-    expect(screen.getByText("Report generation failed")).toBeInTheDocument()
-    expect(screen.getByText("Server error occurred")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument()
-  })
+    expect(screen.getByText("Report generation failed")).toBeInTheDocument();
+    expect(screen.getByText("Server error occurred")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
 
   it("calls onDownload when download button is clicked", () => {
     render(
@@ -99,11 +99,11 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
-    )
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: /Download/i }))
-    expect(mockOnDownload).toHaveBeenCalledTimes(1)
-  })
+    fireEvent.click(screen.getByRole("button", { name: /Download/i }));
+    expect(mockOnDownload).toHaveBeenCalledTimes(1);
+  });
 
   it("calls onRetry when retry button is clicked", () => {
     render(
@@ -116,11 +116,11 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
-    )
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }))
-    expect(mockOnRetry).toHaveBeenCalledTimes(1)
-  })
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(mockOnRetry).toHaveBeenCalledTimes(1);
+  });
 
   it("calls onCancel when cancel button is clicked during processing", () => {
     render(
@@ -132,11 +132,11 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
-    )
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
-    expect(mockOnCancel).toHaveBeenCalledTimes(1)
-  })
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(mockOnCancel).toHaveBeenCalledTimes(1);
+  });
 
   it("calls onCancel when new report button is clicked after completion", () => {
     render(
@@ -148,11 +148,11 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
-    )
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "New Report" }))
-    expect(mockOnCancel).toHaveBeenCalledTimes(1)
-  })
+    fireEvent.click(screen.getByRole("button", { name: "New Report" }));
+    expect(mockOnCancel).toHaveBeenCalledTimes(1);
+  });
 
   it("disables download button when isDownloading is true", () => {
     render(
@@ -165,10 +165,10 @@ describe("ReportProgress", () => {
         onCancel={mockOnCancel}
         isDownloading={true}
       />,
-    )
+    );
 
-    expect(screen.getByRole("button", { name: /Download/i })).toBeDisabled()
-  })
+    expect(screen.getByRole("button", { name: /Download/i })).toBeDisabled();
+  });
 
   it("handles null status gracefully", () => {
     render(
@@ -180,8 +180,8 @@ describe("ReportProgress", () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
       />,
-    )
+    );
 
-    expect(screen.getByText("Initializing...")).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("Initializing...")).toBeInTheDocument();
+  });
+});

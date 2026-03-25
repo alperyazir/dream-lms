@@ -1,18 +1,18 @@
-import type { LucideIcon } from "lucide-react"
-import type { IconType } from "react-icons/lib"
-import { cn } from "@/lib/utils"
+import type { LucideIcon } from "lucide-react";
+import type { IconType } from "react-icons/lib";
+import { cn } from "@/lib/utils";
 
 interface PageContainerProps {
-  children: React.ReactNode
+  children: React.ReactNode;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
   /**
    * Max width variant:
    * - "full" (default): Takes full available width
    * - "narrow": Max 4xl (896px) - good for forms, settings
    * - "medium": Max 6xl (1152px) - good for detail pages
    */
-  maxWidth?: "full" | "narrow" | "medium"
+  maxWidth?: "full" | "narrow" | "medium";
 }
 
 /**
@@ -35,17 +35,17 @@ export function PageContainer({
     >
       {children}
     </div>
-  )
+  );
 }
 
 interface PageHeaderProps {
-  title: string
-  description?: string
-  children?: React.ReactNode
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
   /** Icon to display before the title */
-  icon?: IconType | LucideIcon
+  icon?: IconType | LucideIcon;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -77,5 +77,5 @@ export function PageHeader({
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}
     </div>
-  )
+  );
 }

@@ -6,31 +6,31 @@
  * shared timer, and per-activity progress tracking.
  */
 
-import { useQueryClient } from "@tanstack/react-query"
-import { Eye, EyeOff, FolderOpen, LogOut, RotateCcw } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
-import { hasAudio } from "@/lib/audioUtils"
+import { useQueryClient } from "@tanstack/react-query";
+import { Eye, EyeOff, FolderOpen, LogOut, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { hasAudio } from "@/lib/audioUtils";
 import type {
   ActivityConfig,
   MatchTheWordsActivity,
   PuzzleFindWordsActivity,
-} from "@/lib/mockData"
-import { cn } from "@/lib/utils"
+} from "@/lib/mockData";
+import { cn } from "@/lib/utils";
 import {
   saveActivityProgress,
   submitMultiActivityAssignment,
-} from "@/services/assignmentsApi"
+} from "@/services/assignmentsApi";
 import {
   getActivityAudioUrl,
   getSubtitleUrl,
   getVideoStreamUrl,
-} from "@/services/booksApi"
+} from "@/services/booksApi";
 import {
   type QuestionNavigationState,
   supportsQuestionNavigation,
-} from "@/types/activity-player"
+} from "@/types/activity-player";
 import type {
   ActivityProgressInfo,
   ActivityState,
@@ -39,35 +39,35 @@ import type {
   AssignmentStudentActivityStatus,
   MultiActivitySubmitResponse,
   VideoResource,
-} from "@/types/assignment"
-import { ActivityNavigationBar } from "./ActivityNavigationBar"
-import { ActivityPlayer } from "./ActivityPlayer"
-import { AudioPlayer } from "./AudioPlayer"
-import { ResourceSidebar } from "./ResourceSidebar"
-import { SharedAssignmentTimer } from "./SharedAssignmentTimer"
-import { SubmitConfirmationDialog } from "./SubmitConfirmationDialog"
-import { VideoPlayer } from "./VideoPlayer"
+} from "@/types/assignment";
+import { ActivityNavigationBar } from "./ActivityNavigationBar";
+import { ActivityPlayer } from "./ActivityPlayer";
+import { AudioPlayer } from "./AudioPlayer";
+import { ResourceSidebar } from "./ResourceSidebar";
+import { SharedAssignmentTimer } from "./SharedAssignmentTimer";
+import { SubmitConfirmationDialog } from "./SubmitConfirmationDialog";
+import { VideoPlayer } from "./VideoPlayer";
 
 /**
  * Get default header text for activity type
  */
 function getDefaultActivityHeader(activityType: string): string {
-  const type = activityType.toLowerCase()
+  const type = activityType.toLowerCase();
   switch (type) {
     case "dragdroppicture":
     case "dragdroppicturegroup":
-      return "Complete the sentences."
+      return "Complete the sentences.";
     case "matchthewords":
     case "match_the_words":
-      return "Match the words."
+      return "Match the words.";
     case "markwithx":
-      return "Mark the correct option."
+      return "Mark the correct option.";
     case "circle":
-      return "Circle the correct option."
+      return "Circle the correct option.";
     case "puzzlefindwords":
-      return "Find the words."
+      return "Find the words.";
     default:
-      return ""
+      return "";
   }
 }
 
@@ -76,63 +76,61 @@ function getDefaultActivityHeader(activityType: string): string {
  * Checks config.headerText first, then falls back to activity-type-specific defaults
  */
 function getActivityHeaderText(activity: ActivityWithConfig): string {
-  const config = activity.config_json as ActivityConfig
+  const config = activity.config_json as ActivityConfig;
 
   // Check if config exists and has headerText (MatchTheWords, PuzzleFindWords)
   if (config && "headerText" in config && config.headerText) {
     return (config as MatchTheWordsActivity | PuzzleFindWordsActivity)
-      .headerText
+      .headerText;
   }
 
   // Use activity-type-specific default headers
-  return getDefaultActivityHeader(activity.activity_type)
+  return getDefaultActivityHeader(activity.activity_type);
 }
 
 export interface MultiActivityPlayerProps {
-  assignmentId: string
-  assignmentName: string
-  bookId: string
-  bookTitle: string
-  bookName: string
-  publisherName: string
-  activities: ActivityWithConfig[]
-  activityProgress: ActivityProgressInfo[]
-  timeLimit?: number | null // minutes for entire assignment
-  initialTimeSpent?: number // minutes already spent
-  onExit: () => void
-  onSubmitSuccess?: (response: MultiActivitySubmitResponse) => void
+  assignmentId: string;
+  assignmentName: string;
+  bookId: string;
+  bookTitle: string;
+  bookName: string;
+  publisherName: string;
+  activities: ActivityWithConfig[];
+  activityProgress: ActivityProgressInfo[];
+  timeLimit?: number | null; // minutes for entire assignment
+  initialTimeSpent?: number; // minutes already spent
+  onExit: () => void;
+  onSubmitSuccess?: (response: MultiActivitySubmitResponse) => void;
   /** Story 9.7: Preview/test mode - skip backend saves, keep local state */
-  previewMode?: boolean
+  previewMode?: boolean;
   /** Story 9.7: Callback for preview mode completion */
-  onPreviewComplete?: (results: PreviewResults) => void
+  onPreviewComplete?: (results: PreviewResults) => void;
   /** Story 10.3: Video path attached to assignment (relative path like "videos/chapter1.mp4") - deprecated */
-  videoPath?: string | null
+  videoPath?: string | null;
   /** Story 10.3+: Additional resources with subtitle control */
-  resources?: AdditionalResourcesResponse | null
+  resources?: AdditionalResourcesResponse | null;
 }
 
 /**
  * Story 9.7: Preview results returned on test mode completion
  */
 export interface PreviewResults {
-  totalScore: number
-  activitiesCompleted: number
-  totalActivities: number
+  totalScore: number;
+  activitiesCompleted: number;
+  totalActivities: number;
   perActivityScores: Array<{
-    activityId: string
-    activityTitle: string | null
-    score: number | null
-    status: string
-  }>
-  timeSpentMinutes: number
+    activityId: string;
+    activityTitle: string | null;
+    score: number | null;
+    status: string;
+  }>;
+  timeSpentMinutes: number;
 }
 
 /**
  * Convert activity type string to ActivityPlayer format
  */
-function normalizeActivityType(
-  type: string,
-):
+function normalizeActivityType(type: string):
   | "dragdroppicture"
   | "dragdroppicturegroup"
   | "matchTheWords"
@@ -173,10 +171,10 @@ function normalizeActivityType(
     writing_fill_blank: "writing_fill_blank",
     // writing_sentence_builder reuses sentence_builder
     writing_sentence_builder: "sentence_builder",
-  }
+  };
   return (typeMap[type.toLowerCase()] || type) as ReturnType<
     typeof normalizeActivityType
-  >
+  >;
 }
 
 export function MultiActivityPlayer({
@@ -197,27 +195,27 @@ export function MultiActivityPlayer({
   videoPath,
   resources,
 }: MultiActivityPlayerProps) {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Current activity index
   const [currentIndex, setCurrentIndex] = useState(() => {
     // Start at first incomplete activity, or first if all done
     const firstIncomplete = activityProgress.findIndex(
       (p) => p.status !== "completed",
-    )
-    return firstIncomplete >= 0 ? firstIncomplete : 0
-  })
+    );
+    return firstIncomplete >= 0 ? firstIncomplete : 0;
+  });
 
   // Track per-activity state locally
   const [activityStates, setActivityStates] = useState<
     Map<string, ActivityState>
   >(() => {
-    const states = new Map<string, ActivityState>()
+    const states = new Map<string, ActivityState>();
     for (const activity of activities) {
       const progress = activityProgress.find(
         (p) => p.activity_id === activity.id,
-      )
+      );
       states.set(activity.id, {
         activityId: activity.id,
         status: (progress?.status ||
@@ -226,184 +224,184 @@ export function MultiActivityPlayer({
         responseData: progress?.response_data || null,
         score: progress?.score ?? null,
         timeSpentSeconds: 0,
-      })
+      });
     }
-    return states
-  })
+    return states;
+  });
 
   // Submission state
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
 
   // Saving state
-  const [isSaving, setIsSaving] = useState(false)
+  const [isSaving, setIsSaving] = useState(false);
 
   // Story 9.7: Show answers toggle for preview mode
-  const [showAnswers, setShowAnswers] = useState(false)
+  const [showAnswers, setShowAnswers] = useState(false);
 
   // Story 10.3: Video player expanded state
-  const [videoExpanded, setVideoExpanded] = useState(true)
+  const [videoExpanded, setVideoExpanded] = useState(true);
 
   // Story 10.3+/13.3: Resource sidebar state
-  const [resourceSidebarOpen, setResourceSidebarOpen] = useState(false)
+  const [resourceSidebarOpen, setResourceSidebarOpen] = useState(false);
   const [selectedResourceVideo, setSelectedResourceVideo] =
-    useState<VideoResource | null>(null)
+    useState<VideoResource | null>(null);
   const resourceCount =
     (resources?.videos?.length ?? 0) +
-    (resources?.teacher_materials?.length ?? 0)
+    (resources?.teacher_materials?.length ?? 0);
 
   // Story 10.3: Reset trigger and confirmation dialog
-  const [resetTrigger, setResetTrigger] = useState(0)
-  const [showResetDialog, setShowResetDialog] = useState(false)
+  const [resetTrigger, setResetTrigger] = useState(0);
+  const [showResetDialog, setShowResetDialog] = useState(false);
 
   // Question-level navigation state (for activities that support it)
-  const [questionIndex, setQuestionIndex] = useState(0)
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [questionNavigationState, setQuestionNavigationState] =
-    useState<QuestionNavigationState | null>(null)
+    useState<QuestionNavigationState | null>(null);
 
   // Story 10.3: Video URLs (only compute if videoPath exists)
   const videoSrc = useMemo(() => {
-    if (!videoPath) return null
-    return getVideoStreamUrl(bookId, videoPath)
-  }, [bookId, videoPath])
+    if (!videoPath) return null;
+    return getVideoStreamUrl(bookId, videoPath);
+  }, [bookId, videoPath]);
 
   const subtitleSrc = useMemo(() => {
-    if (!videoPath) return null
-    return getSubtitleUrl(bookId, videoPath)
-  }, [bookId, videoPath])
+    if (!videoPath) return null;
+    return getSubtitleUrl(bookId, videoPath);
+  }, [bookId, videoPath]);
 
   // Time tracking - track elapsed seconds for accurate saving
   const [elapsedSeconds, setElapsedSeconds] = useState(
     Math.floor(initialTimeSpent * 60),
-  )
+  );
 
   // Convert to minutes for API calls (ceil so partial minutes count)
   const getElapsedMinutes = useCallback(() => {
-    return elapsedSeconds > 0 ? Math.ceil(elapsedSeconds / 60) : 0
-  }, [elapsedSeconds])
+    return elapsedSeconds > 0 ? Math.ceil(elapsedSeconds / 60) : 0;
+  }, [elapsedSeconds]);
 
   // Callback for timer to update elapsed time
   const handleElapsedChange = useCallback((seconds: number) => {
-    setElapsedSeconds(seconds)
-  }, [])
+    setElapsedSeconds(seconds);
+  }, []);
 
   // Current activity data
-  const currentActivity = activities[currentIndex]
-  const currentState = activityStates.get(currentActivity?.id || "")
+  const currentActivity = activities[currentIndex];
+  const currentState = activityStates.get(currentActivity?.id || "");
 
   // Check if current activity supports question-level navigation
   const hasQuestionNavigation = supportsQuestionNavigation(
     currentActivity?.activity_type || "",
-  )
+  );
 
   // Reset question navigation state when activity changes
   useEffect(() => {
     if (!hasQuestionNavigation) {
-      setQuestionIndex(0)
-      setQuestionNavigationState(null)
+      setQuestionIndex(0);
+      setQuestionNavigationState(null);
     }
-  }, [hasQuestionNavigation])
+  }, [hasQuestionNavigation]);
 
   // Story 10.2: Check if current activity has audio
   const audioPath = useMemo(() => {
-    const config = currentActivity?.config_json
+    const config = currentActivity?.config_json;
     if (hasAudio(config)) {
-      return config.audio_extra.path
+      return config.audio_extra.path;
     }
-    return null
-  }, [currentActivity?.config_json])
+    return null;
+  }, [currentActivity?.config_json]);
 
   // Story 10.2: Fetch authenticated audio blob URL
-  const [audioUrl, setAudioUrl] = useState<string | null>(null)
-  const [audioLoading, setAudioLoading] = useState(false)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioLoading, setAudioLoading] = useState(false);
   // Use ref to track blob URL for cleanup without causing re-renders
-  const audioUrlRef = useRef<string | null>(null)
+  const audioUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Revoke previous blob URL before fetching new one
     if (audioUrlRef.current) {
-      URL.revokeObjectURL(audioUrlRef.current)
-      audioUrlRef.current = null
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
     }
 
     // Reset audio URL when activity changes
-    setAudioUrl(null)
+    setAudioUrl(null);
 
-    if (!audioPath) return
+    if (!audioPath) return;
 
-    let cancelled = false
-    setAudioLoading(true)
+    let cancelled = false;
+    setAudioLoading(true);
 
     getActivityAudioUrl(bookId, audioPath)
       .then((url) => {
         if (!cancelled && url) {
-          audioUrlRef.current = url
-          setAudioUrl(url)
-          setAudioLoading(false)
+          audioUrlRef.current = url;
+          setAudioUrl(url);
+          setAudioLoading(false);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setAudioLoading(false)
+          setAudioLoading(false);
         }
-      })
+      });
 
     return () => {
-      cancelled = true
-    }
-  }, [audioPath, bookId])
+      cancelled = true;
+    };
+  }, [audioPath, bookId]);
 
   // Cleanup blob URL on unmount
   useEffect(() => {
     return () => {
       if (audioUrlRef.current) {
-        URL.revokeObjectURL(audioUrlRef.current)
+        URL.revokeObjectURL(audioUrlRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   // Computed: all activities completed?
   const completedCount = useMemo(() => {
-    let count = 0
+    let count = 0;
     for (const state of activityStates.values()) {
-      if (state.status === "completed") count++
+      if (state.status === "completed") count++;
     }
-    return count
-  }, [activityStates])
+    return count;
+  }, [activityStates]);
 
-  const allCompleted = completedCount === activities.length
+  const allCompleted = completedCount === activities.length;
 
   // Save current activity progress to backend
   // Story 9.7: Skip backend save in preview mode - just update local state
   // forceInProgress: when true, always send status as "in_progress" (for Save & Exit)
   const saveCurrentActivityProgress = useCallback(
     async (forNavigation = false, forceInProgress = false) => {
-      if (!currentActivity || !currentState) return
+      if (!currentActivity || !currentState) return;
 
       // Only save if there's something to save (unless forcing in_progress for Save & Exit)
-      if (!currentState.isDirty && !forNavigation && !forceInProgress) return
+      if (!currentState.isDirty && !forNavigation && !forceInProgress) return;
 
       // Story 9.7: In preview mode, just mark as not dirty without backend call
       if (previewMode) {
         setActivityStates((prev) => {
-          const newStates = new Map(prev)
-          const state = newStates.get(currentActivity.id)
+          const newStates = new Map(prev);
+          const state = newStates.get(currentActivity.id);
           if (state) {
-            newStates.set(currentActivity.id, { ...state, isDirty: false })
+            newStates.set(currentActivity.id, { ...state, isDirty: false });
           }
-          return newStates
-        })
-        return
+          return newStates;
+        });
+        return;
       }
 
-      setIsSaving(true)
+      setIsSaving(true);
       try {
         // Determine status: forceInProgress overrides completed status (for Save & Exit)
         const saveStatus = forceInProgress
           ? "in_progress"
           : currentState.status === "completed"
             ? "completed"
-            : "in_progress"
+            : "in_progress";
 
         await saveActivityProgress(assignmentId, currentActivity.id, {
           response_data: currentState.responseData || {},
@@ -411,71 +409,71 @@ export function MultiActivityPlayer({
           status: saveStatus,
           score: currentState.score,
           max_score: 100,
-        })
+        });
 
         // Mark as not dirty after save
         setActivityStates((prev) => {
-          const newStates = new Map(prev)
-          const state = newStates.get(currentActivity.id)
+          const newStates = new Map(prev);
+          const state = newStates.get(currentActivity.id);
           if (state) {
-            newStates.set(currentActivity.id, { ...state, isDirty: false })
+            newStates.set(currentActivity.id, { ...state, isDirty: false });
           }
-          return newStates
-        })
+          return newStates;
+        });
         // Note: Removed toast on navigation to reduce popups
       } catch (error: any) {
-        console.error("Failed to save activity progress:", error)
-        console.error("Error response:", error?.response?.data)
-        console.error("Error status:", error?.response?.status)
+        console.error("Failed to save activity progress:", error);
+        console.error("Error response:", error?.response?.data);
+        console.error("Error status:", error?.response?.status);
         console.error("Request data was:", {
           assignmentId,
           activityId: currentActivity.id,
           responseData: currentState.responseData,
           status: currentState.status,
-        })
+        });
         toast({
           title: "Save failed",
           description:
             error?.response?.data?.detail ||
             "Could not save your progress. Please try again.",
           variant: "destructive",
-        })
-        throw error
+        });
+        throw error;
       } finally {
-        setIsSaving(false)
+        setIsSaving(false);
       }
     },
     [assignmentId, currentActivity, currentState, previewMode, toast],
-  )
+  );
 
   // Navigate to a different activity
   const handleNavigate = useCallback(
     async (targetIndex: number) => {
-      if (targetIndex === currentIndex) return
-      if (targetIndex < 0 || targetIndex >= activities.length) return
+      if (targetIndex === currentIndex) return;
+      if (targetIndex < 0 || targetIndex >= activities.length) return;
 
       // Save current activity before navigating
       try {
-        await saveCurrentActivityProgress(true)
-        setCurrentIndex(targetIndex)
+        await saveCurrentActivityProgress(true);
+        setCurrentIndex(targetIndex);
       } catch {
         // Save failed - stay on current activity
       }
     },
     [currentIndex, activities.length, saveCurrentActivityProgress],
-  )
+  );
 
   // Story 8.3: Handle activity score update from ActivityPlayer
   // This callback is called whenever answers change and score is calculated
   // It only updates local state - saves happen on navigation/auto-save/submit
   const handleActivityComplete = useCallback(
     (score: number, answersJson: Record<string, any>) => {
-      if (!currentActivity) return
+      if (!currentActivity) return;
 
       // Update local state with score and answers
       setActivityStates((prev) => {
-        const newStates = new Map(prev)
-        const existingState = newStates.get(currentActivity.id)
+        const newStates = new Map(prev);
+        const existingState = newStates.get(currentActivity.id);
         if (existingState) {
           newStates.set(currentActivity.id, {
             ...existingState,
@@ -483,25 +481,25 @@ export function MultiActivityPlayer({
             score: score,
             responseData: answersJson,
             isDirty: true,
-          })
+          });
         }
-        return newStates
-      })
+        return newStates;
+      });
     },
     [currentActivity],
-  )
+  );
 
   // Handle "Save & Exit" button
   // Always save as "in_progress" to prevent marking assignment as completed
   const handleSaveAndExit = useCallback(async () => {
     try {
-      await saveCurrentActivityProgress(false, true) // forceInProgress = true
+      await saveCurrentActivityProgress(false, true); // forceInProgress = true
       // Note: Removed toast - exit action is self-explanatory
-      onExit()
+      onExit();
     } catch {
       // Error already shown by saveCurrentActivityProgress
     }
-  }, [saveCurrentActivityProgress, onExit])
+  }, [saveCurrentActivityProgress, onExit]);
 
   // Handle time expired (auto-submit)
   const handleTimeExpired = useCallback(async () => {
@@ -509,37 +507,37 @@ export function MultiActivityPlayer({
       title: "Time's up!",
       description: "Submitting your assignment automatically...",
       variant: "destructive",
-    })
+    });
 
     // Force submit with current progress
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       // Build activity_states from local state for Content Library assignments
       const activityStatesForSubmit = activities.map((activity, index) => {
-        const state = activityStates.get(activity.id)
+        const state = activityStates.get(activity.id);
         return {
           activity_index: index,
           score: state?.score ?? null,
           answers_json: state?.responseData || {},
           status: state?.status || "completed",
-        }
-      })
+        };
+      });
 
       const response = await submitMultiActivityAssignment(assignmentId, {
         force_submit: true,
         total_time_spent_seconds: elapsedSeconds, // Send precise seconds
         activity_states: activityStatesForSubmit,
-      })
-      onSubmitSuccess?.(response)
+      });
+      onSubmitSuccess?.(response);
     } catch (error) {
-      console.error("Auto-submit failed:", error)
+      console.error("Auto-submit failed:", error);
       toast({
         title: "Submission failed",
         description: "Please try submitting manually.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }, [
     activities,
@@ -548,46 +546,36 @@ export function MultiActivityPlayer({
     elapsedSeconds,
     onSubmitSuccess,
     toast,
-  ])
+  ]);
 
   // Confirm and submit assignment
   // Story 9.7: In preview mode, calculate local results without backend call
   const handleConfirmSubmit = useCallback(async () => {
-    setShowSubmitDialog(false)
-    setIsSubmitting(true)
-
-    // Debug: log all activity states before submit
-    console.log("[Submit] Activity states before save:")
-    activityStates.forEach((state, id) => {
-      console.log(
-        `  Activity ${id}: status=${state.status}, score=${state.score}, isDirty=${state.isDirty}`,
-      )
-      console.log(`    responseData:`, state.responseData)
-    })
+    setShowSubmitDialog(false);
+    setIsSubmitting(true);
 
     try {
       // Save current activity first (force save with true to ensure last activity is saved)
-      console.log("[Submit] Saving current activity:", currentActivity?.id)
-      await saveCurrentActivityProgress(true)
+      await saveCurrentActivityProgress(true);
 
       // Story 9.7: In preview mode, calculate local results
       if (previewMode) {
         // Calculate preview results from local state
-        const perActivityScores: PreviewResults["perActivityScores"] = []
-        let totalScore = 0
-        let scoredCount = 0
+        const perActivityScores: PreviewResults["perActivityScores"] = [];
+        let totalScore = 0;
+        let scoredCount = 0;
 
         for (const activity of activities) {
-          const state = activityStates.get(activity.id)
+          const state = activityStates.get(activity.id);
           perActivityScores.push({
             activityId: activity.id,
             activityTitle: activity.title,
             score: state?.score ?? null,
             status: state?.status || "not_started",
-          })
+          });
           if (state?.score !== null && state?.score !== undefined) {
-            totalScore += state.score
-            scoredCount++
+            totalScore += state.score;
+            scoredCount++;
           }
         }
 
@@ -597,55 +585,55 @@ export function MultiActivityPlayer({
           totalActivities: activities.length,
           perActivityScores,
           timeSpentMinutes: getElapsedMinutes(),
-        }
+        };
 
         toast({
           title: "Test Complete!",
           description: `Your score: ${Math.round(previewResults.totalScore)}% (not saved)`,
-        })
+        });
 
-        onPreviewComplete?.(previewResults)
-        setIsSubmitting(false)
-        return
+        onPreviewComplete?.(previewResults);
+        setIsSubmitting(false);
+        return;
       }
 
       // Build activity_states from local state for Content Library assignments
       // This sends scores calculated by ActivityPlayer to the backend
       const activityStatesForSubmit = activities.map((activity, index) => {
-        const state = activityStates.get(activity.id)
+        const state = activityStates.get(activity.id);
         return {
           activity_index: index,
           score: state?.score ?? null,
           answers_json: state?.responseData || {},
           status: state?.status || "completed",
-        }
-      })
+        };
+      });
 
       // Submit the assignment (force_submit=true if not all activities completed)
       const response = await submitMultiActivityAssignment(assignmentId, {
         force_submit: !allCompleted,
         total_time_spent_seconds: elapsedSeconds, // Send precise seconds
         activity_states: activityStatesForSubmit,
-      })
+      });
 
       toast({
         title: "Assignment submitted!",
         description: `Your score: ${Math.round(response.combined_score)}%`,
-      })
+      });
 
-      onSubmitSuccess?.(response)
+      onSubmitSuccess?.(response);
 
       // Invalidate student assignments query so dashboard shows updated status
-      queryClient.invalidateQueries({ queryKey: ["studentAssignments"] })
+      queryClient.invalidateQueries({ queryKey: ["studentAssignments"] });
     } catch (error) {
-      console.error("Submit failed:", error)
+      console.error("Submit failed:", error);
       toast({
         title: "Submission failed",
         description: "Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }, [
     activities,
@@ -662,28 +650,28 @@ export function MultiActivityPlayer({
     queryClient,
     saveCurrentActivityProgress,
     toast,
-  ])
+  ]);
 
   // Auto-save on interval (30 seconds)
   // Story 9.7: Skip auto-save in preview mode
   useEffect(() => {
-    if (previewMode) return // No auto-save in preview mode
+    if (previewMode) return; // No auto-save in preview mode
 
     const intervalId = setInterval(() => {
       if (currentState?.isDirty) {
         saveCurrentActivityProgress(false).catch(() => {
           // Ignore errors in auto-save - will be retried
-        })
+        });
       }
-    }, 30000)
+    }, 30000);
 
-    return () => clearInterval(intervalId)
-  }, [currentState?.isDirty, previewMode, saveCurrentActivityProgress])
+    return () => clearInterval(intervalId);
+  }, [currentState?.isDirty, previewMode, saveCurrentActivityProgress]);
 
   // Save on page unload
   // Story 9.7: Skip save on unload in preview mode
   useEffect(() => {
-    if (previewMode) return // No save on unload in preview mode
+    if (previewMode) return; // No save on unload in preview mode
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (currentState?.isDirty) {
@@ -697,38 +685,38 @@ export function MultiActivityPlayer({
             }),
           ],
           { type: "application/json" },
-        )
+        );
         navigator.sendBeacon(
           `${import.meta.env.VITE_API_URL || ""}/api/v1/assignments/${assignmentId}/students/me/activities/${currentActivity?.id}`,
           blob,
-        )
+        );
 
-        e.preventDefault()
-        e.returnValue = ""
+        e.preventDefault();
+        e.returnValue = "";
       }
-    }
+    };
 
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
-  }, [assignmentId, currentActivity?.id, currentState, previewMode])
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [assignmentId, currentActivity?.id, currentState, previewMode]);
 
   if (!currentActivity) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-gray-500">No activities found in this assignment.</p>
       </div>
-    )
+    );
   }
 
   // Handle submit button click - show confirmation dialog
   const handleSubmitClick = useCallback(() => {
-    setShowSubmitDialog(true)
-  }, [])
+    setShowSubmitDialog(true);
+  }, []);
 
   // Get current activity header text
   const currentActivityHeader = currentActivity
     ? getActivityHeaderText(currentActivity)
-    : ""
+    : "";
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-neutral-900">
@@ -760,18 +748,18 @@ export function MultiActivityPlayer({
                     length: questionNavigationState.totalItems,
                   }).map((_, i) => {
                     // Use questionIndex for immediate feedback, fall back to navigationState
-                    const isCurrent = i === questionIndex
+                    const isCurrent = i === questionIndex;
                     // Check if this question index is in the answered indices
                     const itemAnswered =
-                      questionNavigationState.answeredIndices.includes(i)
-                    const isLast = i === questionNavigationState.totalItems - 1
+                      questionNavigationState.answeredIndices.includes(i);
+                    const isLast = i === questionNavigationState.totalItems - 1;
 
                     return (
                       <div key={i} className="flex items-center shrink-0">
                         <button
                           type="button"
                           onClick={() => {
-                            setQuestionIndex(i)
+                            setQuestionIndex(i);
                           }}
                           disabled={isSaving || isSubmitting}
                           className={cn(
@@ -802,7 +790,7 @@ export function MultiActivityPlayer({
                           />
                         )}
                       </div>
-                    )
+                    );
                   })}
                 </div>
               ) : (
@@ -1149,15 +1137,15 @@ export function MultiActivityPlayer({
                     (!questionNavigationState ||
                       questionIndex ===
                         questionNavigationState.totalItems - 1) && (
-                    <button
-                      type="button"
-                      onClick={handleSubmitClick}
-                      disabled={isSubmitting}
-                      className="rounded-md bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
-                    >
-                      {isSubmitting ? "Submitting..." : "Submit"}
-                    </button>
-                  )}
+                      <button
+                        type="button"
+                        onClick={handleSubmitClick}
+                        disabled={isSubmitting}
+                        className="rounded-md bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
+                      >
+                        {isSubmitting ? "Submitting..." : "Submit"}
+                      </button>
+                    )}
                 </>
               )}
             </div>
@@ -1203,19 +1191,19 @@ export function MultiActivityPlayer({
               <button
                 type="button"
                 onClick={() => {
-                  setResetTrigger((prev) => prev + 1)
-                  setShowResetDialog(false)
+                  setResetTrigger((prev) => prev + 1);
+                  setShowResetDialog(false);
                   // Turn off Show Answers so user can interact
-                  setShowAnswers(false)
+                  setShowAnswers(false);
                   // Reset question index for activities with question navigation
                   if (hasQuestionNavigation) {
-                    setQuestionIndex(0)
+                    setQuestionIndex(0);
                   }
                   // Also reset the activity state in the parent
                   if (currentActivity) {
                     setActivityStates((prev) => {
-                      const newStates = new Map(prev)
-                      const state = newStates.get(currentActivity.id)
+                      const newStates = new Map(prev);
+                      const state = newStates.get(currentActivity.id);
                       if (state) {
                         newStates.set(currentActivity.id, {
                           ...state,
@@ -1223,15 +1211,15 @@ export function MultiActivityPlayer({
                           responseData: null,
                           score: null,
                           isDirty: true,
-                        })
+                        });
                       }
-                      return newStates
-                    })
+                      return newStates;
+                    });
                   }
                   toast({
                     title: "Activity Reset",
                     description: "Your answers have been cleared.",
-                  })
+                  });
                 }}
                 className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
               >
@@ -1242,5 +1230,5 @@ export function MultiActivityPlayer({
         </div>
       )}
     </div>
-  )
+  );
 }

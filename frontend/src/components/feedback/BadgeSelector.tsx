@@ -5,14 +5,14 @@
  * Uses checkboxes for multi-select functionality (AC: 3).
  */
 
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { PREDEFINED_BADGES } from "@/types/feedback"
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { PREDEFINED_BADGES } from "@/types/feedback";
 
 interface BadgeSelectorProps {
-  selectedBadges: string[]
-  onBadgesChange: (badges: string[]) => void
-  disabled?: boolean
+  selectedBadges: string[];
+  onBadgesChange: (badges: string[]) => void;
+  disabled?: boolean;
 }
 
 export function BadgeSelector({
@@ -22,11 +22,11 @@ export function BadgeSelector({
 }: BadgeSelectorProps) {
   const handleBadgeToggle = (slug: string, checked: boolean) => {
     if (checked) {
-      onBadgesChange([...selectedBadges, slug])
+      onBadgesChange([...selectedBadges, slug]);
     } else {
-      onBadgesChange(selectedBadges.filter((b) => b !== slug))
+      onBadgesChange(selectedBadges.filter((b) => b !== slug));
     }
-  }
+  };
 
   return (
     <div className="space-y-3">
@@ -76,5 +76,5 @@ export function BadgeSelector({
         </p>
       )}
     </div>
-  )
+  );
 }

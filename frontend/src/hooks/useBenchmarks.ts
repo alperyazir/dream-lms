@@ -3,7 +3,7 @@
  * Story 5.7: Performance Comparison & Benchmarking
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type BenchmarkDisabledError,
   getAdminBenchmarkOverview,
@@ -11,13 +11,13 @@ import {
   isBenchmarkDisabledError,
   updatePublisherBenchmarkSettings,
   updateSchoolBenchmarkSettings,
-} from "@/services/benchmarksApi"
+} from "@/services/benchmarksApi";
 import type {
   AdminBenchmarkOverview,
   BenchmarkPeriod,
   BenchmarkSettingsUpdate,
   ClassBenchmarkResponse,
-} from "@/types/benchmarks"
+} from "@/types/benchmarks";
 
 // Query keys for cache management
 export const benchmarkKeys = {
@@ -25,21 +25,21 @@ export const benchmarkKeys = {
   class: (classId: string, period: BenchmarkPeriod) =>
     ["benchmarks", "class", classId, period] as const,
   admin: () => ["benchmarks", "admin", "overview"] as const,
-}
+};
 
 export interface UseClassBenchmarksOptions {
-  classId: string
-  period?: BenchmarkPeriod
-  enabled?: boolean
+  classId: string;
+  period?: BenchmarkPeriod;
+  enabled?: boolean;
 }
 
 export interface UseClassBenchmarksResult {
-  benchmarks: ClassBenchmarkResponse | null
-  isLoading: boolean
-  error: Error | null
-  isDisabled: boolean
-  disabledMessage: string | null
-  refetch: () => void
+  benchmarks: ClassBenchmarkResponse | null;
+  isLoading: boolean;
+  error: Error | null;
+  isDisabled: boolean;
+  disabledMessage: string | null;
+  refetch: () => void;
 }
 
 /**
@@ -61,17 +61,17 @@ export function useClassBenchmarks({
     retry: (failureCount, error) => {
       // Don't retry on 403 (disabled) or 404 (not found)
       if (isBenchmarkDisabledError(error)) {
-        return false
+        return false;
       }
-      return failureCount < 3
+      return failureCount < 3;
     },
-  })
+  });
 
   // Check if error is a disabled benchmark error
-  const isDisabled = error ? isBenchmarkDisabledError(error) : false
+  const isDisabled = error ? isBenchmarkDisabledError(error) : false;
   const disabledMessage = isDisabled
     ? (error as unknown as BenchmarkDisabledError).message
-    : null
+    : null;
 
   return {
     benchmarks: data ?? null,
@@ -80,14 +80,14 @@ export function useClassBenchmarks({
     isDisabled,
     disabledMessage,
     refetch,
-  }
+  };
 }
 
 export interface UseAdminBenchmarksResult {
-  overview: AdminBenchmarkOverview | null
-  isLoading: boolean
-  error: Error | null
-  refetch: () => void
+  overview: AdminBenchmarkOverview | null;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
 }
 
 /**
@@ -98,54 +98,54 @@ export function useAdminBenchmarks(): UseAdminBenchmarksResult {
     queryKey: benchmarkKeys.admin(),
     queryFn: () => getAdminBenchmarkOverview(),
     staleTime: 5 * 60 * 1000, // 5 minutes cache
-  })
+  });
 
   return {
     overview: data ?? null,
     isLoading,
     error: error as Error | null,
     refetch,
-  }
+  };
 }
 
 /**
  * Hook to update school benchmark settings (admin only)
  */
 export function useUpdateSchoolBenchmarkSettings() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       schoolId,
       settings,
     }: {
-      schoolId: string
-      settings: BenchmarkSettingsUpdate
+      schoolId: string;
+      settings: BenchmarkSettingsUpdate;
     }) => updateSchoolBenchmarkSettings(schoolId, settings),
     onSuccess: () => {
       // Invalidate admin overview to reflect changes
-      queryClient.invalidateQueries({ queryKey: benchmarkKeys.admin() })
+      queryClient.invalidateQueries({ queryKey: benchmarkKeys.admin() });
     },
-  })
+  });
 }
 
 /**
  * Hook to update publisher benchmark settings (admin only)
  */
 export function useUpdatePublisherBenchmarkSettings() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       publisherId,
       settings,
     }: {
-      publisherId: string
-      settings: BenchmarkSettingsUpdate
+      publisherId: string;
+      settings: BenchmarkSettingsUpdate;
     }) => updatePublisherBenchmarkSettings(publisherId, settings),
     onSuccess: () => {
       // Invalidate admin overview to reflect changes
-      queryClient.invalidateQueries({ queryKey: benchmarkKeys.admin() })
+      queryClient.invalidateQueries({ queryKey: benchmarkKeys.admin() });
     },
-  })
+  });
 }

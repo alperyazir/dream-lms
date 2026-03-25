@@ -5,38 +5,38 @@
  * via the Edge TTS backend endpoint.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 
 export interface WordTimestamp {
-  word: string
-  start: number
-  end: number
+  word: string;
+  start: number;
+  end: number;
 }
 
 export interface PassageAudioRequest {
-  text: string
-  voice_id?: string
+  text: string;
+  voice_id?: string;
 }
 
 export interface PassageAudioResponse {
-  audio_base64: string
-  word_timestamps: WordTimestamp[]
-  duration_seconds: number
+  audio_base64: string;
+  word_timestamps: WordTimestamp[];
+  duration_seconds: number;
 }
 
 const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -51,12 +51,12 @@ apiClient.interceptors.request.use(async (config) => {
               | "PATCH",
             url: config.url || "",
           })
-        : token
-    config.headers.Authorization = `Bearer ${tokenValue}`
+        : token;
+    config.headers.Authorization = `Bearer ${tokenValue}`;
   }
 
-  return config
-})
+  return config;
+});
 
 export async function generatePassageAudio(
   request: PassageAudioRequest,
@@ -64,6 +64,6 @@ export async function generatePassageAudio(
   const response = await apiClient.post<PassageAudioResponse>(
     "/api/v1/ai/tts/passage-audio",
     request,
-  )
-  return response.data
+  );
+  return response.data;
 }

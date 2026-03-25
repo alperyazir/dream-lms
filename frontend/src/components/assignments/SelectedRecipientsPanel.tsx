@@ -5,26 +5,26 @@
  * for assignment recipient selection.
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { ChevronDown, X } from "lucide-react"
-import { useMemo } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, X } from "lucide-react";
+import { useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { teachersApi } from "@/services/teachersApi"
-import type { Class, Student } from "@/types/teacher"
+} from "@/components/ui/collapsible";
+import { teachersApi } from "@/services/teachersApi";
+import type { Class, Student } from "@/types/teacher";
 
 interface SelectedRecipientsPanelProps {
-  selectedClassIds: string[]
-  selectedStudentIds: string[]
-  classes: Class[]
-  individualStudents: Student[]
-  onRemoveClass: (classId: string) => void
-  onRemoveStudent: (studentId: string) => void
+  selectedClassIds: string[];
+  selectedStudentIds: string[];
+  classes: Class[];
+  individualStudents: Student[];
+  onRemoveClass: (classId: string) => void;
+  onRemoveStudent: (studentId: string) => void;
 }
 
 export function SelectedRecipientsPanel({
@@ -38,27 +38,27 @@ export function SelectedRecipientsPanel({
   const selectedClasses = useMemo(
     () => classes.filter((c) => selectedClassIds.includes(c.id)),
     [classes, selectedClassIds],
-  )
+  );
 
   const selectedIndividuals = useMemo(
     () => individualStudents.filter((s) => selectedStudentIds.includes(s.id)),
     [individualStudents, selectedStudentIds],
-  )
+  );
 
   // Fetch students for selected classes
   const { data: classStudentsGroups = [] } = useQuery({
     queryKey: ["class-students", selectedClassIds],
     queryFn: () => teachersApi.getStudentsForClasses(selectedClassIds),
     enabled: selectedClassIds.length > 0,
-  })
+  });
 
   const totalStudents = useMemo(() => {
     const classStudentCount = classStudentsGroups.reduce(
       (acc, group) => acc + group.students.length,
       0,
-    )
-    return classStudentCount + selectedIndividuals.length
-  }, [classStudentsGroups, selectedIndividuals])
+    );
+    return classStudentCount + selectedIndividuals.length;
+  }, [classStudentsGroups, selectedIndividuals]);
 
   return (
     <div className="border rounded-lg p-4 bg-muted/30">
@@ -85,7 +85,7 @@ export function SelectedRecipientsPanel({
                 {selectedClasses.map((cls) => {
                   const classStudents =
                     classStudentsGroups.find((g) => g.class_id === cls.id)
-                      ?.students || []
+                      ?.students || [];
 
                   return (
                     <Collapsible key={cls.id}>
@@ -142,7 +142,7 @@ export function SelectedRecipientsPanel({
                         )}
                       </div>
                     </Collapsible>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -176,5 +176,5 @@ export function SelectedRecipientsPanel({
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -188,7 +188,7 @@ def student_assignments_fixture(
             book_id=book.id,
             dream_activity_id=f"analytics-activity-{i}",
             module_name=f"Module {i+1}",
-            page_number=i+1,
+            page_number=i + 1,
             section_index=i,
             activity_type=act_type,
             title=f"Analytics Activity {i+1}",
@@ -224,7 +224,9 @@ def student_assignments_fixture(
         is_completed = i < 12
         days_ago = i
         completed_at = now - timedelta(days=days_ago) if is_completed else None
-        status = AssignmentStatus.completed if is_completed else AssignmentStatus.not_started
+        status = (
+            AssignmentStatus.completed if is_completed else AssignmentStatus.not_started
+        )
         score = 70 + (i * 2) if is_completed else None
         time_spent = 10 + (i * 2) if is_completed else 0
 
@@ -236,7 +238,9 @@ def student_assignments_fixture(
             score=score,
             completed_at=completed_at,
             time_spent_minutes=time_spent,
-            started_at=completed_at - timedelta(minutes=time_spent) if completed_at else None,
+            started_at=(
+                completed_at - timedelta(minutes=time_spent) if completed_at else None
+            ),
         )
         session.add(asgn_student)
         assignment_students.append(asgn_student)

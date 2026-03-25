@@ -43,7 +43,6 @@ _EVENT_REGISTRY: dict[str, list[str]] = {
         "user:{user_id}:conversations:*",
         "user:{user_id}:unread_count",
     ],
-
     # Assignments
     "assignment_assigned": [
         "student:{user_id}:assignments:*",
@@ -68,17 +67,14 @@ _EVENT_REGISTRY: dict[str, list[str]] = {
         "student:{user_id}:assignments:*",
         "student:{user_id}:progress:*",
     ],
-
     # Teacher assignments
     "teacher_assignment_changed": [
         "teacher:{user_id}:assignments:*",
     ],
-
     # User profile
     "user_profile_updated": [
         "auth:user:{user_id}",
     ],
-
     # Teacher student/class management
     "teacher_students_changed": [
         "teacher:{user_id}:students:*",
@@ -87,7 +83,6 @@ _EVENT_REGISTRY: dict[str, list[str]] = {
         "teacher:{user_id}:classes",
         "teacher:{user_id}:students:*",
     ],
-
     # Book assignments — invalidate all book list caches (teachers see different books after assign/unassign)
     "book_assignment_changed": [
         "books:*",
@@ -135,7 +130,9 @@ async def invalidate_for_event(event: str, **ctx: Any) -> None:
                 tasks.append(cache_invalidate(key))
 
         await asyncio.gather(*tasks, return_exceptions=True)
-        logger.debug("Cache invalidated for event=%s ctx=%s keys=%d", event, ctx, len(keys))
+        logger.debug(
+            "Cache invalidated for event=%s ctx=%s keys=%d", event, ctx, len(keys)
+        )
     except Exception as e:
         logger.debug("Cache event invalidation error: event=%s err=%s", event, e)
 
@@ -157,6 +154,8 @@ def invalidate_for_event_sync(event: str, **ctx: Any) -> None:
             else:
                 cache_invalidate_sync(key)
 
-        logger.debug("Sync cache invalidated for event=%s ctx=%s keys=%d", event, ctx, len(keys))
+        logger.debug(
+            "Sync cache invalidated for event=%s ctx=%s keys=%d", event, ctx, len(keys)
+        )
     except Exception as e:
         logger.debug("Sync cache event invalidation error: event=%s err=%s", event, e)

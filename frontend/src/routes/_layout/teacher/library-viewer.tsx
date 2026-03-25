@@ -3,9 +3,9 @@
  * Story 29.2: Create DCS Library Browser Page
  */
 
-import { createFileRoute } from "@tanstack/react-router"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { LibraryViewer } from "@/pages/LibraryViewer"
+import { createFileRoute } from "@tanstack/react-router";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { LibraryViewer } from "@/pages/LibraryViewer";
 
 export const Route = createFileRoute("/_layout/teacher/library-viewer")({
   component: () => (
@@ -17,4 +17,4 @@ export const Route = createFileRoute("/_layout/teacher/library-viewer")({
       />
     </ErrorBoundary>
   ),
-})
+});

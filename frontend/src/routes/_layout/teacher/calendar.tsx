@@ -10,8 +10,8 @@
  * - Past due visual indication
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   addDays,
   addMonths,
@@ -26,7 +26,7 @@ import {
   startOfWeek,
   subMonths,
   subWeeks,
-} from "date-fns"
+} from "date-fns";
 import {
   AlertCircle,
   BookOpen,
@@ -46,13 +46,13 @@ import {
   Timer,
   Trash2,
   Users,
-} from "lucide-react"
-import { useMemo, useState } from "react"
-import { FiCalendar } from "react-icons/fi"
-import { TeachersService } from "@/client"
-import { AssignmentWizardSheet } from "@/components/assignments/AssignmentWizardSheet"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { FiCalendar } from "react-icons/fi";
+import { TeachersService } from "@/client";
+import { AssignmentWizardSheet } from "@/components/assignments/AssignmentWizardSheet";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,41 +62,41 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/hooks/use-toast"
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import {
   type CalendarFilters,
   deleteAssignment,
   getCalendarAssignments,
   updateAssignment,
-} from "@/services/assignmentsApi"
-import * as booksApi from "@/services/booksApi"
+} from "@/services/assignmentsApi";
+import * as booksApi from "@/services/booksApi";
 import type {
   AssignmentPublishStatus,
   CalendarAssignmentItem,
-} from "@/types/assignment"
+} from "@/types/assignment";
 
 export const Route = createFileRoute("/_layout/teacher/calendar")({
   component: () => (
@@ -104,48 +104,50 @@ export const Route = createFileRoute("/_layout/teacher/calendar")({
       <TeacherCalendarPage />
     </ErrorBoundary>
   ),
-})
+});
 
-type ViewMode = "month" | "week" | "list"
+type ViewMode = "month" | "week" | "list";
 
 function TeacherCalendarPage() {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const { toast } = useToast()
+  const { toast } = useToast();
 
   // State for current date and filters
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState<ViewMode>("month")
-  const [classFilter, setClassFilter] = useState<string>("all")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [bookFilter, setBookFilter] = useState<string>("all")
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [classFilter, setClassFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [bookFilter, setBookFilter] = useState<string>("all");
   // State for delete dialog
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] =
-    useState<CalendarAssignmentItem | null>(null)
+    useState<CalendarAssignmentItem | null>(null);
   // State for wizard sheet
-  const [isWizardOpen, setIsWizardOpen] = useState(false)
-  const [wizardPublishDate, setWizardPublishDate] = useState<string | null>(null)
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardPublishDate, setWizardPublishDate] = useState<string | null>(
+    null,
+  );
 
   // Calculate date range for current view
-  const monthStart = startOfMonth(currentDate)
-  const monthEnd = endOfMonth(currentDate)
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
-  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 })
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
 
   // Fetch classes for filter
   const { data: classes = [] } = useQuery({
     queryKey: ["teacherClasses"],
     queryFn: () => TeachersService.listMyClasses(),
-  })
+  });
 
   // Fetch books for filter
   const { data: booksData } = useQuery({
     queryKey: ["teacherBooks"],
     queryFn: () => booksApi.getBooks({ limit: 100 }),
-  })
-  const books = booksData?.items ?? []
+  });
+  const books = booksData?.items ?? [];
 
   // Build filter params
   const filterParams: CalendarFilters = useMemo(
@@ -160,7 +162,7 @@ function TeacherCalendarPage() {
       bookId: bookFilter !== "all" ? bookFilter : undefined,
     }),
     [monthStart, monthEnd, classFilter, statusFilter, bookFilter],
-  )
+  );
 
   // Fetch calendar assignments
   const {
@@ -170,134 +172,134 @@ function TeacherCalendarPage() {
   } = useQuery({
     queryKey: ["calendar-assignments", filterParams],
     queryFn: () => getCalendarAssignments(filterParams),
-  })
+  });
 
   // Publish Now mutation
   const publishNowMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
-      return updateAssignment(assignmentId, { status: "published" })
+      return updateAssignment(assignmentId, { status: "published" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
     },
-  })
+  });
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
-      return deleteAssignment(assignmentId)
+      return deleteAssignment(assignmentId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
       toast({
         title: "Success",
         description: "Assignment deleted successfully",
-      })
-      setIsDeleteDialogOpen(false)
-      setAssignmentToDelete(null)
+      });
+      setIsDeleteDialogOpen(false);
+      setAssignmentToDelete(null);
     },
     onError: (error: unknown) => {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete assignment"
+        error instanceof Error ? error.message : "Failed to delete assignment";
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
   // Handle edit click
   const handleEdit = (assignment: CalendarAssignmentItem) => {
     navigate({
       to: "/teacher/assignments/$assignmentId",
       params: { assignmentId: assignment.id },
-    })
-  }
+    });
+  };
 
   // Handle delete click
   const handleDeleteClick = (assignment: CalendarAssignmentItem) => {
-    setAssignmentToDelete(assignment)
-    setIsDeleteDialogOpen(true)
-  }
+    setAssignmentToDelete(assignment);
+    setIsDeleteDialogOpen(true);
+  };
 
   // Handle confirm delete
   const handleConfirmDelete = () => {
     if (assignmentToDelete) {
-      deleteMutation.mutate(assignmentToDelete.id)
+      deleteMutation.mutate(assignmentToDelete.id);
     }
-  }
+  };
 
   // Navigate to previous/next period
   const goToPrevious = () => {
     if (viewMode === "week") {
-      setCurrentDate(subWeeks(currentDate, 1))
+      setCurrentDate(subWeeks(currentDate, 1));
     } else {
-      setCurrentDate(subMonths(currentDate, 1))
+      setCurrentDate(subMonths(currentDate, 1));
     }
-  }
+  };
   const goToNext = () => {
     if (viewMode === "week") {
-      setCurrentDate(addWeeks(currentDate, 1))
+      setCurrentDate(addWeeks(currentDate, 1));
     } else {
-      setCurrentDate(addMonths(currentDate, 1))
+      setCurrentDate(addMonths(currentDate, 1));
     }
-  }
-  const goToToday = () => setCurrentDate(new Date())
+  };
+  const goToToday = () => setCurrentDate(new Date());
 
   // Generate calendar grid days for month view
   const calendarDays = useMemo(() => {
-    const days: Date[] = []
-    const start = startOfWeek(monthStart, { weekStartsOn: 0 })
+    const days: Date[] = [];
+    const start = startOfWeek(monthStart, { weekStartsOn: 0 });
 
     // Generate 6 weeks (42 days) to ensure full coverage
     for (let i = 0; i < 42; i++) {
-      days.push(new Date(start.getTime() + i * 24 * 60 * 60 * 1000))
+      days.push(new Date(start.getTime() + i * 24 * 60 * 60 * 1000));
     }
 
-    return days
-  }, [monthStart])
+    return days;
+  }, [monthStart]);
 
   // Generate week days for week view
   const weekDays = useMemo(() => {
-    const days: Date[] = []
+    const days: Date[] = [];
     for (let i = 0; i < 7; i++) {
-      days.push(addDays(weekStart, i))
+      days.push(addDays(weekStart, i));
     }
-    return days
-  }, [weekStart])
+    return days;
+  }, [weekStart]);
 
   // Get assignments for a specific date
   const getAssignmentsForDate = (date: Date): CalendarAssignmentItem[] => {
-    if (!calendarData?.assignments_by_date) return []
-    const dateKey = format(date, "yyyy-MM-dd")
-    return calendarData.assignments_by_date[dateKey] || []
-  }
+    if (!calendarData?.assignments_by_date) return [];
+    const dateKey = format(date, "yyyy-MM-dd");
+    return calendarData.assignments_by_date[dateKey] || [];
+  };
 
   // Get all assignments as flat list
   const allAssignments = useMemo(() => {
-    if (!calendarData?.assignments_by_date) return []
-    const assignments: (CalendarAssignmentItem & { dateKey: string })[] = []
+    if (!calendarData?.assignments_by_date) return [];
+    const assignments: (CalendarAssignmentItem & { dateKey: string })[] = [];
     for (const [dateKey, dateAssignments] of Object.entries(
       calendarData.assignments_by_date,
     )) {
       for (const assignment of dateAssignments) {
-        assignments.push({ ...assignment, dateKey })
+        assignments.push({ ...assignment, dateKey });
       }
     }
     // Sort by date
     return assignments.sort(
       (a, b) => new Date(a.dateKey).getTime() - new Date(b.dateKey).getTime(),
-    )
-  }, [calendarData])
+    );
+  }, [calendarData]);
 
   // Check if assignment is past due
   const isPastDue = (assignment: CalendarAssignmentItem): boolean => {
-    if (!assignment.due_date || assignment.status !== "published") return false
-    return isBefore(new Date(assignment.due_date), new Date())
-  }
+    if (!assignment.due_date || assignment.status !== "published") return false;
+    return isBefore(new Date(assignment.due_date), new Date());
+  };
 
   // Get badge variant for status with past due detection
   const getStatusBadge = (
@@ -310,7 +312,7 @@ function TeacherCalendarPage() {
           "border-red-500 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20",
         label: "Past Due",
         icon: <AlertCircle className="w-3 h-3" />,
-      }
+      };
     }
 
     switch (assignment.status) {
@@ -320,52 +322,52 @@ function TeacherCalendarPage() {
             "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
           label: "Scheduled",
           icon: <Timer className="w-3 h-3" />,
-        }
+        };
       case "draft":
         return {
           className:
             "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-neutral-800",
           label: "Draft",
-        }
+        };
       case "published":
         return {
           className:
             "border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20",
           label: "Active",
           icon: <CheckCircle2 className="w-3 h-3" />,
-        }
+        };
       case "archived":
         return {
           className:
             "border-gray-400 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-800",
           label: "Archived",
-        }
+        };
       default:
-        return { className: "", label: assignment.status }
+        return { className: "", label: assignment.status };
     }
-  }
+  };
 
   // Get assignment pill color for calendar cell
   const getAssignmentPillColor = (assignment: CalendarAssignmentItem) => {
     if (isPastDue(assignment)) {
-      return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+      return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300";
     }
     switch (assignment.status) {
       case "scheduled":
-        return "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+        return "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300";
       case "published":
-        return "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300"
+        return "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300";
       default:
-        return "bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300"
+        return "bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300";
     }
-  }
+  };
 
   // Render assignment item (used in both calendar cell and list view)
   const renderAssignmentItem = (
     assignment: CalendarAssignmentItem,
     isCompact = false,
   ) => {
-    const statusBadge = getStatusBadge(assignment)
+    const statusBadge = getStatusBadge(assignment);
 
     if (isCompact) {
       // Compact pill for calendar cell
@@ -389,7 +391,7 @@ function TeacherCalendarPage() {
             />
           </PopoverContent>
         </Popover>
-      )
+      );
     }
 
     // Full card for list view
@@ -454,18 +456,18 @@ function TeacherCalendarPage() {
           </div>
         </CardContent>
       </Card>
-    )
-  }
+    );
+  };
 
   // Clear all filters
   const clearFilters = () => {
-    setClassFilter("all")
-    setStatusFilter("all")
-    setBookFilter("all")
-  }
+    setClassFilter("all");
+    setStatusFilter("all");
+    setBookFilter("all");
+  };
 
   const hasActiveFilters =
-    classFilter !== "all" || statusFilter !== "all" || bookFilter !== "all"
+    classFilter !== "all" || statusFilter !== "all" || bookFilter !== "all";
 
   return (
     <PageContainer>
@@ -621,9 +623,9 @@ function TeacherCalendarPage() {
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
               {calendarDays.map((day, index) => {
-                const dayAssignments = getAssignmentsForDate(day)
-                const isCurrentMonth = isSameMonth(day, currentDate)
-                const isDayToday = isToday(day)
+                const dayAssignments = getAssignmentsForDate(day);
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isDayToday = isToday(day);
 
                 return (
                   <div
@@ -697,7 +699,7 @@ function TeacherCalendarPage() {
                       )}
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </CardContent>
@@ -728,8 +730,8 @@ function TeacherCalendarPage() {
             {/* Week Grid */}
             <div className="grid grid-cols-7 gap-2">
               {weekDays.map((day) => {
-                const dayAssignments = getAssignmentsForDate(day)
-                const isDayToday = isToday(day)
+                const dayAssignments = getAssignmentsForDate(day);
+                const isDayToday = isToday(day);
 
                 return (
                   <div
@@ -749,7 +751,7 @@ function TeacherCalendarPage() {
                       )}
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </CardContent>
@@ -777,9 +779,9 @@ function TeacherCalendarPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem
-                      onClick={() =>
-                        { setIsWizardOpen(true) }
-                      }
+                      onClick={() => {
+                        setIsWizardOpen(true);
+                      }}
                     >
                       <BookOpen className="w-4 h-4 mr-2" />
                       Book Assignment
@@ -802,10 +804,10 @@ function TeacherCalendarPage() {
                       const dateLabel = format(
                         new Date(assignment.dateKey),
                         "EEEE, MMMM d",
-                      )
-                      if (!acc[dateLabel]) acc[dateLabel] = []
-                      acc[dateLabel].push(assignment)
-                      return acc
+                      );
+                      if (!acc[dateLabel]) acc[dateLabel] = [];
+                      acc[dateLabel].push(assignment);
+                      return acc;
                     },
                     {} as Record<string, CalendarAssignmentItem[]>,
                   ),
@@ -851,8 +853,8 @@ function TeacherCalendarPage() {
       <AssignmentWizardSheet
         open={isWizardOpen}
         onOpenChange={(open) => {
-          setIsWizardOpen(open)
-          if (!open) setWizardPublishDate(null)
+          setIsWizardOpen(open);
+          if (!open) setWizardPublishDate(null);
         }}
         mode="create"
         prefilledPublishDate={wizardPublishDate}
@@ -862,8 +864,8 @@ function TeacherCalendarPage() {
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={(open) => {
-          setIsDeleteDialogOpen(open)
-          if (!open) setAssignmentToDelete(null)
+          setIsDeleteDialogOpen(open);
+          if (!open) setAssignmentToDelete(null);
         }}
       >
         <AlertDialogContent>
@@ -900,7 +902,7 @@ function TeacherCalendarPage() {
         </AlertDialogContent>
       </AlertDialog>
     </PageContainer>
-  )
+  );
 }
 
 // Assignment Popover Content Component
@@ -911,19 +913,19 @@ function AssignmentPopoverContent({
   onEdit,
   onDelete,
 }: {
-  assignment: CalendarAssignmentItem
-  onPublishNow: () => void
-  isPublishing: boolean
-  onEdit: () => void
-  onDelete: () => void
+  assignment: CalendarAssignmentItem;
+  onPublishNow: () => void;
+  isPublishing: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   // Check if assignment is past due
   const isPastDue =
     assignment.due_date &&
     assignment.status === "published" &&
-    isBefore(new Date(assignment.due_date), new Date())
+    isBefore(new Date(assignment.due_date), new Date());
 
   // Get status badge info
   const getStatusInfo = () => {
@@ -933,7 +935,7 @@ function AssignmentPopoverContent({
           "border-red-500 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20",
         label: "Past Due",
         icon: <AlertCircle className="w-3 h-3" />,
-      }
+      };
     }
     switch (assignment.status) {
       case "scheduled":
@@ -942,30 +944,30 @@ function AssignmentPopoverContent({
             "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
           label: "Scheduled",
           icon: <Timer className="w-3 h-3" />,
-        }
+        };
       case "published":
         return {
           className:
             "border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20",
           label: "Active",
           icon: <CheckCircle2 className="w-3 h-3" />,
-        }
+        };
       case "draft":
         return {
           className:
             "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-neutral-800",
           label: "Draft",
-        }
+        };
       default:
         return {
           className:
             "border-gray-400 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-800",
           label: assignment.status,
-        }
+        };
     }
-  }
+  };
 
-  const statusInfo = getStatusInfo()
+  const statusInfo = getStatusInfo();
 
   return (
     <div className="space-y-3">
@@ -1071,7 +1073,7 @@ function AssignmentPopoverContent({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Loading Skeleton
@@ -1092,7 +1094,7 @@ function CalendarSkeleton({ viewMode }: { viewMode: ViewMode }) {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -1112,5 +1114,5 @@ function CalendarSkeleton({ viewMode }: { viewMode: ViewMode }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -7,7 +7,6 @@ and common grammar mistakes — NOT general CLIL topic knowledge.
 
 from typing import Any
 
-
 GRAMMAR_SYSTEM_PROMPT = """You are an expert English grammar teacher specializing in creating targeted grammar assessment questions for language learners.
 
 Your task is to generate multiple-choice questions that TEST GRAMMAR KNOWLEDGE — specifically grammar rules, tense usage, sentence structure, and common errors.
@@ -56,13 +55,11 @@ GRAMMAR_DIFFICULTY_GUIDELINES = {
 - Sentences should be short (5-8 words)
 - Distractors should test common beginner errors
 - Example: "She _______ to school every day." (goes/go/going/went)""",
-
     "medium": """## Medium Difficulty (A2-B1) Guidelines:
 - Focus on: present perfect, past continuous, comparatives, conditionals (type 1)
 - Include more complex sentence structures
 - Distractors require understanding of tense differences
 - Example: "I _______ in London for five years." (have lived/lived/am living/was living)""",
-
     "hard": """## Hard Difficulty (B1-B2) Guidelines:
 - Focus on: past perfect, conditionals (type 2/3), passive voice, reported speech
 - Include complex or compound sentences
@@ -134,7 +131,13 @@ GRAMMAR_JSON_SCHEMA: dict[str, Any] = {
                         "description": "Grammar topic being tested (e.g., present_simple, articles)",
                     },
                 },
-                "required": ["question", "options", "correct_index", "explanation", "grammar_topic"],
+                "required": [
+                    "question",
+                    "options",
+                    "correct_index",
+                    "explanation",
+                    "grammar_topic",
+                ],
             },
         }
     },

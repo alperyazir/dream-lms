@@ -5,7 +5,6 @@ Story 27.10: Reading Comprehension Generation
 """
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -117,9 +116,7 @@ class TestReadingComprehensionAPI:
         response = client.post(
             "/api/v1/ai/reading/nonexistent-id/submit",
             headers={"Authorization": f"Bearer {student_token}"},
-            json={
-                "answers": []
-            },
+            json={"answers": []},
         )
 
         assert response.status_code == 404
@@ -210,7 +207,8 @@ class TestReadingActivityStorage:
 
         # Check MCQ question result
         mcq_result = next(
-            r for r in result.question_results
+            r
+            for r in result.question_results
             if r.question_id == mcq_question.question_id
         )
         assert mcq_result.is_correct is True
@@ -244,7 +242,8 @@ class TestReadingActivityStorage:
 
         assert result is not None
         tf_result = next(
-            r for r in result.question_results
+            r
+            for r in result.question_results
             if r.question_id == tf_question.question_id
         )
         assert tf_result.is_correct is True
@@ -277,7 +276,8 @@ class TestReadingActivityStorage:
 
         assert result is not None
         sa_result = next(
-            r for r in result.question_results
+            r
+            for r in result.question_results
             if r.question_id == sa_question.question_id
         )
         assert sa_result.is_correct is True
@@ -311,7 +311,8 @@ class TestReadingActivityStorage:
 
         assert result is not None
         sa_result = next(
-            r for r in result.question_results
+            r
+            for r in result.question_results
             if r.question_id == sa_question.question_id
         )
         assert sa_result.is_correct is True
@@ -372,9 +373,10 @@ class TestReadingActivityStorage:
         student_id = uuid4()
 
         # Initially not submitted
-        assert await storage.has_submitted_reading(
-            sample_activity.activity_id, student_id
-        ) is False
+        assert (
+            await storage.has_submitted_reading(sample_activity.activity_id, student_id)
+            is False
+        )
 
         # Submit
         answers = [
@@ -390,9 +392,10 @@ class TestReadingActivityStorage:
         )
 
         # Now submitted
-        assert await storage.has_submitted_reading(
-            sample_activity.activity_id, student_id
-        ) is True
+        assert (
+            await storage.has_submitted_reading(sample_activity.activity_id, student_id)
+            is True
+        )
 
     @pytest.mark.asyncio
     async def test_get_result(self, sample_activity):

@@ -5,64 +5,64 @@
  * Receives activity data via sessionStorage.
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { ArrowLeft } from "lucide-react"
-import { useEffect, useState } from "react"
-import { MultiActivityPlayer } from "@/components/ActivityPlayers/MultiActivityPlayer"
-import { Button } from "@/components/ui/button"
-import { getBookActivities } from "@/services/booksApi"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MultiActivityPlayer } from "@/components/ActivityPlayers/MultiActivityPlayer";
+import { Button } from "@/components/ui/button";
+import { getBookActivities } from "@/services/booksApi";
 import type {
   ActivityProgressInfo,
   ActivityWithConfig,
   AdditionalResourcesResponse,
-} from "@/types/assignment"
-import type { Activity } from "@/types/book"
+} from "@/types/assignment";
+import type { Activity } from "@/types/book";
 
 interface PreviewData {
-  bookId: string
-  bookTitle: string
-  bookName: string
-  publisherName: string
-  activityIds: string[]
-  assignmentName: string
-  timeLimitMinutes: number | null
-  resources?: AdditionalResourcesResponse | null
+  bookId: string;
+  bookTitle: string;
+  bookName: string;
+  publisherName: string;
+  activityIds: string[];
+  assignmentName: string;
+  timeLimitMinutes: number | null;
+  resources?: AdditionalResourcesResponse | null;
 }
 
-const PREVIEW_STORAGE_KEY = "assignment-preview-data"
+const PREVIEW_STORAGE_KEY = "assignment-preview-data";
 
 export const Route = createFileRoute("/_layout/teacher/assignments/preview")({
   component: AssignmentPreviewPage,
-})
+});
 
 function AssignmentPreviewPage() {
-  const [previewData, setPreviewData] = useState<PreviewData | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Load preview data from sessionStorage
   useEffect(() => {
     try {
-      const stored = sessionStorage.getItem(PREVIEW_STORAGE_KEY)
+      const stored = sessionStorage.getItem(PREVIEW_STORAGE_KEY);
       if (stored) {
-        const data = JSON.parse(stored) as PreviewData
-        setPreviewData(data)
+        const data = JSON.parse(stored) as PreviewData;
+        setPreviewData(data);
       } else {
         setError(
           "No preview data found. Please start from the assignment creation dialog.",
-        )
+        );
       }
     } catch {
-      setError("Failed to load preview data.")
+      setError("Failed to load preview data.");
     }
-  }, [])
+  }, []);
 
   // Fetch activities for the book
   const { data: allActivities, isLoading } = useQuery({
     queryKey: ["book-activities", previewData?.bookId],
     queryFn: () => getBookActivities(previewData!.bookId),
     enabled: !!previewData?.bookId,
-  })
+  });
 
   // Filter to only selected activities and map to ActivityWithConfig format
   const selectedActivities: ActivityWithConfig[] = allActivities
@@ -70,9 +70,9 @@ function AssignmentPreviewPage() {
         .filter((a: Activity) => previewData?.activityIds.includes(a.id))
         .sort((a: Activity, b: Activity) => {
           // Maintain selection order
-          const indexA = previewData!.activityIds.indexOf(a.id)
-          const indexB = previewData!.activityIds.indexOf(b.id)
-          return indexA - indexB
+          const indexA = previewData!.activityIds.indexOf(a.id);
+          const indexB = previewData!.activityIds.indexOf(b.id);
+          return indexA - indexB;
         })
         .map(
           (a: Activity): ActivityWithConfig => ({
@@ -83,7 +83,7 @@ function AssignmentPreviewPage() {
             order_index: a.order_index,
           }),
         )
-    : []
+    : [];
 
   // Create empty progress for preview
   const activityProgress: ActivityProgressInfo[] = selectedActivities.map(
@@ -97,18 +97,18 @@ function AssignmentPreviewPage() {
       started_at: null,
       completed_at: null,
     }),
-  )
+  );
 
   const handleExit = () => {
     // Clear preview data and close tab
-    sessionStorage.removeItem(PREVIEW_STORAGE_KEY)
-    window.close()
-  }
+    sessionStorage.removeItem(PREVIEW_STORAGE_KEY);
+    window.close();
+  };
 
   const handleBackToCreation = () => {
     // Navigate back - since this is a new tab, just close it
-    window.close()
-  }
+    window.close();
+  };
 
   if (error) {
     return (
@@ -119,7 +119,7 @@ function AssignmentPreviewPage() {
           Close Tab
         </Button>
       </div>
-    )
+    );
   }
 
   if (!previewData || isLoading) {
@@ -127,7 +127,7 @@ function AssignmentPreviewPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <p className="text-muted-foreground">Loading preview...</p>
       </div>
-    )
+    );
   }
 
   if (selectedActivities.length === 0) {
@@ -141,7 +141,7 @@ function AssignmentPreviewPage() {
           Close Tab
         </Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -162,5 +162,5 @@ function AssignmentPreviewPage() {
         resources={previewData.resources}
       />
     </div>
-  )
+  );
 }

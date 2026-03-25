@@ -1,6 +1,7 @@
 """
 Unit tests for role validation and RBAC functionality
 """
+
 import uuid
 
 from fastapi.testclient import TestClient
@@ -26,7 +27,7 @@ def test_user_model_default_role(session: Session):
         email="newuser@example.com",
         hashed_password="hashed",
         is_active=True,
-        is_superuser=False
+        is_superuser=False,
     )
     session.add(user)
     session.commit()
@@ -46,7 +47,7 @@ def test_user_model_with_different_roles(session: Session):
             hashed_password="hashed",
             role=role,
             is_active=True,
-            is_superuser=False
+            is_superuser=False,
         )
         session.add(user)
         session.commit()
@@ -64,7 +65,7 @@ def test_jwt_token_includes_role(client: TestClient, admin_user: User):
 
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": admin_user.email, "password": "adminpassword"}
+        data={"username": admin_user.email, "password": "adminpassword"},
     )
     assert response.status_code == 200
 
@@ -81,7 +82,7 @@ def test_require_role_allows_correct_role(client: TestClient, admin_token: str):
     # For now, we'll test the login endpoint which should work with any valid token
     response = client.post(
         f"{settings.API_V1_STR}/login/test-token",
-        headers={"Authorization": f"Bearer {admin_token}"}
+        headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert response.status_code == 200
 
@@ -93,7 +94,7 @@ def test_create_user_with_role(session: Session):
         password="testpassword123",
         role=UserRole.teacher,
         is_active=True,
-        is_superuser=False
+        is_superuser=False,
     )
 
     user = crud.create_user(session=session, user_create=user_in)
@@ -110,7 +111,7 @@ def test_user_role_persists_after_refresh(session: Session):
         hashed_password="hashed",
         role=UserRole.publisher,
         is_active=True,
-        is_superuser=False
+        is_superuser=False,
     )
     session.add(user)
     session.commit()

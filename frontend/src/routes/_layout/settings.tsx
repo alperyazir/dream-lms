@@ -1,18 +1,26 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { Image, Lock, Mail, Palette, Shield, User, Volume2 } from "lucide-react"
-import { FiSettings } from "react-icons/fi"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import Appearance from "@/components/UserSettings/Appearance"
-import AvatarSelection from "@/components/UserSettings/AvatarSelection"
-import ChangePassword from "@/components/UserSettings/ChangePassword"
-import SoundSettings from "@/components/UserSettings/SoundSettings"
-import UserInformation from "@/components/UserSettings/UserInformation"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import useAuth from "@/hooks/useAuth"
-import { cn } from "@/lib/utils"
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  Image,
+  Lock,
+  Mail,
+  Palette,
+  Shield,
+  User,
+  Volume2,
+} from "lucide-react";
+import { FiSettings } from "react-icons/fi";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import Appearance from "@/components/UserSettings/Appearance";
+import AvatarSelection from "@/components/UserSettings/AvatarSelection";
+import ChangePassword from "@/components/UserSettings/ChangePassword";
+import SoundSettings from "@/components/UserSettings/SoundSettings";
+import UserInformation from "@/components/UserSettings/UserInformation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useAuth from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 // Story 14.3 AC 34-39: Removed Danger Zone / Delete Account from all profiles
 // No user can self-delete through UI - account deletion is handled by admins only
@@ -47,11 +55,11 @@ const tabsConfig = [
     icon: Palette,
     component: Appearance,
   },
-]
+];
 
 export const Route = createFileRoute("/_layout/settings")({
   component: UserSettings,
-})
+});
 
 // Helper to get role display info
 function getRoleInfo(role: string) {
@@ -76,35 +84,35 @@ function getRoleInfo(role: string) {
       label: "Student",
       color: "bg-primary/10 text-primary border-primary/20",
     },
-  }
+  };
   return (
     roleMap[role] || { label: role, color: "bg-muted text-muted-foreground" }
-  )
+  );
 }
 
 function UserSettings() {
-  const { user: currentUser } = useAuth()
+  const { user: currentUser } = useAuth();
 
   if (!currentUser) {
-    return null
+    return null;
   }
 
   // Story 28.1: Filter out password tab for students - teachers manage their passwords
   const filteredTabs = tabsConfig.filter((tab) => {
     if (tab.value === "password" && currentUser.role === "student") {
-      return false
+      return false;
     }
-    return true
-  })
+    return true;
+  });
 
-  const roleInfo = getRoleInfo(currentUser.role || "student")
+  const roleInfo = getRoleInfo(currentUser.role || "student");
   const initials =
     currentUser.full_name
       ?.split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2) || "U"
+      .slice(0, 2) || "U";
 
   return (
     <PageContainer>
@@ -182,5 +190,5 @@ function UserSettings() {
         ))}
       </Tabs>
     </PageContainer>
-  )
+  );
 }

@@ -1,11 +1,17 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { AlertCircle, BookOpen, GraduationCap, School, Users } from "lucide-react"
-import { FiHome } from "react-icons/fi"
-import { PublishersService } from "@/client"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { StatCard } from "@/components/dashboard/StatCard"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  AlertCircle,
+  BookOpen,
+  GraduationCap,
+  School,
+  Users,
+} from "lucide-react";
+import { FiHome } from "react-icons/fi";
+import { PublishersService } from "@/client";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { StatCard } from "@/components/dashboard/StatCard";
 
 export const Route = createFileRoute("/_layout/publisher/dashboard")({
   component: () => (
@@ -13,7 +19,7 @@ export const Route = createFileRoute("/_layout/publisher/dashboard")({
       <PublisherDashboard />
     </ErrorBoundary>
   ),
-})
+});
 
 function PublisherDashboard() {
   // Fetch publisher profile for logo and name display
@@ -28,11 +34,11 @@ function PublisherDashboard() {
     retry: (failureCount, error: any) => {
       // Don't retry on 403 or 404 errors
       if (error?.status === 403 || error?.status === 404) {
-        return false
+        return false;
       }
-      return failureCount < 3
+      return failureCount < 3;
     },
-  })
+  });
 
   // Fetch real stats from API
   const {
@@ -44,7 +50,7 @@ function PublisherDashboard() {
     queryFn: () => PublishersService.getMyStats(),
     staleTime: 30000, // Cache for 30 seconds
     enabled: !profileError, // Only fetch stats if profile loaded successfully
-  })
+  });
 
   // Handle account not linked to DCS publisher (403)
   if ((profileError as any)?.status === 403) {
@@ -59,7 +65,7 @@ function PublisherDashboard() {
           </p>
         </div>
       </PageContainer>
-    )
+    );
   }
 
   // Handle DCS publisher not found (404)
@@ -75,7 +81,7 @@ function PublisherDashboard() {
           </p>
         </div>
       </PageContainer>
-    )
+    );
   }
 
   // Handle other profile errors
@@ -90,10 +96,10 @@ function PublisherDashboard() {
           </p>
         </div>
       </PageContainer>
-    )
+    );
   }
 
-  const isLoading = profileLoading || statsLoading
+  const isLoading = profileLoading || statsLoading;
 
   return (
     <PageContainer>
@@ -144,7 +150,6 @@ function PublisherDashboard() {
           />
         </div>
       )}
-
     </PageContainer>
-  )
+  );
 }

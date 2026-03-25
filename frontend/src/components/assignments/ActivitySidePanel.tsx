@@ -9,40 +9,40 @@
  * - Empty state handling
  */
 
-import { useQueries } from "@tanstack/react-query"
-import { CheckSquare, Square } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Skeleton } from "@/components/ui/skeleton"
-import { booksApi } from "@/services/booksApi"
-import type { PageActivity, PageInfo } from "@/types/book"
-import { ACTIVITY_TYPE_CONFIG, type ActivityType } from "@/types/book"
-import { getPageKey } from "./PageBrowser"
+import { useQueries } from "@tanstack/react-query";
+import { CheckSquare, Square } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import { booksApi } from "@/services/booksApi";
+import type { PageActivity, PageInfo } from "@/types/book";
+import { ACTIVITY_TYPE_CONFIG, type ActivityType } from "@/types/book";
+import { getPageKey } from "./PageBrowser";
 
 interface ActivitySidePanelProps {
-  bookId: string
-  selectedPages: Map<string, PageInfo> // Key: "moduleName:pageNumber"
-  selectedActivityIds: Set<string>
-  onActivityToggle: (activityId: string, activity: PageActivity) => void
+  bookId: string;
+  selectedPages: Map<string, PageInfo>; // Key: "moduleName:pageNumber"
+  selectedActivityIds: Set<string>;
+  onActivityToggle: (activityId: string, activity: PageActivity) => void;
   onSelectAllOnPage: (
     moduleName: string,
     pageNumber: number,
     activities: PageActivity[],
-  ) => void
+  ) => void;
   onDeselectAllOnPage: (
     moduleName: string,
     pageNumber: number,
     activities: PageActivity[],
-  ) => void
+  ) => void;
 }
 
 interface PageActivitiesGroup {
-  moduleName: string
-  pageNumber: number
-  activities: PageActivity[]
-  isLoading: boolean
-  error: Error | null
+  moduleName: string;
+  pageNumber: number;
+  activities: PageActivity[];
+  isLoading: boolean;
+  error: Error | null;
 }
 
 export function ActivitySidePanel({
@@ -56,10 +56,10 @@ export function ActivitySidePanel({
   // Get list of selected pages for querying
   const selectedPagesList = Array.from(selectedPages.entries()).map(
     ([key, page]) => {
-      const [moduleName] = key.split(":")
-      return { moduleName, pageNumber: page.page_number }
+      const [moduleName] = key.split(":");
+      return { moduleName, pageNumber: page.page_number };
     },
-  )
+  );
 
   // Fetch activities for each selected page
   const activitiesQueries = useQueries({
@@ -69,7 +69,7 @@ export function ActivitySidePanel({
       enabled: !!bookId,
       staleTime: 5 * 60 * 1000,
     })),
-  })
+  });
 
   // Combine query results with page info
   const pageGroups: PageActivitiesGroup[] = selectedPagesList.map(
@@ -80,18 +80,18 @@ export function ActivitySidePanel({
       isLoading: activitiesQueries[index]?.isLoading || false,
       error: activitiesQueries[index]?.error as Error | null,
     }),
-  )
+  );
 
   // Sort by page number within each module
   pageGroups.sort((a, b) => {
     if (a.moduleName !== b.moduleName) {
-      return a.moduleName.localeCompare(b.moduleName)
+      return a.moduleName.localeCompare(b.moduleName);
     }
-    return a.pageNumber - b.pageNumber
-  })
+    return a.pageNumber - b.pageNumber;
+  });
 
   // Total selected activities count
-  const totalSelected = selectedActivityIds.size
+  const totalSelected = selectedActivityIds.size;
 
   if (selectedPages.size === 0) {
     return (
@@ -100,7 +100,7 @@ export function ActivitySidePanel({
           Select pages from the left to see activities
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -146,19 +146,19 @@ export function ActivitySidePanel({
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 interface PageActivityGroupProps {
-  moduleName: string
-  pageNumber: number
-  activities: PageActivity[]
-  isLoading: boolean
-  error: Error | null
-  selectedActivityIds: Set<string>
-  onActivityToggle: (activityId: string, activity: PageActivity) => void
-  onSelectAll: () => void
-  onDeselectAll: () => void
+  moduleName: string;
+  pageNumber: number;
+  activities: PageActivity[];
+  isLoading: boolean;
+  error: Error | null;
+  selectedActivityIds: Set<string>;
+  onActivityToggle: (activityId: string, activity: PageActivity) => void;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
 }
 
 function PageActivityGroup({
@@ -175,9 +175,9 @@ function PageActivityGroup({
   // Calculate selection state for this page
   const selectedCount = activities.filter((a) =>
     selectedActivityIds.has(a.id),
-  ).length
+  ).length;
   const allSelected =
-    activities.length > 0 && selectedCount === activities.length
+    activities.length > 0 && selectedCount === activities.length;
 
   if (isLoading) {
     return (
@@ -186,7 +186,7 @@ function PageActivityGroup({
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-12 w-full" />
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -194,7 +194,7 @@ function PageActivityGroup({
       <div className="text-red-500 text-sm">
         Failed to load activities for page {pageNumber}
       </div>
-    )
+    );
   }
 
   if (activities.length === 0) {
@@ -209,7 +209,7 @@ function PageActivityGroup({
           No interactive activities on this page
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -242,9 +242,9 @@ function PageActivityGroup({
       {/* Activities List */}
       <div className="space-y-2">
         {activities.map((activity) => {
-          const isSelected = selectedActivityIds.has(activity.id)
+          const isSelected = selectedActivityIds.has(activity.id);
           const typeConfig =
-            ACTIVITY_TYPE_CONFIG[activity.activity_type as ActivityType]
+            ACTIVITY_TYPE_CONFIG[activity.activity_type as ActivityType];
 
           return (
             <label
@@ -275,9 +275,9 @@ function PageActivityGroup({
                 </Badge>
               </div>
             </label>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

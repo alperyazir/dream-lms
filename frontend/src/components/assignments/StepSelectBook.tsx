@@ -6,15 +6,15 @@
  * Story 9.8: Added book cover thumbnails to help identify books
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { BookOpen, Search } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { booksApi, getAuthenticatedCoverUrl } from "@/services/booksApi"
-import type { Book } from "@/types/book"
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { booksApi, getAuthenticatedCoverUrl } from "@/services/booksApi";
+import type { Book } from "@/types/book";
 
 /**
  * Story 9.8: Book cover thumbnail component with authenticated URL
@@ -23,45 +23,45 @@ function BookCoverThumbnail({
   book,
   size = "small",
 }: {
-  book: Book
-  size?: "small" | "medium"
+  book: Book;
+  size?: "small" | "medium";
 }) {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [imageError, setImageError] = useState(false)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
-    setImageError(false)
+    setImageError(false);
 
     async function fetchCover() {
       if (!book.cover_image_url) {
-        setIsLoading(false)
-        return
+        setIsLoading(false);
+        return;
       }
 
-      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url
-        setCoverUrl(url)
-        setIsLoading(false)
+        blobUrl = url;
+        setCoverUrl(url);
+        setIsLoading(false);
       }
     }
 
-    fetchCover()
+    fetchCover();
 
     return () => {
-      isMounted = false
+      isMounted = false;
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [book.cover_image_url])
+    };
+  }, [book.cover_image_url]);
 
-  const sizeClasses = size === "small" ? "w-12 h-16" : "w-20 h-28"
-  const iconSize = size === "small" ? "w-6 h-6" : "w-10 h-10"
+  const sizeClasses = size === "small" ? "w-12 h-16" : "w-20 h-28";
+  const iconSize = size === "small" ? "w-6 h-6" : "w-10 h-10";
 
   if (isLoading) {
     return (
@@ -70,7 +70,7 @@ function BookCoverThumbnail({
       >
         <BookOpen className={`${iconSize} text-gray-400 animate-pulse`} />
       </div>
-    )
+    );
   }
 
   if (coverUrl && !imageError) {
@@ -81,7 +81,7 @@ function BookCoverThumbnail({
         className={`${sizeClasses} object-cover rounded flex-shrink-0 shadow-sm`}
         onError={() => setImageError(true)}
       />
-    )
+    );
   }
 
   return (
@@ -90,19 +90,19 @@ function BookCoverThumbnail({
     >
       <BookOpen className={`${iconSize} text-teal-600`} />
     </div>
-  )
+  );
 }
 
 interface StepSelectBookProps {
-  selectedBook: Book | null
-  onSelectBook: (book: Book | null) => void
+  selectedBook: Book | null;
+  onSelectBook: (book: Book | null) => void;
 }
 
 export function StepSelectBook({
   selectedBook,
   onSelectBook,
 }: StepSelectBookProps) {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch books
   const { data: booksData, isLoading: booksLoading } = useQuery({
@@ -113,9 +113,9 @@ export function StepSelectBook({
         limit: 100,
       }),
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
-  const books = booksData?.items ?? []
+  const books = booksData?.items ?? [];
 
   return (
     <div className="space-y-6">
@@ -237,5 +237,5 @@ export function StepSelectBook({
         )}
       </div>
     </div>
-  )
+  );
 }

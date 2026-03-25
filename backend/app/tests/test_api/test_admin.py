@@ -2,6 +2,7 @@
 Tests for admin endpoints - password reset, user management, validation
 [Source: Story 9.2, Story 11.2]
 """
+
 import uuid
 from unittest.mock import patch
 
@@ -37,7 +38,7 @@ class TestPasswordReset:
             hashed_password=get_password_hash("oldpassword"),
             role=UserRole.teacher,
             is_active=True,
-            full_name="No Email User"
+            full_name="No Email User",
         )
         session.add(user_no_email)
         session.commit()
@@ -60,7 +61,9 @@ class TestPasswordReset:
 
         # Verify password was actually changed in database
         session.refresh(user_no_email)
-        assert verify_password(data["temporary_password"], user_no_email.hashed_password)
+        assert verify_password(
+            data["temporary_password"], user_no_email.hashed_password
+        )
         # User must change password on next login [11.2 AC: 3]
         assert user_no_email.must_change_password is True
 
@@ -90,8 +93,13 @@ class TestPasswordReset:
     @patch("app.api.routes.admin.settings")
     @patch("app.api.routes.admin.send_email")
     def test_reset_password_sends_email_when_enabled(
-        self, mock_send_email, mock_settings, client: TestClient, session: Session,
-        admin_token: str, teacher_user: User
+        self,
+        mock_send_email,
+        mock_settings,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
+        teacher_user: User,
     ):
         """Test password reset sends email and hides password [11.2 AC: 1, 2]"""
         # Configure mocks to simulate email being enabled
@@ -132,10 +140,16 @@ class TestPasswordReset:
         # Verify new password works
         session.refresh(student_user)
         if data["temporary_password"]:
-            assert verify_password(data["temporary_password"], student_user.hashed_password)
+            assert verify_password(
+                data["temporary_password"], student_user.hashed_password
+            )
 
     def test_reset_password_for_publisher(
-        self, client: TestClient, session: Session, admin_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
+        publisher_user: User,
     ):
         """Test password reset works for publisher users"""
         response = client.post(
@@ -150,11 +164,11 @@ class TestPasswordReset:
         # Verify new password works
         session.refresh(publisher_user)
         if data["temporary_password"]:
-            assert verify_password(data["temporary_password"], publisher_user.hashed_password)
+            assert verify_password(
+                data["temporary_password"], publisher_user.hashed_password
+            )
 
-    def test_reset_password_user_not_found(
-        self, client: TestClient, admin_token: str
-    ):
+    def test_reset_password_user_not_found(self, client: TestClient, admin_token: str):
         """Test password reset returns 404 for non-existent user"""
         fake_uuid = uuid.uuid4()
         response = client.post(
@@ -188,9 +202,7 @@ class TestPasswordReset:
 
         assert response.status_code == 403
 
-    def test_reset_password_unauthorized(
-        self, client: TestClient, student_user: User
-    ):
+    def test_reset_password_unauthorized(self, client: TestClient, student_user: User):
         """Test that unauthenticated requests are rejected"""
         response = client.post(
             f"{settings.API_V1_STR}/admin/users/{student_user.id}/reset-password",
@@ -249,10 +261,9 @@ class TestPasswordReset:
         from datetime import timedelta
 
         from app.core.security import create_access_token
+
         teacher_token = create_access_token(
-            teacher_user.id,
-            timedelta(minutes=30),
-            {"role": teacher_user.role.value}
+            teacher_user.id, timedelta(minutes=30), {"role": teacher_user.role.value}
         )
 
         # Reset password
@@ -275,8 +286,7 @@ class TestPasswordReset:
 
         # Find the password reset notification
         password_reset_notification = next(
-            (n for n in notifications if n.get("type") == "password_reset"),
-            None
+            (n for n in notifications if n.get("type") == "password_reset"), None
         )
         assert password_reset_notification is not None
         assert "Password Reset" in password_reset_notification.get("title", "")
@@ -287,24 +297,22 @@ class TestPublisherPasswordReset:
     """Tests for publisher password reset permissions [Story 11.2 AC: 6]"""
 
     def test_publisher_can_reset_own_teacher_password(
-        self, client: TestClient, session: Session, publisher_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        publisher_token: str,
+        publisher_user: User,
     ):
         """Test publisher can reset password for their teacher [11.2 AC: 6]"""
         # Create publisher record
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Test Publisher"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Test Publisher"
         )
         session.add(publisher)
         session.commit()
 
         # Create school under publisher
-        school = School(
-            id=uuid.uuid4(),
-            name="Test School",
-            publisher_id=publisher.id
-        )
+        school = School(id=uuid.uuid4(), name="Test School", publisher_id=publisher.id)
         session.add(school)
         session.commit()
 
@@ -316,17 +324,13 @@ class TestPublisherPasswordReset:
             hashed_password=get_password_hash("password"),
             role=UserRole.teacher,
             is_active=True,
-            full_name="My Teacher"
+            full_name="My Teacher",
         )
         session.add(teacher_user)
         session.commit()
 
         # Create teacher record linked to school
-        teacher = Teacher(
-            id=uuid.uuid4(),
-            user_id=teacher_user.id,
-            school_id=school.id
-        )
+        teacher = Teacher(id=uuid.uuid4(), user_id=teacher_user.id, school_id=school.id)
         session.add(teacher)
         session.commit()
 
@@ -340,23 +344,23 @@ class TestPublisherPasswordReset:
         assert data["success"] is True
 
     def test_publisher_can_reset_own_student_password(
-        self, client: TestClient, session: Session, publisher_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        publisher_token: str,
+        publisher_user: User,
     ):
         """Test publisher can reset password for their student [11.2 AC: 6]"""
         # Create publisher record
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Test Publisher Student"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Test Publisher Student"
         )
         session.add(publisher)
         session.commit()
 
         # Create school under publisher
         school = School(
-            id=uuid.uuid4(),
-            name="Test School Student",
-            publisher_id=publisher.id
+            id=uuid.uuid4(), name="Test School Student", publisher_id=publisher.id
         )
         session.add(school)
         session.commit()
@@ -368,15 +372,13 @@ class TestPublisherPasswordReset:
             username="teacher_for_class",
             hashed_password=get_password_hash("password"),
             role=UserRole.teacher,
-            is_active=True
+            is_active=True,
         )
         session.add(teacher_user_for_class)
         session.commit()
 
         teacher_for_class = Teacher(
-            id=uuid.uuid4(),
-            user_id=teacher_user_for_class.id,
-            school_id=school.id
+            id=uuid.uuid4(), user_id=teacher_user_for_class.id, school_id=school.id
         )
         session.add(teacher_for_class)
         session.commit()
@@ -386,7 +388,7 @@ class TestPublisherPasswordReset:
             id=uuid.uuid4(),
             name="Test Class",
             school_id=school.id,
-            teacher_id=teacher_for_class.id
+            teacher_id=teacher_for_class.id,
         )
         session.add(class_obj)
         session.commit()
@@ -399,24 +401,19 @@ class TestPublisherPasswordReset:
             hashed_password=get_password_hash("password"),
             role=UserRole.student,
             is_active=True,
-            full_name="My Student"
+            full_name="My Student",
         )
         session.add(student_user)
         session.commit()
 
         # Create student record
-        student = Student(
-            id=uuid.uuid4(),
-            user_id=student_user.id
-        )
+        student = Student(id=uuid.uuid4(), user_id=student_user.id)
         session.add(student)
         session.commit()
 
         # Enroll student in class (links student to school)
         enrollment = ClassStudent(
-            id=uuid.uuid4(),
-            class_id=class_obj.id,
-            student_id=student.id
+            id=uuid.uuid4(), class_id=class_obj.id, student_id=student.id
         )
         session.add(enrollment)
         session.commit()
@@ -431,7 +428,11 @@ class TestPublisherPasswordReset:
         assert data["success"] is True
 
     def test_publisher_cannot_reset_other_publisher_teacher(
-        self, client: TestClient, session: Session, publisher_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        publisher_token: str,
+        publisher_user: User,
     ):
         """Test publisher cannot reset another publisher's teacher password [11.2 AC: 6]"""
         # Create another publisher
@@ -440,24 +441,20 @@ class TestPublisherPasswordReset:
             email="other_pub@example.com",
             username="otherpub",
             hashed_password=get_password_hash("password"),
-            role=UserRole.publisher
+            role=UserRole.publisher,
         )
         session.add(other_pub_user)
         session.commit()
 
         other_publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=other_pub_user.id,
-            name="Other Publisher"
+            id=uuid.uuid4(), user_id=other_pub_user.id, name="Other Publisher"
         )
         session.add(other_publisher)
         session.commit()
 
         # Create school under OTHER publisher
         other_school = School(
-            id=uuid.uuid4(),
-            name="Other School",
-            publisher_id=other_publisher.id
+            id=uuid.uuid4(), name="Other School", publisher_id=other_publisher.id
         )
         session.add(other_school)
         session.commit()
@@ -469,24 +466,20 @@ class TestPublisherPasswordReset:
             username="otherteacher",
             hashed_password=get_password_hash("password"),
             role=UserRole.teacher,
-            is_active=True
+            is_active=True,
         )
         session.add(other_teacher_user)
         session.commit()
 
         other_teacher = Teacher(
-            id=uuid.uuid4(),
-            user_id=other_teacher_user.id,
-            school_id=other_school.id
+            id=uuid.uuid4(), user_id=other_teacher_user.id, school_id=other_school.id
         )
         session.add(other_teacher)
         session.commit()
 
         # Current publisher needs a Publisher record too
         my_publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="My Publisher"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="My Publisher"
         )
         session.add(my_publisher)
         session.commit()
@@ -501,14 +494,16 @@ class TestPublisherPasswordReset:
         assert "Not authorized" in response.json()["detail"]
 
     def test_publisher_cannot_reset_other_publisher_password(
-        self, client: TestClient, session: Session, publisher_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        publisher_token: str,
+        publisher_user: User,
     ):
         """Test publisher cannot reset another publisher's password"""
         # Create publisher record for current user
         my_publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="My Publisher Unique"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="My Publisher Unique"
         )
         session.add(my_publisher)
         session.commit()
@@ -519,7 +514,7 @@ class TestPublisherPasswordReset:
             email="another_pub@example.com",
             username="anotherpub",
             hashed_password=get_password_hash("password"),
-            role=UserRole.publisher
+            role=UserRole.publisher,
         )
         session.add(other_pub_user)
         session.commit()
@@ -568,14 +563,16 @@ class TestSchoolValidation:
         assert "publisher" in response.json()["detail"].lower()
 
     def test_create_school_success_with_valid_publisher(
-        self, client: TestClient, session: Session, admin_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
+        publisher_user: User,
     ):
         """Test school creation succeeds with valid publisher_id"""
         # Create publisher record
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Test Publisher"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Test Publisher"
         )
         session.add(publisher)
         session.commit()
@@ -633,23 +630,21 @@ class TestTeacherValidation:
         assert "school" in response.json()["detail"].lower()
 
     def test_create_teacher_success_with_valid_school(
-        self, client: TestClient, session: Session, admin_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
+        publisher_user: User,
     ):
         """Test teacher creation succeeds with valid school_id"""
         # Create publisher and school
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Test Publisher"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Test Publisher"
         )
         session.add(publisher)
         session.commit()
 
-        school = School(
-            id=uuid.uuid4(),
-            name="Test School",
-            publisher_id=publisher.id
-        )
+        school = School(id=uuid.uuid4(), name="Test School", publisher_id=publisher.id)
         session.add(school)
         session.commit()
 
@@ -714,7 +709,11 @@ class TestUserEdit:
         assert response.json()["username"] == "newusername"
 
     def test_edit_user_email_duplicate(
-        self, client: TestClient, admin_token: str, teacher_user: User, student_user: User
+        self,
+        client: TestClient,
+        admin_token: str,
+        teacher_user: User,
+        student_user: User,
     ):
         """Test that duplicate email is rejected [AC: 11]"""
         response = client.patch(
@@ -727,7 +726,11 @@ class TestUserEdit:
         assert "email" in response.json()["detail"].lower()
 
     def test_edit_user_username_duplicate(
-        self, client: TestClient, admin_token: str, teacher_user: User, student_user: User
+        self,
+        client: TestClient,
+        admin_token: str,
+        teacher_user: User,
+        student_user: User,
     ):
         """Test that duplicate username is rejected [AC: 11]"""
         response = client.patch(
@@ -739,9 +742,7 @@ class TestUserEdit:
         assert response.status_code == 409
         assert "username" in response.json()["detail"].lower()
 
-    def test_edit_user_not_found(
-        self, client: TestClient, admin_token: str
-    ):
+    def test_edit_user_not_found(self, client: TestClient, admin_token: str):
         """Test edit returns 404 for non-existent user"""
         fake_id = uuid.uuid4()
         response = client.patch(
@@ -788,7 +789,11 @@ class TestPublisherLogo:
     """Tests for publisher logo upload functionality [AC: 15, 16, 17]"""
 
     def test_upload_logo_success(
-        self, client: TestClient, session: Session, admin_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
+        publisher_user: User,
     ):
         """Test successful logo upload for a publisher [AC: 15]"""
         import io
@@ -797,9 +802,7 @@ class TestPublisherLogo:
 
         # Create publisher record
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Test Publisher Logo"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Test Publisher Logo"
         )
         session.add(publisher)
         session.commit()
@@ -827,16 +830,18 @@ class TestPublisherLogo:
         assert publisher.logo_url is not None
 
     def test_upload_logo_invalid_type(
-        self, client: TestClient, session: Session, admin_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
+        publisher_user: User,
     ):
         """Test logo upload rejects invalid file types [AC: 17]"""
         import io
 
         # Create publisher record
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Test Publisher Logo Type"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Test Publisher Logo Type"
         )
         session.add(publisher)
         session.commit()
@@ -854,16 +859,18 @@ class TestPublisherLogo:
         assert "Invalid file type" in response.json()["detail"]
 
     def test_upload_logo_file_too_large(
-        self, client: TestClient, session: Session, admin_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
+        publisher_user: User,
     ):
         """Test logo upload rejects files over 2MB [AC: 17]"""
         import io
 
         # Create publisher record
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Test Publisher Logo Size"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Test Publisher Logo Size"
         )
         session.add(publisher)
         session.commit()
@@ -899,7 +906,11 @@ class TestPublisherLogo:
         assert "Publisher not found" in response.json()["detail"]
 
     def test_delete_logo_success(
-        self, client: TestClient, session: Session, admin_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
+        publisher_user: User,
     ):
         """Test successful logo deletion"""
         # Create publisher with logo_url
@@ -907,7 +918,7 @@ class TestPublisherLogo:
             id=uuid.uuid4(),
             user_id=publisher_user.id,
             name="Test Publisher Delete Logo",
-            logo_url="/static/logos/test.png"
+            logo_url="/static/logos/test.png",
         )
         session.add(publisher)
         session.commit()
@@ -937,7 +948,11 @@ class TestPublisherLogo:
         assert response.status_code == 404
 
     def test_list_publishers_includes_logo_url(
-        self, client: TestClient, session: Session, admin_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
+        publisher_user: User,
     ):
         """Test that list_publishers response includes logo_url [AC: 16]"""
         # Create publisher with logo_url
@@ -945,7 +960,7 @@ class TestPublisherLogo:
             id=uuid.uuid4(),
             user_id=publisher_user.id,
             name="Test Publisher With Logo",
-            logo_url="/static/logos/publisher_logo.png"
+            logo_url="/static/logos/publisher_logo.png",
         )
         session.add(publisher)
         session.commit()
@@ -960,23 +975,24 @@ class TestPublisherLogo:
 
         # Find our publisher in the list
         found_publisher = next(
-            (p for p in publishers if p["id"] == str(publisher.id)),
-            None
+            (p for p in publishers if p["id"] == str(publisher.id)), None
         )
         assert found_publisher is not None
         assert "logo_url" in found_publisher
         assert found_publisher["logo_url"] == "/static/logos/publisher_logo.png"
 
     def test_upload_logo_requires_admin(
-        self, client: TestClient, session: Session, teacher_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        teacher_token: str,
+        publisher_user: User,
     ):
         """Test that logo upload requires admin role"""
         import io
 
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Test Publisher Auth"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Test Publisher Auth"
         )
         session.add(publisher)
         session.commit()

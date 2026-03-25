@@ -4,8 +4,8 @@
  * Allows publishers to view and manage all book assignments to schools/teachers.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BookOpen,
@@ -14,9 +14,9 @@ import {
   Search,
   Trash2,
   User,
-} from "lucide-react"
-import { useState } from "react"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
+} from "lucide-react";
+import { useState } from "react";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,18 +26,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -45,14 +45,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/table";
+import useCustomToast from "@/hooks/useCustomToast";
 import {
   type BookAssignmentResponse,
   deleteBookAssignment,
   listBookAssignments,
-} from "@/services/bookAssignmentsApi"
-import { booksApi } from "@/services/booksApi"
+} from "@/services/bookAssignmentsApi";
+import { booksApi } from "@/services/booksApi";
 
 export const Route = createFileRoute("/_layout/publisher/book-assignments")({
   component: () => (
@@ -60,27 +60,27 @@ export const Route = createFileRoute("/_layout/publisher/book-assignments")({
       <BookAssignmentsPage />
     </ErrorBoundary>
   ),
-})
+});
 
 function BookAssignmentsPage() {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
   // State
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedBookId, setSelectedBookId] = useState<string | "all">("all")
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBookId, setSelectedBookId] = useState<string | "all">("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] =
-    useState<BookAssignmentResponse | null>(null)
+    useState<BookAssignmentResponse | null>(null);
 
   // Fetch all books for filter dropdown
   const { data: booksData } = useQuery({
     queryKey: ["publisherBooks"],
     queryFn: () => booksApi.getBooks({ limit: 100 }),
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
-  const books = booksData?.items ?? []
+  const books = booksData?.items ?? [];
 
   // Fetch book assignments
   const { data: assignmentsData, isLoading } = useQuery({
@@ -91,48 +91,48 @@ function BookAssignmentsPage() {
         limit: 500,
       }),
     staleTime: 30000,
-  })
+  });
 
-  const assignments = assignmentsData?.items ?? []
+  const assignments = assignmentsData?.items ?? [];
 
   // Filter assignments based on search
   const filteredAssignments = assignments.filter((assignment) => {
-    if (!searchTerm) return true
-    const searchLower = searchTerm.toLowerCase()
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
     return (
       assignment.book_title.toLowerCase().includes(searchLower) ||
       assignment.school_name?.toLowerCase().includes(searchLower) ||
       assignment.teacher_name?.toLowerCase().includes(searchLower) ||
       assignment.teacher_email?.toLowerCase().includes(searchLower)
-    )
-  })
+    );
+  });
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (assignmentId: string) => deleteBookAssignment(assignmentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bookAssignments"] })
-      showSuccessToast("Assignment removed successfully")
-      setDeleteDialogOpen(false)
-      setAssignmentToDelete(null)
+      queryClient.invalidateQueries({ queryKey: ["bookAssignments"] });
+      showSuccessToast("Assignment removed successfully");
+      setDeleteDialogOpen(false);
+      setAssignmentToDelete(null);
     },
     onError: (error: Error) => {
-      showErrorToast(`Failed to remove assignment: ${error.message}`)
+      showErrorToast(`Failed to remove assignment: ${error.message}`);
     },
-  })
+  });
 
   const handleDeleteClick = (assignment: BookAssignmentResponse) => {
-    setAssignmentToDelete(assignment)
-    setDeleteDialogOpen(true)
-  }
+    setAssignmentToDelete(assignment);
+    setDeleteDialogOpen(true);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
-    })
-  }
+    });
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -345,5 +345,5 @@ function BookAssignmentsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

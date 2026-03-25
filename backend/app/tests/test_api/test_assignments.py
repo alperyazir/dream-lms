@@ -38,7 +38,9 @@ class TestCreateAssignment:
             "due_date": future_date.isoformat(),
             "student_ids": [str(uuid.uuid4())],
         }
-        response = client.post(f"{settings.API_V1_STR}/assignments", json=assignment_data)
+        response = client.post(
+            f"{settings.API_V1_STR}/assignments", json=assignment_data
+        )
         assert response.status_code == 401
 
     def test_create_assignment_requires_teacher_role(

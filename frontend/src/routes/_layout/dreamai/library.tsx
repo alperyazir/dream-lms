@@ -5,8 +5,8 @@
  * then sees all AI content for that book from DCS (any teacher).
  */
 
-import { useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertCircle,
   BookOpen,
@@ -15,17 +15,17 @@ import {
   List,
   Loader2,
   Sparkles,
-} from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
-import { AssignmentWizardSheet } from "@/components/assignments/AssignmentWizardSheet"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { ContentCard } from "@/components/DreamAI/ContentCard"
-import { ContentPreviewModal } from "@/components/DreamAI/ContentPreviewModal"
-import { EditContentModal } from "@/components/DreamAI/EditContentModal"
-import { ContentTable } from "@/components/DreamAI/ContentTable"
-import { GenerateContentDialog } from "@/components/DreamAI/GenerateContentDialog"
-import { BookSelector } from "@/components/DreamAI/BookSelector"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+} from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { AssignmentWizardSheet } from "@/components/assignments/AssignmentWizardSheet";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { ContentCard } from "@/components/DreamAI/ContentCard";
+import { ContentPreviewModal } from "@/components/DreamAI/ContentPreviewModal";
+import { EditContentModal } from "@/components/DreamAI/EditContentModal";
+import { ContentTable } from "@/components/DreamAI/ContentTable";
+import { GenerateContentDialog } from "@/components/DreamAI/GenerateContentDialog";
+import { BookSelector } from "@/components/DreamAI/BookSelector";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,38 +35,41 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   PaginationItems,
   PaginationNextTrigger,
   PaginationPrevTrigger,
   PaginationRoot,
-} from "@/components/ui/pagination"
+} from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { useMyAIUsage } from "@/hooks/useAIUsage"
-import { useBookContent, useDeleteBookContent } from "@/hooks/useContentLibrary"
-import { useViewPreference } from "@/hooks/useViewPreference"
-import { ACTIVITY_TYPE_CONFIG } from "@/lib/activityTypeConfig"
-import type { BookContentFilters } from "@/services/contentLibraryApi"
-import type { ContentItem, BookContentItem } from "@/types/content-library"
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { useMyAIUsage } from "@/hooks/useAIUsage";
+import {
+  useBookContent,
+  useDeleteBookContent,
+} from "@/hooks/useContentLibrary";
+import { useViewPreference } from "@/hooks/useViewPreference";
+import { ACTIVITY_TYPE_CONFIG } from "@/lib/activityTypeConfig";
+import type { BookContentFilters } from "@/services/contentLibraryApi";
+import type { ContentItem, BookContentItem } from "@/types/content-library";
 
 export const Route = createFileRoute("/_layout/dreamai/library")({
   component: ContentLibraryPage,
-})
+});
 
 /** AI activity types for the filter dropdown */
 const AI_ACTIVITY_TYPES = Object.entries(ACTIVITY_TYPE_CONFIG)
   .filter(([, config]) => config.isAI)
-  .map(([key, config]) => ({ value: key, label: config.label }))
+  .map(([key, config]) => ({ value: key, label: config.label }));
 
 /** Adapt BookContentItem to ContentItem so existing ContentCard/ContentTable work */
 function toContentItem(item: BookContentItem): ContentItem {
@@ -88,76 +91,82 @@ function toContentItem(item: BookContentItem): ContentItem {
       id: item.created_by_id || "",
       name: item.created_by_name || "Unknown",
     },
-  }
+  };
 }
 
 function ContentLibraryPage() {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Book selection
-  const [selectedBookId, setSelectedBookId] = useState<number | null>(null)
+  const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
 
   // Filters & view
-  const [activityTypeFilter, setActivityTypeFilter] = useState<string>("all")
-  const [page, setPage] = useState(1)
-  const pageSize = 20
-  const [viewMode, setViewMode] = useViewPreference("content-library", "grid")
+  const [activityTypeFilter, setActivityTypeFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [viewMode, setViewMode] = useViewPreference("content-library", "grid");
 
   // Modals
-  const [previewContent, setPreviewContent] = useState<ContentItem | null>(null)
-  const [editContent, setEditContent] = useState<ContentItem | null>(null)
-  const [deleteContent, setDeleteContent] = useState<ContentItem | null>(null)
-  const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+  const [previewContent, setPreviewContent] = useState<ContentItem | null>(
+    null,
+  );
+  const [editContent, setEditContent] = useState<ContentItem | null>(null);
+  const [deleteContent, setDeleteContent] = useState<ContentItem | null>(null);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
 
   // Wizard sheet state
-  const [isWizardOpen, setIsWizardOpen] = useState(false)
-  const [wizardContentId, setWizardContentId] = useState<string | null>(null)
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardContentId, setWizardContentId] = useState<string | null>(null);
 
   const openWizardWithContent = (contentId: string) => {
-    setWizardContentId(contentId)
-    setIsWizardOpen(true)
-  }
+    setWizardContentId(contentId);
+    setIsWizardOpen(true);
+  };
 
   // AI Usage quota
-  const { data: myUsage, isLoading: isLoadingUsage } = useMyAIUsage()
+  const { data: myUsage, isLoading: isLoadingUsage } = useMyAIUsage();
 
   // Build filters for book content query
   const bookFilters: BookContentFilters = useMemo(
     () => ({
-      activity_type: activityTypeFilter !== "all" ? activityTypeFilter : undefined,
+      activity_type:
+        activityTypeFilter !== "all" ? activityTypeFilter : undefined,
       page,
       page_size: pageSize,
     }),
     [activityTypeFilter, page],
-  )
+  );
 
   // Fetch book content from DCS
-  const { data, isLoading, error } = useBookContent(selectedBookId, bookFilters)
+  const { data, isLoading, error } = useBookContent(
+    selectedBookId,
+    bookFilters,
+  );
 
   // Delete mutation
-  const deleteMutation = useDeleteBookContent(selectedBookId)
+  const deleteMutation = useDeleteBookContent(selectedBookId);
 
   // Adapted items for existing components
   const contentItems: ContentItem[] = useMemo(
     () => (data?.items || []).map(toContentItem),
     [data?.items],
-  )
+  );
 
   const handleBookSelect = useCallback((bookId: number | null) => {
-    setSelectedBookId(bookId)
-    setPage(1)
-    setActivityTypeFilter("all")
-  }, [])
+    setSelectedBookId(bookId);
+    setPage(1);
+    setActivityTypeFilter("all");
+  }, []);
 
   const handleDelete = async (content: ContentItem) => {
     try {
-      await deleteMutation.mutateAsync(content.id)
+      await deleteMutation.mutateAsync(content.id);
       toast({
         title: "Content deleted",
         description: `"${content.title}" has been removed.`,
-      })
-      setDeleteContent(null)
+      });
+      setDeleteContent(null);
     } catch (err: any) {
       toast({
         variant: "destructive",
@@ -165,13 +174,13 @@ function ContentLibraryPage() {
         description:
           err.response?.data?.detail ||
           "Failed to delete content. Please try again.",
-      })
+      });
     }
-  }
+  };
 
   const handlePageChange = (newPage: number) => {
-    setPage(newPage)
-  }
+    setPage(newPage);
+  };
 
   return (
     <PageContainer>
@@ -192,7 +201,8 @@ function ContentLibraryPage() {
                   {myUsage.remaining_quota}
                 </span>
                 <span className="text-muted-foreground">
-                  {" "}/ {myUsage.monthly_quota}
+                  {" "}
+                  / {myUsage.monthly_quota}
                 </span>
               </span>
             ) : (
@@ -203,7 +213,11 @@ function ContentLibraryPage() {
             onClick={() => setShowGenerateDialog(true)}
             className="bg-purple-600 hover:bg-purple-700"
             disabled={myUsage?.remaining_quota === 0}
-            title={myUsage?.remaining_quota === 0 ? "Monthly quota exceeded" : undefined}
+            title={
+              myUsage?.remaining_quota === 0
+                ? "Monthly quota exceeded"
+                : undefined
+            }
           >
             <Sparkles className="h-4 w-4 mr-2" />
             AI Generation
@@ -245,8 +259,8 @@ function ContentLibraryPage() {
               <Select
                 value={activityTypeFilter}
                 onValueChange={(value) => {
-                  setActivityTypeFilter(value)
-                  setPage(1)
+                  setActivityTypeFilter(value);
+                  setPage(1);
                 }}
               >
                 <SelectTrigger className="w-[220px]">
@@ -369,12 +383,12 @@ function ContentLibraryPage() {
         onOpenChange={(open) => !open && setPreviewContent(null)}
         content={previewContent}
         onUse={(content) => {
-          setPreviewContent(null)
-          openWizardWithContent(content.id)
+          setPreviewContent(null);
+          openWizardWithContent(content.id);
         }}
         onDelete={(content) => {
-          setPreviewContent(null)
-          setDeleteContent(content)
+          setPreviewContent(null);
+          setDeleteContent(content);
         }}
       />
 
@@ -395,8 +409,8 @@ function ContentLibraryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Content?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{deleteContent?.title}&quot;?
-              This will remove it from DCS permanently.
+              Are you sure you want to delete &quot;{deleteContent?.title}
+              &quot;? This will remove it from DCS permanently.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -415,8 +429,8 @@ function ContentLibraryPage() {
       <AssignmentWizardSheet
         open={isWizardOpen}
         onOpenChange={(open) => {
-          setIsWizardOpen(open)
-          if (!open) setWizardContentId(null)
+          setIsWizardOpen(open);
+          if (!open) setWizardContentId(null);
         }}
         mode="create"
         preSelectedContentId={wizardContentId}
@@ -427,9 +441,9 @@ function ContentLibraryPage() {
         open={showGenerateDialog}
         onOpenChange={setShowGenerateDialog}
         onSaveSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["ai-usage", "my-usage"] })
+          queryClient.invalidateQueries({ queryKey: ["ai-usage", "my-usage"] });
         }}
       />
     </PageContainer>
-  )
+  );
 }

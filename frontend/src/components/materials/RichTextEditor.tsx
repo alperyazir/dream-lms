@@ -5,10 +5,10 @@
  * TipTap-based rich text editor for text notes.
  */
 
-import CharacterCount from "@tiptap/extension-character-count"
-import Placeholder from "@tiptap/extension-placeholder"
-import { EditorContent, useEditor } from "@tiptap/react"
-import StarterKit from "@tiptap/starter-kit"
+import CharacterCount from "@tiptap/extension-character-count";
+import Placeholder from "@tiptap/extension-placeholder";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import {
   Bold,
   Code,
@@ -21,19 +21,19 @@ import {
   Redo,
   Strikethrough,
   Undo,
-} from "lucide-react"
-import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Toggle } from "@/components/ui/toggle"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Toggle } from "@/components/ui/toggle";
+import { cn } from "@/lib/utils";
 
 interface RichTextEditorProps {
-  content: string
-  onChange: (content: string) => void
-  placeholder?: string
-  maxLength?: number
-  disabled?: boolean
-  className?: string
+  content: string;
+  onChange: (content: string) => void;
+  placeholder?: string;
+  maxLength?: number;
+  disabled?: boolean;
+  className?: string;
 }
 
 /**
@@ -46,11 +46,11 @@ function ToolbarButton({
   children,
   title,
 }: {
-  onClick: () => void
-  isActive?: boolean
-  disabled?: boolean
-  children: React.ReactNode
-  title: string
+  onClick: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  children: React.ReactNode;
+  title: string;
 }) {
   return (
     <Toggle
@@ -63,7 +63,7 @@ function ToolbarButton({
     >
       {children}
     </Toggle>
-  )
+  );
 }
 
 /**
@@ -98,31 +98,31 @@ export function RichTextEditor({
     content,
     editable: !disabled,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      onChange(editor.getHTML());
     },
-  })
+  });
 
   // Sync content from props
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content)
+      editor.commands.setContent(content);
     }
-  }, [content, editor])
+  }, [content, editor]);
 
   // Update editable state
   useEffect(() => {
     if (editor) {
-      editor.setEditable(!disabled)
+      editor.setEditable(!disabled);
     }
-  }, [disabled, editor])
+  }, [disabled, editor]);
 
   if (!editor) {
     return (
       <div className="min-h-[250px] border rounded-md bg-gray-50 dark:bg-neutral-800 animate-pulse" />
-    )
+    );
   }
 
-  const characterCount = editor.storage.characterCount?.characters() ?? 0
+  const characterCount = editor.storage.characterCount?.characters() ?? 0;
 
   return (
     <div className={cn("border rounded-md overflow-hidden", className)}>
@@ -263,7 +263,7 @@ export function RichTextEditor({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-RichTextEditor.displayName = "RichTextEditor"
+RichTextEditor.displayName = "RichTextEditor";

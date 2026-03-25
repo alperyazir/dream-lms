@@ -8,21 +8,22 @@ Tests cover:
 """
 
 import uuid
-from datetime import timedelta, timezone, datetime
-from unittest.mock import MagicMock, patch
+from datetime import timedelta
+from unittest.mock import MagicMock
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
-from app.core.rate_limit import ALGORITHM, RateLimits, get_user_id_or_ip
+from app.core.rate_limit import RateLimits, get_user_id_or_ip
 from app.core.security import create_access_token
 
 
 class TestGetUserIdOrIp:
     """Unit tests for the get_user_id_or_ip key function."""
 
-    def _make_request(self, auth_header: str | None = None, client_ip: str = "127.0.0.1") -> MagicMock:
+    def _make_request(
+        self, auth_header: str | None = None, client_ip: str = "127.0.0.1"
+    ) -> MagicMock:
         """Create a mock Request object."""
         request = MagicMock()
         headers = {}
@@ -156,7 +157,9 @@ class TestRateLimitIntegration:
                 data={"username": "wrong@example.com", "password": "wrong"},
             )
             # Should get 400 (invalid credentials), not 429
-            assert response.status_code == 400, f"Request {i+1} got {response.status_code}"
+            assert (
+                response.status_code == 400
+            ), f"Request {i+1} got {response.status_code}"
 
         # 11th request should be rate limited
         response = client.post(
@@ -180,7 +183,9 @@ class TestRateLimitIntegration:
         )
 
         if response.status_code == 429:
-            assert "retry-after" in response.headers or "Retry-After" in response.headers
+            assert (
+                "retry-after" in response.headers or "Retry-After" in response.headers
+            )
 
     def test_429_response_body_format(self, client: TestClient, admin_user):
         """429 response body includes detail and retry_after."""
@@ -210,4 +215,5 @@ class TestRateLimitDisabled:
         # This test verifies the config flag exists and is used
         # The actual limiter reads this at initialization time
         from app.core.rate_limit import limiter
+
         assert hasattr(limiter, "_enabled") or hasattr(limiter, "enabled")

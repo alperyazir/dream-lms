@@ -18,13 +18,13 @@ def test_create_publisher_as_admin(
         "contact_email": "contact@testpublisher.com",
         "username": "publisher1",
         "user_email": "publisher1@example.com",
-        "full_name": "Publisher One"
+        "full_name": "Publisher One",
     }
 
     response = client.post(
         f"{settings.API_V1_STR}/admin/publishers",
         headers={"Authorization": f"Bearer {admin_token}"},
-        json=publisher_data
+        json=publisher_data,
     )
 
     # Publisher creation is deprecated - managed in Dream Central Storage
@@ -32,28 +32,31 @@ def test_create_publisher_as_admin(
     assert "Dream Central Storage" in response.json()["detail"]
 
 
-def test_create_publisher_as_non_admin(
-    client: TestClient, teacher_token: str
-) -> None:
+def test_create_publisher_as_non_admin(client: TestClient, teacher_token: str) -> None:
     """Test non-admin gets 403 when trying to create publisher"""
     publisher_data = {
         "name": "Test Publisher Inc",
         "contact_email": "contact@testpublisher.com",
         "user_email": "publisher2@example.com",
-        "full_name": "Publisher Two"
+        "full_name": "Publisher Two",
     }
 
     response = client.post(
         f"{settings.API_V1_STR}/admin/publishers",
         headers={"Authorization": f"Bearer {teacher_token}"},
-        json=publisher_data
+        json=publisher_data,
     )
 
     assert response.status_code == 403
-    assert "Insufficient permissions" in response.json()["detail"] or "Access forbidden" in response.json()["detail"]
+    assert (
+        "Insufficient permissions" in response.json()["detail"]
+        or "Access forbidden" in response.json()["detail"]
+    )
 
 
-@pytest.mark.skip(reason="TODO: Update test to use DCS publisher IDs (Story 24.4 cleanup)")
+@pytest.mark.skip(
+    reason="TODO: Update test to use DCS publisher IDs (Story 24.4 cleanup)"
+)
 def test_create_school_as_admin(
     client: TestClient, session: Session, admin_token: str
 ) -> None:
@@ -62,7 +65,9 @@ def test_create_school_as_admin(
     pass
 
 
-@pytest.mark.skip(reason="DEPRECATED: Publishers now fetched from DCS API, not local DB")
+@pytest.mark.skip(
+    reason="DEPRECATED: Publishers now fetched from DCS API, not local DB"
+)
 def test_list_publishers_as_admin(
     client: TestClient, session: Session, admin_token: str
 ) -> None:
@@ -70,7 +75,9 @@ def test_list_publishers_as_admin(
     pass
 
 
-@pytest.mark.skip(reason="TODO: Update test to use DCS publisher IDs (Story 24.4 cleanup)")
+@pytest.mark.skip(
+    reason="TODO: Update test to use DCS publisher IDs (Story 24.4 cleanup)"
+)
 def test_list_schools_filtered_by_publisher(
     client: TestClient, session: Session, admin_token: str
 ) -> None:
@@ -79,9 +86,7 @@ def test_list_schools_filtered_by_publisher(
 
 
 @pytest.mark.skip(reason="DEPRECATED: Publisher creation returns 410 Gone")
-def test_temporary_password_format(
-    client: TestClient, admin_token: str
-) -> None:
+def test_temporary_password_format(client: TestClient, admin_token: str) -> None:
     """Test generated temporary password - DEPRECATED"""
     pass
 
@@ -89,9 +94,7 @@ def test_temporary_password_format(
 # Story 7.5: Integration tests for clean database initialization
 
 
-def test_admin_can_login_after_init_db(
-    client: TestClient, session: Session
-) -> None:
+def test_admin_can_login_after_init_db(client: TestClient, session: Session) -> None:
     """Test that admin can log in immediately after database initialization."""
     from app.core.db import init_db
 
@@ -104,10 +107,7 @@ def test_admin_can_login_after_init_db(
         "password": settings.FIRST_SUPERUSER_PASSWORD,
     }
 
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token",
-        data=login_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -127,7 +127,7 @@ def test_get_users_returns_only_admin(
     # Get all users
     response = client.get(
         f"{settings.API_V1_STR}/users/",
-        headers={"Authorization": f"Bearer {admin_token}"}
+        headers={"Authorization": f"Bearer {admin_token}"},
     )
 
     assert response.status_code == 200
@@ -140,7 +140,9 @@ def test_get_users_returns_only_admin(
     assert users[0]["role"] == "admin"
 
 
-@pytest.mark.skip(reason="DEPRECATED: Publishers now fetched from DCS API, not local DB")
+@pytest.mark.skip(
+    reason="DEPRECATED: Publishers now fetched from DCS API, not local DB"
+)
 def test_get_publishers_returns_empty_list(
     client: TestClient, session: Session, admin_token: str
 ) -> None:
@@ -160,7 +162,7 @@ def test_get_teachers_returns_empty_list(
     # Get all teachers
     response = client.get(
         f"{settings.API_V1_STR}/admin/teachers",
-        headers={"Authorization": f"Bearer {admin_token}"}
+        headers={"Authorization": f"Bearer {admin_token}"},
     )
 
     assert response.status_code == 200
@@ -181,7 +183,7 @@ def test_get_students_returns_empty_list(
     # Get all students
     response = client.get(
         f"{settings.API_V1_STR}/admin/students",
-        headers={"Authorization": f"Bearer {admin_token}"}
+        headers={"Authorization": f"Bearer {admin_token}"},
     )
 
     assert response.status_code == 200

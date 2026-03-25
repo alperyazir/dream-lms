@@ -7,15 +7,15 @@ and error handling with mocked DCS AI client.
 Story 27.13: Sentence Builder Activity
 """
 
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
+
+import pytest
 
 from app.schemas.dcs_ai_data import (
     ModuleDetail,
-    ModuleSummary,
     ModuleListResponse,
+    ModuleSummary,
     ProcessingMetadata,
 )
 from app.schemas.sentence_builder import (
@@ -24,14 +24,12 @@ from app.schemas.sentence_builder import (
 )
 from app.services.ai_generation.sentence_builder_service import (
     InsufficientSentencesError,
-    SentenceBuilderError,
     SentenceBuilderService,
 )
 from app.services.dcs_ai.exceptions import (
     DCSAIDataNotFoundError,
     DCSAIDataNotReadyError,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -68,7 +66,9 @@ def mock_tts_manager():
 @pytest.fixture
 def sentence_service(mock_dcs_ai_client, mock_llm_manager, mock_tts_manager):
     """Create SentenceBuilderService with mocked dependencies."""
-    return SentenceBuilderService(mock_dcs_ai_client, mock_llm_manager, mock_tts_manager)
+    return SentenceBuilderService(
+        mock_dcs_ai_client, mock_llm_manager, mock_tts_manager
+    )
 
 
 @pytest.fixture
@@ -138,7 +138,7 @@ class TestSentenceExtraction:
         # All sentences should be properly formatted
         for s in sentences:
             assert s[0].isupper()  # Starts with capital
-            assert s.endswith('.')  # Ends with period
+            assert s.endswith(".")  # Ends with period
 
     def test_extract_sentences_skips_questions(self, sentence_service):
         """Test that questions are skipped."""
@@ -147,7 +147,7 @@ class TestSentenceExtraction:
 
         # Should not include the question
         for s in sentences:
-            assert not s.endswith('?')
+            assert not s.endswith("?")
 
     def test_extract_sentences_skips_short(self, sentence_service):
         """Test that very short sentences are skipped."""
@@ -275,10 +275,15 @@ class TestWordShuffling:
 class TestScoring:
     """Tests for sentence builder scoring."""
 
-    def test_score_correct_order(self, sentence_service_no_llm, sample_module_detail, mock_dcs_ai_client):
+    def test_score_correct_order(
+        self, sentence_service_no_llm, sample_module_detail, mock_dcs_ai_client
+    ):
         """Test scoring when all sentences are correct."""
         # Create a simple activity
-        from app.schemas.sentence_builder import SentenceBuilderActivity, SentenceBuilderItem
+        from app.schemas.sentence_builder import (
+            SentenceBuilderActivity,
+            SentenceBuilderItem,
+        )
 
         activity = SentenceBuilderActivity(
             activity_id="test-123",
@@ -318,7 +323,10 @@ class TestScoring:
 
     def test_score_wrong_order(self, sentence_service_no_llm):
         """Test scoring when sentence order is wrong."""
-        from app.schemas.sentence_builder import SentenceBuilderActivity, SentenceBuilderItem
+        from app.schemas.sentence_builder import (
+            SentenceBuilderActivity,
+            SentenceBuilderItem,
+        )
 
         activity = SentenceBuilderActivity(
             activity_id="test-123",
@@ -358,7 +366,10 @@ class TestScoring:
 
     def test_score_partial_correct(self, sentence_service_no_llm):
         """Test scoring when some sentences are correct."""
-        from app.schemas.sentence_builder import SentenceBuilderActivity, SentenceBuilderItem
+        from app.schemas.sentence_builder import (
+            SentenceBuilderActivity,
+            SentenceBuilderItem,
+        )
 
         activity = SentenceBuilderActivity(
             activity_id="test-123",
@@ -419,7 +430,11 @@ class TestActivityGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_activity_success(
-        self, sentence_service_no_llm, mock_dcs_ai_client, sample_module_detail, sample_module_list
+        self,
+        sentence_service_no_llm,
+        mock_dcs_ai_client,
+        sample_module_detail,
+        sample_module_list,
     ):
         """Test successful activity generation."""
         # Setup mocks
@@ -545,9 +560,7 @@ class TestErrorHandling:
             await sentence_service_no_llm.generate_activity(request)
 
     @pytest.mark.asyncio
-    async def test_no_modules_found(
-        self, sentence_service_no_llm, mock_dcs_ai_client
-    ):
+    async def test_no_modules_found(self, sentence_service_no_llm, mock_dcs_ai_client):
         """Test error when no modules have content."""
         mock_dcs_ai_client.is_book_processed.return_value = True
         mock_dcs_ai_client.get_modules.return_value = ModuleListResponse(

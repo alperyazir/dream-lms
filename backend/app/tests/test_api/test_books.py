@@ -60,14 +60,23 @@ class TestListBooksAuthorization:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
         # Get teacher's school and publisher
-        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
-        teacher_publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+        teacher = session.exec(
+            select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
+        ).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
+        teacher_publisher = session.exec(
+            select(Publisher).where(Publisher.id == school.publisher_id)
+        ).first()
 
         # Create another publisher
         other_pub_user = User(
@@ -145,14 +154,23 @@ class TestListBooksFunctionality:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
         # Get teacher's publisher
-        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
-        publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+        teacher = session.exec(
+            select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
+        ).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
+        publisher = session.exec(
+            select(Publisher).where(Publisher.id == school.publisher_id)
+        ).first()
 
         # Create 5 books with BookAssignment
         for i in range(5):
@@ -201,14 +219,23 @@ class TestListBooksFunctionality:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
         # Get teacher's publisher
-        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
-        publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+        teacher = session.exec(
+            select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
+        ).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
+        publisher = session.exec(
+            select(Publisher).where(Publisher.id == school.publisher_id)
+        ).first()
 
         # Create books with different titles
         book1 = Book(
@@ -261,7 +288,10 @@ class TestListBooksFunctionality:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -289,7 +319,10 @@ class TestListBooksValidation:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -311,7 +344,10 @@ class TestListBooksValidation:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -333,7 +369,10 @@ class TestListBooksValidation:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -366,7 +405,10 @@ class TestGetBookActivities:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -422,14 +464,23 @@ class TestGetBookActivities:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
         # Get teacher's publisher
-        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
-        publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+        teacher = session.exec(
+            select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
+        ).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
+        publisher = session.exec(
+            select(Publisher).where(Publisher.id == school.publisher_id)
+        ).first()
 
         # Create book
         book = Book(
@@ -521,7 +572,10 @@ class TestGetBookActivities:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -555,14 +609,23 @@ class TestGetBookStructure:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
         # Get teacher's publisher
-        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
-        publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+        teacher = session.exec(
+            select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
+        ).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
+        publisher = session.exec(
+            select(Publisher).where(Publisher.id == school.publisher_id)
+        ).first()
 
         # Create book with config_json
         book = Book(
@@ -689,7 +752,10 @@ class TestGetBookStructure:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -767,7 +833,10 @@ class TestListBookVideos:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -821,7 +890,10 @@ class TestListBookVideos:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -846,14 +918,23 @@ class TestListBookVideos:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
         # Get teacher's publisher
-        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
-        publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+        teacher = session.exec(
+            select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
+        ).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
+        publisher = session.exec(
+            select(Publisher).where(Publisher.id == school.publisher_id)
+        ).first()
 
         # Create book
         book = Book(
@@ -881,8 +962,7 @@ class TestListBookVideos:
         mock_client = mocker.Mock()
         mock_client.list_videos = mocker.AsyncMock(side_effect=Exception("DCS error"))
         mocker.patch(
-            "app.api.routes.books.get_dream_storage_client",
-            return_value=mock_client
+            "app.api.routes.books.get_dream_storage_client", return_value=mock_client
         )
 
         # Request videos - should return empty list, not 500
@@ -907,14 +987,23 @@ class TestListBookVideos:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
         # Get teacher's publisher
-        teacher = session.exec(select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
-        publisher = session.exec(select(Publisher).where(Publisher.id == school.publisher_id)).first()
+        teacher = session.exec(
+            select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
+        ).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
+        publisher = session.exec(
+            select(Publisher).where(Publisher.id == school.publisher_id)
+        ).first()
 
         # Create book
         book = Book(
@@ -956,8 +1045,7 @@ class TestListBookVideos:
         mock_client = mocker.Mock()
         mock_client.list_videos = mocker.AsyncMock(return_value=mock_videos)
         mocker.patch(
-            "app.api.routes.books.get_dream_storage_client",
-            return_value=mock_client
+            "app.api.routes.books.get_dream_storage_client", return_value=mock_client
         )
 
         # Request videos

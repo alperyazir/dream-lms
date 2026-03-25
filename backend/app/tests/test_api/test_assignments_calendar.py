@@ -472,7 +472,7 @@ class TestCalendarEndpointFilters:
         assert data["total_assignments"] == 1
 
         # Check all assignments in response have scheduled status
-        for date_key, assignments in data["assignments_by_date"].items():
+        for _date_key, assignments in data["assignments_by_date"].items():
             for assignment in assignments:
                 assert assignment["status"] == "scheduled"
 
@@ -593,7 +593,7 @@ class TestCalendarResponseStructure:
 
         # Check assignment item structure
         assert data["total_assignments"] >= 1
-        for date_key, assignments in data["assignments_by_date"].items():
+        for _date_key, assignments in data["assignments_by_date"].items():
             for assignment in assignments:
                 assert "id" in assignment
                 assert "name" in assignment

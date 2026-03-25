@@ -104,8 +104,7 @@ class AIQuizService:
 
         # Filter to only the requested modules
         requested_modules = [
-            m for m in modules_metadata.modules
-            if m.module_id in request.module_ids
+            m for m in modules_metadata.modules if m.module_id in request.module_ids
         ]
 
         if not requested_modules:
@@ -171,7 +170,9 @@ class AIQuizService:
                 "C2": "hard",
             }
             difficulty = cefr_to_difficulty.get(cefr_level or "B1", "medium")
-            logger.info(f"Auto difficulty mapped from CEFR {cefr_level} to {difficulty}")
+            logger.info(
+                f"Auto difficulty mapped from CEFR {cefr_level} to {difficulty}"
+            )
 
         # 6. Build the topic-based prompt
         user_prompt = build_mcq_prompt(
@@ -197,7 +198,9 @@ class AIQuizService:
                 prompt=f"{effective_system_prompt}\n\n{user_prompt}",
                 schema=MCQ_JSON_SCHEMA,
             )
-            logger.info(f"LLM response received: {len(response.get('questions', []))} questions")
+            logger.info(
+                f"LLM response received: {len(response.get('questions', []))} questions"
+            )
 
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
@@ -240,9 +243,13 @@ class AIQuizService:
                     options=options,
                     correct_answer=options[correct_index],
                     correct_index=correct_index,
-                    explanation=q.get("explanation") if request.include_explanations else None,
+                    explanation=(
+                        q.get("explanation") if request.include_explanations else None
+                    ),
                     source_module_id=source_module.module_id,
-                    source_page=source_module.start_page if source_module.start_page else None,
+                    source_page=(
+                        source_module.start_page if source_module.start_page else None
+                    ),
                     difficulty=difficulty,  # Use resolved difficulty
                 )
             )
@@ -264,8 +271,7 @@ class AIQuizService:
         )
 
         logger.info(
-            f"AI quiz generated: quiz_id={quiz.quiz_id}, "
-            f"questions={len(questions)}"
+            f"AI quiz generated: quiz_id={quiz.quiz_id}, " f"questions={len(questions)}"
         )
 
         return quiz

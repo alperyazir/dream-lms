@@ -4,14 +4,14 @@
  * Story 10.2 - Frontend Audio Player Component
  */
 
-import { memo, useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { getAudioUrl, hasAudio } from "@/lib/audioUtils"
-import { AudioButton } from "./AudioButton"
-import { AudioPlayer } from "./AudioPlayer"
+import { memo, useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { getAudioUrl, hasAudio } from "@/lib/audioUtils";
+import { AudioButton } from "./AudioButton";
+import { AudioPlayer } from "./AudioPlayer";
 
 interface ActivityHeaderProps {
-  bookTitle: string
+  bookTitle: string;
   activityType:
     | "dragdroppicture"
     | "dragdroppicturegroup"
@@ -34,13 +34,13 @@ interface ActivityHeaderProps {
     | "writing_free_response"
     | "vocabulary_matching"
     | "speaking_open_response"
-    | "mix_mode"
-  timeLimit?: number // in minutes
-  onTimeExpired?: () => void
+    | "mix_mode";
+  timeLimit?: number; // in minutes
+  onTimeExpired?: () => void;
   /** Activity config object (may contain audio_extra) */
-  activityConfig?: unknown
+  activityConfig?: unknown;
   /** Book ID for constructing audio URL */
-  bookId?: string
+  bookId?: string;
 }
 
 export const ActivityHeader = memo(function ActivityHeader({
@@ -53,37 +53,37 @@ export const ActivityHeader = memo(function ActivityHeader({
 }: ActivityHeaderProps) {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(
     timeLimit ? timeLimit * 60 : null,
-  ) // Convert to seconds
-  const [showAudio, setShowAudio] = useState(false)
+  ); // Convert to seconds
+  const [showAudio, setShowAudio] = useState(false);
 
   // Check if activity has audio
   const audioPath = hasAudio(activityConfig)
     ? activityConfig.audio_extra.path
-    : null
-  const audioUrl = audioPath && bookId ? getAudioUrl(bookId, audioPath) : null
+    : null;
+  const audioUrl = audioPath && bookId ? getAudioUrl(bookId, audioPath) : null;
 
   // Countdown timer
   useEffect(() => {
-    if (timeRemaining === null) return
+    if (timeRemaining === null) return;
 
     if (timeRemaining <= 0) {
-      onTimeExpired?.()
-      return
+      onTimeExpired?.();
+      return;
     }
 
     const interval = setInterval(() => {
-      setTimeRemaining((prev) => (prev !== null ? prev - 1 : null))
-    }, 1000)
+      setTimeRemaining((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
 
-    return () => clearInterval(interval)
-  }, [timeRemaining, onTimeExpired])
+    return () => clearInterval(interval);
+  }, [timeRemaining, onTimeExpired]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-  }
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   // Activity type labels
   const activityTypeLabels: Record<string, string> = {
@@ -99,15 +99,15 @@ export const ActivityHeader = memo(function ActivityHeader({
     grammar_fill_blank: "Grammar Fill-blank",
     writing_fill_blank: "Writing Fill-blank",
     speaking_open_response: "Speaking",
-  }
+  };
 
   // Time warning colors
   const getTimeColor = () => {
-    if (timeRemaining === null) return ""
-    if (timeRemaining < 60) return "text-red-600 dark:text-red-400" // < 1 minute
-    if (timeRemaining < 300) return "text-orange-600 dark:text-orange-400" // < 5 minutes
-    return "text-teal-600 dark:text-teal-400"
-  }
+    if (timeRemaining === null) return "";
+    if (timeRemaining < 60) return "text-red-600 dark:text-red-400"; // < 1 minute
+    if (timeRemaining < 300) return "text-orange-600 dark:text-orange-400"; // < 5 minutes
+    return "text-teal-600 dark:text-teal-400";
+  };
 
   return (
     <header className="border-b bg-gradient-to-r from-teal-500 to-cyan-500 shadow-md dark:border-gray-700">
@@ -190,5 +190,5 @@ export const ActivityHeader = memo(function ActivityHeader({
         </div>
       )}
     </header>
-  )
-})
+  );
+});

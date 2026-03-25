@@ -8,9 +8,9 @@
  * Immutable fields are displayed as read-only (activity, book, recipients)
  */
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { format } from "date-fns"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   ChevronDown,
   ChevronUp,
@@ -20,22 +20,22 @@ import {
   Plus,
   Trash2,
   Video,
-} from "lucide-react"
-import { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import {
   getMaterialTypeLabel,
   MaterialTypeIcon,
-} from "@/components/materials/MaterialTypeIcon"
-import { TeacherMaterialPicker } from "@/components/materials/TeacherMaterialPicker"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from "@/components/materials/MaterialTypeIcon";
+import { TeacherMaterialPicker } from "@/components/materials/TeacherMaterialPicker";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -43,20 +43,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
-import { previewAssignment, updateAssignment } from "@/services/assignmentsApi"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { previewAssignment, updateAssignment } from "@/services/assignmentsApi";
 import type {
   AdditionalResources,
   AssignmentListItem,
   AssignmentUpdateRequest,
   TeacherMaterialResource,
-} from "@/types/assignment"
-import type { Material, MaterialType } from "@/types/material"
+} from "@/types/assignment";
+import type { Material, MaterialType } from "@/types/material";
 
 /**
  * Validation schema for assignment update
@@ -74,14 +74,14 @@ const updateSchema = z.object({
     .positive("Time limit must be positive")
     .nullable()
     .optional(),
-})
+});
 
-type UpdateFormData = z.infer<typeof updateSchema>
+type UpdateFormData = z.infer<typeof updateSchema>;
 
 interface EditAssignmentDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  assignment: AssignmentListItem
+  isOpen: boolean;
+  onClose: () => void;
+  assignment: AssignmentListItem;
 }
 
 export function EditAssignmentDialog({
@@ -89,20 +89,20 @@ export function EditAssignmentDialog({
   onClose,
   assignment,
 }: EditAssignmentDialogProps) {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Resources state
-  const [resources, setResources] = useState<AdditionalResources | null>(null)
-  const [resourcesOpen, setResourcesOpen] = useState(false)
-  const [materialPickerOpen, setMaterialPickerOpen] = useState(false)
+  const [resources, setResources] = useState<AdditionalResources | null>(null);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [materialPickerOpen, setMaterialPickerOpen] = useState(false);
 
   // Fetch assignment preview to get current resources
   const { data: previewData, isLoading: isLoadingPreview } = useQuery({
     queryKey: ["assignment-preview", assignment.id],
     queryFn: () => previewAssignment(assignment.id),
     enabled: isOpen,
-  })
+  });
 
   // Initialize resources from preview data
   useEffect(() => {
@@ -123,12 +123,12 @@ export function EditAssignmentDialog({
             name: m.name,
             material_type: m.material_type,
           })) ?? [],
-      }
-      setResources(formResources)
+      };
+      setResources(formResources);
     } else {
-      setResources(null)
+      setResources(null);
     }
-  }, [previewData])
+  }, [previewData]);
 
   const {
     register,
@@ -143,21 +143,21 @@ export function EditAssignmentDialog({
       due_date: assignment.due_date ? assignment.due_date.split("T")[0] : "",
       time_limit_minutes: assignment.time_limit_minutes,
     },
-  })
+  });
 
   const updateMutation = useMutation({
     mutationFn: (data: AssignmentUpdateRequest) =>
       updateAssignment(assignment.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
       queryClient.invalidateQueries({
         queryKey: ["assignment-preview", assignment.id],
-      })
+      });
       toast({
         title: "Success",
         description: "Assignment updated successfully!",
-      })
-      onClose()
+      });
+      onClose();
     },
     onError: (error: any) => {
       toast({
@@ -165,15 +165,15 @@ export function EditAssignmentDialog({
         description:
           error?.response?.data?.detail || "Failed to update assignment",
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
   const onSubmit = (data: UpdateFormData) => {
     // Check if resources have content
     const hasResources =
       (resources?.videos.length ?? 0) > 0 ||
-      (resources?.teacher_materials?.length ?? 0) > 0
+      (resources?.teacher_materials?.length ?? 0) > 0;
 
     // Convert form data to API format
     const updateData: AssignmentUpdateRequest = {
@@ -182,44 +182,44 @@ export function EditAssignmentDialog({
       due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
       time_limit_minutes: data.time_limit_minutes || null,
       resources: hasResources ? resources : null,
-    }
+    };
 
-    updateMutation.mutate(updateData)
-  }
+    updateMutation.mutate(updateData);
+  };
 
   const handleClose = () => {
-    reset()
-    setResources(null)
-    setResourcesOpen(false)
-    onClose()
-  }
+    reset();
+    setResources(null);
+    setResourcesOpen(false);
+    onClose();
+  };
 
   /**
    * Remove a video resource
    */
   const handleRemoveVideo = (index: number) => {
-    if (!resources) return
-    const updatedVideos = [...resources.videos]
-    updatedVideos.splice(index, 1)
+    if (!resources) return;
+    const updatedVideos = [...resources.videos];
+    updatedVideos.splice(index, 1);
     setResources({
       ...resources,
       videos: updatedVideos,
-    })
-  }
+    });
+  };
 
   /**
    * Remove a teacher material
    */
   const handleRemoveMaterial = (materialId: string) => {
-    if (!resources) return
+    if (!resources) return;
     const updatedMaterials = (resources.teacher_materials ?? []).filter(
       (m) => m.material_id !== materialId,
-    )
+    );
     setResources({
       ...resources,
       teacher_materials: updatedMaterials,
-    })
-  }
+    });
+  };
 
   /**
    * Add teacher materials from picker
@@ -230,17 +230,17 @@ export function EditAssignmentDialog({
       material_id: mat.id,
       name: mat.name,
       material_type: mat.type,
-    }))
+    }));
 
     // Filter out already added
     const existingIds = new Set(
       (resources?.teacher_materials ?? []).map((m) => m.material_id),
-    )
+    );
     const uniqueNew = newMaterials.filter(
       (m) => !existingIds.has(m.material_id),
-    )
+    );
 
-    if (uniqueNew.length === 0) return
+    if (uniqueNew.length === 0) return;
 
     setResources({
       videos: resources?.videos ?? [],
@@ -248,16 +248,16 @@ export function EditAssignmentDialog({
         ...(resources?.teacher_materials ?? []),
         ...uniqueNew,
       ],
-    })
-  }
+    });
+  };
 
   // Calculate resource counts
-  const videoCount = resources?.videos.length ?? 0
-  const materialCount = resources?.teacher_materials?.length ?? 0
-  const totalResources = videoCount + materialCount
+  const videoCount = resources?.videos.length ?? 0;
+  const materialCount = resources?.teacher_materials?.length ?? 0;
+  const totalResources = videoCount + materialCount;
   const selectedMaterialIds = (resources?.teacher_materials ?? []).map(
     (m) => m.material_id,
-  )
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -548,5 +548,5 @@ export function EditAssignmentDialog({
         />
       </DialogContent>
     </Dialog>
-  )
+  );
 }

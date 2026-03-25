@@ -3,11 +3,11 @@
  * Story 27.15: Teacher Materials Processing
  */
 
-import { render, screen, waitFor } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { TeacherMaterial } from "@/types/teacher-material"
-import { MaterialLibrary } from "./MaterialLibrary"
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { TeacherMaterial } from "@/types/teacher-material";
+import { MaterialLibrary } from "./MaterialLibrary";
 
 // Mock materials data
 const mockMaterials: TeacherMaterial[] = [
@@ -47,94 +47,94 @@ const mockMaterials: TeacherMaterial[] = [
     download_url: null,
     is_processable: true,
   },
-]
+];
 
 describe("MaterialLibrary", () => {
   describe("Loading State", () => {
     it("shows loading indicator when isLoading is true", () => {
-      render(<MaterialLibrary materials={[]} isLoading={true} />)
+      render(<MaterialLibrary materials={[]} isLoading={true} />);
 
       // Should show a loading spinner
-      expect(document.querySelector(".animate-spin")).toBeInTheDocument()
-    })
-  })
+      expect(document.querySelector(".animate-spin")).toBeInTheDocument();
+    });
+  });
 
   describe("Error State", () => {
     it("displays error message when error is provided", () => {
       render(
         <MaterialLibrary materials={[]} error="Failed to load materials" />,
-      )
+      );
 
-      expect(screen.getByText("Failed to load materials")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByText("Failed to load materials")).toBeInTheDocument();
+    });
+  });
 
   describe("Empty State", () => {
     it("shows empty state message when no materials", () => {
-      render(<MaterialLibrary materials={[]} />)
+      render(<MaterialLibrary materials={[]} />);
 
-      expect(screen.getByText(/no materials yet/i)).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByText(/no materials yet/i)).toBeInTheDocument();
+    });
+  });
 
   describe("Materials Display", () => {
     it("renders all materials", () => {
-      render(<MaterialLibrary materials={mockMaterials} />)
+      render(<MaterialLibrary materials={mockMaterials} />);
 
-      expect(screen.getByText("Test PDF Document")).toBeInTheDocument()
-      expect(screen.getByText("Text Note Material")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Test PDF Document")).toBeInTheDocument();
+      expect(screen.getByText("Text Note Material")).toBeInTheDocument();
+    });
 
     it("shows word count for each material", () => {
-      render(<MaterialLibrary materials={mockMaterials} />)
+      render(<MaterialLibrary materials={mockMaterials} />);
 
-      expect(screen.getByText("100 words")).toBeInTheDocument()
-      expect(screen.getByText("50 words")).toBeInTheDocument()
-    })
+      expect(screen.getByText("100 words")).toBeInTheDocument();
+      expect(screen.getByText("50 words")).toBeInTheDocument();
+    });
 
     it("shows language for materials that have it", () => {
-      render(<MaterialLibrary materials={mockMaterials} />)
+      render(<MaterialLibrary materials={mockMaterials} />);
 
-      expect(screen.getByText("English")).toBeInTheDocument()
-      expect(screen.getByText("Turkish")).toBeInTheDocument()
-    })
+      expect(screen.getByText("English")).toBeInTheDocument();
+      expect(screen.getByText("Turkish")).toBeInTheDocument();
+    });
 
     it("shows PDF badge for PDF materials", () => {
-      render(<MaterialLibrary materials={mockMaterials} />)
+      render(<MaterialLibrary materials={mockMaterials} />);
 
-      expect(screen.getByText("PDF")).toBeInTheDocument()
-    })
+      expect(screen.getByText("PDF")).toBeInTheDocument();
+    });
 
     it("shows description when available", () => {
-      render(<MaterialLibrary materials={mockMaterials} />)
+      render(<MaterialLibrary materials={mockMaterials} />);
 
-      expect(screen.getByText("A sample PDF for testing")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByText("A sample PDF for testing")).toBeInTheDocument();
+    });
+  });
 
   describe("Selection Mode", () => {
-    const onSelect = vi.fn()
+    const onSelect = vi.fn();
 
     beforeEach(() => {
-      vi.clearAllMocks()
-    })
+      vi.clearAllMocks();
+    });
 
     it("calls onSelect when material is clicked in selection mode", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
       render(
         <MaterialLibrary
           materials={mockMaterials}
           onSelect={onSelect}
           selectionMode={true}
         />,
-      )
+      );
 
       await user.click(
         screen.getByText("Test PDF Document").closest("div")!.parentElement!,
-      )
+      );
 
-      expect(onSelect).toHaveBeenCalledWith(mockMaterials[0])
-    })
+      expect(onSelect).toHaveBeenCalledWith(mockMaterials[0]);
+    });
 
     it("shows selection indicator for selected material", () => {
       render(
@@ -143,90 +143,90 @@ describe("MaterialLibrary", () => {
           selectionMode={true}
           selectedMaterialId="material-1"
         />,
-      )
+      );
 
       // The selected card should have a different style
       const selectedCard = screen
         .getByText("Test PDF Document")
-        .closest(".border-teal-500")
-      expect(selectedCard).toBeInTheDocument()
-    })
-  })
+        .closest(".border-teal-500");
+      expect(selectedCard).toBeInTheDocument();
+    });
+  });
 
   describe("Delete Action", () => {
-    const onDelete = vi.fn()
+    const onDelete = vi.fn();
 
     beforeEach(() => {
-      vi.clearAllMocks()
-      onDelete.mockResolvedValue(undefined)
-    })
+      vi.clearAllMocks();
+      onDelete.mockResolvedValue(undefined);
+    });
 
     it("shows delete option in menu when onDelete is provided", async () => {
-      const user = userEvent.setup()
-      render(<MaterialLibrary materials={mockMaterials} onDelete={onDelete} />)
+      const user = userEvent.setup();
+      render(<MaterialLibrary materials={mockMaterials} onDelete={onDelete} />);
 
       // Click the action menu button
-      const menuButtons = screen.getAllByRole("button", { name: /actions/i })
-      await user.click(menuButtons[0])
+      const menuButtons = screen.getAllByRole("button", { name: /actions/i });
+      await user.click(menuButtons[0]);
 
       await waitFor(() => {
-        expect(screen.getByText("Delete")).toBeInTheDocument()
-      })
-    })
+        expect(screen.getByText("Delete")).toBeInTheDocument();
+      });
+    });
 
     it("opens delete confirmation dialog when delete is clicked", async () => {
-      const user = userEvent.setup()
-      render(<MaterialLibrary materials={mockMaterials} onDelete={onDelete} />)
+      const user = userEvent.setup();
+      render(<MaterialLibrary materials={mockMaterials} onDelete={onDelete} />);
 
       // Click the action menu button
-      const menuButtons = screen.getAllByRole("button", { name: /actions/i })
-      await user.click(menuButtons[0])
+      const menuButtons = screen.getAllByRole("button", { name: /actions/i });
+      await user.click(menuButtons[0]);
 
       // Click delete
-      await user.click(screen.getByText("Delete"))
+      await user.click(screen.getByText("Delete"));
 
       await waitFor(() => {
         expect(
           screen.getByText(/are you sure you want to delete/i),
-        ).toBeInTheDocument()
-      })
-    })
+        ).toBeInTheDocument();
+      });
+    });
 
     it("calls onDelete when delete is confirmed", async () => {
-      const user = userEvent.setup()
-      render(<MaterialLibrary materials={mockMaterials} onDelete={onDelete} />)
+      const user = userEvent.setup();
+      render(<MaterialLibrary materials={mockMaterials} onDelete={onDelete} />);
 
       // Open menu and click delete
-      const menuButtons = screen.getAllByRole("button", { name: /actions/i })
-      await user.click(menuButtons[0])
-      await user.click(screen.getByText("Delete"))
+      const menuButtons = screen.getAllByRole("button", { name: /actions/i });
+      await user.click(menuButtons[0]);
+      await user.click(screen.getByText("Delete"));
 
       // Confirm deletion
-      await user.click(screen.getByRole("button", { name: /^delete$/i }))
+      await user.click(screen.getByRole("button", { name: /^delete$/i }));
 
       await waitFor(() => {
-        expect(onDelete).toHaveBeenCalledWith("material-1")
-      })
-    })
-  })
+        expect(onDelete).toHaveBeenCalledWith("material-1");
+      });
+    });
+  });
 
   describe("Preview Action", () => {
     it("opens preview dialog when preview is clicked", async () => {
-      const user = userEvent.setup()
-      render(<MaterialLibrary materials={mockMaterials} />)
+      const user = userEvent.setup();
+      render(<MaterialLibrary materials={mockMaterials} />);
 
       // Click the action menu button
-      const menuButtons = screen.getAllByRole("button", { name: /actions/i })
-      await user.click(menuButtons[0])
+      const menuButtons = screen.getAllByRole("button", { name: /actions/i });
+      await user.click(menuButtons[0]);
 
       // Click preview
-      await user.click(screen.getByText(/preview text/i))
+      await user.click(screen.getByText(/preview text/i));
 
       await waitFor(() => {
         expect(
           screen.getByText("Sample extracted text from PDF"),
-        ).toBeInTheDocument()
-      })
-    })
-  })
-})
+        ).toBeInTheDocument();
+      });
+    });
+  });
+});

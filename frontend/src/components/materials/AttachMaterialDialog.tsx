@@ -6,7 +6,7 @@
  * Shows after material upload when in assignment context.
  */
 
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,16 +16,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import useCustomToast from "@/hooks/useCustomToast"
-import { assignmentsApi } from "@/services/assignmentsApi"
-import type { Material } from "@/types/material"
+} from "@/components/ui/alert-dialog";
+import useCustomToast from "@/hooks/useCustomToast";
+import { assignmentsApi } from "@/services/assignmentsApi";
+import type { Material } from "@/types/material";
 
 export interface AttachMaterialDialogProps {
-  material: Material
-  assignmentId: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  material: Material;
+  assignmentId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function AttachMaterialDialog({
@@ -34,23 +34,23 @@ export function AttachMaterialDialog({
   open,
   onOpenChange,
 }: AttachMaterialDialogProps) {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
   const attachMutation = useMutation({
     mutationFn: () => assignmentsApi.attachMaterial(assignmentId, material.id),
     onSuccess: () => {
-      showSuccessToast("Material attached to assignment")
-      queryClient.invalidateQueries({ queryKey: ["assignment", assignmentId] })
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
-      onOpenChange(false)
+      showSuccessToast("Material attached to assignment");
+      queryClient.invalidateQueries({ queryKey: ["assignment", assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      onOpenChange(false);
     },
     onError: (error: any) => {
       const message =
-        error.response?.data?.detail || "Failed to attach material"
-      showErrorToast(message)
+        error.response?.data?.detail || "Failed to attach material";
+      showErrorToast(message);
     },
-  })
+  });
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -73,7 +73,7 @@ export function AttachMaterialDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }
 
-AttachMaterialDialog.displayName = "AttachMaterialDialog"
+AttachMaterialDialog.displayName = "AttachMaterialDialog";

@@ -8,7 +8,7 @@
  * - Direct assignment to individual teachers without school selection
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   Check,
@@ -19,15 +19,15 @@ import {
   User,
   Users,
   X,
-} from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
   PublishersService,
   type SchoolPublic,
   type TeacherPublic,
-} from "@/client"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/client";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -35,40 +35,40 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import useCustomToast from "@/hooks/useCustomToast";
 import {
   type BulkBookAssignmentCreate,
   createBulkBookAssignments,
-} from "@/services/bookAssignmentsApi"
-import type { Book } from "@/types/book"
+} from "@/services/bookAssignmentsApi";
+import type { Book } from "@/types/book";
 
 interface BookAssignmentDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  book: Book
+  isOpen: boolean;
+  onClose: () => void;
+  book: Book;
 }
 
-type FilterType = "schools" | "teachers"
+type FilterType = "schools" | "teachers";
 
 export function BookAssignmentDialog({
   isOpen,
   onClose,
   book,
 }: BookAssignmentDialogProps) {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
   // State
-  const [filterType, setFilterType] = useState<FilterType>("schools")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [expandedSchoolId, setExpandedSchoolId] = useState<string | null>(null)
+  const [filterType, setFilterType] = useState<FilterType>("schools");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedSchoolId, setExpandedSchoolId] = useState<string | null>(null);
   const [selectedWholeSchools, setSelectedWholeSchools] = useState<Set<string>>(
     new Set(),
-  )
-  const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([])
+  );
+  const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>([]);
 
   // Fetch schools
   const { data: schools = [], isLoading: schoolsLoading } = useQuery({
@@ -76,7 +76,7 @@ export function BookAssignmentDialog({
     queryFn: () => PublishersService.listMySchools(),
     enabled: isOpen,
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   // Fetch all teachers
   const { data: teachers = [], isLoading: teachersLoading } = useQuery({
@@ -84,59 +84,61 @@ export function BookAssignmentDialog({
     queryFn: () => PublishersService.listMyTeachers(),
     enabled: isOpen,
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   // Create school lookup map
   const schoolMap = useMemo(() => {
-    const map = new Map<string, SchoolPublic>()
-    schools.forEach((school) => map.set(school.id, school))
-    return map
-  }, [schools])
+    const map = new Map<string, SchoolPublic>();
+    schools.forEach((school) => map.set(school.id, school));
+    return map;
+  }, [schools]);
 
   // Group teachers by school
   const teachersBySchool = useMemo(() => {
-    const map = new Map<string, TeacherPublic[]>()
+    const map = new Map<string, TeacherPublic[]>();
     teachers.forEach((teacher) => {
-      const list = map.get(teacher.school_id) || []
-      list.push(teacher)
-      map.set(teacher.school_id, list)
-    })
-    return map
-  }, [teachers])
+      const list = map.get(teacher.school_id) || [];
+      list.push(teacher);
+      map.set(teacher.school_id, list);
+    });
+    return map;
+  }, [teachers]);
 
   // Filter items based on search query
   const filteredSchools = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim()
-    if (!query) return schools
-    return schools.filter((school) => school.name.toLowerCase().includes(query))
-  }, [schools, searchQuery])
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return schools;
+    return schools.filter((school) =>
+      school.name.toLowerCase().includes(query),
+    );
+  }, [schools, searchQuery]);
 
   const filteredTeachers = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim()
-    if (!query) return teachers
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return teachers;
     return teachers.filter(
       (teacher) =>
         teacher.user_full_name?.toLowerCase().includes(query) ||
         teacher.user_email.toLowerCase().includes(query) ||
         teacher.user_username.toLowerCase().includes(query),
-    )
-  }, [teachers, searchQuery])
+    );
+  }, [teachers, searchQuery]);
 
   // Reset state when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
-      setFilterType("schools")
-      setSearchQuery("")
-      setExpandedSchoolId(null)
-      setSelectedWholeSchools(new Set())
-      setSelectedTeacherIds([])
+      setFilterType("schools");
+      setSearchQuery("");
+      setExpandedSchoolId(null);
+      setSelectedWholeSchools(new Set());
+      setSelectedTeacherIds([]);
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   // Mutation for creating assignments
   const assignMutation = useMutation({
     mutationFn: async () => {
-      const promises: Promise<unknown>[] = []
+      const promises: Promise<unknown>[] = [];
 
       // Handle whole school assignments
       selectedWholeSchools.forEach((schoolId) => {
@@ -144,20 +146,20 @@ export function BookAssignmentDialog({
           book_id: book.id,
           school_id: schoolId,
           assign_to_all_teachers: true,
-        }
-        promises.push(createBulkBookAssignments(data))
-      })
+        };
+        promises.push(createBulkBookAssignments(data));
+      });
 
       // Handle individual teacher assignments (grouped by school)
-      const teachersBySchoolMap = new Map<string, string[]>()
+      const teachersBySchoolMap = new Map<string, string[]>();
       selectedTeacherIds.forEach((teacherId) => {
-        const teacher = teachers.find((t) => t.id === teacherId)
+        const teacher = teachers.find((t) => t.id === teacherId);
         if (teacher && !selectedWholeSchools.has(teacher.school_id)) {
-          const list = teachersBySchoolMap.get(teacher.school_id) || []
-          list.push(teacherId)
-          teachersBySchoolMap.set(teacher.school_id, list)
+          const list = teachersBySchoolMap.get(teacher.school_id) || [];
+          list.push(teacherId);
+          teachersBySchoolMap.set(teacher.school_id, list);
         }
-      })
+      });
 
       teachersBySchoolMap.forEach((teacherIds, schoolId) => {
         const data: BulkBookAssignmentCreate = {
@@ -165,145 +167,145 @@ export function BookAssignmentDialog({
           school_id: schoolId,
           assign_to_all_teachers: false,
           teacher_ids: teacherIds,
-        }
-        promises.push(createBulkBookAssignments(data))
-      })
+        };
+        promises.push(createBulkBookAssignments(data));
+      });
 
-      return Promise.all(promises)
+      return Promise.all(promises);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bookAssignments"] })
-      const totalSchools = selectedWholeSchools.size
+      queryClient.invalidateQueries({ queryKey: ["bookAssignments"] });
+      const totalSchools = selectedWholeSchools.size;
       const totalTeachers = selectedTeacherIds.filter(
         (id) =>
           !selectedWholeSchools.has(
             teachers.find((t) => t.id === id)?.school_id || "",
           ),
-      ).length
+      ).length;
 
       if (totalSchools > 0 && totalTeachers > 0) {
         showSuccessToast(
           `"${book.title}" assigned to ${totalSchools} school(s) and ${totalTeachers} teacher(s)`,
-        )
+        );
       } else if (totalSchools > 0) {
         showSuccessToast(
           `"${book.title}" assigned to ${totalSchools} school(s)`,
-        )
+        );
       } else {
         showSuccessToast(
           `"${book.title}" assigned to ${totalTeachers} teacher(s)`,
-        )
+        );
       }
-      onClose()
+      onClose();
     },
     onError: (error: Error) => {
-      showErrorToast(`Assignment failed: ${error.message}`)
+      showErrorToast(`Assignment failed: ${error.message}`);
     },
-  })
+  });
 
   const handleSchoolExpand = (schoolId: string) => {
-    setExpandedSchoolId(expandedSchoolId === schoolId ? null : schoolId)
-  }
+    setExpandedSchoolId(expandedSchoolId === schoolId ? null : schoolId);
+  };
 
   const handleWholeSchoolToggle = (schoolId: string) => {
-    const newSet = new Set(selectedWholeSchools)
+    const newSet = new Set(selectedWholeSchools);
     if (newSet.has(schoolId)) {
-      newSet.delete(schoolId)
+      newSet.delete(schoolId);
     } else {
-      newSet.add(schoolId)
+      newSet.add(schoolId);
       // Remove individual teacher selections from this school
       const schoolTeacherIds = (teachersBySchool.get(schoolId) || []).map(
         (t) => t.id,
-      )
+      );
       setSelectedTeacherIds((prev) =>
         prev.filter((id) => !schoolTeacherIds.includes(id)),
-      )
+      );
     }
-    setSelectedWholeSchools(newSet)
-  }
+    setSelectedWholeSchools(newSet);
+  };
 
   const handleTeacherToggle = (teacherId: string, schoolId: string) => {
     // If whole school is selected, don't allow individual selection
-    if (selectedWholeSchools.has(schoolId)) return
+    if (selectedWholeSchools.has(schoolId)) return;
 
     setSelectedTeacherIds((prev) =>
       prev.includes(teacherId)
         ? prev.filter((id) => id !== teacherId)
         : [...prev, teacherId],
-    )
-  }
+    );
+  };
 
   const handleRemoveTeacher = (teacherId: string) => {
-    setSelectedTeacherIds((prev) => prev.filter((id) => id !== teacherId))
-  }
+    setSelectedTeacherIds((prev) => prev.filter((id) => id !== teacherId));
+  };
 
   const handleRemoveSchool = (schoolId: string) => {
-    const newSet = new Set(selectedWholeSchools)
-    newSet.delete(schoolId)
-    setSelectedWholeSchools(newSet)
-  }
+    const newSet = new Set(selectedWholeSchools);
+    newSet.delete(schoolId);
+    setSelectedWholeSchools(newSet);
+  };
 
   const handleSelectAllTeachersInSchool = (schoolId: string) => {
-    const schoolTeachers = teachersBySchool.get(schoolId) || []
-    const schoolTeacherIds = schoolTeachers.map((t) => t.id)
+    const schoolTeachers = teachersBySchool.get(schoolId) || [];
+    const schoolTeacherIds = schoolTeachers.map((t) => t.id);
     const allSelected = schoolTeacherIds.every((id) =>
       selectedTeacherIds.includes(id),
-    )
+    );
 
     if (allSelected) {
       setSelectedTeacherIds((prev) =>
         prev.filter((id) => !schoolTeacherIds.includes(id)),
-      )
+      );
     } else {
       setSelectedTeacherIds((prev) => [
         ...new Set([...prev, ...schoolTeacherIds]),
-      ])
+      ]);
     }
-  }
+  };
 
   // Calculate if all teachers in a school are selected
   const areAllTeachersSelected = (schoolId: string) => {
-    const schoolTeachers = teachersBySchool.get(schoolId) || []
-    if (schoolTeachers.length === 0) return false
-    return schoolTeachers.every((t) => selectedTeacherIds.includes(t.id))
-  }
+    const schoolTeachers = teachersBySchool.get(schoolId) || [];
+    if (schoolTeachers.length === 0) return false;
+    return schoolTeachers.every((t) => selectedTeacherIds.includes(t.id));
+  };
 
   const canSubmit =
-    selectedWholeSchools.size > 0 || selectedTeacherIds.length > 0
+    selectedWholeSchools.size > 0 || selectedTeacherIds.length > 0;
 
-  const isLoading = schoolsLoading || teachersLoading
+  const isLoading = schoolsLoading || teachersLoading;
 
   // Get school name for a teacher
   const getTeacherSchoolName = (teacher: TeacherPublic): string => {
-    const school = schoolMap.get(teacher.school_id)
-    return school?.name || "Unknown School"
-  }
+    const school = schoolMap.get(teacher.school_id);
+    return school?.name || "Unknown School";
+  };
 
   // Get selected teachers grouped by school for summary
   const selectedTeachersGrouped = useMemo(() => {
     const groups = new Map<
       string,
       { school: SchoolPublic | null; teachers: TeacherPublic[] }
-    >()
+    >();
 
     selectedTeacherIds.forEach((teacherId) => {
-      const teacher = teachers.find((t) => t.id === teacherId)
+      const teacher = teachers.find((t) => t.id === teacherId);
       if (teacher && !selectedWholeSchools.has(teacher.school_id)) {
-        const school = schoolMap.get(teacher.school_id) || null
-        const schoolId = teacher.school_id
+        const school = schoolMap.get(teacher.school_id) || null;
+        const schoolId = teacher.school_id;
         if (!groups.has(schoolId)) {
-          groups.set(schoolId, { school, teachers: [] })
+          groups.set(schoolId, { school, teachers: [] });
         }
-        groups.get(schoolId)!.teachers.push(teacher)
+        groups.get(schoolId)!.teachers.push(teacher);
       }
-    })
+    });
 
-    return Array.from(groups.values())
-  }, [selectedTeacherIds, teachers, schoolMap, selectedWholeSchools])
+    return Array.from(groups.values());
+  }, [selectedTeacherIds, teachers, schoolMap, selectedWholeSchools]);
 
   // Check if there's any selection
   const hasSelection =
-    selectedWholeSchools.size > 0 || selectedTeacherIds.length > 0
+    selectedWholeSchools.size > 0 || selectedTeacherIds.length > 0;
 
   // Get total counts for summary
   const totalTeachersSelected = selectedTeacherIds.filter(
@@ -311,7 +313,7 @@ export function BookAssignmentDialog({
       !selectedWholeSchools.has(
         teachers.find((t) => t.id === id)?.school_id || "",
       ),
-  ).length
+  ).length;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -380,15 +382,15 @@ export function BookAssignmentDialog({
                       </div>
                     ) : (
                       filteredSchools.map((school) => {
-                        const isExpanded = expandedSchoolId === school.id
+                        const isExpanded = expandedSchoolId === school.id;
                         const schoolTeachers =
-                          teachersBySchool.get(school.id) || []
+                          teachersBySchool.get(school.id) || [];
                         const isWholeSchoolSelected = selectedWholeSchools.has(
                           school.id,
-                        )
+                        );
                         const allTeachersSelected = areAllTeachersSelected(
                           school.id,
-                        )
+                        );
 
                         return (
                           <div
@@ -522,7 +524,7 @@ export function BookAssignmentDialog({
                               </div>
                             )}
                           </div>
-                        )
+                        );
                       })
                     ))}
 
@@ -538,7 +540,7 @@ export function BookAssignmentDialog({
                       filteredTeachers.map((teacher) => {
                         const isSchoolSelected = selectedWholeSchools.has(
                           teacher.school_id,
-                        )
+                        );
                         return (
                           <label
                             key={teacher.id}
@@ -577,7 +579,7 @@ export function BookAssignmentDialog({
                               <Check className="h-4 w-4 text-primary flex-shrink-0" />
                             )}
                           </label>
-                        )
+                        );
                       })
                     ))}
                 </div>
@@ -604,10 +606,10 @@ export function BookAssignmentDialog({
                 <div className="space-y-3 pr-2">
                   {/* Whole School Selections */}
                   {Array.from(selectedWholeSchools).map((schoolId) => {
-                    const school = schoolMap.get(schoolId)
-                    if (!school) return null
+                    const school = schoolMap.get(schoolId);
+                    if (!school) return null;
                     const teacherCount = (teachersBySchool.get(schoolId) || [])
-                      .length
+                      .length;
                     return (
                       <div
                         key={schoolId}
@@ -635,7 +637,7 @@ export function BookAssignmentDialog({
                           </Button>
                         </div>
                       </div>
-                    )
+                    );
                   })}
 
                   {/* Individual Teacher Selections (grouped by school) */}
@@ -717,5 +719,5 @@ export function BookAssignmentDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

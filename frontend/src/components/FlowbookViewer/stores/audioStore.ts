@@ -1,22 +1,22 @@
-import { create } from "zustand"
+import { create } from "zustand";
 
-const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 interface FlowbookAudioState {
-  currentSrc: string | null
-  isPlaying: boolean
-  volume: number
-  playbackRate: number
-  isMuted: boolean
+  currentSrc: string | null;
+  isPlaying: boolean;
+  volume: number;
+  playbackRate: number;
+  isMuted: boolean;
 
-  play: (src: string) => void
-  pause: () => void
-  stop: () => void
-  toggle: () => void
-  setVolume: (volume: number) => void
-  setPlaybackRate: (rate: number) => void
-  toggleMute: () => void
-  reset: () => void
+  play: (src: string) => void;
+  pause: () => void;
+  stop: () => void;
+  toggle: () => void;
+  setVolume: (volume: number) => void;
+  setPlaybackRate: (rate: number) => void;
+  toggleMute: () => void;
+  reset: () => void;
 }
 
 const initialState = {
@@ -25,7 +25,7 @@ const initialState = {
   volume: 1,
   playbackRate: 1,
   isMuted: false,
-}
+};
 
 export const useFlowbookAudioStore = create<FlowbookAudioState>((set, get) => ({
   ...initialState,
@@ -37,8 +37,8 @@ export const useFlowbookAudioStore = create<FlowbookAudioState>((set, get) => ({
   stop: () => set({ currentSrc: null, isPlaying: false }),
 
   toggle: () => {
-    const { isPlaying } = get()
-    set({ isPlaying: !isPlaying })
+    const { isPlaying } = get();
+    set({ isPlaying: !isPlaying });
   },
 
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
@@ -50,16 +50,16 @@ export const useFlowbookAudioStore = create<FlowbookAudioState>((set, get) => ({
           Math.abs(curr - playbackRate) < Math.abs(prev - playbackRate)
             ? curr
             : prev,
-        )
-    set({ playbackRate: validRate })
+        );
+    set({ playbackRate: validRate });
   },
 
   toggleMute: () => {
-    const { isMuted } = get()
-    set({ isMuted: !isMuted })
+    const { isMuted } = get();
+    set({ isMuted: !isMuted });
   },
 
   reset: () => set(initialState),
-}))
+}));
 
-export { PLAYBACK_SPEEDS }
+export { PLAYBACK_SPEEDS };

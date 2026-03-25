@@ -4,11 +4,11 @@
  * Task 10: Frontend Component Tests
  */
 
-import { render, screen, within } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import type { ReactNode } from "react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { ClassAnalyticsResponse } from "@/types/analytics"
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ClassAnalyticsResponse } from "@/types/analytics";
 
 // Mock the classesApi module
 vi.mock("@/services/classesApi", () => ({
@@ -19,7 +19,7 @@ vi.mock("@/services/classesApi", () => ({
   default: {
     getClassAnalytics: vi.fn(),
   },
-}))
+}));
 
 // Mock Recharts to avoid canvas-related errors in tests
 vi.mock("recharts", () => ({
@@ -35,7 +35,7 @@ vi.mock("recharts", () => ({
   YAxis: () => <div data-testid="y-axis" />,
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
   Tooltip: () => <div data-testid="tooltip" />,
-}))
+}));
 
 // Mock analytics data for tests
 const mockClassAnalyticsData: ClassAnalyticsResponse = {
@@ -112,7 +112,7 @@ const mockClassAnalyticsData: ClassAnalyticsResponse = {
       trend: "up",
     },
   ],
-}
+};
 
 // Mock class detail
 const mockClassDetail = {
@@ -120,7 +120,7 @@ const mockClassDetail = {
   name: "Math 101",
   grade_level: "5",
   subject: "Mathematics",
-}
+};
 
 // Mock students list
 const mockStudents = [
@@ -136,15 +136,15 @@ const mockStudents = [
     user_email: "bob@example.com",
     grade_level: "5",
   },
-]
+];
 
 describe("ClassDetailPage", () => {
-  const user = userEvent.setup()
+  const user = userEvent.setup();
 
   beforeEach(() => {
     // QueryClient not needed for direct component tests
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   // Helper component that renders the dashboard with mock data
   function TestableClassAnalyticsDashboard({
@@ -158,15 +158,15 @@ describe("ClassDetailPage", () => {
     onPeriodChange,
     onTabChange,
   }: {
-    period?: string
-    isLoading?: boolean
-    error?: Error | null
-    analytics?: ClassAnalyticsResponse | null
-    classDetail?: typeof mockClassDetail | null
-    students?: typeof mockStudents
-    activeTab?: string
-    onPeriodChange?: (period: string) => void
-    onTabChange?: (tab: string) => void
+    period?: string;
+    isLoading?: boolean;
+    error?: Error | null;
+    analytics?: ClassAnalyticsResponse | null;
+    classDetail?: typeof mockClassDetail | null;
+    students?: typeof mockStudents;
+    activeTab?: string;
+    onPeriodChange?: (period: string) => void;
+    onTabChange?: (tab: string) => void;
   }) {
     // Loading state
     if (isLoading) {
@@ -180,7 +180,7 @@ describe("ClassDetailPage", () => {
             <p className="text-gray-600 mt-4">Loading class details...</p>
           </div>
         </div>
-      )
+      );
     }
 
     // Error state
@@ -201,16 +201,16 @@ describe("ClassDetailPage", () => {
             </button>
           </div>
         </div>
-      )
+      );
     }
 
     // Find trends
     const scoreTrend = analytics.trends.find(
       (t) => t.metric_name === "Average Score",
-    )
+    );
     const completionTrend = analytics.trends.find(
       (t) => t.metric_name === "Completions",
-    )
+    );
 
     return (
       <div className="container mx-auto py-6 px-4">
@@ -478,25 +478,25 @@ describe("ClassDetailPage", () => {
           </div>
         )}
       </div>
-    )
+    );
   }
 
   describe("Loading State", () => {
     it("displays loading spinner while fetching data", () => {
       render(
         <TestableClassAnalyticsDashboard isLoading={true} analytics={null} />,
-      )
+      );
 
-      expect(screen.getByTestId("loading-spinner")).toBeInTheDocument()
-      expect(screen.getByText("Loading class details...")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
+      expect(screen.getByText("Loading class details...")).toBeInTheDocument();
+    });
+  });
 
   describe("Error State", () => {
     it("displays error message when API fails", () => {
       const testError = new Error(
         "Network error - failed to fetch class analytics",
-      )
+      );
 
       render(
         <TestableClassAnalyticsDashboard
@@ -504,13 +504,13 @@ describe("ClassDetailPage", () => {
           error={testError}
           analytics={null}
         />,
-      )
+      );
 
-      expect(screen.getByText("Error Loading Class")).toBeInTheDocument()
+      expect(screen.getByText("Error Loading Class")).toBeInTheDocument();
       expect(screen.getByTestId("error-message")).toHaveTextContent(
         "Network error - failed to fetch class analytics",
-      )
-    })
+      );
+    });
 
     it("displays default error message when no error details", () => {
       render(
@@ -519,13 +519,13 @@ describe("ClassDetailPage", () => {
           error={null}
           analytics={null}
         />,
-      )
+      );
 
-      expect(screen.getByText("Error Loading Class")).toBeInTheDocument()
+      expect(screen.getByText("Error Loading Class")).toBeInTheDocument();
       expect(screen.getByTestId("error-message")).toHaveTextContent(
         "Unable to load class analytics.",
-      )
-    })
+      );
+    });
 
     it("renders back button in error state", () => {
       render(
@@ -534,166 +534,166 @@ describe("ClassDetailPage", () => {
           error={new Error("test")}
           analytics={null}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("back-button")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByTestId("back-button")).toBeInTheDocument();
+    });
+  });
 
   describe("Class Header", () => {
     it("renders class name correctly", () => {
-      render(<TestableClassAnalyticsDashboard />)
+      render(<TestableClassAnalyticsDashboard />);
 
-      expect(screen.getByTestId("class-name")).toHaveTextContent("Math 101")
-    })
+      expect(screen.getByTestId("class-name")).toHaveTextContent("Math 101");
+    });
 
     it("renders grade level and subject", () => {
-      render(<TestableClassAnalyticsDashboard />)
+      render(<TestableClassAnalyticsDashboard />);
 
       expect(screen.getByTestId("class-details")).toHaveTextContent(
         "Grade 5 • Mathematics",
-      )
-    })
+      );
+    });
 
     it("renders back button", () => {
-      render(<TestableClassAnalyticsDashboard />)
+      render(<TestableClassAnalyticsDashboard />);
 
-      expect(screen.getByTestId("back-button")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByTestId("back-button")).toBeInTheDocument();
+    });
+  });
 
   describe("Tabs Navigation", () => {
     it("renders all three tabs", () => {
-      render(<TestableClassAnalyticsDashboard />)
+      render(<TestableClassAnalyticsDashboard />);
 
-      expect(screen.getByTestId("tab-students")).toBeInTheDocument()
-      expect(screen.getByTestId("tab-assignments")).toBeInTheDocument()
-      expect(screen.getByTestId("tab-analytics")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("tab-students")).toBeInTheDocument();
+      expect(screen.getByTestId("tab-assignments")).toBeInTheDocument();
+      expect(screen.getByTestId("tab-analytics")).toBeInTheDocument();
+    });
 
     it("shows analytics tab content by default", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      expect(screen.getByTestId("analytics-tab-content")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("analytics-tab-content")).toBeInTheDocument();
+    });
 
     it("calls onTabChange when tab is clicked", async () => {
-      const onTabChange = vi.fn()
+      const onTabChange = vi.fn();
       render(
         <TestableClassAnalyticsDashboard
           activeTab="analytics"
           onTabChange={onTabChange}
         />,
-      )
+      );
 
-      await user.click(screen.getByTestId("tab-students"))
-      expect(onTabChange).toHaveBeenCalledWith("students")
-    })
-  })
+      await user.click(screen.getByTestId("tab-students"));
+      expect(onTabChange).toHaveBeenCalledWith("students");
+    });
+  });
 
   describe("Students Tab", () => {
     it("renders students table when students exist", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="students" />)
+      render(<TestableClassAnalyticsDashboard activeTab="students" />);
 
-      expect(screen.getByTestId("students-table")).toBeInTheDocument()
-      const rows = screen.getAllByTestId("student-row")
-      expect(rows).toHaveLength(2)
-    })
+      expect(screen.getByTestId("students-table")).toBeInTheDocument();
+      const rows = screen.getAllByTestId("student-row");
+      expect(rows).toHaveLength(2);
+    });
 
     it("displays student names and emails", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="students" />)
+      render(<TestableClassAnalyticsDashboard activeTab="students" />);
 
-      expect(screen.getByText("Alice Smith")).toBeInTheDocument()
-      expect(screen.getByText("alice@example.com")).toBeInTheDocument()
-      expect(screen.getByText("Bob Jones")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Alice Smith")).toBeInTheDocument();
+      expect(screen.getByText("alice@example.com")).toBeInTheDocument();
+      expect(screen.getByText("Bob Jones")).toBeInTheDocument();
+    });
 
     it("displays empty state when no students", () => {
       render(
         <TestableClassAnalyticsDashboard activeTab="students" students={[]} />,
-      )
+      );
 
       expect(screen.getByTestId("no-students")).toHaveTextContent(
         "No students enrolled in this class yet.",
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe("Assignments Tab", () => {
     it("renders assignments table when assignments exist", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="assignments" />)
+      render(<TestableClassAnalyticsDashboard activeTab="assignments" />);
 
-      expect(screen.getByTestId("assignments-table")).toBeInTheDocument()
-      const rows = screen.getAllByTestId("assignment-row")
-      expect(rows).toHaveLength(2)
-    })
+      expect(screen.getByTestId("assignments-table")).toBeInTheDocument();
+      const rows = screen.getAllByTestId("assignment-row");
+      expect(rows).toHaveLength(2);
+    });
 
     it("displays assignment names and scores", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="assignments" />)
+      render(<TestableClassAnalyticsDashboard activeTab="assignments" />);
 
-      expect(screen.getByText("Quiz 1")).toBeInTheDocument()
-      expect(screen.getByText("Homework 1")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Quiz 1")).toBeInTheDocument();
+      expect(screen.getByText("Homework 1")).toBeInTheDocument();
+    });
 
     it("displays empty state when no assignments", () => {
       const emptyAnalytics = {
         ...mockClassAnalyticsData,
         assignment_performance: [],
-      }
+      };
       render(
         <TestableClassAnalyticsDashboard
           activeTab="assignments"
           analytics={emptyAnalytics}
         />,
-      )
+      );
 
       expect(screen.getByTestId("no-assignments")).toHaveTextContent(
         "No assignments created for this class yet.",
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe("Analytics Tab - Summary Cards", () => {
     it("renders all summary cards", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      expect(screen.getByTestId("avg-score-card")).toBeInTheDocument()
-      expect(screen.getByTestId("completion-rate-card")).toBeInTheDocument()
-      expect(screen.getByTestId("total-assignments-card")).toBeInTheDocument()
-      expect(screen.getByTestId("active-students-card")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("avg-score-card")).toBeInTheDocument();
+      expect(screen.getByTestId("completion-rate-card")).toBeInTheDocument();
+      expect(screen.getByTestId("total-assignments-card")).toBeInTheDocument();
+      expect(screen.getByTestId("active-students-card")).toBeInTheDocument();
+    });
 
     it("displays correct summary values", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      expect(screen.getByTestId("avg-score-value")).toHaveTextContent("78.5%")
+      expect(screen.getByTestId("avg-score-value")).toHaveTextContent("78.5%");
       expect(screen.getByTestId("completion-rate-value")).toHaveTextContent(
         "85%",
-      )
+      );
       expect(screen.getByTestId("total-assignments-value")).toHaveTextContent(
         "10",
-      )
+      );
       expect(screen.getByTestId("active-students-value")).toHaveTextContent(
         "22",
-      )
-    })
+      );
+    });
 
     it("displays score trend indicator", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      const scoreTrend = screen.getByTestId("score-trend")
-      expect(scoreTrend).toHaveTextContent("+4.4%")
-      expect(scoreTrend).toHaveAttribute("data-trend", "up")
-    })
+      const scoreTrend = screen.getByTestId("score-trend");
+      expect(scoreTrend).toHaveTextContent("+4.4%");
+      expect(scoreTrend).toHaveAttribute("data-trend", "up");
+    });
 
     it("displays completion trend indicator", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      const completionTrend = screen.getByTestId("completion-trend")
-      expect(completionTrend).toHaveTextContent("+9.1%")
-      expect(completionTrend).toHaveAttribute("data-trend", "up")
-    })
-  })
+      const completionTrend = screen.getByTestId("completion-trend");
+      expect(completionTrend).toHaveTextContent("+9.1%");
+      expect(completionTrend).toHaveAttribute("data-trend", "up");
+    });
+  });
 
   describe("Analytics Tab - Period Selector", () => {
     it("renders period selector with default value", () => {
@@ -702,150 +702,152 @@ describe("ClassDetailPage", () => {
           activeTab="analytics"
           period="monthly"
         />,
-      )
+      );
 
-      const select = screen.getByTestId("period-select")
-      expect(select).toHaveValue("monthly")
-    })
+      const select = screen.getByTestId("period-select");
+      expect(select).toHaveValue("monthly");
+    });
 
     it("displays all period options", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      const select = screen.getByTestId("period-select")
-      const options = within(select).getAllByRole("option")
+      const select = screen.getByTestId("period-select");
+      const options = within(select).getAllByRole("option");
 
-      expect(options).toHaveLength(4)
-      expect(options[0]).toHaveValue("weekly")
-      expect(options[1]).toHaveValue("monthly")
-      expect(options[2]).toHaveValue("semester")
-      expect(options[3]).toHaveValue("ytd")
-    })
+      expect(options).toHaveLength(4);
+      expect(options[0]).toHaveValue("weekly");
+      expect(options[1]).toHaveValue("monthly");
+      expect(options[2]).toHaveValue("semester");
+      expect(options[3]).toHaveValue("ytd");
+    });
 
     it("calls onPeriodChange when period is changed", async () => {
-      const onPeriodChange = vi.fn()
+      const onPeriodChange = vi.fn();
       render(
         <TestableClassAnalyticsDashboard
           activeTab="analytics"
           onPeriodChange={onPeriodChange}
         />,
-      )
+      );
 
-      await user.selectOptions(screen.getByTestId("period-select"), "weekly")
-      expect(onPeriodChange).toHaveBeenCalledWith("weekly")
-    })
-  })
+      await user.selectOptions(screen.getByTestId("period-select"), "weekly");
+      expect(onPeriodChange).toHaveBeenCalledWith("weekly");
+    });
+  });
 
   describe("Analytics Tab - Leaderboard", () => {
     it("renders leaderboard table with top performers", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      expect(screen.getByTestId("leaderboard-table")).toBeInTheDocument()
-      const rows = screen.getAllByTestId("leaderboard-row")
-      expect(rows).toHaveLength(3)
-    })
+      expect(screen.getByTestId("leaderboard-table")).toBeInTheDocument();
+      const rows = screen.getAllByTestId("leaderboard-row");
+      expect(rows).toHaveLength(3);
+    });
 
     it("displays correct rank order", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      const rows = screen.getAllByTestId("leaderboard-row")
-      expect(within(rows[0]).getByTestId("rank")).toHaveTextContent("#1")
-      expect(within(rows[1]).getByTestId("rank")).toHaveTextContent("#2")
-      expect(within(rows[2]).getByTestId("rank")).toHaveTextContent("#3")
-    })
+      const rows = screen.getAllByTestId("leaderboard-row");
+      expect(within(rows[0]).getByTestId("rank")).toHaveTextContent("#1");
+      expect(within(rows[1]).getByTestId("rank")).toHaveTextContent("#2");
+      expect(within(rows[2]).getByTestId("rank")).toHaveTextContent("#3");
+    });
 
     it("displays student names and scores", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      expect(screen.getByText("Alice Smith")).toBeInTheDocument()
-      expect(screen.getByText("95.2%")).toBeInTheDocument()
-      expect(screen.getByText("Bob Jones")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Alice Smith")).toBeInTheDocument();
+      expect(screen.getByText("95.2%")).toBeInTheDocument();
+      expect(screen.getByText("Bob Jones")).toBeInTheDocument();
+    });
 
     it("displays empty state when no leaderboard data", () => {
       const emptyAnalytics = {
         ...mockClassAnalyticsData,
         leaderboard: [],
-      }
+      };
       render(
         <TestableClassAnalyticsDashboard
           activeTab="analytics"
           analytics={emptyAnalytics}
         />,
-      )
+      );
 
       expect(screen.getByTestId("no-leaderboard")).toHaveTextContent(
         "No performance data available yet.",
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe("Analytics Tab - Struggling Students", () => {
     it("renders struggling students table", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
       expect(
         screen.getByTestId("struggling-students-table"),
-      ).toBeInTheDocument()
-      const rows = screen.getAllByTestId("struggling-student-row")
-      expect(rows).toHaveLength(2)
-    })
+      ).toBeInTheDocument();
+      const rows = screen.getAllByTestId("struggling-student-row");
+      expect(rows).toHaveLength(2);
+    });
 
     it("displays student names with alert reasons", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      expect(screen.getByText("Dan Brown")).toBeInTheDocument()
-      expect(screen.getByText("Eve Davis")).toBeInTheDocument()
+      expect(screen.getByText("Dan Brown")).toBeInTheDocument();
+      expect(screen.getByText("Eve Davis")).toBeInTheDocument();
       // Alert reasons
-      const alerts = screen.getAllByTestId("struggling-alert")
-      expect(alerts[0]).toHaveTextContent("Score below 60%")
-    })
+      const alerts = screen.getAllByTestId("struggling-alert");
+      expect(alerts[0]).toHaveTextContent("Score below 60%");
+    });
 
     it("displays low scores with correct values", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      const rows = screen.getAllByTestId("struggling-student-row")
+      const rows = screen.getAllByTestId("struggling-student-row");
       expect(within(rows[0]).getByTestId("struggling-score")).toHaveTextContent(
         "52.3%",
-      )
+      );
       expect(within(rows[1]).getByTestId("struggling-score")).toHaveTextContent(
         "58.1%",
-      )
-    })
+      );
+    });
 
     it("displays empty state when no struggling students", () => {
       const emptyAnalytics = {
         ...mockClassAnalyticsData,
         struggling_students: [],
-      }
+      };
       render(
         <TestableClassAnalyticsDashboard
           activeTab="analytics"
           analytics={emptyAnalytics}
         />,
-      )
+      );
 
       expect(screen.getByTestId("no-struggling-students")).toHaveTextContent(
         "No struggling students identified.",
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe("Analytics Tab - Charts", () => {
     it("renders score distribution section", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
       expect(
         screen.getByTestId("score-distribution-section"),
-      ).toBeInTheDocument()
-      expect(screen.getByTestId("score-distribution-chart")).toBeInTheDocument()
-    })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("score-distribution-chart"),
+      ).toBeInTheDocument();
+    });
 
     it("renders activity type performance section", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      expect(screen.getByTestId("activity-type-section")).toBeInTheDocument()
-      expect(screen.getByTestId("activity-type-chart")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("activity-type-section")).toBeInTheDocument();
+      expect(screen.getByTestId("activity-type-chart")).toBeInTheDocument();
+    });
 
     it("displays empty state for score distribution when no data", () => {
       const emptyAnalytics = {
@@ -856,36 +858,36 @@ describe("ClassDetailPage", () => {
             count: 0,
           }),
         ),
-      }
+      };
       render(
         <TestableClassAnalyticsDashboard
           activeTab="analytics"
           analytics={emptyAnalytics}
         />,
-      )
+      );
 
       expect(screen.getByTestId("no-score-data")).toHaveTextContent(
         "No score data available yet.",
-      )
-    })
+      );
+    });
 
     it("displays empty state for activity type when no data", () => {
       const emptyAnalytics = {
         ...mockClassAnalyticsData,
         activity_type_performance: [],
-      }
+      };
       render(
         <TestableClassAnalyticsDashboard
           activeTab="analytics"
           analytics={emptyAnalytics}
         />,
-      )
+      );
 
       expect(screen.getByTestId("no-activity-data")).toHaveTextContent(
         "No activity data available yet.",
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe("Edge Cases", () => {
     it("handles zero values correctly", () => {
@@ -898,42 +900,44 @@ describe("ClassDetailPage", () => {
           completion_rate: 0,
         },
         trends: [],
-      }
+      };
 
       render(
         <TestableClassAnalyticsDashboard
           activeTab="analytics"
           analytics={zeroData}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("avg-score-value")).toHaveTextContent("0.0%")
+      expect(screen.getByTestId("avg-score-value")).toHaveTextContent("0.0%");
       expect(screen.getByTestId("completion-rate-value")).toHaveTextContent(
         "0%",
-      )
+      );
       expect(screen.getByTestId("total-assignments-value")).toHaveTextContent(
         "0",
-      )
-      expect(screen.getByTestId("active-students-value")).toHaveTextContent("0")
-    })
+      );
+      expect(screen.getByTestId("active-students-value")).toHaveTextContent(
+        "0",
+      );
+    });
 
     it("handles missing trends gracefully", () => {
       const noTrendsData = {
         ...mockClassAnalyticsData,
         trends: [],
-      }
+      };
 
       render(
         <TestableClassAnalyticsDashboard
           activeTab="analytics"
           analytics={noTrendsData}
         />,
-      )
+      );
 
       // Should not have trend indicators
-      expect(screen.queryByTestId("score-trend")).not.toBeInTheDocument()
-      expect(screen.queryByTestId("completion-trend")).not.toBeInTheDocument()
-    })
+      expect(screen.queryByTestId("score-trend")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("completion-trend")).not.toBeInTheDocument();
+    });
 
     it("handles down trends correctly", () => {
       const downTrendData = {
@@ -947,29 +951,29 @@ describe("ClassDetailPage", () => {
             trend: "down" as const,
           },
         ],
-      }
+      };
 
       render(
         <TestableClassAnalyticsDashboard
           activeTab="analytics"
           analytics={downTrendData}
         />,
-      )
+      );
 
-      const scoreTrend = screen.getByTestId("score-trend")
-      expect(scoreTrend).toHaveTextContent("-4.5%")
-      expect(scoreTrend).toHaveAttribute("data-trend", "down")
-    })
-  })
+      const scoreTrend = screen.getByTestId("score-trend");
+      expect(scoreTrend).toHaveTextContent("-4.5%");
+      expect(scoreTrend).toHaveAttribute("data-trend", "down");
+    });
+  });
 
   describe("Responsive Layout", () => {
     it("renders summary cards container with responsive grid classes", () => {
-      render(<TestableClassAnalyticsDashboard activeTab="analytics" />)
+      render(<TestableClassAnalyticsDashboard activeTab="analytics" />);
 
-      const summaryCards = screen.getByTestId("summary-cards")
-      expect(summaryCards).toHaveClass("grid")
-      expect(summaryCards).toHaveClass("md:grid-cols-2")
-      expect(summaryCards).toHaveClass("lg:grid-cols-4")
-    })
-  })
-})
+      const summaryCards = screen.getByTestId("summary-cards");
+      expect(summaryCards).toHaveClass("grid");
+      expect(summaryCards).toHaveClass("md:grid-cols-2");
+      expect(summaryCards).toHaveClass("lg:grid-cols-4");
+    });
+  });
+});

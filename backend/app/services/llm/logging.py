@@ -103,6 +103,7 @@ def generate_request_id() -> str:
         Unique request identifier.
     """
     import uuid
+
     return str(uuid.uuid4())[:8]
 
 

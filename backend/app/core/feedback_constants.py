@@ -32,7 +32,9 @@ PREDEFINED_BADGES: list[BadgeInfo] = [
 VALID_BADGE_SLUGS: set[str] = {badge["slug"] for badge in PREDEFINED_BADGES}
 
 # Badge labels lookup for notification messages
-BADGE_LABELS: dict[str, str] = {badge["slug"]: badge["label"] for badge in PREDEFINED_BADGES}
+BADGE_LABELS: dict[str, str] = {
+    badge["slug"]: badge["label"] for badge in PREDEFINED_BADGES
+}
 
 # Available emoji reactions (AC: 5)
 AVAILABLE_EMOJI_REACTIONS: list[EmojiInfo] = [
@@ -48,7 +50,9 @@ AVAILABLE_EMOJI_REACTIONS: list[EmojiInfo] = [
 VALID_EMOJI_SLUGS: set[str] = {emoji["slug"] for emoji in AVAILABLE_EMOJI_REACTIONS}
 
 # Emoji lookup for display
-EMOJI_DISPLAY: dict[str, str] = {emoji["slug"]: emoji["emoji"] for emoji in AVAILABLE_EMOJI_REACTIONS}
+EMOJI_DISPLAY: dict[str, str] = {
+    emoji["slug"]: emoji["emoji"] for emoji in AVAILABLE_EMOJI_REACTIONS
+}
 
 # Maximum number of badges allowed per feedback
 MAX_BADGES_PER_FEEDBACK = 6

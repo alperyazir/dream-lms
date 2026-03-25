@@ -2,13 +2,13 @@
  * Usage Summary Cards Component
  */
 
-import { Activity, CheckCircle, DollarSign } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { UsageSummary } from "@/types/ai-usage"
+import { Activity, CheckCircle, DollarSign } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { UsageSummary } from "@/types/ai-usage";
 
 interface UsageSummaryCardsProps {
-  summary: UsageSummary
-  isLoading?: boolean
+  summary: UsageSummary;
+  isLoading?: boolean;
 }
 
 export function UsageSummaryCards({
@@ -32,7 +32,7 @@ export function UsageSummaryCards({
           </Card>
         ))}
       </div>
-    )
+    );
   }
 
   const cards = [
@@ -64,7 +64,7 @@ export function UsageSummaryCards({
       description: "Total characters",
       color: "text-purple-600",
     },
-  ]
+  ];
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -83,5 +83,5 @@ export function UsageSummaryCards({
         </Card>
       ))}
     </div>
-  )
+  );
 }

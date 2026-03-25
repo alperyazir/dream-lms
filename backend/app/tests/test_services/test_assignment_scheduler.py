@@ -15,7 +15,6 @@ from datetime import UTC, datetime, timedelta
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
 
 from app.models import (
     Activity,
@@ -487,5 +486,3 @@ async def test_publish_no_scheduled_assignments(
     result = await publish_scheduled_assignments(async_session)
 
     assert result.assignments_published == 0
-
-

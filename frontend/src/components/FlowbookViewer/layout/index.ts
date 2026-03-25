@@ -1,3 +1,3 @@
-export { LeftToolbar } from "./LeftToolbar"
-export { PageViewer } from "./PageViewer"
-export { ThumbnailStrip } from "./ThumbnailStrip"
+export { LeftToolbar } from "./LeftToolbar";
+export { PageViewer } from "./PageViewer";
+export { ThumbnailStrip } from "./ThumbnailStrip";

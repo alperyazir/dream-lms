@@ -1,18 +1,18 @@
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { cn } from "@/lib/utils"
-import type { FlowbookViewerProps } from "@/types/flowbook"
-import { ActivityOverlay } from "./activities"
-import { AnnotationToolbar, PieMenu } from "./annotation"
-import { useLongPress } from "./hooks"
-import { LeftToolbar, PageViewer, ThumbnailStrip } from "./layout"
-import { AudioPlayerBar } from "./media"
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import type { FlowbookViewerProps } from "@/types/flowbook";
+import { ActivityOverlay } from "./activities";
+import { AnnotationToolbar, PieMenu } from "./annotation";
+import { useLongPress } from "./hooks";
+import { LeftToolbar, PageViewer, ThumbnailStrip } from "./layout";
+import { AudioPlayerBar } from "./media";
 import {
   useAnnotationStore,
   useFlowbookAudioStore,
   useFlowbookBookStore,
   useFlowbookUIStore,
-} from "./stores"
+} from "./stores";
 
 export function FlowbookViewer({
   bookConfig,
@@ -30,7 +30,7 @@ export function FlowbookViewer({
     prevPage,
     goToPage,
     totalPages,
-  } = useFlowbookBookStore()
+  } = useFlowbookBookStore();
   const {
     viewMode,
     zoomIn,
@@ -39,8 +39,8 @@ export function FlowbookViewer({
     activeActivityId,
     closeActivity,
     reset: resetUI,
-  } = useFlowbookUIStore()
-  const { reset: resetAudio } = useFlowbookAudioStore()
+  } = useFlowbookUIStore();
+  const { reset: resetAudio } = useFlowbookAudioStore();
   const {
     isPieMenuOpen,
     pieMenuPosition,
@@ -48,49 +48,50 @@ export function FlowbookViewer({
     closePieMenu,
     initializeBook,
     reset: resetAnnotations,
-  } = useAnnotationStore()
+  } = useAnnotationStore();
 
   // Annotation toolbar state
-  const [showAnnotationToolbar, setShowAnnotationToolbar] = useState(false)
+  const [showAnnotationToolbar, setShowAnnotationToolbar] = useState(false);
 
   // Handlers for annotation toolbar
   const handleOpenToolbar = useCallback(() => {
-    setShowAnnotationToolbar(true)
-  }, [])
+    setShowAnnotationToolbar(true);
+  }, []);
 
   const handleCloseToolbar = useCallback(() => {
-    setShowAnnotationToolbar(false)
-  }, [])
+    setShowAnnotationToolbar(false);
+  }, []);
 
   // Long press handler to open pie menu (only when not in annotation mode)
   const { handlers: longPressHandlers } = useLongPress({
     onLongPress: (position) => {
       // Don't open pie menu if annotation toolbar is already open
       if (!showAnnotationToolbar) {
-        openPieMenu(position)
+        openPieMenu(position);
       }
     },
-  })
+  });
 
   // Initialize store with book config
   useEffect(() => {
-    setConfig(bookConfig)
+    setConfig(bookConfig);
     if (initialPage > 0) {
-      goToPage(initialPage)
+      goToPage(initialPage);
     }
 
     // Initialize annotation store with book ID for persistence
     // Use book ID, or fallback to title-based ID, or generate a session ID
-    const annotationBookId = bookConfig.id || bookConfig.title || `book_${Date.now()}`
-    initializeBook(annotationBookId)
+    const annotationBookId =
+      bookConfig.id || bookConfig.title || `book_${Date.now()}`;
+    initializeBook(annotationBookId);
 
     // Cleanup on unmount
     return () => {
-      clearConfig()
-      resetUI()
-      resetAudio()
-      resetAnnotations()
-    }
+      clearConfig();
+      resetUI();
+      resetAudio();
+      resetAnnotations();
+    };
   }, [
     bookConfig,
     initialPage,
@@ -101,7 +102,7 @@ export function FlowbookViewer({
     resetAudio,
     initializeBook,
     resetAnnotations,
-  ])
+  ]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -111,69 +112,69 @@ export function FlowbookViewer({
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
       ) {
-        return
+        return;
       }
 
-      const total = totalPages()
+      const total = totalPages();
       const normalizedIdx =
         viewMode === "double"
           ? currentPageIndex % 2 === 0
             ? currentPageIndex
             : currentPageIndex - 1
-          : currentPageIndex
+          : currentPageIndex;
 
       switch (e.key) {
         case "ArrowRight":
         case "PageDown":
-          e.preventDefault()
+          e.preventDefault();
           if (viewMode === "double") {
-            goToPage(Math.min(normalizedIdx + 2, total - 1))
+            goToPage(Math.min(normalizedIdx + 2, total - 1));
           } else {
-            nextPage()
+            nextPage();
           }
-          break
+          break;
         case "ArrowLeft":
         case "PageUp":
-          e.preventDefault()
+          e.preventDefault();
           if (viewMode === "double") {
-            goToPage(Math.max(0, normalizedIdx - 2))
+            goToPage(Math.max(0, normalizedIdx - 2));
           } else {
-            prevPage()
+            prevPage();
           }
-          break
+          break;
         case "Home":
-          e.preventDefault()
-          goToPage(0)
-          break
+          e.preventDefault();
+          goToPage(0);
+          break;
         case "End":
-          e.preventDefault()
-          goToPage(total - 1)
-          break
+          e.preventDefault();
+          goToPage(total - 1);
+          break;
         case "Escape":
-          e.preventDefault()
+          e.preventDefault();
           // Only close activity overlay, not the viewer
           if (activeActivityId) {
-            closeActivity()
+            closeActivity();
           }
-          break
+          break;
         case "+":
         case "=":
-          e.preventDefault()
-          zoomIn()
-          break
+          e.preventDefault();
+          zoomIn();
+          break;
         case "-":
-          e.preventDefault()
-          zoomOut()
-          break
+          e.preventDefault();
+          zoomOut();
+          break;
         case "0":
-          e.preventDefault()
-          resetZoom()
-          break
+          e.preventDefault();
+          resetZoom();
+          break;
       }
-    }
+    };
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     viewMode,
     currentPageIndex,
@@ -186,9 +187,9 @@ export function FlowbookViewer({
     resetZoom,
     activeActivityId,
     closeActivity,
-  ])
+  ]);
 
-  const total = totalPages()
+  const total = totalPages();
 
   // In double mode, normalize to even index (left page of spread)
   const normalizedIndex =
@@ -196,31 +197,31 @@ export function FlowbookViewer({
       ? currentPageIndex % 2 === 0
         ? currentPageIndex
         : currentPageIndex - 1
-      : currentPageIndex
+      : currentPageIndex;
 
-  const isFirstPage = normalizedIndex === 0
+  const isFirstPage = normalizedIndex === 0;
   const isLastPage =
     viewMode === "double"
       ? normalizedIndex >= total - 2
-      : currentPageIndex >= total - 1
+      : currentPageIndex >= total - 1;
 
   const handlePrevPage = useCallback(() => {
     if (viewMode === "double") {
       // In double mode, go back by 2
-      goToPage(Math.max(0, normalizedIndex - 2))
+      goToPage(Math.max(0, normalizedIndex - 2));
     } else {
-      prevPage()
+      prevPage();
     }
-  }, [viewMode, normalizedIndex, goToPage, prevPage])
+  }, [viewMode, normalizedIndex, goToPage, prevPage]);
 
   const handleNextPage = useCallback(() => {
     if (viewMode === "double") {
       // In double mode, advance by 2
-      goToPage(Math.min(normalizedIndex + 2, total - 1))
+      goToPage(Math.min(normalizedIndex + 2, total - 1));
     } else {
-      nextPage()
+      nextPage();
     }
-  }, [viewMode, normalizedIndex, total, goToPage, nextPage])
+  }, [viewMode, normalizedIndex, total, goToPage, nextPage]);
 
   return (
     <div
@@ -311,5 +312,5 @@ export function FlowbookViewer({
         <AnnotationToolbar onClose={handleCloseToolbar} />
       )}
     </div>
-  )
+  );
 }

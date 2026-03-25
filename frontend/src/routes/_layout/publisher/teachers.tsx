@@ -1,23 +1,23 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { AlertTriangle, User, UserPlus } from "lucide-react"
-import { useMemo, useState } from "react"
-import { FiUsers } from "react-icons/fi"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { AlertTriangle, User, UserPlus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { FiUsers } from "react-icons/fi";
 import {
   AdminService,
   PublishersService,
   type TeacherCreateAPI,
-} from "@/client"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { TeacherCard } from "@/components/teachers/TeacherCard"
-import { TeacherDetailsDialog } from "@/components/teachers/TeacherDetailsDialog"
+} from "@/client";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { TeacherCard } from "@/components/teachers/TeacherCard";
+import { TeacherDetailsDialog } from "@/components/teachers/TeacherDetailsDialog";
 import {
   TeacherFilters,
   type TeacherFilters as TeacherFiltersType,
-} from "@/components/teachers/TeacherFilters"
-import { TeacherListView } from "@/components/teachers/TeacherListView"
-import { Button } from "@/components/ui/button"
+} from "@/components/teachers/TeacherFilters";
+import { TeacherListView } from "@/components/teachers/TeacherListView";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -25,20 +25,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
-import useCustomToast from "@/hooks/useCustomToast"
-import { useViewPreference } from "@/hooks/useViewPreference"
-import { generateUsername } from "@/utils/usernameGenerator"
+} from "@/components/ui/select";
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle";
+import useCustomToast from "@/hooks/useCustomToast";
+import { useViewPreference } from "@/hooks/useViewPreference";
+import { generateUsername } from "@/utils/usernameGenerator";
 
 export const Route = createFileRoute("/_layout/publisher/teachers")({
   component: () => (
@@ -46,30 +46,33 @@ export const Route = createFileRoute("/_layout/publisher/teachers")({
       <PublisherTeachersPage />
     </ErrorBoundary>
   ),
-})
+});
 
 function PublisherTeachersPage() {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [viewMode, setViewMode] = useViewPreference("publisherTeachers", "grid")
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const [viewMode, setViewMode] = useViewPreference(
+    "publisherTeachers",
+    "grid",
+  );
   const [filters, setFilters] = useState<TeacherFiltersType>({
     search: "",
     school: "",
-  })
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  });
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newTeacher, setNewTeacher] = useState<TeacherCreateAPI>({
     username: "",
     user_email: "",
     full_name: "",
     school_id: "",
     subject_specialization: "",
-  })
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<{
-    id: string
-    name: string
-  } | null>(null)
-  const [selectedTeacher, setSelectedTeacher] = useState<any>(null)
+    id: string;
+    name: string;
+  } | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
 
   // Fetch teachers from API
   const {
@@ -79,87 +82,89 @@ function PublisherTeachersPage() {
   } = useQuery({
     queryKey: ["publisherTeachers"],
     queryFn: () => PublishersService.listMyTeachers(),
-  })
+  });
 
   // Fetch schools for dropdown
   const { data: schools = [] } = useQuery({
     queryKey: ["publisherSchools"],
     queryFn: () => PublishersService.listMySchools(),
-  })
+  });
 
   // Create teacher mutation
   const createTeacherMutation = useMutation({
     mutationFn: async (data: TeacherCreateAPI) => {
       return await PublishersService.createMyTeacher({
         requestBody: data,
-      })
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publisherTeachers"] })
-      queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
-      setIsAddDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["publisherTeachers"] });
+      queryClient.invalidateQueries({ queryKey: ["publisherStats"] });
+      setIsAddDialogOpen(false);
       setNewTeacher({
         username: "",
         user_email: "",
         full_name: "",
         school_id: "",
         subject_specialization: "",
-      })
-      showSuccessToast("Teacher created successfully!")
+      });
+      showSuccessToast("Teacher created successfully!");
     },
     onError: (error: any) => {
-      let errorMessage = "Failed to create teacher. Please try again."
+      let errorMessage = "Failed to create teacher. Please try again.";
 
       if (error.body?.detail) {
         if (typeof error.body.detail === "string") {
-          errorMessage = error.body.detail
+          errorMessage = error.body.detail;
         } else if (Array.isArray(error.body.detail)) {
           // Handle validation errors
-          errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
+          errorMessage = error.body.detail
+            .map((err: any) => err.msg)
+            .join(", ");
         }
       }
 
-      showErrorToast(errorMessage)
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   // Delete teacher mutation
   const deleteTeacherMutation = useMutation({
     mutationFn: async (teacherId: string) => {
-      await AdminService.deleteTeacher({ teacherId })
+      await AdminService.deleteTeacher({ teacherId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publisherTeachers"] })
-      queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
-      setDeleteDialogOpen(false)
-      setTeacherToDelete(null)
-      showSuccessToast("Teacher deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["publisherTeachers"] });
+      queryClient.invalidateQueries({ queryKey: ["publisherStats"] });
+      setDeleteDialogOpen(false);
+      setTeacherToDelete(null);
+      showSuccessToast("Teacher deleted successfully!");
     },
     onError: (error: any) => {
-      let errorMessage = "Failed to delete teacher. Please try again."
+      let errorMessage = "Failed to delete teacher. Please try again.";
       if (error.body?.detail) {
         errorMessage =
           typeof error.body.detail === "string"
             ? error.body.detail
-            : "Failed to delete teacher"
+            : "Failed to delete teacher";
       }
-      showErrorToast(errorMessage)
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   const handleDeleteClick = (teacher: {
-    id: string
-    user_full_name: string
+    id: string;
+    user_full_name: string;
   }) => {
-    setTeacherToDelete({ id: teacher.id, name: teacher.user_full_name })
-    setDeleteDialogOpen(true)
-  }
+    setTeacherToDelete({ id: teacher.id, name: teacher.user_full_name });
+    setDeleteDialogOpen(true);
+  };
 
   const handleConfirmDelete = () => {
     if (teacherToDelete) {
-      deleteTeacherMutation.mutate(teacherToDelete.id)
+      deleteTeacherMutation.mutate(teacherToDelete.id);
     }
-  }
+  };
 
   const handleAddTeacher = () => {
     if (
@@ -167,20 +172,20 @@ function PublisherTeachersPage() {
       !newTeacher.full_name ||
       !newTeacher.school_id
     ) {
-      showErrorToast("Please fill in all required fields")
-      return
+      showErrorToast("Please fill in all required fields");
+      return;
     }
 
     // Validate username format
     if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(newTeacher.username)) {
       showErrorToast(
         "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
-      )
-      return
+      );
+      return;
     }
 
-    createTeacherMutation.mutate(newTeacher)
-  }
+    createTeacherMutation.mutate(newTeacher);
+  };
 
   // Filter teachers based on search and school filter
   const filteredTeachers = useMemo(() => {
@@ -190,14 +195,14 @@ function PublisherTeachersPage() {
         teacher.user_full_name
           .toLowerCase()
           .includes(filters.search.toLowerCase()) ||
-        teacher.user_email.toLowerCase().includes(filters.search.toLowerCase())
+        teacher.user_email.toLowerCase().includes(filters.search.toLowerCase());
 
       const matchesSchool =
-        !filters.school || teacher.school_id === filters.school
+        !filters.school || teacher.school_id === filters.school;
 
-      return matchesSearch && matchesSchool
-    })
-  }, [teachers, filters])
+      return matchesSearch && matchesSchool;
+    });
+  }, [teachers, filters]);
 
   return (
     <PageContainer>
@@ -273,9 +278,9 @@ function PublisherTeachersPage() {
       <Dialog
         open={isAddDialogOpen}
         onOpenChange={(open) => {
-          setIsAddDialogOpen(open)
+          setIsAddDialogOpen(open);
           if (!open) {
-            setSelectedBookIds([])
+            setSelectedBookIds([]);
           }
         }}
       >
@@ -299,15 +304,15 @@ function PublisherTeachersPage() {
                 placeholder="e.g., John Doe"
                 value={newTeacher.full_name}
                 onChange={(e) => {
-                  const fullName = e.target.value
+                  const fullName = e.target.value;
                   // Auto-generate username with Turkish character support
-                  const generatedUsername = generateUsername(fullName)
+                  const generatedUsername = generateUsername(fullName);
 
                   setNewTeacher({
                     ...newTeacher,
                     full_name: fullName,
                     username: generatedUsername,
-                  })
+                  });
                 }}
               />
             </div>
@@ -384,7 +389,6 @@ function PublisherTeachersPage() {
                 }
               />
             </div>
-
           </div>
           <DialogFooter>
             <Button
@@ -451,5 +455,5 @@ function PublisherTeachersPage() {
         />
       )}
     </PageContainer>
-  )
+  );
 }

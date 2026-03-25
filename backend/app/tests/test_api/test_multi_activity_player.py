@@ -127,7 +127,9 @@ class TestStartMultiActivityAssignment:
                 module_name="Test Module",
                 page_number=i + 1,
                 section_index=0,
-                activity_type=ActivityType.circle if i == 0 else ActivityType.matchTheWords,
+                activity_type=(
+                    ActivityType.circle if i == 0 else ActivityType.matchTheWords
+                ),
                 title=f"Activity {i + 1}",
                 config_json={"questions": [{"id": 1, "text": f"Question {i + 1}"}]},
                 order_index=i,
@@ -278,7 +280,8 @@ class TestStartMultiActivityAssignment:
 
         # Find the completed activity
         completed = next(
-            p for p in data["activity_progress"]
+            p
+            for p in data["activity_progress"]
             if p["activity_id"] == str(activities[0].id)
         )
         assert completed["status"] == "completed"
@@ -480,7 +483,8 @@ class TestSaveActivityProgress:
         # Verify started_at was set
         session.refresh(assignment_student, ["activity_progress"])
         progress = next(
-            p for p in assignment_student.activity_progress
+            p
+            for p in assignment_student.activity_progress
             if p.activity_id == activities[0].id
         )
         assert progress.started_at is not None

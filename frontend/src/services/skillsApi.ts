@@ -10,23 +10,26 @@ import type {
   SkillWithFormats,
   StudentSkillProfileResponse,
   StudentSkillTrendsResponse,
-} from "@/types/skill"
-import { OpenAPI } from "@/client/core/OpenAPI"
+} from "@/types/skill";
+import { OpenAPI } from "@/client/core/OpenAPI";
 
-const BASE_URL = OpenAPI.BASE || ""
+const BASE_URL = OpenAPI.BASE || "";
 
 export async function getSkills(): Promise<SkillWithFormats[]> {
-  const token = typeof OpenAPI.TOKEN === "function" ? await OpenAPI.TOKEN({} as any) : OpenAPI.TOKEN
+  const token =
+    typeof OpenAPI.TOKEN === "function"
+      ? await OpenAPI.TOKEN({} as any)
+      : OpenAPI.TOKEN;
   const response = await fetch(`${BASE_URL}/api/v1/skills/`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-  })
+  });
   if (!response.ok) {
-    throw new Error(`Failed to fetch skills: ${response.statusText}`)
+    throw new Error(`Failed to fetch skills: ${response.statusText}`);
   }
-  return response.json()
+  return response.json();
 }
 
 export async function getAssignmentSkillBreakdown(
@@ -35,7 +38,7 @@ export async function getAssignmentSkillBreakdown(
   const token =
     typeof OpenAPI.TOKEN === "function"
       ? await OpenAPI.TOKEN({} as any)
-      : OpenAPI.TOKEN
+      : OpenAPI.TOKEN;
   const response = await fetch(
     `${BASE_URL}/api/v1/assignments/${assignmentId}/skill-breakdown`,
     {
@@ -44,31 +47,28 @@ export async function getAssignmentSkillBreakdown(
         "Content-Type": "application/json",
       },
     },
-  )
+  );
   if (!response.ok) {
-    throw new Error(`Failed to fetch skill breakdown: ${response.statusText}`)
+    throw new Error(`Failed to fetch skill breakdown: ${response.statusText}`);
   }
-  return response.json()
+  return response.json();
 }
 
 export async function getMySkillProfile(): Promise<StudentSkillProfileResponse> {
   const token =
     typeof OpenAPI.TOKEN === "function"
       ? await OpenAPI.TOKEN({} as any)
-      : OpenAPI.TOKEN
-  const response = await fetch(
-    `${BASE_URL}/api/v1/students/me/skill-profile`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      : OpenAPI.TOKEN;
+  const response = await fetch(`${BASE_URL}/api/v1/students/me/skill-profile`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
-  )
+  });
   if (!response.ok) {
-    throw new Error(`Failed to fetch skill profile: ${response.statusText}`)
+    throw new Error(`Failed to fetch skill profile: ${response.statusText}`);
   }
-  return response.json()
+  return response.json();
 }
 
 export async function getStudentSkillProfile(
@@ -77,7 +77,7 @@ export async function getStudentSkillProfile(
   const token =
     typeof OpenAPI.TOKEN === "function"
       ? await OpenAPI.TOKEN({} as any)
-      : OpenAPI.TOKEN
+      : OpenAPI.TOKEN;
   const response = await fetch(
     `${BASE_URL}/api/v1/students/${studentId}/skill-profile`,
     {
@@ -86,11 +86,13 @@ export async function getStudentSkillProfile(
         "Content-Type": "application/json",
       },
     },
-  )
+  );
   if (!response.ok) {
-    throw new Error(`Failed to fetch student skill profile: ${response.statusText}`)
+    throw new Error(
+      `Failed to fetch student skill profile: ${response.statusText}`,
+    );
   }
-  return response.json()
+  return response.json();
 }
 
 export async function getClassSkillHeatmap(
@@ -99,7 +101,7 @@ export async function getClassSkillHeatmap(
   const token =
     typeof OpenAPI.TOKEN === "function"
       ? await OpenAPI.TOKEN({} as any)
-      : OpenAPI.TOKEN
+      : OpenAPI.TOKEN;
   const response = await fetch(
     `${BASE_URL}/api/v1/classes/${classId}/skill-heatmap`,
     {
@@ -108,11 +110,13 @@ export async function getClassSkillHeatmap(
         "Content-Type": "application/json",
       },
     },
-  )
+  );
   if (!response.ok) {
-    throw new Error(`Failed to fetch class skill heatmap: ${response.statusText}`)
+    throw new Error(
+      `Failed to fetch class skill heatmap: ${response.statusText}`,
+    );
   }
-  return response.json()
+  return response.json();
 }
 
 export async function getMySkillTrends(
@@ -121,7 +125,7 @@ export async function getMySkillTrends(
   const token =
     typeof OpenAPI.TOKEN === "function"
       ? await OpenAPI.TOKEN({} as any)
-      : OpenAPI.TOKEN
+      : OpenAPI.TOKEN;
   const response = await fetch(
     `${BASE_URL}/api/v1/students/me/skill-trends?period=${period}`,
     {
@@ -130,11 +134,11 @@ export async function getMySkillTrends(
         "Content-Type": "application/json",
       },
     },
-  )
+  );
   if (!response.ok) {
-    throw new Error(`Failed to fetch skill trends: ${response.statusText}`)
+    throw new Error(`Failed to fetch skill trends: ${response.statusText}`);
   }
-  return response.json()
+  return response.json();
 }
 
 export async function getStudentSkillTrends(
@@ -144,7 +148,7 @@ export async function getStudentSkillTrends(
   const token =
     typeof OpenAPI.TOKEN === "function"
       ? await OpenAPI.TOKEN({} as any)
-      : OpenAPI.TOKEN
+      : OpenAPI.TOKEN;
   const response = await fetch(
     `${BASE_URL}/api/v1/students/${studentId}/skill-trends?period=${period}`,
     {
@@ -153,9 +157,11 @@ export async function getStudentSkillTrends(
         "Content-Type": "application/json",
       },
     },
-  )
+  );
   if (!response.ok) {
-    throw new Error(`Failed to fetch student skill trends: ${response.statusText}`)
+    throw new Error(
+      `Failed to fetch student skill trends: ${response.statusText}`,
+    );
   }
-  return response.json()
+  return response.json();
 }

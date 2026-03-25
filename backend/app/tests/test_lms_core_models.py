@@ -1,6 +1,7 @@
 """
 Unit tests for LMS Core models (Classes, Books, Activities, Assignments)
 """
+
 import uuid
 from datetime import UTC, datetime
 
@@ -243,7 +244,7 @@ def test_class_is_active_filtering(session: Session) -> None:
     session.commit()
 
     # Query active classes only
-    result = session.exec(select(Class).where(Class.is_active == True))
+    result = session.exec(select(Class).where(Class.is_active))
     active_classes = result.all()
 
     assert len(active_classes) == 1
@@ -873,7 +874,7 @@ def test_assignment_time_limit_positive_constraint(session: Session) -> None:
     # Try to create assignment with negative time_limit
     # Pydantic will raise ValueError before it reaches the database
     with pytest.raises(Exception):  # Pydantic ValidationError
-        assignment = Assignment(
+        Assignment(
             teacher_id=teacher.id,
             activity_id=activity.id,
             book_id=book.id,
@@ -1217,7 +1218,7 @@ def test_assignment_student_score_range(session: Session) -> None:
 
     # Test invalid score (Pydantic will catch this)
     with pytest.raises(Exception):  # Pydantic ValidationError
-        invalid_submission = AssignmentStudent(
+        AssignmentStudent(
             assignment_id=assignment.id,
             student_id=student.id,
             score=101,  # Invalid

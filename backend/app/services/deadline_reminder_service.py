@@ -86,12 +86,9 @@ async def check_approaching_deadlines(db: AsyncSession) -> DeadlineCheckResult:
         hours_remaining = int((due_date - now).total_seconds() / 3600)
 
         # Find students who haven't completed this assignment
-        student_query = (
-            select(AssignmentStudent)
-            .where(
-                AssignmentStudent.assignment_id == assignment.id,
-                AssignmentStudent.status != AssignmentStatus.completed,
-            )
+        student_query = select(AssignmentStudent).where(
+            AssignmentStudent.assignment_id == assignment.id,
+            AssignmentStudent.status != AssignmentStatus.completed,
         )
 
         student_result = await db.execute(student_query)
@@ -107,7 +104,9 @@ async def check_approaching_deadlines(db: AsyncSession) -> DeadlineCheckResult:
             if student and student.user_id:
                 if student.user_id not in students_to_notify:
                     students_to_notify[student.user_id] = []
-                students_to_notify[student.user_id].append((assignment, hours_remaining))
+                students_to_notify[student.user_id].append(
+                    (assignment, hours_remaining)
+                )
 
     # Send notifications (aggregated per student)
     notifications_sent = 0
@@ -115,30 +114,26 @@ async def check_approaching_deadlines(db: AsyncSession) -> DeadlineCheckResult:
 
     for user_id, assignments_with_hours in students_to_notify.items():
         # Check if student already received deadline notification today
-        if await _has_deadline_notification_today(
-            db, user_id, "deadline_approaching"
-        ):
+        if await _has_deadline_notification_today(db, user_id, "deadline_approaching"):
             logger.debug(f"Student {user_id} already notified today, skipping")
             continue
 
         # Format notification based on number of assignments
         if len(assignments_with_hours) == 1:
             assignment, hours = assignments_with_hours[0]
-            title = f"Assignment due soon: {assignment.name}"
             message = f"Due in {hours} hours"
-            link = f"/student/assignments/{assignment.id}"
         else:
             # Aggregate multiple assignments
             assignment_names = [a.name for a, _ in assignments_with_hours[:3]]
             if len(assignments_with_hours) > 3:
-                title = f"{len(assignments_with_hours)} assignments due soon"
+                f"{len(assignments_with_hours)} assignments due soon"
             else:
-                title = "Assignments due soon"
+                pass
             message = ", ".join(assignment_names)
             if len(assignments_with_hours) > 3:
                 message += f" and {len(assignments_with_hours) - 3} more"
             # Link to first assignment
-            link = f"/student/assignments/{assignments_with_hours[0][0].id}"
+            f"/student/assignments/{assignments_with_hours[0][0].id}"
 
         # Deadline reminders are now visual badges only — no messages sent
         notifications_sent += 1
@@ -199,12 +194,9 @@ async def check_past_due_assignments(db: AsyncSession) -> DeadlineCheckResult:
 
     for assignment in past_due_assignments:
         # Find students who haven't completed this assignment
-        student_query = (
-            select(AssignmentStudent)
-            .where(
-                AssignmentStudent.assignment_id == assignment.id,
-                AssignmentStudent.status != AssignmentStatus.completed,
-            )
+        student_query = select(AssignmentStudent).where(
+            AssignmentStudent.assignment_id == assignment.id,
+            AssignmentStudent.status != AssignmentStatus.completed,
         )
 
         student_result = await db.execute(student_query)

@@ -16,23 +16,23 @@ import {
   Loader2,
   RefreshCw,
   XCircle,
-} from "lucide-react"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { getReportPreviewBlob } from "@/services/reportsApi"
-import type { ReportJobStatus } from "@/types/reports"
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { getReportPreviewBlob } from "@/services/reportsApi";
+import type { ReportJobStatus } from "@/types/reports";
 
 interface ReportProgressProps {
-  status: ReportJobStatus | null
-  progress: number
-  errorMessage?: string | null
-  jobId: string | null
-  onDownload: () => void
-  onRetry: () => void
-  onCancel: () => void
-  isDownloading?: boolean
+  status: ReportJobStatus | null;
+  progress: number;
+  errorMessage?: string | null;
+  jobId: string | null;
+  onDownload: () => void;
+  onRetry: () => void;
+  onCancel: () => void;
+  isDownloading?: boolean;
 }
 
 export function ReportProgress({
@@ -45,64 +45,64 @@ export function ReportProgress({
   onCancel,
   isDownloading = false,
 }: ReportProgressProps) {
-  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
 
   // Fetch PDF when status becomes completed
   useEffect(() => {
     if (status === "completed" && jobId && !pdfBlobUrl) {
       const fetchPdf = async () => {
         try {
-          const blob = await getReportPreviewBlob(jobId)
-          const url = URL.createObjectURL(blob)
-          setPdfBlobUrl(url)
+          const blob = await getReportPreviewBlob(jobId);
+          const url = URL.createObjectURL(blob);
+          setPdfBlobUrl(url);
         } catch (error) {
-          console.error("Failed to load PDF preview:", error)
+          console.error("Failed to load PDF preview:", error);
         }
-      }
-      fetchPdf()
+      };
+      fetchPdf();
     }
 
     // Cleanup blob URL when component unmounts
     return () => {
       if (pdfBlobUrl) {
-        URL.revokeObjectURL(pdfBlobUrl)
+        URL.revokeObjectURL(pdfBlobUrl);
       }
-    }
-  }, [status, jobId, pdfBlobUrl])
+    };
+  }, [status, jobId, pdfBlobUrl]);
 
   const getStatusIcon = () => {
     switch (status) {
       case "completed":
-        return <CheckCircle className="h-12 w-12 text-green-500" />
+        return <CheckCircle className="h-12 w-12 text-green-500" />;
       case "failed":
-        return <XCircle className="h-12 w-12 text-red-500" />
+        return <XCircle className="h-12 w-12 text-red-500" />;
       case "processing":
-        return <Loader2 className="h-12 w-12 text-primary animate-spin" />
+        return <Loader2 className="h-12 w-12 text-primary animate-spin" />;
       default:
-        return <FileText className="h-12 w-12 text-muted-foreground" />
+        return <FileText className="h-12 w-12 text-muted-foreground" />;
     }
-  }
+  };
 
   const getStatusMessage = () => {
     switch (status) {
       case "pending":
-        return "Preparing report..."
+        return "Preparing report...";
       case "processing":
-        return "Generating report..."
+        return "Generating report...";
       case "completed":
-        return "Report ready!"
+        return "Report ready!";
       case "failed":
-        return "Report generation failed"
+        return "Report generation failed";
       default:
-        return "Initializing..."
+        return "Initializing...";
     }
-  }
+  };
 
   const getProgressColor = () => {
-    if (status === "failed") return "bg-red-500"
-    if (status === "completed") return "bg-green-500"
-    return ""
-  }
+    if (status === "failed") return "bg-red-500";
+    if (status === "completed") return "bg-green-500";
+    return "";
+  };
 
   // If completed, show PDF inline preview
   if (status === "completed" && jobId) {
@@ -144,7 +144,7 @@ export function ReportProgress({
           </div>
         </Card>
       </div>
-    )
+    );
   }
 
   // Otherwise show progress/status card
@@ -191,7 +191,7 @@ export function ReportProgress({
         </div>
       </div>
     </Card>
-  )
+  );
 }
 
-export default ReportProgress
+export default ReportProgress;

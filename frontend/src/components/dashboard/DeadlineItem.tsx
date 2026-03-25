@@ -1,12 +1,12 @@
-import { BookOpen, Clock } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { BookOpen, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface DeadlineItemProps {
-  assignmentName: string
-  className: string
-  dueDate: string
+  assignmentName: string;
+  className: string;
+  dueDate: string;
 }
 
 export function DeadlineItem({
@@ -14,49 +14,49 @@ export function DeadlineItem({
   className,
   dueDate,
 }: DeadlineItemProps) {
-  const [timeLeft, setTimeLeft] = useState<string>("")
+  const [timeLeft, setTimeLeft] = useState<string>("");
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const now = Date.now()
-      const due = new Date(dueDate).getTime()
-      const diff = due - now
+      const now = Date.now();
+      const due = new Date(dueDate).getTime();
+      const diff = due - now;
 
       if (diff <= 0) {
-        setTimeLeft("Past Due")
-        return
+        setTimeLeft("Past Due");
+        return;
       }
 
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor(
         (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-      )
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      );
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
       if (days > 0) {
-        setTimeLeft(`${days}d ${hours}h`)
+        setTimeLeft(`${days}d ${hours}h`);
       } else if (hours > 0) {
-        setTimeLeft(`${hours}h ${minutes}m`)
+        setTimeLeft(`${hours}h ${minutes}m`);
       } else {
-        setTimeLeft(`${minutes}m`)
+        setTimeLeft(`${minutes}m`);
       }
-    }
+    };
 
-    calculateTimeLeft()
-    const interval = setInterval(calculateTimeLeft, 60000) // Update every minute
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 60000); // Update every minute
 
-    return () => clearInterval(interval)
-  }, [dueDate])
+    return () => clearInterval(interval);
+  }, [dueDate]);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
   return (
     <Card className="shadow-neuro-sm border-teal-100 dark:border-teal-900">
@@ -81,5 +81,5 @@ export function DeadlineItem({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

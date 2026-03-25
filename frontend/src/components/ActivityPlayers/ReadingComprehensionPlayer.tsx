@@ -6,14 +6,8 @@
  * and answer MCQ, True/False, and Short Answer questions.
  */
 
-import {
-  BookOpen,
-  ChevronLeft,
-  ChevronRight,
-  Pause,
-  Play,
-} from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { BookOpen, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,40 +17,40 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
-import { Slider } from "@/components/ui/slider"
-import { cn } from "@/lib/utils"
-import type { QuestionNavigationState } from "@/types/activity-player"
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
+import type { QuestionNavigationState } from "@/types/activity-player";
 import type {
   ReadingComprehensionActivityPublic,
   ReadingComprehensionAnswer,
   WordTimestamp,
-} from "@/types/reading-comprehension"
+} from "@/types/reading-comprehension";
 
 interface ReadingComprehensionPlayerProps {
   /** The activity to display */
-  activity: ReadingComprehensionActivityPublic
+  activity: ReadingComprehensionActivityPublic;
   /** Callback when activity is submitted */
-  onSubmit: (answers: ReadingComprehensionAnswer[]) => void
+  onSubmit: (answers: ReadingComprehensionAnswer[]) => void;
   /** Whether submission is in progress */
-  isSubmitting?: boolean
+  isSubmitting?: boolean;
   /** Initial answers (for resuming) */
-  initialAnswers?: ReadingComprehensionAnswer[]
+  initialAnswers?: ReadingComprehensionAnswer[];
   /** Hide the submit button (when embedded in ActivityPlayer which has its own submit) */
-  hideSubmitButton?: boolean
+  hideSubmitButton?: boolean;
   /** Callback when answers change (for parent to track progress) */
-  onAnswersChange?: (answers: ReadingComprehensionAnswer[]) => void
+  onAnswersChange?: (answers: ReadingComprehensionAnswer[]) => void;
   /** External control: current question index (when controlled by parent) */
-  currentQuestionIndex?: number
+  currentQuestionIndex?: number;
   /** External control: callback when current question should change */
-  onQuestionIndexChange?: (index: number) => void
+  onQuestionIndexChange?: (index: number) => void;
   /** Callback to expose navigation state to parent */
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 /**
@@ -69,48 +63,48 @@ function PassageWithHighlight({
   currentTime,
   isPlaying,
 }: {
-  passage: string
-  timestamps: WordTimestamp[]
-  currentTime: number
-  isPlaying: boolean
+  passage: string;
+  timestamps: WordTimestamp[];
+  currentTime: number;
+  isPlaying: boolean;
 }) {
   // Find the currently active word index based on audio time
   const activeWordIndex = useMemo(() => {
-    if (!isPlaying || timestamps.length === 0) return -1
+    if (!isPlaying || timestamps.length === 0) return -1;
     for (let i = timestamps.length - 1; i >= 0; i--) {
       if (currentTime >= timestamps[i].start) {
-        return i
+        return i;
       }
     }
-    return -1
-  }, [currentTime, timestamps, isPlaying])
+    return -1;
+  }, [currentTime, timestamps, isPlaying]);
 
   // Build spans from the passage, matching timestamp words sequentially
   const spans = useMemo(() => {
     if (timestamps.length === 0) {
-      return [{ text: passage, wordIndex: -1 }]
+      return [{ text: passage, wordIndex: -1 }];
     }
 
-    const result: { text: string; wordIndex: number }[] = []
+    const result: { text: string; wordIndex: number }[] = [];
     // Split passage into tokens preserving whitespace
-    const tokens = passage.split(/(\s+)/)
-    let tsIdx = 0
+    const tokens = passage.split(/(\s+)/);
+    let tsIdx = 0;
 
     for (const token of tokens) {
       if (/^\s+$/.test(token)) {
         // whitespace - just add as-is
-        result.push({ text: token, wordIndex: -1 })
+        result.push({ text: token, wordIndex: -1 });
       } else if (tsIdx < timestamps.length) {
         // word token - map to the next timestamp
-        result.push({ text: token, wordIndex: tsIdx })
-        tsIdx++
+        result.push({ text: token, wordIndex: tsIdx });
+        tsIdx++;
       } else {
-        result.push({ text: token, wordIndex: -1 })
+        result.push({ text: token, wordIndex: -1 });
       }
     }
 
-    return result
-  }, [passage, timestamps])
+    return result;
+  }, [passage, timestamps]);
 
   return (
     <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
@@ -128,7 +122,7 @@ function PassageWithHighlight({
         </span>
       ))}
     </p>
-  )
+  );
 }
 
 export function ReadingComprehensionPlayer({
@@ -143,151 +137,151 @@ export function ReadingComprehensionPlayer({
   onNavigationStateChange,
 }: ReadingComprehensionPlayerProps) {
   // Internal current question index (used when not externally controlled)
-  const [internalIndex, setInternalIndex] = useState(0)
+  const [internalIndex, setInternalIndex] = useState(0);
   // Use external index if provided, otherwise internal
-  const isExternallyControlled = currentQuestionIndex !== undefined
+  const isExternallyControlled = currentQuestionIndex !== undefined;
   const currentIndex = isExternallyControlled
     ? currentQuestionIndex
-    : internalIndex
+    : internalIndex;
 
   // Setter that works for both internal and external control
   const setCurrentIndex = useCallback(
     (index: number) => {
       if (isExternallyControlled && onQuestionIndexChange) {
-        onQuestionIndexChange(index)
+        onQuestionIndexChange(index);
       } else {
-        setInternalIndex(index)
+        setInternalIndex(index);
       }
     },
     [isExternallyControlled, onQuestionIndexChange],
-  )
+  );
 
   // Answers map: questionId -> answer
   const [answers, setAnswers] = useState<
     Map<string, ReadingComprehensionAnswer>
   >(() => {
-    const map = new Map<string, ReadingComprehensionAnswer>()
-    initialAnswers.forEach((a) => map.set(a.question_id, a))
-    return map
-  })
+    const map = new Map<string, ReadingComprehensionAnswer>();
+    initialAnswers.forEach((a) => map.set(a.question_id, a));
+    return map;
+  });
   // Confirm dialog visibility
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   // Show passage panel on mobile
-  const [showPassage, setShowPassage] = useState(true)
+  const [showPassage, setShowPassage] = useState(true);
 
-  const totalQuestions = activity.questions.length
-  const currentQuestion = activity.questions[currentIndex]
+  const totalQuestions = activity.questions.length;
+  const currentQuestion = activity.questions[currentIndex];
 
   // Store callbacks in refs to avoid infinite loops
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
-  const onNavigationStateChangeRef = useRef(onNavigationStateChange)
-  onNavigationStateChangeRef.current = onNavigationStateChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
+  const onNavigationStateChangeRef = useRef(onNavigationStateChange);
+  onNavigationStateChangeRef.current = onNavigationStateChange;
 
   // Notify parent when answers change
   useEffect(() => {
-    const callback = onAnswersChangeRef.current
+    const callback = onAnswersChangeRef.current;
     if (callback) {
-      callback(Array.from(answers.values()))
+      callback(Array.from(answers.values()));
     }
-  }, [answers])
+  }, [answers]);
 
   // Memoize navigation state components to prevent infinite loops
-  const answeredItemIds = useMemo(() => Array.from(answers.keys()), [answers])
+  const answeredItemIds = useMemo(() => Array.from(answers.keys()), [answers]);
   const answeredIndices = useMemo(() => {
-    const indices: number[] = []
+    const indices: number[] = [];
     activity.questions.forEach((q, index) => {
       if (answers.has(q.question_id)) {
-        indices.push(index)
+        indices.push(index);
       }
-    })
-    return indices
-  }, [answers, activity.questions])
+    });
+    return indices;
+  }, [answers, activity.questions]);
 
   // Track previous navigation state to avoid unnecessary updates
-  const prevNavStateRef = useRef<string>("")
+  const prevNavStateRef = useRef<string>("");
 
   // Notify parent of navigation state changes
   useEffect(() => {
-    const callback = onNavigationStateChangeRef.current
+    const callback = onNavigationStateChangeRef.current;
     if (callback) {
       // Only call if state actually changed
-      const stateKey = `${currentIndex}-${totalQuestions}-${answeredItemIds.join(",")}`
+      const stateKey = `${currentIndex}-${totalQuestions}-${answeredItemIds.join(",")}`;
       if (prevNavStateRef.current !== stateKey) {
-        prevNavStateRef.current = stateKey
+        prevNavStateRef.current = stateKey;
         callback({
           currentIndex,
           totalItems: totalQuestions,
           answeredItemIds,
           answeredIndices,
-        })
+        });
       }
     }
-  }, [currentIndex, totalQuestions, answeredItemIds, answeredIndices])
+  }, [currentIndex, totalQuestions, answeredItemIds, answeredIndices]);
 
-  const answeredCount = answers.size
-  const allAnswered = answeredCount === totalQuestions
-  const progressPercent = (answeredCount / totalQuestions) * 100
+  const answeredCount = answers.size;
+  const allAnswered = answeredCount === totalQuestions;
+  const progressPercent = (answeredCount / totalQuestions) * 100;
 
   // Handle MCQ/True-False option selection
   const handleSelectOption = useCallback(
     (questionId: string, optionIndex: number) => {
       setAnswers((prev) => {
-        const next = new Map(prev)
+        const next = new Map(prev);
         next.set(questionId, {
           question_id: questionId,
           answer_index: optionIndex,
           answer_text: null,
-        })
-        return next
-      })
+        });
+        return next;
+      });
     },
     [],
-  )
+  );
 
   // Handle short answer text input
   const handleTextInput = useCallback((questionId: string, text: string) => {
     setAnswers((prev) => {
-      const next = new Map(prev)
+      const next = new Map(prev);
       if (text.trim()) {
         next.set(questionId, {
           question_id: questionId,
           answer_index: null,
           answer_text: text,
-        })
+        });
       } else {
-        next.delete(questionId)
+        next.delete(questionId);
       }
-      return next
-    })
-  }, [])
+      return next;
+    });
+  }, []);
 
   // Navigate to previous question
   const handlePrevious = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
+      setCurrentIndex(currentIndex - 1);
     }
-  }, [currentIndex, setCurrentIndex])
+  }, [currentIndex, setCurrentIndex]);
 
   // Navigate to next question
   const handleNext = useCallback(() => {
     if (currentIndex < totalQuestions - 1) {
-      setCurrentIndex(currentIndex + 1)
+      setCurrentIndex(currentIndex + 1);
     }
-  }, [currentIndex, totalQuestions, setCurrentIndex])
+  }, [currentIndex, totalQuestions, setCurrentIndex]);
 
   // Handle submit button click
   const handleSubmitClick = useCallback(() => {
     if (allAnswered) {
-      setShowConfirmDialog(true)
+      setShowConfirmDialog(true);
     }
-  }, [allAnswered])
+  }, [allAnswered]);
 
   // Confirm and submit
   const handleConfirmSubmit = useCallback(() => {
-    setShowConfirmDialog(false)
-    onSubmit(Array.from(answers.values()))
-  }, [answers, onSubmit])
+    setShowConfirmDialog(false);
+    onSubmit(Array.from(answers.values()));
+  }, [answers, onSubmit]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -297,106 +291,109 @@ export function ReadingComprehensionPlayer({
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
       ) {
-        return
+        return;
       }
 
       if (e.key === "ArrowLeft") {
-        handlePrevious()
+        handlePrevious();
       } else if (e.key === "ArrowRight") {
-        handleNext()
+        handleNext();
       } else if (
         e.key >= "1" &&
         e.key <= "4" &&
         currentQuestion.question_type !== "short_answer"
       ) {
-        const optionIndex = parseInt(e.key, 10) - 1
+        const optionIndex = parseInt(e.key, 10) - 1;
         if (currentQuestion.options?.[optionIndex]) {
-          handleSelectOption(currentQuestion.question_id, optionIndex)
+          handleSelectOption(currentQuestion.question_id, optionIndex);
         }
       }
-    }
+    };
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handlePrevious, handleNext, handleSelectOption, currentQuestion])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handlePrevious, handleNext, handleSelectOption, currentQuestion]);
 
   // Get current answer for the question
-  const getCurrentAnswer = (questionId: string) => answers.get(questionId)
+  const getCurrentAnswer = (questionId: string) => answers.get(questionId);
 
   // ── Audio player state ──
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [audioProgress, setAudioProgress] = useState(0)
-  const [audioDuration, setAudioDuration] = useState(0)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
 
-  const hasAudio = !!activity.passage_audio?.audio_base64
+  const hasAudio = !!activity.passage_audio?.audio_base64;
 
   // Create audio element from base64 data
   useEffect(() => {
-    if (!activity.passage_audio?.audio_base64) return
+    if (!activity.passage_audio?.audio_base64) return;
 
     const audio = new Audio(
       `data:audio/mp3;base64,${activity.passage_audio.audio_base64}`,
-    )
-    audioRef.current = audio
+    );
+    audioRef.current = audio;
 
     // Use duration_seconds from data if available (more reliable than metadata for base64 mp3s)
-    const knownDuration = activity.passage_audio.duration_seconds
+    const knownDuration = activity.passage_audio.duration_seconds;
     if (knownDuration && knownDuration > 0) {
-      setAudioDuration(knownDuration)
+      setAudioDuration(knownDuration);
     }
 
     audio.addEventListener("loadedmetadata", () => {
       // Only update if we don't already have a known duration, and the value is finite
-      if ((!knownDuration || knownDuration <= 0) && Number.isFinite(audio.duration)) {
-        setAudioDuration(audio.duration)
+      if (
+        (!knownDuration || knownDuration <= 0) &&
+        Number.isFinite(audio.duration)
+      ) {
+        setAudioDuration(audio.duration);
       }
-    })
+    });
     // Also listen for durationchange — some browsers resolve Infinity later
     audio.addEventListener("durationchange", () => {
       if (Number.isFinite(audio.duration) && audio.duration > 0) {
-        setAudioDuration(audio.duration)
+        setAudioDuration(audio.duration);
       }
-    })
+    });
     audio.addEventListener("timeupdate", () => {
-      setAudioProgress(audio.currentTime)
-    })
+      setAudioProgress(audio.currentTime);
+    });
     audio.addEventListener("ended", () => {
-      setIsPlaying(false)
-      setAudioProgress(0)
-    })
+      setIsPlaying(false);
+      setAudioProgress(0);
+    });
 
     return () => {
-      audio.pause()
-      audio.removeAttribute("src")
-      audioRef.current = null
-    }
-  }, [activity.passage_audio])
+      audio.pause();
+      audio.removeAttribute("src");
+      audioRef.current = null;
+    };
+  }, [activity.passage_audio]);
 
   const toggleAudio = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = audioRef.current;
+    if (!audio) return;
     if (isPlaying) {
-      audio.pause()
+      audio.pause();
     } else {
-      audio.play()
+      audio.play();
     }
-    setIsPlaying(!isPlaying)
-  }, [isPlaying])
+    setIsPlaying(!isPlaying);
+  }, [isPlaying]);
 
   const seekAudio = useCallback((value: number[]) => {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.currentTime = value[0]
-    setAudioProgress(value[0])
-  }, [])
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = value[0];
+    setAudioProgress(value[0]);
+  }, []);
 
   const formatTime = (seconds: number) => {
-    if (!Number.isFinite(seconds) || seconds < 0) return "0:00"
-    const m = Math.floor(seconds / 60)
-    const s = Math.floor(seconds % 60)
-    return `${m}:${s.toString().padStart(2, "0")}`
-  }
+    if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="flex min-h-full flex-col items-center justify-center p-4">
@@ -412,8 +409,7 @@ export function ReadingComprehensionPlayer({
             <CardContent className="p-4">
               {/* Passage text with word highlighting */}
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                {hasAudio &&
-                activity.passage_audio?.word_timestamps?.length ? (
+                {hasAudio && activity.passage_audio?.word_timestamps?.length ? (
                   <PassageWithHighlight
                     passage={activity.passage}
                     timestamps={activity.passage_audio.word_timestamps}
@@ -529,7 +525,7 @@ export function ReadingComprehensionPlayer({
                   {currentQuestion.options?.map((option, index) => {
                     const isSelected =
                       getCurrentAnswer(currentQuestion.question_id)
-                        ?.answer_index === index
+                        ?.answer_index === index;
                     return (
                       <Button
                         key={`${currentQuestion.question_id}-${index}`}
@@ -552,7 +548,7 @@ export function ReadingComprehensionPlayer({
                         )}
                         <span className="flex-1">{option}</span>
                       </Button>
-                    )
+                    );
                   })}
                 </div>
               )}
@@ -652,7 +648,7 @@ export function ReadingComprehensionPlayer({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
 
-export default ReadingComprehensionPlayer
+export default ReadingComprehensionPlayer;

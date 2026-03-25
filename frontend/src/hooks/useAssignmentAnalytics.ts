@@ -5,15 +5,15 @@
  * React Query hooks for fetching assignment analytics data.
  */
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query";
 import {
   getAssignmentAnalytics,
   getStudentAssignmentResult,
-} from "@/services/assignmentsApi"
+} from "@/services/assignmentsApi";
 import type {
   MultiActivityAnalyticsResponse,
   StudentAssignmentResultResponse,
-} from "@/types/assignment"
+} from "@/types/assignment";
 
 /**
  * Query key factory for analytics queries
@@ -30,7 +30,7 @@ export const analyticsQueryKeys = {
     ] as const,
   studentResult: (assignmentId: string) =>
     [...analyticsQueryKeys.all, "studentResult", assignmentId] as const,
-}
+};
 
 /**
  * Hook to fetch analytics for a multi-activity assignment (teacher view)
@@ -52,7 +52,7 @@ export function useAssignmentAnalytics(
     queryFn: () => getAssignmentAnalytics(assignmentId, expandActivityId),
     enabled: enabled && Boolean(assignmentId),
     staleTime: 30 * 1000, // Consider data fresh for 30 seconds
-  })
+  });
 }
 
 /**
@@ -71,5 +71,5 @@ export function useStudentAssignmentResult(
     queryFn: () => getStudentAssignmentResult(assignmentId),
     enabled: enabled && Boolean(assignmentId),
     staleTime: 60 * 1000, // Consider data fresh for 1 minute
-  })
+  });
 }

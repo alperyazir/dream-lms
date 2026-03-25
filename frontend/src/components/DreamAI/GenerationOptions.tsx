@@ -5,23 +5,23 @@
  * Renders different configuration options based on selected activity type.
  */
 
-import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import type { ActivityType } from "@/hooks/useGenerationState"
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import type { ActivityType } from "@/hooks/useGenerationState";
 
 interface GenerationOptionsProps {
-  activityType: ActivityType
-  options: Record<string, any>
-  onOptionChange: (key: string, value: any) => void
+  activityType: ActivityType;
+  options: Record<string, any>;
+  onOptionChange: (key: string, value: any) => void;
 }
 
 export function GenerationOptions({
@@ -30,7 +30,7 @@ export function GenerationOptions({
   onOptionChange,
 }: GenerationOptionsProps) {
   if (!activityType) {
-    return null
+    return null;
   }
 
   return (
@@ -72,7 +72,7 @@ export function GenerationOptions({
         <WordBuilderOptions options={options} onChange={onOptionChange} />
       )}
     </div>
-  )
+  );
 }
 
 /**
@@ -82,8 +82,8 @@ function DifficultySelector({
   value,
   onChange,
 }: {
-  value: string
-  onChange: (value: string) => void
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <div className="space-y-2">
@@ -100,7 +100,7 @@ function DifficultySelector({
         </SelectContent>
       </Select>
     </div>
-  )
+  );
 }
 
 /**
@@ -110,12 +110,12 @@ function VocabularyQuizOptions({
   options,
   onChange,
 }: {
-  options: Record<string, any>
-  onChange: (key: string, value: any) => void
+  options: Record<string, any>;
+  onChange: (key: string, value: any) => void;
 }) {
-  const quizLength = options.quiz_length || 10
-  const includeAudio = options.include_audio ?? true
-  const quizMode = options.quiz_mode || "mixed"
+  const quizLength = options.quiz_length || 10;
+  const includeAudio = options.include_audio ?? true;
+  const quizMode = options.quiz_mode || "mixed";
 
   return (
     <>
@@ -178,7 +178,7 @@ function VocabularyQuizOptions({
         />
       </div>
     </>
-  )
+  );
 }
 
 /**
@@ -188,11 +188,11 @@ function AIQuizOptions({
   options,
   onChange,
 }: {
-  options: Record<string, any>
-  onChange: (key: string, value: any) => void
+  options: Record<string, any>;
+  onChange: (key: string, value: any) => void;
 }) {
-  const questionCount = options.question_count || 10
-  const includeExplanations = options.include_explanations ?? true
+  const questionCount = options.question_count || 10;
+  const includeExplanations = options.include_explanations ?? true;
 
   return (
     <>
@@ -232,7 +232,7 @@ function AIQuizOptions({
         />
       </div>
     </>
-  )
+  );
 }
 
 /**
@@ -242,10 +242,10 @@ function ReadingComprehensionOptions({
   options,
   onChange,
 }: {
-  options: Record<string, any>
-  onChange: (key: string, value: any) => void
+  options: Record<string, any>;
+  onChange: (key: string, value: any) => void;
 }) {
-  const questionCount = options.question_count || 5
+  const questionCount = options.question_count || 5;
 
   return (
     <>
@@ -269,7 +269,7 @@ function ReadingComprehensionOptions({
         </div>
       </div>
     </>
-  )
+  );
 }
 
 /**
@@ -279,11 +279,11 @@ function SentenceBuilderOptions({
   options,
   onChange,
 }: {
-  options: Record<string, any>
-  onChange: (key: string, value: any) => void
+  options: Record<string, any>;
+  onChange: (key: string, value: any) => void;
 }) {
-  const sentenceCount = options.sentence_count || 10
-  const includeAudio = options.include_audio ?? true
+  const sentenceCount = options.sentence_count || 10;
+  const includeAudio = options.include_audio ?? true;
 
   return (
     <>
@@ -321,7 +321,7 @@ function SentenceBuilderOptions({
         />
       </div>
     </>
-  )
+  );
 }
 
 /**
@@ -331,11 +331,11 @@ function WordBuilderOptions({
   options,
   onChange,
 }: {
-  options: Record<string, any>
-  onChange: (key: string, value: any) => void
+  options: Record<string, any>;
+  onChange: (key: string, value: any) => void;
 }) {
-  const wordCount = options.word_count || 10
-  const includeAudio = options.include_audio ?? true
+  const wordCount = options.word_count || 10;
+  const includeAudio = options.include_audio ?? true;
 
   return (
     <>
@@ -373,5 +373,5 @@ function WordBuilderOptions({
         />
       </div>
     </>
-  )
+  );
 }

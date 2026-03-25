@@ -14,17 +14,17 @@ export function isAnswerAcceptable(
   acceptableAnswers: string[],
   options?: { caseSensitive?: boolean; trimWhitespace?: boolean },
 ): boolean {
-  const caseSensitive = options?.caseSensitive ?? false
-  const trimWhitespace = options?.trimWhitespace ?? true
+  const caseSensitive = options?.caseSensitive ?? false;
+  const trimWhitespace = options?.trimWhitespace ?? true;
 
-  let normalized = studentAnswer
-  if (trimWhitespace) normalized = normalized.trim()
-  if (!caseSensitive) normalized = normalized.toLowerCase()
+  let normalized = studentAnswer;
+  if (trimWhitespace) normalized = normalized.trim();
+  if (!caseSensitive) normalized = normalized.toLowerCase();
 
   return acceptableAnswers.some((acceptable) => {
-    let norm = acceptable
-    if (trimWhitespace) norm = norm.trim()
-    if (!caseSensitive) norm = norm.toLowerCase()
-    return normalized === norm
-  })
+    let norm = acceptable;
+    if (trimWhitespace) norm = norm.trim();
+    if (!caseSensitive) norm = norm.toLowerCase();
+    return normalized === norm;
+  });
 }

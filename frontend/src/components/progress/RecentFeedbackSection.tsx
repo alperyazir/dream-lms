@@ -5,17 +5,17 @@
  * Displays recent teacher feedback on student assignments
  */
 
-import { Link } from "@tanstack/react-router"
-import { formatDistanceToNow } from "date-fns"
-import { ExternalLink, MessageSquare } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import type { ProgressRecentAssignment } from "@/types/analytics"
+import { Link } from "@tanstack/react-router";
+import { formatDistanceToNow } from "date-fns";
+import { ExternalLink, MessageSquare } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import type { ProgressRecentAssignment } from "@/types/analytics";
 
 export interface RecentFeedbackSectionProps {
-  recentAssignments: ProgressRecentAssignment[]
-  limit?: number
+  recentAssignments: ProgressRecentAssignment[];
+  limit?: number;
 }
 
 export function RecentFeedbackSection({
@@ -25,7 +25,7 @@ export function RecentFeedbackSection({
   // Filter for only assignments with feedback and limit the results
   const assignmentsWithFeedback = recentAssignments
     .filter((assignment) => assignment.has_feedback)
-    .slice(0, limit)
+    .slice(0, limit);
 
   return (
     <section className="space-y-4">
@@ -49,21 +49,21 @@ export function RecentFeedbackSection({
         </div>
       )}
     </section>
-  )
+  );
 }
 
 function FeedbackCard({
   assignment,
 }: {
-  assignment: ProgressRecentAssignment
+  assignment: ProgressRecentAssignment;
 }) {
   const timeAgo = formatDistanceToNow(new Date(assignment.completed_at), {
     addSuffix: true,
-  })
+  });
 
   // Get initials for avatar (assuming teacher name might be in metadata)
   // For now, using "T" for Teacher as we don't have teacher name in the data
-  const teacherInitials = "T"
+  const teacherInitials = "T";
 
   return (
     <Link
@@ -112,5 +112,5 @@ function FeedbackCard({
         </CardContent>
       </Card>
     </Link>
-  )
+  );
 }

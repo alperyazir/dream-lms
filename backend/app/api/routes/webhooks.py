@@ -56,9 +56,7 @@ def _validate_webhook_signature(payload: bytes, signature: str, secret: str) -> 
         Uses constant-time comparison to prevent timing attacks.
     """
     # Compute expected signature
-    expected = hmac.new(
-        secret.encode("utf-8"), payload, hashlib.sha256
-    ).hexdigest()
+    expected = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
     # Extract actual signature (remove "sha256=" prefix if present)
     actual = signature.replace("sha256=", "")
@@ -67,26 +65,24 @@ def _validate_webhook_signature(payload: bytes, signature: str, secret: str) -> 
     return hmac.compare_digest(expected, actual)
 
 
-
-
 async def _import_book_activities(book_id: int, db: AsyncSession) -> dict:
     """
     Import activities from DCS config.json into local Activity table.
-    
+
     Args:
         book_id: DCS book ID
         db: Async database session
-        
+
     Returns:
         Dict with import statistics
-        
+
     Raises:
         Exception if import fails
     """
     from app.models import Activity
     from app.services.book_service_v2 import get_book_service
     from app.services.config_parser import parse_book_config
-    
+
     # Activity types that have implemented players
     SUPPORTED_ACTIVITY_TYPES = {
         "dragdroppicture",
@@ -96,38 +92,35 @@ async def _import_book_activities(book_id: int, db: AsyncSession) -> dict:
         "markwithx",
         "puzzleFindWords",
     }
-    
+
     logger.info(f"📥 Starting activity import for book {book_id}")
-    
+
     # Get book from DCS
     book_service = get_book_service()
     book = await book_service.get_book(book_id)
     if not book:
         raise ValueError(f"Book {book_id} not found in DCS")
-    
+
     # Get book config from DCS
     book_config = await book_service.get_book_config(book_id)
     if not book_config:
         raise ValueError(f"Book configuration not found for book {book_id}")
-    
+
     # Parse activities from config.json
     activity_data_list = parse_book_config(book_config)
-    
+
     # Filter for supported activity types only
     supported_activities = [
-        a for a in activity_data_list 
-        if a.activity_type in SUPPORTED_ACTIVITY_TYPES
+        a for a in activity_data_list if a.activity_type in SUPPORTED_ACTIVITY_TYPES
     ]
-    
+
     # Delete existing activities for this book
-    result = await db.execute(
-        select(Activity).where(Activity.dcs_book_id == book_id)
-    )
+    result = await db.execute(select(Activity).where(Activity.dcs_book_id == book_id))
     existing_activities = result.scalars().all()
     deleted_count = len(existing_activities)
     for activity in existing_activities:
         await db.delete(activity)
-    
+
     # Create new Activity records
     created_count = 0
     for activity_data in supported_activities:
@@ -143,20 +136,21 @@ async def _import_book_activities(book_id: int, db: AsyncSession) -> dict:
         )
         db.add(activity)
         created_count += 1
-    
+
     await db.commit()
-    
+
     logger.info(
         f"✅ Activity import complete for book {book_id}: "
         f"deleted {deleted_count}, created {created_count}"
     )
-    
+
     return {
         "book_id": book_id,
         "deleted": deleted_count,
         "created": created_count,
         "total_parsed": len(activity_data_list),
     }
+
 
 async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> None:
     """
@@ -172,9 +166,11 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
     """
     logger.info("🔄 " + "=" * 78)
     logger.info(f"🔄 PROCESSING WEBHOOK EVENT: {event_log_id}")
-    
+
     # Get event log
-    result = await db.execute(select(WebhookEventLog).where(WebhookEventLog.id == event_log_id))
+    result = await db.execute(
+        select(WebhookEventLog).where(WebhookEventLog.id == event_log_id)
+    )
     event_log = result.scalar_one_or_none()
 
     if not event_log:
@@ -184,7 +180,7 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
     logger.info(f"📋 Event Type: {event_log.event_type.value}")
     logger.info(f"📋 Book ID: {event_log.book_id}")
     logger.info(f"📋 Publisher ID: {event_log.publisher_id}")
-    
+
     max_retries = 3
 
     for attempt in range(max_retries):
@@ -192,22 +188,29 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
             # Update status
             event_log.status = WebhookEventStatus.processing
             await db.commit()
-            logger.info(f"⚙️  Status updated to: processing (attempt {attempt + 1}/{max_retries})")
+            logger.info(
+                f"⚙️  Status updated to: processing (attempt {attempt + 1}/{max_retries})"
+            )
 
             # Get cache for invalidation
             cache = get_dcs_cache()
-            
+
             # ALSO invalidate DCS client's internal cache
             from app.services.dream_storage_client import get_dream_storage_client
+
             dcs_client = await get_dream_storage_client()
 
             # Process based on event type
             if event_log.event_type.value.startswith("book."):
                 book_id = str(event_log.book_id)
-                logger.info(f"📚 Processing BOOK event: {event_log.event_type.value} for book {book_id}")
+                logger.info(
+                    f"📚 Processing BOOK event: {event_log.event_type.value} for book {book_id}"
+                )
 
                 if event_log.event_type == WebhookEventType.book_created:
-                    logger.info("🆕 BOOK CREATED - Invalidating caches and importing activities...")
+                    logger.info(
+                        "🆕 BOOK CREATED - Invalidating caches and importing activities..."
+                    )
                     await cache.invalidate(CacheKeys.BOOK_LIST)
                     await cache.invalidate_pattern("dcs:books:publisher:")
                     dcs_client.invalidate_cache()
@@ -220,13 +223,17 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
                             f"for new book {book_id}"
                         )
                     except Exception as e:
-                        logger.error(f"⚠️  Failed to import activities for book {book_id}: {e}")
+                        logger.error(
+                            f"⚠️  Failed to import activities for book {book_id}: {e}"
+                        )
                         # Don't fail the webhook - cache invalidation succeeded
 
                     logger.info(f"✅ Cache invalidated for new book {book_id}")
 
                 elif event_log.event_type == WebhookEventType.book_updated:
-                    logger.info("📝 BOOK UPDATED - Invalidating caches and re-importing activities...")
+                    logger.info(
+                        "📝 BOOK UPDATED - Invalidating caches and re-importing activities..."
+                    )
                     await cache.invalidate(CacheKeys.book_by_id(book_id))
                     await cache.invalidate(CacheKeys.book_config(book_id))
                     await cache.invalidate(CacheKeys.BOOK_LIST)
@@ -240,13 +247,17 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
                             f"for updated book {book_id}"
                         )
                     except Exception as e:
-                        logger.error(f"⚠️  Failed to re-import activities for book {book_id}: {e}")
+                        logger.error(
+                            f"⚠️  Failed to re-import activities for book {book_id}: {e}"
+                        )
                         # Don't fail the webhook - cache invalidation succeeded
 
                     logger.info(f"✅ Cache invalidated for updated book {book_id}")
 
                 elif event_log.event_type == WebhookEventType.book_deleted:
-                    logger.info("🗑️  BOOK DELETED - Invalidating caches and deleting activities...")
+                    logger.info(
+                        "🗑️  BOOK DELETED - Invalidating caches and deleting activities..."
+                    )
                     await cache.invalidate_pattern(f"dcs:books:id:{book_id}")
                     await cache.invalidate(CacheKeys.BOOK_LIST)
                     dcs_client.invalidate_cache()
@@ -254,6 +265,7 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
                     # Delete activities for the deleted book
                     try:
                         from app.models import Activity
+
                         result = await db.execute(
                             select(Activity).where(Activity.dcs_book_id == int(book_id))
                         )
@@ -262,22 +274,30 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
                         for activity in activities:
                             await db.delete(activity)
                         await db.commit()
-                        logger.info(f"✅ Deleted {deleted_count} activities for deleted book {book_id}")
+                        logger.info(
+                            f"✅ Deleted {deleted_count} activities for deleted book {book_id}"
+                        )
                     except Exception as e:
-                        logger.error(f"⚠️  Failed to delete activities for book {book_id}: {e}")
+                        logger.error(
+                            f"⚠️  Failed to delete activities for book {book_id}: {e}"
+                        )
                         # Don't fail the webhook - cache invalidation succeeded
 
                     logger.info(f"✅ Cache invalidated for deleted book {book_id}")
 
             elif event_log.event_type.value.startswith("publisher."):
                 publisher_id = str(event_log.publisher_id)
-                logger.info(f"🏢 Processing PUBLISHER event: {event_log.event_type.value} for publisher {publisher_id}")
+                logger.info(
+                    f"🏢 Processing PUBLISHER event: {event_log.event_type.value} for publisher {publisher_id}"
+                )
 
                 if event_log.event_type == WebhookEventType.publisher_created:
                     logger.info("🆕 PUBLISHER CREATED - Invalidating caches...")
                     await cache.invalidate(CacheKeys.PUBLISHER_LIST)
                     dcs_client.invalidate_cache()
-                    logger.info(f"✅ Invalidated publisher caches for new publisher {publisher_id}")
+                    logger.info(
+                        f"✅ Invalidated publisher caches for new publisher {publisher_id}"
+                    )
 
                 elif event_log.event_type == WebhookEventType.publisher_updated:
                     logger.info("📝 PUBLISHER UPDATED - Invalidating caches...")
@@ -285,16 +305,24 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
                     await cache.invalidate(CacheKeys.publisher_logo(publisher_id))
                     await cache.invalidate(CacheKeys.PUBLISHER_LIST)
                     dcs_client.invalidate_cache()
-                    logger.info(f"✅ Invalidated publisher caches for updated publisher {publisher_id}")
+                    logger.info(
+                        f"✅ Invalidated publisher caches for updated publisher {publisher_id}"
+                    )
 
                 elif event_log.event_type == WebhookEventType.publisher_deleted:
                     logger.info("🗑️  PUBLISHER DELETED - Invalidating caches...")
                     await cache.invalidate_pattern(f"dcs:publishers:id:{publisher_id}")
-                    await cache.invalidate_pattern(f"dcs:publishers:logo:{publisher_id}")
+                    await cache.invalidate_pattern(
+                        f"dcs:publishers:logo:{publisher_id}"
+                    )
                     await cache.invalidate(CacheKeys.PUBLISHER_LIST)
-                    await cache.invalidate_pattern(f"dcs:books:publisher:{publisher_id}")
+                    await cache.invalidate_pattern(
+                        f"dcs:books:publisher:{publisher_id}"
+                    )
                     dcs_client.invalidate_cache()
-                    logger.info(f"✅ Invalidated publisher caches for deleted publisher {publisher_id}")
+                    logger.info(
+                        f"✅ Invalidated publisher caches for deleted publisher {publisher_id}"
+                    )
 
             # Success
             event_log.status = WebhookEventStatus.success
@@ -307,11 +335,15 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
         except DreamStorageNotFoundError as e:
             # Book not found in Dream Central Storage - mark as failed (non-retryable)
             event_log.retry_count = attempt + 1
-            event_log.error_message = f"Book not found in Dream Central Storage: {str(e)}"
+            event_log.error_message = (
+                f"Book not found in Dream Central Storage: {str(e)}"
+            )
             event_log.status = WebhookEventStatus.failed
             event_log.processed_at = datetime.now(UTC)
             await db.commit()
-            logger.error(f"❌ Webhook event {event_log_id} failed - book not found: {e}")
+            logger.error(
+                f"❌ Webhook event {event_log_id} failed - book not found: {e}"
+            )
             logger.info("🔄 " + "=" * 78)
             return
 
@@ -337,11 +369,6 @@ async def process_webhook_event(event_log_id: uuid.UUID, db: AsyncSession) -> No
                     f"❌ Webhook event {event_log_id} permanently failed after {max_retries} attempts: {e}"
                 )
                 logger.info("🔄 " + "=" * 78)
-
-                # TODO: Send admin notification
-                # await send_admin_notification(
-                #     f"Webhook processing failed: {event_log.event_type} for book {event_log.book_id}"
-                # )
 
 
 @router.post(
@@ -375,7 +402,7 @@ async def receive_dream_storage_webhook(
     logger.info(f"Request URL: {request.url}")
     logger.info(f"Client host: {request.client.host if request.client else 'unknown'}")
     logger.info(f"Headers: {dict(request.headers)}")
-    
+
     # Extract signature from header
     signature = request.headers.get("X-Webhook-Signature")
     if not signature:
@@ -385,37 +412,41 @@ async def receive_dream_storage_webhook(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing webhook signature",
         )
-    
+
     logger.info(f"Signature header present: {signature[:20]}...")
 
     # Read raw request body for signature validation
     payload_bytes = await request.body()
     logger.info(f"Payload size: {len(payload_bytes)} bytes")
-    logger.info(f"Raw payload: {payload_bytes.decode('utf-8')[:500]}...")  # First 500 chars
+    logger.info(
+        f"Raw payload: {payload_bytes.decode('utf-8')[:500]}..."
+    )  # First 500 chars
 
     # Validate signature
     if not _validate_webhook_signature(
         payload_bytes, signature, settings.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET
     ):
         logger.warning("❌ Webhook signature VALIDATION FAILED")
-        logger.warning(f"Expected secret: {settings.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET[:10]}...")
+        logger.warning(
+            f"Expected secret: {settings.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET[:10]}..."
+        )
         logger.info("=" * 80)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid webhook signature",
         )
-    
+
     logger.info("✅ Signature validation PASSED")
 
     # Parse JSON payload
     try:
         payload_dict = json.loads(payload_bytes.decode("utf-8"))
         webhook_payload = WebhookPayload(**payload_dict)
-        
+
         logger.info(f"📦 Event Type: {webhook_payload.event.value}")
         logger.info(f"📦 Event Data: {webhook_payload.data}")
         logger.info(f"📦 Timestamp: {webhook_payload.timestamp}")
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to parse webhook payload: {e}")
         logger.error(f"Payload was: {payload_bytes.decode('utf-8')}")
@@ -446,7 +477,7 @@ async def receive_dream_storage_webhook(
     db.add(event_log)
     await db.commit()
     await db.refresh(event_log)
-    
+
     logger.info(f"💾 Event log created with ID: {event_log.id}")
 
     # Queue background job with new async session
@@ -458,9 +489,11 @@ async def receive_dream_storage_webhook(
             await process_webhook_event(event_log.id, bg_db)
 
     background_tasks.add_task(run_webhook_processing)
-    
-    logger.info(f"⚡ Background task queued for processing")
-    logger.info(f"✅ Webhook accepted: {webhook_payload.event.value} for {entity_type} {entity_id}")
+
+    logger.info("⚡ Background task queued for processing")
+    logger.info(
+        f"✅ Webhook accepted: {webhook_payload.event.value} for {entity_type} {entity_id}"
+    )
     logger.info("=" * 80)
 
     # Return immediately

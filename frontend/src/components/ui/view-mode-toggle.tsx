@@ -1,16 +1,20 @@
-import { LayoutGrid, List } from "lucide-react"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { cn } from "@/lib/utils"
+import { LayoutGrid, List } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 
-export type ViewMode = "grid" | "table"
+export type ViewMode = "grid" | "table";
 
 interface ViewModeToggleProps {
-  value: ViewMode
-  onChange: (value: ViewMode) => void
-  className?: string
+  value: ViewMode;
+  onChange: (value: ViewMode) => void;
+  className?: string;
 }
 
-export function ViewModeToggle({ value, onChange, className }: ViewModeToggleProps) {
+export function ViewModeToggle({
+  value,
+  onChange,
+  className,
+}: ViewModeToggleProps) {
   return (
     <ToggleGroup
       type="single"
@@ -33,5 +37,5 @@ export function ViewModeToggle({ value, onChange, className }: ViewModeTogglePro
         <List className="h-4 w-4" />
       </ToggleGroupItem>
     </ToggleGroup>
-  )
+  );
 }

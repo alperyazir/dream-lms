@@ -8,7 +8,6 @@ Epic 30 - Story 30.5: Listening Skill — Fill-in-the-Blank Format
 
 from typing import Any
 
-
 LISTENING_FB_SYSTEM_PROMPT = """You are an expert ESL/EFL activity designer specializing in listening-based fill-in-the-blank exercises.
 
 ## Activity Design:
@@ -53,13 +52,11 @@ LISTENING_FB_DIFFICULTY_GUIDELINES = {
 - Missing words are common nouns or simple verbs.
 - Prefer 1-2 blanks per sentence.
 - Distractors should be clearly different from correct answers.""",
-
     "medium": """## Medium (A2-B1):
 - Medium sentences (8-15 words) with intermediate vocabulary.
 - Missing words can be nouns, verbs, or common adjectives.
 - Use 1-3 blanks per sentence (vary across items).
 - Distractors should be plausible but distinguishable.""",
-
     "hard": """## Hard (B1-B2):
 - Longer sentences (10-18 words) with advanced vocabulary.
 - Missing words can be adjectives, adverbs, or abstract nouns.

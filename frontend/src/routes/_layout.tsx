@@ -1,9 +1,9 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
-import { UsersService } from "@/client"
-import Navbar from "@/components/Common/Navbar"
-import Sidebar from "@/components/Common/Sidebar"
-import { NavigationProvider } from "@/contexts/NavigationContext"
-import { getMustChangePassword, isLoggedIn } from "@/hooks/useAuth"
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { UsersService } from "@/client";
+import Navbar from "@/components/Common/Navbar";
+import Sidebar from "@/components/Common/Sidebar";
+import { NavigationProvider } from "@/contexts/NavigationContext";
+import { getMustChangePassword, isLoggedIn } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -11,14 +11,14 @@ export const Route = createFileRoute("/_layout")({
     if (!isLoggedIn()) {
       throw redirect({
         to: "/login",
-      })
+      });
     }
 
     // Redirect to password change if required
     if (getMustChangePassword()) {
       throw redirect({
         to: "/change-password",
-      })
+      });
     }
 
     // Load current user if not already in cache
@@ -26,11 +26,11 @@ export const Route = createFileRoute("/_layout")({
     const currentUser = await context.queryClient.ensureQueryData({
       queryKey: ["currentUser"],
       queryFn: UsersService.readUserMe,
-    })
+    });
 
-    return { currentUser }
+    return { currentUser };
   },
-})
+});
 
 function LayoutContent() {
   return (
@@ -48,7 +48,7 @@ function LayoutContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function Layout() {
@@ -56,5 +56,5 @@ function Layout() {
     <NavigationProvider>
       <LayoutContent />
     </NavigationProvider>
-  )
+  );
 }

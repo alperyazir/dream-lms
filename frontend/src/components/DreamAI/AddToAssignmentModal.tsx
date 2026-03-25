@@ -5,10 +5,10 @@
  * Allows teacher to create new assignment or add to existing draft.
  */
 
-import { useNavigate } from "@tanstack/react-router"
-import { FileEdit, PlusCircle } from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useNavigate } from "@tanstack/react-router";
+import { FileEdit, PlusCircle } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,15 +16,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import type { ContentItem } from "@/types/content-library"
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import type { ContentItem } from "@/types/content-library";
 
 interface AddToAssignmentModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  content: ContentItem | null
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  content: ContentItem | null;
 }
 
 export function AddToAssignmentModal({
@@ -32,10 +32,10 @@ export function AddToAssignmentModal({
   onOpenChange,
   content,
 }: AddToAssignmentModalProps) {
-  const [option, setOption] = useState<"new" | "existing">("new")
-  const navigate = useNavigate()
+  const [option, setOption] = useState<"new" | "existing">("new");
+  const navigate = useNavigate();
 
-  if (!content) return null
+  if (!content) return null;
 
   const handleConfirm = () => {
     if (option === "new") {
@@ -48,7 +48,7 @@ export function AddToAssignmentModal({
           content_id: content.id,
           activity_type: content.activity_type,
         } as Record<string, string>,
-      })
+      });
     } else {
       // Navigate to assignment list filtered by drafts
       // Teacher can then select which draft to add content to
@@ -58,10 +58,10 @@ export function AddToAssignmentModal({
           status: "draft",
           add_content_id: content.id,
         } as Record<string, string>,
-      })
+      });
     }
-    onOpenChange(false)
-  }
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,5 +120,5 @@ export function AddToAssignmentModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,36 +1,131 @@
 """Generate Excel template for student bulk import testing."""
+
 import random
+
 from openpyxl import Workbook
 
 # Sample data for realistic names
 first_names = [
-    "James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda",
-    "William", "Barbara", "David", "Elizabeth", "Richard", "Susan", "Joseph", "Jessica",
-    "Thomas", "Sarah", "Charles", "Karen", "Christopher", "Nancy", "Daniel", "Lisa",
-    "Matthew", "Betty", "Anthony", "Margaret", "Mark", "Sandra", "Donald", "Ashley",
-    "Steven", "Kimberly", "Paul", "Emily", "Andrew", "Donna", "Joshua", "Michelle",
-    "Kenneth", "Dorothy", "Kevin", "Carol", "Brian", "Amanda", "George", "Melissa",
-    "Edward", "Deborah", "Ronald", "Stephanie", "Timothy", "Rebecca", "Jason", "Sharon"
+    "James",
+    "Mary",
+    "John",
+    "Patricia",
+    "Robert",
+    "Jennifer",
+    "Michael",
+    "Linda",
+    "William",
+    "Barbara",
+    "David",
+    "Elizabeth",
+    "Richard",
+    "Susan",
+    "Joseph",
+    "Jessica",
+    "Thomas",
+    "Sarah",
+    "Charles",
+    "Karen",
+    "Christopher",
+    "Nancy",
+    "Daniel",
+    "Lisa",
+    "Matthew",
+    "Betty",
+    "Anthony",
+    "Margaret",
+    "Mark",
+    "Sandra",
+    "Donald",
+    "Ashley",
+    "Steven",
+    "Kimberly",
+    "Paul",
+    "Emily",
+    "Andrew",
+    "Donna",
+    "Joshua",
+    "Michelle",
+    "Kenneth",
+    "Dorothy",
+    "Kevin",
+    "Carol",
+    "Brian",
+    "Amanda",
+    "George",
+    "Melissa",
+    "Edward",
+    "Deborah",
+    "Ronald",
+    "Stephanie",
+    "Timothy",
+    "Rebecca",
+    "Jason",
+    "Sharon",
 ]
 
 last_names = [
-    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
-    "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
-    "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
-    "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker",
-    "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
-    "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell",
-    "Carter", "Roberts"
+    "Smith",
+    "Johnson",
+    "Williams",
+    "Brown",
+    "Jones",
+    "Garcia",
+    "Miller",
+    "Davis",
+    "Rodriguez",
+    "Martinez",
+    "Hernandez",
+    "Lopez",
+    "Gonzalez",
+    "Wilson",
+    "Anderson",
+    "Thomas",
+    "Taylor",
+    "Moore",
+    "Jackson",
+    "Martin",
+    "Lee",
+    "Perez",
+    "Thompson",
+    "White",
+    "Harris",
+    "Sanchez",
+    "Clark",
+    "Ramirez",
+    "Lewis",
+    "Robinson",
+    "Walker",
+    "Young",
+    "Allen",
+    "King",
+    "Wright",
+    "Scott",
+    "Torres",
+    "Nguyen",
+    "Hill",
+    "Flores",
+    "Green",
+    "Adams",
+    "Nelson",
+    "Baker",
+    "Hall",
+    "Rivera",
+    "Campbell",
+    "Mitchell",
+    "Carter",
+    "Roberts",
 ]
 
 grade_levels = ["5", "6", "7", "8", "9", "10", "11", "12"]
+
 
 def generate_students(count: int) -> list[dict]:
     """Generate test student data."""
     students = []
     used_emails = set()
 
-    for i in range(count):
+    for _i in range(count):
         first_name = random.choice(first_names)
         last_name = random.choice(last_names)
 
@@ -49,15 +144,18 @@ def generate_students(count: int) -> list[dict]:
         parent_email = f"parent.{email_base}@testparent.com"
         grade_level = random.choice(grade_levels)
 
-        students.append({
-            "First Name": first_name,
-            "Last Name": last_name,
-            "Email": email,
-            "Grade Level": grade_level,
-            "Parent Email": parent_email
-        })
+        students.append(
+            {
+                "First Name": first_name,
+                "Last Name": last_name,
+                "Email": email,
+                "Grade Level": grade_level,
+                "Parent Email": parent_email,
+            }
+        )
 
     return students
+
 
 def create_excel_file(students: list[dict], filename: str):
     """Create Excel file with student data."""
@@ -75,13 +173,15 @@ def create_excel_file(students: list[dict], filename: str):
 
     # Write student data
     for student in students:
-        sheet.append([
-            student["First Name"],
-            student["Last Name"],
-            student["Email"],
-            student["Grade Level"],
-            student["Parent Email"]
-        ])
+        sheet.append(
+            [
+                student["First Name"],
+                student["Last Name"],
+                student["Email"],
+                student["Grade Level"],
+                student["Parent Email"],
+            ]
+        )
 
     # Auto-adjust column widths
     for column in sheet.columns:
@@ -98,6 +198,7 @@ def create_excel_file(students: list[dict], filename: str):
 
     workbook.save(filename)
     print(f"✅ Created {filename} with {len(students)} students")
+
 
 if __name__ == "__main__":
     # Generate 50 test students

@@ -1,4 +1,5 @@
 """API tests for student bulk import (Story 9.9)."""
+
 import io
 
 from fastapi import status
@@ -19,18 +20,27 @@ def create_test_excel(data: list[dict]) -> bytes:
     ws.title = "Students"
 
     # Default headers
-    headers = ["Full Name", "Username", "Password", "Email", "Student ID", "Class/Grade"]
+    headers = [
+        "Full Name",
+        "Username",
+        "Password",
+        "Email",
+        "Student ID",
+        "Class/Grade",
+    ]
     ws.append(headers)
 
     for row in data:
-        ws.append([
-            row.get("Full Name", ""),
-            row.get("Username", ""),
-            row.get("Password", ""),
-            row.get("Email", ""),
-            row.get("Student ID", ""),
-            row.get("Class/Grade", ""),
-        ])
+        ws.append(
+            [
+                row.get("Full Name", ""),
+                row.get("Username", ""),
+                row.get("Password", ""),
+                row.get("Email", ""),
+                row.get("Student ID", ""),
+                row.get("Class/Grade", ""),
+            ]
+        )
 
     buffer = io.BytesIO()
     wb.save(buffer)
@@ -51,8 +61,13 @@ class TestImportTemplate:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.headers["content-type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        assert "student_import_template.xlsx" in response.headers.get("content-disposition", "")
+        assert (
+            response.headers["content-type"]
+            == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        assert "student_import_template.xlsx" in response.headers.get(
+            "content-disposition", ""
+        )
 
         # Verify it's a valid Excel file
         wb = load_workbook(io.BytesIO(response.content))
@@ -101,19 +116,25 @@ class TestImportTemplate:
 class TestImportValidation:
     """Tests for the import validation endpoint."""
 
-    def test_validate_valid_file(
-        self, client: TestClient, admin_token: str
-    ) -> None:
+    def test_validate_valid_file(self, client: TestClient, admin_token: str) -> None:
         """Test validation of a valid import file."""
-        excel_data = create_test_excel([
-            {"Full Name": "John Doe", "Email": "john@test.com"},
-            {"Full Name": "Jane Smith", "Email": "jane@test.com"},
-        ])
+        excel_data = create_test_excel(
+            [
+                {"Full Name": "John Doe", "Email": "john@test.com"},
+                {"Full Name": "Jane Smith", "Email": "jane@test.com"},
+            ]
+        )
 
         response = client.post(
             "/api/v1/students/import/validate",
             headers=auth_headers(admin_token),
-            files={"file": ("students.xlsx", excel_data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    excel_data,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -129,14 +150,22 @@ class TestImportValidation:
         self, client: TestClient, admin_token: str
     ) -> None:
         """Test validation catches missing Full Name."""
-        excel_data = create_test_excel([
-            {"Full Name": "", "Email": "test@test.com"},
-        ])
+        excel_data = create_test_excel(
+            [
+                {"Full Name": "", "Email": "test@test.com"},
+            ]
+        )
 
         response = client.post(
             "/api/v1/students/import/validate",
             headers=auth_headers(admin_token),
-            files={"file": ("students.xlsx", excel_data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    excel_data,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -145,18 +174,24 @@ class TestImportValidation:
         assert data["rows"][0]["status"] == "error"
         assert any("Full Name is required" in err for err in data["rows"][0]["errors"])
 
-    def test_validate_invalid_email(
-        self, client: TestClient, admin_token: str
-    ) -> None:
+    def test_validate_invalid_email(self, client: TestClient, admin_token: str) -> None:
         """Test validation catches invalid email format."""
-        excel_data = create_test_excel([
-            {"Full Name": "John Doe", "Email": "not-an-email"},
-        ])
+        excel_data = create_test_excel(
+            [
+                {"Full Name": "John Doe", "Email": "not-an-email"},
+            ]
+        )
 
         response = client.post(
             "/api/v1/students/import/validate",
             headers=auth_headers(admin_token),
-            files={"file": ("students.xlsx", excel_data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    excel_data,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -168,15 +203,23 @@ class TestImportValidation:
         self, client: TestClient, admin_token: str
     ) -> None:
         """Test validation warns about duplicate usernames in file."""
-        excel_data = create_test_excel([
-            {"Full Name": "John Doe"},
-            {"Full Name": "John Doe"},  # Same name = same generated username
-        ])
+        excel_data = create_test_excel(
+            [
+                {"Full Name": "John Doe"},
+                {"Full Name": "John Doe"},  # Same name = same generated username
+            ]
+        )
 
         response = client.post(
             "/api/v1/students/import/validate",
             headers=auth_headers(admin_token),
-            files={"file": ("students.xlsx", excel_data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    excel_data,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -186,18 +229,24 @@ class TestImportValidation:
         # Second row should have john.doe2
         assert data["rows"][1]["username"] == "john.doe2"
 
-    def test_validate_turkish_name(
-        self, client: TestClient, admin_token: str
-    ) -> None:
+    def test_validate_turkish_name(self, client: TestClient, admin_token: str) -> None:
         """Test Turkish characters are converted in username."""
-        excel_data = create_test_excel([
-            {"Full Name": "Ahmet Yılmaz"},
-        ])
+        excel_data = create_test_excel(
+            [
+                {"Full Name": "Ahmet Yılmaz"},
+            ]
+        )
 
         response = client.post(
             "/api/v1/students/import/validate",
             headers=auth_headers(admin_token),
-            files={"file": ("students.xlsx", excel_data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    excel_data,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -232,7 +281,13 @@ class TestImportValidation:
         response = client.post(
             "/api/v1/students/import/validate",
             headers=auth_headers(admin_token),
-            files={"file": ("students.xlsx", buffer.read(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    buffer.read(),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -246,14 +301,22 @@ class TestImportExecution:
         self, client: TestClient, admin_token: str
     ) -> None:
         """Test admin must provide school_id."""
-        excel_data = create_test_excel([
-            {"Full Name": "John Doe"},
-        ])
+        excel_data = create_test_excel(
+            [
+                {"Full Name": "John Doe"},
+            ]
+        )
 
         response = client.post(
             "/api/v1/students/import",
             headers=auth_headers(admin_token),
-            files={"file": ("students.xlsx", excel_data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    excel_data,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -266,14 +329,22 @@ class TestImportExecution:
         # Skip if teacher doesn't have school assigned
         # This test depends on fixture setup
 
-        excel_data = create_test_excel([
-            {"Full Name": "Import Test Student"},
-        ])
+        excel_data = create_test_excel(
+            [
+                {"Full Name": "Import Test Student"},
+            ]
+        )
 
         response = client.post(
             "/api/v1/students/import",
             headers=auth_headers(teacher_token),
-            files={"file": ("students.xlsx", excel_data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    excel_data,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         # Expected behavior depends on test fixture:
@@ -295,13 +366,21 @@ class TestImportExecution:
 class TestCredentialsDownload:
     """Tests for the credentials download endpoint."""
 
-    def test_download_credentials(
-        self, client: TestClient, admin_token: str
-    ) -> None:
+    def test_download_credentials(self, client: TestClient, admin_token: str) -> None:
         """Test downloading credentials file."""
         credentials = [
-            {"full_name": "John Doe", "username": "john.doe", "password": "abc12345", "email": "john@test.com"},
-            {"full_name": "Jane Smith", "username": "jane.smith", "password": "xyz67890", "email": None},
+            {
+                "full_name": "John Doe",
+                "username": "john.doe",
+                "password": "abc12345",
+                "email": "john@test.com",
+            },
+            {
+                "full_name": "Jane Smith",
+                "username": "jane.smith",
+                "password": "xyz67890",
+                "email": None,
+            },
         ]
 
         response = client.post(
@@ -311,7 +390,10 @@ class TestCredentialsDownload:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.headers["content-type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        assert (
+            response.headers["content-type"]
+            == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         assert "student_credentials" in response.headers.get("content-disposition", "")
 
         # Verify content
@@ -332,9 +414,7 @@ class TestCredentialsDownload:
         assert ws.cell(row=3, column=2).value == "john.doe"
         assert ws.cell(row=3, column=3).value == "abc12345"
 
-    def test_download_credentials_requires_auth(
-        self, client: TestClient
-    ) -> None:
+    def test_download_credentials_requires_auth(self, client: TestClient) -> None:
         """Test credentials download requires authentication."""
         response = client.post(
             "/api/v1/students/import/credentials",

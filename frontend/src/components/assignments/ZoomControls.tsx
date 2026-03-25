@@ -9,23 +9,23 @@
  * - Keyboard shortcuts (Ctrl/Cmd + / -)
  */
 
-import { Minus, Plus, RotateCcw } from "lucide-react"
-import { useCallback, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { Minus, Plus, RotateCcw } from "lucide-react";
+import { useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 
-export const ZOOM_LEVELS = [50, 75, 100, 125, 150, 200] as const
-export type ZoomLevel = (typeof ZOOM_LEVELS)[number]
+export const ZOOM_LEVELS = [50, 75, 100, 125, 150, 200] as const;
+export type ZoomLevel = (typeof ZOOM_LEVELS)[number];
 
 export interface ZoomControlsProps {
-  zoomLevel: ZoomLevel
-  onZoomChange: (level: ZoomLevel) => void
-  enableKeyboardShortcuts?: boolean
+  zoomLevel: ZoomLevel;
+  onZoomChange: (level: ZoomLevel) => void;
+  enableKeyboardShortcuts?: boolean;
 }
 
 export function ZoomControls({
@@ -34,49 +34,49 @@ export function ZoomControls({
   enableKeyboardShortcuts = true,
 }: ZoomControlsProps) {
   // Find current index in zoom levels
-  const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel)
+  const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
 
   // Handlers
   const handleZoomIn = useCallback(() => {
-    const nextIndex = Math.min(currentIndex + 1, ZOOM_LEVELS.length - 1)
-    onZoomChange(ZOOM_LEVELS[nextIndex])
-  }, [currentIndex, onZoomChange])
+    const nextIndex = Math.min(currentIndex + 1, ZOOM_LEVELS.length - 1);
+    onZoomChange(ZOOM_LEVELS[nextIndex]);
+  }, [currentIndex, onZoomChange]);
 
   const handleZoomOut = useCallback(() => {
-    const prevIndex = Math.max(currentIndex - 1, 0)
-    onZoomChange(ZOOM_LEVELS[prevIndex])
-  }, [currentIndex, onZoomChange])
+    const prevIndex = Math.max(currentIndex - 1, 0);
+    onZoomChange(ZOOM_LEVELS[prevIndex]);
+  }, [currentIndex, onZoomChange]);
 
   const handleReset = useCallback(() => {
-    onZoomChange(100)
-  }, [onZoomChange])
+    onZoomChange(100);
+  }, [onZoomChange]);
 
   // Keyboard shortcuts
   useEffect(() => {
-    if (!enableKeyboardShortcuts) return
+    if (!enableKeyboardShortcuts) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMod = e.ctrlKey || e.metaKey
+      const isMod = e.ctrlKey || e.metaKey;
 
       if (isMod && (e.key === "=" || e.key === "+")) {
-        e.preventDefault()
-        handleZoomIn()
+        e.preventDefault();
+        handleZoomIn();
       } else if (isMod && e.key === "-") {
-        e.preventDefault()
-        handleZoomOut()
+        e.preventDefault();
+        handleZoomOut();
       } else if (isMod && e.key === "0") {
-        e.preventDefault()
-        handleReset()
+        e.preventDefault();
+        handleReset();
       }
-    }
+    };
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [enableKeyboardShortcuts, handleZoomIn, handleZoomOut, handleReset])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [enableKeyboardShortcuts, handleZoomIn, handleZoomOut, handleReset]);
 
-  const canZoomOut = currentIndex > 0
-  const canZoomIn = currentIndex < ZOOM_LEVELS.length - 1
-  const isDefaultZoom = zoomLevel === 100
+  const canZoomOut = currentIndex > 0;
+  const canZoomIn = currentIndex < ZOOM_LEVELS.length - 1;
+  const isDefaultZoom = zoomLevel === 100;
 
   return (
     <TooltipProvider>
@@ -143,5 +143,5 @@ export function ZoomControls({
         </Tooltip>
       </div>
     </TooltipProvider>
-  )
+  );
 }

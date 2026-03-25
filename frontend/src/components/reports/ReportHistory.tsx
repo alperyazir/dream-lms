@@ -16,8 +16,8 @@ import {
   FileText,
   Loader2,
   Trash2,
-} from "lucide-react"
-import { useState } from "react"
+} from "lucide-react";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,17 +28,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -46,17 +46,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { getReportPreviewBlob } from "@/services/reportsApi"
-import type { ReportHistoryItem } from "@/types/reports"
-import { REPORT_TYPE_LABELS } from "@/types/reports"
+} from "@/components/ui/table";
+import { getReportPreviewBlob } from "@/services/reportsApi";
+import type { ReportHistoryItem } from "@/types/reports";
+import { REPORT_TYPE_LABELS } from "@/types/reports";
 
 interface ReportHistoryProps {
-  reports: ReportHistoryItem[]
-  isLoading?: boolean
-  onDownload: (report: ReportHistoryItem) => void
-  onDelete?: (report: ReportHistoryItem) => void
-  isDeleting?: boolean
+  reports: ReportHistoryItem[];
+  isLoading?: boolean;
+  onDownload: (report: ReportHistoryItem) => void;
+  onDelete?: (report: ReportHistoryItem) => void;
+  isDeleting?: boolean;
 }
 
 export function ReportHistory({
@@ -66,45 +66,45 @@ export function ReportHistory({
   onDelete,
   isDeleting = false,
 }: ReportHistoryProps) {
-  const [viewingId, setViewingId] = useState<string | null>(null)
+  const [viewingId, setViewingId] = useState<string | null>(null);
 
   const handleView = async (report: ReportHistoryItem) => {
     try {
-      setViewingId(report.id)
-      const blob = await getReportPreviewBlob(report.job_id)
-      const url = window.URL.createObjectURL(blob)
-      window.open(url, "_blank")
+      setViewingId(report.id);
+      const blob = await getReportPreviewBlob(report.job_id);
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
       // Revoke after a delay to allow the tab to load
-      setTimeout(() => window.URL.revokeObjectURL(url), 5000)
+      setTimeout(() => window.URL.revokeObjectURL(url), 5000);
     } catch (error) {
-      console.error("Failed to preview report:", error)
+      console.error("Failed to preview report:", error);
     } finally {
-      setViewingId(null)
+      setViewingId(null);
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return new Intl.DateTimeFormat("en-US", {
       dateStyle: "medium",
       timeStyle: "short",
-    }).format(date)
-  }
+    }).format(date);
+  };
 
   const getTimeRemaining = (expiresAt: string) => {
-    const now = new Date()
-    const expiry = new Date(expiresAt)
-    const diff = expiry.getTime() - now.getTime()
+    const now = new Date();
+    const expiry = new Date(expiresAt);
+    const diff = expiry.getTime() - now.getTime();
 
-    if (diff <= 0) return "Expired"
+    if (diff <= 0) return "Expired";
 
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const days = Math.floor(hours / 24)
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
 
-    if (days > 0) return `${days}d remaining`
-    if (hours > 0) return `${hours}h remaining`
-    return "< 1h remaining"
-  }
+    if (days > 0) return `${days}d remaining`;
+    if (hours > 0) return `${hours}h remaining`;
+    return "< 1h remaining";
+  };
 
   if (isLoading) {
     return (
@@ -116,7 +116,7 @@ export function ReportHistory({
           ))}
         </div>
       </Card>
-    )
+    );
   }
 
   if (reports.length === 0) {
@@ -131,7 +131,7 @@ export function ReportHistory({
           </p>
         </div>
       </Card>
-    )
+    );
   }
 
   return (
@@ -261,7 +261,7 @@ export function ReportHistory({
         </Table>
       </div>
     </Card>
-  )
+  );
 }
 
-export default ReportHistory
+export default ReportHistory;

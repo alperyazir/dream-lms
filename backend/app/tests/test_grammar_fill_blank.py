@@ -1,24 +1,19 @@
 """Tests for Grammar Fill-in-the-Blank (Story 30.6)."""
 
-import asyncio
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pydantic import ValidationError
 
 from app.schemas.grammar_fill_blank import (
     GRAMMAR_TOPICS,
-    GrammarFBDifficulty,
-    GrammarFBMode,
     GrammarFillBlankActivity,
     GrammarFillBlankActivityPublic,
     GrammarFillBlankItem,
     GrammarFillBlankItemPublic,
     GrammarFillBlankRequest,
 )
-
 
 # ---------------------------------------------------------------------------
 # Schema Tests
@@ -38,7 +33,10 @@ class TestGrammarFillBlankSchemas:
 
     def test_valid_request_free_type(self) -> None:
         req = GrammarFillBlankRequest(
-            book_id=1, module_ids=[10], mode="free_type", include_hints=False,
+            book_id=1,
+            module_ids=[10],
+            mode="free_type",
+            include_hints=False,
         )
         assert req.mode == "free_type"
         assert req.include_hints is False
@@ -86,7 +84,10 @@ class TestGrammarFillBlankSchemas:
             grammar_topic="present_simple",
             difficulty="A1",
         )
-        assert not hasattr(public, "correct_answer") or "correct_answer" not in public.model_fields
+        assert (
+            not hasattr(public, "correct_answer")
+            or "correct_answer" not in public.model_fields
+        )
 
     def test_activity_schema(self) -> None:
         activity = GrammarFillBlankActivity(
@@ -148,9 +149,15 @@ class TestGrammarTopics:
 
     def test_expected_topics_present(self) -> None:
         expected = [
-            "present_simple", "past_simple", "future_simple",
-            "present_perfect", "conditionals", "passive_voice",
-            "articles", "prepositions", "modals",
+            "present_simple",
+            "past_simple",
+            "future_simple",
+            "present_perfect",
+            "conditionals",
+            "passive_voice",
+            "articles",
+            "prepositions",
+            "modals",
         ]
         for topic in expected:
             assert topic in GRAMMAR_TOPICS, f"Missing topic: {topic}"
@@ -223,7 +230,9 @@ class TestGrammarFillBlankPrompts:
             GRAMMAR_FB_JSON_SCHEMA,
         )
 
-        item_props = GRAMMAR_FB_JSON_SCHEMA["properties"]["items"]["items"]["properties"]
+        item_props = GRAMMAR_FB_JSON_SCHEMA["properties"]["items"]["items"][
+            "properties"
+        ]
         assert "sentence" in item_props
         assert "correct_answer" in item_props
         assert "grammar_topic" in item_props
@@ -243,7 +252,9 @@ class TestGrammarFillBlankService:
     def mock_dcs_client(self) -> MagicMock:
         client = MagicMock()
         module_mock = MagicMock()
-        module_mock.text = "The students go to school every day. They have been studying hard."
+        module_mock.text = (
+            "The students go to school every day. They have been studying hard."
+        )
         module_mock.title = "Unit 1: School Life"
         module_mock.topics = ["Education", "Daily Routines"]
         module_mock.language = "en"
@@ -254,26 +265,28 @@ class TestGrammarFillBlankService:
     @pytest.fixture
     def mock_llm_manager(self) -> MagicMock:
         manager = MagicMock()
-        manager.generate_structured = AsyncMock(return_value={
-            "items": [
-                {
-                    "sentence": "She _______ to school every day.",
-                    "correct_answer": "goes",
-                    "word_bank": ["goes", "go", "going", "gone"],
-                    "grammar_topic": "present_simple",
-                    "grammar_hint": "Use 3rd person singular.",
-                    "difficulty": "A1",
-                },
-                {
-                    "sentence": "They _______ a movie last night.",
-                    "correct_answer": "watched",
-                    "word_bank": ["watched", "watch", "watching", "watches"],
-                    "grammar_topic": "past_simple",
-                    "grammar_hint": "Use the past tense.",
-                    "difficulty": "A2",
-                },
-            ]
-        })
+        manager.generate_structured = AsyncMock(
+            return_value={
+                "items": [
+                    {
+                        "sentence": "She _______ to school every day.",
+                        "correct_answer": "goes",
+                        "word_bank": ["goes", "go", "going", "gone"],
+                        "grammar_topic": "present_simple",
+                        "grammar_hint": "Use 3rd person singular.",
+                        "difficulty": "A1",
+                    },
+                    {
+                        "sentence": "They _______ a movie last night.",
+                        "correct_answer": "watched",
+                        "word_bank": ["watched", "watch", "watching", "watches"],
+                        "grammar_topic": "past_simple",
+                        "grammar_hint": "Use the past tense.",
+                        "difficulty": "A2",
+                    },
+                ]
+            }
+        )
         return manager
 
     @pytest.mark.asyncio
@@ -286,7 +299,10 @@ class TestGrammarFillBlankService:
 
         service = GrammarFillBlankService(mock_dcs_client, mock_llm_manager)
         request = GrammarFillBlankRequest(
-            book_id=1, module_ids=[10], item_count=10, mode="word_bank",
+            book_id=1,
+            module_ids=[10],
+            item_count=10,
+            mode="word_bank",
         )
         activity = await service.generate_activity(request)
 
@@ -306,7 +322,10 @@ class TestGrammarFillBlankService:
 
         service = GrammarFillBlankService(mock_dcs_client, mock_llm_manager)
         request = GrammarFillBlankRequest(
-            book_id=1, module_ids=[10], item_count=10, mode="free_type",
+            book_id=1,
+            module_ids=[10],
+            item_count=10,
+            mode="free_type",
         )
         activity = await service.generate_activity(request)
 
@@ -323,17 +342,24 @@ class TestGrammarFillBlankService:
             GrammarFillBlankService,
         )
 
-        mock_llm_manager.generate_structured = AsyncMock(return_value={
-            "items": [{
-                "sentence": "He _______ fast.",
-                "correct_answer": "runs",
-                "grammar_topic": "invalid_topic_xyz",
-                "difficulty": "A1",
-            }]
-        })
+        mock_llm_manager.generate_structured = AsyncMock(
+            return_value={
+                "items": [
+                    {
+                        "sentence": "He _______ fast.",
+                        "correct_answer": "runs",
+                        "grammar_topic": "invalid_topic_xyz",
+                        "difficulty": "A1",
+                    }
+                ]
+            }
+        )
         service = GrammarFillBlankService(mock_dcs_client, mock_llm_manager)
         request = GrammarFillBlankRequest(
-            book_id=1, module_ids=[10], item_count=5, mode="free_type",
+            book_id=1,
+            module_ids=[10],
+            item_count=5,
+            mode="free_type",
         )
         activity = await service.generate_activity(request)
         assert activity.items[0].grammar_topic == "present_simple"
@@ -366,22 +392,34 @@ class TestGrammarFillBlankService:
         self, mock_dcs_client: MagicMock, mock_llm_manager: MagicMock
     ) -> None:
         """Word bank should always contain the correct answer."""
-        mock_llm_manager.generate_structured = AsyncMock(return_value={
-            "items": [{
-                "sentence": "She _______ happy.",
-                "correct_answer": "is",
-                "word_bank": ["am", "are", "was", "were"],  # correct 'is' not in bank
-                "grammar_topic": "present_simple",
-                "difficulty": "A1",
-            }]
-        })
+        mock_llm_manager.generate_structured = AsyncMock(
+            return_value={
+                "items": [
+                    {
+                        "sentence": "She _______ happy.",
+                        "correct_answer": "is",
+                        "word_bank": [
+                            "am",
+                            "are",
+                            "was",
+                            "were",
+                        ],  # correct 'is' not in bank
+                        "grammar_topic": "present_simple",
+                        "difficulty": "A1",
+                    }
+                ]
+            }
+        )
         from app.services.ai_generation.grammar_fill_blank_service import (
             GrammarFillBlankService,
         )
 
         service = GrammarFillBlankService(mock_dcs_client, mock_llm_manager)
         request = GrammarFillBlankRequest(
-            book_id=1, module_ids=[10], item_count=5, mode="word_bank",
+            book_id=1,
+            module_ids=[10],
+            item_count=5,
+            mode="word_bank",
         )
         activity = await service.generate_activity(request)
         assert "is" in activity.items[0].word_bank
@@ -420,7 +458,9 @@ class TestGrammarFillBlankStorage:
         )
 
     @pytest.mark.asyncio
-    async def test_save_and_get(self, sample_activity: GrammarFillBlankActivity) -> None:
+    async def test_save_and_get(
+        self, sample_activity: GrammarFillBlankActivity
+    ) -> None:
         from app.services.ai_generation.quiz_storage_service import QuizStorageService
 
         storage = QuizStorageService()
@@ -442,7 +482,10 @@ class TestGrammarFillBlankStorage:
         assert public is not None
         assert isinstance(public, GrammarFillBlankActivityPublic)
         assert public.items[0].sentence == "She _______ to school."
-        assert not hasattr(public.items[0], "correct_answer") or "correct_answer" not in public.items[0].model_fields
+        assert (
+            not hasattr(public.items[0], "correct_answer")
+            or "correct_answer" not in public.items[0].model_fields
+        )
 
     @pytest.mark.asyncio
     async def test_get_nonexistent_returns_none(self) -> None:

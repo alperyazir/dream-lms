@@ -5,14 +5,14 @@
  * Shows a loading spinner during regeneration.
  */
 
-import { RefreshCw } from "lucide-react"
+import { RefreshCw } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 
 export interface RegenerateButtonProps {
-  onClick: () => void
-  isLoading?: boolean
-  size?: "default" | "sm" | "lg" | "icon"
+  onClick: () => void;
+  isLoading?: boolean;
+  size?: "default" | "sm" | "lg" | "icon";
 }
 
 export function RegenerateButton({
@@ -31,5 +31,5 @@ export function RegenerateButton({
     >
       <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
     </Button>
-  )
+  );
 }

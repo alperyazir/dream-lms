@@ -12,30 +12,30 @@ import {
   FileText,
   Loader2,
   Sparkles,
-} from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
-import { cn } from "@/lib/utils"
-import { booksApi } from "@/services/booksApi"
-import type { Book, BookStructureResponse } from "@/types/book"
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
+import { booksApi } from "@/services/booksApi";
+import type { Book, BookStructureResponse } from "@/types/book";
 import type {
   ReadingComprehensionRequest,
   ReadingDifficulty,
   ReadingQuestionType,
-} from "@/types/reading-comprehension"
+} from "@/types/reading-comprehension";
 import {
   getDifficultyLabel,
   getQuestionTypeLabel,
@@ -44,15 +44,15 @@ import {
   READING_MAX_QUESTIONS,
   READING_MIN_QUESTIONS,
   READING_QUESTION_TYPES,
-} from "@/types/reading-comprehension"
+} from "@/types/reading-comprehension";
 
 interface ReadingComprehensionFormProps {
   /** Callback when activity generation is requested */
-  onGenerate: (request: ReadingComprehensionRequest) => void
+  onGenerate: (request: ReadingComprehensionRequest) => void;
   /** Whether generation is in progress */
-  isGenerating?: boolean
+  isGenerating?: boolean;
   /** Error message to display */
-  error?: string | null
+  error?: string | null;
 }
 
 export function ReadingComprehensionForm({
@@ -61,95 +61,95 @@ export function ReadingComprehensionForm({
   error = null,
 }: ReadingComprehensionFormProps) {
   // Books data
-  const [books, setBooks] = useState<Book[]>([])
-  const [loadingBooks, setLoadingBooks] = useState(true)
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loadingBooks, setLoadingBooks] = useState(true);
 
   // Selected book and its structure
-  const [selectedBookId, setSelectedBookId] = useState<number | null>(null)
+  const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
   const [bookStructure, setBookStructure] =
-    useState<BookStructureResponse | null>(null)
-  const [loadingStructure, setLoadingStructure] = useState(false)
+    useState<BookStructureResponse | null>(null);
+  const [loadingStructure, setLoadingStructure] = useState(false);
 
   // Form state
-  const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null)
+  const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
   const [questionTypes, setQuestionTypes] = useState<Set<ReadingQuestionType>>(
     new Set(["mcq", "true_false", "short_answer"]),
-  )
-  const [difficulty, setDifficulty] = useState<ReadingDifficulty>("auto")
-  const [questionCount, setQuestionCount] = useState(READING_DEFAULT_QUESTIONS)
+  );
+  const [difficulty, setDifficulty] = useState<ReadingDifficulty>("auto");
+  const [questionCount, setQuestionCount] = useState(READING_DEFAULT_QUESTIONS);
 
   // Load books on mount
   useEffect(() => {
     async function loadBooks() {
       try {
-        setLoadingBooks(true)
-        const response = await booksApi.getBooks({ limit: 100 })
-        setBooks(response.items)
+        setLoadingBooks(true);
+        const response = await booksApi.getBooks({ limit: 100 });
+        setBooks(response.items);
       } catch (err) {
-        console.error("Failed to load books:", err)
+        console.error("Failed to load books:", err);
       } finally {
-        setLoadingBooks(false)
+        setLoadingBooks(false);
       }
     }
-    loadBooks()
-  }, [])
+    loadBooks();
+  }, []);
 
   // Load book structure when book is selected
   useEffect(() => {
     async function loadStructure() {
       if (!selectedBookId) {
-        setBookStructure(null)
-        return
+        setBookStructure(null);
+        return;
       }
 
       try {
-        setLoadingStructure(true)
-        const structure = await booksApi.getBookStructure(selectedBookId)
-        setBookStructure(structure)
+        setLoadingStructure(true);
+        const structure = await booksApi.getBookStructure(selectedBookId);
+        setBookStructure(structure);
         // Reset module selection when book changes
-        setSelectedModuleId(null)
+        setSelectedModuleId(null);
       } catch (err) {
-        console.error("Failed to load book structure:", err)
-        setBookStructure(null)
+        console.error("Failed to load book structure:", err);
+        setBookStructure(null);
       } finally {
-        setLoadingStructure(false)
+        setLoadingStructure(false);
       }
     }
-    loadStructure()
-  }, [selectedBookId])
+    loadStructure();
+  }, [selectedBookId]);
 
   // Handle book selection
   const handleBookChange = useCallback((value: string) => {
-    setSelectedBookId(parseInt(value, 10))
-  }, [])
+    setSelectedBookId(parseInt(value, 10));
+  }, []);
 
   // Handle module selection
   const handleModuleChange = useCallback((value: string) => {
-    setSelectedModuleId(parseInt(value, 10))
-  }, [])
+    setSelectedModuleId(parseInt(value, 10));
+  }, []);
 
   // Handle question type toggle
   const handleQuestionTypeToggle = useCallback(
     (type: ReadingQuestionType, checked: boolean) => {
       setQuestionTypes((prev) => {
-        const next = new Set(prev)
+        const next = new Set(prev);
         if (checked) {
-          next.add(type)
+          next.add(type);
         } else {
           // Ensure at least one type is selected
           if (next.size > 1) {
-            next.delete(type)
+            next.delete(type);
           }
         }
-        return next
-      })
+        return next;
+      });
     },
     [],
-  )
+  );
 
   // Handle form submission
   const handleSubmit = useCallback(() => {
-    if (!selectedBookId || selectedModuleId === null) return
+    if (!selectedBookId || selectedModuleId === null) return;
 
     const request: ReadingComprehensionRequest = {
       book_id: selectedBookId,
@@ -157,9 +157,9 @@ export function ReadingComprehensionForm({
       question_count: questionCount,
       question_types: Array.from(questionTypes),
       difficulty,
-    }
+    };
 
-    onGenerate(request)
+    onGenerate(request);
   }, [
     selectedBookId,
     selectedModuleId,
@@ -167,15 +167,15 @@ export function ReadingComprehensionForm({
     questionTypes,
     difficulty,
     onGenerate,
-  ])
+  ]);
 
   const isFormValid =
     selectedBookId !== null &&
     selectedModuleId !== null &&
-    questionTypes.size > 0
+    questionTypes.size > 0;
 
   // Estimated generation time
-  const estimatedTime = Math.ceil(questionCount * 2) // ~2 seconds per question
+  const estimatedTime = Math.ceil(questionCount * 2); // ~2 seconds per question
 
   return (
     <Card className="mx-auto max-w-2xl shadow-lg">
@@ -398,7 +398,7 @@ export function ReadingComprehensionForm({
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-export default ReadingComprehensionForm
+export default ReadingComprehensionForm;

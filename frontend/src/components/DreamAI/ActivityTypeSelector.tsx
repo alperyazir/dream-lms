@@ -14,19 +14,19 @@ import {
   type LucideIcon,
   Sparkles,
   Type,
-} from "lucide-react"
-import { Label } from "@/components/ui/label"
-import type { ActivityType } from "@/hooks/useGenerationState"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { Label } from "@/components/ui/label";
+import type { ActivityType } from "@/hooks/useGenerationState";
+import { cn } from "@/lib/utils";
 
 export interface ActivityTypeConfig {
-  id: ActivityType
-  name: string
-  icon: LucideIcon
-  description: string
-  options: string[]
-  defaultOptions: Record<string, any>
-  gradient: string // Neon gradient colors
+  id: ActivityType;
+  name: string;
+  icon: LucideIcon;
+  description: string;
+  options: string[];
+  defaultOptions: Record<string, any>;
+  gradient: string; // Neon gradient colors
 }
 
 export const ACTIVITY_TYPES: ActivityTypeConfig[] = [
@@ -90,11 +90,11 @@ export const ACTIVITY_TYPES: ActivityTypeConfig[] = [
     defaultOptions: { word_count: 10, include_audio: true },
     gradient: "from-pink-500 to-purple-600",
   },
-]
+];
 
 interface ActivityTypeSelectorProps {
-  selectedType: ActivityType | null
-  onSelect: (type: ActivityType, defaultOptions: Record<string, any>) => void
+  selectedType: ActivityType | null;
+  onSelect: (type: ActivityType, defaultOptions: Record<string, any>) => void;
 }
 
 export function ActivityTypeSelector({
@@ -153,7 +153,7 @@ export function ActivityTypeSelector({
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -162,5 +162,5 @@ export function ActivityTypeSelector({
 export function getActivityTypeConfig(
   id: ActivityType,
 ): ActivityTypeConfig | undefined {
-  return ACTIVITY_TYPES.find((type) => type.id === id)
+  return ACTIVITY_TYPES.find((type) => type.id === id);
 }

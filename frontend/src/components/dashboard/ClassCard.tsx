@@ -1,12 +1,12 @@
-import { TrendingUp, Users } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TrendingUp, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface ClassCardProps {
-  name: string
-  subject: string
-  studentCount: number
-  averageScore: number
+  name: string;
+  subject: string;
+  studentCount: number;
+  averageScore: number;
 }
 
 export function ClassCard({
@@ -20,7 +20,7 @@ export function ClassCard({
       ? "text-green-500"
       : averageScore >= 80
         ? "text-teal-500"
-        : "text-yellow-500"
+        : "text-yellow-500";
 
   return (
     <Card className="shadow-neuro border-teal-100 dark:border-teal-900 hover:shadow-neuro-lg transition-all">
@@ -50,5 +50,5 @@ export function ClassCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

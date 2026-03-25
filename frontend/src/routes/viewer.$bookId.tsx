@@ -8,15 +8,15 @@
  * Shows a splash screen with animated book cover before opening viewer.
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, Loader2 } from "lucide-react"
-import { Suspense, lazy, useEffect, useMemo, useState } from "react"
-import { BookEntrySplash } from "@/components/FlowbookViewer/BookEntrySplash"
-import { Button } from "@/components/ui/button"
-import { booksApi } from "@/services/booksApi"
-import type { ActivityType as BackendActivityType } from "@/types/book"
-import type { ActivityType, BookConfig } from "@/types/flowbook"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { BookOpen, Loader2 } from "lucide-react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { BookEntrySplash } from "@/components/FlowbookViewer/BookEntrySplash";
+import { Button } from "@/components/ui/button";
+import { booksApi } from "@/services/booksApi";
+import type { ActivityType as BackendActivityType } from "@/types/book";
+import type { ActivityType, BookConfig } from "@/types/flowbook";
 
 /**
  * Map backend activity types to flowbook activity types
@@ -31,41 +31,51 @@ function mapActivityType(backendType: BackendActivityType): ActivityType {
     puzzleFindWords: "wordSearch",
     fillSentencesWithDots: "fillBlanks",
     fillpicture: "fillPicture",
-  }
-  return mapping[backendType] || "matchTheWords" // Default fallback
+  };
+  return mapping[backendType] || "matchTheWords"; // Default fallback
 }
 
 // Lazy load FlowbookViewer for code splitting
 const FlowbookViewer = lazy(() =>
-  import("@/components/FlowbookViewer").then((m) => ({ default: m.FlowbookViewer }))
-)
+  import("@/components/FlowbookViewer").then((m) => ({
+    default: m.FlowbookViewer,
+  })),
+);
 
 export const Route = createFileRoute("/viewer/$bookId")({
   component: ViewerPage,
-})
+});
 
 function ViewerPage() {
-  const { bookId } = Route.useParams()
+  const { bookId } = Route.useParams();
 
   // State for splash vs viewer
-  const [showViewer, setShowViewer] = useState(false)
+  const [showViewer, setShowViewer] = useState(false);
 
   // Fetch book details - use getBookById which fetches from list and filters
-  const { data: book, isLoading: isLoadingBook, error: bookError } = useQuery({
+  const {
+    data: book,
+    isLoading: isLoadingBook,
+    error: bookError,
+  } = useQuery({
     queryKey: ["book", bookId],
     queryFn: () => booksApi.getBookById(Number(bookId)),
-  })
+  });
 
   // Fetch book pages detail for FlowbookViewer - only when showViewer is true
-  const { data: pagesDetail, isLoading: isLoadingPages, error: pagesError } = useQuery({
+  const {
+    data: pagesDetail,
+    isLoading: isLoadingPages,
+    error: pagesError,
+  } = useQuery({
     queryKey: ["bookPagesDetail", bookId],
     queryFn: () => booksApi.getBookPagesDetail(bookId),
     enabled: !!book && showViewer,
-  })
+  });
 
   // Transform to BookConfig format
   const bookConfig: BookConfig | null = useMemo(() => {
-    if (!book || !pagesDetail) return null
+    if (!book || !pagesDetail) return null;
 
     return {
       title: book.title || "",
@@ -121,28 +131,28 @@ function ViewerPage() {
           config: a.config || {},
         })),
       })),
-    }
-  }, [book, pagesDetail])
+    };
+  }, [book, pagesDetail]);
 
   // Update document title
   useEffect(() => {
     if (book?.title) {
-      document.title = `${book.title} - Flowbook Viewer`
+      document.title = `${book.title} - Flowbook Viewer`;
     }
     return () => {
-      document.title = "Dream LMS"
-    }
-  }, [book?.title])
+      document.title = "Dream LMS";
+    };
+  }, [book?.title]);
 
   // Handle close - close the tab
   const handleClose = () => {
-    window.close()
-  }
+    window.close();
+  };
 
   // Handle open book from splash
   const handleOpenBook = () => {
-    setShowViewer(true)
-  }
+    setShowViewer(true);
+  };
 
   // Loading state for initial book data
   if (isLoadingBook) {
@@ -153,7 +163,7 @@ function ViewerPage() {
           <p className="text-slate-600">Loading book...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Error state
@@ -164,12 +174,14 @@ function ViewerPage() {
           <BookOpen className="h-16 w-16 mx-auto text-destructive mb-4" />
           <p className="text-lg text-slate-800 mb-2">Failed to load book</p>
           <p className="text-sm text-slate-500 mb-4">
-            {bookError instanceof Error ? bookError.message : "An error occurred"}
+            {bookError instanceof Error
+              ? bookError.message
+              : "An error occurred"}
           </p>
           <Button onClick={handleClose}>Close</Button>
         </div>
       </div>
-    )
+    );
   }
 
   // Book not found
@@ -182,7 +194,7 @@ function ViewerPage() {
           <Button onClick={handleClose}>Close</Button>
         </div>
       </div>
-    )
+    );
   }
 
   // Show splash screen if not yet opened
@@ -197,7 +209,7 @@ function ViewerPage() {
         onOpen={handleOpenBook}
         onClose={handleClose}
       />
-    )
+    );
   }
 
   // Loading pages for viewer
@@ -209,7 +221,7 @@ function ViewerPage() {
           <p className="text-slate-600">Loading book pages...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Error loading pages
@@ -218,14 +230,18 @@ function ViewerPage() {
       <div className="fixed inset-0 flex items-center justify-center bg-slate-100">
         <div className="text-center">
           <BookOpen className="h-16 w-16 mx-auto text-destructive mb-4" />
-          <p className="text-lg text-slate-800 mb-2">Failed to load book pages</p>
+          <p className="text-lg text-slate-800 mb-2">
+            Failed to load book pages
+          </p>
           <p className="text-sm text-slate-500 mb-4">
-            {pagesError instanceof Error ? pagesError.message : "An error occurred"}
+            {pagesError instanceof Error
+              ? pagesError.message
+              : "An error occurred"}
           </p>
           <Button onClick={handleClose}>Close</Button>
         </div>
       </div>
-    )
+    );
   }
 
   // No book config (shouldn't happen if pages loaded)
@@ -234,11 +250,13 @@ function ViewerPage() {
       <div className="fixed inset-0 flex items-center justify-center bg-slate-100">
         <div className="text-center">
           <BookOpen className="h-16 w-16 mx-auto text-destructive mb-4" />
-          <p className="text-lg text-slate-800 mb-2">Failed to build book configuration</p>
+          <p className="text-lg text-slate-800 mb-2">
+            Failed to build book configuration
+          </p>
           <Button onClick={handleClose}>Close</Button>
         </div>
       </div>
-    )
+    );
   }
 
   // Show FlowbookViewer
@@ -259,5 +277,5 @@ function ViewerPage() {
         />
       </Suspense>
     </div>
-  )
+  );
 }

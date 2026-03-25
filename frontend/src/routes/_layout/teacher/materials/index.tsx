@@ -5,48 +5,48 @@
  * Main page for teachers to manage their supplementary materials.
  */
 
-import { createFileRoute } from "@tanstack/react-router"
-import { Link, Plus, StickyNote, Upload } from "lucide-react"
-import { useState } from "react"
-import { FiFolder } from "react-icons/fi"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { DeleteMaterialDialog } from "@/components/materials/DeleteMaterialDialog"
-import { MaterialPreviewModal } from "@/components/materials/MaterialPreviewModal"
-import { MaterialUploadZone } from "@/components/materials/MaterialUploadZone"
-import { RenameDialog } from "@/components/materials/RenameDialog"
-import { StorageQuotaBar } from "@/components/materials/StorageQuotaBar"
-import { TeacherMaterialsTable } from "@/components/materials/TeacherMaterialsTable"
-import { TextNoteModal } from "@/components/materials/TextNoteModal"
-import { UrlLinkModal } from "@/components/materials/UrlLinkModal"
-import { Button } from "@/components/ui/button"
+import { createFileRoute } from "@tanstack/react-router";
+import { Link, Plus, StickyNote, Upload } from "lucide-react";
+import { useState } from "react";
+import { FiFolder } from "react-icons/fi";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { DeleteMaterialDialog } from "@/components/materials/DeleteMaterialDialog";
+import { MaterialPreviewModal } from "@/components/materials/MaterialPreviewModal";
+import { MaterialUploadZone } from "@/components/materials/MaterialUploadZone";
+import { RenameDialog } from "@/components/materials/RenameDialog";
+import { StorageQuotaBar } from "@/components/materials/StorageQuotaBar";
+import { TeacherMaterialsTable } from "@/components/materials/TeacherMaterialsTable";
+import { TextNoteModal } from "@/components/materials/TextNoteModal";
+import { UrlLinkModal } from "@/components/materials/UrlLinkModal";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import useCustomToast from "@/hooks/useCustomToast"
-import { useMaterialDownload } from "@/hooks/useMaterialDownload"
-import { useMaterialsPage } from "@/hooks/useMaterials"
+} from "@/components/ui/dropdown-menu";
+import useCustomToast from "@/hooks/useCustomToast";
+import { useMaterialDownload } from "@/hooks/useMaterialDownload";
+import { useMaterialsPage } from "@/hooks/useMaterials";
 import type {
   Material,
   TextNoteCreate,
   TextNoteUpdate,
   UrlLinkCreate,
-} from "@/types/material"
+} from "@/types/material";
 
 export const Route = createFileRoute("/_layout/teacher/materials/")({
   component: TeacherMaterialsPage,
-})
+});
 
 function TeacherMaterialsPage() {
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
   // Get materials data and actions from hook
   const {
@@ -65,23 +65,23 @@ function TeacherMaterialsPage() {
     isRenaming,
     deleteMaterial,
     isDeleting,
-  } = useMaterialsPage()
+  } = useMaterialsPage();
 
   // Modal states
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
-  const [textNoteModalOpen, setTextNoteModalOpen] = useState(false)
-  const [editingNote, setEditingNote] = useState<Material | null>(null)
-  const [urlLinkModalOpen, setUrlLinkModalOpen] = useState(false)
-  const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null)
-  const [previewModalOpen, setPreviewModalOpen] = useState(false)
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [textNoteModalOpen, setTextNoteModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<Material | null>(null);
+  const [urlLinkModalOpen, setUrlLinkModalOpen] = useState(false);
+  const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [renamingMaterial, setRenamingMaterial] = useState<Material | null>(
     null,
-  )
-  const [renameDialogOpen, setRenameDialogOpen] = useState(false)
+  );
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(
     null,
-  )
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  );
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Handle file upload
   const handleUpload = async (
@@ -89,113 +89,115 @@ function TeacherMaterialsPage() {
     onProgress: (progress: number) => void,
   ) => {
     try {
-      await uploadFile({ file, onProgress })
-      showSuccessToast(`${file.name} uploaded successfully`)
+      await uploadFile({ file, onProgress });
+      showSuccessToast(`${file.name} uploaded successfully`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Upload failed"
-      showErrorToast(message)
-      throw err
+      const message = err instanceof Error ? err.message : "Upload failed";
+      showErrorToast(message);
+      throw err;
     }
-  }
+  };
 
   // Handle text note save
   const handleSaveTextNote = async (data: TextNoteCreate | TextNoteUpdate) => {
     try {
       if (editingNote) {
-        await updateTextNote(editingNote.id, data as TextNoteUpdate)
-        showSuccessToast("Note updated successfully")
+        await updateTextNote(editingNote.id, data as TextNoteUpdate);
+        showSuccessToast("Note updated successfully");
       } else {
-        await createTextNote(data as TextNoteCreate)
-        showSuccessToast("Note created successfully")
+        await createTextNote(data as TextNoteCreate);
+        showSuccessToast("Note created successfully");
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save note"
-      showErrorToast(message)
-      throw err
+      const message =
+        err instanceof Error ? err.message : "Failed to save note";
+      showErrorToast(message);
+      throw err;
     }
-  }
+  };
 
   // Handle URL link save
   const handleSaveUrlLink = async (data: UrlLinkCreate) => {
     try {
-      await createUrlLink(data)
-      showSuccessToast("Link saved successfully")
+      await createUrlLink(data);
+      showSuccessToast("Link saved successfully");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save link"
-      showErrorToast(message)
-      throw err
+      const message =
+        err instanceof Error ? err.message : "Failed to save link";
+      showErrorToast(message);
+      throw err;
     }
-  }
+  };
 
   // Handle rename
   const handleRename = async (newName: string) => {
-    if (!renamingMaterial) return
+    if (!renamingMaterial) return;
     try {
-      await renameMaterial(renamingMaterial.id, newName)
-      showSuccessToast("Material renamed successfully")
+      await renameMaterial(renamingMaterial.id, newName);
+      showSuccessToast("Material renamed successfully");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to rename"
-      showErrorToast(message)
-      throw err
+      const message = err instanceof Error ? err.message : "Failed to rename";
+      showErrorToast(message);
+      throw err;
     }
-  }
+  };
 
   // Handle delete
   const handleDelete = async () => {
-    if (!deletingMaterial) return
+    if (!deletingMaterial) return;
     try {
-      await deleteMaterial(deletingMaterial.id)
-      showSuccessToast("Material deleted successfully")
+      await deleteMaterial(deletingMaterial.id);
+      showSuccessToast("Material deleted successfully");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete"
-      showErrorToast(message)
-      throw err
+      const message = err instanceof Error ? err.message : "Failed to delete";
+      showErrorToast(message);
+      throw err;
     }
-  }
+  };
 
   // Handle preview
   const handlePreview = (material: Material) => {
-    setPreviewMaterial(material)
-    setPreviewModalOpen(true)
-  }
+    setPreviewMaterial(material);
+    setPreviewModalOpen(true);
+  };
 
   // Handle download with authentication
-  const { downloadMaterial } = useMaterialDownload()
+  const { downloadMaterial } = useMaterialDownload();
   const handleDownload = async (material: Material) => {
     try {
       await downloadMaterial(
         material.id,
         material.original_filename || material.name,
-      )
+      );
     } catch (err) {
       // Error already shown by hook via toast
-      console.error("Download failed:", err)
+      console.error("Download failed:", err);
     }
-  }
+  };
 
   // Handle edit (for text notes)
   const handleEdit = (material: Material) => {
-    setEditingNote(material)
-    setTextNoteModalOpen(true)
-  }
+    setEditingNote(material);
+    setTextNoteModalOpen(true);
+  };
 
   // Handle rename click
   const handleRenameClick = (material: Material) => {
-    setRenamingMaterial(material)
-    setRenameDialogOpen(true)
-  }
+    setRenamingMaterial(material);
+    setRenameDialogOpen(true);
+  };
 
   // Handle delete click
   const handleDeleteClick = (material: Material) => {
-    setDeletingMaterial(material)
-    setDeleteDialogOpen(true)
-  }
+    setDeletingMaterial(material);
+    setDeleteDialogOpen(true);
+  };
 
   // Handle create note button
   const handleCreateNote = () => {
-    setEditingNote(null)
-    setTextNoteModalOpen(true)
-  }
+    setEditingNote(null);
+    setTextNoteModalOpen(true);
+  };
 
   // Handle error display
   if (error) {
@@ -209,7 +211,7 @@ function TeacherMaterialsPage() {
           </div>
         </div>
       </PageContainer>
-    )
+    );
   }
 
   return (
@@ -289,8 +291,8 @@ function TeacherMaterialsPage() {
       <TextNoteModal
         open={textNoteModalOpen}
         onOpenChange={(open) => {
-          setTextNoteModalOpen(open)
-          if (!open) setEditingNote(null)
+          setTextNoteModalOpen(open);
+          if (!open) setEditingNote(null);
         }}
         material={editingNote}
         onSave={handleSaveTextNote}
@@ -313,8 +315,8 @@ function TeacherMaterialsPage() {
       <RenameDialog
         open={renameDialogOpen}
         onOpenChange={(open) => {
-          setRenameDialogOpen(open)
-          if (!open) setRenamingMaterial(null)
+          setRenameDialogOpen(open);
+          if (!open) setRenamingMaterial(null);
         }}
         material={renamingMaterial}
         onRename={handleRename}
@@ -324,13 +326,13 @@ function TeacherMaterialsPage() {
       <DeleteMaterialDialog
         open={deleteDialogOpen}
         onOpenChange={(open) => {
-          setDeleteDialogOpen(open)
-          if (!open) setDeletingMaterial(null)
+          setDeleteDialogOpen(open);
+          if (!open) setDeletingMaterial(null);
         }}
         material={deletingMaterial}
         onConfirm={handleDelete}
         isDeleting={isDeleting}
       />
     </PageContainer>
-  )
+  );
 }

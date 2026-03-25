@@ -6,64 +6,64 @@
  * Reuses functionality from teacher/ai-materials.tsx.
  */
 
-import { createFileRoute } from "@tanstack/react-router"
-import { FileText, Plus, RefreshCw, Sparkles } from "lucide-react"
-import { useCallback, useState } from "react"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
+import { createFileRoute } from "@tanstack/react-router";
+import { FileText, Plus, RefreshCw, Sparkles } from "lucide-react";
+import { useCallback, useState } from "react";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
 import {
   GeneratedContentLibrary,
   MaterialLibrary,
   MaterialUpload,
-} from "@/components/teacher-materials"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "@/components/teacher-materials";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import useCustomToast from "@/hooks/useCustomToast"
-import { materialsApi } from "@/services/materialsApi"
-import { teacherMaterialsApi } from "@/services/teacherMaterialsApi"
-import type { TeacherMaterial } from "@/types/teacher-material"
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useCustomToast from "@/hooks/useCustomToast";
+import { materialsApi } from "@/services/materialsApi";
+import { teacherMaterialsApi } from "@/services/teacherMaterialsApi";
+import type { TeacherMaterial } from "@/types/teacher-material";
 
 export const Route = createFileRoute("/_layout/dreamai/materials")({
   component: MyMaterialsPage,
-})
+});
 
 function MyMaterialsPage() {
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
   // State
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
-  const [materials, setMaterials] = useState<TeacherMaterial[]>([])
-  const [isLoadingMaterials, setIsLoadingMaterials] = useState(true)
-  const [materialsError, setMaterialsError] = useState<string | null>(null)
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [materials, setMaterials] = useState<TeacherMaterial[]>([]);
+  const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
+  const [materialsError, setMaterialsError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"materials" | "generated">(
     "materials",
-  )
+  );
 
   // Load materials
   const loadMaterials = useCallback(async () => {
     try {
-      setIsLoadingMaterials(true)
-      setMaterialsError(null)
-      const response = await teacherMaterialsApi.listProcessableMaterials()
-      setMaterials(response.materials)
+      setIsLoadingMaterials(true);
+      setMaterialsError(null);
+      const response = await teacherMaterialsApi.listProcessableMaterials();
+      setMaterials(response.materials);
     } catch (err) {
-      console.error("Failed to load materials:", err)
-      setMaterialsError("Failed to load materials")
+      console.error("Failed to load materials:", err);
+      setMaterialsError("Failed to load materials");
     } finally {
-      setIsLoadingMaterials(false)
+      setIsLoadingMaterials(false);
     }
-  }, [])
+  }, []);
 
   // Load on mount
   useState(() => {
-    loadMaterials()
-  })
+    loadMaterials();
+  });
 
   // Handle PDF upload
   const handleUploadPdf = useCallback(
@@ -78,13 +78,13 @@ function MyMaterialsPage() {
         name,
         description,
         onProgress,
-      )
-      showSuccessToast(`"${name}" uploaded and processed successfully`)
-      loadMaterials()
-      return result
+      );
+      showSuccessToast(`"${name}" uploaded and processed successfully`);
+      loadMaterials();
+      return result;
     },
     [showSuccessToast, loadMaterials],
-  )
+  );
 
   // Handle text material creation
   const handleCreateTextMaterial = useCallback(
@@ -93,29 +93,29 @@ function MyMaterialsPage() {
         name,
         text,
         description,
-      })
-      showSuccessToast(`"${name}" created successfully`)
-      loadMaterials()
-      return result
+      });
+      showSuccessToast(`"${name}" created successfully`);
+      loadMaterials();
+      return result;
     },
     [showSuccessToast, loadMaterials],
-  )
+  );
 
   // Handle material deletion
   const handleDeleteMaterial = useCallback(
     async (materialId: string) => {
       try {
-        await materialsApi.deleteMaterial(materialId)
-        showSuccessToast("Material deleted successfully")
-        loadMaterials()
+        await materialsApi.deleteMaterial(materialId);
+        showSuccessToast("Material deleted successfully");
+        loadMaterials();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete"
-        showErrorToast(message)
-        throw err
+        const message = err instanceof Error ? err.message : "Failed to delete";
+        showErrorToast(message);
+        throw err;
       }
     },
     [showSuccessToast, showErrorToast, loadMaterials],
-  )
+  );
 
   return (
     <PageContainer>
@@ -203,5 +203,5 @@ function MyMaterialsPage() {
         </DialogContent>
       </Dialog>
     </PageContainer>
-  )
+  );
 }

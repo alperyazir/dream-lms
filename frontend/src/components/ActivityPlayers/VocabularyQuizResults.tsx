@@ -12,26 +12,26 @@ import {
   RefreshCw,
   Volume2,
   XCircle,
-} from "lucide-react"
-import { useCallback, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import type {
   QuestionResult,
   VocabularyQuizResult,
-} from "@/types/vocabulary-quiz"
+} from "@/types/vocabulary-quiz";
 
 interface VocabularyQuizResultsProps {
   /** The quiz result data */
-  result: VocabularyQuizResult
+  result: VocabularyQuizResult;
   /** Callback to retry the quiz */
-  onRetry?: () => void
+  onRetry?: () => void;
   /** Callback to go back to generator */
-  onBack?: () => void
+  onBack?: () => void;
   /** Hide summary card when embedded in result page (to avoid duplication) */
-  hideSummary?: boolean
+  hideSummary?: boolean;
 }
 
 export function VocabularyQuizResults({
@@ -40,55 +40,55 @@ export function VocabularyQuizResults({
   onBack,
   hideSummary = false,
 }: VocabularyQuizResultsProps) {
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const correctCount = result.results.filter((r) => r.is_correct).length
-  const totalCount = result.total
-  const percentage = result.percentage
+  const correctCount = result.results.filter((r) => r.is_correct).length;
+  const totalCount = result.total;
+  const percentage = result.percentage;
 
   // Determine score color
   const getScoreColor = (pct: number) => {
-    if (pct >= 80) return "text-green-600 dark:text-green-400"
-    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400"
-    return "text-red-600 dark:text-red-400"
-  }
+    if (pct >= 80) return "text-green-600 dark:text-green-400";
+    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
+  };
 
   // Determine progress color
   const getProgressClass = (pct: number) => {
-    if (pct >= 80) return "[&>div]:bg-green-500"
-    if (pct >= 60) return "[&>div]:bg-yellow-500"
-    return "[&>div]:bg-red-500"
-  }
+    if (pct >= 80) return "[&>div]:bg-green-500";
+    if (pct >= 60) return "[&>div]:bg-yellow-500";
+    return "[&>div]:bg-red-500";
+  };
 
   // Play audio for a word
   const handlePlayAudio = useCallback((audioUrl: string | null) => {
-    if (!audioUrl) return
+    if (!audioUrl) return;
 
     if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current = null
+      audioRef.current.pause();
+      audioRef.current = null;
     }
 
-    const audio = new Audio(audioUrl)
-    audioRef.current = audio
-    setPlayingAudio(audioUrl)
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
+    setPlayingAudio(audioUrl);
 
     audio.onended = () => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    }
+      setPlayingAudio(null);
+      audioRef.current = null;
+    };
 
     audio.onerror = () => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    }
+      setPlayingAudio(null);
+      audioRef.current = null;
+    };
 
     audio.play().catch(() => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    })
-  }, [])
+      setPlayingAudio(null);
+      audioRef.current = null;
+    });
+  }, []);
 
   return (
     <div
@@ -180,14 +180,14 @@ export function VocabularyQuizResults({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 interface QuestionResultCardProps {
-  result: QuestionResult
-  index: number
-  onPlayAudio: (url: string | null) => void
-  isPlaying: boolean
+  result: QuestionResult;
+  index: number;
+  onPlayAudio: (url: string | null) => void;
+  isPlaying: boolean;
 }
 
 function QuestionResultCard({
@@ -278,7 +278,7 @@ function QuestionResultCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-export default VocabularyQuizResults
+export default VocabularyQuizResults;

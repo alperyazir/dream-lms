@@ -1,38 +1,42 @@
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import { useMemo } from "react"
-import { useForm } from "react-hook-form"
-import { LuCheck, LuShieldCheck, LuX } from "react-icons/lu"
-import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { useForm } from "react-hook-form";
+import { LuCheck, LuShieldCheck, LuX } from "react-icons/lu";
+import { z } from "zod";
 
-import { type UserPublic, UsersService } from "@/client"
-import { Button } from "@/components/ui/button"
+import { type UserPublic, UsersService } from "@/client";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { PasswordInput } from "@/components/ui/password-input"
-import { Progress } from "@/components/ui/progress"
-import { getMustChangePassword, getUserRole, isLoggedIn } from "@/hooks/useAuth"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Progress } from "@/components/ui/progress";
+import {
+  getMustChangePassword,
+  getUserRole,
+  isLoggedIn,
+} from "@/hooks/useAuth";
+import useCustomToast from "@/hooks/useCustomToast";
 
 // Password strength calculation
 interface PasswordStrength {
-  score: number // 0-4
-  label: string
-  color: string
+  score: number; // 0-4
+  label: string;
+  color: string;
   checks: {
-    minLength: boolean
-    hasUppercase: boolean
-    hasLowercase: boolean
-    hasNumber: boolean
-    hasSpecial: boolean
-  }
+    minLength: boolean;
+    hasUppercase: boolean;
+    hasLowercase: boolean;
+    hasNumber: boolean;
+    hasSpecial: boolean;
+  };
 }
 
 function calculatePasswordStrength(password: string): PasswordStrength {
@@ -42,33 +46,33 @@ function calculatePasswordStrength(password: string): PasswordStrength {
     hasLowercase: /[a-z]/.test(password),
     hasNumber: /[0-9]/.test(password),
     hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-  }
+  };
 
-  const passedChecks = Object.values(checks).filter(Boolean).length
+  const passedChecks = Object.values(checks).filter(Boolean).length;
 
-  let score = 0
-  let label = "Very Weak"
-  let color = "bg-destructive"
+  let score = 0;
+  let label = "Very Weak";
+  let color = "bg-destructive";
 
   if (passedChecks >= 5) {
-    score = 4
-    label = "Very Strong"
-    color = "bg-green-500"
+    score = 4;
+    label = "Very Strong";
+    color = "bg-green-500";
   } else if (passedChecks >= 4) {
-    score = 3
-    label = "Strong"
-    color = "bg-green-400"
+    score = 3;
+    label = "Strong";
+    color = "bg-green-400";
   } else if (passedChecks >= 3) {
-    score = 2
-    label = "Fair"
-    color = "bg-yellow-500"
+    score = 2;
+    label = "Fair";
+    color = "bg-yellow-500";
   } else if (passedChecks >= 2) {
-    score = 1
-    label = "Weak"
-    color = "bg-orange-500"
+    score = 1;
+    label = "Weak";
+    color = "bg-orange-500";
   }
 
-  return { score, label, color, checks }
+  return { score, label, color, checks };
 }
 
 // Validation schema
@@ -87,33 +91,33 @@ const changePasswordSchema = z
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
-  })
+  });
 
-type ChangePasswordForm = z.infer<typeof changePasswordSchema>
+type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
 
 export const Route = createFileRoute("/change-password")({
   beforeLoad: () => {
     // Redirect if not authenticated
     if (!isLoggedIn()) {
-      throw redirect({ to: "/login" })
+      throw redirect({ to: "/login" });
     }
     // Story 28.1: Students cannot change their own passwords - teachers manage them
-    const role = getUserRole()
+    const role = getUserRole();
     if (role === "student") {
-      throw redirect({ to: "/student/dashboard" })
+      throw redirect({ to: "/student/dashboard" });
     }
     // Redirect if doesn't need password change
     if (!getMustChangePassword()) {
-      throw redirect({ to: "/" })
+      throw redirect({ to: "/" });
     }
   },
   component: ChangePasswordPage,
-})
+});
 
 function ChangePasswordPage() {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
   const {
     register,
@@ -128,13 +132,13 @@ function ChangePasswordPage() {
       newPassword: "",
       confirmPassword: "",
     },
-  })
+  });
 
-  const newPassword = watch("newPassword")
+  const newPassword = watch("newPassword");
   const passwordStrength = useMemo(
     () => calculatePasswordStrength(newPassword || ""),
     [newPassword],
-  )
+  );
 
   const changePasswordMutation = useMutation({
     mutationFn: (data: { currentPassword: string; newPassword: string }) =>
@@ -145,53 +149,53 @@ function ChangePasswordPage() {
         },
       }),
     onSuccess: async () => {
-      showSuccessToast("Password changed successfully!")
+      showSuccessToast("Password changed successfully!");
       // Clear the must_change_password flag
-      sessionStorage.removeItem("must_change_password")
+      sessionStorage.removeItem("must_change_password");
       // Refetch user to get updated must_change_password status
-      await queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+      await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       // Navigate to role-appropriate dashboard
-      navigateToRoleDashboard()
+      navigateToRoleDashboard();
     },
     onError: (error: unknown) => {
-      const err = error as { body?: { detail?: string } }
+      const err = error as { body?: { detail?: string } };
       if (err.body?.detail === "Current password is incorrect") {
         setError("currentPassword", {
           message: "Current password is incorrect",
-        })
+        });
       } else {
-        showErrorToast(err.body?.detail || "Failed to change password")
+        showErrorToast(err.body?.detail || "Failed to change password");
       }
     },
-  })
+  });
 
   const navigateToRoleDashboard = () => {
-    const user = queryClient.getQueryData<UserPublic>(["currentUser"])
-    const role = user?.role
+    const user = queryClient.getQueryData<UserPublic>(["currentUser"]);
+    const role = user?.role;
     switch (role) {
       case "admin":
-        navigate({ to: "/admin/dashboard" })
-        break
+        navigate({ to: "/admin/dashboard" });
+        break;
       case "publisher":
-        navigate({ to: "/publisher/dashboard" })
-        break
+        navigate({ to: "/publisher/dashboard" });
+        break;
       case "teacher":
-        navigate({ to: "/teacher/dashboard" })
-        break
+        navigate({ to: "/teacher/dashboard" });
+        break;
       case "student":
-        navigate({ to: "/student/dashboard" })
-        break
+        navigate({ to: "/student/dashboard" });
+        break;
       default:
-        navigate({ to: "/" })
+        navigate({ to: "/" });
     }
-  }
+  };
 
   const onSubmit = (data: ChangePasswordForm) => {
     changePasswordMutation.mutate({
       currentPassword: data.currentPassword,
       newPassword: data.newPassword,
-    })
-  }
+    });
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
@@ -359,5 +363,5 @@ function ChangePasswordPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -24,8 +24,8 @@ def test_generate_username_handles_duplicates(session: Session) -> None:
             username="jdoe",
             password="password123",
             full_name="John Doe",
-            role=UserRole.student
-        )
+            role=UserRole.student,
+        ),
     )
     assert user1.username == "jdoe"
 
@@ -41,8 +41,8 @@ def test_generate_username_handles_duplicates(session: Session) -> None:
             username=username2,
             password="password123",
             full_name="John Doe",
-            role=UserRole.student
-        )
+            role=UserRole.student,
+        ),
     )
     assert user2.username == "jdoe1"
 
@@ -86,5 +86,7 @@ def test_generate_username_with_middle_name(session: Session) -> None:
 
 def test_generate_username_special_chars_only_raises(session: Session) -> None:
     """Name with only special characters raises ValueError"""
-    with pytest.raises(ValueError, match="Full name must contain at least one valid character"):
+    with pytest.raises(
+        ValueError, match="Full name must contain at least one valid character"
+    ):
         generate_username("@#$%", session)

@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BarChart3,
   ChevronLeft,
@@ -9,22 +9,22 @@ import {
   Trash2,
   TrendingUp,
   UserPlus,
-} from "lucide-react"
-import { useState } from "react"
-import { FiTrendingUp } from "react-icons/fi"
+} from "lucide-react";
+import { useState } from "react";
+import { FiTrendingUp } from "react-icons/fi";
 import {
   type ClassCreateByTeacher,
   type ClassResponse,
   type ClassUpdate,
   type StudentPublic,
   TeachersService,
-} from "@/client"
-import { getMyStudentsPaginated } from "@/services/teachersApi"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/client";
+import { getMyStudentsPaginated } from "@/services/teachersApi";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -32,9 +32,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -42,8 +42,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/table";
+import useCustomToast from "@/hooks/useCustomToast";
 
 export const Route = createFileRoute("/_layout/teacher/classrooms")({
   component: () => (
@@ -51,24 +51,30 @@ export const Route = createFileRoute("/_layout/teacher/classrooms")({
       <TeacherClassroomsPage />
     </ErrorBoundary>
   ),
-})
+});
 
 function TeacherClassroomsPage() {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isManageStudentsDialogOpen, setIsManageStudentsDialogOpen] =
-    useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedClass, setSelectedClass] = useState<ClassResponse | null>(null)
-  const [classToDelete, setClassToDelete] = useState<ClassResponse | null>(null)
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
-  const [selectedClassIds, setSelectedClassIds] = useState<Set<string>>(new Set())
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
-  const PAGE_SIZE = 20
-  const [currentPage, setCurrentPage] = useState(1)
+    useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<ClassResponse | null>(
+    null,
+  );
+  const [classToDelete, setClassToDelete] = useState<ClassResponse | null>(
+    null,
+  );
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [selectedClassIds, setSelectedClassIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const PAGE_SIZE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [newClass, setNewClass] = useState<ClassCreateByTeacher>({
     name: "",
@@ -76,7 +82,7 @@ function TeacherClassroomsPage() {
     subject: "",
     academic_year: "",
     is_active: true,
-  })
+  });
 
   const [editClass, setEditClass] = useState<ClassUpdate>({
     name: "",
@@ -84,7 +90,7 @@ function TeacherClassroomsPage() {
     subject: "",
     academic_year: "",
     is_active: true,
-  })
+  });
 
   // Fetch classes from API
   const {
@@ -94,16 +100,16 @@ function TeacherClassroomsPage() {
   } = useQuery({
     queryKey: ["teacherClasses"],
     queryFn: () => TeachersService.listMyClasses(),
-  })
+  });
 
   // Fetch all students
   const { data: allStudents = [] } = useQuery({
     queryKey: ["teacherStudents"],
     queryFn: async () => {
-      const res = await getMyStudentsPaginated(500, 0)
-      return res.items
+      const res = await getMyStudentsPaginated(500, 0);
+      return res.items;
     },
-  })
+  });
 
   // Fetch students in selected class
   const { data: classStudents = [] } = useQuery<StudentPublic[]>({
@@ -113,70 +119,74 @@ function TeacherClassroomsPage() {
         ? TeachersService.getClassStudents({ classId: selectedClass.id })
         : Promise.resolve([]),
     enabled: !!selectedClass && isManageStudentsDialogOpen,
-  })
+  });
 
   // Create class mutation
   const createClassMutation = useMutation({
     mutationFn: (data: ClassCreateByTeacher) =>
       TeachersService.createClass({ requestBody: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
-      setIsCreateDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] });
+      setIsCreateDialogOpen(false);
       setNewClass({
         name: "",
         grade_level: "",
         subject: "",
         academic_year: "",
         is_active: true,
-      })
-      showSuccessToast("Class created successfully!")
+      });
+      showSuccessToast("Class created successfully!");
     },
     onError: (error: any) => {
-      let errorMessage = "Failed to create class. Please try again."
+      let errorMessage = "Failed to create class. Please try again.";
 
       if (error.body?.detail) {
         if (typeof error.body.detail === "string") {
-          errorMessage = error.body.detail
+          errorMessage = error.body.detail;
         } else if (Array.isArray(error.body.detail)) {
-          errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
+          errorMessage = error.body.detail
+            .map((err: any) => err.msg)
+            .join(", ");
         }
       }
 
-      showErrorToast(errorMessage)
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   const handleCreateClass = () => {
     if (!newClass.name) {
-      showErrorToast("Please enter a class name")
-      return
+      showErrorToast("Please enter a class name");
+      return;
     }
 
-    createClassMutation.mutate(newClass)
-  }
+    createClassMutation.mutate(newClass);
+  };
 
   // Update class mutation
   const updateClassMutation = useMutation({
     mutationFn: ({ classId, data }: { classId: string; data: ClassUpdate }) =>
       TeachersService.updateClass({ classId, requestBody: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
-      setIsEditDialogOpen(false)
-      setSelectedClass(null)
-      showSuccessToast("Class updated successfully!")
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] });
+      setIsEditDialogOpen(false);
+      setSelectedClass(null);
+      showSuccessToast("Class updated successfully!");
     },
     onError: (error: any) => {
-      let errorMessage = "Failed to update class. Please try again."
+      let errorMessage = "Failed to update class. Please try again.";
       if (error.body?.detail) {
         if (typeof error.body.detail === "string") {
-          errorMessage = error.body.detail
+          errorMessage = error.body.detail;
         } else if (Array.isArray(error.body.detail)) {
-          errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
+          errorMessage = error.body.detail
+            .map((err: any) => err.msg)
+            .join(", ");
         }
       }
-      showErrorToast(errorMessage)
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   // Add students to class mutation
   const addStudentsMutation = useMutation({
@@ -184,32 +194,34 @@ function TeacherClassroomsPage() {
       classId,
       studentIds,
     }: {
-      classId: string
-      studentIds: string[]
+      classId: string;
+      studentIds: string[];
     }) =>
       TeachersService.addStudentsToClass({ classId, requestBody: studentIds }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["classStudents", selectedClass?.id],
-      })
-      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
-      setIsManageStudentsDialogOpen(false)
-      setSelectedClass(null)
-      setSelectedStudentIds([])
-      showSuccessToast("Students added to class successfully!")
+      });
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] });
+      setIsManageStudentsDialogOpen(false);
+      setSelectedClass(null);
+      setSelectedStudentIds([]);
+      showSuccessToast("Students added to class successfully!");
     },
     onError: (error: any) => {
-      let errorMessage = "Failed to add students. Please try again."
+      let errorMessage = "Failed to add students. Please try again.";
       if (error.body?.detail) {
         if (typeof error.body.detail === "string") {
-          errorMessage = error.body.detail
+          errorMessage = error.body.detail;
         } else if (Array.isArray(error.body.detail)) {
-          errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
+          errorMessage = error.body.detail
+            .map((err: any) => err.msg)
+            .join(", ");
         }
       }
-      showErrorToast(errorMessage)
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   // Remove student from class mutation
   const removeStudentMutation = useMutation({
@@ -217,171 +229,171 @@ function TeacherClassroomsPage() {
       classId,
       studentId,
     }: {
-      classId: string
-      studentId: string
+      classId: string;
+      studentId: string;
     }) => TeachersService.removeStudentFromClass({ classId, studentId }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["classStudents", selectedClass?.id],
-      })
-      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
-      showSuccessToast("Student removed from class!")
+      });
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] });
+      showSuccessToast("Student removed from class!");
     },
     onError: (_error: any) => {
-      showErrorToast("Failed to remove student. Please try again.")
+      showErrorToast("Failed to remove student. Please try again.");
     },
-  })
+  });
 
   // Delete class mutation
   const deleteClassMutation = useMutation({
     mutationFn: (classId: string) => TeachersService.deleteClass({ classId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
-      setIsDeleteDialogOpen(false)
-      setClassToDelete(null)
-      showSuccessToast("Class deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] });
+      setIsDeleteDialogOpen(false);
+      setClassToDelete(null);
+      showSuccessToast("Class deleted successfully!");
     },
     onError: (error: any) => {
-      let errorMessage = "Failed to delete class. Please try again."
+      let errorMessage = "Failed to delete class. Please try again.";
       if (error.body?.detail) {
         if (typeof error.body.detail === "string") {
-          errorMessage = error.body.detail
+          errorMessage = error.body.detail;
         }
       }
-      showErrorToast(errorMessage)
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   const handleDeleteClass = (classItem: ClassResponse) => {
-    setClassToDelete(classItem)
-    setIsDeleteDialogOpen(true)
-  }
+    setClassToDelete(classItem);
+    setIsDeleteDialogOpen(true);
+  };
 
   const confirmDeleteClass = () => {
-    if (!classToDelete) return
-    deleteClassMutation.mutate(classToDelete.id)
-  }
+    if (!classToDelete) return;
+    deleteClassMutation.mutate(classToDelete.id);
+  };
 
   const bulkDeleteClassesMutation = useMutation({
     mutationFn: async (ids: string[]) => {
       await Promise.all(
         ids.map((id) => TeachersService.deleteClass({ classId: id })),
-      )
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] })
-      setSelectedClassIds(new Set())
-      setIsBulkDeleteDialogOpen(false)
-      showSuccessToast("Selected classes deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["teacherClasses"] });
+      setSelectedClassIds(new Set());
+      setIsBulkDeleteDialogOpen(false);
+      showSuccessToast("Selected classes deleted successfully!");
     },
     onError: () => {
-      showErrorToast("Failed to delete some classes. Please try again.")
+      showErrorToast("Failed to delete some classes. Please try again.");
     },
-  })
+  });
 
   const handleSelectAllClasses = (checked: boolean) => {
     if (checked) {
-      setSelectedClassIds(new Set(paginatedClasses.map((c) => c.id)))
+      setSelectedClassIds(new Set(paginatedClasses.map((c) => c.id)));
     } else {
-      setSelectedClassIds(new Set())
+      setSelectedClassIds(new Set());
     }
-  }
+  };
 
   const handleSelectClass = (classId: string, checked: boolean) => {
-    const newSelected = new Set(selectedClassIds)
+    const newSelected = new Set(selectedClassIds);
     if (checked) {
-      newSelected.add(classId)
+      newSelected.add(classId);
     } else {
-      newSelected.delete(classId)
+      newSelected.delete(classId);
     }
-    setSelectedClassIds(newSelected)
-  }
+    setSelectedClassIds(newSelected);
+  };
 
   const handleBulkDeleteClasses = () => {
     if (selectedClassIds.size > 0) {
-      setIsBulkDeleteDialogOpen(true)
+      setIsBulkDeleteDialogOpen(true);
     }
-  }
+  };
 
   const confirmBulkDeleteClasses = () => {
-    bulkDeleteClassesMutation.mutate(Array.from(selectedClassIds))
-  }
+    bulkDeleteClassesMutation.mutate(Array.from(selectedClassIds));
+  };
 
   const handleEditClass = (classItem: ClassResponse) => {
-    setSelectedClass(classItem)
+    setSelectedClass(classItem);
     setEditClass({
       name: classItem.name,
       grade_level: classItem.grade_level,
       subject: classItem.subject,
       academic_year: classItem.academic_year,
       is_active: classItem.is_active,
-    })
-    setIsEditDialogOpen(true)
-  }
+    });
+    setIsEditDialogOpen(true);
+  };
 
   const handleUpdateClass = () => {
     if (!selectedClass || !editClass.name) {
-      showErrorToast("Please enter a class name")
-      return
+      showErrorToast("Please enter a class name");
+      return;
     }
 
     updateClassMutation.mutate({
       classId: selectedClass.id,
       data: editClass,
-    })
-  }
+    });
+  };
 
   const handleManageStudents = (classItem: ClassResponse) => {
-    setSelectedClass(classItem)
-    setIsManageStudentsDialogOpen(true)
-  }
+    setSelectedClass(classItem);
+    setIsManageStudentsDialogOpen(true);
+  };
 
   const handleAddStudents = () => {
     if (!selectedClass || selectedStudentIds.length === 0) {
-      showErrorToast("Please select at least one student")
-      return
+      showErrorToast("Please select at least one student");
+      return;
     }
 
     addStudentsMutation.mutate({
       classId: selectedClass.id,
       studentIds: selectedStudentIds,
-    })
-  }
+    });
+  };
 
   const handleRemoveStudent = (studentId: string) => {
-    if (!selectedClass) return
+    if (!selectedClass) return;
 
     removeStudentMutation.mutate({
       classId: selectedClass.id,
       studentId,
-    })
-  }
+    });
+  };
 
   const toggleStudentSelection = (studentId: string) => {
     setSelectedStudentIds((prev) =>
       prev.includes(studentId)
         ? prev.filter((id) => id !== studentId)
         : [...prev, studentId],
-    )
-  }
+    );
+  };
 
   // Get students not in class for selection
   const availableStudents = allStudents.filter(
     (student: any) => !classStudents.some((cs: any) => cs.id === student.id),
-  )
+  );
 
   const filteredClasses = classes.filter(
     (classItem) =>
       classItem.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       classItem.subject?.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  );
 
-  const totalFilteredCount = filteredClasses.length
-  const totalPages = Math.ceil(totalFilteredCount / PAGE_SIZE)
+  const totalFilteredCount = filteredClasses.length;
+  const totalPages = Math.ceil(totalFilteredCount / PAGE_SIZE);
   const paginatedClasses = filteredClasses.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
-  )
+  );
 
   return (
     <PageContainer>
@@ -407,8 +419,8 @@ function TeacherClassroomsPage() {
             placeholder="Search classes by name or subject..."
             value={searchQuery}
             onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setCurrentPage(1)
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
             }}
             className="w-full"
           />
@@ -917,8 +929,8 @@ function TeacherClassroomsPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setIsManageStudentsDialogOpen(false)
-                setSelectedStudentIds([])
+                setIsManageStudentsDialogOpen(false);
+                setSelectedStudentIds([]);
               }}
             >
               Close
@@ -942,8 +954,8 @@ function TeacherClassroomsPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setIsDeleteDialogOpen(false)
-                setClassToDelete(null)
+                setIsDeleteDialogOpen(false);
+                setClassToDelete(null);
               }}
               disabled={deleteClassMutation.isPending}
             >
@@ -961,7 +973,10 @@ function TeacherClassroomsPage() {
       </Dialog>
 
       {/* Bulk Delete Confirmation Dialog */}
-      <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+      <Dialog
+        open={isBulkDeleteDialogOpen}
+        onOpenChange={setIsBulkDeleteDialogOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Selected Classes</DialogTitle>
@@ -992,5 +1007,5 @@ function TeacherClassroomsPage() {
         </DialogContent>
       </Dialog>
     </PageContainer>
-  )
+  );
 }

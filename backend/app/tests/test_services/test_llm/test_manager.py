@@ -172,7 +172,9 @@ class TestLLMManager:
         manager = LLMManager(settings=settings)
 
         primary = MockProvider("primary")
-        primary._generate_mock.side_effect = LLMProviderError("Primary failed", "primary")
+        primary._generate_mock.side_effect = LLMProviderError(
+            "Primary failed", "primary"
+        )
 
         fallback = MockProvider("fallback")
         expected_result = create_mock_result("fallback response")
@@ -239,10 +241,14 @@ class TestLLMManager:
         manager = LLMManager(settings=settings)
 
         primary = MockProvider("primary")
-        primary._generate_mock.side_effect = LLMProviderError("Primary failed", "primary")
+        primary._generate_mock.side_effect = LLMProviderError(
+            "Primary failed", "primary"
+        )
 
         fallback = MockProvider("fallback")
-        fallback._generate_mock.side_effect = LLMProviderError("Fallback failed", "fallback")
+        fallback._generate_mock.side_effect = LLMProviderError(
+            "Fallback failed", "fallback"
+        )
 
         manager.register_provider(LLMProviderType.DEEPSEEK, primary)
         manager.register_provider(LLMProviderType.GEMINI, fallback)
@@ -303,7 +309,9 @@ class TestLLMManager:
         manager = LLMManager(settings=settings)
 
         primary = MockProvider("primary")
-        primary._generate_structured_mock.side_effect = LLMProviderError("Failed", "primary")
+        primary._generate_structured_mock.side_effect = LLMProviderError(
+            "Failed", "primary"
+        )
 
         fallback = MockProvider("fallback")
         expected_result = {"key": "fallback_value"}

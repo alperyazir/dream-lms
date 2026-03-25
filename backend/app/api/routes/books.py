@@ -13,7 +13,6 @@ from starlette.requests import Request
 
 from app.api.deps import AsyncSessionDep, require_role
 from app.core.rate_limit import RateLimits, limiter
-from app.services.redis_cache import cache_get, cache_set
 from app.models import (
     Activity,
     Teacher,
@@ -24,7 +23,6 @@ from app.schemas.book import (
     ActivityCoords,
     ActivityListResponse,
     ActivityMarker,
-    ActivityResponse,
     AudioMarker,
     BookListResponse,
     BookPagesDetailResponse,
@@ -51,6 +49,7 @@ from app.services import book_assignment_service
 from app.services.book_service_v2 import get_book_service
 from app.services.config_parser import parse_book_config, parse_video_sections
 from app.services.dream_storage_client import get_dream_storage_client
+from app.services.redis_cache import cache_get, cache_set
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -77,7 +76,7 @@ async def trigger_book_sync(request: Request) -> BookSyncResponse:
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="Book sync is deprecated. Books are now fetched on-demand from DCS with caching. No sync needed."
+        detail="Book sync is deprecated. Books are now fetched on-demand from DCS with caching. No sync needed.",
     )
 
 
@@ -107,8 +106,7 @@ async def get_book_cover(request: Request, book_id: int) -> Any:
 
         if not book:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Book not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Book not found"
             )
 
         client = await get_dream_storage_client()
@@ -140,8 +138,7 @@ async def get_book_cover(request: Request, book_id: int) -> Any:
         except Exception as e:
             logger.error(f"Error fetching cover for book {book_id} from DCS: {e}")
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Book cover not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Book cover not found"
             )
 
     except HTTPException:
@@ -149,8 +146,7 @@ async def get_book_cover(request: Request, book_id: int) -> Any:
     except Exception as e:
         logger.error(f"Error in get_book_cover for book {book_id}: {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book cover not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Book cover not found"
         )
 
 
@@ -181,7 +177,7 @@ async def _get_teacher_from_user(session: AsyncSession, user: User) -> Teacher:
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     return teacher
@@ -205,8 +201,7 @@ async def _verify_book_exists(book_id: int) -> BookPublic:
 
     if not book:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book not found in DCS"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found in DCS"
         )
 
     return book
@@ -216,18 +211,20 @@ async def _verify_book_exists(book_id: int) -> BookPublic:
     "",
     response_model=BookListResponse,
     summary="List accessible books",
-    description="Returns books accessible to the authenticated user from DCS (admin/supervisor/publisher see all, teacher sees assigned books)."
+    description="Returns books accessible to the authenticated user from DCS (admin/supervisor/publisher see all, teacher sees assigned books).",
 )
 @limiter.limit(RateLimits.READ)
 async def list_books(
     request: Request,
     *,
     session: AsyncSessionDep,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher),
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
+    ),
     skip: int = 0,
     limit: int = 20,
     search: str | None = None,
-    activity_type: str | None = None
+    activity_type: str | None = None,
 ) -> Any:
     """
     List books accessible to the current user (fetched from DCS on-demand).
@@ -255,13 +252,13 @@ async def list_books(
     if skip < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Skip parameter must be non-negative"
+            detail="Skip parameter must be non-negative",
         )
 
     if limit < 1 or limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit parameter must be between 1 and 100"
+            detail="Limit parameter must be between 1 and 100",
         )
 
     # Get book service
@@ -277,12 +274,7 @@ async def list_books(
         )
         # If no books assigned, return empty list
         if not accessible_book_ids:
-            return BookListResponse(
-                items=[],
-                total=0,
-                skip=skip,
-                limit=limit
-            )
+            return BookListResponse(items=[], total=0, skip=skip, limit=limit)
 
         # Fetch all books from DCS
         all_books = await book_service.list_books()
@@ -297,7 +289,8 @@ async def list_books(
     if search:
         search_lower = search.lower()
         books = [
-            book for book in books
+            book
+            for book in books
             if (book.title and search_lower in book.title.lower())
             or (book.publisher_name and search_lower in book.publisher_name.lower())
         ]
@@ -317,7 +310,7 @@ async def list_books(
     total = len(books)
 
     # Apply pagination (client-side)
-    books = books[skip:skip + limit]
+    books = books[skip : skip + limit]
 
     # Convert to BookResponse format
     response_items = [
@@ -331,16 +324,13 @@ async def list_books(
             category=None,
             cover_image_url=book.cover_url,
             activity_count=book.activity_count,
-            dream_storage_id=str(book.id)  # For backwards compatibility
+            dream_storage_id=str(book.id),  # For backwards compatibility
         )
         for book in books
     ]
 
     response = BookListResponse(
-        items=response_items,
-        total=total,
-        skip=skip,
-        limit=limit
+        items=response_items, total=total, skip=skip, limit=limit
     )
     await cache_set(cache_key, response.model_dump(), ttl=30)
     return response
@@ -350,7 +340,7 @@ async def list_books(
     "/{book_id}/activities",
     response_model=list[ActivityListResponse],
     summary="Get book activities",
-    description="Returns all activities for a specific book (admin/supervisor/publisher see all, teacher must have access)."
+    description="Returns all activities for a specific book (admin/supervisor/publisher see all, teacher must have access).",
 )
 @limiter.limit(RateLimits.READ)
 async def get_book_activities(
@@ -358,7 +348,9 @@ async def get_book_activities(
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
+    ),
 ) -> Any:
     """
     Get all activities for a specific book.
@@ -385,8 +377,7 @@ async def get_book_activities(
         )
         if not has_access:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Book not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Book not found"
             )
 
     # Get activities for book (using dcs_book_id)
@@ -406,7 +397,7 @@ async def get_book_activities(
             title=activity.title,
             order_index=activity.order_index,
             module_name=activity.module_name,
-            page_number=activity.page_number
+            page_number=activity.page_number,
         )
         for activity in activities
     ]
@@ -415,7 +406,9 @@ async def get_book_activities(
 # --- Story 8.2: Page-Based Activity Selection ---
 
 
-async def _verify_teacher_book_access(session: AsyncSession, user: User, book_id: int) -> BookPublic:
+async def _verify_teacher_book_access(
+    session: AsyncSession, user: User, book_id: int
+) -> BookPublic:
     """
     Verify that a teacher has access to a book via BookAssignment.
 
@@ -439,7 +432,7 @@ async def _verify_teacher_book_access(session: AsyncSession, user: User, book_id
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book not found or not accessible"
+            detail="Book not found or not accessible",
         )
 
     # Get the book from DCS
@@ -520,7 +513,9 @@ def _normalize_media_path(media_path: str) -> str:
     return clean_path
 
 
-def _extract_audio_video_fill_from_sections(sections: list, book_id: int, page_number: int) -> tuple[list[AudioMarker], list[VideoMarker], list[FillAnswerMarker]]:
+def _extract_audio_video_fill_from_sections(
+    sections: list, book_id: int, page_number: int
+) -> tuple[list[AudioMarker], list[VideoMarker], list[FillAnswerMarker]]:
     """
     Extract audio, video, and fill answer markers from page sections.
 
@@ -554,14 +549,16 @@ def _extract_audio_video_fill_from_sections(sections: list, book_id: int, page_n
             audio_path = section.get("audio_path", "") or section.get("audio", "")
             if audio_path:
                 coords = section.get("coords", {})
-                audio_markers.append(AudioMarker(
-                    id=f"audio-{page_number}-{audio_idx}",
-                    src=build_media_url(audio_path),
-                    x=coords.get("x", 50),
-                    y=coords.get("y", 50),
-                    width=coords.get("w", coords.get("width", 44)),
-                    height=coords.get("h", coords.get("height", 44)),
-                ))
+                audio_markers.append(
+                    AudioMarker(
+                        id=f"audio-{page_number}-{audio_idx}",
+                        src=build_media_url(audio_path),
+                        x=coords.get("x", 50),
+                        y=coords.get("y", 50),
+                        width=coords.get("w", coords.get("width", 44)),
+                        height=coords.get("h", coords.get("height", 44)),
+                    )
+                )
                 audio_idx += 1
 
         # Extract standalone video sections
@@ -572,18 +569,24 @@ def _extract_audio_video_fill_from_sections(sections: list, book_id: int, page_n
                 video_url = build_media_url(video_path)
                 # Check for subtitle file (same name with .srt extension)
                 normalized_path = _normalize_media_path(video_path)
-                subtitle_url = f"/api/v1/books/{book_id}/media/{normalized_path.rsplit('.', 1)[0]}.srt" if "." in normalized_path else None
+                subtitle_url = (
+                    f"/api/v1/books/{book_id}/media/{normalized_path.rsplit('.', 1)[0]}.srt"
+                    if "." in normalized_path
+                    else None
+                )
                 poster_path = section.get("poster", "")
-                video_markers.append(VideoMarker(
-                    id=f"video-{page_number}-{video_idx}",
-                    src=video_url,
-                    poster=build_media_url(poster_path) if poster_path else None,
-                    subtitle_src=subtitle_url,
-                    x=coords.get("x", 50),
-                    y=coords.get("y", 50),
-                    width=coords.get("w", coords.get("width", 44)),
-                    height=coords.get("h", coords.get("height", 44)),
-                ))
+                video_markers.append(
+                    VideoMarker(
+                        id=f"video-{page_number}-{video_idx}",
+                        src=video_url,
+                        poster=build_media_url(poster_path) if poster_path else None,
+                        subtitle_src=subtitle_url,
+                        x=coords.get("x", 50),
+                        y=coords.get("y", 50),
+                        width=coords.get("w", coords.get("width", 44)),
+                        height=coords.get("h", coords.get("height", 44)),
+                    )
+                )
                 video_idx += 1
 
         # Extract fill answer sections (type: "fill" with answer array)
@@ -593,14 +596,20 @@ def _extract_audio_video_fill_from_sections(sections: list, book_id: int, page_n
                 answer_coords = answer.get("coords", {})
                 answer_text = answer.get("text", "")
                 if answer_coords and answer_text:
-                    fill_markers.append(FillAnswerMarker(
-                        id=f"fill-{page_number}-{section_idx}-{fill_idx}",
-                        x=answer_coords.get("x", 0),
-                        y=answer_coords.get("y", 0),
-                        width=answer_coords.get("w", answer_coords.get("width", 50)),
-                        height=answer_coords.get("h", answer_coords.get("height", 20)),
-                        text=answer_text,
-                    ))
+                    fill_markers.append(
+                        FillAnswerMarker(
+                            id=f"fill-{page_number}-{section_idx}-{fill_idx}",
+                            x=answer_coords.get("x", 0),
+                            y=answer_coords.get("y", 0),
+                            width=answer_coords.get(
+                                "w", answer_coords.get("width", 50)
+                            ),
+                            height=answer_coords.get(
+                                "h", answer_coords.get("height", 20)
+                            ),
+                            text=answer_text,
+                        )
+                    )
                     fill_idx += 1
 
         # Note: audio_extra is handled by ActivityToolbar when activity opens,
@@ -609,7 +618,9 @@ def _extract_audio_video_fill_from_sections(sections: list, book_id: int, page_n
     return audio_markers, video_markers, fill_markers
 
 
-def _extract_all_pages_from_config(config_json: dict, book_id: int) -> tuple[list[dict], list[ModuleInfo]]:
+def _extract_all_pages_from_config(
+    config_json: dict, book_id: int
+) -> tuple[list[dict], list[ModuleInfo]]:
     """
     Extract ALL pages from config.json (not just pages with activities).
 
@@ -664,26 +675,34 @@ def _extract_all_pages_from_config(config_json: dict, book_id: int) -> tuple[lis
                     image_url = f"/api/v1/books/{book_id}/assets/images/HB/modules/{module_folder}/pages/{page_number:02d}.png"
 
                 # Extract audio, video, and fill answers from sections
-                audio_markers, video_markers, fill_markers = _extract_audio_video_fill_from_sections(sections, book_id, page_number)
+                audio_markers, video_markers, fill_markers = (
+                    _extract_audio_video_fill_from_sections(
+                        sections, book_id, page_number
+                    )
+                )
 
-                all_pages.append({
-                    "module_name": module_name,
-                    "page_number": page_number,
-                    "image_url": image_url,
-                    "audio": audio_markers,
-                    "video": video_markers,
-                    "fill_answers": fill_markers,
-                })
+                all_pages.append(
+                    {
+                        "module_name": module_name,
+                        "page_number": page_number,
+                        "image_url": image_url,
+                        "audio": audio_markers,
+                        "video": video_markers,
+                        "fill_answers": fill_markers,
+                    }
+                )
                 page_index += 1
 
         # Add module info for navigation shortcuts
         page_count = page_index - first_page_index
         if page_count > 0:
-            module_infos.append(ModuleInfo(
-                name=module_name,
-                first_page_index=first_page_index,
-                page_count=page_count
-            ))
+            module_infos.append(
+                ModuleInfo(
+                    name=module_name,
+                    first_page_index=first_page_index,
+                    page_count=page_count,
+                )
+            )
 
     return all_pages, module_infos
 
@@ -692,7 +711,7 @@ def _extract_all_pages_from_config(config_json: dict, book_id: int) -> tuple[lis
     "/{book_id}/pages",
     response_model=BookPagesResponse,
     summary="Get book pages with activities",
-    description="Returns pages grouped by module with activity counts and thumbnail URLs."
+    description="Returns pages grouped by module with activity counts and thumbnail URLs.",
 )
 @limiter.limit(RateLimits.READ)
 async def get_book_pages(
@@ -700,7 +719,9 @@ async def get_book_pages(
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
+    ),
 ) -> BookPagesResponse:
     """
     Get pages for a book, grouped by module.
@@ -730,7 +751,7 @@ async def get_book_pages(
     if not book_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book configuration not found in DCS"
+            detail="Book configuration not found in DCS",
         )
 
     # Extract page image paths from config.json
@@ -741,7 +762,7 @@ async def get_book_pages(
         select(
             Activity.module_name,
             Activity.page_number,
-            func.count(Activity.id).label("activity_count")
+            func.count(Activity.id).label("activity_count"),
         )
         .where(Activity.dcs_book_id == book_id)
         .group_by(Activity.module_name, Activity.page_number)
@@ -776,7 +797,7 @@ async def get_book_pages(
         page_info = PageInfo(
             page_number=page_number,
             activity_count=activity_count,
-            thumbnail_url=thumbnail_url
+            thumbnail_url=thumbnail_url,
         )
 
         if module_name not in modules_dict:
@@ -788,15 +809,14 @@ async def get_book_pages(
 
     # Build response
     modules = [
-        ModulePages(name=name, pages=pages)
-        for name, pages in modules_dict.items()
+        ModulePages(name=name, pages=pages) for name, pages in modules_dict.items()
     ]
 
     return BookPagesResponse(
         book_id=book_id,
         modules=modules,
         total_pages=total_pages,
-        total_activities=total_activities
+        total_activities=total_activities,
     )
 
 
@@ -827,7 +847,7 @@ def _module_name_to_folder(module_name: str) -> str:
     "/{book_id}/pages/{page_number}/activities",
     response_model=list[PageActivityResponse],
     summary="Get activities on a specific page",
-    description="Returns activities for a specific page, ordered by section_index."
+    description="Returns activities for a specific page, ordered by section_index.",
 )
 @limiter.limit(RateLimits.READ)
 async def get_page_activities(
@@ -837,7 +857,9 @@ async def get_page_activities(
     book_id: int,  # Changed from UUID to int (DCS book ID)
     page_number: int,
     module_name: str | None = None,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
+    ),
 ) -> list[PageActivityResponse]:
     """
     Get activities for a specific page in a book.
@@ -862,8 +884,7 @@ async def get_page_activities(
 
     # Build query (using dcs_book_id)
     query = select(Activity).where(
-        Activity.dcs_book_id == book_id,
-        Activity.page_number == page_number
+        Activity.dcs_book_id == book_id, Activity.page_number == page_number
     )
 
     # Apply module filter if provided
@@ -882,7 +903,7 @@ async def get_page_activities(
             title=activity.title,
             activity_type=activity.activity_type,
             section_index=activity.section_index,
-            order_index=activity.order_index
+            order_index=activity.order_index,
         )
         for activity in activities
     ]
@@ -896,10 +917,7 @@ def _extract_activity_coords(config_json: dict) -> ActivityCoords | None:
     coords = config_json.get("coords")
     if coords and all(k in coords for k in ("x", "y", "w", "h")):
         return ActivityCoords(
-            x=coords["x"],
-            y=coords["y"],
-            w=coords["w"],
-            h=coords["h"]
+            x=coords["x"], y=coords["y"], w=coords["w"], h=coords["h"]
         )
     return None
 
@@ -908,7 +926,7 @@ def _extract_activity_coords(config_json: dict) -> ActivityCoords | None:
     "/{book_id}/pages/detail",
     response_model=BookPagesDetailResponse,
     summary="Get detailed book pages with activity markers",
-    description="Returns pages grouped by module with full-size images and activity coordinates for the page viewer."
+    description="Returns pages grouped by module with full-size images and activity coordinates for the page viewer.",
 )
 @limiter.limit(RateLimits.READ)
 async def get_book_pages_detail(
@@ -916,7 +934,9 @@ async def get_book_pages_detail(
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
+    ),
 ) -> BookPagesDetailResponse:
     """
     Get detailed page information for the enhanced page viewer.
@@ -946,12 +966,14 @@ async def get_book_pages_detail(
     if not book_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book configuration not found in DCS"
+            detail="Book configuration not found in DCS",
         )
 
     # Extract ALL pages from config.json (not just pages with activities)
     all_pages, module_infos = _extract_all_pages_from_config(book_config, book_id)
-    logger.info(f"Extracted {len(all_pages)} total pages from config.json across {len(module_infos)} modules")
+    logger.info(
+        f"Extracted {len(all_pages)} total pages from config.json across {len(module_infos)} modules"
+    )
 
     # Get all activities for this book with their coordinates (using dcs_book_id)
     result = await session.execute(
@@ -1000,10 +1022,14 @@ async def get_book_pages_detail(
                 # Remove books/{book_name}/ prefix if present (assets endpoint adds this)
                 if section_path.startswith("books/"):
                     # Format: books/{book_name}/images/... -> images/...
-                    parts = section_path.split("/", 2)  # Split into ['books', 'book_name', 'rest']
+                    parts = section_path.split(
+                        "/", 2
+                    )  # Split into ['books', 'book_name', 'rest']
                     if len(parts) >= 3:
                         section_path = parts[2]
-                config["section_image_url"] = f"/api/v1/books/{book_id}/assets/{section_path}"
+                config["section_image_url"] = (
+                    f"/api/v1/books/{book_id}/assets/{section_path}"
+                )
 
             # Convert audio_extra.path to full API URL if present
             if "audio_extra" in config and isinstance(config["audio_extra"], dict):
@@ -1018,33 +1044,39 @@ async def get_book_pages_detail(
                         parts = audio_path.split("/", 2)
                         if len(parts) >= 3:
                             audio_path = parts[2]
-                    config["audio_extra"]["url"] = f"/api/v1/books/{book_id}/media/{audio_path}"
-            activity_markers.append(ActivityMarker(
-                id=activity.id,
-                title=activity.title,
-                activity_type=activity.activity_type,
-                section_index=activity.section_index,
-                coords=coords,
-                config=config
-            ))
+                    config["audio_extra"][
+                        "url"
+                    ] = f"/api/v1/books/{book_id}/media/{audio_path}"
+            activity_markers.append(
+                ActivityMarker(
+                    id=activity.id,
+                    title=activity.title,
+                    activity_type=activity.activity_type,
+                    section_index=activity.section_index,
+                    coords=coords,
+                    config=config,
+                )
+            )
             total_activities += 1
 
-        pages_list.append(PageDetail(
-            page_number=page_number,
-            image_url=image_url,
-            module_name=module_name,
-            activities=activity_markers,
-            audio=audio_markers,
-            video=video_markers,
-            fill_answers=fill_markers,
-        ))
+        pages_list.append(
+            PageDetail(
+                page_number=page_number,
+                image_url=image_url,
+                module_name=module_name,
+                activities=activity_markers,
+                audio=audio_markers,
+                video=video_markers,
+                fill_answers=fill_markers,
+            )
+        )
 
     return BookPagesDetailResponse(
         book_id=book_id,
         modules=module_infos,
         pages=pages_list,
         total_pages=len(pages_list),
-        total_activities=total_activities
+        total_activities=total_activities,
     )
 
 
@@ -1065,7 +1097,7 @@ SUPPORTED_ACTIVITY_TYPES = {
     "/{book_id}/structure",
     response_model=BookStructureResponse,
     summary="Get book structure with modules and pages for activity selection",
-    description="Returns book structure with modules and pages including activity IDs for bulk selection in assignment creation."
+    description="Returns book structure with modules and pages including activity IDs for bulk selection in assignment creation.",
 )
 @limiter.limit(RateLimits.READ)
 async def get_book_structure(
@@ -1073,7 +1105,9 @@ async def get_book_structure(
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
+    ),
 ) -> BookStructureResponse:
     """
     Get book structure with modules and pages for activity selection tabs.
@@ -1103,7 +1137,7 @@ async def get_book_structure(
     if not book_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book configuration not found in DCS"
+            detail="Book configuration not found in DCS",
         )
 
     # Extract page image paths from config.json for thumbnails
@@ -1114,7 +1148,7 @@ async def get_book_structure(
         select(Activity)
         .where(
             Activity.dcs_book_id == book_id,
-            Activity.activity_type.in_(SUPPORTED_ACTIVITY_TYPES)
+            Activity.activity_type.in_(SUPPORTED_ACTIVITY_TYPES),
         )
         .order_by(Activity.module_name, Activity.page_number, Activity.section_index)
     )
@@ -1139,7 +1173,7 @@ async def get_book_structure(
                 "name": module_name,
                 "pages": {},
                 "activity_ids": [],
-                "page_numbers": []
+                "page_numbers": [],
             }
         module_data[module_name]["activity_ids"].append(activity.id)
         if activity.page_number not in module_data[module_name]["pages"]:
@@ -1168,29 +1202,33 @@ async def get_book_structure(
                 module_folder = _module_name_to_folder(module_name)
                 thumbnail_url = f"/api/v1/books/{book_id}/assets/images/HB/modules/{module_folder}/pages/{page_num:02d}.png"
 
-            pages.append(PageWithActivities(
-                page_number=page_num,
-                thumbnail_url=thumbnail_url,
-                activity_count=len(activity_ids),
-                activity_ids=activity_ids
-            ))
+            pages.append(
+                PageWithActivities(
+                    page_number=page_num,
+                    thumbnail_url=thumbnail_url,
+                    activity_count=len(activity_ids),
+                    activity_ids=activity_ids,
+                )
+            )
             total_pages += 1
             total_activities += len(activity_ids)
 
-        modules.append(ModuleWithActivities(
-            name=module_name,
-            page_start=min(page_numbers) if page_numbers else 0,
-            page_end=max(page_numbers) if page_numbers else 0,
-            activity_count=len(data["activity_ids"]),
-            activity_ids=data["activity_ids"],
-            pages=pages
-        ))
+        modules.append(
+            ModuleWithActivities(
+                name=module_name,
+                page_start=min(page_numbers) if page_numbers else 0,
+                page_end=max(page_numbers) if page_numbers else 0,
+                activity_count=len(data["activity_ids"]),
+                activity_ids=data["activity_ids"],
+                pages=pages,
+            )
+        )
 
     return BookStructureResponse(
         book_id=book_id,
         modules=modules,
         total_pages=total_pages,
-        total_activities=total_activities
+        total_activities=total_activities,
     )
 
 
@@ -1201,7 +1239,7 @@ async def get_book_structure(
     "/{book_id}/videos",
     response_model=BookVideosResponse,
     summary="List available videos for a book",
-    description="Returns available videos defined in the book's config.json."
+    description="Returns available videos defined in the book's config.json.",
 )
 @limiter.limit(RateLimits.READ)
 async def list_book_videos(
@@ -1209,7 +1247,9 @@ async def list_book_videos(
     *,
     session: AsyncSessionDep,
     book_id: int,  # Changed from UUID to int (DCS book ID)
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
+    ),
 ) -> BookVideosResponse:
     """
     List available videos for a book from its config.json.
@@ -1237,16 +1277,14 @@ async def list_book_videos(
     book = await book_service.get_book(book_id)
     if not book:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book not found in DCS"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found in DCS"
         )
 
     # Get Dream Storage client and fetch config.json
     dcs_client = await get_dream_storage_client()
     try:
         config_data = await dcs_client.get_book_config(
-            publisher=book.publisher_name,
-            book_name=book.name
+            publisher=book.publisher_name, book_name=book.name
         )
     except Exception as e:
         logger.error(f"Failed to fetch config.json for book {book_id}: {e}")
@@ -1259,8 +1297,7 @@ async def list_book_videos(
     # Get all files in the book to check for subtitles
     try:
         all_files = await dcs_client.list_book_contents(
-            publisher=book.publisher_name,
-            book_name=book.name
+            publisher=book.publisher_name, book_name=book.name
         )
     except Exception as e:
         logger.warning(f"Could not list book contents for subtitle detection: {e}")
@@ -1306,7 +1343,7 @@ async def list_book_videos(
                 size_bytes = await dcs_client.get_asset_size(
                     publisher=book.publisher_name,
                     book_name=book.name,
-                    asset_path=video_path
+                    asset_path=video_path,
                 )
             except Exception as e:
                 logger.warning(f"Could not get size for {video_path}: {e}")
@@ -1316,17 +1353,13 @@ async def list_book_videos(
                 path=video_path,
                 name=display_name,
                 size_bytes=size_bytes,
-                has_subtitles=has_subtitles
+                has_subtitles=has_subtitles,
             )
 
     # Filter out videos with 0 bytes (files that don't exist in DCS)
     videos = [v for v in unique_videos.values() if v.size_bytes > 0]
 
-    return BookVideosResponse(
-        book_id=book_id,
-        videos=videos,
-        total_count=len(videos)
-    )
+    return BookVideosResponse(book_id=book_id, videos=videos, total_count=len(videos))
 
 
 # --- Admin: Import Activities from DCS ---
@@ -1336,7 +1369,7 @@ async def list_book_videos(
     "/{book_id}/import-activities",
     response_model=dict,
     summary="Import activities from DCS config.json into local database",
-    description="Admin-only endpoint to sync activities from DCS config.json to local Activity table."
+    description="Admin-only endpoint to sync activities from DCS config.json to local Activity table.",
 )
 @limiter.limit(RateLimits.WRITE)
 async def import_book_activities(
@@ -1344,7 +1377,7 @@ async def import_book_activities(
     *,
     session: AsyncSessionDep,
     book_id: int,
-    current_user: User = require_role(UserRole.admin)
+    current_user: User = require_role(UserRole.admin),
 ) -> dict:
     """
     Import activities from DCS config.json into local Activity table.
@@ -1362,8 +1395,7 @@ async def import_book_activities(
     book = await book_service.get_book(book_id)
     if not book:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book not found in DCS"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found in DCS"
         )
 
     # Get book config from DCS
@@ -1371,7 +1403,7 @@ async def import_book_activities(
     if not book_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Book configuration not found in DCS"
+            detail="Book configuration not found in DCS",
         )
 
     # Parse activities from config.json
@@ -1381,13 +1413,12 @@ async def import_book_activities(
         logger.error(f"Failed to parse config.json for book {book_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to parse book configuration: {str(e)}"
+            detail=f"Failed to parse book configuration: {str(e)}",
         )
 
     # Filter for supported activity types only
     supported_activities = [
-        a for a in activity_data_list
-        if a.activity_type in SUPPORTED_ACTIVITY_TYPES
+        a for a in activity_data_list if a.activity_type in SUPPORTED_ACTIVITY_TYPES
     ]
 
     # Delete existing activities for this book
@@ -1416,7 +1447,9 @@ async def import_book_activities(
 
     await session.commit()
 
-    logger.info(f"Imported {created_count} activities for book {book_id} ({book.title})")
+    logger.info(
+        f"Imported {created_count} activities for book {book_id} ({book.title})"
+    )
 
     return {
         "book_id": book_id,
@@ -1437,7 +1470,7 @@ VALID_PLATFORMS = {"mac", "win", "win7-8", "linux"}
     "/{book_id}/bundle",
     response_model=BundleResponse,
     summary="Request book bundle download URL",
-    description="Generates a download URL for a standalone app bundle of the book for the specified platform."
+    description="Generates a download URL for a standalone app bundle of the book for the specified platform.",
 )
 @limiter.limit(RateLimits.WRITE)
 async def request_book_bundle(
@@ -1446,7 +1479,9 @@ async def request_book_bundle(
     session: AsyncSessionDep,
     book_id: int,
     bundle_request: BundleRequest,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
+    ),
 ) -> BundleResponse:
     """
     Request a standalone app bundle download URL for a book.
@@ -1472,7 +1507,7 @@ async def request_book_bundle(
     if bundle_request.platform not in VALID_PLATFORMS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid platform: {bundle_request.platform}. Must be one of: {', '.join(VALID_PLATFORMS)}"
+            detail=f"Invalid platform: {bundle_request.platform}. Must be one of: {', '.join(VALID_PLATFORMS)}",
         )
 
     # Verify access based on role
@@ -1485,7 +1520,9 @@ async def request_book_bundle(
     # Request bundle from DCS
     try:
         dcs_client = await get_dream_storage_client()
-        bundle_data = await dcs_client.request_book_bundle(book_id, bundle_request.platform)
+        bundle_data = await dcs_client.request_book_bundle(
+            book_id, bundle_request.platform
+        )
 
         return BundleResponse(
             download_url=bundle_data["download_url"],
@@ -1494,13 +1531,10 @@ async def request_book_bundle(
             expires_at=bundle_data.get("expires_at"),
         )
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logger.error(f"Failed to request bundle for book {book_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate download URL. Please try again later."
+            detail="Failed to generate download URL. Please try again later.",
         )

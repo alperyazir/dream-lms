@@ -53,10 +53,14 @@ class TTSManager:
         """
         self._settings = settings or get_tts_settings()
         self._providers: dict[TTSProviderType, TTSProvider] = providers or {}
-        self._cache = cache if cache is not None else (
-            get_audio_cache(self._settings.TTS_CACHE_TTL_HOURS)
-            if self._settings.TTS_CACHE_ENABLED
-            else None
+        self._cache = (
+            cache
+            if cache is not None
+            else (
+                get_audio_cache(self._settings.TTS_CACHE_TTL_HOURS)
+                if self._settings.TTS_CACHE_ENABLED
+                else None
+            )
         )
 
     @property
@@ -197,7 +201,9 @@ class TTSManager:
 
         for provider in providers:
             try:
-                logger.info(f"Attempting TTS generation with provider: {provider.get_name()}")
+                logger.info(
+                    f"Attempting TTS generation with provider: {provider.get_name()}"
+                )
                 start_time = time.time()
                 result = await provider.generate_audio(text, options)
                 latency_ms = int((time.time() - start_time) * 1000)

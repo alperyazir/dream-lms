@@ -1,13 +1,13 @@
-import { AnimatePresence, motion } from "framer-motion"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useNavigation } from "@/contexts/NavigationContext"
-import SidebarItems from "./SidebarItems"
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useNavigation } from "@/contexts/NavigationContext";
+import SidebarItems from "./SidebarItems";
 
-const SIDEBAR_WIDTH = 260
-const SIDEBAR_COLLAPSED_WIDTH = 72
+const SIDEBAR_WIDTH = 260;
+const SIDEBAR_COLLAPSED_WIDTH = 72;
 
 const Sidebar = () => {
-  const { isSidebarCollapsed, toggleSidebar } = useNavigation()
+  const { isSidebarCollapsed, toggleSidebar } = useNavigation();
 
   return (
     <motion.div
@@ -60,7 +60,7 @@ const Sidebar = () => {
         <SidebarItems isCollapsed={isSidebarCollapsed} />
       </div>
     </motion.div>
-  )
-}
+  );
+};
 
-export default Sidebar
+export default Sidebar;

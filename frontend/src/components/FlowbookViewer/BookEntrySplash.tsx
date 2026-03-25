@@ -9,23 +9,23 @@
  * 5. Open button appears
  */
 
-import { BookOpen, Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { BookCover } from "@/components/books/BookCover"
-import { Button } from "@/components/ui/button"
-import { useSoundContext } from "@/hooks/useSoundEffects"
+import { BookOpen, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookCover } from "@/components/books/BookCover";
+import { Button } from "@/components/ui/button";
+import { useSoundContext } from "@/hooks/useSoundEffects";
 
 interface BookEntrySplashProps {
-  title: string
-  coverUrl: string | null
-  publisherName: string
-  publisherId: number
-  isLoading?: boolean
-  onOpen: () => void
-  onClose?: () => void
+  title: string;
+  coverUrl: string | null;
+  publisherName: string;
+  publisherId: number;
+  isLoading?: boolean;
+  onOpen: () => void;
+  onClose?: () => void;
 }
 
-type AnimationStage = "logo" | "name" | "move-up" | "book" | "ready"
+type AnimationStage = "logo" | "name" | "move-up" | "book" | "ready";
 
 export function BookEntrySplash({
   title,
@@ -36,29 +36,35 @@ export function BookEntrySplash({
   onOpen,
   onClose,
 }: BookEntrySplashProps) {
-  const [stage, setStage] = useState<AnimationStage>("logo")
-  const [logoError, setLogoError] = useState(false)
-  const [logoLoaded, setLogoLoaded] = useState(false)
-  const { play } = useSoundContext()
+  const [stage, setStage] = useState<AnimationStage>("logo");
+  const [logoError, setLogoError] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
+  const { play } = useSoundContext();
 
-  const publisherLogoUrl = `/api/v1/publishers/${publisherId}/logo`
+  const publisherLogoUrl = `/api/v1/publishers/${publisherId}/logo`;
 
   // Animation sequence
   useEffect(() => {
-    const timers: NodeJS.Timeout[] = []
+    const timers: NodeJS.Timeout[] = [];
 
-    timers.push(setTimeout(() => setStage("name"), 800))
-    timers.push(setTimeout(() => setStage("move-up"), 1800))
-    timers.push(setTimeout(() => setStage("book"), 2400))
-    timers.push(setTimeout(() => setStage("ready"), 3200))
+    timers.push(setTimeout(() => setStage("name"), 800));
+    timers.push(setTimeout(() => setStage("move-up"), 1800));
+    timers.push(setTimeout(() => setStage("book"), 2400));
+    timers.push(setTimeout(() => setStage("ready"), 3200));
 
-    return () => timers.forEach(clearTimeout)
-  }, [])
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   const isStageActive = (checkStage: AnimationStage) => {
-    const stages: AnimationStage[] = ["logo", "name", "move-up", "book", "ready"]
-    return stages.indexOf(stage) >= stages.indexOf(checkStage)
-  }
+    const stages: AnimationStage[] = [
+      "logo",
+      "name",
+      "move-up",
+      "book",
+      "ready",
+    ];
+    return stages.indexOf(stage) >= stages.indexOf(checkStage);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
@@ -139,7 +145,12 @@ export function BookEntrySplash({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <BookCover coverUrl={null} title={title} size="lg" className="w-full h-full" />
+                <BookCover
+                  coverUrl={null}
+                  title={title}
+                  size="lg"
+                  className="w-full h-full"
+                />
               )}
             </div>
           </div>
@@ -162,8 +173,8 @@ export function BookEntrySplash({
             size="lg"
             className="px-10 bg-primary hover:bg-primary/90 text-white font-medium shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:scale-105"
             onClick={() => {
-              play("bookOpen")
-              onOpen()
+              play("bookOpen");
+              onOpen();
             }}
             disabled={isLoading}
           >
@@ -193,5 +204,5 @@ export function BookEntrySplash({
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -12,25 +12,25 @@ import {
   Lightbulb,
   RefreshCw,
   XCircle,
-} from "lucide-react"
-import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { useSoundContext } from "@/hooks/useSoundEffects"
-import { cn } from "@/lib/utils"
-import type { AIQuizQuestionResult, AIQuizResult } from "@/types/ai-quiz"
-import { getDifficultyLabel } from "@/types/ai-quiz"
+} from "lucide-react";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useSoundContext } from "@/hooks/useSoundEffects";
+import { cn } from "@/lib/utils";
+import type { AIQuizQuestionResult, AIQuizResult } from "@/types/ai-quiz";
+import { getDifficultyLabel } from "@/types/ai-quiz";
 
 interface AIQuizResultsProps {
   /** The quiz result data */
-  result: AIQuizResult
+  result: AIQuizResult;
   /** Callback to retry the quiz */
-  onRetry?: () => void
+  onRetry?: () => void;
   /** Callback to go back to generator */
-  onBack?: () => void
+  onBack?: () => void;
   /** Hide summary card when embedded in result page (to avoid duplication) */
-  hideSummary?: boolean
+  hideSummary?: boolean;
 }
 
 export function AIQuizResults({
@@ -39,33 +39,33 @@ export function AIQuizResults({
   onBack,
   hideSummary = false,
 }: AIQuizResultsProps) {
-  const { play: playSound } = useSoundContext()
+  const { play: playSound } = useSoundContext();
   const correctCount = result.question_results.filter(
     (r) => r.is_correct,
-  ).length
-  const totalCount = result.total
-  const percentage = result.percentage
+  ).length;
+  const totalCount = result.total;
+  const percentage = result.percentage;
 
   // Play completion sound on mount
   useEffect(() => {
     if (percentage >= 60) {
-      playSound("complete")
+      playSound("complete");
     }
-  }, [percentage, playSound])
+  }, [percentage, playSound]);
 
   // Determine score color
   const getScoreColor = (pct: number) => {
-    if (pct >= 80) return "text-green-600 dark:text-green-400"
-    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400"
-    return "text-red-600 dark:text-red-400"
-  }
+    if (pct >= 80) return "text-green-600 dark:text-green-400";
+    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
+  };
 
   // Determine progress color
   const getProgressClass = (pct: number) => {
-    if (pct >= 80) return "[&>div]:bg-green-500"
-    if (pct >= 60) return "[&>div]:bg-yellow-500"
-    return "[&>div]:bg-red-500"
-  }
+    if (pct >= 80) return "[&>div]:bg-green-500";
+    if (pct >= 60) return "[&>div]:bg-yellow-500";
+    return "[&>div]:bg-red-500";
+  };
 
   return (
     <div
@@ -163,12 +163,12 @@ export function AIQuizResults({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 interface QuestionResultCardProps {
-  result: AIQuizQuestionResult
-  index: number
+  result: AIQuizQuestionResult;
+  index: number;
 }
 
 function QuestionResultCard({ result, index }: QuestionResultCardProps) {
@@ -207,10 +207,10 @@ function QuestionResultCard({ result, index }: QuestionResultCardProps) {
             {/* Options with highlighting */}
             <div className="space-y-1.5">
               {result.options.map((option, optionIndex) => {
-                const isCorrectOption = optionIndex === result.correct_index
+                const isCorrectOption = optionIndex === result.correct_index;
                 const isStudentAnswer =
-                  optionIndex === result.student_answer_index
-                const showAsIncorrect = isStudentAnswer && !result.is_correct
+                  optionIndex === result.student_answer_index;
+                const showAsIncorrect = isStudentAnswer && !result.is_correct;
 
                 return (
                   <div
@@ -246,7 +246,7 @@ function QuestionResultCard({ result, index }: QuestionResultCardProps) {
                       <XCircle className="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" />
                     )}
                   </div>
-                )
+                );
               })}
             </div>
 
@@ -270,7 +270,7 @@ function QuestionResultCard({ result, index }: QuestionResultCardProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-export default AIQuizResults
+export default AIQuizResults;

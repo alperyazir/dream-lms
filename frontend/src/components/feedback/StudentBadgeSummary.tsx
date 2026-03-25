@@ -6,22 +6,22 @@
  * Used on student dashboard/profile.
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { LuAward, LuLoader } from "react-icons/lu"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BADGE_ICONS, BADGE_LABELS } from "@/types/feedback"
+import { useQuery } from "@tanstack/react-query";
+import { LuAward, LuLoader } from "react-icons/lu";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BADGE_ICONS, BADGE_LABELS } from "@/types/feedback";
 
 interface StudentBadgeSummaryProps {
-  showMonthly?: boolean
-  compact?: boolean
+  showMonthly?: boolean;
+  compact?: boolean;
 }
 
 interface BadgeCountsResponse {
-  badge_counts: Record<string, number>
-  total: number
-  this_month: Record<string, number>
-  this_month_total: number
+  badge_counts: Record<string, number>;
+  total: number;
+  this_month: Record<string, number>;
+  this_month_total: number;
 }
 
 export function StudentBadgeSummary({
@@ -33,14 +33,14 @@ export function StudentBadgeSummary({
     queryFn: async () => {
       const response = await fetch("/api/v1/students/me/badges", {
         credentials: "include",
-      })
+      });
       if (!response.ok) {
-        throw new Error("Failed to fetch badge counts")
+        throw new Error("Failed to fetch badge counts");
       }
-      return response.json()
+      return response.json();
     },
     staleTime: 60000, // 1 minute
-  })
+  });
 
   if (isLoading) {
     return (
@@ -49,17 +49,17 @@ export function StudentBadgeSummary({
           <LuLoader className="h-6 w-6 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error || !data) {
-    return null
+    return null;
   }
 
   // Get all badge types that have at least one count
   const earnedBadges = Object.entries(data.badge_counts).filter(
     ([_, count]) => count > 0,
-  )
+  );
 
   if (earnedBadges.length === 0) {
     return (
@@ -76,7 +76,7 @@ export function StudentBadgeSummary({
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (compact) {
@@ -96,7 +96,7 @@ export function StudentBadgeSummary({
           </Badge>
         ))}
       </div>
-    )
+    );
   }
 
   return (
@@ -148,5 +148,5 @@ export function StudentBadgeSummary({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

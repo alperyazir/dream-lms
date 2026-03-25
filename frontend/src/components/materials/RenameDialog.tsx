@@ -5,9 +5,9 @@
  * Dialog for renaming materials.
  */
 
-import { AlertCircle, Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,18 +15,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import type { Material } from "@/types/material"
-import { MaterialTypeIcon } from "./MaterialTypeIcon"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { Material } from "@/types/material";
+import { MaterialTypeIcon } from "./MaterialTypeIcon";
 
 interface RenameDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  material: Material | null
-  onRename: (newName: string) => Promise<void>
-  isRenaming?: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  material: Material | null;
+  onRename: (newName: string) => Promise<void>;
+  isRenaming?: boolean;
 }
 
 /**
@@ -39,54 +39,54 @@ export function RenameDialog({
   onRename,
   isRenaming = false,
 }: RenameDialogProps) {
-  const [name, setName] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   // Reset form when modal opens/closes or material changes
   useEffect(() => {
     if (open && material) {
-      setName(material.name)
-      setError(null)
+      setName(material.name);
+      setError(null);
     }
-  }, [open, material])
+  }, [open, material]);
 
   // Handle save
   const handleSave = async () => {
     if (!name.trim()) {
-      setError("Name is required")
-      return
+      setError("Name is required");
+      return;
     }
 
     if (name.trim() === material?.name) {
       // No change, just close
-      onOpenChange(false)
-      return
+      onOpenChange(false);
+      return;
     }
 
-    setError(null)
+    setError(null);
 
     try {
-      await onRename(name.trim())
-      onOpenChange(false)
+      await onRename(name.trim());
+      onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to rename")
+      setError(err instanceof Error ? err.message : "Failed to rename");
     }
-  }
+  };
 
   // Handle cancel
   const handleCancel = () => {
-    onOpenChange(false)
-  }
+    onOpenChange(false);
+  };
 
   // Handle key press
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !isRenaming) {
-      e.preventDefault()
-      handleSave()
+      e.preventDefault();
+      handleSave();
     }
-  }
+  };
 
-  if (!material) return null
+  if (!material) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,7 +154,7 @@ export function RenameDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-RenameDialog.displayName = "RenameDialog"
+RenameDialog.displayName = "RenameDialog";

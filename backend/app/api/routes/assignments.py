@@ -19,8 +19,6 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 from app.api.deps import AsyncSessionDep, require_role
-from app.services.cache_events import invalidate_for_event
-from app.services.redis_cache import cache_get, cache_set
 from app.core import security
 from app.core.config import settings
 from app.core.rate_limit import RateLimits, limiter
@@ -50,20 +48,6 @@ from app.schemas.analytics import (
     AssignmentDetailedResultsResponse,
     StudentAnswersResponse,
 )
-from app.schemas.assignment import (
-    PendingReviewItem,
-    PendingReviewsResponse,
-    TeacherGradeRequest,
-    TeacherGradeResponse,
-)
-from app.schemas.skill import (
-    ActivityFormatPublic,
-    AssignmentSkillBreakdownResponse,
-    SkillBreakdownItem,
-    SkillCategoryPublic,
-)
-from app.schemas.pagination import AssignmentListPaginatedResponse
-from app.services.skill_attribution_service import attribute_skill_scores
 from app.schemas.assignment import (
     ActivityAnalyticsItem,
     ActivityInfo,
@@ -96,9 +80,13 @@ from app.schemas.assignment import (
     MultiActivityStartResponse,
     MultiActivitySubmitRequest,
     MultiActivitySubmitResponse,
+    PendingReviewItem,
+    PendingReviewsResponse,
     PerActivityScore,
     StudentActivityScore,
     StudentAssignmentResultResponse,
+    TeacherGradeRequest,
+    TeacherGradeResponse,
     TeacherMaterialResourceResponse,
 )
 from app.schemas.feedback import (
@@ -107,18 +95,28 @@ from app.schemas.feedback import (
     FeedbackStudentView,
     FeedbackUpdate,
 )
+from app.schemas.pagination import AssignmentListPaginatedResponse
+from app.schemas.skill import (
+    ActivityFormatPublic,
+    AssignmentSkillBreakdownResponse,
+    SkillBreakdownItem,
+    SkillCategoryPublic,
+)
 from app.services import book_assignment_service, feedback_service
 from app.services.analytics_service import (
     get_assignment_detailed_results,
     get_student_assignment_answers,
 )
 from app.services.book_service_v2 import get_book_service
+from app.services.cache_events import invalidate_for_event
 from app.services.dream_storage_client import (
     DreamCentralStorageClient,
     DreamStorageError,
     DreamStorageNotFoundError,
     get_dream_storage_client,
 )
+from app.services.redis_cache import cache_get, cache_set
+from app.services.skill_attribution_service import attribute_skill_scores
 
 router = APIRouter(prefix="/assignments", tags=["assignments"])
 logger = logging.getLogger(__name__)
@@ -254,7 +252,8 @@ async def _get_target_students(
                 # Student belongs to teacher if:
                 # 1. They are in one of teacher's classes OR
                 # 2. They were created by this teacher (unassigned students)
-                (Class.teacher_id == teacher_id) | (Student.created_by_teacher_id == teacher_id)
+                (Class.teacher_id == teacher_id)
+                | (Student.created_by_teacher_id == teacher_id),
             )
             .distinct()
         )
@@ -382,9 +381,11 @@ async def _enrich_resources(
                     mime_type=material.mime_type,
                     url=material.url,
                     text_content=material.text_content,
-                    download_url=f"/api/v1/teachers/materials/{material.id}/download"
-                    if material.storage_path
-                    else None,
+                    download_url=(
+                        f"/api/v1/teachers/materials/{material.id}/download"
+                        if material.storage_path
+                        else None
+                    ),
                 )
             )
         else:
@@ -497,7 +498,9 @@ async def list_assignments(
 
     # Batch-fetch all books in a single DCS call
     book_service = get_book_service()
-    unique_book_ids = {row[0].dcs_book_id for row in assignments_data if row[0].dcs_book_id}
+    unique_book_ids = {
+        row[0].dcs_book_id for row in assignments_data if row[0].dcs_book_id
+    }
     book_map = await book_service.get_books_batch(list(unique_book_ids))
 
     # Build response with enriched data
@@ -521,7 +524,9 @@ async def list_assignments(
 
         # Only show pending reviews for manual-grading activity types
         pending_reviews_count = 0
-        act_type_val = assignment.activity_type.value if assignment.activity_type else None
+        act_type_val = (
+            assignment.activity_type.value if assignment.activity_type else None
+        )
         if act_type_val in ("writing_free_response", "speaking_open_response"):
             pending_reviews_count = pending_reviews_raw
 
@@ -529,14 +534,22 @@ async def list_assignments(
         if activity:
             activity_id = activity.id
             activity_title = activity.title
-            activity_type = activity.activity_type.value if hasattr(activity.activity_type, 'value') else str(activity.activity_type)
+            activity_type = (
+                activity.activity_type.value
+                if hasattr(activity.activity_type, "value")
+                else str(activity.activity_type)
+            )
             book_id = book.id if book else (assignment.dcs_book_id or 0)
             book_title_final = (book.title or book.name) if book else "Unknown Book"
         else:
             # Content Library assignment - use assignment's embedded data
             activity_id = assignment.id  # Use assignment id as pseudo activity id
             activity_title = assignment.name
-            activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+            activity_type = (
+                assignment.activity_type.value
+                if assignment.activity_type
+                else "ai_quiz"
+            )
             book_id = assignment.dcs_book_id if assignment.dcs_book_id else 0
             book_title_final = (book.title or book.name) if book else "AI Generated"
 
@@ -571,7 +584,9 @@ async def list_assignments(
             )
         )
 
-    logger.info(f"Listed {len(assignment_list)} assignments for teacher_id={teacher.id}")
+    logger.info(
+        f"Listed {len(assignment_list)} assignments for teacher_id={teacher.id}"
+    )
 
     response = AssignmentListPaginatedResponse(
         items=assignment_list,
@@ -644,7 +659,7 @@ async def list_all_assignments_admin(
     for row in assignments_data:
         assignment = row[0]
         activity = row[1]
-        teacher = row[2]
+        row[2]
         teacher_user = row[3]
         total_students = row[4] or 0
         not_started = row[5] or 0
@@ -676,7 +691,8 @@ async def list_all_assignments_admin(
                 not_started=not_started,
                 in_progress=in_progress,
                 completed=completed,
-                teacher_name=teacher_user.full_name or "",  # Add teacher name for admin view
+                teacher_name=teacher_user.full_name
+                or "",  # Add teacher name for admin view
             )
         )
 
@@ -699,7 +715,9 @@ async def get_calendar_assignments(
     start_date: datetime = Query(..., description="Start date for range (inclusive)"),
     end_date: datetime = Query(..., description="End date for range (inclusive)"),
     class_id: uuid.UUID | None = Query(None, description="Filter by class ID"),
-    status_filter: AssignmentPublishStatus | None = Query(None, alias="status", description="Filter by status"),
+    status_filter: AssignmentPublishStatus | None = Query(
+        None, alias="status", description="Filter by status"
+    ),
     book_id: int | None = Query(None, description="Filter by book ID (DCS book ID)"),
     current_user: User = require_role(UserRole.teacher),
 ) -> CalendarAssignmentsResponse:
@@ -737,7 +755,7 @@ async def get_calendar_assignments(
     activity_count_subq = (
         select(
             AssignmentActivity.assignment_id,
-            sql_func.count(AssignmentActivity.activity_id).label("activity_count")
+            sql_func.count(AssignmentActivity.activity_id).label("activity_count"),
         )
         .group_by(AssignmentActivity.assignment_id)
         .subquery()
@@ -749,21 +767,24 @@ async def get_calendar_assignments(
     query = (
         select(
             Assignment,
-            sql_func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
+            sql_func.coalesce(activity_count_subq.c.activity_count, 1).label(
+                "activity_count"
+            ),
         )
         .outerjoin(
-            activity_count_subq,
-            activity_count_subq.c.assignment_id == Assignment.id
+            activity_count_subq, activity_count_subq.c.assignment_id == Assignment.id
         )
         .where(Assignment.teacher_id == teacher.id)
         .where(
             # Include if due_date, scheduled_publish_date, OR created_at falls in range
-            (
-                (Assignment.due_date >= start_date) & (Assignment.due_date <= end_date)
-            ) | (
-                (Assignment.scheduled_publish_date >= start_date) & (Assignment.scheduled_publish_date <= end_date)
-            ) | (
-                (Assignment.created_at >= start_date) & (Assignment.created_at <= end_date)
+            ((Assignment.due_date >= start_date) & (Assignment.due_date <= end_date))
+            | (
+                (Assignment.scheduled_publish_date >= start_date)
+                & (Assignment.scheduled_publish_date <= end_date)
+            )
+            | (
+                (Assignment.created_at >= start_date)
+                & (Assignment.created_at <= end_date)
             )
         )
     )
@@ -790,10 +811,7 @@ async def get_calendar_assignments(
         # Query class names via AssignmentStudent → ClassStudent → Class
         # Filter by assignment_ids first to use the index before joining large tables
         class_query = await session.execute(
-            select(
-                AssignmentStudent.assignment_id,
-                Class.name
-            )
+            select(AssignmentStudent.assignment_id, Class.name)
             .where(AssignmentStudent.assignment_id.in_(assignment_ids))
             .join(ClassStudent, ClassStudent.student_id == AssignmentStudent.student_id)
             .join(Class, ClassStudent.class_id == Class.id)
@@ -840,7 +858,11 @@ async def get_calendar_assignments(
             continue
 
         # Use due_date as primary, scheduled_publish_date as secondary, created_at as fallback
-        calendar_date = assignment.due_date or assignment.scheduled_publish_date or assignment.created_at
+        calendar_date = (
+            assignment.due_date
+            or assignment.scheduled_publish_date
+            or assignment.created_at
+        )
         date_key = calendar_date.strftime("%Y-%m-%d")
 
         calendar_item = CalendarAssignmentItem(
@@ -858,11 +880,13 @@ async def get_calendar_assignments(
 
     # Sort assignments within each day
     for date_key in assignments_by_date:
+
         def _sort_key(a):
             dt = a.due_date or a.scheduled_publish_date
             if dt is None:
                 return datetime.min
             return dt.replace(tzinfo=None) if dt.tzinfo else dt
+
         assignments_by_date[date_key].sort(key=_sort_key)
 
     total_assignments = sum(len(items) for items in assignments_by_date.values())
@@ -972,8 +996,8 @@ async def create_assignment(
     # Story 27.x: Handle AI content assignments differently
     if assignment_in.source_type == "ai_content":
         # Fetch AI content from DCS (Dream Central Storage)
-        from app.services.dream_storage_client import get_dream_storage_client
         from app.services.dcs_ai_content_client import get_dcs_ai_content_client
+        from app.services.dream_storage_client import get_dream_storage_client
 
         dcs_client = await get_dream_storage_client()
         ai_client = get_dcs_ai_content_client(dcs_client)
@@ -992,12 +1016,18 @@ async def create_assignment(
 
         # DCS returns { content_id, manifest: { activity_type, ... }, content: { ... } }
         manifest = dcs_content.get("manifest", {})
-        dcs_activity_type = manifest.get("activity_type", "") or dcs_content.get("activity_type", "")
-        logger.info(f"DCS AI content fetched: activity_type={dcs_activity_type}, content_keys={list(dcs_content.get('content', {}).keys()) if isinstance(dcs_content.get('content'), dict) else 'N/A'}")
+        dcs_activity_type = manifest.get("activity_type", "") or dcs_content.get(
+            "activity_type", ""
+        )
+        logger.info(
+            f"DCS AI content fetched: activity_type={dcs_activity_type}, content_keys={list(dcs_content.get('content', {}).keys()) if isinstance(dcs_content.get('content'), dict) else 'N/A'}"
+        )
         try:
             activity_type_enum = ActivityType(dcs_activity_type)
         except ValueError:
-            logger.warning(f"Unknown DCS activity type '{dcs_activity_type}', falling back to ai_quiz")
+            logger.warning(
+                f"Unknown DCS activity type '{dcs_activity_type}', falling back to ai_quiz"
+            )
             activity_type_enum = ActivityType.ai_quiz
 
         # Fix audio_url paths: DCS content may have audio URLs referencing
@@ -1006,7 +1036,7 @@ async def create_assignment(
         import re as _re
 
         embedded_content = dcs_content.get("content", {})
-        canonical_content_id = str(assignment_in.content_id)
+        str(assignment_in.content_id)
         book_id_str = str(assignment_in.book_id)
 
         def _fix_audio_urls(obj: Any) -> Any:
@@ -1058,7 +1088,11 @@ async def create_assignment(
             scheduled_publish_date=assignment_in.scheduled_publish_date,
             status=assignment_status,
             video_path=assignment_in.video_path,
-            resources=validated_resources.model_dump(mode="json") if validated_resources else None,
+            resources=(
+                validated_resources.model_dump(mode="json")
+                if validated_resources
+                else None
+            ),
             # AI content fields
             activity_type=activity_type_enum,
             activity_content=fixed_content,
@@ -1091,13 +1125,17 @@ async def create_assignment(
 
         # Invalidate teacher assignment cache + per-student assignment caches (batched)
         invalidation_tasks = [
-            invalidate_for_event("teacher_assignment_changed", user_id=str(current_user.id))
+            invalidate_for_event(
+                "teacher_assignment_changed", user_id=str(current_user.id)
+            )
         ]
         if assignment_status == AssignmentPublishStatus.published:
             for student in students:
                 if student.user_id:
                     invalidation_tasks.append(
-                        invalidate_for_event("assignment_assigned", user_id=str(student.user_id))
+                        invalidate_for_event(
+                            "assignment_assigned", user_id=str(student.user_id)
+                        )
                     )
         await asyncio.gather(*invalidation_tasks, return_exceptions=True)
 
@@ -1150,7 +1188,9 @@ async def create_assignment(
         scheduled_publish_date=assignment_in.scheduled_publish_date,
         status=assignment_status,
         video_path=assignment_in.video_path,  # Story 10.3: Video attachment (deprecated)
-        resources=validated_resources.model_dump(mode="json") if validated_resources else None,  # Story 10.3+/13.3: Additional resources
+        resources=(
+            validated_resources.model_dump(mode="json") if validated_resources else None
+        ),  # Story 10.3+/13.3: Additional resources
         created_at=now,
         updated_at=now,
     )
@@ -1213,7 +1253,9 @@ async def create_assignment(
         for student in students:
             if student.user_id:
                 invalidation_tasks.append(
-                    invalidate_for_event("assignment_assigned", user_id=str(student.user_id))
+                    invalidate_for_event(
+                        "assignment_assigned", user_id=str(student.user_id)
+                    )
                 )
     await asyncio.gather(*invalidation_tasks, return_exceptions=True)
 
@@ -1379,7 +1421,11 @@ async def create_bulk_assignments(
             scheduled_publish_date=group.scheduled_publish_date,
             status=assignment_status,
             video_path=assignment_in.video_path,  # Story 10.3: Video attachment (deprecated)
-            resources=assignment_in.resources.model_dump() if assignment_in.resources else None,  # Story 10.3+: Additional resources
+            resources=(
+                assignment_in.resources.model_dump()
+                if assignment_in.resources
+                else None
+            ),  # Story 10.3+: Additional resources
             created_at=now,
             updated_at=now,
         )
@@ -1451,7 +1497,9 @@ async def create_bulk_assignments(
     for student in students:
         if student.user_id:
             invalidation_tasks.append(
-                invalidate_for_event("assignment_assigned", user_id=str(student.user_id))
+                invalidate_for_event(
+                    "assignment_assigned", user_id=str(student.user_id)
+                )
             )
     await asyncio.gather(*invalidation_tasks, return_exceptions=True)
 
@@ -1561,7 +1609,11 @@ async def update_assignment(
             validated_resources = await _validate_and_denormalize_teacher_materials(
                 session, resources_model, teacher.id
             )
-            assignment.resources = validated_resources.model_dump(mode="json") if validated_resources else None
+            assignment.resources = (
+                validated_resources.model_dump(mode="json")
+                if validated_resources
+                else None
+            )
         else:
             # Clear resources if empty dict/None
             assignment.resources = None
@@ -1627,14 +1679,20 @@ async def update_assignment(
     # to avoid lazy load errors when accessing the activities property
     result = await session.execute(
         select(Assignment)
-        .options(selectinload(Assignment.assignment_activities).selectinload(AssignmentActivity.activity))
+        .options(
+            selectinload(Assignment.assignment_activities).selectinload(
+                AssignmentActivity.activity
+            )
+        )
         .where(Assignment.id == assignment.id)
     )
     assignment = result.scalar_one()
 
     # Count assigned students for response
     result = await session.execute(
-        select(AssignmentStudent).where(AssignmentStudent.assignment_id == assignment.id)
+        select(AssignmentStudent).where(
+            AssignmentStudent.assignment_id == assignment.id
+        )
     )
     student_count = len(result.scalars().all())
 
@@ -1744,9 +1802,7 @@ async def delete_assignment(
         )
     await asyncio.gather(*invalidation_tasks, return_exceptions=True)
 
-    logger.info(
-        f"Assignment deleted: id={assignment_id}, teacher_id={teacher.id}"
-    )
+    logger.info(f"Assignment deleted: id={assignment_id}, teacher_id={teacher.id}")
 
 
 @router.post(
@@ -1830,11 +1886,13 @@ async def attach_material_to_assignment(
         )
 
     # Add new material
-    teacher_materials.append({
-        "material_id": str(material_id),
-        "name": material.name,
-        "material_type": material.type.value,
-    })
+    teacher_materials.append(
+        {
+            "material_id": str(material_id),
+            "name": material.name,
+            "material_type": material.type.value,
+        }
+    )
 
     # Update assignment resources
     current_resources["teacher_materials"] = teacher_materials
@@ -1849,7 +1907,6 @@ async def attach_material_to_assignment(
     )
 
     return {"status": "attached"}
-
 
 
 @router.get(
@@ -1981,12 +2038,14 @@ async def start_assignment(
         # Content Library assignment - use assignment's embedded data
         activity_id = assignment.id  # Use assignment id as pseudo activity id
         activity_title = assignment.name
-        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        activity_type = (
+            assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        )
         # Build config_json with structure expected by frontend:
         # { type: "ai_quiz", content: { questions: [...] } }
         config_json = {
             "type": activity_type,
-            "content": assignment.activity_content or {}
+            "content": assignment.activity_content or {},
         }
 
     # Build response
@@ -2140,12 +2199,14 @@ async def start_multi_activity_assignment(
     # Handle Content Library assignments (single embedded activity without AssignmentActivity records)
     if not assignment_activities and assignment.activity_content:
         # Content Library assignment - create single activity from embedded content
-        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        activity_type = (
+            assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        )
         # Build config_json with structure expected by frontend:
         # { type: "ai_quiz", content: { questions: [...] } }
         config_json = {
             "type": activity_type,
-            "content": assignment.activity_content or {}
+            "content": assignment.activity_content or {},
         }
         activities.append(
             ActivityWithConfig(
@@ -2201,7 +2262,8 @@ async def start_multi_activity_assignment(
         # Regular multi-activity assignment - use AssignmentStudentActivity records
         result = await session.execute(
             select(AssignmentStudentActivity).where(
-                AssignmentStudentActivity.assignment_student_id == assignment_student.id,
+                AssignmentStudentActivity.assignment_student_id
+                == assignment_student.id,
                 AssignmentStudentActivity.activity_id.in_(activity_ids),
             )
         )
@@ -2262,7 +2324,9 @@ async def start_multi_activity_assignment(
 
     # Invalidate student assignment cache when status changes
     if status_changed:
-        await invalidate_for_event("assignment_progress_updated", user_id=str(current_user.id))
+        await invalidate_for_event(
+            "assignment_progress_updated", user_id=str(current_user.id)
+        )
 
     # Story 13.3: Enrich resources with availability status for students
     enriched_resources = await _enrich_resources(session, assignment.resources)
@@ -2359,7 +2423,9 @@ async def download_assignment_material(
             detail="Could not validate credentials",
         )
 
-    user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    user_id = (
+        uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    )
     current_user = await session.get(User, user_id)
     if not current_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -2457,8 +2523,7 @@ async def download_assignment_material(
 
     # Check if material is in the attached materials
     material_attached = any(
-        str(mat.material_id) == str(material_id)
-        for mat in resources.teacher_materials
+        str(mat.material_id) == str(material_id) for mat in resources.teacher_materials
     )
 
     if not material_attached:
@@ -2481,6 +2546,7 @@ async def download_assignment_material(
 
     # URLs and text notes cannot be downloaded (they're accessed differently)
     from app.models import MaterialType
+
     if material.type in [MaterialType.url, MaterialType.text_note]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -2569,10 +2635,13 @@ async def download_assignment_material(
     # Prepare filename for Content-Disposition (RFC 5987 for non-ASCII)
     filename = material.original_filename or material.name
     # ASCII fallback - replace non-ASCII chars
-    ascii_filename = filename.encode("ascii", errors="replace").decode("ascii").replace("?", "_")
+    ascii_filename = (
+        filename.encode("ascii", errors="replace").decode("ascii").replace("?", "_")
+    )
     ascii_filename = ascii_filename.replace('"', "'").replace("\n", " ")
     # UTF-8 encoded filename for modern browsers
     from urllib.parse import quote
+
     utf8_filename = quote(filename, safe="")
 
     logger.info(
@@ -2695,8 +2764,7 @@ async def save_activity_progress(
     # Check if this is a Content Library assignment (AI-generated)
     # Content Library assignments use assignment.activity_content and activity_id == assignment_id
     is_content_library = (
-        assignment.activity_content is not None
-        and activity_id == assignment_id
+        assignment.activity_content is not None and activity_id == assignment_id
     )
 
     # For Content Library assignments, handle already-completed gracefully (idempotent)
@@ -2769,7 +2837,9 @@ async def save_activity_progress(
 
         # Invalidate student assignment cache when status changes
         if assignment_student.status != old_status:
-            await invalidate_for_event("assignment_progress_updated", user_id=str(current_user.id))
+            await invalidate_for_event(
+                "assignment_progress_updated", user_id=str(current_user.id)
+            )
 
         return ActivityProgressSaveResponse(
             message="Progress saved successfully",
@@ -2849,7 +2919,9 @@ async def save_activity_progress(
         activity_progress.status = AssignmentStudentActivityStatus.in_progress
 
     # Also ensure assignment is in_progress
-    assignment_status_changed = assignment_student.status == AssignmentStatus.not_started
+    assignment_status_changed = (
+        assignment_student.status == AssignmentStatus.not_started
+    )
     if assignment_status_changed:
         assignment_student.status = AssignmentStatus.in_progress
         assignment_student.started_at = datetime.now(UTC)
@@ -2871,14 +2943,18 @@ async def save_activity_progress(
 
     # Invalidate student assignment cache when assignment status changes
     if assignment_status_changed:
-        await invalidate_for_event("assignment_progress_updated", user_id=str(current_user.id))
+        await invalidate_for_event(
+            "assignment_progress_updated", user_id=str(current_user.id)
+        )
 
     return ActivityProgressSaveResponse(
         message="Progress saved successfully",
         activity_id=activity_id,
         status=activity_progress.status.value,
         score=activity_progress.score,
-        last_saved_at=activity_progress.completed_at or activity_progress.started_at or datetime.now(UTC),
+        last_saved_at=activity_progress.completed_at
+        or activity_progress.started_at
+        or datetime.now(UTC),
     )
 
 
@@ -2976,13 +3052,20 @@ async def submit_multi_activity_assignment(
 
         # Update time if provided (Content Library can be marked completed
         # by save_activity_progress before submit is called, so time needs saving here too)
-        if submission.total_time_spent_seconds is not None and submission.total_time_spent_seconds > 0:
+        if (
+            submission.total_time_spent_seconds is not None
+            and submission.total_time_spent_seconds > 0
+        ):
             assignment_student.time_spent_seconds = submission.total_time_spent_seconds
-            assignment_student.time_spent_minutes = submission.total_time_spent_seconds // 60
+            assignment_student.time_spent_minutes = (
+                submission.total_time_spent_seconds // 60
+            )
             needs_commit = True
         elif submission.total_time_spent_minutes > 0:
             assignment_student.time_spent_minutes = submission.total_time_spent_minutes
-            assignment_student.time_spent_seconds = submission.total_time_spent_minutes * 60
+            assignment_student.time_spent_seconds = (
+                submission.total_time_spent_minutes * 60
+            )
             needs_commit = True
 
         # For Content Library assignments, answers_json might not have been saved yet
@@ -3022,7 +3105,6 @@ async def submit_multi_activity_assignment(
 
         if is_content_library:
             # Content Library assignment - single activity from embedded content
-            activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
             per_activity_scores.append(
                 PerActivityScore(
                     activity_id=assignment.id,  # Use assignment ID as pseudo activity ID
@@ -3053,7 +3135,8 @@ async def submit_multi_activity_assignment(
                 )
             total_activities = len(assignment_student.activity_progress)
             completed_activities = sum(
-                1 for ap in assignment_student.activity_progress
+                1
+                for ap in assignment_student.activity_progress
                 if ap.status == AssignmentStudentActivityStatus.completed
             )
 
@@ -3080,9 +3163,8 @@ async def submit_multi_activity_assignment(
         # Content Library: check if we have activity_states OR saved progress
         # The frontend sends scores calculated from the AI content
         has_activity_data = (
-            (submission.activity_states and len(submission.activity_states) > 0)
-            or assignment_student.progress_json is not None
-        )
+            submission.activity_states and len(submission.activity_states) > 0
+        ) or assignment_student.progress_json is not None
         if not has_activity_data and not submission.force_submit:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -3091,7 +3173,8 @@ async def submit_multi_activity_assignment(
     else:
         # Regular multi-activity: check AssignmentStudentActivity records
         incomplete_activities = [
-            ap for ap in assignment_student.activity_progress
+            ap
+            for ap in assignment_student.activity_progress
             if ap.status != AssignmentStudentActivityStatus.completed
         ]
 
@@ -3135,7 +3218,9 @@ async def submit_multi_activity_assignment(
     # Save time: prefer seconds if provided, fallback to minutes
     if submission.total_time_spent_seconds is not None:
         assignment_student.time_spent_seconds = submission.total_time_spent_seconds
-        assignment_student.time_spent_minutes = submission.total_time_spent_seconds // 60
+        assignment_student.time_spent_minutes = (
+            submission.total_time_spent_seconds // 60
+        )
     else:
         assignment_student.time_spent_minutes = submission.total_time_spent_minutes
         assignment_student.time_spent_seconds = submission.total_time_spent_minutes * 60
@@ -3160,7 +3245,7 @@ async def submit_multi_activity_assignment(
                 "status": "completed",
             }
             logger.info(
-                f"Submit multi-activity: using progress_json fallback for Content Library assignment"
+                "Submit multi-activity: using progress_json fallback for Content Library assignment"
             )
     else:
         # Regular multi-activity: build from AssignmentStudentActivity records
@@ -3184,7 +3269,6 @@ async def submit_multi_activity_assignment(
     per_activity_scores = []
     if is_content_library:
         # Content Library: single activity from embedded content
-        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
         per_activity_scores.append(
             PerActivityScore(
                 activity_id=assignment.id,  # Use assignment ID as pseudo activity ID
@@ -3243,7 +3327,8 @@ async def submit_multi_activity_assignment(
         # Regular multi-activity
         total_activities = len(assignment_student.activity_progress)
         completed_count = sum(
-            1 for ap in assignment_student.activity_progress
+            1
+            for ap in assignment_student.activity_progress
             if ap.status == AssignmentStudentActivityStatus.completed
         )
 
@@ -3556,7 +3641,9 @@ async def get_assignment_result(
     result = await session.execute(
         select(AssignmentStudent, Assignment, Activity)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
-        .outerjoin(Activity, Assignment.activity_id == Activity.id)  # LEFT JOIN for AI content
+        .outerjoin(
+            Activity, Assignment.activity_id == Activity.id
+        )  # LEFT JOIN for AI content
         .where(
             AssignmentStudent.assignment_id == assignment_id,
             AssignmentStudent.student_id == student.id,
@@ -3581,7 +3668,9 @@ async def get_assignment_result(
 
     # Check if assignment is completed
     if assignment_student.status != AssignmentStatus.completed:
-        logger.warning(f"Get assignment result: status is {assignment_student.status}, expected completed")
+        logger.warning(
+            f"Get assignment result: status is {assignment_student.status}, expected completed"
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Assignment has not been completed yet",
@@ -3589,7 +3678,7 @@ async def get_assignment_result(
 
     # Check if answers_json exists
     if not assignment_student.answers_json:
-        logger.warning(f"Get assignment result: answers_json is empty or None")
+        logger.warning("Get assignment result: answers_json is empty or None")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No submission data found for this assignment",
@@ -3627,10 +3716,12 @@ async def get_assignment_result(
         # AI Content assignment - use embedded content
         activity_id = assignment.id  # Use assignment ID as pseudo activity ID
         activity_title = assignment.name
-        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        activity_type = (
+            assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        )
         config_json = {
             "type": activity_type,
-            "content": assignment.activity_content or {}
+            "content": assignment.activity_content or {},
         }
 
     # Build response with all data needed for result review
@@ -3890,26 +3981,39 @@ async def get_multi_activity_analytics(
 
         # Count completed students
         completed_records = [
-            (astu, student, user) for astu, student, user in all_students_data
+            (astu, student, user)
+            for astu, student, user in all_students_data
             if astu.status == AssignmentStatus.completed
         ]
         completed_count = len(completed_records)
         submitted_count = completed_count
 
         # Calculate class average score
-        scores = [astu.score for astu, _, _ in completed_records if astu.score is not None]
+        scores = [
+            astu.score for astu, _, _ in completed_records if astu.score is not None
+        ]
         class_average_score = sum(scores) / len(scores) if scores else None
 
         # Build single activity analytics item
-        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        activity_type = (
+            assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        )
         activities_analytics = [
             ActivityAnalyticsItem(
                 activity_id=assignment.id,  # Use assignment id as pseudo activity id
                 activity_title=assignment.name,
                 page_number=None,
                 activity_type=activity_type,
-                class_average_score=round(class_average_score, 1) if class_average_score is not None else None,
-                completion_rate=round(completed_count / total_students, 2) if total_students > 0 else 0.0,
+                class_average_score=(
+                    round(class_average_score, 1)
+                    if class_average_score is not None
+                    else None
+                ),
+                completion_rate=(
+                    round(completed_count / total_students, 2)
+                    if total_students > 0
+                    else 0.0
+                ),
                 completed_count=completed_count,
                 total_assigned_count=total_students,
             )
@@ -3922,7 +4026,9 @@ async def get_multi_activity_analytics(
             for astu, student, user in all_students_data:
                 time_spent_seconds = 0
                 if astu.started_at and astu.completed_at:
-                    time_spent_seconds = int((astu.completed_at - astu.started_at).total_seconds())
+                    time_spent_seconds = int(
+                        (astu.completed_at - astu.started_at).total_seconds()
+                    )
 
                 expanded_students.append(
                     StudentActivityScore(
@@ -3967,18 +4073,22 @@ async def get_multi_activity_analytics(
 
     # Count submitted (completed) students
     submitted_count = sum(
-        1 for astu in all_assignment_students
+        1
+        for _astu in all_assignment_students
         if astu.status == AssignmentStatus.completed
     )
 
     # Build per-activity analytics
     activities_analytics: list[ActivityAnalyticsItem] = []
 
-    for aa, activity in assignment_activities:
+    for _aa, activity in assignment_activities:
         # Get all student progress for this activity
         result = await session.execute(
             select(AssignmentStudentActivity)
-            .join(AssignmentStudent, AssignmentStudentActivity.assignment_student_id == AssignmentStudent.id)
+            .join(
+                AssignmentStudent,
+                AssignmentStudentActivity.assignment_student_id == AssignmentStudent.id,
+            )
             .where(
                 AssignmentStudent.assignment_id == assignment_id,
                 AssignmentStudentActivity.activity_id == activity.id,
@@ -3988,14 +4098,21 @@ async def get_multi_activity_analytics(
 
         # Calculate completion stats
         completed_records = [
-            ap for ap in activity_progress_records
+            ap
+            for ap in activity_progress_records
             if ap.status == AssignmentStudentActivityStatus.completed
         ]
         completed_count = len(completed_records)
-        total_assigned_count = len(activity_progress_records) if activity_progress_records else total_students
+        total_assigned_count = (
+            len(activity_progress_records)
+            if activity_progress_records
+            else total_students
+        )
 
         # Calculate completion rate
-        completion_rate = completed_count / total_assigned_count if total_assigned_count > 0 else 0.0
+        completion_rate = (
+            completed_count / total_assigned_count if total_assigned_count > 0 else 0.0
+        )
 
         # Calculate class average (only from completed activities with scores)
         scores = [ap.score for ap in completed_records if ap.score is not None]
@@ -4007,7 +4124,11 @@ async def get_multi_activity_analytics(
                 activity_title=activity.title,
                 page_number=activity.page_number,
                 activity_type=activity.activity_type.value,
-                class_average_score=round(class_average_score, 1) if class_average_score is not None else None,
+                class_average_score=(
+                    round(class_average_score, 1)
+                    if class_average_score is not None
+                    else None
+                ),
                 completion_rate=round(completion_rate, 2),
                 completed_count=completed_count,
                 total_assigned_count=total_assigned_count,
@@ -4034,7 +4155,10 @@ async def get_multi_activity_analytics(
         # Get all student scores for this activity
         result = await session.execute(
             select(AssignmentStudentActivity, AssignmentStudent, Student, User)
-            .join(AssignmentStudent, AssignmentStudentActivity.assignment_student_id == AssignmentStudent.id)
+            .join(
+                AssignmentStudent,
+                AssignmentStudentActivity.assignment_student_id == AssignmentStudent.id,
+            )
             .join(Student, AssignmentStudent.student_id == Student.id)
             .join(User, Student.user_id == User.id)
             .where(
@@ -4046,11 +4170,13 @@ async def get_multi_activity_analytics(
         student_records = result.all()
 
         expanded_students = []
-        for ap, astu, student, user in student_records:
+        for ap, _astu, student, user in student_records:
             # Calculate time spent in seconds (using completed_at - started_at if available)
             time_spent_seconds = 0
             if ap.started_at and ap.completed_at:
-                time_spent_seconds = int((ap.completed_at - ap.started_at).total_seconds())
+                time_spent_seconds = int(
+                    (ap.completed_at - ap.started_at).total_seconds()
+                )
 
             expanded_students.append(
                 StudentActivityScore(
@@ -4098,6 +4224,7 @@ def _recalculate_score(
 
     def resolve(val: str) -> str:
         import re
+
         m = re.match(r"^item-(\d+)$", val)
         if m:
             idx = int(m.group(1))
@@ -4114,7 +4241,11 @@ def _recalculate_score(
                 c = ans.get("coords", {})
                 key = f"{c.get('x', 0)}-{c.get('y', 0)}"
                 user_val = answers.get(key)
-                if user_val and resolve(str(user_val)).strip().lower() == ans.get("text", "").strip().lower():
+                if (
+                    user_val
+                    and resolve(str(user_val)).strip().lower()
+                    == ans.get("text", "").strip().lower()
+                ):
                     correct += 1
             return round((correct / len(config_answer)) * 100)
 
@@ -4174,7 +4305,10 @@ def _recalculate_score(
                 if len(parts) >= 2:
                     student_by_sent[int(parts[1])] = str(word_text)
             for i, s in enumerate(sentences):
-                if student_by_sent.get(i, "").strip().lower() == s.get("word", "").strip().lower():
+                if (
+                    student_by_sent.get(i, "").strip().lower()
+                    == s.get("word", "").strip().lower()
+                ):
                     correct += 1
             return round((correct / len(sentences)) * 100)
 
@@ -4224,12 +4358,15 @@ def _build_review_items(
                 else:
                     student_word = str(item_ref)
 
-                items.append(ActivityReviewItem(
-                    question=f"Place: {correct_word}",
-                    student_answer=student_word,
-                    correct_answer=correct_word,
-                    is_correct=student_word.strip().lower() == correct_word.strip().lower(),
-                ))
+                items.append(
+                    ActivityReviewItem(
+                        question=f"Place: {correct_word}",
+                        student_answer=student_word,
+                        correct_answer=correct_word,
+                        is_correct=student_word.strip().lower()
+                        == correct_word.strip().lower(),
+                    )
+                )
 
         elif at == "circle":
             config_answer = config_json.get("answer", [])
@@ -4241,19 +4378,33 @@ def _build_review_items(
             ]
             for q_idx_str, selected in answers.items():
                 q_idx = int(q_idx_str)
-                correct_idx = correct_indices[q_idx] if q_idx < len(correct_indices) else None
-                is_correct = selected == correct_idx if correct_idx is not None else False
-                items.append(ActivityReviewItem(
-                    question=f"Question {q_idx + 1}",
-                    student_answer=f"Option {selected + 1}" if isinstance(selected, int) else str(selected),
-                    correct_answer=f"Option {correct_idx + 1}" if correct_idx is not None else "?",
-                    is_correct=is_correct,
-                ))
+                correct_idx = (
+                    correct_indices[q_idx] if q_idx < len(correct_indices) else None
+                )
+                is_correct = (
+                    selected == correct_idx if correct_idx is not None else False
+                )
+                items.append(
+                    ActivityReviewItem(
+                        question=f"Question {q_idx + 1}",
+                        student_answer=(
+                            f"Option {selected + 1}"
+                            if isinstance(selected, int)
+                            else str(selected)
+                        ),
+                        correct_answer=(
+                            f"Option {correct_idx + 1}"
+                            if correct_idx is not None
+                            else "?"
+                        ),
+                        is_correct=is_correct,
+                    )
+                )
 
         elif at == "matchthewords":
             sentences = config_json.get("sentences", [])
             # Build correct map: sentence -> correct word
-            correct_matches = {s["sentence"]: s["word"] for s in sentences}
+            {s["sentence"]: s["word"] for s in sentences}
 
             # response answers: {"wordIdx-sentIdx": "word text"}
             # Reconstruct student matches per sentence
@@ -4269,12 +4420,15 @@ def _build_review_items(
                 sentence_text = sentence_item["sentence"]
                 correct_word = sentence_item["word"]
                 student_word = student_matches.get(sentence_text, "—")
-                items.append(ActivityReviewItem(
-                    question=sentence_text,
-                    student_answer=student_word,
-                    correct_answer=correct_word,
-                    is_correct=student_word.strip().lower() == correct_word.strip().lower(),
-                ))
+                items.append(
+                    ActivityReviewItem(
+                        question=sentence_text,
+                        student_answer=student_word,
+                        correct_answer=correct_word,
+                        is_correct=student_word.strip().lower()
+                        == correct_word.strip().lower(),
+                    )
+                )
 
         elif at == "dragdroppicturegroup":
             config_answer = config_json.get("answer", [])
@@ -4283,12 +4437,15 @@ def _build_review_items(
             # For now, show which words belong to which group
             for group_idx, group in enumerate(config_answer):
                 group_words = group.get("group", [])
-                items.append(ActivityReviewItem(
-                    question=f"Group {group_idx + 1}",
-                    student_answer="See score",
-                    correct_answer=", ".join(group_words[:5]) + ("..." if len(group_words) > 5 else ""),
-                    is_correct=False,  # Can't determine per-item for groups
-                ))
+                items.append(
+                    ActivityReviewItem(
+                        question=f"Group {group_idx + 1}",
+                        student_answer="See score",
+                        correct_answer=", ".join(group_words[:5])
+                        + ("..." if len(group_words) > 5 else ""),
+                        is_correct=False,  # Can't determine per-item for groups
+                    )
+                )
     except Exception:
         return None
 
@@ -4362,10 +4519,13 @@ async def get_student_assignment_result(
     result = await session.execute(
         select(AssignmentStudentActivity, Activity)
         .join(Activity, AssignmentStudentActivity.activity_id == Activity.id)
-        .join(AssignmentActivity, (
-            (AssignmentActivity.assignment_id == assignment_id) &
-            (AssignmentActivity.activity_id == Activity.id)
-        ))
+        .join(
+            AssignmentActivity,
+            (
+                (AssignmentActivity.assignment_id == assignment_id)
+                & (AssignmentActivity.activity_id == Activity.id)
+            ),
+        )
         .where(
             AssignmentStudentActivity.assignment_student_id == assignment_student.id,
         )
@@ -4382,9 +4542,13 @@ async def get_student_assignment_result(
             completed_count += 1
 
         # Build review items for completed activities
-        review_items = _build_review_items(
-            activity.activity_type.value, activity.config_json, ap.response_data
-        ) if ap.status == AssignmentStudentActivityStatus.completed else None
+        review_items = (
+            _build_review_items(
+                activity.activity_type.value, activity.config_json, ap.response_data
+            )
+            if ap.status == AssignmentStudentActivityStatus.completed
+            else None
+        )
 
         # Recalculate score from config + response data (fixes stale 0% scores)
         score = ap.score
@@ -4417,7 +4581,11 @@ async def get_student_assignment_result(
     # Recalculate total score from per-activity scores (all activities, skipped = 0)
     total_score_sum = sum(a.score or 0 for a in activity_scores)
     total_max_sum = sum(a.max_score for a in activity_scores)
-    recalc_total = round((total_score_sum / total_max_sum) * 100, 1) if total_max_sum > 0 else assignment_student.score
+    recalc_total = (
+        round((total_score_sum / total_max_sum) * 100, 1)
+        if total_max_sum > 0
+        else assignment_student.score
+    )
 
     return StudentAssignmentResultResponse(
         assignment_id=assignment_id,
@@ -4560,7 +4728,9 @@ async def create_or_update_feedback(
     )
     student_record = student_result.scalar_one_or_none()
     if student_record and student_record.user_id:
-        await invalidate_for_event("assignment_feedback", user_id=str(student_record.user_id))
+        await invalidate_for_event(
+            "assignment_feedback", user_id=str(student_record.user_id)
+        )
 
     logger.info(
         f"Feedback {'updated' if existing_feedback else 'created'} "
@@ -4778,7 +4948,9 @@ async def update_feedback(
         )
 
     # Build and return public response
-    feedback_public = await feedback_service.get_feedback_public(session, updated_feedback)
+    feedback_public = await feedback_service.get_feedback_public(
+        session, updated_feedback
+    )
 
     if not feedback_public:
         raise HTTPException(
@@ -4808,7 +4980,9 @@ async def preview_assignment(
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher, UserRole.publisher, UserRole.admin),
+    current_user: User = require_role(
+        UserRole.teacher, UserRole.publisher, UserRole.admin
+    ),
 ) -> AssignmentPreviewResponse:
     """
     Get assignment data for teacher preview/test mode.
@@ -4838,8 +5012,7 @@ async def preview_assignment(
     """
     # Get assignment
     result = await session.execute(
-        select(Assignment)
-        .where(Assignment.id == assignment_id)
+        select(Assignment).where(Assignment.id == assignment_id)
     )
     assignment = result.scalar_one_or_none()
 
@@ -4951,7 +5124,9 @@ async def get_assignment_for_edit(
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher, UserRole.publisher, UserRole.admin),
+    current_user: User = require_role(
+        UserRole.teacher, UserRole.publisher, UserRole.admin
+    ),
 ) -> AssignmentForEditResponse:
     """
     Get assignment data for editing (Story 20.2).
@@ -5111,7 +5286,9 @@ async def preview_activity(
     *,
     session: AsyncSessionDep,
     activity_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher, UserRole.publisher, UserRole.admin),
+    current_user: User = require_role(
+        UserRole.teacher, UserRole.publisher, UserRole.admin
+    ),
 ) -> ActivityPreviewResponse:
     """
     Get single activity data for preview.
@@ -5140,10 +5317,7 @@ async def preview_activity(
     - 404: Activity not found
     """
     # Get activity
-    result = await session.execute(
-        select(Activity)
-        .where(Activity.id == activity_id)
-    )
+    result = await session.execute(select(Activity).where(Activity.id == activity_id))
     activity = result.scalar_one_or_none()
 
     if not activity:
@@ -5230,7 +5404,9 @@ async def get_assignment_skill_breakdown(
     *,
     session: AsyncSessionDep,
     assignment_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),
+    current_user: User = require_role(
+        UserRole.teacher, UserRole.admin, UserRole.supervisor
+    ),
 ) -> AssignmentSkillBreakdownResponse:
     """Get skill-level score breakdown for an assignment."""
     from sqlalchemy import func as sa_func
@@ -5261,7 +5437,9 @@ async def get_assignment_skill_breakdown(
 
     if assignment.activity_format_id:
         result = await session.execute(
-            select(ActivityFormat).where(ActivityFormat.id == assignment.activity_format_id)
+            select(ActivityFormat).where(
+                ActivityFormat.id == assignment.activity_format_id
+            )
         )
         fmt = result.scalar_one_or_none()
         if fmt:
@@ -5279,7 +5457,9 @@ async def get_assignment_skill_breakdown(
                 / sa_func.nullif(StudentSkillScore.attributed_max_score, 0)
                 * 100
             ).label("avg_score"),
-            sa_func.count(StudentSkillScore.student_id.distinct()).label("student_count"),
+            sa_func.count(StudentSkillScore.student_id.distinct()).label(
+                "student_count"
+            ),
             sa_func.min(
                 StudentSkillScore.attributed_score
                 / sa_func.nullif(StudentSkillScore.attributed_max_score, 0)
@@ -5425,7 +5605,9 @@ async def grade_student_submission(
         await session.commit()
 
         # Resolve student user_id for cache invalidation
-        _student = await session.execute(select(Student).where(Student.id == student_id))
+        _student = await session.execute(
+            select(Student).where(Student.id == student_id)
+        )
         _s = _student.scalar_one_or_none()
         if _s and _s.user_id:
             await invalidate_for_event("assignment_graded", user_id=str(_s.user_id))
@@ -5447,7 +5629,9 @@ async def grade_student_submission(
         await session.commit()
 
         # Resolve student user_id for cache invalidation
-        _student = await session.execute(select(Student).where(Student.id == student_id))
+        _student = await session.execute(
+            select(Student).where(Student.id == student_id)
+        )
         _s = _student.scalar_one_or_none()
         if _s and _s.user_id:
             await invalidate_for_event("assignment_graded", user_id=str(_s.user_id))
@@ -5493,7 +5677,10 @@ async def get_pending_reviews(
         )
 
     # Manual grading activity types
-    manual_grading_types = [ActivityType.writing_free_response, ActivityType.speaking_open_response]
+    manual_grading_types = [
+        ActivityType.writing_free_response,
+        ActivityType.speaking_open_response,
+    ]
 
     # Query: completed submissions with no score where assignment has manual-grading activity type
     result = await session.execute(
@@ -5517,7 +5704,11 @@ async def get_pending_reviews(
             PendingReviewItem(
                 assignment_id=str(assignment.id),
                 assignment_name=assignment.name,
-                activity_type=assignment.activity_type.value if assignment.activity_type else "unknown",
+                activity_type=(
+                    assignment.activity_type.value
+                    if assignment.activity_type
+                    else "unknown"
+                ),
                 student_id=str(student.id),
                 student_name=user.full_name or user.email,
                 completed_at=asgn_student.completed_at,

@@ -71,7 +71,9 @@ def school_fixture(session: Session, class_analytics_publisher: Publisher) -> Sc
 
 
 @pytest.fixture(name="class_analytics_teacher")
-def teacher_fixture(session: Session, class_analytics_school: School) -> tuple[Teacher, User, str]:
+def teacher_fixture(
+    session: Session, class_analytics_school: School
+) -> tuple[Teacher, User, str]:
     """Create teacher with token."""
     teacher_user = User(
         email="class.analytics.teacher@test.com",
@@ -102,7 +104,9 @@ def teacher_fixture(session: Session, class_analytics_school: School) -> tuple[T
 
 
 @pytest.fixture(name="class_analytics_other_teacher")
-def other_teacher_fixture(session: Session, class_analytics_school: School) -> tuple[Teacher, User, str]:
+def other_teacher_fixture(
+    session: Session, class_analytics_school: School
+) -> tuple[Teacher, User, str]:
     """Create another teacher for authorization tests."""
     teacher_user = User(
         email="other.class.teacher@test.com",
@@ -248,7 +252,9 @@ def class_with_assignments_fixture(
             activity_id=activity.id,
             name=f"Class Assignment {i + 1}",
             instructions=f"Complete activity {i + 1}",
-            due_date=now + timedelta(days=7) if i < 6 else now - timedelta(days=3),  # 2 past due
+            due_date=(
+                now + timedelta(days=7) if i < 6 else now - timedelta(days=3)
+            ),  # 2 past due
             time_limit_minutes=30,
         )
         session.add(assignment)
@@ -266,7 +272,11 @@ def class_with_assignments_fixture(
             base_score = 90 - (j * 10)  # 90, 80, 70, 60, 50
 
             completed_at = now - timedelta(days=days_ago) if is_completed else None
-            status = AssignmentStatus.completed if is_completed else AssignmentStatus.not_started
+            status = (
+                AssignmentStatus.completed
+                if is_completed
+                else AssignmentStatus.not_started
+            )
             score = base_score + (i % 5) if is_completed else None
             time_spent = 15 + (i * 2) if is_completed else 0
 
@@ -278,7 +288,11 @@ def class_with_assignments_fixture(
                 score=score,
                 completed_at=completed_at,
                 time_spent_minutes=time_spent,
-                started_at=completed_at - timedelta(minutes=time_spent) if completed_at else None,
+                started_at=(
+                    completed_at - timedelta(minutes=time_spent)
+                    if completed_at
+                    else None
+                ),
             )
             session.add(asgn_student)
 
@@ -313,7 +327,9 @@ def empty_class_fixture(
 
 def test_get_class_analytics_success(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test successful class analytics retrieval."""
@@ -352,7 +368,9 @@ def test_get_class_analytics_success(
 
 def test_get_class_analytics_score_distribution(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test score distribution histogram accuracy."""
@@ -387,7 +405,9 @@ def test_get_class_analytics_score_distribution(
 
 def test_get_class_analytics_leaderboard_ranking(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test leaderboard ranking correctness."""
@@ -422,7 +442,9 @@ def test_get_class_analytics_leaderboard_ranking(
 
 def test_get_class_analytics_struggling_students(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test struggling students detection."""
@@ -458,7 +480,9 @@ def test_get_class_analytics_struggling_students(
 
 def test_get_class_analytics_assignment_performance(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test assignment performance aggregation."""
@@ -489,7 +513,9 @@ def test_get_class_analytics_assignment_performance(
 
 def test_get_class_analytics_activity_type_performance(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test activity type performance breakdown."""
@@ -518,7 +544,9 @@ def test_get_class_analytics_activity_type_performance(
 
 def test_get_class_analytics_trends(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test trend analysis."""
@@ -549,7 +577,9 @@ def test_get_class_analytics_trends(
 
 def test_get_class_analytics_period_filter_weekly(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test weekly period filter."""
@@ -571,7 +601,9 @@ def test_get_class_analytics_period_filter_weekly(
 
 def test_get_class_analytics_period_filter_semester(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test semester period filter."""
@@ -591,7 +623,9 @@ def test_get_class_analytics_period_filter_semester(
 
 def test_get_class_analytics_period_filter_ytd(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test year-to-date period filter."""
@@ -611,7 +645,9 @@ def test_get_class_analytics_period_filter_ytd(
 
 def test_get_class_analytics_authorization_own_class_only(
     client: TestClient,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
     class_analytics_other_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test that teacher can only access their own classes."""
@@ -630,7 +666,9 @@ def test_get_class_analytics_authorization_own_class_only(
 def test_get_class_analytics_requires_teacher_role(
     client: TestClient,
     session: Session,
-    class_with_varied_assignments: tuple[Class, list[tuple[Student, User]], list[Assignment]],
+    class_with_varied_assignments: tuple[
+        Class, list[tuple[Student, User]], list[Assignment]
+    ],
 ) -> None:
     """Test that non-teachers cannot access class analytics."""
     test_class, students, _ = class_with_varied_assignments

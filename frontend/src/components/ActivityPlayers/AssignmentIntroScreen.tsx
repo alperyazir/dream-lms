@@ -15,41 +15,41 @@ import {
   ListChecks,
   Play,
   Save,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useSoundContext } from "@/hooks/useSoundEffects"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useSoundContext } from "@/hooks/useSoundEffects";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import type {
   ActivityWithConfig,
   MultiActivityStartResponse,
-} from "@/types/assignment"
+} from "@/types/assignment";
 
 interface AssignmentIntroScreenProps {
-  assignment: MultiActivityStartResponse
-  onStart: () => void
-  onBack: () => void
+  assignment: MultiActivityStartResponse;
+  onStart: () => void;
+  onBack: () => void;
 }
 
 // Get the number of questions/items from an activity's config
 function getActivityItemCount(activity: ActivityWithConfig): number {
-  const config = activity.config_json
-  if (!config) return 0
+  const config = activity.config_json;
+  if (!config) return 0;
 
-  const content = (config.content as Record<string, unknown>) || config
+  const content = (config.content as Record<string, unknown>) || config;
 
   // Check for different item arrays based on activity type
-  if (Array.isArray(content.questions)) return content.questions.length
-  if (Array.isArray(content.words)) return content.words.length
-  if (Array.isArray(content.sentences)) return content.sentences.length
-  if (Array.isArray(content.items)) return content.items.length
+  if (Array.isArray(content.questions)) return content.questions.length;
+  if (Array.isArray(content.words)) return content.words.length;
+  if (Array.isArray(content.sentences)) return content.sentences.length;
+  if (Array.isArray(content.items)) return content.items.length;
 
-  return 0
+  return 0;
 }
 
 export function AssignmentIntroScreen({
@@ -57,21 +57,21 @@ export function AssignmentIntroScreen({
   onStart,
   onBack,
 }: AssignmentIntroScreenProps) {
-  const { play: playSound } = useSoundContext()
-  const activities = assignment.activities ?? []
-  const totalActivities = activities.length
-  const timeLimit = assignment.time_limit_minutes
+  const { play: playSound } = useSoundContext();
+  const activities = assignment.activities ?? [];
+  const totalActivities = activities.length;
+  const timeLimit = assignment.time_limit_minutes;
 
   const handleStart = () => {
-    playSound("activityStart")
-    onStart()
-  }
+    playSound("activityStart");
+    onStart();
+  };
 
   // Calculate total questions/items across all activities
   const totalQuestions = activities.reduce(
     (sum, activity) => sum + getActivityItemCount(activity),
     0,
-  )
+  );
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -181,7 +181,7 @@ export function AssignmentIntroScreen({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
-export default AssignmentIntroScreen
+export default AssignmentIntroScreen;

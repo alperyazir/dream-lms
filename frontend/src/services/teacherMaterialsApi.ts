@@ -6,8 +6,8 @@
  * and AI-generated content management.
  */
 
-import axios, { type AxiosProgressEvent } from "axios"
-import { OpenAPI } from "../client"
+import axios, { type AxiosProgressEvent } from "axios";
+import { OpenAPI } from "../client";
 import type {
   GeneratedContent,
   GeneratedContentListResponse,
@@ -15,7 +15,7 @@ import type {
   TeacherMaterialListResponse,
   TeacherMaterialUploadResponse,
   TextMaterialCreate,
-} from "../types/teacher-material"
+} from "../types/teacher-material";
 
 /**
  * Create axios instance with OpenAPI config
@@ -24,15 +24,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -47,15 +47,15 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
-const MATERIALS_BASE = "/api/v1/teachers/materials"
+const MATERIALS_BASE = "/api/v1/teachers/materials";
 
 // =============================================================================
 // PDF Upload & Text Processing
@@ -70,16 +70,16 @@ export async function uploadPdfForAI(
   description?: string,
   onProgress?: (progress: number) => void,
 ): Promise<TeacherMaterialUploadResponse> {
-  const formData = new FormData()
-  formData.append("file", file)
+  const formData = new FormData();
+  formData.append("file", file);
 
-  const params = new URLSearchParams()
-  params.set("name", name)
+  const params = new URLSearchParams();
+  params.set("name", name);
   if (description) {
-    params.set("description", description)
+    params.set("description", description);
   }
 
-  const url = `${MATERIALS_BASE}/ai/upload-pdf?${params.toString()}`
+  const url = `${MATERIALS_BASE}/ai/upload-pdf?${params.toString()}`;
   const response = await apiClient.post<TeacherMaterialUploadResponse>(
     url,
     formData,
@@ -89,13 +89,13 @@ export async function uploadPdfForAI(
       },
       onUploadProgress: (event: AxiosProgressEvent) => {
         if (event.total && onProgress) {
-          const progress = Math.round((event.loaded / event.total) * 100)
-          onProgress(progress)
+          const progress = Math.round((event.loaded / event.total) * 100);
+          onProgress(progress);
         }
       },
     },
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -104,12 +104,12 @@ export async function uploadPdfForAI(
 export async function createTextMaterial(
   data: TextMaterialCreate,
 ): Promise<TeacherMaterialUploadResponse> {
-  const url = `${MATERIALS_BASE}/ai/text`
+  const url = `${MATERIALS_BASE}/ai/text`;
   const response = await apiClient.post<TeacherMaterialUploadResponse>(
     url,
     data,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 // =============================================================================
@@ -120,9 +120,9 @@ export async function createTextMaterial(
  * List materials that have extracted text available for AI generation
  */
 export async function listProcessableMaterials(): Promise<TeacherMaterialListResponse> {
-  const url = `${MATERIALS_BASE}/ai/processable`
-  const response = await apiClient.get<TeacherMaterialListResponse>(url)
-  return response.data
+  const url = `${MATERIALS_BASE}/ai/processable`;
+  const response = await apiClient.get<TeacherMaterialListResponse>(url);
+  return response.data;
 }
 
 /**
@@ -131,9 +131,9 @@ export async function listProcessableMaterials(): Promise<TeacherMaterialListRes
 export async function getMaterialForAI(
   materialId: string,
 ): Promise<TeacherMaterial> {
-  const url = `${MATERIALS_BASE}/ai/${materialId}`
-  const response = await apiClient.get<TeacherMaterial>(url)
-  return response.data
+  const url = `${MATERIALS_BASE}/ai/${materialId}`;
+  const response = await apiClient.get<TeacherMaterial>(url);
+  return response.data;
 }
 
 // =============================================================================
@@ -144,17 +144,17 @@ export async function getMaterialForAI(
  * List all generated content for the current teacher
  */
 export async function listGeneratedContent(params?: {
-  activity_type?: string
+  activity_type?: string;
 }): Promise<GeneratedContentListResponse> {
-  const searchParams = new URLSearchParams()
+  const searchParams = new URLSearchParams();
   if (params?.activity_type) {
-    searchParams.set("activity_type", params.activity_type)
+    searchParams.set("activity_type", params.activity_type);
   }
 
-  const query = searchParams.toString()
-  const url = `${MATERIALS_BASE}/generated${query ? `?${query}` : ""}`
-  const response = await apiClient.get<GeneratedContentListResponse>(url)
-  return response.data
+  const query = searchParams.toString();
+  const url = `${MATERIALS_BASE}/generated${query ? `?${query}` : ""}`;
+  const response = await apiClient.get<GeneratedContentListResponse>(url);
+  return response.data;
 }
 
 /**
@@ -163,9 +163,9 @@ export async function listGeneratedContent(params?: {
 export async function getGeneratedContent(
   contentId: string,
 ): Promise<GeneratedContent> {
-  const url = `${MATERIALS_BASE}/generated/${contentId}`
-  const response = await apiClient.get<GeneratedContent>(url)
-  return response.data
+  const url = `${MATERIALS_BASE}/generated/${contentId}`;
+  const response = await apiClient.get<GeneratedContent>(url);
+  return response.data;
 }
 
 /**
@@ -173,8 +173,8 @@ export async function getGeneratedContent(
  * Cannot delete content that is used in an assignment
  */
 export async function deleteGeneratedContent(contentId: string): Promise<void> {
-  const url = `${MATERIALS_BASE}/generated/${contentId}`
-  await apiClient.delete(url)
+  const url = `${MATERIALS_BASE}/generated/${contentId}`;
+  await apiClient.delete(url);
 }
 
 // =============================================================================
@@ -195,6 +195,6 @@ export const teacherMaterialsApi = {
   listGeneratedContent,
   getGeneratedContent,
   deleteGeneratedContent,
-}
+};
 
-export default teacherMaterialsApi
+export default teacherMaterialsApi;

@@ -5,26 +5,26 @@
  * Displays study time statistics
  */
 
-import { Calendar, Clock, Timer } from "lucide-react"
-import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { StudyTimeStats } from "@/types/analytics"
+import { Calendar, Clock, Timer } from "lucide-react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { StudyTimeStats } from "@/types/analytics";
 
 export interface StudyTimeCardProps {
-  stats: StudyTimeStats
+  stats: StudyTimeStats;
 }
 
 const formatTime = (minutes: number): string => {
   if (minutes < 60) {
-    return `${minutes}m`
+    return `${minutes}m`;
   }
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
   if (mins === 0) {
-    return `${hours}h`
+    return `${hours}h`;
   }
-  return `${hours}h ${mins}m`
-}
+  return `${hours}h ${mins}m`;
+};
 
 export const StudyTimeCard = React.memo(({ stats }: StudyTimeCardProps) => {
   return (
@@ -77,7 +77,7 @@ export const StudyTimeCard = React.memo(({ stats }: StudyTimeCardProps) => {
         )}
       </CardContent>
     </Card>
-  )
-})
+  );
+});
 
-StudyTimeCard.displayName = "StudyTimeCard"
+StudyTimeCard.displayName = "StudyTimeCard";

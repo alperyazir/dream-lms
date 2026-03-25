@@ -8,26 +8,26 @@
  * - Results display after submission
  */
 
-import { useCallback, useState } from "react"
-import { AIQuizPlayer } from "@/components/ActivityPlayers/AIQuizPlayer"
-import { AIQuizResults } from "@/components/ActivityPlayers/AIQuizResults"
-import { aiQuizApi } from "@/services/aiQuizApi"
+import { useCallback, useState } from "react";
+import { AIQuizPlayer } from "@/components/ActivityPlayers/AIQuizPlayer";
+import { AIQuizResults } from "@/components/ActivityPlayers/AIQuizResults";
+import { aiQuizApi } from "@/services/aiQuizApi";
 import type {
   AIQuiz,
   AIQuizContainerState,
   AIQuizGenerationRequest,
   AIQuizPublic,
   AIQuizResult,
-} from "@/types/ai-quiz"
-import { AIQuizForm } from "./AIQuizForm"
+} from "@/types/ai-quiz";
+import { AIQuizForm } from "./AIQuizForm";
 
 interface AIQuizContainerProps {
   /** Initial quiz ID to load (for students accessing shared quiz) */
-  initialQuizId?: string
+  initialQuizId?: string;
   /** Whether to show the generation form (for teachers) */
-  showForm?: boolean
+  showForm?: boolean;
   /** Callback when quiz is completed */
-  onComplete?: (result: AIQuizResult) => void
+  onComplete?: (result: AIQuizResult) => void;
 }
 
 export function AIQuizContainer({
@@ -37,24 +37,24 @@ export function AIQuizContainer({
 }: AIQuizContainerProps) {
   const [phase, setPhase] = useState<AIQuizContainerState>(
     initialQuizId ? "playing" : "form",
-  )
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Quiz data
-  const [_generatedQuiz, setGeneratedQuiz] = useState<AIQuiz | null>(null)
-  const [publicQuiz, setPublicQuiz] = useState<AIQuizPublic | null>(null)
-  const [result, setResult] = useState<AIQuizResult | null>(null)
+  const [_generatedQuiz, setGeneratedQuiz] = useState<AIQuiz | null>(null);
+  const [publicQuiz, setPublicQuiz] = useState<AIQuizPublic | null>(null);
+  const [result, setResult] = useState<AIQuizResult | null>(null);
 
   // Generate a new quiz
   const handleGenerate = useCallback(
     async (request: AIQuizGenerationRequest) => {
       try {
-        setIsLoading(true)
-        setPhase("generating")
-        setError(null)
-        const quiz = await aiQuizApi.generateAIQuiz(request)
-        setGeneratedQuiz(quiz)
+        setIsLoading(true);
+        setPhase("generating");
+        setError(null);
+        const quiz = await aiQuizApi.generateAIQuiz(request);
+        setGeneratedQuiz(quiz);
         // Also create public version for the player
         setPublicQuiz({
           quiz_id: quiz.quiz_id,
@@ -71,87 +71,87 @@ export function AIQuizContainer({
             source_module_id: q.source_module_id,
             difficulty: q.difficulty,
           })),
-        })
-        setPhase("playing")
+        });
+        setPhase("playing");
       } catch (err: any) {
         const message =
           err?.response?.data?.detail ||
           err?.message ||
-          "Failed to generate quiz. Please try again."
-        setError(message)
-        setPhase("form")
+          "Failed to generate quiz. Please try again.";
+        setError(message);
+        setPhase("form");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
     [],
-  )
+  );
 
   // Load existing quiz by ID
   const loadQuiz = useCallback(async (quizId: string) => {
     try {
-      setIsLoading(true)
-      setError(null)
-      const quiz = await aiQuizApi.getAIQuiz(quizId)
-      setPublicQuiz(quiz)
-      setPhase("playing")
+      setIsLoading(true);
+      setError(null);
+      const quiz = await aiQuizApi.getAIQuiz(quizId);
+      setPublicQuiz(quiz);
+      setPhase("playing");
     } catch (err: any) {
       const message =
         err?.response?.data?.detail ||
         err?.message ||
-        "Failed to load quiz. Please try again."
-      setError(message)
+        "Failed to load quiz. Please try again.";
+      setError(message);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   // Submit quiz answers
   const handleSubmit = useCallback(
     async (answers: Record<string, number>) => {
-      if (!publicQuiz) return
+      if (!publicQuiz) return;
 
       try {
-        setIsLoading(true)
-        setError(null)
+        setIsLoading(true);
+        setError(null);
         const quizResult = await aiQuizApi.submitAIQuiz(
           publicQuiz.quiz_id,
           answers,
-        )
-        setResult(quizResult)
-        setPhase("results")
-        onComplete?.(quizResult)
+        );
+        setResult(quizResult);
+        setPhase("results");
+        onComplete?.(quizResult);
       } catch (err: any) {
         const message =
           err?.response?.data?.detail ||
           err?.message ||
-          "Failed to submit quiz. Please try again."
-        setError(message)
+          "Failed to submit quiz. Please try again.";
+        setError(message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
     [publicQuiz, onComplete],
-  )
+  );
 
   // Retry the quiz
   const handleRetry = useCallback(() => {
-    setResult(null)
-    setPhase("playing")
-  }, [])
+    setResult(null);
+    setPhase("playing");
+  }, []);
 
   // Go back to form
   const handleBackToForm = useCallback(() => {
-    setGeneratedQuiz(null)
-    setPublicQuiz(null)
-    setResult(null)
-    setError(null)
-    setPhase("form")
-  }, [])
+    setGeneratedQuiz(null);
+    setPublicQuiz(null);
+    setResult(null);
+    setError(null);
+    setPhase("form");
+  }, []);
 
   // Load initial quiz if provided
   if (initialQuizId && !publicQuiz && !isLoading && !error) {
-    loadQuiz(initialQuizId)
+    loadQuiz(initialQuizId);
   }
 
   // Render based on current phase
@@ -162,7 +162,7 @@ export function AIQuizContainer({
         isGenerating={isLoading}
         error={error}
       />
-    )
+    );
   }
 
   if (phase === "generating") {
@@ -180,7 +180,7 @@ export function AIQuizContainer({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (phase === "playing" && publicQuiz) {
@@ -190,7 +190,7 @@ export function AIQuizContainer({
         onSubmit={handleSubmit}
         isSubmitting={isLoading}
       />
-    )
+    );
   }
 
   if (phase === "results" && result) {
@@ -200,7 +200,7 @@ export function AIQuizContainer({
         onRetry={handleRetry}
         onBack={showForm ? handleBackToForm : undefined}
       />
-    )
+    );
   }
 
   // Loading or error state
@@ -212,7 +212,7 @@ export function AIQuizContainer({
           <p className="text-muted-foreground">Loading quiz...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -233,10 +233,10 @@ export function AIQuizContainer({
           )}
         </div>
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }
 
-export default AIQuizContainer
+export default AIQuizContainer;

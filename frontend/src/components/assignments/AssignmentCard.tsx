@@ -1,23 +1,23 @@
-import { useNavigate } from "@tanstack/react-router"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { useCountdown } from "@/hooks/useCountdown"
+import { useNavigate } from "@tanstack/react-router";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { useCountdown } from "@/hooks/useCountdown";
 import {
   getActivityTypeColorClasses,
   getActivityTypeConfig,
-} from "@/lib/activityTypeConfig"
-import type { AssignmentFull, AssignmentStudent, Book } from "@/lib/mockData"
-import type { StudentAssignmentResponse } from "@/types/assignment"
+} from "@/lib/activityTypeConfig";
+import type { AssignmentFull, AssignmentStudent, Book } from "@/lib/mockData";
+import type { StudentAssignmentResponse } from "@/types/assignment";
 
 export interface AssignmentCardProps {
-  assignment: AssignmentFull
-  book: Book
-  submission?: AssignmentStudent
+  assignment: AssignmentFull;
+  book: Book;
+  submission?: AssignmentStudent;
 }
 
 export interface StudentAssignmentCardProps {
-  assignment: StudentAssignmentResponse
+  assignment: StudentAssignmentResponse;
 }
 
 /**
@@ -30,22 +30,22 @@ export function AssignmentCard({
   book,
   submission,
 }: AssignmentCardProps) {
-  const { timeLeft, isPastDue } = useCountdown(assignment.due_date)
+  const { timeLeft, isPastDue } = useCountdown(assignment.due_date);
 
-  const status = submission?.status || "not_started"
-  const score = submission?.score
+  const status = submission?.status || "not_started";
+  const score = submission?.score;
 
   const statusColors = {
     not_started: "bg-blue-100 text-blue-800",
     in_progress: "bg-yellow-100 text-yellow-800",
     completed: "bg-green-100 text-green-800",
-  }
+  };
 
   const statusLabels = {
     not_started: "Not Started",
     in_progress: "In Progress",
     completed: "Completed",
-  }
+  };
 
   return (
     <Card className="shadow-neuro hover:shadow-neuro-lg transition-all duration-300">
@@ -137,7 +137,7 @@ export function AssignmentCard({
         )}
       </CardFooter>
     </Card>
-  )
+  );
 }
 
 /**
@@ -149,27 +149,27 @@ export function AssignmentCard({
 export function StudentAssignmentCard({
   assignment,
 }: StudentAssignmentCardProps) {
-  const { timeLeft } = useCountdown(assignment.due_date || "")
-  const navigate = useNavigate()
+  const { timeLeft } = useCountdown(assignment.due_date || "");
+  const navigate = useNavigate();
 
   const statusColors = {
     not_started: "bg-blue-100 text-blue-800",
     in_progress: "bg-yellow-100 text-yellow-800",
     completed: "bg-green-100 text-green-800",
-  }
+  };
 
   const statusLabels = {
     not_started: "Not Started",
     in_progress: "In Progress",
     completed: "Completed",
-  }
+  };
 
   const handleCardClick = () => {
     navigate({
       to: "/student/assignments/$assignmentId",
       params: { assignmentId: assignment.assignment_id },
-    })
-  }
+    });
+  };
 
   return (
     <Card
@@ -241,9 +241,9 @@ export function StudentAssignmentCard({
           {/* Activity Type Badge - Story 27.20 */}
           {assignment.activity_type &&
             (() => {
-              const config = getActivityTypeConfig(assignment.activity_type)
-              const colorClasses = getActivityTypeColorClasses(config.color)
-              const IconComponent = config.icon
+              const config = getActivityTypeConfig(assignment.activity_type);
+              const colorClasses = getActivityTypeColorClasses(config.color);
+              const IconComponent = config.icon;
               return (
                 <div className="flex items-center gap-2">
                   <Badge
@@ -254,7 +254,7 @@ export function StudentAssignmentCard({
                     {config.label}
                   </Badge>
                 </div>
-              )
+              );
             })()}
 
           {/* Activity Info */}
@@ -269,11 +269,11 @@ export function StudentAssignmentCard({
             className="w-full bg-teal-600 hover:bg-teal-700"
             aria-label={`Start assignment ${assignment.assignment_name}`}
             onClick={(e) => {
-              e.stopPropagation()
+              e.stopPropagation();
               navigate({
                 to: "/student/assignments/$assignmentId/play-multi",
                 params: { assignmentId: assignment.assignment_id },
-              })
+              });
             }}
           >
             Start Assignment
@@ -285,11 +285,11 @@ export function StudentAssignmentCard({
             className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
             aria-label={`Resume assignment ${assignment.assignment_name}`}
             onClick={(e) => {
-              e.stopPropagation()
+              e.stopPropagation();
               navigate({
                 to: "/student/assignments/$assignmentId/play-multi",
                 params: { assignmentId: assignment.assignment_id },
-              })
+              });
             }}
           >
             Resume Assignment
@@ -309,5 +309,5 @@ export function StudentAssignmentCard({
         )}
       </CardFooter>
     </Card>
-  )
+  );
 }

@@ -23,7 +23,6 @@ from app.models import (
     Student,
     Teacher,
     User,
-    UserRole,
 )
 
 

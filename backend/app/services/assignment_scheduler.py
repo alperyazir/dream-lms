@@ -23,7 +23,9 @@ class PublishResult:
     assignments_published: int
 
 
-async def publish_scheduled_assignments(db: AsyncSession, arq_pool: object | None = None) -> PublishResult:
+async def publish_scheduled_assignments(
+    db: AsyncSession, arq_pool: object | None = None
+) -> PublishResult:
     """
     Publish scheduled assignments whose publish date has passed.
 

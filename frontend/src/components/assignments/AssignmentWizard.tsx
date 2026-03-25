@@ -1,43 +1,43 @@
-import { useId, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useId, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import useCustomToast from "@/hooks/useCustomToast";
 import {
   type Activity,
   type AssignmentFull,
   type Book,
   mockClasses,
   mockStudents,
-} from "@/lib/mockData"
-import { cn } from "@/lib/utils"
-import { useAssignmentStore } from "@/stores/assignmentStore"
+} from "@/lib/mockData";
+import { cn } from "@/lib/utils";
+import { useAssignmentStore } from "@/stores/assignmentStore";
 
 interface WizardFormData {
-  activityId: string
-  activityName: string
-  bookName: string
-  selectedStudents: string[]
-  selectedClasses: string[]
-  assignmentName: string
-  instructions: string
-  dueDate: string
-  timeLimit: string
+  activityId: string;
+  activityName: string;
+  bookName: string;
+  selectedStudents: string[];
+  selectedClasses: string[];
+  assignmentName: string;
+  instructions: string;
+  dueDate: string;
+  timeLimit: string;
 }
 
 export interface AssignmentWizardProps {
-  open: boolean
-  onClose: () => void
-  activity: Activity
-  book: Book
+  open: boolean;
+  onClose: () => void;
+  activity: Activity;
+  book: Book;
 }
 
 export function AssignmentWizard({
@@ -46,7 +46,7 @@ export function AssignmentWizard({
   activity,
   book,
 }: AssignmentWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1)
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<WizardFormData>({
     activityId: activity.id,
     activityName: activity.title,
@@ -57,13 +57,13 @@ export function AssignmentWizard({
     instructions: "",
     dueDate: "",
     timeLimit: activity.duration_minutes?.toString() || "",
-  })
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
-  const { showSuccessToast } = useCustomToast()
-  const addAssignment = useAssignmentStore((state) => state.addAssignment)
+  });
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const { showSuccessToast } = useCustomToast();
+  const addAssignment = useAssignmentStore((state) => state.addAssignment);
 
   const validateStep = (step: number): boolean => {
-    const errors: string[] = []
+    const errors: string[] = [];
 
     switch (step) {
       case 2:
@@ -71,40 +71,40 @@ export function AssignmentWizard({
           formData.selectedStudents.length === 0 &&
           formData.selectedClasses.length === 0
         ) {
-          errors.push("Please select at least one student or class")
+          errors.push("Please select at least one student or class");
         }
-        break
+        break;
       case 3:
         if (!formData.assignmentName.trim()) {
-          errors.push("Assignment name is required")
+          errors.push("Assignment name is required");
         }
         if (!formData.dueDate) {
-          errors.push("Due date is required")
+          errors.push("Due date is required");
         } else {
-          const dueDate = new Date(formData.dueDate)
-          const now = new Date()
+          const dueDate = new Date(formData.dueDate);
+          const now = new Date();
           if (dueDate <= now) {
-            errors.push("Due date must be in the future")
+            errors.push("Due date must be in the future");
           }
         }
-        break
+        break;
     }
 
-    setValidationErrors(errors)
-    return errors.length === 0
-  }
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, 4))
-      setValidationErrors([])
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
+      setValidationErrors([]);
     }
-  }
+  };
 
   const handleBack = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1))
-    setValidationErrors([])
-  }
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    setValidationErrors([]);
+  };
 
   const handleCreate = () => {
     const newAssignment: AssignmentFull = {
@@ -120,17 +120,17 @@ export function AssignmentWizard({
         : undefined,
       created_at: new Date().toISOString(),
       completionRate: 0,
-    }
+    };
 
     // Add to assignments store (triggers React re-render)
-    addAssignment(newAssignment)
+    addAssignment(newAssignment);
 
-    showSuccessToast("Assignment created successfully!")
-    handleClose()
-  }
+    showSuccessToast("Assignment created successfully!");
+    handleClose();
+  };
 
   const handleClose = () => {
-    setCurrentStep(1)
+    setCurrentStep(1);
     setFormData({
       activityId: activity.id,
       activityName: activity.title,
@@ -141,10 +141,10 @@ export function AssignmentWizard({
       instructions: "",
       dueDate: "",
       timeLimit: activity.duration_minutes?.toString() || "",
-    })
-    setValidationErrors([])
-    onClose()
-  }
+    });
+    setValidationErrors([]);
+    onClose();
+  };
 
   const toggleStudent = (studentId: string) => {
     setFormData((prev) => ({
@@ -152,8 +152,8 @@ export function AssignmentWizard({
       selectedStudents: prev.selectedStudents.includes(studentId)
         ? prev.selectedStudents.filter((id) => id !== studentId)
         : [...prev.selectedStudents, studentId],
-    }))
-  }
+    }));
+  };
 
   const toggleClass = (classId: string) => {
     setFormData((prev) => ({
@@ -161,8 +161,8 @@ export function AssignmentWizard({
       selectedClasses: prev.selectedClasses.includes(classId)
         ? prev.selectedClasses.filter((id) => id !== classId)
         : [...prev.selectedClasses, classId],
-    }))
-  }
+    }));
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -261,7 +261,7 @@ export function AssignmentWizard({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 // Step 1: Review Activity
@@ -269,8 +269,8 @@ function Step1ReviewActivity({
   activity,
   book,
 }: {
-  activity: Activity
-  book: Book
+  activity: Activity;
+  book: Book;
 }) {
   return (
     <div className="space-y-4">
@@ -311,7 +311,7 @@ function Step1ReviewActivity({
         Review the activity details before proceeding to student selection.
       </p>
     </div>
-  )
+  );
 }
 
 // Step 2: Select Students/Classes
@@ -321,10 +321,10 @@ function Step2SelectStudents({
   onToggleStudent,
   onToggleClass,
 }: {
-  selectedStudents: string[]
-  selectedClasses: string[]
-  onToggleStudent: (id: string) => void
-  onToggleClass: (id: string) => void
+  selectedStudents: string[];
+  selectedClasses: string[];
+  onToggleStudent: (id: string) => void;
+  onToggleClass: (id: string) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -379,7 +379,7 @@ function Step2SelectStudents({
         student(s)
       </p>
     </div>
-  )
+  );
 }
 
 // Step 3: Configure Assignment
@@ -387,13 +387,13 @@ function Step3Configure({
   formData,
   onChange,
 }: {
-  formData: WizardFormData
-  onChange: (updates: Partial<WizardFormData>) => void
+  formData: WizardFormData;
+  onChange: (updates: Partial<WizardFormData>) => void;
 }) {
-  const assignmentNameId = useId()
-  const instructionsId = useId()
-  const dueDateId = useId()
-  const timeLimitId = useId()
+  const assignmentNameId = useId();
+  const instructionsId = useId();
+  const dueDateId = useId();
+  const timeLimitId = useId();
 
   return (
     <div className="space-y-4">
@@ -465,7 +465,7 @@ function Step3Configure({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Step 4: Review & Create
@@ -473,9 +473,9 @@ function Step4Review({ formData }: { formData: WizardFormData }) {
   const totalRecipients =
     formData.selectedStudents.length +
     formData.selectedClasses.reduce((sum, classId) => {
-      const classItem = mockClasses.find((c) => c.id === classId)
-      return sum + (classItem?.studentCount || 0)
-    }, 0)
+      const classItem = mockClasses.find((c) => c.id === classId);
+      return sum + (classItem?.studentCount || 0);
+    }, 0);
 
   return (
     <div className="space-y-4">
@@ -548,5 +548,5 @@ function Step4Review({ formData }: { formData: WizardFormData }) {
         Click "Create Assignment" to finalize and notify students.
       </p>
     </div>
-  )
+  );
 }

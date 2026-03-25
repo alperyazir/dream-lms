@@ -3,10 +3,10 @@
  * Story 5.5: Student Progress Tracking & Personal Analytics
  */
 
-import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
-import type { ProgressRecentAssignment } from "@/types/analytics"
-import { RecentAssignments } from "../RecentAssignments"
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import type { ProgressRecentAssignment } from "@/types/analytics";
+import { RecentAssignments } from "../RecentAssignments";
 
 const mockAssignments: ProgressRecentAssignment[] = [
   {
@@ -36,69 +36,71 @@ const mockAssignments: ProgressRecentAssignment[] = [
     activity_type: "dragdroppicture",
     book_title: "Science Lab",
   },
-]
+];
 
-const emptyAssignments: ProgressRecentAssignment[] = []
+const emptyAssignments: ProgressRecentAssignment[] = [];
 
 describe("RecentAssignments", () => {
   it("renders component title", () => {
-    render(<RecentAssignments assignments={mockAssignments} />)
+    render(<RecentAssignments assignments={mockAssignments} />);
 
-    expect(screen.getByText("Recent Assignments")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Recent Assignments")).toBeInTheDocument();
+  });
 
   it("renders empty state when no assignments", () => {
-    render(<RecentAssignments assignments={emptyAssignments} />)
+    render(<RecentAssignments assignments={emptyAssignments} />);
 
-    expect(screen.getByText("Recent Assignments")).toBeInTheDocument()
+    expect(screen.getByText("Recent Assignments")).toBeInTheDocument();
     expect(
       screen.getByText("No completed assignments yet. Start practicing!"),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it("renders all assignments in list", () => {
-    render(<RecentAssignments assignments={mockAssignments} />)
+    render(<RecentAssignments assignments={mockAssignments} />);
 
-    expect(screen.getByText("Math Quiz Chapter 5")).toBeInTheDocument()
-    expect(screen.getByText("Reading Comprehension")).toBeInTheDocument()
-    expect(screen.getByText("Perfect Score Quiz")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Math Quiz Chapter 5")).toBeInTheDocument();
+    expect(screen.getByText("Reading Comprehension")).toBeInTheDocument();
+    expect(screen.getByText("Perfect Score Quiz")).toBeInTheDocument();
+  });
 
   it("displays book titles for assignments", () => {
-    render(<RecentAssignments assignments={mockAssignments} />)
+    render(<RecentAssignments assignments={mockAssignments} />);
 
-    expect(screen.getByText("Math Fundamentals")).toBeInTheDocument()
-    expect(screen.getByText("English Stories")).toBeInTheDocument()
-    expect(screen.getByText("Science Lab")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Math Fundamentals")).toBeInTheDocument();
+    expect(screen.getByText("English Stories")).toBeInTheDocument();
+    expect(screen.getByText("Science Lab")).toBeInTheDocument();
+  });
 
   it("displays scores with correct formatting", () => {
-    render(<RecentAssignments assignments={mockAssignments} />)
+    render(<RecentAssignments assignments={mockAssignments} />);
 
-    expect(screen.getByText("95%")).toBeInTheDocument()
-    expect(screen.getByText("78%")).toBeInTheDocument()
-    expect(screen.getByText("100%")).toBeInTheDocument()
-  })
+    expect(screen.getByText("95%")).toBeInTheDocument();
+    expect(screen.getByText("78%")).toBeInTheDocument();
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
 
   it("shows Perfect! badge for 100% score", () => {
-    render(<RecentAssignments assignments={mockAssignments} />)
+    render(<RecentAssignments assignments={mockAssignments} />);
 
-    expect(screen.getByText("Perfect!")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Perfect!")).toBeInTheDocument();
+  });
 
   it("does not show Perfect! badge for non-100 scores", () => {
-    const nonPerfectAssignments = mockAssignments.filter((a) => a.score !== 100)
-    render(<RecentAssignments assignments={nonPerfectAssignments} />)
+    const nonPerfectAssignments = mockAssignments.filter(
+      (a) => a.score !== 100,
+    );
+    render(<RecentAssignments assignments={nonPerfectAssignments} />);
 
-    expect(screen.queryByText("Perfect!")).not.toBeInTheDocument()
-  })
+    expect(screen.queryByText("Perfect!")).not.toBeInTheDocument();
+  });
 
   it("formats dates correctly", () => {
-    render(<RecentAssignments assignments={mockAssignments} />)
+    render(<RecentAssignments assignments={mockAssignments} />);
 
     // Should show formatted dates like "Jan 25"
-    expect(screen.getByText("Jan 25")).toBeInTheDocument()
-    expect(screen.getByText("Jan 24")).toBeInTheDocument()
-    expect(screen.getByText("Jan 23")).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("Jan 25")).toBeInTheDocument();
+    expect(screen.getByText("Jan 24")).toBeInTheDocument();
+    expect(screen.getByText("Jan 23")).toBeInTheDocument();
+  });
+});

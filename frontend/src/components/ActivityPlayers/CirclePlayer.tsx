@@ -4,9 +4,9 @@
  * Handles both "circle" and "markwithx" activity types
  */
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import type { CircleActivity } from "@/lib/mockData"
-import { getActivityImageUrl } from "@/services/booksApi"
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { CircleActivity } from "@/lib/mockData";
+import { getActivityImageUrl } from "@/services/booksApi";
 
 /**
  * Animated border selection indicator
@@ -17,18 +17,18 @@ function AnimatedBorder({
   height,
   type,
 }: {
-  width: number
-  height: number
-  type: "circle" | "markwithx"
+  width: number;
+  height: number;
+  type: "circle" | "markwithx";
 }) {
-  const strokeColor = type === "markwithx" ? "#ef4444" : "#3b82f6" // red-500 or blue-500
-  const strokeWidth = 5
-  const radius = 8 // border-radius for rounded corners
-  const padding = strokeWidth / 2
+  const strokeColor = type === "markwithx" ? "#ef4444" : "#3b82f6"; // red-500 or blue-500
+  const strokeWidth = 5;
+  const radius = 8; // border-radius for rounded corners
+  const padding = strokeWidth / 2;
 
   // Calculate the perimeter of the rounded rectangle
   const perimeter =
-    2 * (width - 2 * radius) + 2 * (height - 2 * radius) + 2 * Math.PI * radius
+    2 * (width - 2 * radius) + 2 * (height - 2 * radius) + 2 * Math.PI * radius;
 
   return (
     <svg
@@ -69,18 +69,18 @@ function AnimatedBorder({
         `}
       </style>
     </svg>
-  )
+  );
 }
 
 interface CirclePlayerProps {
-  activity: CircleActivity
-  bookId: string // Story 4.2: For backend-proxied image URLs
-  onAnswersChange: (answers: Map<number, number>) => void
-  showResults?: boolean
-  correctAnswers?: Map<number, number>
-  initialAnswers?: Map<number, number>
+  activity: CircleActivity;
+  bookId: string; // Story 4.2: For backend-proxied image URLs
+  onAnswersChange: (answers: Map<number, number>) => void;
+  showResults?: boolean;
+  correctAnswers?: Map<number, number>;
+  initialAnswers?: Map<number, number>;
   // Story 9.7: Show correct answers in preview mode
-  showCorrectAnswers?: boolean
+  showCorrectAnswers?: boolean;
 }
 
 export function CirclePlayer({
@@ -95,314 +95,285 @@ export function CirclePlayer({
   // Map of questionIndex -> selectedAnswerIndex
   const [selections, setSelections] = useState<Map<number, number>>(
     initialAnswers || new Map(),
-  )
+  );
 
   // Image state (Story 4.2: Authenticated image loading)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [imageError, setImageError] = useState(false)
-  const [imageScale, setImageScale] = useState({ x: 1, y: 1 })
-  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 })
-  const imageRef = useRef<HTMLImageElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const [imageScale, setImageScale] = useState({ x: 1, y: 1 });
+  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
+  const imageRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Use refs to track if image dimensions have been initialized
-  const isImageScaledRef = useRef(false)
+  const isImageScaledRef = useRef(false);
 
   // Lock image dimensions after first load to prevent reflow
   const [lockedImageDimensions, setLockedImageDimensions] = useState<{
-    width: number
-    height: number
-  } | null>(null)
+    width: number;
+    height: number;
+  } | null>(null);
 
   // Lock container height after first load to prevent reflow
   const [lockedContainerHeight, setLockedContainerHeight] = useState<
     number | null
-  >(null)
+  >(null);
 
   // Store scaled coordinates in a ref to prevent recalculation
   const scaledCoordsCache = useRef<
     Map<
       number,
       {
-        left: number
-        top: number
-        width: number
-        height: number
+        left: number;
+        top: number;
+        width: number;
+        height: number;
       }
     >
-  >(new Map())
+  >(new Map());
 
   // Handle special circleCount values
-  let effectiveCircleCount = activity.circleCount ?? 2 // Default to 2 if undefined
-  const isMultiSelectMode = effectiveCircleCount === -1
+  let effectiveCircleCount = activity.circleCount ?? 2; // Default to 2 if undefined
+  const isMultiSelectMode = effectiveCircleCount === -1;
   if (effectiveCircleCount === 0) {
-    effectiveCircleCount = 2 // Default to true/false
+    effectiveCircleCount = 2; // Default to true/false
   }
 
   // Update image scale when image loads or window resizes
   const updateImageScale = useCallback(() => {
-    const img = imageRef.current
-    const container = containerRef.current
-    if (!img || !container) return
+    const img = imageRef.current;
+    const container = containerRef.current;
+    if (!img || !container) return;
 
     // Don't recalculate if image hasn't loaded yet
-    if (!img.complete || img.naturalWidth === 0) return
+    if (!img.complete || img.naturalWidth === 0) return;
 
     // Calculate aspect ratios
-    const imageAspect = img.naturalWidth / img.naturalHeight
-    const containerAspect = container.clientWidth / container.clientHeight
+    const imageAspect = img.naturalWidth / img.naturalHeight;
+    const containerAspect = container.clientWidth / container.clientHeight;
 
     // Calculate painted (rendered) dimensions with object-contain
-    let paintedWidth: number, paintedHeight: number
-    let xOffset: number, yOffset: number
+    let paintedWidth: number, paintedHeight: number;
+    let xOffset: number, yOffset: number;
 
     if (imageAspect > containerAspect) {
       // Image is wider - constrained by width, letterboxing top/bottom
-      paintedWidth = container.clientWidth
-      paintedHeight = container.clientWidth / imageAspect
-      xOffset = 0
-      yOffset = (container.clientHeight - paintedHeight) / 2
+      paintedWidth = container.clientWidth;
+      paintedHeight = container.clientWidth / imageAspect;
+      xOffset = 0;
+      yOffset = (container.clientHeight - paintedHeight) / 2;
     } else {
       // Image is taller - constrained by height, pillarboxing left/right
-      paintedHeight = container.clientHeight
-      paintedWidth = container.clientHeight * imageAspect
-      xOffset = (container.clientWidth - paintedWidth) / 2
-      yOffset = 0
+      paintedHeight = container.clientHeight;
+      paintedWidth = container.clientHeight * imageAspect;
+      xOffset = (container.clientWidth - paintedWidth) / 2;
+      yOffset = 0;
     }
 
     // Calculate scale factors based on painted dimensions
-    const xScale = paintedWidth / img.naturalWidth
-    const yScale = paintedHeight / img.naturalHeight
+    const xScale = paintedWidth / img.naturalWidth;
+    const yScale = paintedHeight / img.naturalHeight;
 
     // Lock image and container dimensions on first load to prevent flex container reflow
     if (!lockedImageDimensions) {
       const imageDims = {
         width: paintedWidth,
         height: paintedHeight,
-      }
-      const containerHeight = container.clientHeight
+      };
+      const containerHeight = container.clientHeight;
 
-      setLockedImageDimensions(imageDims)
-      setLockedContainerHeight(containerHeight)
+      setLockedImageDimensions(imageDims);
+      setLockedContainerHeight(containerHeight);
     }
 
     // Round to 4 decimal places to prevent floating-point drift
-    const roundedXScale = Math.round(xScale * 10000) / 10000
-    const roundedYScale = Math.round(yScale * 10000) / 10000
+    const roundedXScale = Math.round(xScale * 10000) / 10000;
+    const roundedYScale = Math.round(yScale * 10000) / 10000;
 
     // Only update state if values have actually changed to prevent unnecessary re-renders
     setImageScale((prev) => {
-      if (prev.x === roundedXScale && prev.y === roundedYScale) return prev
-      return { x: roundedXScale, y: roundedYScale }
-    })
+      if (prev.x === roundedXScale && prev.y === roundedYScale) return prev;
+      return { x: roundedXScale, y: roundedYScale };
+    });
 
     // Update offset for positioning
-    setImageOffset({ x: xOffset, y: yOffset })
+    setImageOffset({ x: xOffset, y: yOffset });
 
     // Pre-calculate all button positions and cache them
     // Include offset for proper centering within container
-    scaledCoordsCache.current.clear()
+    scaledCoordsCache.current.clear();
     activity.answer.forEach((answer, answerIndex) => {
       const coords = {
-        left: Math.round((xOffset + answer.coords.x * roundedXScale) * 100) / 100,
-        top: Math.round((yOffset + answer.coords.y * roundedYScale) * 100) / 100,
+        left:
+          Math.round((xOffset + answer.coords.x * roundedXScale) * 100) / 100,
+        top:
+          Math.round((yOffset + answer.coords.y * roundedYScale) * 100) / 100,
         width: Math.round(answer.coords.w * roundedXScale * 100) / 100,
         height: Math.round(answer.coords.h * roundedYScale * 100) / 100,
-      }
-      scaledCoordsCache.current.set(answerIndex, coords)
-    })
+      };
+      scaledCoordsCache.current.set(answerIndex, coords);
+    });
 
-    isImageScaledRef.current = true
-  }, [activity.answer, lockedImageDimensions])
+    isImageScaledRef.current = true;
+  }, [activity.answer, lockedImageDimensions]);
 
   // Fetch authenticated image (Story 4.2)
   useEffect(() => {
-    let isMounted = true
+    let isMounted = true;
 
     async function loadImage() {
-      console.log("CirclePlayer - Loading image:", {
-        bookId,
-        section_path: activity.section_path,
-      })
-
       try {
-        const url = await getActivityImageUrl(bookId, activity.section_path)
+        const url = await getActivityImageUrl(bookId, activity.section_path);
 
         if (isMounted) {
-          console.log("CirclePlayer - Generated URL:", url)
-
           if (url) {
-            setImageUrl(url)
-            setImageError(false)
+            setImageUrl(url);
+            setImageError(false);
           } else {
-            console.error("CirclePlayer - Failed to generate image URL")
-            setImageError(true)
+            console.error("CirclePlayer - Failed to generate image URL");
+            setImageError(true);
           }
         }
       } catch (error) {
-        console.error("CirclePlayer - Error loading image:", error)
+        console.error("CirclePlayer - Error loading image:", error);
         if (isMounted) {
-          setImageError(true)
+          setImageError(true);
         }
       }
     }
 
-    loadImage()
+    loadImage();
 
     return () => {
-      isMounted = false
-    }
-  }, [bookId, activity.section_path])
+      isMounted = false;
+    };
+  }, [bookId, activity.section_path]);
 
   // Cleanup blob URL on unmount (separate effect to avoid infinite loop)
   useEffect(() => {
     return () => {
       if (imageUrl) {
-        URL.revokeObjectURL(imageUrl)
+        URL.revokeObjectURL(imageUrl);
       }
-    }
-  }, [imageUrl])
+    };
+  }, [imageUrl]);
 
   useEffect(() => {
-    const img = imageRef.current
-    const container = containerRef.current
+    const img = imageRef.current;
+    const container = containerRef.current;
     if (img) {
       if (img.complete) {
-        updateImageScale()
+        updateImageScale();
       } else {
-        img.addEventListener("load", updateImageScale)
+        img.addEventListener("load", updateImageScale);
       }
     }
 
     // Use ResizeObserver for container size changes (e.g., sidebar open/close)
-    let resizeObserver: ResizeObserver | null = null
+    let resizeObserver: ResizeObserver | null = null;
     if (container) {
       resizeObserver = new ResizeObserver(() => {
-        requestAnimationFrame(updateImageScale)
-      })
-      resizeObserver.observe(container)
+        requestAnimationFrame(updateImageScale);
+      });
+      resizeObserver.observe(container);
     }
 
-    window.addEventListener("resize", updateImageScale)
+    window.addEventListener("resize", updateImageScale);
     return () => {
-      window.removeEventListener("resize", updateImageScale)
+      window.removeEventListener("resize", updateImageScale);
       if (img) {
-        img.removeEventListener("load", updateImageScale)
+        img.removeEventListener("load", updateImageScale);
       }
       if (resizeObserver) {
-        resizeObserver.disconnect()
+        resizeObserver.disconnect();
       }
-    }
-  }, [updateImageScale])
+    };
+  }, [updateImageScale]);
 
   // Handle area click - implements QML's handleAnswer logic
   const handleAreaClick = (answerIndex: number) => {
-    if (showResults) return
+    if (showResults) return;
 
-    const newSelections = new Map(selections)
-
-    console.log("CirclePlayer - Click:", {
-      answerIndex,
-      effectiveCircleCount,
-      isMultiSelectMode,
-      currentSelections: Array.from(selections.entries()),
-    })
+    const newSelections = new Map(selections);
 
     // Multi-select mode: toggle selections without grouping
     if (isMultiSelectMode) {
       const wasSelected = Array.from(newSelections.values()).includes(
         answerIndex,
-      )
+      );
       if (wasSelected) {
         // Find and remove this selection
         for (const [qIdx, aIdx] of newSelections.entries()) {
           if (aIdx === answerIndex) {
-            newSelections.delete(qIdx)
-            break
+            newSelections.delete(qIdx);
+            break;
           }
         }
       } else {
         // Add new selection with unique question index
-        const nextQIdx = newSelections.size
-        newSelections.set(nextQIdx, answerIndex)
+        const nextQIdx = newSelections.size;
+        newSelections.set(nextQIdx, answerIndex);
       }
     } else {
       // QML grouping logic: Calculate which question group this answer belongs to
-      const questionIndex = Math.floor(answerIndex / effectiveCircleCount)
-
-      console.log("CirclePlayer - Question grouping:", {
-        answerIndex,
-        questionIndex,
-        wasSelected: newSelections.get(questionIndex) === answerIndex,
-      })
+      const questionIndex = Math.floor(answerIndex / effectiveCircleCount);
 
       // Check if clicking the same answer (deselect behavior)
       if (newSelections.get(questionIndex) === answerIndex) {
-        newSelections.delete(questionIndex)
-        console.log("CirclePlayer - Deselected question", questionIndex)
+        newSelections.delete(questionIndex);
       } else {
         // Clear current group selection and set new one
-        newSelections.set(questionIndex, answerIndex)
-        console.log(
-          "CirclePlayer - Selected answer",
-          answerIndex,
-          "for question",
-          questionIndex,
-        )
+        newSelections.set(questionIndex, answerIndex);
       }
     }
 
-    console.log(
-      "CirclePlayer - New selections:",
-      Array.from(newSelections.entries()),
-    )
-    setSelections(newSelections)
-    onAnswersChange(newSelections)
-  }
+    setSelections(newSelections);
+    onAnswersChange(newSelections);
+  };
 
   // Get question index for an answer
   const getQuestionIndex = (answerIndex: number): number => {
-    if (isMultiSelectMode) return 0
-    return Math.floor(answerIndex / effectiveCircleCount)
-  }
+    if (isMultiSelectMode) return 0;
+    return Math.floor(answerIndex / effectiveCircleCount);
+  };
 
   // Check if answer is selected
   const isSelected = (answerIndex: number): boolean => {
-    return Array.from(selections.values()).includes(answerIndex)
-  }
+    return Array.from(selections.values()).includes(answerIndex);
+  };
 
   // Check if area is correct (for results view)
   const isCorrect = (answerIndex: number): boolean => {
-    if (!showResults || !correctAnswers) return false
-    const questionIndex = getQuestionIndex(answerIndex)
-    return correctAnswers.get(questionIndex) === answerIndex
-  }
+    if (!showResults || !correctAnswers) return false;
+    const questionIndex = getQuestionIndex(answerIndex);
+    return correctAnswers.get(questionIndex) === answerIndex;
+  };
 
   // Story 9.7: Check if this answer is the correct one for its question (for preview mode)
   const isCorrectAnswer = (answerIndex: number): boolean => {
-    return activity.answer[answerIndex]?.isCorrect === true
-  }
+    return activity.answer[answerIndex]?.isCorrect === true;
+  };
 
   // Get scaled coordinates - use cached values to prevent recalculation
   const getScaledCoords = useCallback(
     (answerIndex: number) => {
       // Try to get from cache first
-      const cached = scaledCoordsCache.current.get(answerIndex)
+      const cached = scaledCoordsCache.current.get(answerIndex);
       if (cached) {
-        return cached
+        return cached;
       }
 
       // Fallback: calculate on the fly (shouldn't happen if image is loaded)
-      const answer = activity.answer[answerIndex]
+      const answer = activity.answer[answerIndex];
       return {
         left: imageOffset.x + answer.coords.x * imageScale.x,
         top: imageOffset.y + answer.coords.y * imageScale.y,
         width: answer.coords.w * imageScale.x,
         height: answer.coords.h * imageScale.y,
-      }
+      };
     },
     [activity.answer, imageScale, imageOffset],
-  )
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col p-2">
@@ -446,13 +417,13 @@ export function CirclePlayer({
 
             {/* Selectable Areas Overlay - positioned relative to container with offset */}
             {activity.answer.map((_answer, answerIndex) => {
-              const selected = isSelected(answerIndex)
-              const correct = isCorrect(answerIndex)
-              const scaledCoords = getScaledCoords(answerIndex)
-              const questionIndex = getQuestionIndex(answerIndex)
+              const selected = isSelected(answerIndex);
+              const correct = isCorrect(answerIndex);
+              const scaledCoords = getScaledCoords(answerIndex);
+              const questionIndex = getQuestionIndex(answerIndex);
               // Story 9.7: Check if this is the correct answer for preview mode
               const isCorrectForPreview =
-                showCorrectAnswers && isCorrectAnswer(answerIndex)
+                showCorrectAnswers && isCorrectAnswer(answerIndex);
 
               return (
                 <button
@@ -534,7 +505,7 @@ export function CirclePlayer({
                     </div>
                   )}
                 </button>
-              )
+              );
             })}
           </div>
         )}
@@ -571,5 +542,5 @@ export function CirclePlayer({
         </div>
       )}
     </div>
-  )
+  );
 }

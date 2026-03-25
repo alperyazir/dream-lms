@@ -82,7 +82,9 @@ def school_fixture(session: Session, reports_publisher: Publisher) -> School:
 
 
 @pytest.fixture(name="reports_teacher")
-def teacher_fixture(session: Session, reports_school: School) -> tuple[Teacher, User, str]:
+def teacher_fixture(
+    session: Session, reports_school: School
+) -> tuple[Teacher, User, str]:
     """Create teacher with token."""
     teacher_user = User(
         email="reports.teacher@test.com",
@@ -111,7 +113,9 @@ def teacher_fixture(session: Session, reports_school: School) -> tuple[Teacher, 
 
 
 @pytest.fixture(name="reports_class")
-def class_fixture(session: Session, reports_teacher: tuple[Teacher, User, str]) -> Class:
+def class_fixture(
+    session: Session, reports_teacher: tuple[Teacher, User, str]
+) -> Class:
     """Create a test class."""
     teacher, _, _ = reports_teacher
     test_class = Class(
@@ -463,7 +467,7 @@ class TestReportHistory:
         teacher, _, token = reports_teacher
 
         # Create some jobs
-        for i in range(3):
+        for _i in range(3):
             job = ReportJob(
                 id=uuid.uuid4(),
                 teacher_id=teacher.id,
@@ -551,7 +555,11 @@ class TestReportTemplates:
                 id=uuid.uuid4(),
                 teacher_id=teacher.id,
                 name=name,
-                config_json={"report_type": "student", "period": "week", "format": "pdf"},
+                config_json={
+                    "report_type": "student",
+                    "period": "week",
+                    "format": "pdf",
+                },
             )
             session.add(config)
         session.commit()

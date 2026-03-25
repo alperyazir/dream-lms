@@ -22,56 +22,56 @@ import {
   Volume1,
   Volume2,
   VolumeX,
-} from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
-import { getCurrentSubtitle, parseSRT, type Subtitle } from "@/lib/videoUtils"
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { getCurrentSubtitle, parseSRT, type Subtitle } from "@/lib/videoUtils";
 
 export interface VideoPlayerProps {
   /** URL to the video file */
-  src: string
+  src: string;
   /** URL to subtitle file (.srt) - optional */
-  subtitleSrc?: string
+  subtitleSrc?: string;
   /** Whether player is expanded */
-  isExpanded?: boolean
+  isExpanded?: boolean;
   /** Callback when minimize clicked */
-  onMinimize?: () => void
+  onMinimize?: () => void;
   /** Callback when expand clicked */
-  onExpand?: () => void
+  onExpand?: () => void;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 /** Available playback speeds */
-const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 /**
  * Format seconds as MM:SS or HH:MM:SS for longer videos
  */
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) {
-    return "0:00"
+    return "0:00";
   }
-  const hours = Math.floor(seconds / 3600)
-  const mins = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
 
   if (hours > 0) {
-    return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+    return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   }
-  return `${mins}:${secs.toString().padStart(2, "0")}`
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 export function VideoPlayer({
@@ -82,298 +82,297 @@ export function VideoPlayer({
   onExpand,
   className,
 }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const progressRef = useRef<HTMLDivElement>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [volume, setVolume] = useState(1)
-  const [isMuted, setIsMuted] = useState(false)
-  const [playbackSpeed, setPlaybackSpeed] = useState(1)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [showSubtitles, setShowSubtitles] = useState(true)
-  const [subtitles, setSubtitles] = useState<Subtitle[]>([])
-  const [currentSubtitle, setCurrentSubtitle] = useState<string | null>(null)
-  const [subtitlesAvailable, setSubtitlesAvailable] = useState(false)
-  const [showControls, setShowControls] = useState(true)
-  const [isHoveringProgress, setIsHoveringProgress] = useState(false)
-  const [hoverTime, setHoverTime] = useState(0)
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false)
-  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSubtitles, setShowSubtitles] = useState(true);
+  const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
+  const [currentSubtitle, setCurrentSubtitle] = useState<string | null>(null);
+  const [subtitlesAvailable, setSubtitlesAvailable] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [isHoveringProgress, setIsHoveringProgress] = useState(false);
+  const [hoverTime, setHoverTime] = useState(0);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-hide controls
   useEffect(() => {
     if (isPlaying && !isHoveringProgress) {
       controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false)
-      }, 3000)
+        setShowControls(false);
+      }, 3000);
     } else {
-      setShowControls(true)
+      setShowControls(true);
     }
 
     return () => {
       if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current)
+        clearTimeout(controlsTimeoutRef.current);
       }
-    }
-  }, [isPlaying, isHoveringProgress])
+    };
+  }, [isPlaying, isHoveringProgress]);
 
   const handleMouseMove = useCallback(() => {
-    setShowControls(true)
+    setShowControls(true);
     if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current)
+      clearTimeout(controlsTimeoutRef.current);
     }
     if (isPlaying) {
       controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false)
-      }, 3000)
+        setShowControls(false);
+      }, 3000);
     }
-  }, [isPlaying])
+  }, [isPlaying]);
 
   // Load subtitles if available
   useEffect(() => {
     if (!subtitleSrc) {
-      setSubtitlesAvailable(false)
-      setSubtitles([])
-      return
+      setSubtitlesAvailable(false);
+      setSubtitles([]);
+      return;
     }
 
     const loadSubtitles = async () => {
       try {
-        const response = await fetch(subtitleSrc)
+        const response = await fetch(subtitleSrc);
         if (response.ok) {
-          const srtText = await response.text()
-          const parsed = parseSRT(srtText)
-          setSubtitles(parsed)
-          setSubtitlesAvailable(parsed.length > 0)
+          const srtText = await response.text();
+          const parsed = parseSRT(srtText);
+          setSubtitles(parsed);
+          setSubtitlesAvailable(parsed.length > 0);
         } else {
-          setSubtitlesAvailable(false)
+          setSubtitlesAvailable(false);
         }
       } catch (err) {
-        console.warn("Failed to load subtitles:", err)
-        setSubtitlesAvailable(false)
+        setSubtitlesAvailable(false);
       }
-    }
+    };
 
-    loadSubtitles()
-  }, [subtitleSrc])
+    loadSubtitles();
+  }, [subtitleSrc]);
 
   // Update current subtitle based on time
   useEffect(() => {
     if (!showSubtitles || subtitles.length === 0) {
-      setCurrentSubtitle(null)
-      return
+      setCurrentSubtitle(null);
+      return;
     }
 
-    const subtitle = getCurrentSubtitle(subtitles, currentTime)
-    setCurrentSubtitle(subtitle?.text || null)
-  }, [currentTime, subtitles, showSubtitles])
+    const subtitle = getCurrentSubtitle(subtitles, currentTime);
+    setCurrentSubtitle(subtitle?.text || null);
+  }, [currentTime, subtitles, showSubtitles]);
 
   // Handle play/pause
   const togglePlay = useCallback(() => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
     if (isPlaying) {
-      video.pause()
+      video.pause();
     } else {
       video.play().catch((err) => {
-        setError("Failed to play video")
-        console.error("Video play error:", err)
-      })
+        setError("Failed to play video");
+        console.error("Video play error:", err);
+      });
     }
-  }, [isPlaying])
+  }, [isPlaying]);
 
   // Handle seek from progress bar click
   const handleProgressClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      const video = videoRef.current
-      const progressBar = progressRef.current
-      if (!video || !progressBar || !duration) return
+      const video = videoRef.current;
+      const progressBar = progressRef.current;
+      if (!video || !progressBar || !duration) return;
 
-      const rect = progressBar.getBoundingClientRect()
-      const clickPosition = (e.clientX - rect.left) / rect.width
-      const newTime = clickPosition * duration
-      video.currentTime = newTime
-      setCurrentTime(newTime)
+      const rect = progressBar.getBoundingClientRect();
+      const clickPosition = (e.clientX - rect.left) / rect.width;
+      const newTime = clickPosition * duration;
+      video.currentTime = newTime;
+      setCurrentTime(newTime);
     },
     [duration],
-  )
+  );
 
   // Handle hover on progress bar
   const handleProgressHover = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      const progressBar = progressRef.current
-      if (!progressBar || !duration) return
+      const progressBar = progressRef.current;
+      if (!progressBar || !duration) return;
 
-      const rect = progressBar.getBoundingClientRect()
-      const hoverPosition = (e.clientX - rect.left) / rect.width
-      setHoverTime(hoverPosition * duration)
+      const rect = progressBar.getBoundingClientRect();
+      const hoverPosition = (e.clientX - rect.left) / rect.width;
+      setHoverTime(hoverPosition * duration);
     },
     [duration],
-  )
+  );
 
   // Handle retry on error
   const handleRetry = useCallback(() => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
-    setError(null)
-    setIsLoading(true)
-    video.load()
-  }, [])
+    setError(null);
+    setIsLoading(true);
+    video.load();
+  }, []);
 
   // Handle volume change
   const handleVolumeChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const video = videoRef.current
-      if (!video) return
+      const video = videoRef.current;
+      if (!video) return;
 
-      const newVolume = parseFloat(e.target.value)
-      video.volume = newVolume
-      setVolume(newVolume)
+      const newVolume = parseFloat(e.target.value);
+      video.volume = newVolume;
+      setVolume(newVolume);
       if (newVolume > 0 && isMuted) {
-        setIsMuted(false)
-        video.muted = false
+        setIsMuted(false);
+        video.muted = false;
       }
     },
     [isMuted],
-  )
+  );
 
   // Handle mute toggle
   const toggleMute = useCallback(() => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
-    const newMuted = !isMuted
-    video.muted = newMuted
-    setIsMuted(newMuted)
-  }, [isMuted])
+    const newMuted = !isMuted;
+    video.muted = newMuted;
+    setIsMuted(newMuted);
+  }, [isMuted]);
 
   // Handle playback speed change
   const handleSpeedChange = useCallback((speed: number) => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
-    video.playbackRate = speed
-    setPlaybackSpeed(speed)
-  }, [])
+    video.playbackRate = speed;
+    setPlaybackSpeed(speed);
+  }, []);
 
   // Handle fullscreen toggle
   const toggleFullscreen = useCallback(async () => {
-    const container = containerRef.current
-    if (!container) return
+    const container = containerRef.current;
+    if (!container) return;
 
     try {
       if (!document.fullscreenElement) {
-        await container.requestFullscreen()
-        setIsFullscreen(true)
+        await container.requestFullscreen();
+        setIsFullscreen(true);
       } else {
-        await document.exitFullscreen()
-        setIsFullscreen(false)
+        await document.exitFullscreen();
+        setIsFullscreen(false);
       }
     } catch (err) {
-      console.error("Fullscreen error:", err)
+      console.error("Fullscreen error:", err);
     }
-  }, [])
+  }, []);
 
   // Handle subtitle toggle
   const toggleSubtitles = useCallback(() => {
-    setShowSubtitles((prev) => !prev)
-  }, [])
+    setShowSubtitles((prev) => !prev);
+  }, []);
 
   // Video event handlers
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
     const handleLoadedMetadata = () => {
-      setDuration(video.duration)
-      setIsLoading(false)
-    }
+      setDuration(video.duration);
+      setIsLoading(false);
+    };
 
     const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime)
-    }
+      setCurrentTime(video.currentTime);
+    };
 
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
     const handleEnded = () => {
-      setIsPlaying(false)
-      setCurrentTime(0)
+      setIsPlaying(false);
+      setCurrentTime(0);
       if (video) {
-        video.currentTime = 0
+        video.currentTime = 0;
       }
-    }
+    };
 
     const handleError = () => {
-      setError("Failed to load video")
-      setIsLoading(false)
-    }
+      setError("Failed to load video");
+      setIsLoading(false);
+    };
 
     const handleCanPlay = () => {
-      setIsLoading(false)
-      setError(null)
-    }
+      setIsLoading(false);
+      setError(null);
+    };
 
     const handleLoadStart = () => {
-      setIsLoading(true)
-      setError(null)
-    }
+      setIsLoading(true);
+      setError(null);
+    };
 
-    video.addEventListener("loadedmetadata", handleLoadedMetadata)
-    video.addEventListener("timeupdate", handleTimeUpdate)
-    video.addEventListener("play", handlePlay)
-    video.addEventListener("pause", handlePause)
-    video.addEventListener("ended", handleEnded)
-    video.addEventListener("error", handleError)
-    video.addEventListener("canplay", handleCanPlay)
-    video.addEventListener("loadstart", handleLoadStart)
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+    video.addEventListener("ended", handleEnded);
+    video.addEventListener("error", handleError);
+    video.addEventListener("canplay", handleCanPlay);
+    video.addEventListener("loadstart", handleLoadStart);
 
     return () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata)
-      video.removeEventListener("timeupdate", handleTimeUpdate)
-      video.removeEventListener("play", handlePlay)
-      video.removeEventListener("pause", handlePause)
-      video.removeEventListener("ended", handleEnded)
-      video.removeEventListener("error", handleError)
-      video.removeEventListener("canplay", handleCanPlay)
-      video.removeEventListener("loadstart", handleLoadStart)
-    }
-  }, [])
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+      video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("error", handleError);
+      video.removeEventListener("canplay", handleCanPlay);
+      video.removeEventListener("loadstart", handleLoadStart);
+    };
+  }, []);
 
   // Listen for fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
+      setIsFullscreen(!!document.fullscreenElement);
+    };
 
-    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange)
-    }
-  }, [])
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   // Cleanup: pause video when component unmounts or src changes
   useEffect(() => {
     return () => {
-      const video = videoRef.current
+      const video = videoRef.current;
       if (video) {
-        video.pause()
+        video.pause();
       }
-    }
-  }, [])
+    };
+  }, []);
 
   // Calculate progress percentage
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
-  const hoverProgress = duration > 0 ? (hoverTime / duration) * 100 : 0
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const hoverProgress = duration > 0 ? (hoverTime / duration) * 100 : 0;
 
   // Get volume icon based on state
   const VolumeIcon =
-    isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2
+    isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
   // Minimized view
   if (!isExpanded) {
@@ -430,7 +429,7 @@ export function VideoPlayer({
           </button>
         )}
       </div>
-    )
+    );
   }
 
   return (
@@ -768,5 +767,5 @@ export function VideoPlayer({
         </div>
       </div>
     </TooltipProvider>
-  )
+  );
 }

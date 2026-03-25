@@ -1,22 +1,38 @@
-import { BookOpen, Building2, GraduationCap, Trash2, Users } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import {
+  BookOpen,
+  Building2,
+  GraduationCap,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 
 interface SchoolCardProps {
   school: {
-    id: string
-    name: string
-    address?: string | null
-    teacher_count?: number
-    student_count?: number
-    book_count?: number
-  }
-  onEdit?: () => void
-  onDelete?: () => void
-  onViewDetails?: () => void
+    id: string;
+    name: string;
+    address?: string | null;
+    teacher_count?: number;
+    student_count?: number;
+    book_count?: number;
+  };
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onViewDetails?: () => void;
 }
 
-export function SchoolCard({ school, onEdit, onDelete, onViewDetails }: SchoolCardProps) {
+export function SchoolCard({
+  school,
+  onEdit,
+  onDelete,
+  onViewDetails,
+}: SchoolCardProps) {
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
@@ -65,11 +81,16 @@ export function SchoolCard({ school, onEdit, onDelete, onViewDetails }: SchoolCa
           </Button>
         )}
         {onDelete && (
-          <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="text-destructive hover:text-destructive"
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         )}
       </CardFooter>
     </Card>
-  )
+  );
 }

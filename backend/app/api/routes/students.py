@@ -1,6 +1,5 @@
 """Student API endpoints - Story 3.9, 5.1, 5.5, 6.5, 9.9."""
 
-import asyncio
 import io
 import logging
 import re
@@ -10,16 +9,15 @@ from datetime import UTC, datetime
 from fastapi import File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from fastapi.routing import APIRouter
-from starlette.requests import Request
-
-from app.core.rate_limit import RateLimits, limiter
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from sqlmodel import func, select
+from starlette.requests import Request
 
 from app import crud
 from app.api.deps import AsyncSessionDep, SessionDep, require_role
+from app.core.rate_limit import RateLimits, limiter
 from app.models import (
     Activity,
     Assignment,
@@ -29,9 +27,11 @@ from app.models import (
     AssignmentStudent,
     Class,
     ClassStudent,
+    SkillCategory,
     Student,
     StudentCreate,
     StudentPublic,
+    StudentSkillScore,
     Teacher,
     User,
     UserRole,
@@ -49,6 +49,13 @@ from app.schemas.assignment import (
     StudentCalendarAssignmentsResponse,
 )
 from app.schemas.feedback import StudentBadgeCountsResponse
+from app.schemas.skill import (
+    SkillProfileItem,
+    SkillTrendLine,
+    SkillTrendPoint,
+    StudentSkillProfileResponse,
+    StudentSkillTrendsResponse,
+)
 from app.schemas.student_import import (
     CredentialsDownloadRequest,
     ImportCredential,
@@ -57,21 +64,10 @@ from app.schemas.student_import import (
     ImportRowStatus,
     ImportValidationResponse,
 )
-from app.models import (
-    SkillCategory,
-    StudentSkillScore,
-)
-from app.schemas.skill import (
-    SkillProfileItem,
-    SkillTrendLine,
-    SkillTrendPoint,
-    StudentSkillProfileResponse,
-    StudentSkillTrendsResponse,
-)
 from app.services import analytics_service, feedback_service
+from app.services.book_service_v2 import get_book_service
 from app.services.redis_cache import cache_get, cache_set
 from app.services.skill_attribution_service import _ACTIVITY_TYPE_SKILL_SLUG
-from app.services.book_service_v2 import get_book_service
 from app.utils import (
     ensure_unique_username,
     generate_student_password,
@@ -92,14 +88,14 @@ async def _get_student_for_user(
     cached_id = await cache_get(cache_key)
     if cached_id:
         # We have the student ID — load by PK (fastest possible query)
-        student = await session.get(Student, uuid.UUID(cached_id) if isinstance(cached_id, str) else cached_id)
+        student = await session.get(
+            Student, uuid.UUID(cached_id) if isinstance(cached_id, str) else cached_id
+        )
         if student:
             return student
 
     # Fallback: query by user_id
-    result = await session.execute(
-        select(Student).where(Student.user_id == user_id)
-    )
+    result = await session.execute(select(Student).where(Student.user_id == user_id))
     student = result.scalar_one_or_none()
     if not student:
         raise HTTPException(
@@ -135,7 +131,9 @@ async def get_student_assignments(
         List of assignments with enriched data (book, activity, progress)
     """
     # Check cache first
-    cache_key = f"student:{current_user.id}:assignments:{status_filter}:{limit}:{offset}"
+    cache_key = (
+        f"student:{current_user.id}:assignments:{status_filter}:{limit}:{offset}"
+    )
     cached = await cache_get(cache_key)
     if cached is not None:
         return StudentAssignmentListResponse(**cached)
@@ -147,7 +145,7 @@ async def get_student_assignments(
     activity_count_subq = (
         select(
             AssignmentActivity.assignment_id,
-            func.count(AssignmentActivity.activity_id).label("activity_count")
+            func.count(AssignmentActivity.activity_id).label("activity_count"),
         )
         .group_by(AssignmentActivity.assignment_id)
         .subquery()
@@ -161,15 +159,16 @@ async def get_student_assignments(
             AssignmentStudent,
             Assignment,
             Activity,
-            func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
+            func.coalesce(activity_count_subq.c.activity_count, 1).label(
+                "activity_count"
+            ),
         )
         .where(AssignmentStudent.student_id == student.id)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
         .where(Assignment.status == AssignmentPublishStatus.published)
         .outerjoin(Activity, Assignment.activity_id == Activity.id)
         .outerjoin(
-            activity_count_subq,
-            activity_count_subq.c.assignment_id == Assignment.id
+            activity_count_subq, activity_count_subq.c.assignment_id == Assignment.id
         )
     )
 
@@ -180,7 +179,7 @@ async def get_student_assignments(
         if status_filter not in valid_statuses:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid status filter. Must be one of: {valid_statuses}"
+                detail=f"Invalid status filter. Must be one of: {valid_statuses}",
             )
         query = query.where(AssignmentStudent.status == status_filter)
 
@@ -238,7 +237,9 @@ async def get_student_assignments(
             # Content Library assignment - use assignment's embedded data
             activity_id = assignment.id  # Use assignment id as pseudo activity id
             activity_title = assignment.name
-            activity_type = assignment.activity_type if assignment.activity_type else "ai_quiz"
+            activity_type = (
+                assignment.activity_type if assignment.activity_type else "ai_quiz"
+            )
 
         response = StudentAssignmentResponse(
             # Assignment fields
@@ -248,24 +249,20 @@ async def get_student_assignments(
             due_date=assignment.due_date,
             time_limit_minutes=assignment.time_limit_minutes,
             created_at=assignment.created_at,
-
             # Book fields (from DCS via BookService)
             book_id=book_id,
             book_title=book_title,
             book_cover_url=book_cover_url,
-
             # Activity fields (first activity for display purposes)
             activity_id=activity_id,
             activity_title=activity_title,
             activity_type=activity_type,
-
             # Student-specific fields
             status=assignment_student.status,
             score=assignment_student.score,
             started_at=assignment_student.started_at,
             completed_at=assignment_student.completed_at,
             time_spent_minutes=assignment_student.time_spent_minutes or 0,
-
             # Multi-activity support (Story 8.3)
             activity_count=activity_count,
         )
@@ -294,8 +291,7 @@ async def get_student_progress(
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
     period: StudentProgressPeriod = Query(
-        default="this_month",
-        description="Time period for progress data"
+        default="this_month", description="Time period for progress data"
     ),
 ) -> StudentProgressResponse:
     """
@@ -339,10 +335,7 @@ async def get_student_progress(
         await cache_set(cache_key, progress.model_dump(), ttl=3600)
         return progress
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get(
@@ -388,8 +381,7 @@ async def get_student_analytics(
 
     if not teacher:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher record not found"
         )
 
     # Verify teacher has access to student via their classes
@@ -408,7 +400,7 @@ async def get_student_analytics(
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have access to this student's data"
+            detail="You do not have access to this student's data",
         )
 
     # Call analytics service
@@ -420,10 +412,7 @@ async def get_student_analytics(
         )
         return analytics
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get(
@@ -460,8 +449,7 @@ async def get_my_badges(
 
     if not student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student record not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student record not found"
         )
 
     result = await feedback_service.get_student_badge_counts(
@@ -469,7 +457,7 @@ async def get_my_badges(
         student_id=student.id,
     )
     # result may be a dict or Pydantic model depending on the service
-    cache_data = result.model_dump() if hasattr(result, 'model_dump') else result
+    cache_data = result.model_dump() if hasattr(result, "model_dump") else result
     await cache_set(cache_key, cache_data, ttl=3600)
     return result
 
@@ -514,7 +502,7 @@ async def get_student_badges(
         if not student or student.id != student_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only view your own badges"
+                detail="You can only view your own badges",
             )
     else:
         # Teacher must have student in their class
@@ -525,8 +513,7 @@ async def get_student_badges(
 
         if not teacher:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Teacher record not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Teacher record not found"
             )
 
         access_check = await session.execute(
@@ -543,7 +530,7 @@ async def get_student_badges(
         if not has_access:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to this student's badges"
+                detail="You do not have access to this student's badges",
             )
 
     # Verify student exists
@@ -552,8 +539,7 @@ async def get_student_badges(
     )
     if not student_check.scalar_one_or_none():
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
         )
 
     # Get badge counts
@@ -577,8 +563,12 @@ async def get_student_badges(
 async def get_students(
     request: Request,
     session: AsyncSessionDep,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.teacher),
-    limit: int = Query(100, ge=1, le=500, description="Maximum number of students to return"),
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.teacher
+    ),
+    limit: int = Query(
+        100, ge=1, le=500, description="Maximum number of students to return"
+    ),
     offset: int = Query(0, ge=0, description="Number of students to skip"),
 ) -> list[StudentPublic]:
     """
@@ -617,8 +607,7 @@ async def get_students(
 
         if not teacher:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Teacher record not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Teacher record not found"
             )
 
         # Get students from teacher's classes
@@ -636,7 +625,7 @@ async def get_students(
         # Should not reach here due to require_role, but just in case
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to view students"
+            detail="You do not have permission to view students",
         )
 
     result = await session.execute(query)
@@ -700,8 +689,7 @@ async def get_unassigned_students(
 
     if not teacher:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher record not found"
         )
 
     # Get all student IDs that are enrolled in this teacher's classes
@@ -789,7 +777,7 @@ async def get_student_calendar_assignments(
     activity_count_subq = (
         select(
             AssignmentActivity.assignment_id,
-            func.count(AssignmentActivity.activity_id).label("activity_count")
+            func.count(AssignmentActivity.activity_id).label("activity_count"),
         )
         .group_by(AssignmentActivity.assignment_id)
         .subquery()
@@ -803,12 +791,13 @@ async def get_student_calendar_assignments(
         select(
             AssignmentStudent,
             Assignment,
-            func.coalesce(activity_count_subq.c.activity_count, 1).label("activity_count")
+            func.coalesce(activity_count_subq.c.activity_count, 1).label(
+                "activity_count"
+            ),
         )
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
         .outerjoin(
-            activity_count_subq,
-            activity_count_subq.c.assignment_id == Assignment.id
+            activity_count_subq, activity_count_subq.c.assignment_id == Assignment.id
         )
         .where(AssignmentStudent.student_id == student.id)
         .where(Assignment.status == AssignmentPublishStatus.published)
@@ -816,8 +805,10 @@ async def get_student_calendar_assignments(
             # Include if due_date, scheduled_publish_date, OR created_at falls in range
             or_(
                 (Assignment.due_date >= start_date) & (Assignment.due_date <= end_date),
-                (Assignment.scheduled_publish_date >= start_date) & (Assignment.scheduled_publish_date <= end_date),
-                (Assignment.created_at >= start_date) & (Assignment.created_at <= end_date)
+                (Assignment.scheduled_publish_date >= start_date)
+                & (Assignment.scheduled_publish_date <= end_date),
+                (Assignment.created_at >= start_date)
+                & (Assignment.created_at <= end_date),
             )
         )
     )
@@ -831,7 +822,9 @@ async def get_student_calendar_assignments(
     book_map = await book_service.get_books_batch(list(unique_book_ids))
 
     # Group assignments by date (priority: due_date > scheduled_publish_date > created_at)
-    assignments_by_date: dict[str, list[StudentCalendarAssignmentItem]] = defaultdict(list)
+    assignments_by_date: dict[str, list[StudentCalendarAssignmentItem]] = defaultdict(
+        list
+    )
 
     for row in rows:
         assignment_student = row[0]
@@ -846,7 +839,11 @@ async def get_student_calendar_assignments(
             continue
 
         # Use due_date as primary, scheduled_publish_date as secondary, created_at as fallback
-        calendar_date = assignment.due_date or assignment.scheduled_publish_date or assignment.created_at
+        calendar_date = (
+            assignment.due_date
+            or assignment.scheduled_publish_date
+            or assignment.created_at
+        )
         date_key = calendar_date.strftime("%Y-%m-%d")
 
         calendar_item = StudentCalendarAssignmentItem(
@@ -857,14 +854,23 @@ async def get_student_calendar_assignments(
             book_title=book.title or book.name,
             book_cover_url=book.cover_url,
             activity_count=activity_count,
-            status=assignment_student.status.value if hasattr(assignment_student.status, 'value') else str(assignment_student.status),
+            status=(
+                assignment_student.status.value
+                if hasattr(assignment_student.status, "value")
+                else str(assignment_student.status)
+            ),
         )
         assignments_by_date[date_key].append(calendar_item)
 
     # Sort assignments within each day
     for date_key in assignments_by_date:
         assignments_by_date[date_key].sort(
-            key=lambda a: (a.due_date.replace(tzinfo=None) if a.due_date and a.due_date.tzinfo else a.due_date) or datetime.min
+            key=lambda a: (
+                a.due_date.replace(tzinfo=None)
+                if a.due_date and a.due_date.tzinfo
+                else a.due_date
+            )
+            or datetime.min
         )
 
     total_assignments = sum(len(items) for items in assignments_by_date.values())
@@ -909,7 +915,9 @@ def _create_import_template_workbook() -> Workbook:
 
     # Header styling
     header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_fill = PatternFill(
+        start_color="4472C4", end_color="4472C4", fill_type="solid"
+    )
     header_alignment = Alignment(horizontal="center", vertical="center")
 
     # Write headers
@@ -944,29 +952,59 @@ def _create_import_template_workbook() -> Workbook:
         ("Student Import Template Instructions", None),
         ("", None),
         ("Column Descriptions:", None),
-        ("- Full Name * (Required):", "Student's full name. Used to generate username if not provided."),
-        ("- Username (Optional):", "Leave empty to auto-generate from full name. Turkish characters will be converted."),
-        ("- Password (Optional):", "Student's password. Leave empty to auto-generate or use class password option."),
+        (
+            "- Full Name * (Required):",
+            "Student's full name. Used to generate username if not provided.",
+        ),
+        (
+            "- Username (Optional):",
+            "Leave empty to auto-generate from full name. Turkish characters will be converted.",
+        ),
+        (
+            "- Password (Optional):",
+            "Student's password. Leave empty to auto-generate or use class password option.",
+        ),
         ("- Email (Optional):", "Student's email address."),
-        ("- Parent Email (Optional):", "Parent/guardian email address for communications."),
+        (
+            "- Parent Email (Optional):",
+            "Parent/guardian email address for communications.",
+        ),
         ("- Grade (Optional):", "Student's grade level (e.g., '3', '5', '10')."),
-        ("- Class (Optional):", "Class/section identifier (e.g., 'A', 'B', 'Morning'). Used with Grade to create/assign classrooms."),
+        (
+            "- Class (Optional):",
+            "Class/section identifier (e.g., 'A', 'B', 'Morning'). Used with Grade to create/assign classrooms.",
+        ),
         ("", None),
         ("Password Options:", None),
         ("- Provide passwords in the Password column for individual students", None),
-        ("- Leave Password column empty and use 'class password' option to set same password for all", None),
-        ("- Leave Password column empty without class password to auto-generate unique passwords", None),
+        (
+            "- Leave Password column empty and use 'class password' option to set same password for all",
+            None,
+        ),
+        (
+            "- Leave Password column empty without class password to auto-generate unique passwords",
+            None,
+        ),
         ("", None),
         ("Notes:", None),
         ("- Maximum 500 students per upload", None),
-        ("- Usernames are auto-generated as: firstname.lastname (lowercase, Turkish chars converted)", None),
+        (
+            "- Usernames are auto-generated as: firstname.lastname (lowercase, Turkish chars converted)",
+            None,
+        ),
         ("- If username exists, a number will be appended (e.g., john.doe2)", None),
         ("- Auto-generated passwords are 8 characters with letters and numbers", None),
-        ("- Teachers can view and change student passwords anytime from the student list", None),
+        (
+            "- Teachers can view and change student passwords anytime from the student list",
+            None,
+        ),
         ("- Students are bound to the teacher who imports them", None),
         ("", None),
         ("Turkish Character Conversion:", None),
-        ("ı → i, İ → I, ğ → g, Ğ → G, ü → u, Ü → U, ş → s, Ş → S, ö → o, Ö → O, ç → c, Ç → C", None),
+        (
+            "ı → i, İ → I, ğ → g, Ğ → G, ü → u, Ü → U, ş → s, Ş → S, ö → o, Ö → O, ç → c, Ç → C",
+            None,
+        ),
     ]
 
     for row_num, (text, description) in enumerate(instructions, start=1):
@@ -1035,7 +1073,7 @@ def _validate_email_format(email: str) -> bool:
     """Validate email format using regex."""
     if not email:
         return True  # Empty email is valid (optional field)
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return bool(re.match(pattern, email))
 
 
@@ -1070,14 +1108,13 @@ async def validate_import_file(
     # Validate file type
     if not file.filename:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No filename provided"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No filename provided"
         )
 
-    if not file.filename.lower().endswith(('.xlsx', '.xls')):
+    if not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only Excel files (.xlsx, .xls) are accepted"
+            detail="Only Excel files (.xlsx, .xls) are accepted",
         )
 
     # Validate file size
@@ -1085,36 +1122,34 @@ async def validate_import_file(
     if not is_valid_size:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size exceeds 5MB limit"
+            detail="File size exceeds 5MB limit",
         )
 
     # Parse Excel file
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     # Validate row count
     if len(rows) > 500:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Maximum 500 students per upload. File contains {len(rows)} rows."
+            detail=f"Maximum 500 students per upload. File contains {len(rows)} rows.",
         )
 
     if len(rows) == 0:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File contains no data rows"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File contains no data rows"
         )
 
     # Get existing usernames from database for uniqueness check
     existing_usernames_result = session.execute(
         select(User.username).where(User.username.isnot(None))
     )
-    existing_usernames: set[str] = {row[0] for row in existing_usernames_result.all() if row[0]}
+    existing_usernames: set[str] = {
+        row[0] for row in existing_usernames_result.all() if row[0]
+    }
 
     # Track usernames seen in this file
     file_usernames: set[str] = set()
@@ -1128,7 +1163,9 @@ async def validate_import_file(
     for row in rows:
         row_num = row.get("_row_number", 0)
         # Support both new ("Full Name *") and old ("Full Name") column headers
-        full_name = str(row.get("Full Name *", "") or row.get("Full Name", "") or "").strip()
+        full_name = str(
+            row.get("Full Name *", "") or row.get("Full Name", "") or ""
+        ).strip()
         provided_username = str(row.get("Username", "") or "").strip()
         email = str(row.get("Email", "") or "").strip()
         parent_email = str(row.get("Parent Email", "") or "").strip()
@@ -1164,13 +1201,17 @@ async def validate_import_file(
             if username in existing_usernames:
                 # Auto-fix: will append number
                 original = username
-                username = ensure_unique_username(username, existing_usernames | file_usernames)
+                username = ensure_unique_username(
+                    username, existing_usernames | file_usernames
+                )
                 warnings.append(f"Username '{original}' exists, will use '{username}'")
 
             # Check against file (duplicates within file)
             if username in file_usernames:
                 original = username
-                username = ensure_unique_username(username, existing_usernames | file_usernames)
+                username = ensure_unique_username(
+                    username, existing_usernames | file_usernames
+                )
                 warnings.append(f"Duplicate username in file, will use '{username}'")
 
             file_usernames.add(username)
@@ -1186,17 +1227,19 @@ async def validate_import_file(
             row_status = ImportRowStatus.valid
             valid_count += 1
 
-        results.append(ImportRowResult(
-            row_number=row_num,
-            full_name=full_name,
-            username=username,
-            email=email if email else None,
-            grade=grade if grade else None,
-            class_name=class_name if class_name else None,
-            status=row_status,
-            errors=errors,
-            warnings=warnings,
-        ))
+        results.append(
+            ImportRowResult(
+                row_number=row_num,
+                full_name=full_name,
+                username=username,
+                email=email if email else None,
+                grade=grade if grade else None,
+                class_name=class_name if class_name else None,
+                status=row_status,
+                errors=errors,
+                warnings=warnings,
+            )
+        )
 
     return ImportValidationResponse(
         valid_count=valid_count,
@@ -1218,9 +1261,20 @@ async def execute_import(
     request: Request,
     session: SessionDep,
     file: UploadFile = File(..., description="Excel file (.xlsx or .xls)"),
-    school_id: uuid.UUID | None = Query(None, description="School ID (required for Admin)"),
-    teacher_id_param: uuid.UUID | None = Query(None, alias="teacher_id", description="Teacher ID (optional for Admin, to assign classrooms)"),
-    class_password: str | None = Query(None, min_length=4, max_length=50, description="Password to apply to all students (Story 28.1)"),
+    school_id: uuid.UUID | None = Query(
+        None, description="School ID (required for Admin)"
+    ),
+    teacher_id_param: uuid.UUID | None = Query(
+        None,
+        alias="teacher_id",
+        description="Teacher ID (optional for Admin, to assign classrooms)",
+    ),
+    class_password: str | None = Query(
+        None,
+        min_length=4,
+        max_length=50,
+        description="Password to apply to all students (Story 28.1)",
+    ),
     current_user: User = require_role(UserRole.admin, UserRole.teacher),
 ) -> ImportExecutionResponse:
     """
@@ -1254,13 +1308,12 @@ async def execute_import(
         teacher = teacher_result.scalar_one_or_none()
         if not teacher:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Teacher record not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Teacher record not found"
             )
         if not teacher.school_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Teacher must be associated with a school to import students"
+                detail="Teacher must be associated with a school to import students",
             )
         school_id = teacher.school_id
         teacher_id = teacher.id
@@ -1268,59 +1321,57 @@ async def execute_import(
         if not school_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Admin must specify school_id for import"
+                detail="Admin must specify school_id for import",
             )
         # Admin can optionally specify a teacher for classroom creation
         if teacher_id_param:
             # Verify teacher exists and belongs to the selected school
             teacher_result = session.execute(
                 select(Teacher).where(
-                    Teacher.id == teacher_id_param,
-                    Teacher.school_id == school_id
+                    Teacher.id == teacher_id_param, Teacher.school_id == school_id
                 )
             )
             teacher = teacher_result.scalar_one_or_none()
             if not teacher:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Teacher not found or does not belong to selected school"
+                    detail="Teacher not found or does not belong to selected school",
                 )
             teacher_id = teacher.id
 
     # Validate file
-    if not file.filename or not file.filename.lower().endswith(('.xlsx', '.xls')):
+    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only Excel files (.xlsx, .xls) are accepted"
+            detail="Only Excel files (.xlsx, .xls) are accepted",
         )
 
     is_valid_size = await validate_file_size(file, max_size_mb=5)
     if not is_valid_size:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size exceeds 5MB limit"
+            detail="File size exceeds 5MB limit",
         )
 
     # Parse Excel file
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     if len(rows) > 500:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Maximum 500 students per upload. File contains {len(rows)} rows."
+            detail=f"Maximum 500 students per upload. File contains {len(rows)} rows.",
         )
 
     # Get existing usernames
     existing_usernames_result = session.execute(
         select(User.username).where(User.username.isnot(None))
     )
-    existing_usernames: set[str] = {row[0] for row in existing_usernames_result.all() if row[0]}
+    existing_usernames: set[str] = {
+        row[0] for row in existing_usernames_result.all() if row[0]
+    }
 
     # Track usernames used in this import
     used_usernames: set[str] = set(existing_usernames)
@@ -1395,7 +1446,9 @@ async def execute_import(
     for row in rows:
         row_num = row.get("_row_number", 0)
         # Support both new ("Full Name *") and old ("Full Name") column headers
-        full_name = str(row.get("Full Name *", "") or row.get("Full Name", "") or "").strip()
+        full_name = str(
+            row.get("Full Name *", "") or row.get("Full Name", "") or ""
+        ).strip()
         provided_username = str(row.get("Username", "") or "").strip()
         row_password = str(row.get("Password", "") or "").strip()  # Story 28.1
         email = str(row.get("Email", "") or "").strip()
@@ -1413,8 +1466,7 @@ async def execute_import(
             # Generate username if not provided
             if provided_username:
                 username = ensure_unique_username(
-                    provided_username.lower(),
-                    used_usernames
+                    provided_username.lower(), used_usernames
                 )
             else:
                 base_username = generate_username_from_fullname(full_name)
@@ -1466,12 +1518,14 @@ async def execute_import(
                         classrooms_created += 1
                     enroll_student_in_classroom(student, classroom)
 
-            credentials.append(ImportCredential(
-                full_name=full_name,
-                username=username,
-                password=password,
-                email=email if email else None,
-            ))
+            credentials.append(
+                ImportCredential(
+                    full_name=full_name,
+                    username=username,
+                    password=password,
+                    email=email if email else None,
+                )
+            )
             created_count += 1
 
             # Flush in batches to release DB resources periodically
@@ -1488,7 +1542,10 @@ async def execute_import(
 
     # Add info about auto-created classrooms to response
     if classrooms_created > 0:
-        errors.insert(0, f"Info: Auto-created {classrooms_created} classroom(s) based on Grade/Class data")
+        errors.insert(
+            0,
+            f"Info: Auto-created {classrooms_created} classroom(s) based on Grade/Class data",
+        )
 
     return ImportExecutionResponse(
         created_count=created_count,
@@ -1533,7 +1590,9 @@ def download_credentials(
 
     # Header styling
     header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_fill = PatternFill(
+        start_color="4472C4", end_color="4472C4", fill_type="solid"
+    )
     header_alignment = Alignment(horizontal="center", vertical="center")
 
     # Headers
@@ -1559,7 +1618,11 @@ def download_credentials(
 
     # Add warning row at top
     ws.insert_rows(1)
-    warning_cell = ws.cell(row=1, column=1, value="WARNING: Store this file securely! Passwords cannot be retrieved later.")
+    warning_cell = ws.cell(
+        row=1,
+        column=1,
+        value="WARNING: Store this file securely! Passwords cannot be retrieved later.",
+    )
     warning_cell.font = Font(bold=True, color="FF0000")
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=4)
 
@@ -1592,18 +1655,19 @@ async def _build_skill_profile(
     """Build skill profile for a student from StudentSkillScore data,
     with fallback to deriving from AssignmentStudent scores when no
     StudentSkillScore records exist."""
-    from sqlalchemy import case, distinct
+    from sqlalchemy import distinct
 
     # Count total AI assignments completed (assignments with skill scores)
     total_query = await session.execute(
-        select(func.count(distinct(StudentSkillScore.assignment_id)))
-        .where(StudentSkillScore.student_id == student_id)
+        select(func.count(distinct(StudentSkillScore.assignment_id))).where(
+            StudentSkillScore.student_id == student_id
+        )
     )
     total_ai_assignments = total_query.scalar() or 0
 
     # Get all active skills to show all 5 axes even if no data
     skills_result = await session.execute(
-        select(SkillCategory).where(SkillCategory.is_active == True)
+        select(SkillCategory).where(SkillCategory.is_active)
     )
     all_skills = skills_result.scalars().all()
     skill_by_slug: dict[str, SkillCategory] = {s.slug: s for s in all_skills}
@@ -1631,11 +1695,14 @@ async def _build_skill_profile(
             }
 
         # Build trend data using a single windowed query (replaces N per-skill queries)
-        from sqlalchemy import over, literal_column
-        row_num = func.row_number().over(
-            partition_by=StudentSkillScore.skill_id,
-            order_by=StudentSkillScore.recorded_at.desc(),
-        ).label("rn")
+        row_num = (
+            func.row_number()
+            .over(
+                partition_by=StudentSkillScore.skill_id,
+                order_by=StudentSkillScore.recorded_at.desc(),
+            )
+            .label("rn")
+        )
         windowed_subq = (
             select(
                 StudentSkillScore.skill_id,
@@ -1657,6 +1724,7 @@ async def _build_skill_profile(
         )
         # Group by skill_id
         from collections import defaultdict
+
         trend_rows: dict[uuid.UUID, list] = defaultdict(list)
         for tr in trend_result.all():
             trend_rows[tr.skill_id].append(tr)
@@ -1666,13 +1734,19 @@ async def _build_skill_profile(
                 rows_for_skill = sorted(trend_rows[skill_id], key=lambda r: r.rn)
                 if len(rows_for_skill) >= 6:
                     recent_3 = [
-                        (r.attributed_score / r.attributed_max_score * 100)
-                        if r.attributed_max_score > 0 else 0
+                        (
+                            (r.attributed_score / r.attributed_max_score * 100)
+                            if r.attributed_max_score > 0
+                            else 0
+                        )
                         for r in rows_for_skill[:3]
                     ]
                     prev_3 = [
-                        (r.attributed_score / r.attributed_max_score * 100)
-                        if r.attributed_max_score > 0 else 0
+                        (
+                            (r.attributed_score / r.attributed_max_score * 100)
+                            if r.attributed_max_score > 0
+                            else 0
+                        )
                         for r in rows_for_skill[3:6]
                     ]
                     diff = sum(recent_3) / 3 - sum(prev_3) / 3
@@ -1705,7 +1779,11 @@ async def _build_skill_profile(
 
             # Aggregate by inferred skill
             for row in fallback_rows:
-                act_type_val = row.activity_type.value if hasattr(row.activity_type, 'value') else str(row.activity_type)
+                act_type_val = (
+                    row.activity_type.value
+                    if hasattr(row.activity_type, "value")
+                    else str(row.activity_type)
+                )
                 skill_slug = _ACTIVITY_TYPE_SKILL_SLUG.get(act_type_val)
                 if not skill_slug:
                     continue
@@ -1714,7 +1792,11 @@ async def _build_skill_profile(
                     continue
 
                 if skill.id not in score_map:
-                    score_map[skill.id] = {"total_score": 0.0, "total_max": 0.0, "data_points": 0}
+                    score_map[skill.id] = {
+                        "total_score": 0.0,
+                        "total_max": 0.0,
+                        "data_points": 0,
+                    }
                 score_map[skill.id]["total_score"] += float(row.score)
                 score_map[skill.id]["total_max"] += 100.0
                 score_map[skill.id]["data_points"] += 1
@@ -1727,7 +1809,8 @@ async def _build_skill_profile(
             dp = data["data_points"]
             proficiency = (
                 (data["total_score"] / data["total_max"] * 100)
-                if data["total_max"] > 0 else None
+                if data["total_max"] > 0
+                else None
             )
             if dp < 3:
                 confidence = "insufficient"
@@ -1743,17 +1826,19 @@ async def _build_skill_profile(
             proficiency = None
             confidence = "insufficient"
 
-        profile_items.append(SkillProfileItem(
-            skill_id=skill.id,
-            skill_name=skill.name,
-            skill_slug=skill.slug,
-            skill_color=skill.color,
-            skill_icon=skill.icon,
-            proficiency=round(proficiency, 1) if proficiency is not None else None,
-            data_points=dp,
-            confidence=confidence,
-            trend=trend_map.get(skill.id),
-        ))
+        profile_items.append(
+            SkillProfileItem(
+                skill_id=skill.id,
+                skill_name=skill.name,
+                skill_slug=skill.slug,
+                skill_color=skill.color,
+                skill_icon=skill.icon,
+                proficiency=round(proficiency, 1) if proficiency is not None else None,
+                data_points=dp,
+                confidence=confidence,
+                trend=trend_map.get(skill.id),
+            )
+        )
 
     return StudentSkillProfileResponse(
         student_id=student_id,
@@ -1806,7 +1891,9 @@ async def get_student_skill_profile(
     request: Request,
     student_id: uuid.UUID,
     session: AsyncSessionDep,
-    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),
+    current_user: User = require_role(
+        UserRole.teacher, UserRole.admin, UserRole.supervisor
+    ),
 ) -> StudentSkillProfileResponse:
     """
     Get skill profile for a student.
@@ -1823,8 +1910,7 @@ async def get_student_skill_profile(
     row = student_result.first()
     if not row:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
         )
     student, student_user = row
 
@@ -1837,8 +1923,7 @@ async def get_student_skill_profile(
 
         if not teacher:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Teacher record not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Teacher record not found"
             )
 
         access_check = await session.execute(
@@ -1853,7 +1938,7 @@ async def get_student_skill_profile(
         if access_check.scalar_one_or_none() is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to this student's data"
+                detail="You do not have access to this student's data",
             )
 
     return await _build_skill_profile(
@@ -1892,13 +1977,15 @@ async def _build_skill_trends(
         elif 9 <= month <= 12:
             start_date = now.replace(month=9, day=1, hour=0, minute=0, second=0)
         else:  # Jan
-            start_date = now.replace(year=now.year - 1, month=9, day=1, hour=0, minute=0, second=0)
+            start_date = now.replace(
+                year=now.year - 1, month=9, day=1, hour=0, minute=0, second=0
+            )
     else:  # "all"
         start_date = datetime(2000, 1, 1, tzinfo=UTC)
 
     # Get all active skills
     skills_result = await session.execute(
-        select(SkillCategory).where(SkillCategory.is_active == True)
+        select(SkillCategory).where(SkillCategory.is_active)
     )
     all_skills = {s.id: s for s in skills_result.scalars().all()}
     skill_by_slug: dict[str, SkillCategory] = {s.slug: s for s in all_skills.values()}
@@ -1935,14 +2022,17 @@ async def _build_skill_trends(
                 continue
             score = (
                 (row.attributed_score / row.attributed_max_score * 100)
-                if row.attributed_max_score > 0 else 0
+                if row.attributed_max_score > 0
+                else 0
             )
-            skill_points[row.skill_id].append(SkillTrendPoint(
-                date=row.recorded_at.strftime("%Y-%m-%d"),
-                score=round(score, 1),
-                assignment_name=row.assignment_name,
-                cefr_level=row.cefr_level,
-            ))
+            skill_points[row.skill_id].append(
+                SkillTrendPoint(
+                    date=row.recorded_at.strftime("%Y-%m-%d"),
+                    score=round(score, 1),
+                    assignment_name=row.assignment_name,
+                    cefr_level=row.cefr_level,
+                )
+            )
     else:
         # Fallback: derive from completed AI content assignments directly
         fallback_query = await session.execute(
@@ -1964,32 +2054,40 @@ async def _build_skill_trends(
             .order_by(AssignmentStudent.completed_at.asc())
         )
         for row in fallback_query.all():
-            act_type_val = row.activity_type.value if hasattr(row.activity_type, 'value') else str(row.activity_type)
+            act_type_val = (
+                row.activity_type.value
+                if hasattr(row.activity_type, "value")
+                else str(row.activity_type)
+            )
             skill_slug = _ACTIVITY_TYPE_SKILL_SLUG.get(act_type_val)
             if not skill_slug:
                 continue
             skill = skill_by_slug.get(skill_slug)
             if not skill:
                 continue
-            skill_points[skill.id].append(SkillTrendPoint(
-                date=row.completed_at.strftime("%Y-%m-%d"),
-                score=round(float(row.score), 1),
-                assignment_name=row.name,
-                cefr_level=None,
-            ))
+            skill_points[skill.id].append(
+                SkillTrendPoint(
+                    date=row.completed_at.strftime("%Y-%m-%d"),
+                    score=round(float(row.score), 1),
+                    assignment_name=row.name,
+                    cefr_level=None,
+                )
+            )
 
     # Build trend lines
     trends: list[SkillTrendLine] = []
     for skill_id, skill in all_skills.items():
         points = skill_points[skill_id]
-        trends.append(SkillTrendLine(
-            skill_id=skill_id,
-            skill_name=skill.name,
-            skill_slug=skill.slug,
-            skill_color=skill.color,
-            data_points=points,
-            has_sufficient_data=len(points) >= 3,
-        ))
+        trends.append(
+            SkillTrendLine(
+                skill_id=skill_id,
+                skill_name=skill.name,
+                skill_slug=skill.slug,
+                skill_color=skill.color,
+                data_points=points,
+                has_sufficient_data=len(points) >= 3,
+            )
+        )
 
     return StudentSkillTrendsResponse(
         student_id=student_id,
@@ -2008,7 +2106,9 @@ async def get_my_skill_trends(
     request: Request,
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.student),
-    period: str = Query(default="3m", description="Time period: 30d, 3m, semester, all"),
+    period: str = Query(
+        default="3m", description="Time period: 30d, 3m, semester, all"
+    ),
 ) -> StudentSkillTrendsResponse:
     """Get skill trend lines for the authenticated student."""
     result = await session.execute(
@@ -2016,7 +2116,9 @@ async def get_my_skill_trends(
     )
     student = result.scalar_one_or_none()
     if not student:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student record not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student record not found"
+        )
 
     return await _build_skill_trends(student.id, period, session)
 
@@ -2031,8 +2133,12 @@ async def get_student_skill_trends(
     request: Request,
     student_id: uuid.UUID,
     session: AsyncSessionDep,
-    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),
-    period: str = Query(default="3m", description="Time period: 30d, 3m, semester, all"),
+    current_user: User = require_role(
+        UserRole.teacher, UserRole.admin, UserRole.supervisor
+    ),
+    period: str = Query(
+        default="3m", description="Time period: 30d, 3m, semester, all"
+    ),
 ) -> StudentSkillTrendsResponse:
     """Get skill trend lines for a student. Teacher must have access via classes."""
     # Verify student exists
@@ -2040,7 +2146,9 @@ async def get_student_skill_trends(
         select(Student).where(Student.id == student_id)
     )
     if not student_result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
+        )
 
     # Teacher access check
     if current_user.role == UserRole.teacher:
@@ -2049,15 +2157,22 @@ async def get_student_skill_trends(
         )
         teacher = teacher_result.scalar_one_or_none()
         if not teacher:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Teacher record not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Teacher record not found"
+            )
 
         access_check = await session.execute(
             select(ClassStudent.id)
             .join(Class, ClassStudent.class_id == Class.id)
-            .where(Class.teacher_id == teacher.id, ClassStudent.student_id == student_id)
+            .where(
+                Class.teacher_id == teacher.id, ClassStudent.student_id == student_id
+            )
             .limit(1)
         )
         if access_check.scalar_one_or_none() is None:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this student's data")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this student's data",
+            )
 
     return await _build_skill_trends(student_id, period, session)

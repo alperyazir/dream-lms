@@ -3,10 +3,10 @@
  * Story 22.2: My Progress Page Enhancement
  */
 
-import { render, screen } from "@testing-library/react"
-import { vi } from "vitest"
-import type { ProgressRecentAssignment } from "@/types/analytics"
-import { RecentFeedbackSection } from "./RecentFeedbackSection"
+import { render, screen } from "@testing-library/react";
+import { vi } from "vitest";
+import type { ProgressRecentAssignment } from "@/types/analytics";
+import { RecentFeedbackSection } from "./RecentFeedbackSection";
 
 // Mock Link component from router
 vi.mock("@tanstack/react-router", () => ({
@@ -15,11 +15,11 @@ vi.mock("@tanstack/react-router", () => ({
     to,
     params,
   }: {
-    children: React.ReactNode
-    to: string
-    params?: Record<string, string>
+    children: React.ReactNode;
+    to: string;
+    params?: Record<string, string>;
   }) => <a href={to}>{children}</a>,
-}))
+}));
 
 describe("RecentFeedbackSection", () => {
   const mockAssignmentsWithFeedback: ProgressRecentAssignment[] = [
@@ -50,7 +50,7 @@ describe("RecentFeedbackSection", () => {
       activity_type: "lab",
       book_title: "Biology",
     },
-  ]
+  ];
 
   const mockAssignmentsWithoutFeedback: ProgressRecentAssignment[] = [
     {
@@ -62,67 +62,67 @@ describe("RecentFeedbackSection", () => {
       activity_type: "quiz",
       book_title: "World History",
     },
-  ]
+  ];
 
   const mockMixedAssignments: ProgressRecentAssignment[] = [
     ...mockAssignmentsWithFeedback,
     ...mockAssignmentsWithoutFeedback,
-  ]
+  ];
 
   it("renders section title", () => {
-    render(<RecentFeedbackSection recentAssignments={[]} />)
-    expect(screen.getByText("Recent Feedback")).toBeInTheDocument()
-  })
+    render(<RecentFeedbackSection recentAssignments={[]} />);
+    expect(screen.getByText("Recent Feedback")).toBeInTheDocument();
+  });
 
   it("shows empty state when no feedback exists", () => {
-    render(<RecentFeedbackSection recentAssignments={[]} />)
-    expect(screen.getByText("No feedback yet!")).toBeInTheDocument()
+    render(<RecentFeedbackSection recentAssignments={[]} />);
+    expect(screen.getByText("No feedback yet!")).toBeInTheDocument();
     expect(
       screen.getByText("Complete assignments to receive teacher feedback."),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it("shows empty state when no assignments have feedback", () => {
     render(
       <RecentFeedbackSection
         recentAssignments={mockAssignmentsWithoutFeedback}
       />,
-    )
-    expect(screen.getByText("No feedback yet!")).toBeInTheDocument()
-  })
+    );
+    expect(screen.getByText("No feedback yet!")).toBeInTheDocument();
+  });
 
   it("displays assignments with feedback", () => {
     render(
       <RecentFeedbackSection recentAssignments={mockAssignmentsWithFeedback} />,
-    )
-    expect(screen.getByText("Math Quiz")).toBeInTheDocument()
-    expect(screen.getByText("English Essay")).toBeInTheDocument()
-    expect(screen.getByText("Science Lab")).toBeInTheDocument()
-  })
+    );
+    expect(screen.getByText("Math Quiz")).toBeInTheDocument();
+    expect(screen.getByText("English Essay")).toBeInTheDocument();
+    expect(screen.getByText("Science Lab")).toBeInTheDocument();
+  });
 
   it("filters out assignments without feedback", () => {
-    render(<RecentFeedbackSection recentAssignments={mockMixedAssignments} />)
-    expect(screen.getByText("Math Quiz")).toBeInTheDocument()
-    expect(screen.queryByText("History Assignment")).not.toBeInTheDocument()
-  })
+    render(<RecentFeedbackSection recentAssignments={mockMixedAssignments} />);
+    expect(screen.getByText("Math Quiz")).toBeInTheDocument();
+    expect(screen.queryByText("History Assignment")).not.toBeInTheDocument();
+  });
 
   it("displays book titles", () => {
     render(
       <RecentFeedbackSection recentAssignments={mockAssignmentsWithFeedback} />,
-    )
-    expect(screen.getByText(/Algebra 101/)).toBeInTheDocument()
-    expect(screen.getByText(/English Literature/)).toBeInTheDocument()
-    expect(screen.getByText(/Biology/)).toBeInTheDocument()
-  })
+    );
+    expect(screen.getByText(/Algebra 101/)).toBeInTheDocument();
+    expect(screen.getByText(/English Literature/)).toBeInTheDocument();
+    expect(screen.getByText(/Biology/)).toBeInTheDocument();
+  });
 
   it("displays scores with correct badge variant", () => {
     render(
       <RecentFeedbackSection recentAssignments={mockAssignmentsWithFeedback} />,
-    )
-    expect(screen.getByText("95%")).toBeInTheDocument()
-    expect(screen.getByText("87%")).toBeInTheDocument()
-    expect(screen.getByText("92%")).toBeInTheDocument()
-  })
+    );
+    expect(screen.getByText("95%")).toBeInTheDocument();
+    expect(screen.getByText("87%")).toBeInTheDocument();
+    expect(screen.getByText("92%")).toBeInTheDocument();
+  });
 
   it("limits feedback items to specified limit", () => {
     const manyAssignments: ProgressRecentAssignment[] = Array.from(
@@ -136,34 +136,36 @@ describe("RecentFeedbackSection", () => {
         activity_type: "quiz",
         book_title: "Test Book",
       }),
-    )
+    );
 
     render(
       <RecentFeedbackSection recentAssignments={manyAssignments} limit={3} />,
-    )
+    );
 
     // Should only show 3 assignments
-    expect(screen.getByText("Assignment 0")).toBeInTheDocument()
-    expect(screen.getByText("Assignment 1")).toBeInTheDocument()
-    expect(screen.getByText("Assignment 2")).toBeInTheDocument()
-    expect(screen.queryByText("Assignment 3")).not.toBeInTheDocument()
-  })
+    expect(screen.getByText("Assignment 0")).toBeInTheDocument();
+    expect(screen.getByText("Assignment 1")).toBeInTheDocument();
+    expect(screen.getByText("Assignment 2")).toBeInTheDocument();
+    expect(screen.queryByText("Assignment 3")).not.toBeInTheDocument();
+  });
 
   it("renders feedback available indicator", () => {
     render(
       <RecentFeedbackSection recentAssignments={mockAssignmentsWithFeedback} />,
-    )
-    const feedbackIndicators = screen.getAllByText("Teacher feedback available")
-    expect(feedbackIndicators).toHaveLength(3)
-  })
+    );
+    const feedbackIndicators = screen.getAllByText(
+      "Teacher feedback available",
+    );
+    expect(feedbackIndicators).toHaveLength(3);
+  });
 
   it("creates links to assignment details", () => {
     render(
       <RecentFeedbackSection
         recentAssignments={[mockAssignmentsWithFeedback[0]]}
       />,
-    )
-    const link = screen.getByRole("link")
-    expect(link).toHaveAttribute("href", "/student/assignments/$assignmentId")
-  })
-})
+    );
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "/student/assignments/$assignmentId");
+  });
+});

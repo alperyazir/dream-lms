@@ -104,8 +104,12 @@ def _seed_skill_data(session: Session) -> None:
             skills[slug] = existing
         else:
             sc = SkillCategory(
-                name=name, slug=slug, icon=icon, color=color,
-                display_order=order, is_active=active,
+                name=name,
+                slug=slug,
+                icon=icon,
+                color=color,
+                display_order=order,
+                is_active=active,
             )
             session.add(sc)
             skills[slug] = sc
@@ -118,7 +122,11 @@ def _seed_skill_data(session: Session) -> None:
         ("Fill-in-the-blank", "fill_blank", "Fill in missing words"),
         ("Sentence Builder", "sentence_builder", "Arrange words to form sentences"),
         ("Comprehension", "comprehension", "Reading or listening comprehension"),
-        ("Sentence Corrector", "sentence_corrector", "Correct intentionally wrong sentences"),
+        (
+            "Sentence Corrector",
+            "sentence_corrector",
+            "Correct intentionally wrong sentences",
+        ),
         ("Free Response", "free_response", "Open-ended writing with teacher grading"),
         ("Open Response", "open_response", "Open-ended speaking response"),
     ]
@@ -178,12 +186,18 @@ def _seed_skill_data(session: Session) -> None:
         ("speaking", "sentence_repeat"),  # removed — sentence repeat dropped
     ]
     for skill_slug, fmt_slug in deprecated_combos:
-        dep_skill = skills.get(skill_slug) or session.exec(
-            select(SkillCategory).where(SkillCategory.slug == skill_slug)
-        ).first()
-        dep_fmt = formats.get(fmt_slug) or session.exec(
-            select(ActivityFormat).where(ActivityFormat.slug == fmt_slug)
-        ).first()
+        dep_skill = (
+            skills.get(skill_slug)
+            or session.exec(
+                select(SkillCategory).where(SkillCategory.slug == skill_slug)
+            ).first()
+        )
+        dep_fmt = (
+            formats.get(fmt_slug)
+            or session.exec(
+                select(ActivityFormat).where(ActivityFormat.slug == fmt_slug)
+            ).first()
+        )
         if dep_skill and dep_fmt:
             old = session.exec(
                 select(SkillFormatCombination).where(

@@ -5,27 +5,33 @@
  * and the correct answer when wrong.
  */
 
-import { CheckCircle2, XCircle } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import type { SentenceCorrectorResult } from "@/lib/resultParsers"
+import { CheckCircle2, XCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { SentenceCorrectorResult } from "@/lib/resultParsers";
 
 interface SentenceCorrectorResultsProps {
-  result: SentenceCorrectorResult
-  hideSummary?: boolean
+  result: SentenceCorrectorResult;
+  hideSummary?: boolean;
 }
 
 export function SentenceCorrectorResults({
   result,
   hideSummary = false,
 }: SentenceCorrectorResultsProps) {
-  const correctCount = result.item_results.filter((r) => r.is_correct).length
-  const actualPercentage = result.total > 0
-    ? Math.round((correctCount / result.total) * 100)
-    : result.percentage
+  const correctCount = result.item_results.filter((r) => r.is_correct).length;
+  const actualPercentage =
+    result.total > 0
+      ? Math.round((correctCount / result.total) * 100)
+      : result.percentage;
 
   return (
-    <div className={cn("mx-auto flex max-w-2xl flex-col gap-4", !hideSummary && "p-4")}>
+    <div
+      className={cn(
+        "mx-auto flex max-w-2xl flex-col gap-4",
+        !hideSummary && "p-4",
+      )}
+    >
       <div className="space-y-3">
         {result.item_results.map((item, index) => (
           <Card
@@ -99,7 +105,7 @@ export function SentenceCorrectorResults({
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-export default SentenceCorrectorResults
+export default SentenceCorrectorResults;

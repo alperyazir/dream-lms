@@ -12,7 +12,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 ListeningSBDifficulty = Literal["auto", "easy", "medium", "hard"]
 
 
@@ -38,7 +37,8 @@ class ListeningSentenceBuilderItem(BaseModel):
     )
     word_count: int = Field(description="Number of words in the sentence.")
     audio_url: str | None = Field(
-        default=None, description="URL to TTS audio of the sentence.",
+        default=None,
+        description="URL to TTS audio of the sentence.",
     )
     audio_status: Literal["pending", "ready", "failed"] = Field(default="pending")
     difficulty: str = Field(description="Difficulty level (easy, medium, hard).")

@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   Check,
   ChevronLeft,
@@ -13,22 +13,22 @@ import {
   Trash2,
   UserCheck,
   X,
-} from "lucide-react"
-import { useEffect, useState } from "react"
-import { FiUsers } from "react-icons/fi"
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { FiUsers } from "react-icons/fi";
 import {
   AdminService,
   type TeacherCreateAPI,
   type TeacherPublic,
   type TeacherUpdate,
-} from "@/client"
-import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/client";
+import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -36,16 +36,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -53,9 +53,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import useCustomToast from "@/hooks/useCustomToast"
-import { generateUsername } from "@/utils/usernameGenerator"
+} from "@/components/ui/table";
+import useCustomToast from "@/hooks/useCustomToast";
+import { generateUsername } from "@/utils/usernameGenerator";
 
 export const Route = createFileRoute("/_layout/admin/teachers")({
   component: () => (
@@ -63,68 +63,68 @@ export const Route = createFileRoute("/_layout/admin/teachers")({
       <AdminTeachers />
     </ErrorBoundary>
   ),
-})
+});
 
 function AdminTeachers() {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const PAGE_SIZE = 20
-  const [searchQuery, setSearchQuery] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const PAGE_SIZE = 20;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<TeacherPublic | null>(
     null,
-  )
+  );
   const [teacherToDelete, setTeacherToDelete] = useState<{
-    id: string
-    userName: string
-  } | null>(null)
+    id: string;
+    userName: string;
+  } | null>(null);
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
-    useState(false)
+    useState(false);
   const [isPasswordResultDialogOpen, setIsPasswordResultDialogOpen] =
-    useState(false)
+    useState(false);
   const [teacherToResetPassword, setTeacherToResetPassword] = useState<{
-    userId: string
-    userName: string
-  } | null>(null)
+    userId: string;
+    userName: string;
+  } | null>(null);
   const [resetResult, setResetResult] = useState<{
-    passwordEmailed: boolean
-    temporaryPassword: string | null
-    message: string
-  } | null>(null)
-  const [passwordCopied, setPasswordCopied] = useState(false)
+    passwordEmailed: boolean;
+    temporaryPassword: string | null;
+    message: string;
+  } | null>(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
   const [newTeacher, setNewTeacher] = useState<TeacherCreateAPI>({
     username: "",
     user_email: "",
     full_name: "",
     school_id: "",
     subject_specialization: "",
-  })
+  });
   const [editTeacher, setEditTeacher] = useState<TeacherUpdate>({
     school_id: undefined,
     subject_specialization: "",
     user_email: "",
     user_username: "",
     user_full_name: "",
-  })
+  });
 
   // Debounce search for server-side filtering
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery)
-      setCurrentPage(1)
-      setSelectedIds(new Set())
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+      setSelectedIds(new Set());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch teachers from API (server-side pagination)
-  const skip = (currentPage - 1) * PAGE_SIZE
+  const skip = (currentPage - 1) * PAGE_SIZE;
   const {
     data: teachersResponse,
     isLoading,
@@ -137,52 +137,52 @@ function AdminTeachers() {
         limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
       }),
-  })
-  const teachers = teachersResponse?.items ?? []
-  const totalTeachers = teachersResponse?.total ?? 0
-  const totalPages = Math.ceil(totalTeachers / PAGE_SIZE)
+  });
+  const teachers = teachersResponse?.items ?? [];
+  const totalTeachers = teachersResponse?.total ?? 0;
+  const totalPages = Math.ceil(totalTeachers / PAGE_SIZE);
 
   // Fetch schools for dropdown
   const { data: schools = [] } = useQuery({
     queryKey: ["schools"],
     queryFn: () => AdminService.listSchools(),
-  })
+  });
 
   // Create teacher mutation
   const createTeacherMutation = useMutation({
     mutationFn: (data: TeacherCreateAPI) =>
       AdminService.createTeacher({ requestBody: data }),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["teachers"] })
-      setIsAddDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      setIsAddDialogOpen(false);
       setNewTeacher({
         username: "",
         user_email: "",
         full_name: "",
         school_id: "",
         subject_specialization: "",
-      })
+      });
 
       if (response.password_emailed) {
-        showSuccessToast("Teacher created. Password sent to their email.")
+        showSuccessToast("Teacher created. Password sent to their email.");
       } else if (response.temporary_password) {
         // Show one-time password dialog
         setResetResult({
           passwordEmailed: false,
           temporaryPassword: response.temporary_password,
           message: "Teacher created successfully",
-        })
-        setIsPasswordResultDialogOpen(true)
+        });
+        setIsPasswordResultDialogOpen(true);
       } else {
-        showSuccessToast("Teacher created successfully!")
+        showSuccessToast("Teacher created successfully!");
       }
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to create teacher. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Update teacher mutation
   const updateTeacherMutation = useMutation({
@@ -190,36 +190,36 @@ function AdminTeachers() {
       teacherId,
       data,
     }: {
-      teacherId: string
-      data: TeacherUpdate
+      teacherId: string;
+      data: TeacherUpdate;
     }) => AdminService.updateTeacher({ teacherId, requestBody: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teachers"] })
-      setIsEditDialogOpen(false)
-      setSelectedTeacher(null)
-      showSuccessToast("Teacher updated successfully!")
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      setIsEditDialogOpen(false);
+      setSelectedTeacher(null);
+      showSuccessToast("Teacher updated successfully!");
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to update teacher. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Delete teacher mutation
   const deleteTeacherMutation = useMutation({
     mutationFn: (teacherId: string) =>
       AdminService.deleteTeacher({ teacherId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teachers"] })
-      showSuccessToast("Teacher deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      showSuccessToast("Teacher deleted successfully!");
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to delete teacher. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Reset password mutation [Story 11.4]
   const resetPasswordMutation = useMutation({
@@ -229,61 +229,63 @@ function AdminTeachers() {
         passwordEmailed: response.password_emailed,
         temporaryPassword: response.temporary_password ?? null,
         message: response.message,
-      })
-      setIsResetPasswordDialogOpen(false)
-      setIsPasswordResultDialogOpen(true)
-      queryClient.invalidateQueries({ queryKey: ["teachers"] })
+      });
+      setIsResetPasswordDialogOpen(false);
+      setIsPasswordResultDialogOpen(true);
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to reset password. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: (ids: string[]) =>
-      Promise.all(ids.map((id) => AdminService.deleteTeacher({ teacherId: id }))),
+      Promise.all(
+        ids.map((id) => AdminService.deleteTeacher({ teacherId: id })),
+      ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teachers"] })
-      setSelectedIds(new Set())
-      setIsBulkDeleteDialogOpen(false)
-      showSuccessToast(`Successfully deleted ${selectedIds.size} teacher(s)`)
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      setSelectedIds(new Set());
+      setIsBulkDeleteDialogOpen(false);
+      showSuccessToast(`Successfully deleted ${selectedIds.size} teacher(s)`);
     },
     onError: () => {
-      showErrorToast("Failed to delete some teachers. Please try again.")
+      showErrorToast("Failed to delete some teachers. Please try again.");
     },
-  })
+  });
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(teachers.map((t) => t.id)))
+      setSelectedIds(new Set(teachers.map((t) => t.id)));
     } else {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     }
-  }
+  };
 
   const handleSelect = (id: string, checked: boolean) => {
-    const newSelected = new Set(selectedIds)
+    const newSelected = new Set(selectedIds);
     if (checked) {
-      newSelected.add(id)
+      newSelected.add(id);
     } else {
-      newSelected.delete(id)
+      newSelected.delete(id);
     }
-    setSelectedIds(newSelected)
-  }
+    setSelectedIds(newSelected);
+  };
 
   const handleBulkDelete = () => {
     if (selectedIds.size > 0) {
-      setIsBulkDeleteDialogOpen(true)
+      setIsBulkDeleteDialogOpen(true);
     }
-  }
+  };
 
   const confirmBulkDelete = () => {
-    bulkDeleteMutation.mutate(Array.from(selectedIds))
-  }
+    bulkDeleteMutation.mutate(Array.from(selectedIds));
+  };
 
   const handleAddTeacher = () => {
     if (
@@ -292,94 +294,94 @@ function AdminTeachers() {
       !newTeacher.full_name ||
       !newTeacher.school_id
     ) {
-      showErrorToast("Please fill in all required fields")
-      return
+      showErrorToast("Please fill in all required fields");
+      return;
     }
 
     // Validate username format
     if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(newTeacher.username)) {
       showErrorToast(
         "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
-      )
-      return
+      );
+      return;
     }
 
-    createTeacherMutation.mutate(newTeacher)
-  }
+    createTeacherMutation.mutate(newTeacher);
+  };
 
   const handleEditTeacher = (teacher: TeacherPublic) => {
-    setSelectedTeacher(teacher)
+    setSelectedTeacher(teacher);
     setEditTeacher({
       school_id: teacher.school_id,
       subject_specialization: teacher.subject_specialization || "",
       user_email: teacher.user_email,
       user_username: teacher.user_username || "",
       user_full_name: teacher.user_full_name,
-    })
-    setIsEditDialogOpen(true)
-  }
+    });
+    setIsEditDialogOpen(true);
+  };
 
   const handleUpdateTeacher = () => {
-    if (!selectedTeacher) return
+    if (!selectedTeacher) return;
     if (
       !editTeacher.user_email ||
       !editTeacher.user_full_name ||
       !editTeacher.school_id
     ) {
-      showErrorToast("Please fill in all required fields")
-      return
+      showErrorToast("Please fill in all required fields");
+      return;
     }
     updateTeacherMutation.mutate({
       teacherId: selectedTeacher.id,
       data: editTeacher,
-    })
-  }
+    });
+  };
 
   const handleDeleteTeacher = (teacherId: string, userName: string) => {
-    setTeacherToDelete({ id: teacherId, userName })
-    setIsDeleteDialogOpen(true)
-  }
+    setTeacherToDelete({ id: teacherId, userName });
+    setIsDeleteDialogOpen(true);
+  };
 
   const confirmDeleteTeacher = () => {
     if (teacherToDelete) {
-      deleteTeacherMutation.mutate(teacherToDelete.id)
-      setTeacherToDelete(null)
+      deleteTeacherMutation.mutate(teacherToDelete.id);
+      setTeacherToDelete(null);
     }
-  }
+  };
 
   // Password reset handlers [Story 9.2]
   const handleResetPassword = (userId: string, userName: string) => {
-    setTeacherToResetPassword({ userId, userName })
-    setIsResetPasswordDialogOpen(true)
-  }
+    setTeacherToResetPassword({ userId, userName });
+    setIsResetPasswordDialogOpen(true);
+  };
 
   const confirmResetPassword = () => {
     if (teacherToResetPassword) {
-      resetPasswordMutation.mutate(teacherToResetPassword.userId)
+      resetPasswordMutation.mutate(teacherToResetPassword.userId);
     }
-  }
+  };
 
   const handleCopyPassword = async () => {
     if (resetResult?.temporaryPassword) {
-      await navigator.clipboard.writeText(resetResult.temporaryPassword)
-      setPasswordCopied(true)
-      showSuccessToast("Password copied to clipboard")
-      setTimeout(() => setPasswordCopied(false), 2000)
+      await navigator.clipboard.writeText(resetResult.temporaryPassword);
+      setPasswordCopied(true);
+      showSuccessToast("Password copied to clipboard");
+      setTimeout(() => setPasswordCopied(false), 2000);
     }
-  }
+  };
 
   const closePasswordResultDialog = () => {
-    setIsPasswordResultDialogOpen(false)
-    setResetResult(null)
-    setTeacherToResetPassword(null)
-    setPasswordCopied(false)
-  }
+    setIsPasswordResultDialogOpen(false);
+    setResetResult(null);
+    setTeacherToResetPassword(null);
+    setPasswordCopied(false);
+  };
 
   // Get school name by id
   const getSchoolName = (schoolId: string) => {
-    const school = schools.find((s) => s.id === schoolId)
-    return school?.name || "Unknown"
-  }
+    const school = schools.find((s) => s.id === schoolId);
+    return school?.name || "Unknown";
+  };
 
   if (error) {
     return (
@@ -388,7 +390,7 @@ function AdminTeachers() {
           Error loading teachers. Please try again later.
         </div>
       </PageContainer>
-    )
+    );
   }
 
   return (
@@ -595,8 +597,7 @@ function AdminTeachers() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {skip + 1} to{" "}
-            {Math.min(skip + PAGE_SIZE, totalTeachers)} of{" "}
+            Showing {skip + 1} to {Math.min(skip + PAGE_SIZE, totalTeachers)} of{" "}
             {totalTeachers}
           </div>
           <div className="flex items-center gap-2">
@@ -604,8 +605,8 @@ function AdminTeachers() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p - 1)
-                setSelectedIds(new Set())
+                setCurrentPage((p) => p - 1);
+                setSelectedIds(new Set());
               }}
               disabled={currentPage === 1}
             >
@@ -619,8 +620,8 @@ function AdminTeachers() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p + 1)
-                setSelectedIds(new Set())
+                setCurrentPage((p) => p + 1);
+                setSelectedIds(new Set());
               }}
               disabled={currentPage === totalPages}
             >
@@ -785,15 +786,15 @@ function AdminTeachers() {
                 placeholder="e.g., John Doe"
                 value={newTeacher.full_name}
                 onChange={(e) => {
-                  const fullName = e.target.value
+                  const fullName = e.target.value;
                   // Auto-generate username with Turkish character support
-                  const generatedUsername = generateUsername(fullName)
+                  const generatedUsername = generateUsername(fullName);
 
                   setNewTeacher({
                     ...newTeacher,
                     full_name: fullName,
                     username: generatedUsername,
-                  })
+                  });
                 }}
               />
             </div>
@@ -1003,5 +1004,5 @@ function AdminTeachers() {
         </DialogContent>
       </Dialog>
     </PageContainer>
-  )
+  );
 }

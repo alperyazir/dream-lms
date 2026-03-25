@@ -1,31 +1,26 @@
-import React, { useEffect, useRef } from "react"
-import { Link } from "@tanstack/react-router"
-import {
-  CheckCircle,
-  FileText,
-  MessageSquare,
-  Bot,
-} from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import type { Message, MessageCategory } from "@/types/message"
+import React, { useEffect, useRef } from "react";
+import { Link } from "@tanstack/react-router";
+import { CheckCircle, FileText, MessageSquare, Bot } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import type { Message, MessageCategory } from "@/types/message";
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
   assignment_created: FileText,
   student_completed: CheckCircle,
   feedback_received: MessageSquare,
-}
+};
 
 const CATEGORY_COLORS: Record<string, string> = {
   assignment_created: "text-blue-600",
   student_completed: "text-green-600",
   feedback_received: "text-emerald-600",
-}
+};
 
 export interface MessageThreadProps {
-  messages: Message[]
-  currentUserId: string
+  messages: Message[];
+  currentUserId: string;
 }
 
 /**
@@ -34,31 +29,31 @@ export interface MessageThreadProps {
  */
 export const MessageThread = React.memo(
   ({ messages, currentUserId }: MessageThreadProps) => {
-    const messagesEndRef = useRef<HTMLDivElement>(null)
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Scroll to latest message when messages load or change
     useEffect(() => {
-      const el = messagesEndRef.current
-      if (!el) return
+      const el = messagesEndRef.current;
+      if (!el) return;
       // Scroll the nearest scrollable parent instead of the whole page
-      const scrollParent = el.closest("[class*='overflow-y']") as HTMLElement
+      const scrollParent = el.closest("[class*='overflow-y']") as HTMLElement;
       if (scrollParent) {
-        scrollParent.scrollTop = scrollParent.scrollHeight
+        scrollParent.scrollTop = scrollParent.scrollHeight;
       }
-    }, [messages])
+    }, [messages]);
 
     // Format timestamp for display
     const formatTimestamp = (sentAt: string): string => {
-      const date = new Date(sentAt)
-      const now = new Date()
-      const isToday = date.toDateString() === now.toDateString()
+      const date = new Date(sentAt);
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
 
       if (isToday) {
         return date.toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
-        })
+        });
       }
 
       return date.toLocaleString("en-US", {
@@ -67,8 +62,8 @@ export const MessageThread = React.memo(
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
-      })
-    }
+      });
+    };
 
     // Get initials from name
     const getInitials = (name: string): string => {
@@ -77,8 +72,8 @@ export const MessageThread = React.memo(
         .map((n) => n[0])
         .join("")
         .toUpperCase()
-        .slice(0, 2)
-    }
+        .slice(0, 2);
+    };
 
     return (
       <div className="p-6 space-y-6">
@@ -89,21 +84,21 @@ export const MessageThread = React.memo(
         ) : (
           <>
             {messages.map((message) => {
-              const isCurrentUser = message.sender_id === currentUserId
-              const senderInitials = getInitials(message.sender_name)
+              const isCurrentUser = message.sender_id === currentUserId;
+              const senderInitials = getInitials(message.sender_name);
 
               // System message rendering
               if (message.is_system) {
                 const CategoryIcon =
-                  CATEGORY_ICONS[message.message_category || ""] || Bot
+                  CATEGORY_ICONS[message.message_category || ""] || Bot;
                 const iconColor =
                   CATEGORY_COLORS[message.message_category || ""] ||
-                  "text-gray-500"
+                  "text-gray-500";
 
                 const assignmentLink =
                   message.context_type === "assignment" && message.context_id
                     ? `/student/assignments/${message.context_id}`
-                    : null
+                    : null;
 
                 return (
                   <div key={message.id} className="flex gap-3">
@@ -152,7 +147,7 @@ export const MessageThread = React.memo(
                       </div>
                     </div>
                   </div>
-                )
+                );
               }
 
               // Regular message rendering
@@ -234,14 +229,14 @@ export const MessageThread = React.memo(
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
             <div ref={messagesEndRef} />
           </>
         )}
       </div>
-    )
+    );
   },
-)
+);
 
-MessageThread.displayName = "MessageThread"
+MessageThread.displayName = "MessageThread";

@@ -4,10 +4,18 @@
  * Used by admin/supervisor/teacher to manage student credentials.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Save } from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Check,
+  Copy,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  Save,
+} from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,22 +23,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import useCustomToast from "@/hooks/useCustomToast";
 import {
   getStudentPassword,
   type StudentPasswordResponse,
   setStudentPassword,
-} from "@/services/studentsApi"
+} from "@/services/studentsApi";
 
 interface StudentPasswordModalProps {
-  studentId: string
-  studentName: string
-  isOpen: boolean
-  onClose: () => void
+  studentId: string;
+  studentName: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function StudentPasswordModal({
@@ -39,14 +47,14 @@ export function StudentPasswordModal({
   isOpen,
   onClose,
 }: StudentPasswordModalProps) {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
-  const [showPassword, setShowPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [newPassword, setNewPassword] = useState("")
-  const [usernameCopied, setUsernameCopied] = useState(false)
-  const [passwordCopied, setPasswordCopied] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [usernameCopied, setUsernameCopied] = useState(false);
+  const [passwordCopied, setPasswordCopied] = useState(false);
 
   // Fetch current password
   const {
@@ -59,7 +67,7 @@ export function StudentPasswordModal({
     queryFn: () => getStudentPassword(studentId),
     enabled: isOpen && !!studentId,
     retry: false,
-  })
+  });
 
   // Set password mutation
   const setPasswordMutation = useMutation({
@@ -67,56 +75,56 @@ export function StudentPasswordModal({
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["studentPassword", studentId],
-      })
-      setNewPassword("")
-      showSuccessToast("Password updated successfully!")
-      refetch()
+      });
+      setNewPassword("");
+      showSuccessToast("Password updated successfully!");
+      refetch();
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to update password. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   const handleCopyUsername = async () => {
     if (passwordData?.username) {
-      await navigator.clipboard.writeText(passwordData.username)
-      setUsernameCopied(true)
-      showSuccessToast("Username copied to clipboard")
-      setTimeout(() => setUsernameCopied(false), 2000)
+      await navigator.clipboard.writeText(passwordData.username);
+      setUsernameCopied(true);
+      showSuccessToast("Username copied to clipboard");
+      setTimeout(() => setUsernameCopied(false), 2000);
     }
-  }
+  };
 
   const handleCopyPassword = async () => {
     if (passwordData?.password) {
-      await navigator.clipboard.writeText(passwordData.password)
-      setPasswordCopied(true)
-      showSuccessToast("Password copied to clipboard")
-      setTimeout(() => setPasswordCopied(false), 2000)
+      await navigator.clipboard.writeText(passwordData.password);
+      setPasswordCopied(true);
+      showSuccessToast("Password copied to clipboard");
+      setTimeout(() => setPasswordCopied(false), 2000);
     }
-  }
+  };
 
   const handleSetPassword = () => {
     if (!newPassword) {
-      showErrorToast("Please enter a new password")
-      return
+      showErrorToast("Please enter a new password");
+      return;
     }
     if (newPassword.length > 50) {
-      showErrorToast("Password must be 50 characters or less")
-      return
+      showErrorToast("Password must be 50 characters or less");
+      return;
     }
-    setPasswordMutation.mutate(newPassword)
-  }
+    setPasswordMutation.mutate(newPassword);
+  };
 
   const handleClose = () => {
-    setNewPassword("")
-    setShowPassword(false)
-    setShowNewPassword(false)
-    setUsernameCopied(false)
-    setPasswordCopied(false)
-    onClose()
-  }
+    setNewPassword("");
+    setShowPassword(false);
+    setShowNewPassword(false);
+    setUsernameCopied(false);
+    setPasswordCopied(false);
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -286,5 +294,5 @@ export function StudentPasswordModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

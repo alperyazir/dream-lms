@@ -1,7 +1,7 @@
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import React, { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -9,22 +9,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 
 export interface ActivityHistoryEntry {
-  date: string
-  activity_name: string
-  activity_type: string
-  score: number
-  time_spent_minutes: number
-  status: "completed" | "in_progress" | "not_started"
-  assignment_id: string
+  date: string;
+  activity_name: string;
+  activity_type: string;
+  score: number;
+  time_spent_minutes: number;
+  status: "completed" | "in_progress" | "not_started";
+  assignment_id: string;
 }
 
 export interface ActivityHistoryTableProps {
-  entries: ActivityHistoryEntry[]
-  itemsPerPage?: number
-  onRowClick?: (assignmentId: string) => void
+  entries: ActivityHistoryEntry[];
+  itemsPerPage?: number;
+  onRowClick?: (assignmentId: string) => void;
 }
 
 /**
@@ -33,18 +33,18 @@ export interface ActivityHistoryTableProps {
  */
 export const ActivityHistoryTable = React.memo(
   ({ entries, itemsPerPage = 10, onRowClick }: ActivityHistoryTableProps) => {
-    const [currentPage, setCurrentPage] = useState(1)
+    const [currentPage, setCurrentPage] = useState(1);
 
     // Sort entries by date (newest first)
     const sortedEntries = [...entries].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    )
+    );
 
     // Calculate pagination
-    const totalPages = Math.ceil(sortedEntries.length / itemsPerPage)
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    const currentEntries = sortedEntries.slice(startIndex, endIndex)
+    const totalPages = Math.ceil(sortedEntries.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentEntries = sortedEntries.slice(startIndex, endIndex);
 
     // Activity type display names
     const getActivityTypeName = (activityType: string): string => {
@@ -55,9 +55,9 @@ export const ActivityHistoryTable = React.memo(
         circle: "Circle",
         markwithx: "Mark with X",
         puzzleFindWords: "Word Search",
-      }
-      return nameMap[activityType] || activityType
-    }
+      };
+      return nameMap[activityType] || activityType;
+    };
 
     // Status badge color
     const getStatusColor = (status: string): string => {
@@ -68,21 +68,21 @@ export const ActivityHistoryTable = React.memo(
           "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
         not_started:
           "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
-      }
+      };
       return (
         colorMap[status] ||
         "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-      )
-    }
+      );
+    };
 
     // Score color
     const getScoreColor = (score: number): string => {
-      if (score >= 90) return "text-green-600 dark:text-green-400 font-bold"
-      if (score >= 80) return "text-teal-600 dark:text-teal-400 font-semibold"
+      if (score >= 90) return "text-green-600 dark:text-green-400 font-bold";
+      if (score >= 80) return "text-teal-600 dark:text-teal-400 font-semibold";
       if (score >= 70)
-        return "text-yellow-600 dark:text-yellow-400 font-semibold"
-      return "text-red-600 dark:text-red-400 font-semibold"
-    }
+        return "text-yellow-600 dark:text-yellow-400 font-semibold";
+      return "text-red-600 dark:text-red-400 font-semibold";
+    };
 
     return (
       <div className="space-y-4">
@@ -125,8 +125,8 @@ export const ActivityHistoryTable = React.memo(
                           onRowClick &&
                           (e.key === "Enter" || e.key === " ")
                         ) {
-                          e.preventDefault()
-                          onRowClick(entry.assignment_id)
+                          e.preventDefault();
+                          onRowClick(entry.assignment_id);
                         }
                       }}
                     >
@@ -214,8 +214,8 @@ export const ActivityHistoryTable = React.memo(
           </div>
         )}
       </div>
-    )
+    );
   },
-)
+);
 
-ActivityHistoryTable.displayName = "ActivityHistoryTable"
+ActivityHistoryTable.displayName = "ActivityHistoryTable";

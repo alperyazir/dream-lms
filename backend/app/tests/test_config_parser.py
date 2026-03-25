@@ -1,6 +1,5 @@
 """Unit tests for config.json parser."""
 
-
 from app.services.config_parser import (
     parse_book_config,
     validate_activity_type,
@@ -105,7 +104,10 @@ def test_skip_section_without_activity_field():
                             {
                                 "page_number": 1,
                                 "sections": [
-                                    {"type": "text", "content": "Some text"},  # No activity field
+                                    {
+                                        "type": "text",
+                                        "content": "Some text",
+                                    },  # No activity field
                                     {
                                         "activity": {
                                             "type": "matchTheWords",
@@ -140,7 +142,10 @@ def test_skip_audio_without_activity():
                             {
                                 "page_number": 1,
                                 "sections": [
-                                    {"type": "audio", "src": "audio.mp3"},  # Page decoration
+                                    {
+                                        "type": "audio",
+                                        "src": "audio.mp3",
+                                    },  # Page decoration
                                 ],
                             }
                         ],
@@ -168,11 +173,11 @@ def test_order_index_calculation():
                             {
                                 "page_number": 7,
                                 "sections": [
+                                    {"activity": {"type": "circle"}},  # section_idx = 0
                                     {
-                                        "activity": {"type": "circle"}  # section_idx = 0
-                                    },
-                                    {
-                                        "activity": {"type": "matchTheWords"}  # section_idx = 1
+                                        "activity": {
+                                            "type": "matchTheWords"
+                                        }  # section_idx = 1
                                     },
                                 ],
                             }
@@ -204,7 +209,9 @@ def test_missing_headerText_generates_title():
                             {
                                 "page_number": 1,
                                 "sections": [
-                                    {"activity": {"type": "matchTheWords"}},  # No headerText
+                                    {
+                                        "activity": {"type": "matchTheWords"}
+                                    },  # No headerText
                                 ],
                             }
                         ],
@@ -219,7 +226,9 @@ def test_missing_headerText_generates_title():
     assert len(activities) == 1
     # Should generate title from type
     assert activities[0].title is not None
-    assert "match" in activities[0].title.lower() or "the" in activities[0].title.lower()
+    assert (
+        "match" in activities[0].title.lower() or "the" in activities[0].title.lower()
+    )
 
 
 def test_empty_config_returns_empty_list():

@@ -11,7 +11,7 @@ import {
   type BookAssignmentResponse,
   BookAssignmentsService,
   type BulkBookAssignmentCreate,
-} from "@/client"
+} from "@/client";
 
 /**
  * Create a single book assignment
@@ -21,7 +21,7 @@ export async function createBookAssignment(
 ): Promise<BookAssignmentPublic> {
   return BookAssignmentsService.createBookAssignment({
     requestBody: data,
-  })
+  });
 }
 
 /**
@@ -32,24 +32,24 @@ export async function createBulkBookAssignments(
 ): Promise<BookAssignmentPublic[]> {
   return BookAssignmentsService.createBulkBookAssignments({
     requestBody: data,
-  })
+  });
 }
 
 /**
  * List book assignments with optional filters
  */
 export async function listBookAssignments(params: {
-  bookId?: string
-  schoolId?: string
-  skip?: number
-  limit?: number
+  bookId?: string;
+  schoolId?: string;
+  skip?: number;
+  limit?: number;
 }): Promise<BookAssignmentListResponse> {
   return BookAssignmentsService.listBookAssignments({
     bookId: params.bookId,
     schoolId: params.schoolId,
     skip: params.skip,
     limit: params.limit,
-  })
+  });
 }
 
 /**
@@ -60,7 +60,7 @@ export async function getBookAssignments(
 ): Promise<BookAssignmentResponse[]> {
   return BookAssignmentsService.getBookAssignments({
     bookId,
-  })
+  });
 }
 
 /**
@@ -71,7 +71,7 @@ export async function deleteBookAssignment(
 ): Promise<void> {
   return BookAssignmentsService.deleteBookAssignment({
     assignmentId,
-  })
+  });
 }
 
 // Re-export types for convenience
@@ -81,4 +81,4 @@ export type {
   BookAssignmentPublic,
   BookAssignmentResponse,
   BulkBookAssignmentCreate,
-}
+};

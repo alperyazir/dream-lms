@@ -192,7 +192,9 @@ async def test_book_fixture(
 
 
 @pytest_asyncio.fixture(name="test_activity")
-async def test_activity_fixture(async_session: AsyncSession, test_book: Book) -> Activity:
+async def test_activity_fixture(
+    async_session: AsyncSession, test_book: Book
+) -> Activity:
     """Create a test activity."""
     activity = Activity(
         id=uuid.uuid4(),
@@ -275,9 +277,7 @@ async def test_full_assignment_submission_flow(
     5. Verify cannot start assignment again (already completed)
     """
     # Mock the Dream Storage client to return activity config
-    with patch(
-        "app.api.routes.assignments.DreamStorageClient"
-    ) as mock_storage_client:
+    with patch("app.api.routes.assignments.DreamStorageClient") as mock_storage_client:
         mock_client_instance = AsyncMock()
         mock_client_instance.get_activity_config.return_value = {
             "type": "circle",
@@ -304,7 +304,9 @@ async def test_full_assignment_submission_flow(
                 f"/api/v1/assignments/{test_assignment.id}/start",
                 headers=headers,
             )
-            assert start_response.status_code == 200, f"Start failed: {start_response.text}"
+            assert (
+                start_response.status_code == 200
+            ), f"Start failed: {start_response.text}"
             start_data = start_response.json()
             assert "activity_config" in start_data
 
@@ -442,4 +444,7 @@ async def test_submission_updates_timestamps(
         await async_session.refresh(assignment_student)
         assert assignment_student.completed_at is not None
         # Convert to ISO string for comparison
-        assert assignment_student.completed_at.isoformat().replace("+00:00", "Z") == custom_completed_at
+        assert (
+            assignment_student.completed_at.isoformat().replace("+00:00", "Z")
+            == custom_completed_at
+        )

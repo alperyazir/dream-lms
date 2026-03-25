@@ -24,7 +24,6 @@ from sqlmodel import select
 # Ensure app modules are importable
 sys.path.insert(0, ".")
 
-from app.core.config import settings  # noqa: E402
 from app.core.db import async_engine  # noqa: E402
 from app.models import TeacherGeneratedContent  # noqa: E402
 from app.services.dcs_ai_content_client import DCSAIContentClient  # noqa: E402
@@ -166,7 +165,9 @@ async def _generate_and_upload_audio(
     return content
 
 
-async def migrate(dry_run: bool = False, limit: int | None = None, resync: bool = False) -> None:
+async def migrate(
+    dry_run: bool = False, limit: int | None = None, resync: bool = False
+) -> None:
     """Run the migration. Use resync=True to re-push already-synced audio records."""
     dcs = DreamCentralStorageClient()
     ai_client = DCSAIContentClient(dcs)
@@ -233,7 +234,9 @@ async def migrate(dry_run: bool = False, limit: int | None = None, resync: bool 
                     )
 
                     if dry_run:
-                        logger.info(f"  [DRY RUN] Would {'resync' if resync else 'create'} DCS content: {record.title}")
+                        logger.info(
+                            f"  [DRY RUN] Would {'resync' if resync else 'create'} DCS content: {record.title}"
+                        )
                         migrated += 1
                         continue
 
@@ -243,7 +246,9 @@ async def migrate(dry_run: bool = False, limit: int | None = None, resync: bool 
                             await ai_client.delete_content(rec_book_id, old_dcs_id)
                             logger.info(f"  Deleted old DCS entry: {old_dcs_id}")
                         except Exception as e:
-                            logger.warning(f"  Could not delete old DCS entry {old_dcs_id}: {e}")
+                            logger.warning(
+                                f"  Could not delete old DCS entry {old_dcs_id}: {e}"
+                            )
 
                     # 1. Generate audio FIRST so content has final URLs after DCS create
                     audio_files: list[tuple[str, bytes]] = []
@@ -273,10 +278,14 @@ async def migrate(dry_run: bool = False, limit: int | None = None, resync: bool 
                     payload["content"] = rec_content
 
                     dcs_result = await ai_client.create_content(rec_book_id, payload)
-                    dcs_content_id = dcs_result.get("content_id") or dcs_result.get("id")
+                    dcs_content_id = dcs_result.get("content_id") or dcs_result.get(
+                        "id"
+                    )
 
                     if not dcs_content_id:
-                        logger.error(f"  DCS returned no content_id for record {rec_id}: {dcs_result}")
+                        logger.error(
+                            f"  DCS returned no content_id for record {rec_id}: {dcs_result}"
+                        )
                         errors += 1
                         continue
 
@@ -288,15 +297,17 @@ async def migrate(dry_run: bool = False, limit: int | None = None, resync: bool 
                         items = rec_content.get(items_key, [])
                         for idx, filename in audio_items:
                             if idx < len(items):
-                                items[idx]["audio_url"] = (
-                                    f"/api/v1/ai/content/{rec_book_id}/{dcs_content_id}/audio/{filename}"
-                                )
+                                items[idx][
+                                    "audio_url"
+                                ] = f"/api/v1/ai/content/{rec_book_id}/{dcs_content_id}/audio/{filename}"
                                 items[idx]["audio_status"] = "ready"
 
                     # 4. Upload audio files to DCS
                     if audio_files:
                         try:
-                            await ai_client.upload_audio_batch(rec_book_id, dcs_content_id, audio_files)
+                            await ai_client.upload_audio_batch(
+                                rec_book_id, dcs_content_id, audio_files
+                            )
                             logger.info(f"  Uploaded {len(audio_files)} audio files")
                         except Exception as e:
                             logger.error(f"  Audio upload failed: {e}")
@@ -312,7 +323,9 @@ async def migrate(dry_run: bool = False, limit: int | None = None, resync: bool 
                     logger.info(f"  Migrated record {rec_id} → DCS {dcs_content_id}")
 
                 except Exception as e:
-                    logger.error(f"  Failed to migrate record {rec_id}: {e}", exc_info=True)
+                    logger.error(
+                        f"  Failed to migrate record {rec_id}: {e}", exc_info=True
+                    )
                     errors += 1
                     await session.rollback()
                     continue
@@ -327,9 +340,17 @@ async def migrate(dry_run: bool = False, limit: int | None = None, resync: bool 
 
 def main():
     parser = argparse.ArgumentParser(description="Migrate AI content to DCS")
-    parser.add_argument("--dry-run", action="store_true", help="Preview without making changes")
-    parser.add_argument("--limit", type=int, default=None, help="Max records to process")
-    parser.add_argument("--resync", action="store_true", help="Re-sync audio-type records that already have dcs_content_id")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview without making changes"
+    )
+    parser.add_argument(
+        "--limit", type=int, default=None, help="Max records to process"
+    )
+    parser.add_argument(
+        "--resync",
+        action="store_true",
+        help="Re-sync audio-type records that already have dcs_content_id",
+    )
     args = parser.parse_args()
 
     asyncio.run(migrate(dry_run=args.dry_run, limit=args.limit, resync=args.resync))

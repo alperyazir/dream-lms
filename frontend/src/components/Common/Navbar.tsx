@@ -1,14 +1,14 @@
-import { Link } from "@tanstack/react-router"
-import { Mail } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { ColorModeButton } from "@/components/ui/color-mode"
-import { useMessagesUnreadCount } from "@/hooks/useMessages"
-import Logo from "/assets/images/dreamedtech_single.svg"
+import { Link } from "@tanstack/react-router";
+import { Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ColorModeButton } from "@/components/ui/color-mode";
+import { useMessagesUnreadCount } from "@/hooks/useMessages";
+import Logo from "/assets/images/dreamedtech_single.svg";
 
-import UserMenu from "./UserMenu"
+import UserMenu from "./UserMenu";
 
 function Navbar() {
-  const { count: totalUnreadMessages } = useMessagesUnreadCount()
+  const { count: totalUnreadMessages } = useMessagesUnreadCount();
 
   return (
     <>
@@ -93,7 +93,7 @@ function Navbar() {
         </div>
       </header>
     </>
-  )
+  );
 }
 
-export default Navbar
+export default Navbar;

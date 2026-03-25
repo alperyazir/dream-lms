@@ -6,10 +6,10 @@ import {
   Image,
   Share2,
   Video,
-} from "lucide-react"
-import React, { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from "lucide-react";
+import React, { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -17,14 +17,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { Material } from "@/lib/mockData"
+} from "@/components/ui/table";
+import type { Material } from "@/lib/mockData";
 
 export interface MaterialsTableProps {
-  materials: Material[]
-  itemsPerPage?: number
-  onShare?: (materialId: string) => void
-  onDownload?: (materialId: string) => void
+  materials: Material[];
+  itemsPerPage?: number;
+  onShare?: (materialId: string) => void;
+  onDownload?: (materialId: string) => void;
 }
 
 /**
@@ -38,45 +38,45 @@ export const MaterialsTable = React.memo(
     onShare,
     onDownload,
   }: MaterialsTableProps) => {
-    const [currentPage, setCurrentPage] = useState(1)
-    const [sortBy, setSortBy] = useState<"date" | "name">("date")
+    const [currentPage, setCurrentPage] = useState(1);
+    const [sortBy, setSortBy] = useState<"date" | "name">("date");
 
     // Sort materials
     const sortedMaterials = [...materials].sort((a, b) => {
       if (sortBy === "date") {
         return (
           new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime()
-        )
+        );
       }
-      return a.name.localeCompare(b.name)
-    })
+      return a.name.localeCompare(b.name);
+    });
 
     // Pagination
-    const totalPages = Math.ceil(sortedMaterials.length / itemsPerPage)
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    const currentMaterials = sortedMaterials.slice(startIndex, endIndex)
+    const totalPages = Math.ceil(sortedMaterials.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentMaterials = sortedMaterials.slice(startIndex, endIndex);
 
     // Get file type icon
     const getFileTypeIcon = (type: string) => {
       switch (type) {
         case "pdf":
-          return <FileText className="h-5 w-5 text-red-500" />
+          return <FileText className="h-5 w-5 text-red-500" />;
         case "image":
-          return <Image className="h-5 w-5 text-blue-500" />
+          return <Image className="h-5 w-5 text-blue-500" />;
         case "video":
-          return <Video className="h-5 w-5 text-purple-500" />
+          return <Video className="h-5 w-5 text-purple-500" />;
         default:
-          return <FileText className="h-5 w-5 text-gray-500" />
+          return <FileText className="h-5 w-5 text-gray-500" />;
       }
-    }
+    };
 
     // Format file size
     const formatFileSize = (bytes: number): string => {
-      if (bytes < 1024) return `${bytes} B`
-      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-    }
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
 
     // Format date
     const formatDate = (dateString: string): string => {
@@ -84,8 +84,8 @@ export const MaterialsTable = React.memo(
         year: "numeric",
         month: "short",
         day: "numeric",
-      })
-    }
+      });
+    };
 
     return (
       <div className="space-y-4">
@@ -225,8 +225,8 @@ export const MaterialsTable = React.memo(
           </div>
         )}
       </div>
-    )
+    );
   },
-)
+);
 
-MaterialsTable.displayName = "MaterialsTable"
+MaterialsTable.displayName = "MaterialsTable";

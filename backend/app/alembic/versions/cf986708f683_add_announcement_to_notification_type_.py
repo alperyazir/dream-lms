@@ -5,14 +5,15 @@ Revises: 860023313fd4
 Create Date: 2025-12-29 01:02:18.872168
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 import sqlmodel.sql.sqltypes
 
 
 # revision identifiers, used by Alembic.
-revision = 'cf986708f683'
-down_revision = '860023313fd4'
+revision = "cf986708f683"
+down_revision = "860023313fd4"
 branch_labels = None
 depends_on = None
 

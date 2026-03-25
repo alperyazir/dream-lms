@@ -1,12 +1,12 @@
-import * as React from "react"
-import { Label } from "./label"
+import * as React from "react";
+import { Label } from "./label";
 
 export interface FieldProps {
-  label?: string
-  error?: string
-  required?: boolean
-  children: React.ReactNode
-  className?: string
+  label?: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+  className?: string;
 }
 
 export const Field = React.forwardRef<HTMLDivElement, FieldProps>(
@@ -20,10 +20,8 @@ export const Field = React.forwardRef<HTMLDivElement, FieldProps>(
           </Label>
         )}
         {children}
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
-    )
-  }
-)
+    );
+  },
+);

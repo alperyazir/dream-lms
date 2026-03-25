@@ -5,7 +5,7 @@
  * Custom hooks for content library data fetching and state management.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deleteBookContent,
   deleteLibraryContent,
@@ -15,7 +15,7 @@ import {
   listLibraryContent,
   updateLibraryContent,
   type BookContentFilters,
-} from "@/services/contentLibraryApi"
+} from "@/services/contentLibraryApi";
 import type {
   BookContentDetail,
   BookContentListResponse,
@@ -23,7 +23,7 @@ import type {
   LibraryFilters,
   LibraryResponse,
   UpdateContentRequest,
-} from "@/types/content-library"
+} from "@/types/content-library";
 
 // =============================================================================
 // Query Keys
@@ -36,7 +36,7 @@ export const contentLibraryKeys = {
     [...contentLibraryKeys.lists(), filters] as const,
   details: () => [...contentLibraryKeys.all, "detail"] as const,
   detail: (id: string) => [...contentLibraryKeys.details(), id] as const,
-}
+};
 
 // =============================================================================
 // Hooks
@@ -49,7 +49,7 @@ export function useContentLibrary(filters?: LibraryFilters) {
   return useQuery<LibraryResponse>({
     queryKey: contentLibraryKeys.list(filters),
     queryFn: () => listLibraryContent(filters),
-  })
+  });
 }
 
 /**
@@ -60,46 +60,46 @@ export function useContentLibraryDetail(contentId: string) {
     queryKey: contentLibraryKeys.detail(contentId),
     queryFn: () => getLibraryContentDetail(contentId),
     enabled: !!contentId,
-  })
+  });
 }
 
 /**
  * Hook to delete content library item
  */
 export function useDeleteContent() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (contentId: string) => deleteLibraryContent(contentId),
     onSuccess: () => {
       // Invalidate all library queries to refetch
-      queryClient.invalidateQueries({ queryKey: contentLibraryKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: contentLibraryKeys.lists() });
     },
-  })
+  });
 }
 
 /**
  * Hook to update content library item
  */
 export function useUpdateContent() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       contentId,
       data,
     }: {
-      contentId: string
-      data: UpdateContentRequest
+      contentId: string;
+      data: UpdateContentRequest;
     }) => updateLibraryContent(contentId, data),
     onSuccess: (_, variables) => {
       // Invalidate both list and detail queries
-      queryClient.invalidateQueries({ queryKey: contentLibraryKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: contentLibraryKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: contentLibraryKeys.detail(variables.contentId),
-      })
+      });
     },
-  })
+  });
 }
 
 // =============================================================================
@@ -114,7 +114,7 @@ export const bookContentKeys = {
   details: () => [...bookContentKeys.all, "detail"] as const,
   detail: (bookId: number, contentId: string) =>
     [...bookContentKeys.details(), bookId, contentId] as const,
-}
+};
 
 /**
  * Hook to fetch book content from DCS
@@ -127,7 +127,7 @@ export function useBookContent(
     queryKey: bookContentKeys.list(bookId!, filters),
     queryFn: () => listBookContent(bookId!, filters),
     enabled: !!bookId,
-  })
+  });
 }
 
 /**
@@ -138,19 +138,19 @@ export function useBookContentDetail(bookId: number | null, contentId: string) {
     queryKey: bookContentKeys.detail(bookId!, contentId),
     queryFn: () => getBookContentDetail(bookId!, contentId),
     enabled: !!bookId && !!contentId,
-  })
+  });
 }
 
 /**
  * Hook to delete book content from DCS
  */
 export function useDeleteBookContent(bookId: number | null) {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (contentId: string) => deleteBookContent(bookId!, contentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bookContentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: bookContentKeys.lists() });
     },
-  })
+  });
 }

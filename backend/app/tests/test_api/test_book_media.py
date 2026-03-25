@@ -69,7 +69,9 @@ class TestGetMediaContentType:
     def test_unknown_returns_octet_stream(self):
         """Test that unknown extensions fall back to application/octet-stream."""
         # Use a truly unknown extension that mimetypes won't recognize
-        assert _get_media_content_type("file.unknownext123") == "application/octet-stream"
+        assert (
+            _get_media_content_type("file.unknownext123") == "application/octet-stream"
+        )
 
 
 class TestParseRangeHeader:
@@ -103,40 +105,58 @@ class TestParseRangeHeader:
         """Test that invalid Range format returns 416."""
         with pytest.raises(HTTPException) as exc_info:
             _parse_range_header("invalid-range", file_size=10000)
-        assert exc_info.value.status_code == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        assert (
+            exc_info.value.status_code
+            == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        )
         assert "Invalid Range header format" in exc_info.value.detail
 
     def test_empty_range_raises_416(self):
         """Test that 'bytes=-' (empty range) returns 416."""
         with pytest.raises(HTTPException) as exc_info:
             _parse_range_header("bytes=-", file_size=10000)
-        assert exc_info.value.status_code == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        assert (
+            exc_info.value.status_code
+            == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        )
 
     def test_start_exceeds_file_size_raises_416(self):
         """Test that start > file_size returns 416."""
         with pytest.raises(HTTPException) as exc_info:
             _parse_range_header("bytes=20000-", file_size=10000)
-        assert exc_info.value.status_code == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        assert (
+            exc_info.value.status_code
+            == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        )
         assert "Range Not Satisfiable" in exc_info.value.detail
 
     def test_end_exceeds_file_size_raises_416(self):
         """Test that end >= file_size returns 416."""
         with pytest.raises(HTTPException) as exc_info:
             _parse_range_header("bytes=0-20000", file_size=10000)
-        assert exc_info.value.status_code == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        assert (
+            exc_info.value.status_code
+            == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        )
 
     def test_start_greater_than_end_raises_416(self):
         """Test that start > end returns 416."""
         with pytest.raises(HTTPException) as exc_info:
             _parse_range_header("bytes=500-100", file_size=10000)
-        assert exc_info.value.status_code == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        assert (
+            exc_info.value.status_code
+            == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        )
 
     def test_negative_start_raises_416(self):
         """Test that suffix range exceeding file size is handled."""
         # bytes=-20000 on a 10000 byte file would make start negative
         with pytest.raises(HTTPException) as exc_info:
             _parse_range_header("bytes=-20000", file_size=10000)
-        assert exc_info.value.status_code == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        assert (
+            exc_info.value.status_code
+            == status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+        )
 
     def test_content_range_header_in_error(self):
         """Test that 416 errors include Content-Range header."""
@@ -160,7 +180,11 @@ class TestMediaMimeTypes:
         for ext, mime_type in MEDIA_MIME_TYPES.items():
             assert "/" in mime_type, f"Invalid MIME type format for {ext}: {mime_type}"
             category, subtype = mime_type.split("/", 1)
-            assert category in ["audio", "video", "text"], f"Unexpected category for {ext}"
+            assert category in [
+                "audio",
+                "video",
+                "text",
+            ], f"Unexpected category for {ext}"
 
 
 # ============================================================================
@@ -202,13 +226,20 @@ class TestStreamMediaEndpoint:
         return client
 
     @pytest.mark.asyncio
-    async def test_range_request_returns_206(self, mock_book, mock_user, mock_dcs_client):
+    async def test_range_request_returns_206(
+        self, mock_book, mock_user, mock_dcs_client
+    ):
         """Test that Range requests return 206 Partial Content."""
         from app.api.routes.book_media import stream_media
 
-        with patch("app.api.routes.book_media._check_book_access", return_value=mock_book), \
-             patch("app.api.routes.book_media.get_dream_storage_client", return_value=mock_dcs_client), \
-             patch("app.api.routes.book_media._validate_asset_path"):
+        with patch(
+            "app.api.routes.book_media._check_book_access", return_value=mock_book
+        ), patch(
+            "app.api.routes.book_media.get_dream_storage_client",
+            return_value=mock_dcs_client,
+        ), patch(
+            "app.api.routes.book_media._validate_asset_path"
+        ):
 
             # Mock db session
             mock_db = MagicMock()
@@ -231,9 +262,14 @@ class TestStreamMediaEndpoint:
         """Test that requests without Range header return 200 OK."""
         from app.api.routes.book_media import stream_media
 
-        with patch("app.api.routes.book_media._check_book_access", return_value=mock_book), \
-             patch("app.api.routes.book_media.get_dream_storage_client", return_value=mock_dcs_client), \
-             patch("app.api.routes.book_media._validate_asset_path"):
+        with patch(
+            "app.api.routes.book_media._check_book_access", return_value=mock_book
+        ), patch(
+            "app.api.routes.book_media.get_dream_storage_client",
+            return_value=mock_dcs_client,
+        ), patch(
+            "app.api.routes.book_media._validate_asset_path"
+        ):
 
             mock_db = MagicMock()
 
@@ -250,13 +286,20 @@ class TestStreamMediaEndpoint:
             assert "Content-Range" not in response.headers
 
     @pytest.mark.asyncio
-    async def test_correct_content_type_for_mp3(self, mock_book, mock_user, mock_dcs_client):
+    async def test_correct_content_type_for_mp3(
+        self, mock_book, mock_user, mock_dcs_client
+    ):
         """Test that mp3 files return audio/mpeg content type."""
         from app.api.routes.book_media import stream_media
 
-        with patch("app.api.routes.book_media._check_book_access", return_value=mock_book), \
-             patch("app.api.routes.book_media.get_dream_storage_client", return_value=mock_dcs_client), \
-             patch("app.api.routes.book_media._validate_asset_path"):
+        with patch(
+            "app.api.routes.book_media._check_book_access", return_value=mock_book
+        ), patch(
+            "app.api.routes.book_media.get_dream_storage_client",
+            return_value=mock_dcs_client,
+        ), patch(
+            "app.api.routes.book_media._validate_asset_path"
+        ):
 
             mock_db = MagicMock()
 
@@ -271,13 +314,20 @@ class TestStreamMediaEndpoint:
             assert response.media_type == "audio/mpeg"
 
     @pytest.mark.asyncio
-    async def test_correct_content_type_for_mp4(self, mock_book, mock_user, mock_dcs_client):
+    async def test_correct_content_type_for_mp4(
+        self, mock_book, mock_user, mock_dcs_client
+    ):
         """Test that mp4 files return video/mp4 content type."""
         from app.api.routes.book_media import stream_media
 
-        with patch("app.api.routes.book_media._check_book_access", return_value=mock_book), \
-             patch("app.api.routes.book_media.get_dream_storage_client", return_value=mock_dcs_client), \
-             patch("app.api.routes.book_media._validate_asset_path"):
+        with patch(
+            "app.api.routes.book_media._check_book_access", return_value=mock_book
+        ), patch(
+            "app.api.routes.book_media.get_dream_storage_client",
+            return_value=mock_dcs_client,
+        ), patch(
+            "app.api.routes.book_media._validate_asset_path"
+        ):
 
             mock_db = MagicMock()
 
@@ -298,11 +348,18 @@ class TestStreamMediaEndpoint:
         from app.services.dream_storage_client import DreamStorageNotFoundError
 
         mock_client = MagicMock()
-        mock_client.get_asset_size = AsyncMock(side_effect=DreamStorageNotFoundError("Not found"))
+        mock_client.get_asset_size = AsyncMock(
+            side_effect=DreamStorageNotFoundError("Not found")
+        )
 
-        with patch("app.api.routes.book_media._check_book_access", return_value=mock_book), \
-             patch("app.api.routes.book_media.get_dream_storage_client", return_value=mock_client), \
-             patch("app.api.routes.book_media._validate_asset_path"):
+        with patch(
+            "app.api.routes.book_media._check_book_access", return_value=mock_book
+        ), patch(
+            "app.api.routes.book_media.get_dream_storage_client",
+            return_value=mock_client,
+        ), patch(
+            "app.api.routes.book_media._validate_asset_path"
+        ):
 
             mock_db = MagicMock()
 
@@ -325,11 +382,18 @@ class TestStreamMediaEndpoint:
         from app.services.dream_storage_client import DreamStorageError
 
         mock_client = MagicMock()
-        mock_client.get_asset_size = AsyncMock(side_effect=DreamStorageError("Connection failed"))
+        mock_client.get_asset_size = AsyncMock(
+            side_effect=DreamStorageError("Connection failed")
+        )
 
-        with patch("app.api.routes.book_media._check_book_access", return_value=mock_book), \
-             patch("app.api.routes.book_media.get_dream_storage_client", return_value=mock_client), \
-             patch("app.api.routes.book_media._validate_asset_path"):
+        with patch(
+            "app.api.routes.book_media._check_book_access", return_value=mock_book
+        ), patch(
+            "app.api.routes.book_media.get_dream_storage_client",
+            return_value=mock_client,
+        ), patch(
+            "app.api.routes.book_media._validate_asset_path"
+        ):
 
             mock_db = MagicMock()
 
@@ -345,13 +409,20 @@ class TestStreamMediaEndpoint:
             assert exc_info.value.status_code == 500
 
     @pytest.mark.asyncio
-    async def test_cache_control_header_set(self, mock_book, mock_user, mock_dcs_client):
+    async def test_cache_control_header_set(
+        self, mock_book, mock_user, mock_dcs_client
+    ):
         """Test that Cache-Control header is set for caching."""
         from app.api.routes.book_media import stream_media
 
-        with patch("app.api.routes.book_media._check_book_access", return_value=mock_book), \
-             patch("app.api.routes.book_media.get_dream_storage_client", return_value=mock_dcs_client), \
-             patch("app.api.routes.book_media._validate_asset_path"):
+        with patch(
+            "app.api.routes.book_media._check_book_access", return_value=mock_book
+        ), patch(
+            "app.api.routes.book_media.get_dream_storage_client",
+            return_value=mock_dcs_client,
+        ), patch(
+            "app.api.routes.book_media._validate_asset_path"
+        ):
 
             mock_db = MagicMock()
 

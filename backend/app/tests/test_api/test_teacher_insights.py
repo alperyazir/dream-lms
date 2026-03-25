@@ -72,7 +72,9 @@ def school_fixture(session: Session, insights_publisher: Publisher) -> School:
 
 
 @pytest.fixture(name="insights_teacher")
-def teacher_fixture(session: Session, insights_school: School) -> tuple[Teacher, User, str]:
+def teacher_fixture(
+    session: Session, insights_school: School
+) -> tuple[Teacher, User, str]:
     """Create teacher with token."""
     teacher_user = User(
         email="insights.teacher@test.com",
@@ -101,7 +103,11 @@ def teacher_fixture(session: Session, insights_school: School) -> tuple[Teacher,
 
 
 @pytest.fixture(name="insights_class")
-def class_fixture(session: Session, insights_teacher: tuple[Teacher, User, str], insights_school: School) -> Class:
+def class_fixture(
+    session: Session,
+    insights_teacher: tuple[Teacher, User, str],
+    insights_school: School,
+) -> Class:
     """Create a test class."""
     teacher, _, _ = insights_teacher
     test_class = Class(
@@ -117,7 +123,9 @@ def class_fixture(session: Session, insights_teacher: tuple[Teacher, User, str],
 
 
 @pytest.fixture(name="insights_students")
-def students_fixture(session: Session, insights_class: Class, insights_school: School) -> list[tuple[Student, User]]:
+def students_fixture(
+    session: Session, insights_class: Class, insights_school: School
+) -> list[tuple[Student, User]]:
     """Create test students and enroll in class."""
     students = []
     for i in range(5):
@@ -324,7 +332,8 @@ def test_get_insights_detects_low_performing_assignment(
 
     # Should have at least one insight for low performing assignment
     low_perf_insights = [
-        i for i in data["insights"]
+        i
+        for i in data["insights"]
         if i["type"] == "review_recommended" and "Low Performing" in i["title"]
     ]
     assert len(low_perf_insights) >= 1
@@ -352,8 +361,7 @@ def test_get_insights_detects_common_misconception(
     data = response.json()
 
     misconception_insights = [
-        i for i in data["insights"]
-        if i["type"] == "common_misconception"
+        i for i in data["insights"] if i["type"] == "common_misconception"
     ]
     # Should detect the misconception where 80% chose "orange" instead of "apple"
     assert len(misconception_insights) >= 1
@@ -380,8 +388,12 @@ def test_get_insights_sorted_by_severity(
     if len(insights) >= 2:
         # Critical should come before moderate
         severities = [i["severity"] for i in insights]
-        critical_idx = next((idx for idx, s in enumerate(severities) if s == "critical"), -1)
-        moderate_idx = next((idx for idx, s in enumerate(severities) if s == "moderate"), -1)
+        critical_idx = next(
+            (idx for idx, s in enumerate(severities) if s == "critical"), -1
+        )
+        moderate_idx = next(
+            (idx for idx, s in enumerate(severities) if s == "moderate"), -1
+        )
         if critical_idx >= 0 and moderate_idx >= 0:
             assert critical_idx < moderate_idx
 

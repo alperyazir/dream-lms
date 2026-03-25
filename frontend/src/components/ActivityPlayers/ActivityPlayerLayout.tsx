@@ -5,17 +5,17 @@
  * Main layout wrapper for activity player with header, content, and footer
  */
 
-import type { ActivityStartResponse } from "../../types/assignment"
-import { Card } from "../ui/card"
-import { ActivityPlayerFooter } from "./ActivityPlayerFooter"
-import { ActivityPlayerHeader } from "./ActivityPlayerHeader"
+import type { ActivityStartResponse } from "../../types/assignment";
+import { Card } from "../ui/card";
+import { ActivityPlayerFooter } from "./ActivityPlayerFooter";
+import { ActivityPlayerHeader } from "./ActivityPlayerHeader";
 
 interface ActivityPlayerLayoutProps {
-  activity: ActivityStartResponse
-  onSubmit: () => void
-  onExit: () => void
-  onTimeExpired: () => void
-  submitDisabled?: boolean
+  activity: ActivityStartResponse;
+  onSubmit: () => void;
+  onExit: () => void;
+  onTimeExpired: () => void;
+  submitDisabled?: boolean;
 }
 
 export function ActivityPlayerLayout({
@@ -70,5 +70,5 @@ export function ActivityPlayerLayout({
         hasUnsavedChanges={false}
       />
     </div>
-  )
+  );
 }

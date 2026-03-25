@@ -1,5 +1,5 @@
-import { AlertTriangle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,18 +7,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
 interface ConfirmDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onConfirm: () => void
-  title: string
-  description: string
-  confirmText?: string
-  cancelText?: string
-  variant?: "danger" | "warning" | "info"
-  isLoading?: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  title: string;
+  description: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: "danger" | "warning" | "info";
+  isLoading?: boolean;
 }
 
 export function ConfirmDialog({
@@ -49,14 +49,14 @@ export function ConfirmDialog({
         "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white",
       border: "border-teal-200 dark:border-teal-900",
     },
-  }
+  };
 
-  const styles = variantStyles[variant]
+  const styles = variantStyles[variant];
 
   const handleConfirm = () => {
-    onConfirm()
-    onOpenChange(false)
-  }
+    onConfirm();
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,5 +90,5 @@ export function ConfirmDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

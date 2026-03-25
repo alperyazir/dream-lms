@@ -5,15 +5,15 @@
  * This service provides functions to interact with the Benchmarks API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   AdminBenchmarkOverview,
   BenchmarkPeriod,
   BenchmarkSettingsResponse,
   BenchmarkSettingsUpdate,
   ClassBenchmarkResponse,
-} from "../types/benchmarks"
+} from "../types/benchmarks";
 
 /**
  * Create axios instance with OpenAPI config
@@ -22,16 +22,16 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
   // Set baseURL dynamically to ensure it uses the value set in main.tsx
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     // Handle both sync and async token functions
     const tokenValue =
@@ -47,20 +47,20 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Error type for benchmark disabled response
  */
 export interface BenchmarkDisabledError {
-  message: string
-  isDisabled: true
+  message: string;
+  isDisabled: true;
 }
 
 /**
@@ -70,9 +70,9 @@ export function isBenchmarkDisabledError(
   error: unknown,
 ): error is BenchmarkDisabledError {
   if (axios.isAxiosError(error) && error.response?.status === 403) {
-    return true
+    return true;
   }
-  return false
+  return false;
 }
 
 /**
@@ -87,12 +87,12 @@ export async function getClassBenchmarks(
   classId: string,
   period: BenchmarkPeriod = "monthly",
 ): Promise<ClassBenchmarkResponse> {
-  const url = `/api/v1/classes/${classId}/benchmarks`
+  const url = `/api/v1/classes/${classId}/benchmarks`;
   try {
     const response = await apiClient.get<ClassBenchmarkResponse>(url, {
       params: { period },
-    })
-    return response.data
+    });
+    return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 403) {
       // Transform 403 into a specific error type for disabled benchmarking
@@ -101,10 +101,10 @@ export async function getClassBenchmarks(
           error.response.data?.detail ||
           "Benchmarking is disabled for this school",
         isDisabled: true,
-      }
-      throw disabledError
+      };
+      throw disabledError;
     }
-    throw error
+    throw error;
   }
 }
 
@@ -114,9 +114,9 @@ export async function getClassBenchmarks(
  * @returns Promise with admin benchmark overview data
  */
 export async function getAdminBenchmarkOverview(): Promise<AdminBenchmarkOverview> {
-  const url = `/api/v1/admin/benchmarks/overview`
-  const response = await apiClient.get<AdminBenchmarkOverview>(url)
-  return response.data
+  const url = `/api/v1/admin/benchmarks/overview`;
+  const response = await apiClient.get<AdminBenchmarkOverview>(url);
+  return response.data;
 }
 
 /**
@@ -130,12 +130,12 @@ export async function updateSchoolBenchmarkSettings(
   schoolId: string,
   settings: BenchmarkSettingsUpdate,
 ): Promise<BenchmarkSettingsResponse> {
-  const url = `/api/v1/admin/schools/${schoolId}/settings`
+  const url = `/api/v1/admin/schools/${schoolId}/settings`;
   const response = await apiClient.patch<BenchmarkSettingsResponse>(
     url,
     settings,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -149,12 +149,12 @@ export async function updatePublisherBenchmarkSettings(
   publisherId: string,
   settings: BenchmarkSettingsUpdate,
 ): Promise<BenchmarkSettingsResponse> {
-  const url = `/api/v1/admin/publishers/${publisherId}/settings`
+  const url = `/api/v1/admin/publishers/${publisherId}/settings`;
   const response = await apiClient.patch<BenchmarkSettingsResponse>(
     url,
     settings,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -166,6 +166,6 @@ export const benchmarksApi = {
   updateSchoolBenchmarkSettings,
   updatePublisherBenchmarkSettings,
   isBenchmarkDisabledError,
-}
+};
 
-export default benchmarksApi
+export default benchmarksApi;

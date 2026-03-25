@@ -167,13 +167,16 @@ async def check_teacher_book_access(
 
     # Check for direct teacher assignment OR school-level assignment
     result = await db.execute(
-        select(BookAssignment.id).where(
+        select(BookAssignment.id)
+        .where(
             BookAssignment.dcs_book_id == book_id,
             or_(
                 BookAssignment.teacher_id == teacher_id,
-                (BookAssignment.school_id == school_id) & (BookAssignment.teacher_id.is_(None))
-            )
-        ).limit(1)
+                (BookAssignment.school_id == school_id)
+                & (BookAssignment.teacher_id.is_(None)),
+            ),
+        )
+        .limit(1)
     )
     return result.scalar_one_or_none() is not None
 
@@ -193,9 +196,7 @@ async def get_accessible_book_ids(
         List of accessible DCS book IDs (int)
     """
     # Get teacher's school
-    teacher_result = await db.execute(
-        select(Teacher).where(Teacher.id == teacher_id)
-    )
+    teacher_result = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
     teacher = teacher_result.scalar_one_or_none()
 
     if not teacher:
@@ -203,13 +204,16 @@ async def get_accessible_book_ids(
 
     # Get books with direct teacher assignment OR school-level assignment
     result = await db.execute(
-        select(BookAssignment.dcs_book_id).where(
+        select(BookAssignment.dcs_book_id)
+        .where(
             or_(
                 BookAssignment.teacher_id == teacher_id,
                 # School-level assignment
-                (BookAssignment.school_id == teacher.school_id) & (BookAssignment.teacher_id.is_(None))
+                (BookAssignment.school_id == teacher.school_id)
+                & (BookAssignment.teacher_id.is_(None)),
             )
-        ).distinct()
+        )
+        .distinct()
     )
 
     return [row[0] for row in result.fetchall()]

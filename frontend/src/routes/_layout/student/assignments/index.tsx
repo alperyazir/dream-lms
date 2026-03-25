@@ -1,34 +1,34 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useMemo, useState } from "react"
-import { FiClipboard } from "react-icons/fi"
-import { StudentAssignmentCard } from "@/components/assignments/AssignmentCard"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { Button } from "@/components/ui/button"
-import { getStudentAssignments } from "@/services/assignmentsApi"
-import type { StudentAssignmentResponse } from "@/types/assignment"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { FiClipboard } from "react-icons/fi";
+import { StudentAssignmentCard } from "@/components/assignments/AssignmentCard";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { Button } from "@/components/ui/button";
+import { getStudentAssignments } from "@/services/assignmentsApi";
+import type { StudentAssignmentResponse } from "@/types/assignment";
 
 export const Route = createFileRoute("/_layout/student/assignments/")({
   component: StudentAssignmentsPage,
-})
+});
 
 function StudentAssignmentsPage() {
   return (
     <ErrorBoundary>
       <StudentAssignmentsContent />
     </ErrorBoundary>
-  )
+  );
 }
 
-type TabValue = "todo" | "completed" | "past-due"
+type TabValue = "todo" | "completed" | "past-due";
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 12;
 
 function StudentAssignmentsContent() {
-  const [activeTab, setActiveTab] = useState<TabValue>("todo")
-  const [currentPage, setCurrentPage] = useState(1)
+  const [activeTab, setActiveTab] = useState<TabValue>("todo");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch student's assignments from API
   const {
@@ -38,32 +38,32 @@ function StudentAssignmentsContent() {
   } = useQuery({
     queryKey: ["studentAssignments"],
     queryFn: async () => {
-      const result = await getStudentAssignments()
-      return result
+      const result = await getStudentAssignments();
+      return result;
     },
     staleTime: 0, // Always fetch fresh data
     refetchOnMount: true,
-  })
+  });
 
   // Categorize assignments by tab
   const categorizedAssignments = useMemo(() => {
-    const todo: StudentAssignmentResponse[] = []
-    const completed: StudentAssignmentResponse[] = []
-    const pastDue: StudentAssignmentResponse[] = []
+    const todo: StudentAssignmentResponse[] = [];
+    const completed: StudentAssignmentResponse[] = [];
+    const pastDue: StudentAssignmentResponse[] = [];
 
     if (!Array.isArray(assignments)) {
-      return { todo, completed, pastDue }
+      return { todo, completed, pastDue };
     }
 
     assignments.forEach((assignment) => {
       if (assignment.status === "completed") {
-        completed.push(assignment)
+        completed.push(assignment);
       } else if (assignment.is_past_due) {
-        pastDue.push(assignment)
+        pastDue.push(assignment);
       } else {
-        todo.push(assignment)
+        todo.push(assignment);
       }
-    })
+    });
 
     // Sort by due date (earliest first), assignments without due dates go to the end
     const sortByDueDate = (
@@ -71,34 +71,34 @@ function StudentAssignmentsContent() {
       b: StudentAssignmentResponse,
     ) => {
       // Assignments without due dates go to the end
-      if (!a.due_date && !b.due_date) return 0
-      if (!a.due_date) return 1
-      if (!b.due_date) return -1
+      if (!a.due_date && !b.due_date) return 0;
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
 
       // Sort by due date (earliest first)
-      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-    }
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    };
 
-    todo.sort(sortByDueDate)
-    pastDue.sort(sortByDueDate)
+    todo.sort(sortByDueDate);
+    pastDue.sort(sortByDueDate);
     completed.sort((a, b) => {
       // Sort completed by completion date (most recent first)
-      if (!a.completed_at && !b.completed_at) return 0
-      if (!a.completed_at) return 1
-      if (!b.completed_at) return -1
+      if (!a.completed_at && !b.completed_at) return 0;
+      if (!a.completed_at) return 1;
+      if (!b.completed_at) return -1;
       return (
         new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
-      )
-    })
+      );
+    });
 
-    return { todo, completed, pastDue }
-  }, [assignments])
+    return { todo, completed, pastDue };
+  }, [assignments]);
 
   // Reset page when switching tabs
   const handleTabChange = (tab: TabValue) => {
-    setActiveTab(tab)
-    setCurrentPage(1)
-  }
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
 
   const renderAssignmentGrid = (
     items: StudentAssignmentResponse[],
@@ -109,14 +109,14 @@ function StudentAssignmentsContent() {
         <div className="text-center py-12">
           <p className="text-lg text-muted-foreground">{emptyMessage}</p>
         </div>
-      )
+      );
     }
 
-    const totalPages = Math.ceil(items.length / PAGE_SIZE)
+    const totalPages = Math.ceil(items.length / PAGE_SIZE);
     const paginatedItems = items.slice(
       (currentPage - 1) * PAGE_SIZE,
       currentPage * PAGE_SIZE,
-    )
+    );
 
     return (
       <>
@@ -161,8 +161,8 @@ function StudentAssignmentsContent() {
           </div>
         )}
       </>
-    )
-  }
+    );
+  };
 
   // Loading state
   if (isLoading) {
@@ -174,12 +174,12 @@ function StudentAssignmentsContent() {
           </p>
         </div>
       </PageContainer>
-    )
+    );
   }
 
   // Error state
   if (error) {
-    console.error("Error loading assignments:", error)
+    console.error("Error loading assignments:", error);
     return (
       <PageContainer>
         <div className="text-center py-12">
@@ -191,7 +191,7 @@ function StudentAssignmentsContent() {
           </p>
         </div>
       </PageContainer>
-    )
+    );
   }
 
   return (
@@ -274,5 +274,5 @@ function StudentAssignmentsContent() {
           )}
       </div>
     </PageContainer>
-  )
+  );
 }

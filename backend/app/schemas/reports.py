@@ -64,7 +64,9 @@ class ReportGenerateRequest(BaseModel):
     end_date: str | None = Field(
         None, description="ISO date for custom period end (YYYY-MM-DD)"
     )
-    target_id: str = Field(..., description="UUID of target (student, class, or None for assignment)")
+    target_id: str = Field(
+        ..., description="UUID of target (student, class, or None for assignment)"
+    )
     format: ReportFormat
     template_type: ReportTemplateType | None = Field(
         None, description="Optional predefined template to use"
@@ -202,7 +204,9 @@ class AssignmentReportData(BaseModel):
     total_assignments: int
     summary: ReportSummaryStats
     trend: TrendAnalysis
-    assignments: list[dict]  # [{name, avg_score, completion_rate, time_spent, activity_type}]
+    assignments: list[
+        dict
+    ]  # [{name, avg_score, completion_rate, time_spent, activity_type}]
     activity_type_comparison: list[dict]  # [{activity_type, avg_score, count}]
     most_successful: list[dict]  # Top 3 highest scoring assignments
     least_successful: list[dict]  # Bottom 3 lowest scoring assignments

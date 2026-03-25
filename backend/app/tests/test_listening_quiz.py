@@ -1,8 +1,7 @@
 """Tests for Listening Quiz Generator (Story 30.4)."""
 
-import uuid
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -14,7 +13,6 @@ from app.schemas.listening_quiz import (
     ListeningQuizRequest,
 )
 
-
 # ---------------------------------------------------------------------------
 # Schema Tests
 # ---------------------------------------------------------------------------
@@ -25,7 +23,10 @@ class TestListeningQuizRequestSchema:
 
     def test_valid_request(self) -> None:
         req = ListeningQuizRequest(
-            book_id=1, module_ids=[10, 11], question_count=10, difficulty="medium",
+            book_id=1,
+            module_ids=[10, 11],
+            question_count=10,
+            difficulty="medium",
         )
         assert req.question_count == 10
         assert req.difficulty == "medium"
@@ -38,16 +39,19 @@ class TestListeningQuizRequestSchema:
 
     def test_min_question_count(self) -> None:
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             ListeningQuizRequest(book_id=1, module_ids=[10], question_count=2)
 
     def test_max_question_count(self) -> None:
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             ListeningQuizRequest(book_id=1, module_ids=[10], question_count=25)
 
     def test_module_ids_required(self) -> None:
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             ListeningQuizRequest(book_id=1, module_ids=[])
 
@@ -211,6 +215,7 @@ class TestListeningPrompts:
         from app.services.ai_generation.prompts.listening_prompts import (
             build_listening_prompt,
         )
+
         prompt = build_listening_prompt(
             question_count=10,
             difficulty="medium",
@@ -231,6 +236,7 @@ class TestListeningPrompts:
         from app.services.ai_generation.prompts.listening_prompts import (
             build_listening_prompt,
         )
+
         prompt = build_listening_prompt(
             question_count=10,
             difficulty="easy",
@@ -247,6 +253,7 @@ class TestListeningPrompts:
         from app.services.ai_generation.prompts.listening_prompts import (
             LISTENING_SYSTEM_PROMPT,
         )
+
         assert "audio" in LISTENING_SYSTEM_PROMPT.lower()
         assert "gist" in LISTENING_SYSTEM_PROMPT.lower()
         assert "detail" in LISTENING_SYSTEM_PROMPT.lower()
@@ -256,7 +263,10 @@ class TestListeningPrompts:
         from app.services.ai_generation.prompts.listening_prompts import (
             LISTENING_JSON_SCHEMA,
         )
-        q_props = LISTENING_JSON_SCHEMA["properties"]["questions"]["items"]["properties"]
+
+        q_props = LISTENING_JSON_SCHEMA["properties"]["questions"]["items"][
+            "properties"
+        ]
         assert "sub_skill" in q_props
         assert "audio_text" in q_props
         assert "question_text" in q_props
@@ -265,6 +275,7 @@ class TestListeningPrompts:
         from app.services.ai_generation.prompts.listening_prompts import (
             LISTENING_DIFFICULTY_GUIDELINES,
         )
+
         assert "easy" in LISTENING_DIFFICULTY_GUIDELINES
         assert "medium" in LISTENING_DIFFICULTY_GUIDELINES
         assert "hard" in LISTENING_DIFFICULTY_GUIDELINES
@@ -308,7 +319,12 @@ class TestListeningQuizService:
                 {
                     "audio_text": "Welcome to the city tour. Today we will visit three main attractions.",
                     "question_text": "What is this announcement about?",
-                    "options": ["A bus schedule", "A city tour", "A train delay", "A ticket price"],
+                    "options": [
+                        "A bus schedule",
+                        "A city tour",
+                        "A train delay",
+                        "A ticket price",
+                    ],
                     "correct_index": 1,
                     "explanation": "The speaker welcomes people to a city tour.",
                     "sub_skill": "gist",
@@ -346,9 +362,13 @@ class TestListeningQuizService:
     async def test_generate_activity_returns_questions(
         self, mock_dcs_client, mock_llm_manager, mock_tts_manager
     ) -> None:
-        from app.services.ai_generation.listening_quiz_service import ListeningQuizService
+        from app.services.ai_generation.listening_quiz_service import (
+            ListeningQuizService,
+        )
 
-        service = ListeningQuizService(mock_dcs_client, mock_llm_manager, mock_tts_manager)
+        service = ListeningQuizService(
+            mock_dcs_client, mock_llm_manager, mock_tts_manager
+        )
         request = ListeningQuizRequest(book_id=1, module_ids=[10], question_count=5)
         activity = await service.generate_activity(request)
 
@@ -361,9 +381,13 @@ class TestListeningQuizService:
     async def test_questions_have_audio_urls(
         self, mock_dcs_client, mock_llm_manager, mock_tts_manager
     ) -> None:
-        from app.services.ai_generation.listening_quiz_service import ListeningQuizService
+        from app.services.ai_generation.listening_quiz_service import (
+            ListeningQuizService,
+        )
 
-        service = ListeningQuizService(mock_dcs_client, mock_llm_manager, mock_tts_manager)
+        service = ListeningQuizService(
+            mock_dcs_client, mock_llm_manager, mock_tts_manager
+        )
         request = ListeningQuizRequest(book_id=1, module_ids=[10])
         activity = await service.generate_activity(request)
 
@@ -376,9 +400,13 @@ class TestListeningQuizService:
     async def test_sub_skill_distribution(
         self, mock_dcs_client, mock_llm_manager, mock_tts_manager
     ) -> None:
-        from app.services.ai_generation.listening_quiz_service import ListeningQuizService
+        from app.services.ai_generation.listening_quiz_service import (
+            ListeningQuizService,
+        )
 
-        service = ListeningQuizService(mock_dcs_client, mock_llm_manager, mock_tts_manager)
+        service = ListeningQuizService(
+            mock_dcs_client, mock_llm_manager, mock_tts_manager
+        )
         request = ListeningQuizRequest(book_id=1, module_ids=[10])
         activity = await service.generate_activity(request)
 
@@ -391,7 +419,9 @@ class TestListeningQuizService:
     async def test_tts_failure_marks_audio_failed(
         self, mock_dcs_client, mock_llm_manager
     ) -> None:
-        from app.services.ai_generation.listening_quiz_service import ListeningQuizService
+        from app.services.ai_generation.listening_quiz_service import (
+            ListeningQuizService,
+        )
         from app.services.tts.exceptions import TTSProviderError
 
         tts_manager = MagicMock()
@@ -410,9 +440,13 @@ class TestListeningQuizService:
     async def test_no_tts_manager_still_generates(
         self, mock_dcs_client, mock_llm_manager
     ) -> None:
-        from app.services.ai_generation.listening_quiz_service import ListeningQuizService
+        from app.services.ai_generation.listening_quiz_service import (
+            ListeningQuizService,
+        )
 
-        service = ListeningQuizService(mock_dcs_client, mock_llm_manager, tts_manager=None)
+        service = ListeningQuizService(
+            mock_dcs_client, mock_llm_manager, tts_manager=None
+        )
         request = ListeningQuizRequest(book_id=1, module_ids=[10])
         activity = await service.generate_activity(request)
 
@@ -422,7 +456,9 @@ class TestListeningQuizService:
 
     @pytest.mark.asyncio
     async def test_module_not_found_raises(self, mock_llm_manager) -> None:
-        from app.services.ai_generation.listening_quiz_service import ListeningQuizService
+        from app.services.ai_generation.listening_quiz_service import (
+            ListeningQuizService,
+        )
         from app.services.dcs_ai.exceptions import DCSAIDataNotFoundError
 
         dcs = AsyncMock()
@@ -438,9 +474,13 @@ class TestListeningQuizService:
     async def test_auto_difficulty_uses_module_cefr(
         self, mock_dcs_client, mock_llm_manager, mock_tts_manager
     ) -> None:
-        from app.services.ai_generation.listening_quiz_service import ListeningQuizService
+        from app.services.ai_generation.listening_quiz_service import (
+            ListeningQuizService,
+        )
 
-        service = ListeningQuizService(mock_dcs_client, mock_llm_manager, mock_tts_manager)
+        service = ListeningQuizService(
+            mock_dcs_client, mock_llm_manager, mock_tts_manager
+        )
         request = ListeningQuizRequest(book_id=1, module_ids=[10], difficulty="auto")
         activity = await service.generate_activity(request)
 

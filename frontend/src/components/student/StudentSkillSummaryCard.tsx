@@ -4,10 +4,13 @@
  * Designed for younger learners — visual, encouraging, never discouraging.
  */
 
-import { Star } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Star } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
-const SKILL_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+const SKILL_COLORS: Record<
+  string,
+  { bg: string; border: string; text: string }
+> = {
   blue: {
     bg: "bg-blue-50 dark:bg-blue-900/20",
     border: "border-blue-200 dark:border-blue-800",
@@ -38,15 +41,15 @@ const SKILL_COLORS: Record<string, { bg: string; border: string; text: string }>
     border: "border-rose-200 dark:border-rose-800",
     text: "text-rose-600 dark:text-rose-400",
   },
-}
+};
 
 function getColors(color: string) {
-  return SKILL_COLORS[color] || SKILL_COLORS.blue
+  return SKILL_COLORS[color] || SKILL_COLORS.blue;
 }
 
 interface SkillLevel {
-  stars: number
-  message: string
+  stars: number;
+  message: string;
 }
 
 function getSkillLevel(
@@ -54,21 +57,21 @@ function getSkillLevel(
   confidence: string,
 ): SkillLevel {
   if (proficiency === null || confidence === "insufficient") {
-    return { stars: 0, message: "Start practicing!" }
+    return { stars: 0, message: "Start practicing!" };
   }
-  if (proficiency <= 20) return { stars: 1, message: "Keep going!" }
-  if (proficiency <= 40) return { stars: 2, message: "Getting better!" }
-  if (proficiency <= 60) return { stars: 3, message: "Good progress!" }
-  if (proficiency <= 80) return { stars: 4, message: "Well done!" }
-  return { stars: 5, message: "Excellent!" }
+  if (proficiency <= 20) return { stars: 1, message: "Keep going!" };
+  if (proficiency <= 40) return { stars: 2, message: "Getting better!" };
+  if (proficiency <= 60) return { stars: 3, message: "Good progress!" };
+  if (proficiency <= 80) return { stars: 4, message: "Well done!" };
+  return { stars: 5, message: "Excellent!" };
 }
 
 interface StudentSkillSummaryCardProps {
-  skillName: string
-  skillIcon: string
-  skillColor: string
-  proficiency: number | null
-  confidence: string
+  skillName: string;
+  skillIcon: string;
+  skillColor: string;
+  proficiency: number | null;
+  confidence: string;
 }
 
 export function StudentSkillSummaryCard({
@@ -78,8 +81,8 @@ export function StudentSkillSummaryCard({
   proficiency,
   confidence,
 }: StudentSkillSummaryCardProps) {
-  const colors = getColors(skillColor)
-  const { stars, message } = getSkillLevel(proficiency, confidence)
+  const colors = getColors(skillColor);
+  const { stars, message } = getSkillLevel(proficiency, confidence);
 
   return (
     <Card className={`${colors.bg} ${colors.border} border-2`}>
@@ -110,5 +113,5 @@ export function StudentSkillSummaryCard({
         <p className="text-xs text-center text-muted-foreground">{message}</p>
       </CardContent>
     </Card>
-  )
+  );
 }

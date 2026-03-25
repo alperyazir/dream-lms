@@ -9,7 +9,6 @@ Epic 30 - Story 30.4: Listening Skill — Quiz Format (Audio + MCQ)
 
 from typing import Any
 
-
 LISTENING_SYSTEM_PROMPT = """You are an expert ESL/EFL listening assessment designer. Your task is to create listening comprehension questions where students MUST listen to audio to answer correctly.
 
 ## CRITICAL DESIGN PRINCIPLE
@@ -45,13 +44,11 @@ LISTENING_DIFFICULTY_GUIDELINES = {
 - Slow, clear speech with familiar topics (greetings, numbers, daily routines).
 - Detail questions use simple facts (colors, numbers 1-20, basic times).
 - Discrimination uses clearly different words.""",
-
     "medium": """## Medium (A2-B1):
 - Natural-length sentences with intermediate vocabulary.
 - Normal speaking pace with everyday topics (shopping, travel, school).
 - Detail questions involve dates, prices, addresses, specific instructions.
 - Discrimination uses commonly confused pairs (ship/sheep, live/leave).""",
-
     "hard": """## Hard (B1-B2):
 - Complex sentences with advanced vocabulary and idioms.
 - Natural pace, may include connected speech features.

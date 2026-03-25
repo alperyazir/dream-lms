@@ -6,9 +6,8 @@ from fastapi import APIRouter
 from sqlmodel import select
 from starlette.requests import Request
 
-from app.core.rate_limit import RateLimits, limiter
-
 from app.api.deps import AsyncSessionDep, require_role
+from app.core.rate_limit import RateLimits, limiter
 from app.models import (
     ActivityFormat,
     SkillCategory,

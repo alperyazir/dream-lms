@@ -5,12 +5,12 @@
  * This service provides functions to interact with the Classes API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   ClassAnalyticsResponse,
   ClassPeriodType,
-} from "../types/analytics"
+} from "../types/analytics";
 
 /**
  * Create axios instance with OpenAPI config
@@ -19,16 +19,16 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
   // Set baseURL dynamically to ensure it uses the value set in main.tsx
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     // Handle both sync and async token functions
     const tokenValue =
@@ -44,13 +44,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Get comprehensive performance analytics for a class
@@ -63,11 +63,11 @@ export async function getClassAnalytics(
   classId: string,
   period: ClassPeriodType = "monthly",
 ): Promise<ClassAnalyticsResponse> {
-  const url = `/api/v1/classes/${classId}/analytics`
+  const url = `/api/v1/classes/${classId}/analytics`;
   const response = await apiClient.get<ClassAnalyticsResponse>(url, {
     params: { period },
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -75,6 +75,6 @@ export async function getClassAnalytics(
  */
 export const classesApi = {
   getClassAnalytics,
-}
+};
 
-export default classesApi
+export default classesApi;

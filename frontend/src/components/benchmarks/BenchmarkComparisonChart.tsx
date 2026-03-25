@@ -5,8 +5,8 @@
  * Displays comparison chart showing class performance vs. benchmarks over time
  */
 
-import { TrendingUp } from "lucide-react"
-import React, { useState } from "react"
+import { TrendingUp } from "lucide-react";
+import React, { useState } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -16,15 +16,15 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { BenchmarkTrendPoint } from "@/types/benchmarks"
+} from "recharts";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { BenchmarkTrendPoint } from "@/types/benchmarks";
 
 export interface BenchmarkComparisonChartProps {
-  trendData: BenchmarkTrendPoint[]
-  periodType?: "weekly" | "monthly"
-  onPeriodChange?: (periodType: "weekly" | "monthly") => void
+  trendData: BenchmarkTrendPoint[];
+  periodType?: "weekly" | "monthly";
+  onPeriodChange?: (periodType: "weekly" | "monthly") => void;
 }
 
 export const BenchmarkComparisonChart = React.memo(
@@ -33,12 +33,12 @@ export const BenchmarkComparisonChart = React.memo(
     periodType = "weekly",
     onPeriodChange,
   }: BenchmarkComparisonChartProps) => {
-    const [selectedPeriod, setSelectedPeriod] = useState(periodType)
+    const [selectedPeriod, setSelectedPeriod] = useState(periodType);
 
     const handlePeriodChange = (period: "weekly" | "monthly") => {
-      setSelectedPeriod(period)
-      onPeriodChange?.(period)
-    }
+      setSelectedPeriod(period);
+      onPeriodChange?.(period);
+    };
 
     // Transform data for chart
     const chartData = trendData.map((point) => ({
@@ -46,7 +46,7 @@ export const BenchmarkComparisonChart = React.memo(
       "Your Class": point.class_average,
       "School Average": point.school_benchmark,
       "Publisher Average": point.publisher_benchmark,
-    }))
+    }));
 
     if (trendData.length === 0) {
       return (
@@ -63,7 +63,7 @@ export const BenchmarkComparisonChart = React.memo(
             </div>
           </CardContent>
         </Card>
-      )
+      );
     }
 
     return (
@@ -152,8 +152,8 @@ export const BenchmarkComparisonChart = React.memo(
           </div>
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-BenchmarkComparisonChart.displayName = "BenchmarkComparisonChart"
+BenchmarkComparisonChart.displayName = "BenchmarkComparisonChart";

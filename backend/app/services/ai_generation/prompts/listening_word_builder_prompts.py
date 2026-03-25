@@ -9,7 +9,6 @@ Epic 30 - Listening Skill: Word Builder Format
 
 from typing import Any
 
-
 LISTENING_WB_SYSTEM_PROMPT = """You are an expert ESL/EFL activity designer specializing in listening-based spelling exercises.
 
 ## Activity Design:
@@ -48,13 +47,11 @@ LISTENING_WB_DIFFICULTY_GUIDELINES = {
 - Common, high-frequency vocabulary.
 - Regular spelling patterns.
 - Concrete nouns and simple adjectives.""",
-
     "medium": """## Medium (A2-B1):
 - Medium words with 6-8 letters.
 - Intermediate vocabulary.
 - Some irregular spelling patterns (silent letters, double consonants).
 - Include abstract nouns and verbs.""",
-
     "hard": """## Hard (B1-B2):
 - Longer words with 9+ letters.
 - Advanced vocabulary.

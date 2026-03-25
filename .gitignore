@@ -1,14 +1,19 @@
+# IDE
 .vscode
+.idea
+
+# Node
 node_modules/
+
+# Testing
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
 
-# Python virtual environments
+# Python
 venv/
 **/venv/
-/backend/venv/*
 *.pyc
 __pycache__/
 
@@ -16,11 +21,13 @@ __pycache__/
 .env
 .env.local
 .env.*.local
+.env.prod
 
 # Logs
 *.log
 logs/
 backend/backend.log
+nohup.out
 
 # Backups
 *.bak
@@ -28,19 +35,27 @@ backups/
 backend/backups/
 
 # Generated files
-**.xlsx
+*.xlsx
 backend/generated_reports/*.pdf
 backend/generated_reports/*.excel
 
 # System files
 .DS_Store
-docs/.DS_Store
+**/.DS_Store
+Thumbs.db
 
-# Duplicate directories
+# Duplicate/dev directories
 frontend/frontend/
+
+# Load testing (dev only)
 docker-compose.loadtest.yml
-.gitignore
 backend/scripts/seed_load_test.py
-todo.txt
 load-tests/k6-load-test.js
 load-tests/k6-setup.js
+load-tests/k6-setup-data.json
+load-tests/nohup.out
+
+# Dev artifacts
+todo.txt
+*.tmp
+*.swp

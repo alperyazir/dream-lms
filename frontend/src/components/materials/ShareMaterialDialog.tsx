@@ -1,6 +1,6 @@
-import React, { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -8,15 +8,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { type Material, mockClasses } from "@/lib/mockData"
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { type Material, mockClasses } from "@/lib/mockData";
 
 export interface ShareMaterialDialogProps {
-  material: Material | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onShare: (materialId: string, selectedClasses: string[]) => void
+  material: Material | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onShare: (materialId: string, selectedClasses: string[]) => void;
 }
 
 /**
@@ -27,12 +27,12 @@ export const ShareMaterialDialog = React.memo(
   ({ material, open, onOpenChange, onShare }: ShareMaterialDialogProps) => {
     const [selectedClasses, setSelectedClasses] = useState<string[]>(
       material?.shared_with || [],
-    )
+    );
 
     // Update selected classes when material changes
     React.useEffect(() => {
-      setSelectedClasses(material?.shared_with || [])
-    }, [material])
+      setSelectedClasses(material?.shared_with || []);
+    }, [material]);
 
     // Handle checkbox change
     const handleClassToggle = (classId: string) => {
@@ -40,18 +40,18 @@ export const ShareMaterialDialog = React.memo(
         prev.includes(classId)
           ? prev.filter((id) => id !== classId)
           : [...prev, classId],
-      )
-    }
+      );
+    };
 
     // Handle share
     const handleShare = () => {
       if (material) {
-        onShare(material.id, selectedClasses)
-        onOpenChange(false)
+        onShare(material.id, selectedClasses);
+        onOpenChange(false);
       }
-    }
+    };
 
-    if (!material) return null
+    if (!material) return null;
 
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,8 +97,8 @@ export const ShareMaterialDialog = React.memo(
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    )
+    );
   },
-)
+);
 
-ShareMaterialDialog.displayName = "ShareMaterialDialog"
+ShareMaterialDialog.displayName = "ShareMaterialDialog";

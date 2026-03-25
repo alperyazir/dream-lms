@@ -1,9 +1,9 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_layout/admin")({
   component: () => <Outlet />,
   beforeLoad: async ({ context }) => {
-    const currentUser = context.currentUser
+    const currentUser = context.currentUser;
 
     // Allow both admin and supervisor roles to access admin routes
     if (
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_layout/admin")({
     ) {
       throw redirect({
         to: "/",
-      })
+      });
     }
   },
-})
+});

@@ -8,29 +8,29 @@
  * - Results display after submission
  */
 
-import { useCallback, useState } from "react"
-import { SentenceBuilderPlayer } from "@/components/ActivityPlayers/SentenceBuilderPlayer"
-import { SentenceBuilderResults } from "@/components/ActivityPlayers/SentenceBuilderResults"
-import { sentenceBuilderApi } from "@/services/sentenceBuilderApi"
+import { useCallback, useState } from "react";
+import { SentenceBuilderPlayer } from "@/components/ActivityPlayers/SentenceBuilderPlayer";
+import { SentenceBuilderResults } from "@/components/ActivityPlayers/SentenceBuilderResults";
+import { sentenceBuilderApi } from "@/services/sentenceBuilderApi";
 import type {
   SentenceBuilderActivity,
   SentenceBuilderActivityPublic,
   SentenceBuilderRequest,
   SentenceBuilderResult,
   SentenceBuilderSubmission,
-} from "@/types/sentence-builder"
-import { DIFFICULTY_LABELS } from "@/types/sentence-builder"
-import { SentenceBuilderForm } from "./SentenceBuilderForm"
+} from "@/types/sentence-builder";
+import { DIFFICULTY_LABELS } from "@/types/sentence-builder";
+import { SentenceBuilderForm } from "./SentenceBuilderForm";
 
-type ActivityPhase = "form" | "preview" | "playing" | "results"
+type ActivityPhase = "form" | "preview" | "playing" | "results";
 
 interface SentenceBuilderContainerProps {
   /** Initial activity ID to load (for students accessing shared activity) */
-  initialActivityId?: string
+  initialActivityId?: string;
   /** Whether to show the generation form (for teachers) */
-  showForm?: boolean
+  showForm?: boolean;
   /** Callback when activity is completed */
-  onComplete?: (result: SentenceBuilderResult) => void
+  onComplete?: (result: SentenceBuilderResult) => void;
 }
 
 export function SentenceBuilderContainer({
@@ -40,25 +40,25 @@ export function SentenceBuilderContainer({
 }: SentenceBuilderContainerProps) {
   const [phase, setPhase] = useState<ActivityPhase>(
     initialActivityId ? "playing" : "form",
-  )
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Activity data
   const [generatedActivity, setGeneratedActivity] =
-    useState<SentenceBuilderActivity | null>(null)
+    useState<SentenceBuilderActivity | null>(null);
   const [publicActivity, setPublicActivity] =
-    useState<SentenceBuilderActivityPublic | null>(null)
-  const [result, setResult] = useState<SentenceBuilderResult | null>(null)
+    useState<SentenceBuilderActivityPublic | null>(null);
+  const [result, setResult] = useState<SentenceBuilderResult | null>(null);
 
   // Generate a new activity
   const handleGenerate = useCallback(
     async (request: SentenceBuilderRequest) => {
       try {
-        setIsLoading(true)
-        setError(null)
-        const activity = await sentenceBuilderApi.generateActivity(request)
-        setGeneratedActivity(activity)
+        setIsLoading(true);
+        setError(null);
+        const activity = await sentenceBuilderApi.generateActivity(request);
+        setGeneratedActivity(activity);
         // Also create public version for the player
         setPublicActivity({
           activity_id: activity.activity_id,
@@ -74,91 +74,91 @@ export function SentenceBuilderContainer({
           include_audio: activity.include_audio,
           created_at: activity.created_at,
           sentence_count: activity.sentences.length,
-        })
-        setPhase("preview")
+        });
+        setPhase("preview");
       } catch (err: any) {
         const message =
           err?.response?.data?.detail ||
           err?.message ||
-          "Failed to generate activity. Please try again."
-        setError(message)
+          "Failed to generate activity. Please try again.";
+        setError(message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
     [],
-  )
+  );
 
   // Load existing activity by ID
   const loadActivity = useCallback(async (activityId: string) => {
     try {
-      setIsLoading(true)
-      setError(null)
-      const activity = await sentenceBuilderApi.getActivity(activityId)
-      setPublicActivity(activity)
-      setPhase("playing")
+      setIsLoading(true);
+      setError(null);
+      const activity = await sentenceBuilderApi.getActivity(activityId);
+      setPublicActivity(activity);
+      setPhase("playing");
     } catch (err: any) {
       const message =
         err?.response?.data?.detail ||
         err?.message ||
-        "Failed to load activity. Please try again."
-      setError(message)
+        "Failed to load activity. Please try again.";
+      setError(message);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   // Start the activity (from preview)
   const handleStartActivity = useCallback(() => {
-    setPhase("playing")
-  }, [])
+    setPhase("playing");
+  }, []);
 
   // Submit sentence answers
   const handleSubmit = useCallback(
     async (submission: SentenceBuilderSubmission) => {
-      if (!publicActivity) return
+      if (!publicActivity) return;
 
       try {
-        setIsLoading(true)
-        setError(null)
+        setIsLoading(true);
+        setError(null);
         const activityResult = await sentenceBuilderApi.submitSentences(
           publicActivity.activity_id,
           submission,
-        )
-        setResult(activityResult)
-        setPhase("results")
-        onComplete?.(activityResult)
+        );
+        setResult(activityResult);
+        setPhase("results");
+        onComplete?.(activityResult);
       } catch (err: any) {
         const message =
           err?.response?.data?.detail ||
           err?.message ||
-          "Failed to submit activity. Please try again."
-        setError(message)
+          "Failed to submit activity. Please try again.";
+        setError(message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
     [publicActivity, onComplete],
-  )
+  );
 
   // Retry the activity
   const handleRetry = useCallback(() => {
-    setResult(null)
-    setPhase("playing")
-  }, [])
+    setResult(null);
+    setPhase("playing");
+  }, []);
 
   // Go back to form
   const handleBackToForm = useCallback(() => {
-    setGeneratedActivity(null)
-    setPublicActivity(null)
-    setResult(null)
-    setError(null)
-    setPhase("form")
-  }, [])
+    setGeneratedActivity(null);
+    setPublicActivity(null);
+    setResult(null);
+    setError(null);
+    setPhase("form");
+  }, []);
 
   // Load initial activity if provided
   if (initialActivityId && !publicActivity && !isLoading && !error) {
-    loadActivity(initialActivityId)
+    loadActivity(initialActivityId);
   }
 
   // Render based on current phase
@@ -169,7 +169,7 @@ export function SentenceBuilderContainer({
         isGenerating={isLoading}
         error={error}
       />
-    )
+    );
   }
 
   if (phase === "preview" && generatedActivity && publicActivity) {
@@ -241,7 +241,7 @@ export function SentenceBuilderContainer({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (phase === "playing" && publicActivity) {
@@ -251,7 +251,7 @@ export function SentenceBuilderContainer({
         onSubmit={handleSubmit}
         isSubmitting={isLoading}
       />
-    )
+    );
   }
 
   if (phase === "results" && result) {
@@ -261,7 +261,7 @@ export function SentenceBuilderContainer({
         onRetry={handleRetry}
         onBack={showForm ? handleBackToForm : undefined}
       />
-    )
+    );
   }
 
   // Loading or error state
@@ -273,7 +273,7 @@ export function SentenceBuilderContainer({
           <p className="text-muted-foreground">Loading activity...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -294,10 +294,10 @@ export function SentenceBuilderContainer({
           )}
         </div>
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }
 
-export default SentenceBuilderContainer
+export default SentenceBuilderContainer;

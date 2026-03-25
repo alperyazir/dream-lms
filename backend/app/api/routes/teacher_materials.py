@@ -15,7 +15,16 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
@@ -53,11 +62,6 @@ from app.schemas.teacher_material import (
     TeacherMaterialUploadResponse,
     TextMaterialCreate,
 )
-from app.services.pdf_processing_service import (
-    get_pdf_processing_service,
-    PDFProcessingService,
-)
-from app.services.redis_cache import cache_get_sync, cache_set_sync
 from app.services.dream_storage_client import (
     DreamCentralStorageClient,
     DreamStorageError,
@@ -76,6 +80,11 @@ from app.services.material_service import (
     validate_and_categorize_file,
     validate_file_content,
 )
+from app.services.pdf_processing_service import (
+    PDFProcessingService,
+    get_pdf_processing_service,
+)
+from app.services.redis_cache import cache_get_sync, cache_set_sync
 
 router = APIRouter(prefix="/teachers/materials", tags=["teacher-materials"])
 
@@ -148,7 +157,9 @@ def get_media_teacher_id(
         )
 
     # Convert string UUID to UUID object
-    user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    user_id = (
+        uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    )
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
@@ -156,9 +167,7 @@ def get_media_teacher_id(
         )
 
     # Get teacher ID
-    teacher = session.exec(
-        select(Teacher).where(Teacher.user_id == user.id)
-    ).first()
+    teacher = session.exec(select(Teacher).where(Teacher.user_id == user.id)).first()
 
     if not teacher:
         raise HTTPException(
@@ -516,7 +525,8 @@ async def get_presigned_url(
         return PresignedUrlResponse(
             url=stream_url,
             expires_in_seconds=result.get("expires_in_seconds", expires_minutes * 60),
-            content_type=material.mime_type or result.get("content_type", "application/octet-stream"),
+            content_type=material.mime_type
+            or result.get("content_type", "application/octet-stream"),
         )
     except DreamStorageNotFoundError:
         raise HTTPException(
@@ -660,10 +670,14 @@ async def download_material(
         )
 
     # Get user and verify teacher
-    user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    user_id = (
+        uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    )
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     teacher = session.exec(select(Teacher).where(Teacher.user_id == user.id)).first()
     if not teacher:
@@ -707,12 +721,15 @@ async def download_material(
     filename = material.original_filename or material.name
     # For ASCII filenames, use simple quoting; for non-ASCII, use RFC 5987 encoding
     try:
-        filename.encode('ascii')
-        content_disposition = f'attachment; filename="{filename.replace(chr(34), chr(39))}"'
+        filename.encode("ascii")
+        content_disposition = (
+            f'attachment; filename="{filename.replace(chr(34), chr(39))}"'
+        )
     except UnicodeEncodeError:
         # Use RFC 5987 encoding for non-ASCII filenames
         from urllib.parse import quote
-        encoded_filename = quote(filename, safe='')
+
+        encoded_filename = quote(filename, safe="")
         content_disposition = f"attachment; filename*=UTF-8''{encoded_filename}"
 
     return StreamingResponse(
@@ -782,7 +799,11 @@ async def stream_material(
             range_spec = range_header.replace("bytes=", "")
             parts = range_spec.split("-")
             start = int(parts[0]) if parts[0] else 0
-            end = int(parts[1]) if len(parts) > 1 and parts[1] else (file_size - 1 if file_size else None)
+            end = (
+                int(parts[1])
+                if len(parts) > 1 and parts[1]
+                else (file_size - 1 if file_size else None)
+            )
         except (ValueError, IndexError):
             pass
 
@@ -988,10 +1009,14 @@ async def list_processable_materials(
     """
     teacher_id = get_teacher_id(session, current_user)
 
-    query = select(TeacherMaterial).where(
-        TeacherMaterial.teacher_id == teacher_id,
-        TeacherMaterial.extracted_text.isnot(None),
-    ).order_by(TeacherMaterial.created_at.desc())
+    query = (
+        select(TeacherMaterial)
+        .where(
+            TeacherMaterial.teacher_id == teacher_id,
+            TeacherMaterial.extracted_text.isnot(None),
+        )
+        .order_by(TeacherMaterial.created_at.desc())
+    )
 
     materials = session.exec(query).all()
 
@@ -1080,19 +1105,21 @@ async def list_generated_content(
             if material:
                 material_name = material.name
 
-        responses.append(TeacherGeneratedContentResponse(
-            id=item.id,
-            teacher_id=item.teacher_id,
-            material_id=item.material_id,
-            book_id=item.book_id,
-            activity_type=item.activity_type,
-            title=item.title,
-            content=item.content,
-            is_used=item.is_used,
-            assignment_id=item.assignment_id,
-            created_at=item.created_at,
-            material_name=material_name,
-        ))
+        responses.append(
+            TeacherGeneratedContentResponse(
+                id=item.id,
+                teacher_id=item.teacher_id,
+                material_id=item.material_id,
+                book_id=item.book_id,
+                activity_type=item.activity_type,
+                title=item.title,
+                content=item.content,
+                is_used=item.is_used,
+                assignment_id=item.assignment_id,
+                created_at=item.created_at,
+                material_name=material_name,
+            )
+        )
 
     return TeacherGeneratedContentListResponse(
         items=responses,

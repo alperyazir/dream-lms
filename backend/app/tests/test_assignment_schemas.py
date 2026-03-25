@@ -83,7 +83,9 @@ class TestAssignmentCreate:
             )
 
         errors = exc_info.value.errors()
-        assert any("At least one student or class must be selected" in str(e) for e in errors)
+        assert any(
+            "At least one student or class must be selected" in str(e) for e in errors
+        )
 
     def test_empty_recipients_raises_error(self):
         """Test that empty student and class lists raise error."""
@@ -97,7 +99,9 @@ class TestAssignmentCreate:
             )
 
         errors = exc_info.value.errors()
-        assert any("At least one student or class must be selected" in str(e) for e in errors)
+        assert any(
+            "At least one student or class must be selected" in str(e) for e in errors
+        )
 
     def test_due_date_in_past_raises_error(self):
         """Test that past due date raises validation error."""

@@ -8,26 +8,26 @@
  * - Mobile responsive (horizontal scroll on small screens)
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { BookOpen } from "lucide-react"
-import { useState } from "react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { booksApi } from "@/services/booksApi"
-import type { PageInfo } from "@/types/book"
-import { PageThumbnail } from "./PageThumbnail"
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen } from "lucide-react";
+import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { booksApi } from "@/services/booksApi";
+import type { PageInfo } from "@/types/book";
+import { PageThumbnail } from "./PageThumbnail";
 
 interface PageBrowserProps {
-  bookId: string
-  selectedPages: Map<string, PageInfo> // Key: "moduleName:pageNumber"
-  onTogglePage: (moduleName: string, page: PageInfo) => void
+  bookId: string;
+  selectedPages: Map<string, PageInfo>; // Key: "moduleName:pageNumber"
+  onTogglePage: (moduleName: string, page: PageInfo) => void;
 }
 
 /**
  * Generate a unique key for a page across modules
  */
 export function getPageKey(moduleName: string, pageNumber: number): string {
-  return `${moduleName}:${pageNumber}`
+  return `${moduleName}:${pageNumber}`;
 }
 
 export function PageBrowser({
@@ -35,7 +35,7 @@ export function PageBrowser({
   selectedPages,
   onTogglePage,
 }: PageBrowserProps) {
-  const [activeModule, setActiveModule] = useState<string>("")
+  const [activeModule, setActiveModule] = useState<string>("");
 
   // Fetch book pages
   const {
@@ -47,11 +47,11 @@ export function PageBrowser({
     queryFn: () => booksApi.getBookPages(bookId),
     enabled: !!bookId,
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   // Set default active module when data loads
   if (pagesData?.modules && pagesData.modules.length > 0 && !activeModule) {
-    setActiveModule(pagesData.modules[0].name)
+    setActiveModule(pagesData.modules[0].name);
   }
 
   if (isLoading) {
@@ -68,7 +68,7 @@ export function PageBrowser({
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -76,7 +76,7 @@ export function PageBrowser({
       <div className="text-center py-8 text-red-500">
         <p>Failed to load pages. Please try again.</p>
       </div>
-    )
+    );
   }
 
   if (!pagesData || pagesData.modules.length === 0) {
@@ -85,7 +85,7 @@ export function PageBrowser({
         <BookOpen className="w-12 h-12 mx-auto mb-2 text-gray-400" />
         <p>No pages with activities found in this book.</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -126,14 +126,14 @@ export function PageBrowser({
         ))}
       </Tabs>
     </div>
-  )
+  );
 }
 
 interface PageGridProps {
-  moduleName: string
-  pages: PageInfo[]
-  selectedPages: Map<string, PageInfo>
-  onTogglePage: (moduleName: string, page: PageInfo) => void
+  moduleName: string;
+  pages: PageInfo[];
+  selectedPages: Map<string, PageInfo>;
+  onTogglePage: (moduleName: string, page: PageInfo) => void;
 }
 
 function PageGrid({
@@ -145,8 +145,8 @@ function PageGrid({
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
       {pages.map((page) => {
-        const pageKey = getPageKey(moduleName, page.page_number)
-        const isSelected = selectedPages.has(pageKey)
+        const pageKey = getPageKey(moduleName, page.page_number);
+        const isSelected = selectedPages.has(pageKey);
 
         return (
           <PageThumbnail
@@ -157,8 +157,8 @@ function PageGrid({
             isSelected={isSelected}
             onClick={() => onTogglePage(moduleName, page)}
           />
-        )
+        );
       })}
     </div>
-  )
+  );
 }

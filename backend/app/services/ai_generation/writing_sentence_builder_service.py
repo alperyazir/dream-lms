@@ -64,15 +64,9 @@ class WritingSentenceBuilderService:
 
         # Tier 1: Use metadata-only context (topics + vocab, no full text)
         try:
-            ctx = await get_metadata_context(
-                self._dcs_client, book_id, module_ids
-            )
+            ctx = await get_metadata_context(self._dcs_client, book_id, module_ids)
         except ValueError as e:
-            raise DCSAIDataNotFoundError(
-                message=str(e), book_id=book_id
-            ) from e
-
-        lang = language or ctx.language
+            raise DCSAIDataNotFoundError(message=str(e), book_id=book_id) from e
 
         if difficulty == "auto":
             cefr_level = ctx.difficulty_level or "A2"

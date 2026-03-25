@@ -77,7 +77,9 @@ def sample_book(session: Session, test_publisher: Publisher) -> Book:
         publisher_id=test_publisher.id,
         book_name="TestBook1",
         status=BookStatus.published,
-        config_json={"books": [{"modules": [{"name": "Module 1", "pages": ["1", "2", "3"]}]}]},
+        config_json={
+            "books": [{"modules": [{"name": "Module 1", "pages": ["1", "2", "3"]}]}]
+        },
     )
     session.add(book)
     session.commit()
@@ -87,7 +89,9 @@ def sample_book(session: Session, test_publisher: Publisher) -> Book:
 
 
 @pytest.fixture
-def book_access(session: Session, sample_book: Book, test_publisher: Publisher) -> BookAccess:
+def book_access(
+    session: Session, sample_book: Book, test_publisher: Publisher
+) -> BookAccess:
     """Grant publisher access to the book."""
     access = BookAccess(
         book_id=sample_book.id,
@@ -398,7 +402,9 @@ def test_asset_not_found_returns_404(
 ):
     """Test that missing assets return 404."""
     mock_client = AsyncMock()
-    mock_client.download_asset.side_effect = DreamStorageNotFoundError("Asset not found")
+    mock_client.download_asset.side_effect = DreamStorageNotFoundError(
+        "Asset not found"
+    )
 
     with patch(
         "app.api.routes.book_assets.get_dream_storage_client",

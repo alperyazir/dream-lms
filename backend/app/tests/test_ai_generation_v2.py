@@ -10,10 +10,8 @@ from app.models import ActivityFormat, SkillCategory, SkillFormatCombination
 from app.schemas.ai_generation_v2 import GenerationRequestV2, GenerationResponseV2
 from app.services.skill_generation_dispatcher import (
     GENERATOR_MAP,
-    DispatchResult,
     dispatch,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -24,28 +22,52 @@ from app.services.skill_generation_dispatcher import (
 def seed_skill_data_fixture(session: Session) -> dict:
     """Seed skills, formats, and combinations for dispatcher tests."""
     vocab = SkillCategory(
-        name="Vocabulary", slug="vocabulary", icon="text", color="teal",
-        display_order=5, is_active=True,
+        name="Vocabulary",
+        slug="vocabulary",
+        icon="text",
+        color="teal",
+        display_order=5,
+        is_active=True,
     )
     grammar = SkillCategory(
-        name="Grammar", slug="grammar", icon="pen-tool", color="orange",
-        display_order=6, is_active=True,
+        name="Grammar",
+        slug="grammar",
+        icon="pen-tool",
+        color="orange",
+        display_order=6,
+        is_active=True,
     )
     reading = SkillCategory(
-        name="Reading", slug="reading", icon="book-open", color="green",
-        display_order=2, is_active=True,
+        name="Reading",
+        slug="reading",
+        icon="book-open",
+        color="green",
+        display_order=2,
+        is_active=True,
     )
     listening = SkillCategory(
-        name="Listening", slug="listening", icon="ear", color="blue",
-        display_order=1, is_active=True,
+        name="Listening",
+        slug="listening",
+        icon="ear",
+        color="blue",
+        display_order=1,
+        is_active=True,
     )
     writing = SkillCategory(
-        name="Writing", slug="writing", icon="edit-3", color="yellow",
-        display_order=3, is_active=True,
+        name="Writing",
+        slug="writing",
+        icon="edit-3",
+        color="yellow",
+        display_order=3,
+        is_active=True,
     )
     speaking = SkillCategory(
-        name="Speaking", slug="speaking", icon="mic", color="purple",
-        display_order=4, is_active=False,  # Inactive!
+        name="Speaking",
+        slug="speaking",
+        icon="mic",
+        color="purple",
+        display_order=4,
+        is_active=False,  # Inactive!
     )
     session.add_all([vocab, grammar, reading, listening, writing, speaking])
     session.flush()
@@ -62,14 +84,20 @@ def seed_skill_data_fixture(session: Session) -> dict:
     combos = [
         SkillFormatCombination(skill_id=vocab.id, format_id=mcq.id, display_order=1),
         SkillFormatCombination(skill_id=vocab.id, format_id=wb.id, display_order=2),
-        SkillFormatCombination(skill_id=vocab.id, format_id=matching.id, display_order=3),
+        SkillFormatCombination(
+            skill_id=vocab.id, format_id=matching.id, display_order=3
+        ),
         SkillFormatCombination(skill_id=grammar.id, format_id=mcq.id, display_order=1),
         SkillFormatCombination(skill_id=grammar.id, format_id=sb.id, display_order=2),
         SkillFormatCombination(skill_id=grammar.id, format_id=fill.id, display_order=3),
         SkillFormatCombination(skill_id=reading.id, format_id=comp.id, display_order=1),
         SkillFormatCombination(skill_id=reading.id, format_id=mcq.id, display_order=2),
-        SkillFormatCombination(skill_id=listening.id, format_id=mcq.id, display_order=1),
-        SkillFormatCombination(skill_id=listening.id, format_id=fill.id, display_order=2),
+        SkillFormatCombination(
+            skill_id=listening.id, format_id=mcq.id, display_order=1
+        ),
+        SkillFormatCombination(
+            skill_id=listening.id, format_id=fill.id, display_order=2
+        ),
         SkillFormatCombination(skill_id=writing.id, format_id=sb.id, display_order=1),
         SkillFormatCombination(skill_id=writing.id, format_id=fill.id, display_order=2),
     ]
@@ -77,10 +105,18 @@ def seed_skill_data_fixture(session: Session) -> dict:
     session.commit()
 
     return {
-        "vocab": vocab, "grammar": grammar, "reading": reading,
-        "listening": listening, "writing": writing, "speaking": speaking,
-        "mcq": mcq, "wb": wb, "matching": matching, "sb": sb,
-        "fill": fill, "comp": comp,
+        "vocab": vocab,
+        "grammar": grammar,
+        "reading": reading,
+        "listening": listening,
+        "writing": writing,
+        "speaking": speaking,
+        "mcq": mcq,
+        "wb": wb,
+        "matching": matching,
+        "sb": sb,
+        "fill": fill,
+        "comp": comp,
     }
 
 
@@ -167,7 +203,9 @@ class TestGenerationRequestV2Schema:
 class TestSkillGenerationDispatcher:
     """Test the skill-format dispatcher."""
 
-    def test_dispatch_vocabulary_mcq(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_vocabulary_mcq(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching vocabulary × multiple_choice."""
         result = dispatch("vocabulary", "multiple_choice", session)
         assert result.generator_key == "vocabulary_quiz"
@@ -175,94 +213,129 @@ class TestSkillGenerationDispatcher:
         assert result.skill_name == "Vocabulary"
         assert result.format_name == "Quiz (MCQ)"
 
-    def test_dispatch_vocabulary_word_builder(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_vocabulary_word_builder(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching vocabulary × word_builder."""
         result = dispatch("vocabulary", "word_builder", session)
         assert result.generator_key == "word_builder"
 
-    def test_dispatch_grammar_mcq(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_grammar_mcq(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching grammar × multiple_choice routes to grammar_quiz."""
         result = dispatch("grammar", "multiple_choice", session)
         assert result.generator_key == "grammar_quiz"
         assert result.activity_type == "ai_quiz"
 
-    def test_dispatch_grammar_sentence_builder(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_grammar_sentence_builder(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching grammar × sentence_builder."""
         result = dispatch("grammar", "sentence_builder", session)
         assert result.generator_key == "sentence_builder"
 
-    def test_dispatch_reading_comprehension(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_reading_comprehension(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching reading × comprehension."""
         result = dispatch("reading", "comprehension", session)
         assert result.generator_key == "reading_comprehension"
         assert result.activity_type == "reading"
 
-    def test_dispatch_reading_mcq(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_reading_mcq(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching reading × multiple_choice."""
         result = dispatch("reading", "multiple_choice", session)
         assert result.generator_key == "ai_quiz"
 
-    def test_invalid_skill_returns_422(self, session: Session, seed_skill_data: dict) -> None:
+    def test_invalid_skill_returns_422(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test that an unknown skill slug returns 422."""
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             dispatch("nonexistent_skill", "multiple_choice", session)
         assert exc_info.value.status_code == 422
 
-    def test_invalid_format_returns_422(self, session: Session, seed_skill_data: dict) -> None:
+    def test_invalid_format_returns_422(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test that an unknown format slug returns 422."""
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             dispatch("vocabulary", "nonexistent_format", session)
         assert exc_info.value.status_code == 422
 
-    def test_inactive_skill_returns_422(self, session: Session, seed_skill_data: dict) -> None:
+    def test_inactive_skill_returns_422(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test that an inactive skill (Speaking) returns 422."""
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             dispatch("speaking", "multiple_choice", session)
         assert exc_info.value.status_code == 422
 
-    def test_dispatch_listening_mcq(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_listening_mcq(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching listening × multiple_choice (Story 30.4)."""
         result = dispatch("listening", "multiple_choice", session)
         assert result.generator_key == "listening_quiz"
         assert result.activity_type == "listening_quiz"
 
-    def test_dispatch_grammar_fill_blank(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_grammar_fill_blank(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching grammar × fill_blank (Story 30.6)."""
         result = dispatch("grammar", "fill_blank", session)
         assert result.generator_key == "grammar_fill_blank"
         assert result.activity_type == "grammar_fill_blank"
 
-    def test_dispatch_listening_fill_blank(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_listening_fill_blank(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching listening × fill_blank (Story 30.5)."""
         result = dispatch("listening", "fill_blank", session)
         assert result.generator_key == "listening_fill_blank"
         assert result.activity_type == "listening_fill_blank"
 
-    def test_dispatch_writing_sentence_builder(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_writing_sentence_builder(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching writing × sentence_builder (Story 30.7)."""
         result = dispatch("writing", "sentence_builder", session)
         assert result.generator_key == "writing_sentence_builder"
         assert result.activity_type == "writing_sentence_builder"
 
-    def test_dispatch_writing_fill_blank(self, session: Session, seed_skill_data: dict) -> None:
+    def test_dispatch_writing_fill_blank(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test dispatching writing × fill_blank (Story 30.7)."""
         result = dispatch("writing", "fill_blank", session)
         assert result.generator_key == "writing_fill_blank"
         assert result.activity_type == "writing_fill_blank"
 
-    def test_vocab_matching_returns_501(self, session: Session, seed_skill_data: dict) -> None:
+    def test_vocab_matching_returns_501(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test that vocabulary × matching returns 501 (not yet implemented)."""
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             dispatch("vocabulary", "matching", session)
         assert exc_info.value.status_code == 501
 
-    def test_invalid_combination_returns_422(self, session: Session, seed_skill_data: dict) -> None:
+    def test_invalid_combination_returns_422(
+        self, session: Session, seed_skill_data: dict
+    ) -> None:
         """Test that a valid skill+format but invalid combination returns 422."""
         from fastapi import HTTPException
+
         # vocabulary × comprehension is not a valid combination
         with pytest.raises(HTTPException) as exc_info:
             dispatch("vocabulary", "comprehension", session)
@@ -280,8 +353,12 @@ class TestGeneratorMap:
     def test_all_implemented_keys_are_valid(self) -> None:
         """Test that all generator keys in the map are valid identifiers."""
         valid_keys = {
-            "vocabulary_quiz", "word_builder", "ai_quiz",
-            "grammar_quiz", "sentence_builder", "reading_comprehension",
+            "vocabulary_quiz",
+            "word_builder",
+            "ai_quiz",
+            "grammar_quiz",
+            "sentence_builder",
+            "reading_comprehension",
             "listening_quiz",
             "listening_fill_blank",
             "grammar_fill_blank",
@@ -290,7 +367,9 @@ class TestGeneratorMap:
             None,  # stub
         }
         for (skill, fmt), (gen_key, act_type) in GENERATOR_MAP.items():
-            assert gen_key in valid_keys, f"Invalid generator key: {gen_key} for ({skill}, {fmt})"
+            assert (
+                gen_key in valid_keys
+            ), f"Invalid generator key: {gen_key} for ({skill}, {fmt})"
             assert isinstance(act_type, str)
 
     def test_implemented_combo_count(self) -> None:
@@ -353,7 +432,9 @@ class TestGrammarPrompt:
 
     def test_build_grammar_prompt(self) -> None:
         """Test that grammar prompt builds correctly."""
-        from app.services.ai_generation.prompts.grammar_prompts import build_grammar_prompt
+        from app.services.ai_generation.prompts.grammar_prompts import (
+            build_grammar_prompt,
+        )
 
         prompt = build_grammar_prompt(
             question_count=5,
@@ -372,7 +453,9 @@ class TestGrammarPrompt:
 
     def test_grammar_system_prompt_content(self) -> None:
         """Test that grammar system prompt focuses on grammar."""
-        from app.services.ai_generation.prompts.grammar_prompts import GRAMMAR_SYSTEM_PROMPT
+        from app.services.ai_generation.prompts.grammar_prompts import (
+            GRAMMAR_SYSTEM_PROMPT,
+        )
 
         assert "grammar" in GRAMMAR_SYSTEM_PROMPT.lower()
         assert "tense" in GRAMMAR_SYSTEM_PROMPT.lower()
@@ -380,9 +463,13 @@ class TestGrammarPrompt:
 
     def test_grammar_json_schema_has_grammar_topic(self) -> None:
         """Test that grammar JSON schema includes grammar_topic field."""
-        from app.services.ai_generation.prompts.grammar_prompts import GRAMMAR_JSON_SCHEMA
+        from app.services.ai_generation.prompts.grammar_prompts import (
+            GRAMMAR_JSON_SCHEMA,
+        )
 
-        question_props = GRAMMAR_JSON_SCHEMA["properties"]["questions"]["items"]["properties"]
+        question_props = GRAMMAR_JSON_SCHEMA["properties"]["questions"]["items"][
+            "properties"
+        ]
         assert "grammar_topic" in question_props
 
 
@@ -423,7 +510,8 @@ class TestContentLibrarySkillFields:
     def test_content_item_public_with_skill_data(self) -> None:
         """Test ContentItemPublic includes skill fields."""
         from datetime import datetime, timezone
-        from app.schemas.content_library import ContentItemPublic, ContentCreator
+
+        from app.schemas.content_library import ContentCreator, ContentItemPublic
 
         item = ContentItemPublic(
             id=uuid.uuid4(),
@@ -448,7 +536,8 @@ class TestContentLibrarySkillFields:
     def test_content_item_public_null_skill_data(self) -> None:
         """Test ContentItemPublic works with null skill data (old content)."""
         from datetime import datetime, timezone
-        from app.schemas.content_library import ContentItemPublic, ContentCreator
+
+        from app.schemas.content_library import ContentCreator, ContentItemPublic
 
         item = ContentItemPublic(
             id=uuid.uuid4(),

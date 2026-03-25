@@ -3,19 +3,20 @@ Tests for Assignment Creation from AI Content Service
 Story 27.20: Unified Activity Player Integration - Task 3
 """
 
-import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
+
+import pytest
 from sqlmodel import Session
 
+from app.models import ActivityType, Class, School, User
 from app.services.assignment_from_ai_service import (
+    AssignmentFromAIError,
+    ClassNotFoundError,
+    InvalidActivityTypeError,
     create_assignment_from_ai_content,
     create_assignments_from_ai_batch,
-    InvalidActivityTypeError,
-    ClassNotFoundError,
-    AssignmentFromAIError,
 )
-from app.models import Assignment, ActivityType, Class, User, School
 
 
 @pytest.fixture

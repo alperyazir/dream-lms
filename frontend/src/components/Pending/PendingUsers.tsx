@@ -5,8 +5,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Skeleton } from "../ui/skeleton"
+} from "@/components/ui/table";
+import { Skeleton } from "../ui/skeleton";
 
 const PendingUsers = () => (
   <div className="w-full">
@@ -43,6 +43,6 @@ const PendingUsers = () => (
       </TableBody>
     </Table>
   </div>
-)
+);
 
-export default PendingUsers
+export default PendingUsers;

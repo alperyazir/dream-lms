@@ -6,15 +6,15 @@
  * This service provides functions to interact with the Assignments API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   AssignmentDetailedResultsResponse,
   PendingReviewsResponse,
   StudentAnswersResponse,
   TeacherGradeRequest,
   TeacherGradeResponse,
-} from "../types/analytics"
+} from "../types/analytics";
 import type {
   ActivityPreviewResponse,
   ActivityProgressSaveRequest,
@@ -41,7 +41,7 @@ import type {
   StudentAssignmentResponse,
   StudentAssignmentResultResponse,
   StudentCalendarAssignmentsResponse,
-} from "../types/assignment"
+} from "../types/assignment";
 
 /**
  * Create axios instance with OpenAPI config
@@ -50,16 +50,16 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
   // Set baseURL dynamically to ensure it uses the value set in main.tsx
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     // Handle both sync and async token functions
     const tokenValue =
@@ -75,13 +75,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Get list of assignments for the current teacher
@@ -89,22 +89,22 @@ apiClient.interceptors.request.use(async (config) => {
  * @returns Promise with assignment list
  */
 export interface AssignmentListPaginatedResponse {
-  items: AssignmentListItem[]
-  total: number
-  limit: number
-  offset: number
-  has_more: boolean
+  items: AssignmentListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 }
 
 export async function getAssignments(params?: {
-  limit?: number
-  offset?: number
+  limit?: number;
+  offset?: number;
 }): Promise<AssignmentListPaginatedResponse> {
-  const url = `/api/v1/assignments/`
+  const url = `/api/v1/assignments/`;
   const response = await apiClient.get(url, {
     params: { limit: params?.limit ?? 20, offset: params?.offset ?? 0 },
-  })
-  const data = response.data
+  });
+  const data = response.data;
   // Handle both paginated response and legacy array response
   if (Array.isArray(data)) {
     return {
@@ -113,9 +113,9 @@ export async function getAssignments(params?: {
       limit: params?.limit ?? 20,
       offset: params?.offset ?? 0,
       has_more: false,
-    }
+    };
   }
-  return data
+  return data;
 }
 
 /**
@@ -127,9 +127,9 @@ export async function getAssignments(params?: {
 export async function createAssignment(
   data: AssignmentCreateRequest,
 ): Promise<AssignmentResponse> {
-  const url = `/api/v1/assignments/`
-  const response = await apiClient.post<AssignmentResponse>(url, data)
-  return response.data
+  const url = `/api/v1/assignments/`;
+  const response = await apiClient.post<AssignmentResponse>(url, data);
+  return response.data;
 }
 
 /**
@@ -143,9 +143,9 @@ export async function updateAssignment(
   assignmentId: string,
   data: AssignmentUpdateRequest,
 ): Promise<AssignmentResponse> {
-  const url = `/api/v1/assignments/${assignmentId}`
-  const response = await apiClient.patch<AssignmentResponse>(url, data)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}`;
+  const response = await apiClient.patch<AssignmentResponse>(url, data);
+  return response.data;
 }
 
 /**
@@ -155,8 +155,8 @@ export async function updateAssignment(
  * @returns Promise that resolves when deletion is complete
  */
 export async function deleteAssignment(assignmentId: string): Promise<void> {
-  const url = `/api/v1/assignments/${assignmentId}`
-  await apiClient.delete(url)
+  const url = `/api/v1/assignments/${assignmentId}`;
+  await apiClient.delete(url);
 }
 
 /**
@@ -168,13 +168,13 @@ export async function deleteAssignment(assignmentId: string): Promise<void> {
 export async function getStudentAssignments(
   status?: "not_started" | "in_progress" | "completed",
 ): Promise<StudentAssignmentResponse[]> {
-  const url = `/api/v1/students/me/assignments`
-  const params: Record<string, string | number> = { limit: 100, offset: 0 }
-  if (status) params.status = status
-  const response = await apiClient.get(url, { params })
+  const url = `/api/v1/students/me/assignments`;
+  const params: Record<string, string | number> = { limit: 100, offset: 0 };
+  if (status) params.status = status;
+  const response = await apiClient.get(url, { params });
   // Handle both paginated response { items: [...] } and legacy array response
-  const data = response.data
-  return Array.isArray(data) ? data : data.items ?? []
+  const data = response.data;
+  return Array.isArray(data) ? data : (data.items ?? []);
 }
 
 /**
@@ -186,9 +186,9 @@ export async function getStudentAssignments(
 export async function startAssignment(
   assignmentId: string,
 ): Promise<ActivityStartResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/start`
-  const response = await apiClient.get<ActivityStartResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/start`;
+  const response = await apiClient.get<ActivityStartResponse>(url);
+  return response.data;
 }
 
 /**
@@ -202,12 +202,12 @@ export async function saveProgress(
   assignmentId: string,
   data: AssignmentSaveProgressRequest,
 ): Promise<AssignmentSaveProgressResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/save-progress`
+  const url = `/api/v1/assignments/${assignmentId}/save-progress`;
   const response = await apiClient.post<AssignmentSaveProgressResponse>(
     url,
     data,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -221,16 +221,16 @@ export async function submitAssignment(
   assignmentId: string,
   data: AssignmentSubmitRequest,
 ): Promise<AssignmentSubmissionResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/submit`
+  const url = `/api/v1/assignments/${assignmentId}/submit`;
   const payload = {
     ...data,
     completed_at: data.completed_at || new Date().toISOString(),
-  }
+  };
   const response = await apiClient.post<AssignmentSubmissionResponse>(
     url,
     payload,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -242,9 +242,9 @@ export async function submitAssignment(
 export async function getAssignmentDetailedResults(
   assignmentId: string,
 ): Promise<AssignmentDetailedResultsResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/detailed-results`
-  const response = await apiClient.get<AssignmentDetailedResultsResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/detailed-results`;
+  const response = await apiClient.get<AssignmentDetailedResultsResponse>(url);
+  return response.data;
 }
 
 /**
@@ -258,9 +258,9 @@ export async function getStudentAnswers(
   assignmentId: string,
   studentId: string,
 ): Promise<StudentAnswersResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/students/${studentId}/answers`
-  const response = await apiClient.get<StudentAnswersResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/students/${studentId}/answers`;
+  const response = await apiClient.get<StudentAnswersResponse>(url);
+  return response.data;
 }
 
 // =============================================================================
@@ -276,9 +276,9 @@ export async function getStudentAnswers(
 export async function startMultiActivityAssignment(
   assignmentId: string,
 ): Promise<MultiActivityStartResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/start-multi`
-  const response = await apiClient.get<MultiActivityStartResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/start-multi`;
+  const response = await apiClient.get<MultiActivityStartResponse>(url);
+  return response.data;
 }
 
 /**
@@ -294,12 +294,12 @@ export async function saveActivityProgress(
   activityId: string,
   data: ActivityProgressSaveRequest,
 ): Promise<ActivityProgressSaveResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/students/me/activities/${activityId}`
+  const url = `/api/v1/assignments/${assignmentId}/students/me/activities/${activityId}`;
   const response = await apiClient.patch<ActivityProgressSaveResponse>(
     url,
     data,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -313,12 +313,12 @@ export async function submitMultiActivityAssignment(
   assignmentId: string,
   data?: MultiActivitySubmitRequest,
 ): Promise<MultiActivitySubmitResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/students/me/submit-multi`
+  const url = `/api/v1/assignments/${assignmentId}/students/me/submit-multi`;
   const response = await apiClient.post<MultiActivitySubmitResponse>(
     url,
     data || {},
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 // =============================================================================
@@ -337,14 +337,14 @@ export async function getAssignmentAnalytics(
   assignmentId: string,
   expandActivityId?: string,
 ): Promise<MultiActivityAnalyticsResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/analytics`
+  const url = `/api/v1/assignments/${assignmentId}/analytics`;
   const params = expandActivityId
     ? { expand_activity_id: expandActivityId }
-    : {}
+    : {};
   const response = await apiClient.get<MultiActivityAnalyticsResponse>(url, {
     params,
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -357,9 +357,9 @@ export async function getAssignmentAnalytics(
 export async function getStudentAssignmentResult(
   assignmentId: string,
 ): Promise<StudentAssignmentResultResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/students/me/result`
-  const response = await apiClient.get<StudentAssignmentResultResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/students/me/result`;
+  const response = await apiClient.get<StudentAssignmentResultResponse>(url);
+  return response.data;
 }
 
 // =============================================================================
@@ -382,9 +382,12 @@ export async function getStudentAssignmentResult(
 export async function createBulkAssignments(
   data: AssignmentCreateRequest,
 ): Promise<BulkAssignmentCreateResponse> {
-  const url = `/api/v1/assignments/bulk`
-  const response = await apiClient.post<BulkAssignmentCreateResponse>(url, data)
-  return response.data
+  const url = `/api/v1/assignments/bulk`;
+  const response = await apiClient.post<BulkAssignmentCreateResponse>(
+    url,
+    data,
+  );
+  return response.data;
 }
 
 // =============================================================================
@@ -396,11 +399,11 @@ export async function createBulkAssignments(
  * Story 9.6: Calendar-Based Assignment Scheduling
  */
 export interface CalendarFilters {
-  startDate: string // ISO date string YYYY-MM-DD
-  endDate: string // ISO date string YYYY-MM-DD
-  classId?: string
-  statusFilter?: AssignmentPublishStatus
-  bookId?: string
+  startDate: string; // ISO date string YYYY-MM-DD
+  endDate: string; // ISO date string YYYY-MM-DD
+  classId?: string;
+  statusFilter?: AssignmentPublishStatus;
+  bookId?: string;
 }
 
 /**
@@ -413,24 +416,24 @@ export interface CalendarFilters {
 export async function getCalendarAssignments(
   filters: CalendarFilters,
 ): Promise<CalendarAssignmentsResponse> {
-  const url = `/api/v1/assignments/calendar`
+  const url = `/api/v1/assignments/calendar`;
   const params: Record<string, string> = {
     start_date: filters.startDate,
     end_date: filters.endDate,
-  }
+  };
   if (filters.classId) {
-    params.class_id = filters.classId
+    params.class_id = filters.classId;
   }
   if (filters.statusFilter) {
-    params.status = filters.statusFilter
+    params.status = filters.statusFilter;
   }
   if (filters.bookId) {
-    params.book_id = filters.bookId
+    params.book_id = filters.bookId;
   }
   const response = await apiClient.get<CalendarAssignmentsResponse>(url, {
     params,
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -444,8 +447,8 @@ export async function getCalendarAssignments(
  * Student calendar filter parameters
  */
 export interface StudentCalendarFilters {
-  startDate: string // ISO date string YYYY-MM-DD
-  endDate: string // ISO date string YYYY-MM-DD
+  startDate: string; // ISO date string YYYY-MM-DD
+  endDate: string; // ISO date string YYYY-MM-DD
 }
 
 /**
@@ -458,18 +461,18 @@ export interface StudentCalendarFilters {
 export async function getStudentCalendarAssignments(
   filters: StudentCalendarFilters,
 ): Promise<StudentCalendarAssignmentsResponse> {
-  const url = `/api/v1/students/me/calendar`
+  const url = `/api/v1/students/me/calendar`;
   const params: Record<string, string> = {
     start_date: filters.startDate,
     end_date: filters.endDate,
-  }
+  };
   const response = await apiClient.get<StudentCalendarAssignmentsResponse>(
     url,
     {
       params,
     },
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 // =============================================================================
@@ -487,9 +490,9 @@ export async function getStudentCalendarAssignments(
 export async function previewAssignment(
   assignmentId: string,
 ): Promise<AssignmentPreviewResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/preview`
-  const response = await apiClient.get<AssignmentPreviewResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/preview`;
+  const response = await apiClient.get<AssignmentPreviewResponse>(url);
+  return response.data;
 }
 
 /**
@@ -502,9 +505,9 @@ export async function previewAssignment(
 export async function getAssignmentForEdit(
   assignmentId: string,
 ): Promise<AssignmentForEditResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/for-edit`
-  const response = await apiClient.get<AssignmentForEditResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/for-edit`;
+  const response = await apiClient.get<AssignmentForEditResponse>(url);
+  return response.data;
 }
 
 /**
@@ -518,9 +521,9 @@ export async function getAssignmentForEdit(
 export async function previewActivity(
   activityId: string,
 ): Promise<ActivityPreviewResponse> {
-  const url = `/api/v1/assignments/activities/${activityId}/preview`
-  const response = await apiClient.get<ActivityPreviewResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/activities/${activityId}/preview`;
+  const response = await apiClient.get<ActivityPreviewResponse>(url);
+  return response.data;
 }
 
 /**
@@ -533,9 +536,9 @@ export async function previewActivity(
 export async function getAssignmentResult(
   assignmentId: string,
 ): Promise<AssignmentResultDetailResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/result`
-  const response = await apiClient.get<AssignmentResultDetailResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/result`;
+  const response = await apiClient.get<AssignmentResultDetailResponse>(url);
+  return response.data;
 }
 
 /**
@@ -546,9 +549,9 @@ async function attachMaterial(
   assignmentId: string,
   materialId: string,
 ): Promise<{ status: string }> {
-  const url = `/api/v1/assignments/${assignmentId}/materials/${materialId}`
-  const response = await apiClient.post<{ status: string }>(url)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/materials/${materialId}`;
+  const response = await apiClient.post<{ status: string }>(url);
+  return response.data;
 }
 
 // =============================================================================
@@ -568,9 +571,9 @@ export async function gradeActivity(
   studentId: string,
   data: TeacherGradeRequest,
 ): Promise<TeacherGradeResponse> {
-  const url = `/api/v1/assignments/${assignmentId}/students/${studentId}/grade`
-  const response = await apiClient.post<TeacherGradeResponse>(url, data)
-  return response.data
+  const url = `/api/v1/assignments/${assignmentId}/students/${studentId}/grade`;
+  const response = await apiClient.post<TeacherGradeResponse>(url, data);
+  return response.data;
 }
 
 /**
@@ -579,9 +582,9 @@ export async function gradeActivity(
  * @returns Promise with pending reviews list
  */
 export async function getPendingReviews(): Promise<PendingReviewsResponse> {
-  const url = `/api/v1/assignments/pending-reviews`
-  const response = await apiClient.get<PendingReviewsResponse>(url)
-  return response.data
+  const url = `/api/v1/assignments/pending-reviews`;
+  const response = await apiClient.get<PendingReviewsResponse>(url);
+  return response.data;
 }
 
 export const assignmentsApi = {
@@ -618,6 +621,6 @@ export const assignmentsApi = {
   // Teacher Grading APIs
   gradeActivity,
   getPendingReviews,
-}
+};
 
-export default assignmentsApi
+export default assignmentsApi;

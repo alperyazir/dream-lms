@@ -5,15 +5,15 @@
  * No scoring — pending teacher review.
  */
 
-import { PenLine } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import type { FreeResponseResult } from "@/lib/resultParsers"
+import { PenLine } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { FreeResponseResult } from "@/lib/resultParsers";
 
 interface WritingFreeResponseResultsProps {
-  result: FreeResponseResult
-  hideSummary?: boolean
-  score?: number | null
+  result: FreeResponseResult;
+  hideSummary?: boolean;
+  score?: number | null;
 }
 
 export function WritingFreeResponseResults({
@@ -22,7 +22,12 @@ export function WritingFreeResponseResults({
   score,
 }: WritingFreeResponseResultsProps) {
   return (
-    <div className={cn("mx-auto flex max-w-2xl flex-col gap-4", !hideSummary && "p-4")}>
+    <div
+      className={cn(
+        "mx-auto flex max-w-2xl flex-col gap-4",
+        !hideSummary && "p-4",
+      )}
+    >
       <div className="space-y-3">
         {result.item_results.map((item, index) => (
           <Card
@@ -50,7 +55,9 @@ export function WritingFreeResponseResults({
                     </span>
                     <div className="rounded-md bg-white px-3 py-2 text-sm leading-relaxed text-gray-800 border border-gray-200 dark:bg-gray-800/50 dark:text-gray-200 dark:border-gray-700">
                       {item.submitted_text || (
-                        <span className="italic text-muted-foreground">No response submitted</span>
+                        <span className="italic text-muted-foreground">
+                          No response submitted
+                        </span>
                       )}
                     </div>
                   </div>
@@ -61,7 +68,7 @@ export function WritingFreeResponseResults({
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-export default WritingFreeResponseResults
+export default WritingFreeResponseResults;

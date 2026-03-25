@@ -2,8 +2,6 @@
 Tests for AI Cost Calculator - Story 27.22
 """
 
-import pytest
-
 from app.services.ai_cost_calculator import (
     LLM_COSTS,
     TTS_COSTS,

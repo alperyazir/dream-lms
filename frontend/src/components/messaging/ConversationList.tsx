@@ -1,13 +1,13 @@
-import React from "react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import type { Conversation } from "@/types/message"
+import React from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import type { Conversation } from "@/types/message";
 
 export interface ConversationListProps {
-  conversations: Conversation[]
-  selectedParticipantId?: string
-  onConversationClick: (participantId: string) => void
+  conversations: Conversation[];
+  selectedParticipantId?: string;
+  onConversationClick: (participantId: string) => void;
 }
 
 /**
@@ -22,25 +22,25 @@ export const ConversationList = React.memo(
   }: ConversationListProps) => {
     // Format timestamp for display
     const formatTimestamp = (timestamp: string): string => {
-      const date = new Date(timestamp)
-      const now = new Date()
-      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
       if (diffInHours < 1) {
-        const minutes = Math.floor(diffInHours * 60)
-        return `${minutes}m ago`
+        const minutes = Math.floor(diffInHours * 60);
+        return `${minutes}m ago`;
       }
       if (diffInHours < 24) {
-        return `${Math.floor(diffInHours)}h ago`
+        return `${Math.floor(diffInHours)}h ago`;
       }
       if (diffInHours < 48) {
-        return "Yesterday"
+        return "Yesterday";
       }
       return date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
-      })
-    }
+      });
+    };
 
     // Get initials from participant name
     const getInitials = (name: string): string => {
@@ -49,8 +49,8 @@ export const ConversationList = React.memo(
         .map((n) => n[0])
         .join("")
         .toUpperCase()
-        .slice(0, 2)
-    }
+        .slice(0, 2);
+    };
 
     return (
       <div className="px-2 py-1">
@@ -120,8 +120,8 @@ export const ConversationList = React.memo(
           ))
         )}
       </div>
-    )
+    );
   },
-)
+);
 
-ConversationList.displayName = "ConversationList"
+ConversationList.displayName = "ConversationList";

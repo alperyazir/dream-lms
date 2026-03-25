@@ -9,19 +9,28 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 GrammarFBMode = Literal["word_bank", "free_type"]
 GrammarFBDifficulty = Literal["auto", "easy", "medium", "hard"]
 
 GRAMMAR_TOPICS = [
-    "present_simple", "past_simple", "future_simple",
-    "present_continuous", "past_continuous",
-    "present_perfect", "past_perfect",
-    "comparatives", "superlatives",
-    "articles", "prepositions", "pronouns",
-    "conditionals", "passive_voice",
-    "reported_speech", "modals",
-    "plurals", "possessives",
+    "present_simple",
+    "past_simple",
+    "future_simple",
+    "present_continuous",
+    "past_continuous",
+    "present_perfect",
+    "past_perfect",
+    "comparatives",
+    "superlatives",
+    "articles",
+    "prepositions",
+    "pronouns",
+    "conditionals",
+    "passive_voice",
+    "reported_speech",
+    "modals",
+    "plurals",
+    "possessives",
 ]
 
 
@@ -52,7 +61,8 @@ class GrammarFillBlankItem(BaseModel):
     )
     grammar_topic: str = Field(description="Grammar topic slug (e.g., present_simple).")
     grammar_hint: str | None = Field(
-        default=None, description="Optional hint for the student.",
+        default=None,
+        description="Optional hint for the student.",
     )
     difficulty: str
 

@@ -1,16 +1,16 @@
-import { BookOpen, Clock, Play } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "@/hooks/use-toast"
-import { useCountdown } from "@/hooks/useCountdown"
+import { BookOpen, Clock, Play } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
+import { useCountdown } from "@/hooks/useCountdown";
 
 export interface AssignmentDueCardProps {
-  id: string
-  name: string
-  subject: string
-  dueDate: string
-  status: "due-today" | "due-week" | "upcoming"
+  id: string;
+  name: string;
+  subject: string;
+  dueDate: string;
+  status: "due-today" | "due-week" | "upcoming";
 }
 
 export function AssignmentDueCard({
@@ -19,7 +19,7 @@ export function AssignmentDueCard({
   dueDate,
   status,
 }: AssignmentDueCardProps) {
-  const { timeLeft, isPastDue } = useCountdown(dueDate)
+  const { timeLeft, isPastDue } = useCountdown(dueDate);
 
   const getStatusBadge = () => {
     if (isPastDue) {
@@ -27,7 +27,7 @@ export function AssignmentDueCard({
         <Badge variant="destructive" className="shadow-neuro-sm">
           Past Due
         </Badge>
-      )
+      );
     }
     switch (status) {
       case "due-today":
@@ -35,7 +35,7 @@ export function AssignmentDueCard({
           <Badge variant="destructive" className="shadow-neuro-sm">
             Due Today
           </Badge>
-        )
+        );
       case "due-week":
         return (
           <Badge
@@ -44,7 +44,7 @@ export function AssignmentDueCard({
           >
             Due This Week
           </Badge>
-        )
+        );
       case "upcoming":
         return (
           <Badge
@@ -53,16 +53,16 @@ export function AssignmentDueCard({
           >
             Upcoming
           </Badge>
-        )
+        );
     }
-  }
+  };
 
   const handleStart = () => {
     toast({
       title: "Start Assignment",
       description: `Starting "${name}" - Assignment player coming soon!`,
-    })
-  }
+    });
+  };
 
   return (
     <Card
@@ -115,5 +115,5 @@ export function AssignmentDueCard({
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -10,7 +10,7 @@ Note: This should ONLY be used in development environments
 from sqlmodel import Session, select
 
 from app.core.db import engine
-from app.models import ClassStudent, Student, User, UserRole
+from app.models import ClassStudent, Student, User
 
 
 def clean_students() -> None:
@@ -48,7 +48,9 @@ def clean_students() -> None:
 
         # Commit all deletions
         session.commit()
-        print(f"✅ Successfully deleted {len(students)} student(s) and their user accounts.")
+        print(
+            f"✅ Successfully deleted {len(students)} student(s) and their user accounts."
+        )
 
 
 if __name__ == "__main__":

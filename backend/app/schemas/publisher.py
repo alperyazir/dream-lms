@@ -95,7 +95,7 @@ class PublisherAccountCreate(BaseModel):
         default=None,
         min_length=3,
         max_length=50,
-        description="Username (auto-generated from full_name if not provided)"
+        description="Username (auto-generated from full_name if not provided)",
     )
     email: EmailStr
     full_name: str = Field(max_length=255)

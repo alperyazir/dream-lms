@@ -1,21 +1,21 @@
-import { BookOpen, Download, ExternalLink } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { BookOpen, Download, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { getAuthenticatedCoverUrl } from "@/services/booksApi"
-import type { Book } from "@/types/book"
+} from "@/components/ui/tooltip";
+import { getAuthenticatedCoverUrl } from "@/services/booksApi";
+import type { Book } from "@/types/book";
 
 export interface BookCardProps {
-  book: Book
-  onOpenFlowbook?: (book: Book) => void
-  onDownload?: (book: Book) => void
+  book: Book;
+  onOpenFlowbook?: (book: Book) => void;
+  onDownload?: (book: Book) => void;
 }
 
 /**
@@ -31,42 +31,42 @@ export interface BookCardProps {
  * - Permanent action buttons: Open with Flowbook, Download (Story 29.3)
  */
 export function BookCard({ book, onOpenFlowbook, onDownload }: BookCardProps) {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null)
-  const [isLoadingCover, setIsLoadingCover] = useState(true)
-  const [imageError, setImageError] = useState(false)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [isLoadingCover, setIsLoadingCover] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   // Fetch authenticated cover URL
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
     // Reset error state when cover URL changes
-    setImageError(false)
+    setImageError(false);
 
     async function fetchCover() {
       if (!book.cover_image_url) {
-        setIsLoadingCover(false)
-        return
+        setIsLoadingCover(false);
+        return;
       }
 
-      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url
-        setCoverUrl(url)
-        setIsLoadingCover(false)
+        blobUrl = url;
+        setCoverUrl(url);
+        setIsLoadingCover(false);
       }
     }
 
-    fetchCover()
+    fetchCover();
 
     // Cleanup: revoke blob URL when component unmounts or cover changes
     return () => {
-      isMounted = false
+      isMounted = false;
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [book.cover_image_url])
+    };
+  }, [book.cover_image_url]);
 
   return (
     <Card className="h-full flex flex-col shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -130,8 +130,8 @@ export function BookCard({ book, onOpenFlowbook, onDownload }: BookCardProps) {
                     size="sm"
                     variant="default"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      onOpenFlowbook(book)
+                      e.stopPropagation();
+                      onOpenFlowbook(book);
                     }}
                     className="flex-1"
                   >
@@ -150,8 +150,8 @@ export function BookCard({ book, onOpenFlowbook, onDownload }: BookCardProps) {
                     size="sm"
                     variant="outline"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      onDownload(book)
+                      e.stopPropagation();
+                      onDownload(book);
                     }}
                     className="flex-1"
                   >
@@ -166,5 +166,5 @@ export function BookCard({ book, onOpenFlowbook, onDownload }: BookCardProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

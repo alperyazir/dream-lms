@@ -5,8 +5,8 @@
  * Displays performance breakdown by activity type with user-friendly labels
  */
 
-import { PieChart } from "lucide-react"
-import React from "react"
+import { PieChart } from "lucide-react";
+import React from "react";
 import {
   Bar,
   BarChart,
@@ -15,22 +15,22 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { ActivityTypeScore } from "@/types/analytics"
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ActivityTypeScore } from "@/types/analytics";
 
 export interface ActivityBreakdownProps {
-  data: ActivityTypeScore[]
+  data: ActivityTypeScore[];
 }
 
 // Colors for different score ranges
 const getScoreColor = (score: number): string => {
-  if (score >= 90) return "#10B981" // green-500
-  if (score >= 80) return "#14B8A6" // teal-500
-  if (score >= 70) return "#F59E0B" // amber-500
-  if (score >= 60) return "#F97316" // orange-500
-  return "#EF4444" // red-500
-}
+  if (score >= 90) return "#10B981"; // green-500
+  if (score >= 80) return "#14B8A6"; // teal-500
+  if (score >= 70) return "#F59E0B"; // amber-500
+  if (score >= 60) return "#F97316"; // orange-500
+  return "#EF4444"; // red-500
+};
 
 export const ActivityBreakdown = React.memo(
   ({ data }: ActivityBreakdownProps) => {
@@ -49,11 +49,11 @@ export const ActivityBreakdown = React.memo(
             </p>
           </CardContent>
         </Card>
-      )
+      );
     }
 
     // Sort by score (highest first)
-    const sortedData = [...data].sort((a, b) => b.avg_score - a.avg_score)
+    const sortedData = [...data].sort((a, b) => b.avg_score - a.avg_score);
 
     return (
       <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
@@ -132,8 +132,8 @@ export const ActivityBreakdown = React.memo(
           </div>
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-ActivityBreakdown.displayName = "ActivityBreakdown"
+ActivityBreakdown.displayName = "ActivityBreakdown";

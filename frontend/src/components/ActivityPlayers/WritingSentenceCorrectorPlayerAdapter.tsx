@@ -5,46 +5,60 @@
  * Fuzzy-matched against the correct sentence.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import type { ActivityConfig } from "@/lib/mockData"
-import { cn } from "@/lib/utils"
-import type { QuestionNavigationState } from "@/types/activity-player"
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import type { ActivityConfig } from "@/lib/mockData";
+import { cn } from "@/lib/utils";
+import type { QuestionNavigationState } from "@/types/activity-player";
 
 interface SentenceCorrectorItem {
-  item_id: string
-  context: string
-  incorrect_sentence: string
-  correct_sentence?: string
-  error_type: string
-  difficulty?: string
+  item_id: string;
+  context: string;
+  incorrect_sentence: string;
+  correct_sentence?: string;
+  error_type: string;
+  difficulty?: string;
 }
 
 interface SentenceCorrectorContent {
-  activity_id: string
-  items: SentenceCorrectorItem[]
-  total_items: number
-  difficulty: string
+  activity_id: string;
+  items: SentenceCorrectorItem[];
+  total_items: number;
+  difficulty: string;
 }
 
 interface WritingSentenceCorrectorPlayerAdapterProps {
-  activity: ActivityConfig
-  onAnswersChange: (answers: Map<string, string>) => void
-  showResults: boolean
-  correctAnswers: Set<string>
-  initialAnswers?: Map<string, string>
-  showCorrectAnswers?: boolean
-  currentQuestionIndex?: number
-  onQuestionIndexChange?: (index: number) => void
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  activity: ActivityConfig;
+  onAnswersChange: (answers: Map<string, string>) => void;
+  showResults: boolean;
+  correctAnswers: Set<string>;
+  initialAnswers?: Map<string, string>;
+  showCorrectAnswers?: boolean;
+  currentQuestionIndex?: number;
+  onQuestionIndexChange?: (index: number) => void;
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 const ERROR_TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  word_order: { label: "Word Order", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
-  grammar: { label: "Grammar", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
-  spelling: { label: "Spelling", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300" },
-  mixed: { label: "Mixed", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
-}
+  word_order: {
+    label: "Word Order",
+    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  },
+  grammar: {
+    label: "Grammar",
+    color:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  },
+  spelling: {
+    label: "Spelling",
+    color: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
+  },
+  mixed: {
+    label: "Mixed",
+    color:
+      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  },
+};
 
 export function WritingSentenceCorrectorPlayerAdapter({
   activity,
@@ -57,70 +71,67 @@ export function WritingSentenceCorrectorPlayerAdapter({
   onQuestionIndexChange: _onQuestionIndexChange,
   onNavigationStateChange,
 }: WritingSentenceCorrectorPlayerAdapterProps) {
-  const content = (activity as any).content as SentenceCorrectorContent
-  const items = content?.items || []
+  const content = (activity as any).content as SentenceCorrectorContent;
+  const items = content?.items || [];
 
   const [answers, setAnswers] = useState<Map<string, string>>(
     () => initialAnswers || new Map(),
-  )
+  );
 
-  const qIndex = currentQuestionIndex ?? 0
-  const currentItem = items[qIndex]
+  const qIndex = currentQuestionIndex ?? 0;
+  const currentItem = items[qIndex];
 
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
 
   useEffect(() => {
-    onAnswersChangeRef.current(new Map(answers))
-  }, [answers])
+    onAnswersChangeRef.current(new Map(answers));
+  }, [answers]);
 
   useEffect(() => {
     if (onNavigationStateChange) {
       const answeredIndices = items
         .map((item, i) => {
-          const answer = answers.get(item.item_id)
-          return answer && answer.trim().length > 0 ? i : -1
+          const answer = answers.get(item.item_id);
+          return answer && answer.trim().length > 0 ? i : -1;
         })
-        .filter((i) => i >= 0)
+        .filter((i) => i >= 0);
       onNavigationStateChange({
         currentIndex: qIndex,
         totalItems: items.length,
         answeredItemIds: items
           .filter((item) => {
-            const a = answers.get(item.item_id)
-            return a && a.trim().length > 0
+            const a = answers.get(item.item_id);
+            return a && a.trim().length > 0;
           })
           .map((item) => item.item_id),
         answeredIndices,
-      })
+      });
     }
-  }, [answers, items, qIndex, onNavigationStateChange])
+  }, [answers, items, qIndex, onNavigationStateChange]);
 
-  const handleInputChange = useCallback(
-    (itemId: string, value: string) => {
-      setAnswers((prev) => {
-        const next = new Map(prev)
-        next.set(itemId, value)
-        return next
-      })
-    },
-    [],
-  )
+  const handleInputChange = useCallback((itemId: string, value: string) => {
+    setAnswers((prev) => {
+      const next = new Map(prev);
+      next.set(itemId, value);
+      return next;
+    });
+  }, []);
 
   if (!currentItem) {
     return (
       <div className="flex items-center justify-center p-8 text-muted-foreground">
         No items available.
       </div>
-    )
+    );
   }
 
   if (showResults) {
-    const total = items.length
+    const total = items.length;
     const correct = items.filter((item) =>
       correctAnswers.has(item.item_id),
-    ).length
-    const score = total > 0 ? Math.round((correct / total) * 100) : 0
+    ).length;
+    const score = total > 0 ? Math.round((correct / total) * 100) : 0;
     return (
       <div className="p-8 text-center">
         <h2 className="text-2xl font-bold mb-4">
@@ -131,11 +142,12 @@ export function WritingSentenceCorrectorPlayerAdapter({
           {correct} out of {total} correct
         </p>
       </div>
-    )
+    );
   }
 
-  const userAnswer = answers.get(currentItem.item_id) || ""
-  const errorTypeInfo = ERROR_TYPE_LABELS[currentItem.error_type] || ERROR_TYPE_LABELS.mixed
+  const userAnswer = answers.get(currentItem.item_id) || "";
+  const errorTypeInfo =
+    ERROR_TYPE_LABELS[currentItem.error_type] || ERROR_TYPE_LABELS.mixed;
 
   return (
     <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4 sm:p-6">
@@ -151,7 +163,10 @@ export function WritingSentenceCorrectorPlayerAdapter({
             <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
               Incorrect Sentence
             </p>
-            <p className="text-lg font-medium text-red-800 dark:text-red-200" onCopy={(e) => e.preventDefault()}>
+            <p
+              className="text-lg font-medium text-red-800 dark:text-red-200"
+              onCopy={(e) => e.preventDefault()}
+            >
               {currentItem.incorrect_sentence}
             </p>
           </div>
@@ -193,5 +208,5 @@ export function WritingSentenceCorrectorPlayerAdapter({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

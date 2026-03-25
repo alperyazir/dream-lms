@@ -31,7 +31,13 @@ router = APIRouter(prefix="/messages", tags=["messages"])
 
 
 # Roles allowed to use messaging
-MESSAGING_ROLES = [UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher, UserRole.student]
+MESSAGING_ROLES = [
+    UserRole.admin,
+    UserRole.supervisor,
+    UserRole.publisher,
+    UserRole.teacher,
+    UserRole.student,
+]
 
 
 @router.post("", response_model=MessagePublic, status_code=status.HTTP_201_CREATED)
@@ -101,8 +107,16 @@ async def send_message(
     )
 
     # Get names for response
-    sender_name = current_user.full_name or (current_user.email.split("@")[0] if current_user.email else current_user.username or "Unknown")
-    recipient_name = recipient.full_name or (recipient.email.split("@")[0] if recipient.email else recipient.username or "Unknown")
+    sender_name = current_user.full_name or (
+        current_user.email.split("@")[0]
+        if current_user.email
+        else current_user.username or "Unknown"
+    )
+    recipient_name = recipient.full_name or (
+        recipient.email.split("@")[0]
+        if recipient.email
+        else recipient.username or "Unknown"
+    )
 
     await invalidate_for_event(
         "message_sent",
@@ -126,7 +140,9 @@ async def send_message(
     )
 
 
-@router.post("/broadcast", response_model=BroadcastResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/broadcast", response_model=BroadcastResponse, status_code=status.HTTP_201_CREATED
+)
 @limiter.limit(RateLimits.WRITE)
 async def broadcast_to_class(
     request: Request,
@@ -146,19 +162,27 @@ async def broadcast_to_class(
 
     # Verify teacher owns this class
     from app.models import Teacher
+
     teacher_result = await db.execute(
         select(Teacher).where(Teacher.user_id == current_user.id)
     )
     teacher = teacher_result.scalar_one_or_none()
     if not teacher:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found"
+        )
 
     class_result = await db.execute(
-        select(Class).where(Class.id == data.class_id, Class.teacher_id == teacher.id, Class.is_active == True)
+        select(Class).where(
+            Class.id == data.class_id, Class.teacher_id == teacher.id, Class.is_active
+        )
     )
     cls = class_result.scalar_one_or_none()
     if not cls:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found or not owned by you")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class not found or not owned by you",
+        )
 
     # Get all students in the class
     students_result = await db.execute(
@@ -169,7 +193,10 @@ async def broadcast_to_class(
     students = students_result.scalars().all()
 
     if not students:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No students enrolled in this class")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No students enrolled in this class",
+        )
 
     sent_count = 0
     for student in students:
@@ -200,7 +227,9 @@ async def get_conversations(
     request: Request,
     db: AsyncSessionDep,
     current_user: CurrentUser,
-    limit: int = Query(20, ge=1, le=100, description="Number of conversations to return"),
+    limit: int = Query(
+        20, ge=1, le=100, description="Number of conversations to return"
+    ),
     offset: int = Query(0, ge=0, description="Number of conversations to skip"),
 ) -> ConversationListResponse:
     """
@@ -281,6 +310,7 @@ async def get_message_thread(
     participant_organization_name = None
     if partner.role == UserRole.publisher and partner.dcs_publisher_id:
         from app.services.publisher_service_v2 import get_publisher_service
+
         publisher_service = get_publisher_service()
         try:
             publisher = await publisher_service.get_publisher(partner.dcs_publisher_id)
@@ -292,7 +322,12 @@ async def get_message_thread(
 
     return MessageThreadResponse(
         participant_id=partner.id,
-        participant_name=partner.full_name or (partner.email.split("@")[0] if partner.email else partner.username or "Unknown"),
+        participant_name=partner.full_name
+        or (
+            partner.email.split("@")[0]
+            if partner.email
+            else partner.username or "Unknown"
+        ),
         participant_email=partner.email,
         participant_role=partner.role.value,
         participant_organization_name=participant_organization_name,

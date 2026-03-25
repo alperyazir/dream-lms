@@ -3,11 +3,11 @@
  * Story 27.18: Vocabulary Explorer with Audio Player
  */
 
-import { fireEvent, render, screen } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
-import type { BookWithVocabulary } from "@/types/vocabulary-explorer"
-import { VocabularyFilters } from "./VocabularyFilters"
+import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+import type { BookWithVocabulary } from "@/types/vocabulary-explorer";
+import { VocabularyFilters } from "./VocabularyFilters";
 
 describe("VocabularyFilters", () => {
   const mockBooks: BookWithVocabulary[] = [
@@ -32,9 +32,9 @@ describe("VocabularyFilters", () => {
       vocabulary_count: 80,
       modules: [{ id: "m3", name: "Module 3", vocabulary_count: 80 }],
     },
-  ]
+  ];
 
-  const mockOnFiltersChange = vi.fn()
+  const mockOnFiltersChange = vi.fn();
 
   it("renders book selector", () => {
     render(
@@ -44,10 +44,10 @@ describe("VocabularyFilters", () => {
         filters={null}
         onFiltersChange={mockOnFiltersChange}
       />,
-    )
+    );
 
-    expect(screen.getByLabelText("Book")).toBeInTheDocument()
-  })
+    expect(screen.getByLabelText("Book")).toBeInTheDocument();
+  });
 
   it("renders module selector", () => {
     render(
@@ -57,10 +57,10 @@ describe("VocabularyFilters", () => {
         filters={null}
         onFiltersChange={mockOnFiltersChange}
       />,
-    )
+    );
 
-    expect(screen.getByLabelText("Module")).toBeInTheDocument()
-  })
+    expect(screen.getByLabelText("Module")).toBeInTheDocument();
+  });
 
   it("renders search input", () => {
     render(
@@ -70,12 +70,12 @@ describe("VocabularyFilters", () => {
         filters={null}
         onFiltersChange={mockOnFiltersChange}
       />,
-    )
+    );
 
     expect(
       screen.getByPlaceholderText("Search vocabulary..."),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it("renders CEFR level checkboxes", () => {
     render(
@@ -85,15 +85,15 @@ describe("VocabularyFilters", () => {
         filters={null}
         onFiltersChange={mockOnFiltersChange}
       />,
-    )
+    );
 
-    expect(screen.getByLabelText("A1")).toBeInTheDocument()
-    expect(screen.getByLabelText("A2")).toBeInTheDocument()
-    expect(screen.getByLabelText("B1")).toBeInTheDocument()
-    expect(screen.getByLabelText("B2")).toBeInTheDocument()
-    expect(screen.getByLabelText("C1")).toBeInTheDocument()
-    expect(screen.getByLabelText("C2")).toBeInTheDocument()
-  })
+    expect(screen.getByLabelText("A1")).toBeInTheDocument();
+    expect(screen.getByLabelText("A2")).toBeInTheDocument();
+    expect(screen.getByLabelText("B1")).toBeInTheDocument();
+    expect(screen.getByLabelText("B2")).toBeInTheDocument();
+    expect(screen.getByLabelText("C1")).toBeInTheDocument();
+    expect(screen.getByLabelText("C2")).toBeInTheDocument();
+  });
 
   it("disables module selector when no book selected", () => {
     render(
@@ -103,11 +103,11 @@ describe("VocabularyFilters", () => {
         filters={null}
         onFiltersChange={mockOnFiltersChange}
       />,
-    )
+    );
 
-    const moduleSelect = screen.getByLabelText("Module")
-    expect(moduleSelect).toBeDisabled()
-  })
+    const moduleSelect = screen.getByLabelText("Module");
+    expect(moduleSelect).toBeDisabled();
+  });
 
   it("disables search input when no book selected", () => {
     render(
@@ -117,11 +117,11 @@ describe("VocabularyFilters", () => {
         filters={null}
         onFiltersChange={mockOnFiltersChange}
       />,
-    )
+    );
 
-    const searchInput = screen.getByPlaceholderText("Search vocabulary...")
-    expect(searchInput).toBeDisabled()
-  })
+    const searchInput = screen.getByPlaceholderText("Search vocabulary...");
+    expect(searchInput).toBeDisabled();
+  });
 
   it("disables CEFR checkboxes when no book selected", () => {
     render(
@@ -131,14 +131,14 @@ describe("VocabularyFilters", () => {
         filters={null}
         onFiltersChange={mockOnFiltersChange}
       />,
-    )
+    );
 
-    const a1Checkbox = screen.getByLabelText("A1")
-    expect(a1Checkbox).toBeDisabled()
-  })
+    const a1Checkbox = screen.getByLabelText("A1");
+    expect(a1Checkbox).toBeDisabled();
+  });
 
   it("calls onFiltersChange when CEFR level is toggled", async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup();
 
     render(
       <VocabularyFilters
@@ -147,20 +147,20 @@ describe("VocabularyFilters", () => {
         filters={{ bookId: 1 }}
         onFiltersChange={mockOnFiltersChange}
       />,
-    )
+    );
 
-    const a1Checkbox = screen.getByLabelText("A1")
-    await user.click(a1Checkbox)
+    const a1Checkbox = screen.getByLabelText("A1");
+    await user.click(a1Checkbox);
 
     expect(mockOnFiltersChange).toHaveBeenCalledWith({
       bookId: 1,
       cefrLevels: ["A1"],
-    })
-  })
+    });
+  });
 
   it("debounces search input (300ms)", async () => {
-    vi.useFakeTimers()
-    const newMock = vi.fn()
+    vi.useFakeTimers();
+    const newMock = vi.fn();
 
     render(
       <VocabularyFilters
@@ -169,24 +169,24 @@ describe("VocabularyFilters", () => {
         filters={{ bookId: 1 }}
         onFiltersChange={newMock}
       />,
-    )
+    );
 
-    const searchInput = screen.getByPlaceholderText("Search vocabulary...")
+    const searchInput = screen.getByPlaceholderText("Search vocabulary...");
 
     // Type into the input
-    fireEvent.change(searchInput, { target: { value: "hello" } })
+    fireEvent.change(searchInput, { target: { value: "hello" } });
 
     // Should not call immediately
-    expect(newMock).not.toHaveBeenCalled()
+    expect(newMock).not.toHaveBeenCalled();
 
     // Advance timers by 300ms
-    vi.advanceTimersByTime(300)
+    vi.advanceTimersByTime(300);
 
     // Now it should have been called
-    expect(newMock).toHaveBeenCalled()
+    expect(newMock).toHaveBeenCalled();
 
-    vi.useRealTimers()
-  })
+    vi.useRealTimers();
+  });
 
   it("shows active filters summary when filters applied", () => {
     render(
@@ -196,12 +196,12 @@ describe("VocabularyFilters", () => {
         filters={{ bookId: 1, search: "test", moduleId: "m1" }}
         onFiltersChange={mockOnFiltersChange}
       />,
-    )
+    );
 
-    expect(screen.getByText("Active filters:")).toBeInTheDocument()
+    expect(screen.getByText("Active filters:")).toBeInTheDocument();
     // Use getAllByText since book name and module appear in both dropdown and badge
-    expect(screen.getAllByText("English Book 1").length).toBeGreaterThan(0)
-    expect(screen.getAllByText("Module 1").length).toBeGreaterThan(0)
-    expect(screen.getByText("Search: test")).toBeInTheDocument()
-  })
-})
+    expect(screen.getAllByText("English Book 1").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Module 1").length).toBeGreaterThan(0);
+    expect(screen.getByText("Search: test")).toBeInTheDocument();
+  });
+});

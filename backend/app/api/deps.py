@@ -17,8 +17,11 @@ if TYPE_CHECKING:
 from app.core import security
 from app.core.config import settings
 from app.core.db import async_engine, engine
-from app.models import Student, Teacher, TokenPayload, User, UserRole
-from app.services.redis_cache import cache_get, cache_get_sync, cache_set, cache_set_sync
+from app.models import TokenPayload, User, UserRole
+from app.services.redis_cache import (
+    cache_get,
+    cache_set,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +46,7 @@ AsyncSessionDep = Annotated[AsyncSession, Depends(get_async_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
-async def get_current_user(
-    session: AsyncSessionDep, token: TokenDep
-) -> User:
+async def get_current_user(session: AsyncSessionDep, token: TokenDep) -> User:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
@@ -57,7 +58,9 @@ async def get_current_user(
             detail="Could not validate credentials",
         )
     # Convert string UUID to UUID object
-    user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    user_id = (
+        uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    )
 
     # Try Redis cache — return cached User without hitting DB
     cache_key = f"auth:user:{user_id}"
@@ -88,16 +91,20 @@ async def get_current_user(
 
     # Cache full user info to skip DB on subsequent requests
     try:
-        await cache_set(cache_key, {
-            "id": str(user.id),
-            "email": user.email,
-            "username": user.username,
-            "full_name": user.full_name,
-            "role": user.role.value if user.role else None,
-            "is_active": user.is_active,
-            "is_superuser": user.is_superuser,
-            "dcs_publisher_id": user.dcs_publisher_id,
-        }, ttl=3600)
+        await cache_set(
+            cache_key,
+            {
+                "id": str(user.id),
+                "email": user.email,
+                "username": user.username,
+                "full_name": user.full_name,
+                "role": user.role.value if user.role else None,
+                "is_active": user.is_active,
+                "is_superuser": user.is_superuser,
+                "dcs_publisher_id": user.dcs_publisher_id,
+            },
+            ttl=3600,
+        )
     except Exception:
         pass  # Non-critical
 
@@ -126,11 +133,12 @@ def require_role(*allowed_roles: UserRole):
         ):
             ...
     """
+
     def role_checker(current_user: CurrentUser) -> User:
         if current_user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access forbidden. Required roles: {[role.value for role in allowed_roles]}"
+                detail=f"Access forbidden. Required roles: {[role.value for role in allowed_roles]}",
             )
         return current_user
 

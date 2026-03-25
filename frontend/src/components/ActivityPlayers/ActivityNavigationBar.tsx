@@ -7,16 +7,16 @@
  * Supports scrolling for many activities.
  */
 
-import { useEffect, useRef } from "react"
-import { cn } from "@/lib/utils"
-import type { ActivityState, ActivityWithConfig } from "@/types/assignment"
+import { useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
+import type { ActivityState, ActivityWithConfig } from "@/types/assignment";
 
 export interface ActivityNavigationBarProps {
-  activities: ActivityWithConfig[]
-  currentIndex: number
-  activityStates: Map<string, ActivityState>
-  onNavigate: (index: number) => void
-  disabled?: boolean
+  activities: ActivityWithConfig[];
+  currentIndex: number;
+  activityStates: Map<string, ActivityState>;
+  onNavigate: (index: number) => void;
+  disabled?: boolean;
 }
 
 export function ActivityNavigationBar({
@@ -26,8 +26,8 @@ export function ActivityNavigationBar({
   onNavigate,
   disabled = false,
 }: ActivityNavigationBarProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const currentButtonRef = useRef<HTMLButtonElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const currentButtonRef = useRef<HTMLButtonElement>(null);
 
   // Auto-scroll to keep current activity visible
   useEffect(() => {
@@ -36,9 +36,9 @@ export function ActivityNavigationBar({
         behavior: "smooth",
         block: "nearest",
         inline: "center",
-      })
+      });
     }
-  }, [])
+  }, []);
 
   // Size modes based on activity count
   const sizeMode =
@@ -46,7 +46,7 @@ export function ActivityNavigationBar({
       ? "tiny"
       : activities.length > 15
         ? "compact"
-        : "normal"
+        : "normal";
 
   // Get size classes based on mode
   const getSizeClasses = () => {
@@ -56,23 +56,23 @@ export function ActivityNavigationBar({
           button: "h-6 w-6 text-[10px]",
           connector: "w-1.5",
           icon: "h-3 w-3",
-        }
+        };
       case "compact":
         return {
           button: "h-7 w-7 text-xs",
           connector: "w-2",
           icon: "h-3.5 w-3.5",
-        }
+        };
       default:
         return {
           button: "h-8 w-8 text-sm",
           connector: "w-3",
           icon: "h-4 w-4",
-        }
+        };
     }
-  }
+  };
 
-  const sizes = getSizeClasses()
+  const sizes = getSizeClasses();
 
   return (
     <div className="relative w-full max-w-full overflow-hidden py-1">
@@ -86,11 +86,11 @@ export function ActivityNavigationBar({
       >
         <div className="flex items-center gap-0 mx-auto px-2">
           {activities.map((activity, index) => {
-            const state = activityStates.get(activity.id)
-            const status = state?.status || "not_started"
-            const isCurrent = index === currentIndex
-            const isCompleted = status === "completed"
-            const isLast = index === activities.length - 1
+            const state = activityStates.get(activity.id);
+            const status = state?.status || "not_started";
+            const isCurrent = index === currentIndex;
+            const isCompleted = status === "completed";
+            const isLast = index === activities.length - 1;
 
             return (
               <div key={activity.id} className="flex items-center shrink-0">
@@ -145,10 +145,10 @@ export function ActivityNavigationBar({
                   />
                 )}
               </div>
-            )
+            );
           })}
         </div>
       </div>
     </div>
-  )
+  );
 }

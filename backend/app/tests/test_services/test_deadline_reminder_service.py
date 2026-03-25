@@ -78,7 +78,9 @@ async def school_fixture(async_session: AsyncSession, publisher: Publisher) -> S
 
 
 @pytest_asyncio.fixture(name="teacher_user")
-async def teacher_user_fixture(async_session: AsyncSession, school: School) -> tuple[User, Teacher]:
+async def teacher_user_fixture(
+    async_session: AsyncSession, school: School
+) -> tuple[User, Teacher]:
     """Create a teacher user and record for testing."""
     user = User(
         id=uuid.uuid4(),
@@ -131,7 +133,9 @@ async def student_user_fixture(async_session: AsyncSession) -> tuple[User, Stude
 
 
 @pytest_asyncio.fixture(name="second_student_user")
-async def second_student_user_fixture(async_session: AsyncSession) -> tuple[User, Student]:
+async def second_student_user_fixture(
+    async_session: AsyncSession,
+) -> tuple[User, Student]:
     """Create a second student user and record for testing."""
     user = User(
         id=uuid.uuid4(),

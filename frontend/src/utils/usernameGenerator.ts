@@ -18,7 +18,7 @@ const TURKISH_MAP: Record<string, string> = {
   Ö: "O",
   ç: "c",
   Ç: "C",
-}
+};
 
 /**
  * Convert Turkish special characters to ASCII equivalents
@@ -29,7 +29,7 @@ export function turkishToAscii(text: string): string {
   return text
     .split("")
     .map((char) => TURKISH_MAP[char] ?? char)
-    .join("")
+    .join("");
 }
 
 /**
@@ -49,7 +49,7 @@ export function turkishToAscii(text: string): string {
  */
 export function generateUsername(fullName: string): string {
   if (!fullName || typeof fullName !== "string") {
-    return ""
+    return "";
   }
 
   return (
@@ -72,7 +72,7 @@ export function generateUsername(fullName: string): string {
       .replace(/\.+/g, ".")
       // Remove leading/trailing dots
       .replace(/^\.+|\.+$/g, "")
-  )
+  );
 }
 
 /**
@@ -87,23 +87,23 @@ export function generateUsername(fullName: string): string {
  */
 export function isValidUsername(username: string): boolean {
   if (!username || username.length < 3) {
-    return false
+    return false;
   }
 
   // Only lowercase alphanumeric, dots, and underscores
   if (!/^[a-z0-9._]+$/.test(username)) {
-    return false
+    return false;
   }
 
   // No consecutive dots
   if (/\.\./.test(username)) {
-    return false
+    return false;
   }
 
   // No leading/trailing dots
   if (username.startsWith(".") || username.endsWith(".")) {
-    return false
+    return false;
   }
 
-  return true
+  return true;
 }

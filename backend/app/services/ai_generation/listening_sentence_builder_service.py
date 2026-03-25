@@ -92,9 +92,7 @@ class ListeningSentenceBuilderService:
                 self._dcs_client, request.book_id, request.module_ids
             )
         except ValueError as e:
-            raise DCSAIDataNotFoundError(
-                message=str(e), book_id=request.book_id
-            ) from e
+            raise DCSAIDataNotFoundError(message=str(e), book_id=request.book_id) from e
 
         language = request.language or ctx.language
 
@@ -131,7 +129,9 @@ class ListeningSentenceBuilderService:
             ) from e
 
         if not raw_sentences:
-            raise ListeningSentenceBuilderError("LLM returned no sentences. Please try again.")
+            raise ListeningSentenceBuilderError(
+                "LLM returned no sentences. Please try again."
+            )
 
         # 4. Build items with shuffled words
         activity_id = str(uuid4())
@@ -162,7 +162,9 @@ class ListeningSentenceBuilderService:
         # 5. Generate TTS audio
         if self._tts_manager:
             try:
-                await self._generate_audio(items, language, book_id=request.book_id, content_id=activity_id)
+                await self._generate_audio(
+                    items, language, book_id=request.book_id, content_id=activity_id
+                )
                 ready = sum(1 for i in items if i.audio_status == "ready")
                 logger.info(f"TTS audio generated for {ready}/{len(items)} items")
             except Exception as e:
@@ -181,12 +183,17 @@ class ListeningSentenceBuilderService:
             created_at=datetime.now(timezone.utc),
         )
 
-        logger.info(f"Listening sentence builder generated: id={activity_id}, items={len(items)}")
+        logger.info(
+            f"Listening sentence builder generated: id={activity_id}, items={len(items)}"
+        )
         return activity
 
     async def _generate_audio(
-        self, items: list[ListeningSentenceBuilderItem], language: str,
-        book_id: int | None = None, content_id: str | None = None,
+        self,
+        items: list[ListeningSentenceBuilderItem],
+        language: str,
+        book_id: int | None = None,
+        content_id: str | None = None,
     ) -> None:
         """Generate TTS for each item's correct_sentence and upload to DCS."""
 
@@ -207,24 +214,35 @@ class ListeningSentenceBuilderService:
                     },
                 )
                 dcs_content_id = dcs_entry.get("content_id") or dcs_entry.get("id")
-                logger.info(f"DCS content entry created for listening SB audio: {dcs_content_id}")
+                logger.info(
+                    f"DCS content entry created for listening SB audio: {dcs_content_id}"
+                )
             except Exception as e:
-                logger.warning(f"Failed to create DCS content entry, will fall back to TTS URLs: {e}")
+                logger.warning(
+                    f"Failed to create DCS content entry, will fall back to TTS URLs: {e}"
+                )
 
         async def _gen_single(item: ListeningSentenceBuilderItem) -> None:
             options = AudioGenerationOptions(language=language)
             for attempt in range(2):
                 try:
-                    result = await self._tts_manager.generate_audio(item.correct_sentence, options)
+                    result = await self._tts_manager.generate_audio(
+                        item.correct_sentence, options
+                    )
                     if dcs_content_id and self._dcs_ai_content_client and book_id:
                         try:
                             filename = f"{item.item_id}.mp3"
                             await self._dcs_ai_content_client.upload_audio(
-                                book_id, dcs_content_id, filename, result.audio_data,
+                                book_id,
+                                dcs_content_id,
+                                filename,
+                                result.audio_data,
                             )
                             item.audio_url = f"/api/v1/ai/content/{book_id}/{dcs_content_id}/audio/{filename}"
                         except Exception as upload_err:
-                            logger.warning(f"DCS upload failed for {item.item_id}, using TTS URL: {upload_err}")
+                            logger.warning(
+                                f"DCS upload failed for {item.item_id}, using TTS URL: {upload_err}"
+                            )
                             item.audio_url = (
                                 f"/api/v1/ai/tts/audio"
                                 f"?text={quote(item.correct_sentence, safe='')}"

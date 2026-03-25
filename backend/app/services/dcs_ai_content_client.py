@@ -52,9 +52,7 @@ class DCSAIContentClient:
 
     async def list_content(self, book_id: int) -> list[dict]:
         """GET /books/{book_id}/ai-content/ — list all content for a book."""
-        resp = await self._dcs._make_request(
-            "GET", f"/books/{book_id}/ai-content/"
-        )
+        resp = await self._dcs._make_request("GET", f"/books/{book_id}/ai-content/")
         return resp.json()
 
     async def get_content(self, book_id: int, content_id: str) -> dict:
@@ -123,18 +121,14 @@ class DCSAIContentClient:
             resp.raise_for_status()
             return resp.json()
 
-    def get_audio_stream_url(
-        self, book_id: int, content_id: str, filename: str
-    ) -> str:
+    def get_audio_stream_url(self, book_id: int, content_id: str, filename: str) -> str:
         """Build full DCS URL for GET /books/{book_id}/ai-content/{content_id}/audio/{filename}."""
         return (
             f"{settings.DREAM_CENTRAL_STORAGE_URL}"
             f"/books/{book_id}/ai-content/{content_id}/audio/{filename}"
         )
 
-    async def stream_audio(
-        self, book_id: int, content_id: str, filename: str
-    ) -> bytes:
+    async def stream_audio(self, book_id: int, content_id: str, filename: str) -> bytes:
         """GET /books/{book_id}/ai-content/{content_id}/audio/{filename} — fetch audio bytes."""
         resp = await self._dcs._make_request(
             "GET",

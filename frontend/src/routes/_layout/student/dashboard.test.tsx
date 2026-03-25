@@ -3,46 +3,46 @@
  * Story 22.1: Dashboard Layout Refactor
  */
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen, waitFor } from "@testing-library/react"
-import { vi } from "vitest"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { ProgressSummaryCard } from "@/components/student/ProgressSummaryCard"
-import { UpcomingAssignmentsList } from "@/components/student/UpcomingAssignmentsList"
-import { Skeleton } from "@/components/ui/skeleton"
-import * as assignmentsApi from "@/services/assignmentsApi"
-import type { StudentProgressResponse } from "@/types/analytics"
-import type { StudentAssignmentResponse } from "@/types/assignment"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import { vi } from "vitest";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { ProgressSummaryCard } from "@/components/student/ProgressSummaryCard";
+import { UpcomingAssignmentsList } from "@/components/student/UpcomingAssignmentsList";
+import { Skeleton } from "@/components/ui/skeleton";
+import * as assignmentsApi from "@/services/assignmentsApi";
+import type { StudentProgressResponse } from "@/types/analytics";
+import type { StudentAssignmentResponse } from "@/types/assignment";
 
 // Mock hooks
 vi.mock("@/hooks/useStudentProgress", () => ({
   useStudentProgress: vi.fn(),
-}))
+}));
 
 // Mock router Link component
 vi.mock("@tanstack/react-router", async () => {
-  const actual = await vi.importActual("@tanstack/react-router")
+  const actual = await vi.importActual("@tanstack/react-router");
   return {
     ...actual,
     Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
       <a href={to}>{children}</a>
     ),
-  }
-})
+  };
+});
 
-import { useQuery } from "@tanstack/react-query"
-import { useStudentProgress } from "@/hooks/useStudentProgress"
+import { useQuery } from "@tanstack/react-query";
+import { useStudentProgress } from "@/hooks/useStudentProgress";
 
 // Import the component directly, not the Route export
 function StudentDashboard() {
   const { data: assignments = [], isLoading: isLoadingAssignments } = useQuery({
     queryKey: ["studentAssignments"],
     queryFn: () => assignmentsApi.getStudentAssignments(),
-  })
+  });
 
   const { progress, isLoading: isLoadingProgress } = useStudentProgress({
     period: "this_month",
-  })
+  });
 
   return (
     <div className="container py-4 md:py-6 space-y-4 md:space-y-6">
@@ -69,7 +69,7 @@ function StudentDashboard() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 const renderWithProviders = (component: React.ReactElement) => {
@@ -77,19 +77,19 @@ const renderWithProviders = (component: React.ReactElement) => {
     defaultOptions: {
       queries: { retry: false },
     },
-  })
+  });
 
   return render(
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>{component}</ErrorBoundary>
     </QueryClientProvider>,
-  )
-}
+  );
+};
 
 describe("Student Dashboard", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   const mockProgressResponse: StudentProgressResponse = {
     stats: {
@@ -109,7 +109,7 @@ describe("Student Dashboard", () => {
       avg_per_assignment: 30,
     },
     improvement_tips: [],
-  }
+  };
 
   const mockAssignments: StudentAssignmentResponse[] = [
     {
@@ -134,155 +134,155 @@ describe("Student Dashboard", () => {
       is_past_due: false,
       days_until_due: 2,
     },
-  ]
+  ];
 
   it("displays page title", async () => {
     vi.mocked(useStudentProgress).mockReturnValue({
       progress: mockProgressResponse,
       isLoading: false,
       error: null,
-    })
+    });
     vi.spyOn(assignmentsApi, "getStudentAssignments").mockResolvedValue(
       mockAssignments,
-    )
+    );
 
-    renderWithProviders(<StudentDashboard />)
+    renderWithProviders(<StudentDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Student Dashboard")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Student Dashboard")).toBeInTheDocument();
+    });
 
     expect(
       screen.getByText("Welcome back! Here's your learning overview."),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it("shows progress summary card", async () => {
     vi.mocked(useStudentProgress).mockReturnValue({
       progress: mockProgressResponse,
       isLoading: false,
       error: null,
-    })
+    });
     vi.spyOn(assignmentsApi, "getStudentAssignments").mockResolvedValue(
       mockAssignments,
-    )
+    );
 
-    renderWithProviders(<StudentDashboard />)
+    renderWithProviders(<StudentDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Your Progress")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Your Progress")).toBeInTheDocument();
+    });
 
-    expect(screen.getByText("View Details")).toBeInTheDocument()
-  })
+    expect(screen.getByText("View Details")).toBeInTheDocument();
+  });
 
   it("shows upcoming assignments section", async () => {
     vi.mocked(useStudentProgress).mockReturnValue({
       progress: mockProgressResponse,
       isLoading: false,
       error: null,
-    })
+    });
     vi.spyOn(assignmentsApi, "getStudentAssignments").mockResolvedValue(
       mockAssignments,
-    )
+    );
 
-    renderWithProviders(<StudentDashboard />)
+    renderWithProviders(<StudentDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Upcoming Assignments")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByText("Upcoming Assignments")).toBeInTheDocument();
+    });
+  });
 
   it("does NOT show Reports section", async () => {
     vi.mocked(useStudentProgress).mockReturnValue({
       progress: mockProgressResponse,
       isLoading: false,
       error: null,
-    })
+    });
     vi.spyOn(assignmentsApi, "getStudentAssignments").mockResolvedValue(
       mockAssignments,
-    )
+    );
 
-    renderWithProviders(<StudentDashboard />)
+    renderWithProviders(<StudentDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Student Dashboard")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Student Dashboard")).toBeInTheDocument();
+    });
 
-    expect(screen.queryByText("Reports")).not.toBeInTheDocument()
-  })
+    expect(screen.queryByText("Reports")).not.toBeInTheDocument();
+  });
 
   it("does NOT show Tips section", async () => {
     vi.mocked(useStudentProgress).mockReturnValue({
       progress: mockProgressResponse,
       isLoading: false,
       error: null,
-    })
+    });
     vi.spyOn(assignmentsApi, "getStudentAssignments").mockResolvedValue(
       mockAssignments,
-    )
+    );
 
-    renderWithProviders(<StudentDashboard />)
+    renderWithProviders(<StudentDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Student Dashboard")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Student Dashboard")).toBeInTheDocument();
+    });
 
-    expect(screen.queryByText("Tips")).not.toBeInTheDocument()
-  })
+    expect(screen.queryByText("Tips")).not.toBeInTheDocument();
+  });
 
   it("does NOT show Recent Feedback on dashboard", async () => {
     vi.mocked(useStudentProgress).mockReturnValue({
       progress: mockProgressResponse,
       isLoading: false,
       error: null,
-    })
+    });
     vi.spyOn(assignmentsApi, "getStudentAssignments").mockResolvedValue(
       mockAssignments,
-    )
+    );
 
-    renderWithProviders(<StudentDashboard />)
+    renderWithProviders(<StudentDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Student Dashboard")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Student Dashboard")).toBeInTheDocument();
+    });
 
-    expect(screen.queryByText("Recent Feedback")).not.toBeInTheDocument()
-  })
+    expect(screen.queryByText("Recent Feedback")).not.toBeInTheDocument();
+  });
 
   it("does NOT show Achievements on dashboard", async () => {
     vi.mocked(useStudentProgress).mockReturnValue({
       progress: mockProgressResponse,
       isLoading: false,
       error: null,
-    })
+    });
     vi.spyOn(assignmentsApi, "getStudentAssignments").mockResolvedValue(
       mockAssignments,
-    )
+    );
 
-    renderWithProviders(<StudentDashboard />)
+    renderWithProviders(<StudentDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Student Dashboard")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Student Dashboard")).toBeInTheDocument();
+    });
 
-    expect(screen.queryByText("Achievements")).not.toBeInTheDocument()
-  })
+    expect(screen.queryByText("Achievements")).not.toBeInTheDocument();
+  });
 
   it("shows empty state when no assignments", async () => {
     vi.mocked(useStudentProgress).mockReturnValue({
       progress: mockProgressResponse,
       isLoading: false,
       error: null,
-    })
-    vi.spyOn(assignmentsApi, "getStudentAssignments").mockResolvedValue([])
+    });
+    vi.spyOn(assignmentsApi, "getStudentAssignments").mockResolvedValue([]);
 
-    renderWithProviders(<StudentDashboard />)
+    renderWithProviders(<StudentDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("No upcoming assignments!")).toBeInTheDocument()
-    })
+      expect(screen.getByText("No upcoming assignments!")).toBeInTheDocument();
+    });
 
-    expect(screen.getByText("You're all caught up. 🎉")).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("You're all caught up. 🎉")).toBeInTheDocument();
+  });
+});

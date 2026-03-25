@@ -4,88 +4,82 @@
  * Allows teachers to score AND leave feedback in one flow.
  */
 
-import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react"
-import { useEffect, useState } from "react"
-import { LuLoader, LuSave, LuSend } from "react-icons/lu"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/hooks/use-toast"
-import { useFeedbackModal } from "@/hooks/useFeedback"
-import { isFeedbackPublic } from "@/types/feedback"
-import { EmojiPicker } from "@/components/feedback/EmojiPicker"
+import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LuLoader, LuSave, LuSend } from "react-icons/lu";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/hooks/use-toast";
+import { useFeedbackModal } from "@/hooks/useFeedback";
+import { isFeedbackPublic } from "@/types/feedback";
+import { EmojiPicker } from "@/components/feedback/EmojiPicker";
 
 interface InlineFeedbackProps {
-  assignmentId: string
-  studentId: string
+  assignmentId: string;
+  studentId: string;
 }
 
 export function InlineFeedback({
   assignmentId,
   studentId,
 }: InlineFeedbackProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [feedbackText, setFeedbackText] = useState("")
-  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
 
-  const {
-    feedback,
-    isLoading,
-    isSaving,
-    saveError,
-    saveDraft,
-    publish,
-  } = useFeedbackModal(
-    isExpanded ? assignmentId : null,
-    isExpanded ? studentId : null,
-  )
+  const { feedback, isLoading, isSaving, saveError, saveDraft, publish } =
+    useFeedbackModal(
+      isExpanded ? assignmentId : null,
+      isExpanded ? studentId : null,
+    );
 
   // Load existing feedback when expanded
   useEffect(() => {
     if (isExpanded && feedback && isFeedbackPublic(feedback)) {
-      setFeedbackText(feedback.feedback_text || "")
+      setFeedbackText(feedback.feedback_text || "");
       setSelectedEmoji(
         feedback.emoji_reactions && feedback.emoji_reactions.length > 0
           ? feedback.emoji_reactions[0]
           : null,
-      )
+      );
     }
-  }, [isExpanded, feedback])
+  }, [isExpanded, feedback]);
 
   const handleSaveDraft = async () => {
-    if (!feedbackText.trim()) return
+    if (!feedbackText.trim()) return;
     try {
-      await saveDraft(feedbackText, { emoji_reaction: selectedEmoji })
-      toast({ title: "Draft Saved", description: "Feedback saved as draft" })
+      await saveDraft(feedbackText, { emoji_reaction: selectedEmoji });
+      toast({ title: "Draft Saved", description: "Feedback saved as draft" });
     } catch {
       toast({
         title: "Error",
         description: "Failed to save draft.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handlePublish = async () => {
-    if (!feedbackText.trim()) return
+    if (!feedbackText.trim()) return;
     try {
-      await publish(feedbackText, { emoji_reaction: selectedEmoji })
+      await publish(feedbackText, { emoji_reaction: selectedEmoji });
       toast({
         title: "Feedback Published",
         description: "Student has been notified of your feedback",
-      })
+      });
     } catch {
       toast({
         title: "Error",
         description: "Failed to publish feedback.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
-  const isDraft = feedback && isFeedbackPublic(feedback) && feedback.is_draft
-  const isExisting = feedback && isFeedbackPublic(feedback)
-  const maxCharacters = 1000
+  const isDraft = feedback && isFeedbackPublic(feedback) && feedback.is_draft;
+  const isExisting = feedback && isFeedbackPublic(feedback);
+  const maxCharacters = 1000;
 
   return (
     <div className="rounded-lg border bg-card">
@@ -184,5 +178,5 @@ export function InlineFeedback({
         </div>
       )}
     </div>
-  )
+  );
 }

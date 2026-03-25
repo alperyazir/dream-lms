@@ -2,26 +2,30 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import aliased
 from sqlmodel import SQLModel, func, select
 from starlette.requests import Request
 
-from app.core.rate_limit import RateLimits, limiter
-
 from app import crud
-from app.services.cache_events import invalidate_for_event_sync
-from app.services.redis_cache import cache_get, cache_get_sync, cache_set, cache_set_sync
 from app.api.deps import AsyncSessionDep, SessionDep, require_role
 from app.core.config import settings
+from app.core.rate_limit import RateLimits, limiter
 from app.models import (
     BulkImportErrorDetail,
     BulkImportResponse,
     Class,
     ClassCreateByTeacher,
-    ClassPublic,
     ClassListItem,
-    ClassResponse,
+    ClassPublic,
     ClassStudent,
     ClassUpdate,
     Student,
@@ -37,6 +41,11 @@ from app.models import (
 )
 from app.schemas.pagination import StudentListResponse
 from app.services.bulk_import import validate_bulk_import
+from app.services.cache_events import invalidate_for_event_sync
+from app.services.redis_cache import (
+    cache_get,
+    cache_set,
+)
 from app.utils import (
     generate_new_account_email,
     generate_temp_password,
@@ -66,7 +75,7 @@ def create_student(
     session: SessionDep,
     student_in: StudentCreateAPI,
     background_tasks: BackgroundTasks,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Create a new student.
@@ -86,24 +95,28 @@ def create_student(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Check if user email already exists (only if email is provided)
     if student_in.user_email:
-        existing_user = crud.get_user_by_email(session=session, email=student_in.user_email)
+        existing_user = crud.get_user_by_email(
+            session=session, email=student_in.user_email
+        )
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists"
+                detail="User with this email already exists",
             )
 
     # Check if username already exists
-    existing_username = crud.get_user_by_username(session=session, username=student_in.username)
+    existing_username = crud.get_user_by_username(
+        session=session, username=student_in.username
+    )
     if existing_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username already exists"
+            detail="User with this username already exists",
         )
 
     # Use provided password or generate one
@@ -116,7 +129,7 @@ def create_student(
     student_create = StudentCreate(
         user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
         grade_level=student_in.grade_level,
-        parent_email=student_in.parent_email
+        parent_email=student_in.parent_email,
     )
 
     # Create user and student atomically
@@ -127,7 +140,7 @@ def create_student(
         password=temp_password,
         full_name=student_in.full_name,
         student_create=student_create,
-        created_by_teacher_id=teacher.id
+        created_by_teacher_id=teacher.id,
     )
 
     # Handle password delivery based on email availability
@@ -142,7 +155,7 @@ def create_student(
                 email_to=user.email,
                 username=user.username,
                 password=temp_password,
-                full_name=student_in.full_name
+                full_name=student_in.full_name,
             )
             background_tasks.add_task(
                 send_email,
@@ -155,7 +168,9 @@ def create_student(
         except Exception as e:
             logger.error(f"Failed to prepare welcome email for {user.email}: {e}")
             temp_password_for_response = temp_password
-            message = "Email delivery failed. Please share the temporary password securely."
+            message = (
+                "Email delivery failed. Please share the temporary password securely."
+            )
     else:
         # No email or emails disabled - return password once for manual communication
         temp_password_for_response = temp_password
@@ -171,7 +186,7 @@ def create_student(
         user_username=user.username,
         user_full_name=user.full_name or "",
         created_at=student.created_at,
-        updated_at=student.updated_at
+        updated_at=student.updated_at,
     )
 
     invalidate_for_event_sync("teacher_students_changed", user_id=str(current_user.id))
@@ -181,7 +196,7 @@ def create_student(
         role_record=student_data,
         temporary_password=temp_password_for_response,
         password_emailed=password_emailed,
-        message=message
+        message=message,
     )
 
 
@@ -198,7 +213,7 @@ async def bulk_import_students(
     *,
     session: SessionDep,
     file: UploadFile = File(...),
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Bulk import students from Excel file.
@@ -214,49 +229,54 @@ async def bulk_import_students(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Validate file extension
-    if not file.filename or not file.filename.lower().endswith(('.xlsx', '.xls')):
+    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only Excel files (.xlsx, .xls) are supported"
+            detail="Only Excel files (.xlsx, .xls) are supported",
         )
 
     # Validate file size (max 5MB)
     if not await validate_file_size(file, max_size_mb=5):
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File size exceeds 5MB limit"
+            detail="File size exceeds 5MB limit",
         )
 
     # Parse Excel file
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     if not rows:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Excel file contains no data rows"
+            detail="Excel file contains no data rows",
         )
 
     # Extract headers from first row
     if rows:
         headers = list(rows[0].keys())
-        headers = [h for h in headers if not h.startswith('_')]  # Remove internal fields
+        headers = [
+            h for h in headers if not h.startswith("_")
+        ]  # Remove internal fields
 
         # Validate headers
-        required_headers = ["First Name", "Last Name", "Email", "Grade Level", "Parent Email"]
+        required_headers = [
+            "First Name",
+            "Last Name",
+            "Email",
+            "Grade Level",
+            "Parent Email",
+        ]
         if not validate_excel_headers(headers, required_headers):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Missing required columns. Expected: {', '.join(required_headers)}"
+                detail=f"Missing required columns. Expected: {', '.join(required_headers)}",
             )
 
     # Validate all rows
@@ -266,9 +286,7 @@ async def bulk_import_students(
     if validation_result.error_count > 0:
         error_details = [
             BulkImportErrorDetail(
-                row_number=err.row_number,
-                field=None,
-                message="; ".join(err.errors)
+                row_number=err.row_number, field=None, message="; ".join(err.errors)
             )
             for err in validation_result.errors
         ]
@@ -279,7 +297,7 @@ async def bulk_import_students(
             created_count=0,
             error_count=validation_result.error_count,
             errors=error_details,
-            credentials=None
+            credentials=None,
         )
 
     # All validations passed - create students in transaction
@@ -287,12 +305,16 @@ async def bulk_import_students(
 
     try:
         for row in rows:
-            email = row.get('Email', '').strip()
-            first_name = row.get('First Name', '').strip()
-            last_name = row.get('Last Name', '').strip()
+            email = row.get("Email", "").strip()
+            first_name = row.get("First Name", "").strip()
+            last_name = row.get("Last Name", "").strip()
             full_name = f"{first_name} {last_name}"
-            grade_level = row.get('Grade Level', '').strip() if row.get('Grade Level') else None
-            parent_email = row.get('Parent Email', '').strip() if row.get('Parent Email') else None
+            grade_level = (
+                row.get("Grade Level", "").strip() if row.get("Grade Level") else None
+            )
+            parent_email = (
+                row.get("Parent Email", "").strip() if row.get("Parent Email") else None
+            )
 
             # Generate temporary password
             temp_password = generate_temp_password()
@@ -304,7 +326,7 @@ async def bulk_import_students(
             student_create = StudentCreate(
                 user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
                 grade_level=grade_level,
-                parent_email=parent_email
+                parent_email=parent_email,
             )
 
             # Create user and student atomically
@@ -315,24 +337,24 @@ async def bulk_import_students(
                 password=temp_password,
                 full_name=full_name,
                 student_create=student_create,
-                created_by_teacher_id=teacher.id
+                created_by_teacher_id=teacher.id,
             )
 
-            created_credentials.append({
-                "email": email,
-                "temp_password": temp_password,
-                "full_name": full_name
-            })
+            created_credentials.append(
+                {"email": email, "temp_password": temp_password, "full_name": full_name}
+            )
 
         session.commit()
-        logger.info(f"Bulk import: Successfully created {len(created_credentials)} students")
+        logger.info(
+            f"Bulk import: Successfully created {len(created_credentials)} students"
+        )
 
     except Exception as e:
         session.rollback()
         logger.error(f"Bulk import failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bulk import failed: {str(e)}"
+            detail=f"Bulk import failed: {str(e)}",
         )
 
     invalidate_for_event_sync("teacher_students_changed", user_id=str(current_user.id))
@@ -343,7 +365,7 @@ async def bulk_import_students(
         created_count=len(created_credentials),
         error_count=0,
         errors=[],
-        credentials=created_credentials
+        credentials=created_credentials,
     )
 
 
@@ -375,29 +397,29 @@ async def list_my_students(
         return StudentListResponse(**cached)
 
     # Get Teacher record for current user
-    teacher_result = await session.execute(select(Teacher).where(Teacher.user_id == current_user.id))
+    teacher_result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
     teacher = teacher_result.scalar_one_or_none()
 
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get students created by this teacher OR enrolled in teacher's classes
     teacher_class_ids = select(Class.id).where(Class.teacher_id == teacher.id)
-    enrolled_student_ids = (
-        select(ClassStudent.student_id)
-        .where(ClassStudent.class_id.in_(teacher_class_ids))
+    enrolled_student_ids = select(ClassStudent.student_id).where(
+        ClassStudent.class_id.in_(teacher_class_ids)
     )
 
     StudentUser = aliased(User, name="student_user")
     CreatedByTeacher = aliased(Teacher, name="created_by_teacher")
     CreatedByUser = aliased(User, name="created_by_user")
 
-    base_filter = (
-        (Student.created_by_teacher_id == teacher.id) |
-        (Student.id.in_(enrolled_student_ids))
+    base_filter = (Student.created_by_teacher_id == teacher.id) | (
+        Student.id.in_(enrolled_student_ids)
     )
 
     # Count total before pagination
@@ -413,7 +435,9 @@ async def list_my_students(
             CreatedByUser.full_name.label("teacher_name"),
         )
         .join(StudentUser, Student.user_id == StudentUser.id)
-        .outerjoin(CreatedByTeacher, Student.created_by_teacher_id == CreatedByTeacher.id)
+        .outerjoin(
+            CreatedByTeacher, Student.created_by_teacher_id == CreatedByTeacher.id
+        )
         .outerjoin(CreatedByUser, CreatedByTeacher.user_id == CreatedByUser.id)
         .where(base_filter)
         .distinct()
@@ -456,7 +480,7 @@ async def list_my_students(
             created_by_teacher_name=teacher_name,
             classroom_names=classroom_map.get(s.id, []),
             created_at=s.created_at,
-            updated_at=s.updated_at
+            updated_at=s.updated_at,
         )
         result.append(student_data)
 
@@ -484,7 +508,7 @@ def update_student(
     session: SessionDep,
     student_id: uuid.UUID,
     student_in: StudentUpdate,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Update a student.
@@ -502,15 +526,14 @@ def update_student(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get student
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
         )
 
     # Verify student belongs to this teacher (created by them OR enrolled in their class)
@@ -518,16 +541,19 @@ def update_student(
         select(Class.id).where(Class.teacher_id == teacher.id)
     ).all()
 
-    is_enrolled = session.exec(
-        select(ClassStudent)
-        .where(ClassStudent.student_id == student_id)
-        .where(ClassStudent.class_id.in_(teacher_class_ids))
-    ).first() is not None
+    is_enrolled = (
+        session.exec(
+            select(ClassStudent)
+            .where(ClassStudent.student_id == student_id)
+            .where(ClassStudent.class_id.in_(teacher_class_ids))
+        ).first()
+        is not None
+    )
 
     if student.created_by_teacher_id != teacher.id and not is_enrolled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot update a student that is not in your classes"
+            detail="Cannot update a student that is not in your classes",
         )
 
     # Update student fields (grade_level, parent_email)
@@ -538,14 +564,14 @@ def update_student(
     student_fields = {}
 
     for key, value in update_data.items():
-        if key in ['user_email', 'user_username', 'user_full_name']:
+        if key in ["user_email", "user_username", "user_full_name"]:
             # Map to User model fields
-            if key == 'user_email':
-                user_fields['email'] = value
-            elif key == 'user_username':
-                user_fields['username'] = value
-            elif key == 'user_full_name':
-                user_fields['full_name'] = value
+            if key == "user_email":
+                user_fields["email"] = value
+            elif key == "user_username":
+                user_fields["username"] = value
+            elif key == "user_full_name":
+                user_fields["full_name"] = value
         else:
             student_fields[key] = value
 
@@ -558,23 +584,27 @@ def update_student(
         user = session.get(User, student.user_id)
         if user:
             # Check if username is being changed
-            if 'username' in user_fields and user_fields['username'] != user.username:
+            if "username" in user_fields and user_fields["username"] != user.username:
                 # Check if new username already exists
-                existing_user = crud.get_user_by_username(session=session, username=user_fields['username'])
+                existing_user = crud.get_user_by_username(
+                    session=session, username=user_fields["username"]
+                )
                 if existing_user and existing_user.id != user.id:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Username already exists"
+                        detail="Username already exists",
                     )
 
             # Check if email is being changed
-            if 'email' in user_fields and user_fields['email'] != user.email:
+            if "email" in user_fields and user_fields["email"] != user.email:
                 # Check if new email already exists
-                existing_user = crud.get_user_by_email(session=session, email=user_fields['email'])
+                existing_user = crud.get_user_by_email(
+                    session=session, email=user_fields["email"]
+                )
                 if existing_user and existing_user.id != user.id:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Email already exists"
+                        detail="Email already exists",
                     )
 
             for key, value in user_fields.items():
@@ -599,7 +629,7 @@ def update_student(
         user_username=user.username if user else "",
         user_full_name=user.full_name if user and user.full_name else "",
         created_at=student.created_at,
-        updated_at=student.updated_at
+        updated_at=student.updated_at,
     )
 
 
@@ -615,7 +645,7 @@ def delete_student(
     *,
     session: SessionDep,
     student_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Delete a student.
@@ -632,15 +662,14 @@ def delete_student(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get student
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
         )
 
     # Verify student belongs to this teacher (created by them OR enrolled in their class)
@@ -648,16 +677,19 @@ def delete_student(
         select(Class.id).where(Class.teacher_id == teacher.id)
     ).all()
 
-    is_enrolled = session.exec(
-        select(ClassStudent)
-        .where(ClassStudent.student_id == student_id)
-        .where(ClassStudent.class_id.in_(teacher_class_ids))
-    ).first() is not None
+    is_enrolled = (
+        session.exec(
+            select(ClassStudent)
+            .where(ClassStudent.student_id == student_id)
+            .where(ClassStudent.class_id.in_(teacher_class_ids))
+        ).first()
+        is not None
+    )
 
     if student.created_by_teacher_id != teacher.id and not is_enrolled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot delete a student that is not in your classes"
+            detail="Cannot delete a student that is not in your classes",
         )
 
     # Remove from all classes first
@@ -687,11 +719,13 @@ def delete_student(
 
 class BulkDeleteRequest(SQLModel):
     """Request body for bulk delete operations."""
+
     ids: list[uuid.UUID]
 
 
 class BulkDeleteResponse(SQLModel):
     """Response for bulk delete operations."""
+
     deleted_count: int
     failed_count: int
     errors: list[str] = []
@@ -709,7 +743,7 @@ def bulk_delete_students(
     *,
     session: SessionDep,
     bulk_request: BulkDeleteRequest,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> BulkDeleteResponse:
     """
     Delete multiple students by their IDs.
@@ -726,7 +760,7 @@ def bulk_delete_students(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get teacher's class IDs for permission checking
@@ -747,11 +781,14 @@ def bulk_delete_students(
                 continue
 
             # Check permission: created by teacher OR in teacher's class
-            is_enrolled = session.exec(
-                select(ClassStudent)
-                .where(ClassStudent.student_id == student_id)
-                .where(ClassStudent.class_id.in_(teacher_class_ids))
-            ).first() is not None
+            is_enrolled = (
+                session.exec(
+                    select(ClassStudent)
+                    .where(ClassStudent.student_id == student_id)
+                    .where(ClassStudent.class_id.in_(teacher_class_ids))
+                ).first()
+                is not None
+            )
 
             if student.created_by_teacher_id != teacher.id and not is_enrolled:
                 failed_count += 1
@@ -780,12 +817,12 @@ def bulk_delete_students(
 
     session.commit()
     if deleted_count > 0:
-        invalidate_for_event_sync("teacher_students_changed", user_id=str(current_user.id))
+        invalidate_for_event_sync(
+            "teacher_students_changed", user_id=str(current_user.id)
+        )
 
     return BulkDeleteResponse(
-        deleted_count=deleted_count,
-        failed_count=failed_count,
-        errors=errors
+        deleted_count=deleted_count, failed_count=failed_count, errors=errors
     )
 
 
@@ -800,7 +837,7 @@ async def list_my_classes(
     request: Request,
     *,
     session: AsyncSessionDep,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     List all classes taught by this teacher with student counts.
@@ -814,20 +851,19 @@ async def list_my_classes(
         return cached
 
     # Get Teacher record for current user
-    teacher_result = await session.execute(select(Teacher).where(Teacher.user_id == current_user.id))
+    teacher_result = await session.execute(
+        select(Teacher).where(Teacher.user_id == current_user.id)
+    )
     teacher = teacher_result.scalar_one_or_none()
 
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     classes_result = await session.execute(
-        select(
-            Class,
-            func.count(ClassStudent.id).label("student_count")
-        )
+        select(Class, func.count(ClassStudent.id).label("student_count"))
         .outerjoin(ClassStudent, Class.id == ClassStudent.class_id)
         .where(Class.teacher_id == teacher.id)
         .group_by(Class.id)
@@ -863,7 +899,7 @@ def create_class(
     *,
     session: SessionDep,
     class_in: ClassCreateByTeacher,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Create a new class.
@@ -884,13 +920,13 @@ def create_class(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Add teacher_id and school_id to class data
     class_data = class_in.model_dump()
-    class_data['teacher_id'] = teacher.id
-    class_data['school_id'] = teacher.school_id
+    class_data["teacher_id"] = teacher.id
+    class_data["school_id"] = teacher.school_id
 
     # Create class
     db_class = Class.model_validate(class_data)
@@ -914,7 +950,7 @@ def get_class_details(
     *,
     session: SessionDep,
     class_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Get details of a specific class including enrolled students.
@@ -928,22 +964,21 @@ def get_class_details(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get class
     db_class = session.get(Class, class_id)
     if not db_class:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Class not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
         )
 
     # Verify class belongs to this teacher
     if db_class.teacher_id != teacher.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot access another teacher's class"
+            detail="Cannot access another teacher's class",
         )
 
     return ClassPublic.model_validate(db_class)
@@ -962,7 +997,7 @@ def update_class(
     session: SessionDep,
     class_id: uuid.UUID,
     class_in: ClassUpdate,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Update a class.
@@ -978,22 +1013,21 @@ def update_class(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get class
     db_class = session.get(Class, class_id)
     if not db_class:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Class not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
         )
 
     # Verify class belongs to this teacher
     if db_class.teacher_id != teacher.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot update another teacher's class"
+            detail="Cannot update another teacher's class",
         )
 
     # Update class
@@ -1021,7 +1055,7 @@ def delete_class(
     *,
     session: SessionDep,
     class_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> None:
     """
     Delete a class.
@@ -1036,26 +1070,27 @@ def delete_class(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get class
     db_class = session.get(Class, class_id)
     if not db_class:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Class not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
         )
 
     # Verify class belongs to this teacher
     if db_class.teacher_id != teacher.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot delete another teacher's class"
+            detail="Cannot delete another teacher's class",
         )
 
     # Delete all student enrollments in this class first
-    class_students_statement = select(ClassStudent).where(ClassStudent.class_id == class_id)
+    class_students_statement = select(ClassStudent).where(
+        ClassStudent.class_id == class_id
+    )
     class_students = session.exec(class_students_statement).all()
     for cs in class_students:
         session.delete(cs)
@@ -1079,7 +1114,7 @@ def add_students_to_class(
     session: SessionDep,
     class_id: uuid.UUID,
     student_ids: list[uuid.UUID],
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Add students to a class.
@@ -1095,22 +1130,21 @@ def add_students_to_class(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get class
     db_class = session.get(Class, class_id)
     if not db_class:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Class not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
         )
 
     # Verify class belongs to this teacher
     if db_class.teacher_id != teacher.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot add students to another teacher's class"
+            detail="Cannot add students to another teacher's class",
         )
 
     added_count = 0
@@ -1129,20 +1163,19 @@ def add_students_to_class(
 
         if not existing:
             # Add student to class
-            class_student = ClassStudent(
-                class_id=class_id,
-                student_id=student_id
-            )
+            class_student = ClassStudent(class_id=class_id, student_id=student_id)
             session.add(class_student)
             added_count += 1
 
     session.commit()
     if added_count > 0:
-        invalidate_for_event_sync("teacher_classes_changed", user_id=str(current_user.id))
+        invalidate_for_event_sync(
+            "teacher_classes_changed", user_id=str(current_user.id)
+        )
 
     return {
         "message": f"Successfully added {added_count} student(s) to class",
-        "added_count": added_count
+        "added_count": added_count,
     }
 
 
@@ -1158,7 +1191,7 @@ def remove_student_from_class(
     session: SessionDep,
     class_id: uuid.UUID,
     student_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Remove a student from a class.
@@ -1172,22 +1205,21 @@ def remove_student_from_class(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get class
     db_class = session.get(Class, class_id)
     if not db_class:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Class not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
         )
 
     # Verify class belongs to this teacher
     if db_class.teacher_id != teacher.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot remove students from another teacher's class"
+            detail="Cannot remove students from another teacher's class",
         )
 
     # Find enrollment
@@ -1200,7 +1232,7 @@ def remove_student_from_class(
     if not class_student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not enrolled in this class"
+            detail="Student not enrolled in this class",
         )
 
     # Remove enrollment
@@ -1223,7 +1255,7 @@ def get_class_students(
     *,
     session: SessionDep,
     class_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Get all students enrolled in a class.
@@ -1237,22 +1269,21 @@ def get_class_students(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Get class
     db_class = session.get(Class, class_id)
     if not db_class:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Class not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
         )
 
     # Verify class belongs to this teacher
     if db_class.teacher_id != teacher.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot access another teacher's class"
+            detail="Cannot access another teacher's class",
         )
 
     # Get enrolled students
@@ -1276,7 +1307,7 @@ def get_class_students(
             user_username=user.username if user else "",
             user_full_name=user.full_name if user and user.full_name else "",
             created_at=s.created_at,
-            updated_at=s.updated_at
+            updated_at=s.updated_at,
         )
         result.append(student_data)
 
@@ -1285,11 +1316,13 @@ def get_class_students(
 
 class StudentsForClassesRequest(SQLModel):
     """Request body for fetching students for multiple classes."""
+
     class_ids: list[uuid.UUID]
 
 
 class ClassStudentsGroup(SQLModel):
     """Students grouped by class ID."""
+
     class_id: uuid.UUID
     students: list[StudentPublic]
 
@@ -1306,7 +1339,7 @@ def get_students_for_classes(
     *,
     session: SessionDep,
     classes_request: StudentsForClassesRequest,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Get students for multiple classes at once.
@@ -1325,13 +1358,12 @@ def get_students_for_classes(
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     # Verify all classes belong to this teacher
     classes_statement = select(Class).where(
-        Class.id.in_(classes_request.class_ids),
-        Class.teacher_id == teacher.id
+        Class.id.in_(classes_request.class_ids), Class.teacher_id == teacher.id
     )
     classes = session.exec(classes_statement).all()
 
@@ -1343,7 +1375,7 @@ def get_students_for_classes(
         unauthorized_ids = requested_class_ids - verified_class_ids
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Cannot access classes: {unauthorized_ids}"
+            detail=f"Cannot access classes: {unauthorized_ids}",
         )
 
     # Fetch all students for these classes in a single query
@@ -1371,7 +1403,7 @@ def get_students_for_classes(
             user_username=user.username if user else "",
             user_full_name=user.full_name if user and user.full_name else "",
             created_at=student.created_at,
-            updated_at=student.updated_at
+            updated_at=student.updated_at,
         )
         students_by_class[class_id].append(student_data)
 
@@ -1402,7 +1434,7 @@ async def get_my_insights(
     request: Request,
     *,
     session: AsyncSessionDep,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     DEPRECATED: This endpoint has been removed in Story 21.4.
@@ -1412,7 +1444,7 @@ async def get_my_insights(
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="The Insights feature has been removed. Please use student analytics or assignment reports instead."
+        detail="The Insights feature has been removed. Please use student analytics or assignment reports instead.",
     )
 
 
@@ -1428,14 +1460,14 @@ async def get_insight_details(
     *,
     session: AsyncSessionDep,
     insight_id: str,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     DEPRECATED: This endpoint has been removed in Story 21.4.
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="The Insights feature has been removed."
+        detail="The Insights feature has been removed.",
     )
 
 
@@ -1451,12 +1483,12 @@ async def dismiss_insight_endpoint(
     *,
     session: AsyncSessionDep,
     insight_id: str,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     DEPRECATED: This endpoint has been removed in Story 21.4.
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="The Insights feature has been removed."
+        detail="The Insights feature has been removed.",
     )

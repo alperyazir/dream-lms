@@ -5,18 +5,28 @@
  * Displays per-activity score breakdown for students viewing their results.
  */
 
-import { CheckCircle, ChevronDown, ChevronUp, Clock, FileText, XCircle } from "lucide-react"
-import { useState } from "react"
-import { ActivityReviewRenderer, supportsVisualReview } from "@/components/analytics/ActivityReviewRenderer"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useStudentAssignmentResult } from "@/hooks/useAssignmentAnalytics"
-import type { ActivityScoreItem } from "@/types/assignment"
+import {
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  FileText,
+  XCircle,
+} from "lucide-react";
+import { useState } from "react";
+import {
+  ActivityReviewRenderer,
+  supportsVisualReview,
+} from "@/components/analytics/ActivityReviewRenderer";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useStudentAssignmentResult } from "@/hooks/useAssignmentAnalytics";
+import type { ActivityScoreItem } from "@/types/assignment";
 
 interface StudentScoreBreakdownProps {
-  assignmentId: string
+  assignmentId: string;
 }
 
 /**
@@ -32,36 +42,36 @@ function formatActivityType(type: string): string {
     multiple_choice: "Multiple Choice",
     coloring: "Coloring",
     drawing: "Drawing",
-  }
+  };
   return (
     typeMap[type] ||
     type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  )
+  );
 }
 
 /**
  * Get status icon and color
  */
 function getStatusDisplay(status: string): {
-  icon: React.ReactNode
-  color: string
+  icon: React.ReactNode;
+  color: string;
 } {
   switch (status) {
     case "completed":
       return {
         icon: <CheckCircle className="h-5 w-5" />,
         color: "text-green-500",
-      }
+      };
     case "in_progress":
       return {
         icon: <Clock className="h-5 w-5" />,
         color: "text-yellow-500",
-      }
+      };
     default:
       return {
         icon: <XCircle className="h-5 w-5" />,
         color: "text-gray-400",
-      }
+      };
   }
 }
 
@@ -69,31 +79,38 @@ function getStatusDisplay(status: string): {
  * Get score color based on percentage
  */
 function getScoreColor(score: number | null, maxScore: number): string {
-  if (score === null) return "text-gray-400"
-  const percentage = (score / maxScore) * 100
-  if (percentage >= 90) return "text-green-600"
-  if (percentage >= 70) return "text-blue-600"
-  if (percentage >= 50) return "text-yellow-600"
-  return "text-red-600"
+  if (score === null) return "text-gray-400";
+  const percentage = (score / maxScore) * 100;
+  if (percentage >= 90) return "text-green-600";
+  if (percentage >= 70) return "text-blue-600";
+  if (percentage >= 50) return "text-yellow-600";
+  return "text-red-600";
 }
 
 /**
  * Individual activity score card with expandable answer review
  */
-function ActivityScoreCard({ activity, bookId }: { activity: ActivityScoreItem; bookId?: number | null }) {
-  const [expanded, setExpanded] = useState(false)
-  const statusDisplay = getStatusDisplay(activity.status)
+function ActivityScoreCard({
+  activity,
+  bookId,
+}: {
+  activity: ActivityScoreItem;
+  bookId?: number | null;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const statusDisplay = getStatusDisplay(activity.status);
   const scorePercentage =
     activity.score !== null
       ? Math.round((activity.score / activity.max_score) * 100)
-      : null
+      : null;
 
   const hasVisualReview =
     activity.config_json &&
     activity.response_data &&
-    supportsVisualReview(activity.activity_type)
-  const hasTextReview = activity.review_items && activity.review_items.length > 0
-  const canExpand = hasVisualReview || hasTextReview
+    supportsVisualReview(activity.activity_type);
+  const hasTextReview =
+    activity.review_items && activity.review_items.length > 0;
+  const canExpand = hasVisualReview || hasTextReview;
 
   return (
     <div className="rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -131,7 +148,11 @@ function ActivityScoreCard({ activity, bookId }: { activity: ActivityScoreItem; 
           </div>
           {canExpand && (
             <div className="text-muted-foreground">
-              {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              {expanded ? (
+                <ChevronUp className="h-5 w-5" />
+              ) : (
+                <ChevronDown className="h-5 w-5" />
+              )}
             </div>
           )}
         </div>
@@ -171,7 +192,13 @@ function ActivityScoreCard({ activity, bookId }: { activity: ActivityScoreItem; 
                 <div className="mt-1 space-y-0.5">
                   <p>
                     <span className="text-muted-foreground">Your answer: </span>
-                    <span className={item.is_correct ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400 line-through"}>
+                    <span
+                      className={
+                        item.is_correct
+                          ? "text-green-700 dark:text-green-400"
+                          : "text-red-700 dark:text-red-400 line-through"
+                      }
+                    >
                       {item.student_answer || "—"}
                     </span>
                   </p>
@@ -190,7 +217,7 @@ function ActivityScoreCard({ activity, bookId }: { activity: ActivityScoreItem; 
         </div>
       )}
     </div>
-  )
+  );
 }
 
 /**
@@ -204,7 +231,7 @@ function ScoreBreakdownSkeleton() {
       <Skeleton className="h-16 w-full" />
       <Skeleton className="h-16 w-full" />
     </div>
-  )
+  );
 }
 
 /**
@@ -217,10 +244,10 @@ export function StudentScoreBreakdown({
     data: result,
     isLoading,
     error,
-  } = useStudentAssignmentResult(assignmentId)
+  } = useStudentAssignmentResult(assignmentId);
 
   if (isLoading) {
-    return <ScoreBreakdownSkeleton />
+    return <ScoreBreakdownSkeleton />;
   }
 
   if (error) {
@@ -229,7 +256,7 @@ export function StudentScoreBreakdown({
         <XCircle className="h-8 w-8 mx-auto mb-2" />
         <p>Failed to load your results. Please try again.</p>
       </div>
-    )
+    );
   }
 
   if (!result) {
@@ -238,12 +265,12 @@ export function StudentScoreBreakdown({
         <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
         <p>No results available.</p>
       </div>
-    )
+    );
   }
 
   const completionPercent = Math.round(
     (result.completed_activities / result.total_activities) * 100,
-  )
+  );
 
   return (
     <Card>
@@ -284,10 +311,14 @@ export function StudentScoreBreakdown({
         <div className="space-y-3">
           <h3 className="font-semibold text-lg">Score Breakdown</h3>
           {result.activity_scores.map((activity) => (
-            <ActivityScoreCard key={activity.activity_id} activity={activity} bookId={result.book_id} />
+            <ActivityScoreCard
+              key={activity.activity_id}
+              activity={activity}
+              bookId={result.book_id}
+            />
           ))}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

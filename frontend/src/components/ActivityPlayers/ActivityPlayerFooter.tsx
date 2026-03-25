@@ -5,7 +5,7 @@
  * Action buttons for submit, save, and exit
  */
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,15 +15,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../ui/alert-dialog"
-import { Button } from "../ui/button"
+} from "../ui/alert-dialog";
+import { Button } from "../ui/button";
 
 interface ActivityPlayerFooterProps {
-  onSubmit: () => void
-  onExit: () => void
-  submitDisabled?: boolean
-  saveDisabled?: boolean
-  hasUnsavedChanges?: boolean
+  onSubmit: () => void;
+  onExit: () => void;
+  submitDisabled?: boolean;
+  saveDisabled?: boolean;
+  hasUnsavedChanges?: boolean;
 }
 
 export function ActivityPlayerFooter({
@@ -33,20 +33,20 @@ export function ActivityPlayerFooter({
   saveDisabled = true,
   hasUnsavedChanges = false,
 }: ActivityPlayerFooterProps) {
-  const [showExitDialog, setShowExitDialog] = useState(false)
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const handleExit = () => {
     if (hasUnsavedChanges) {
-      setShowExitDialog(true)
+      setShowExitDialog(true);
     } else {
-      onExit()
+      onExit();
     }
-  }
+  };
 
   const confirmExit = () => {
-    setShowExitDialog(false)
-    onExit()
-  }
+    setShowExitDialog(false);
+    onExit();
+  };
 
   return (
     <>
@@ -94,5 +94,5 @@ export function ActivityPlayerFooter({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }

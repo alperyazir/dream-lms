@@ -2,10 +2,10 @@
 Tests for student password management - Story 28.1
 Teacher-controlled student password management: view, set, and create with passwords.
 """
+
 import uuid
 from unittest.mock import patch
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -38,7 +38,7 @@ class TestGetStudentPassword:
             viewable_password_encrypted=None,  # Will be set via mock
             role=UserRole.student,
             is_active=True,
-            full_name="Test Student"
+            full_name="Test Student",
         )
         session.add(student_user)
         session.commit()
@@ -69,9 +69,7 @@ class TestGetStudentPassword:
             assert data["full_name"] == "Test Student"
             assert data["password"] == "student123"
 
-    def test_student_not_found_returns_404(
-        self, client: TestClient, admin_token: str
-    ):
+    def test_student_not_found_returns_404(self, client: TestClient, admin_token: str):
         """Test 404 is returned for non-existent student."""
         fake_id = uuid.uuid4()
         response = client.get(
@@ -87,11 +85,7 @@ class TestGetStudentPassword:
     ):
         """Test teacher can get password for student in their class."""
         # Create school
-        school = School(
-            id=uuid.uuid4(),
-            name="Test School",
-            dcs_publisher_id=999
-        )
+        school = School(id=uuid.uuid4(), name="Test School", dcs_publisher_id=999)
         session.add(school)
         session.commit()
 
@@ -103,7 +97,7 @@ class TestGetStudentPassword:
             hashed_password=get_password_hash("teacherpassword"),
             role=UserRole.teacher,
             is_active=True,
-            full_name="Teacher PWD"
+            full_name="Teacher PWD",
         )
         session.add(teacher_user)
         session.commit()
@@ -134,7 +128,7 @@ class TestGetStudentPassword:
             hashed_password=get_password_hash("student123"),
             role=UserRole.student,
             is_active=True,
-            full_name="Student In Class"
+            full_name="Student In Class",
         )
         session.add(student_user)
         session.commit()
@@ -159,7 +153,7 @@ class TestGetStudentPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"}
+            data={"username": teacher_user.email, "password": "teacherpassword"},
         )
         assert response.status_code == 200
         teacher_token = response.json()["access_token"]
@@ -185,11 +179,7 @@ class TestGetStudentPassword:
     ):
         """Test teacher cannot get password for student not in their class."""
         # Create school
-        school = School(
-            id=uuid.uuid4(),
-            name="Test School 2",
-            dcs_publisher_id=999
-        )
+        school = School(id=uuid.uuid4(), name="Test School 2", dcs_publisher_id=999)
         session.add(school)
         session.commit()
 
@@ -201,7 +191,7 @@ class TestGetStudentPassword:
             hashed_password=get_password_hash("teacherpassword"),
             role=UserRole.teacher,
             is_active=True,
-            full_name="Teacher No Access"
+            full_name="Teacher No Access",
         )
         session.add(teacher_user)
         session.commit()
@@ -222,7 +212,7 @@ class TestGetStudentPassword:
             hashed_password=get_password_hash("student123"),
             role=UserRole.student,
             is_active=True,
-            full_name="Other Student"
+            full_name="Other Student",
         )
         session.add(student_user)
         session.commit()
@@ -238,7 +228,7 @@ class TestGetStudentPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"}
+            data={"username": teacher_user.email, "password": "teacherpassword"},
         )
         assert response.status_code == 200
         teacher_token = response.json()["access_token"]
@@ -264,7 +254,7 @@ class TestGetStudentPassword:
             viewable_password_encrypted=None,  # Pre-feature student
             role=UserRole.student,
             is_active=True,
-            full_name="Old Student"
+            full_name="Old Student",
         )
         session.add(student_user)
         session.commit()
@@ -302,7 +292,7 @@ class TestSetStudentPassword:
             hashed_password=get_password_hash("oldpassword"),
             role=UserRole.student,
             is_active=True,
-            full_name="Student Set PWD"
+            full_name="Student Set PWD",
         )
         session.add(student_user)
         session.commit()
@@ -345,7 +335,7 @@ class TestSetStudentPassword:
             hashed_password=get_password_hash("oldpassword"),
             role=UserRole.student,
             is_active=True,
-            full_name="Student Short PWD"
+            full_name="Student Short PWD",
         )
         session.add(student_user)
         session.commit()
@@ -366,9 +356,7 @@ class TestSetStudentPassword:
 
         assert response.status_code == 422  # Validation error
 
-    def test_student_not_found_returns_404(
-        self, client: TestClient, admin_token: str
-    ):
+    def test_student_not_found_returns_404(self, client: TestClient, admin_token: str):
         """Test 404 is returned for non-existent student."""
         fake_id = uuid.uuid4()
         response = client.put(
@@ -392,7 +380,7 @@ class TestStudentCannotChangePassword:
             headers={"Authorization": f"Bearer {student_token}"},
             json={
                 "current_password": "studentpassword",
-                "new_password": "newpassword123"
+                "new_password": "newpassword123",
             },
         )
 
@@ -408,7 +396,7 @@ class TestStudentCannotChangePassword:
             headers={"Authorization": f"Bearer {student_token}"},
             json={
                 "current_password": "studentpassword",
-                "new_password": "newpassword123"
+                "new_password": "newpassword123",
             },
         )
 
@@ -425,9 +413,7 @@ class TestStudentCreationWithPassword:
         """Test admin can create student with custom password."""
         # Create school
         school = School(
-            id=uuid.uuid4(),
-            name="Test School Custom PWD",
-            dcs_publisher_id=999
+            id=uuid.uuid4(), name="Test School Custom PWD", dcs_publisher_id=999
         )
         session.add(school)
         session.commit()
@@ -462,9 +448,7 @@ class TestStudentCreationWithPassword:
         """Test admin can create student with auto-generated password when none provided."""
         # Create school
         school = School(
-            id=uuid.uuid4(),
-            name="Test School Auto PWD",
-            dcs_publisher_id=999
+            id=uuid.uuid4(), name="Test School Auto PWD", dcs_publisher_id=999
         )
         session.add(school)
         session.commit()
@@ -488,15 +472,15 @@ class TestStudentCreationWithPassword:
 
             # Verify auto-generated password is returned
             assert "temporary_password" in data
-            assert len(data["temporary_password"]) >= 8  # Auto-generated passwords are 8 chars
+            assert (
+                len(data["temporary_password"]) >= 8
+            )  # Auto-generated passwords are 8 chars
 
 
 class TestBulkImportWithPassword:
     """Tests for bulk import password options [Story 28.1]"""
 
-    def test_import_with_class_password(
-        self, client: TestClient, session: Session
-    ):
+    def test_import_with_class_password(self, client: TestClient, session: Session):
         """Test bulk import with class_password parameter."""
         import io
 
@@ -504,9 +488,7 @@ class TestBulkImportWithPassword:
 
         # Create school and teacher
         school = School(
-            id=uuid.uuid4(),
-            name="Bulk Import School",
-            dcs_publisher_id=999
+            id=uuid.uuid4(), name="Bulk Import School", dcs_publisher_id=999
         )
         session.add(school)
         session.commit()
@@ -518,7 +500,7 @@ class TestBulkImportWithPassword:
             hashed_password=get_password_hash("teacherpassword"),
             role=UserRole.teacher,
             is_active=True,
-            full_name="Bulk Teacher"
+            full_name="Bulk Teacher",
         )
         session.add(teacher_user)
         session.commit()
@@ -534,7 +516,7 @@ class TestBulkImportWithPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"}
+            data={"username": teacher_user.email, "password": "teacherpassword"},
         )
         teacher_token = response.json()["access_token"]
 
@@ -557,7 +539,13 @@ class TestBulkImportWithPassword:
         response = client.post(
             f"{settings.API_V1_STR}/students/import?class_password=classwide123",
             headers={"Authorization": f"Bearer {teacher_token}"},
-            files={"file": ("students.xlsx", buffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    buffer,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == 200
@@ -568,9 +556,7 @@ class TestBulkImportWithPassword:
         assert len(data["credentials"]) == 1
         assert data["credentials"][0]["password"] == "classwide123"
 
-    def test_import_with_password_from_file(
-        self, client: TestClient, session: Session
-    ):
+    def test_import_with_password_from_file(self, client: TestClient, session: Session):
         """Test bulk import uses password from Excel file when provided."""
         import io
 
@@ -578,9 +564,7 @@ class TestBulkImportWithPassword:
 
         # Create school and teacher
         school = School(
-            id=uuid.uuid4(),
-            name="Bulk Import School 2",
-            dcs_publisher_id=999
+            id=uuid.uuid4(), name="Bulk Import School 2", dcs_publisher_id=999
         )
         session.add(school)
         session.commit()
@@ -592,7 +576,7 @@ class TestBulkImportWithPassword:
             hashed_password=get_password_hash("teacherpassword"),
             role=UserRole.teacher,
             is_active=True,
-            full_name="Bulk Teacher 2"
+            full_name="Bulk Teacher 2",
         )
         session.add(teacher_user)
         session.commit()
@@ -608,7 +592,7 @@ class TestBulkImportWithPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"}
+            data={"username": teacher_user.email, "password": "teacherpassword"},
         )
         teacher_token = response.json()["access_token"]
 
@@ -631,7 +615,13 @@ class TestBulkImportWithPassword:
         response = client.post(
             f"{settings.API_V1_STR}/students/import",
             headers={"Authorization": f"Bearer {teacher_token}"},
-            files={"file": ("students.xlsx", buffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    buffer,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == 200
@@ -652,9 +642,7 @@ class TestBulkImportWithPassword:
 
         # Create school and teacher
         school = School(
-            id=uuid.uuid4(),
-            name="Bulk Import School Priority",
-            dcs_publisher_id=999
+            id=uuid.uuid4(), name="Bulk Import School Priority", dcs_publisher_id=999
         )
         session.add(school)
         session.commit()
@@ -666,7 +654,7 @@ class TestBulkImportWithPassword:
             hashed_password=get_password_hash("teacherpassword"),
             role=UserRole.teacher,
             is_active=True,
-            full_name="Bulk Teacher Priority"
+            full_name="Bulk Teacher Priority",
         )
         session.add(teacher_user)
         session.commit()
@@ -682,7 +670,7 @@ class TestBulkImportWithPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"}
+            data={"username": teacher_user.email, "password": "teacherpassword"},
         )
         teacher_token = response.json()["access_token"]
 
@@ -705,7 +693,13 @@ class TestBulkImportWithPassword:
         response = client.post(
             f"{settings.API_V1_STR}/students/import?class_password=classpwd",
             headers={"Authorization": f"Bearer {teacher_token}"},
-            files={"file": ("students.xlsx", buffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            files={
+                "file": (
+                    "students.xlsx",
+                    buffer,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
         )
 
         assert response.status_code == 200

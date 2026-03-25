@@ -1,6 +1,7 @@
 """
 Tests for Supervisor CRUD endpoints [Story 14.2]
 """
+
 import uuid
 
 from fastapi.testclient import TestClient
@@ -26,7 +27,7 @@ class TestListSupervisors:
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
             is_active=True,
-            full_name="List Supervisor"
+            full_name="List Supervisor",
         )
         session.add(supervisor)
         session.commit()
@@ -94,7 +95,7 @@ class TestListSupervisors:
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
             is_active=True,
-            full_name="Searchable User"
+            full_name="Searchable User",
         )
         session.add(supervisor)
         session.commit()
@@ -121,7 +122,7 @@ class TestListSupervisors:
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
             is_active=True,
-            full_name="Fields Supervisor"
+            full_name="Fields Supervisor",
         )
         session.add(supervisor)
         session.commit()
@@ -169,7 +170,7 @@ class TestGetSupervisor:
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
             is_active=True,
-            full_name="Get Supervisor"
+            full_name="Get Supervisor",
         )
         session.add(supervisor)
         session.commit()
@@ -206,9 +207,7 @@ class TestGetSupervisor:
 
         assert response.status_code == 200
 
-    def test_get_supervisor_not_found(
-        self, client: TestClient, admin_token: str
-    ):
+    def test_get_supervisor_not_found(self, client: TestClient, admin_token: str):
         """Test 404 when supervisor not found [AC: 8]"""
         fake_id = uuid.uuid4()
         response = client.get(
@@ -234,9 +233,7 @@ class TestGetSupervisor:
 class TestCreateSupervisor:
     """Tests for POST /api/v1/admin/supervisors [Story 14.2 AC: 10-18]"""
 
-    def test_admin_can_create_supervisor(
-        self, client: TestClient, admin_token: str
-    ):
+    def test_admin_can_create_supervisor(self, client: TestClient, admin_token: str):
         """Test admin can create supervisor [AC: 10, 11]"""
         response = client.post(
             f"{settings.API_V1_STR}/admin/supervisors",
@@ -244,7 +241,7 @@ class TestCreateSupervisor:
             json={
                 "username": "newsupervisor",
                 "user_email": "newsupervisor@example.com",
-                "full_name": "New Supervisor"
+                "full_name": "New Supervisor",
             },
         )
 
@@ -255,7 +252,9 @@ class TestCreateSupervisor:
         assert data["user"]["role"] == "supervisor"
         assert data["user"]["must_change_password"] is True
         # Password should be returned since emails are disabled in test
-        assert data["temporary_password"] is not None or data["password_emailed"] is True
+        assert (
+            data["temporary_password"] is not None or data["password_emailed"] is True
+        )
 
     def test_supervisor_cannot_create_supervisor(
         self, client: TestClient, supervisor_token: str
@@ -264,10 +263,7 @@ class TestCreateSupervisor:
         response = client.post(
             f"{settings.API_V1_STR}/admin/supervisors",
             headers={"Authorization": f"Bearer {supervisor_token}"},
-            json={
-                "username": "shouldfail",
-                "full_name": "Should Fail"
-            },
+            json={"username": "shouldfail", "full_name": "Should Fail"},
         )
 
         assert response.status_code == 403
@@ -294,7 +290,7 @@ class TestCreateSupervisor:
             json={
                 "username": "newsuper",
                 "user_email": "taken@example.com",
-                "full_name": "New Super"
+                "full_name": "New Super",
             },
         )
 
@@ -320,10 +316,7 @@ class TestCreateSupervisor:
         response = client.post(
             f"{settings.API_V1_STR}/admin/supervisors",
             headers={"Authorization": f"Bearer {admin_token}"},
-            json={
-                "username": "takenusername",
-                "full_name": "New Super"
-            },
+            json={"username": "takenusername", "full_name": "New Super"},
         )
 
         assert response.status_code == 409
@@ -336,10 +329,7 @@ class TestCreateSupervisor:
         response = client.post(
             f"{settings.API_V1_STR}/admin/supervisors",
             headers={"Authorization": f"Bearer {admin_token}"},
-            json={
-                "username": "noemailsuper",
-                "full_name": "No Email Super"
-            },
+            json={"username": "noemailsuper", "full_name": "No Email Super"},
         )
 
         assert response.status_code == 201
@@ -355,10 +345,7 @@ class TestCreateSupervisor:
         response = client.post(
             f"{settings.API_V1_STR}/admin/supervisors",
             headers={"Authorization": f"Bearer {admin_token}"},
-            json={
-                "username": "mustchange",
-                "full_name": "Must Change"
-            },
+            json={"username": "mustchange", "full_name": "Must Change"},
         )
 
         assert response.status_code == 201
@@ -380,7 +367,7 @@ class TestUpdateSupervisor:
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
             is_active=True,
-            full_name="Update Supervisor"
+            full_name="Update Supervisor",
         )
         session.add(supervisor)
         session.commit()
@@ -481,9 +468,7 @@ class TestUpdateSupervisor:
 
         assert response.status_code == 409
 
-    def test_update_supervisor_not_found(
-        self, client: TestClient, admin_token: str
-    ):
+    def test_update_supervisor_not_found(self, client: TestClient, admin_token: str):
         """Test 404 when supervisor not found"""
         fake_id = uuid.uuid4()
         response = client.patch(
@@ -559,9 +544,7 @@ class TestDeleteSupervisor:
         # Create a supervisor and login as them
         pass  # This is tested in the general permissions tests
 
-    def test_delete_supervisor_not_found(
-        self, client: TestClient, admin_token: str
-    ):
+    def test_delete_supervisor_not_found(self, client: TestClient, admin_token: str):
         """Test 404 when supervisor not found [AC: 28]"""
         fake_id = uuid.uuid4()
         response = client.delete(
@@ -599,13 +582,17 @@ class TestResetSupervisorPassword:
         data = response.json()
         assert data["success"] is True
         # Password should be returned (emails disabled in test)
-        assert data["temporary_password"] is not None or data["password_emailed"] is True
+        assert (
+            data["temporary_password"] is not None or data["password_emailed"] is True
+        )
 
         # Verify password was changed
         session.refresh(supervisor)
         assert supervisor.must_change_password is True
         if data["temporary_password"]:
-            assert verify_password(data["temporary_password"], supervisor.hashed_password)
+            assert verify_password(
+                data["temporary_password"], supervisor.hashed_password
+            )
 
     def test_supervisor_cannot_reset_supervisor_password(
         self, client: TestClient, session: Session, supervisor_token: str

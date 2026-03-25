@@ -5,23 +5,23 @@
  * Compact icon button to toggle audio player visibility in activity headers.
  */
 
-import { Headphones, Volume2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Headphones, Volume2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export interface AudioButtonProps {
   /** Click handler to toggle audio player */
-  onClick: () => void
+  onClick: () => void;
   /** Whether the audio player is currently visible */
-  isActive?: boolean
+  isActive?: boolean;
   /** Whether audio is currently loading */
-  isLoading?: boolean
+  isLoading?: boolean;
 }
 
 export function AudioButton({
@@ -65,5 +65,5 @@ export function AudioButton({
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  )
+  );
 }

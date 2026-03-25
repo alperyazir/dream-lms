@@ -5,15 +5,15 @@
  * Button to add/remove vocabulary words from quiz cart.
  */
 
-import { Check, Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useQuizCart } from "@/hooks/useQuizCart"
-import type { VocabularyWord } from "@/types/vocabulary-explorer"
+import { Check, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useQuizCart } from "@/hooks/useQuizCart";
+import type { VocabularyWord } from "@/types/vocabulary-explorer";
 
 export interface QuickAddButtonProps {
-  word: VocabularyWord
-  size?: "default" | "sm" | "lg" | "icon"
-  variant?: "default" | "outline" | "ghost"
+  word: VocabularyWord;
+  size?: "default" | "sm" | "lg" | "icon";
+  variant?: "default" | "outline" | "ghost";
 }
 
 /**
@@ -27,16 +27,16 @@ export function QuickAddButton({
   size = "sm",
   variant = "outline",
 }: QuickAddButtonProps) {
-  const { addWord, removeWord, hasWord } = useQuizCart()
-  const isAdded = hasWord(word.id)
+  const { addWord, removeWord, hasWord } = useQuizCart();
+  const isAdded = hasWord(word.id);
 
   const handleClick = () => {
     if (isAdded) {
-      removeWord(word.id)
+      removeWord(word.id);
     } else {
-      addWord(word)
+      addWord(word);
     }
-  }
+  };
 
   return (
     <Button
@@ -60,5 +60,5 @@ export function QuickAddButton({
         </>
       )}
     </Button>
-  )
+  );
 }

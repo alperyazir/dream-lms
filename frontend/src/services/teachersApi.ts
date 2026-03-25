@@ -6,17 +6,17 @@
  * Used for fetching teacher's classes and students for assignment creation.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
-import type { StudentPublic } from "../client"
-import type { Class, Student } from "../types/teacher"
+import axios from "axios";
+import { OpenAPI } from "../client";
+import type { StudentPublic } from "../client";
+import type { Class, Student } from "../types/teacher";
 
 export interface PaginatedStudentsResponse {
-  items: StudentPublic[]
-  total: number
-  limit: number
-  offset: number
-  has_more: boolean
+  items: StudentPublic[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 }
 
 /**
@@ -26,14 +26,14 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
   // Set baseURL from OpenAPI config to ensure requests go to correct backend
-  config.baseURL = OpenAPI.BASE
+  config.baseURL = OpenAPI.BASE;
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     // Handle both sync and async token functions
     const tokenValue =
@@ -49,13 +49,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Get all classes for the authenticated teacher
@@ -63,9 +63,9 @@ apiClient.interceptors.request.use(async (config) => {
  * @returns Promise with array of classes
  */
 export async function getMyClasses(): Promise<Class[]> {
-  const url = `/api/v1/teachers/me/classes`
-  const response = await apiClient.get<Class[]>(url)
-  return response.data
+  const url = `/api/v1/teachers/me/classes`;
+  const response = await apiClient.get<Class[]>(url);
+  return response.data;
 }
 
 /**
@@ -74,11 +74,11 @@ export async function getMyClasses(): Promise<Class[]> {
  * @returns Promise with array of students
  */
 export async function getMyStudents(): Promise<Student[]> {
-  const url = `/api/v1/teachers/me/students`
-  const response = await apiClient.get(url)
+  const url = `/api/v1/teachers/me/students`;
+  const response = await apiClient.get(url);
   // Handle both paginated response { items: [...] } and legacy array response
-  const data = response.data
-  return Array.isArray(data) ? data : data.items ?? []
+  const data = response.data;
+  return Array.isArray(data) ? data : (data.items ?? []);
 }
 
 /**
@@ -92,11 +92,11 @@ export async function getMyStudentsPaginated(
   limit = 20,
   offset = 0,
 ): Promise<PaginatedStudentsResponse> {
-  const url = `/api/v1/teachers/me/students`
+  const url = `/api/v1/teachers/me/students`;
   const response = await apiClient.get<PaginatedStudentsResponse>(url, {
     params: { limit, offset },
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -104,8 +104,8 @@ export async function getMyStudentsPaginated(
  * Story 20.5: Recipient Selection Enhancements
  */
 export interface ClassStudentsGroup {
-  class_id: string
-  students: Student[]
+  class_id: string;
+  students: Student[];
 }
 
 /**
@@ -120,11 +120,11 @@ export interface ClassStudentsGroup {
 export async function getStudentsForClasses(
   classIds: string[],
 ): Promise<ClassStudentsGroup[]> {
-  const url = `/api/v1/teachers/me/classes/students`
+  const url = `/api/v1/teachers/me/classes/students`;
   const response = await apiClient.post<ClassStudentsGroup[]>(url, {
     class_ids: classIds,
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -135,6 +135,6 @@ export const teachersApi = {
   getMyStudents,
   getMyStudentsPaginated,
   getStudentsForClasses,
-}
+};
 
-export default teachersApi
+export default teachersApi;

@@ -1,16 +1,16 @@
-import { AlertTriangle, X } from "lucide-react"
-import { useCallback, useEffect } from "react"
-import { cn } from "@/lib/utils"
+import { AlertTriangle, X } from "lucide-react";
+import { useCallback, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface ConfirmDialogProps {
-  isOpen: boolean
-  title: string
-  message: string
-  confirmLabel?: string
-  cancelLabel?: string
-  variant?: "default" | "danger"
-  onConfirm: () => void
-  onCancel: () => void
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: "default" | "danger";
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
 export function ConfirmDialog({
@@ -27,22 +27,22 @@ export function ConfirmDialog({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onCancel()
+        onCancel();
       }
     },
-    [onCancel]
-  )
+    [onCancel],
+  );
 
   useEffect(() => {
     if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown)
+      window.addEventListener("keydown", handleKeyDown);
       return () => {
-        window.removeEventListener("keydown", handleKeyDown)
-      }
+        window.removeEventListener("keydown", handleKeyDown);
+      };
     }
-  }, [isOpen, handleKeyDown])
+  }, [isOpen, handleKeyDown]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
@@ -91,7 +91,7 @@ export function ConfirmDialog({
               "flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors",
               variant === "danger"
                 ? "text-white bg-red-600 hover:bg-red-700"
-                : "text-white bg-cyan-600 hover:bg-cyan-700"
+                : "text-white bg-cyan-600 hover:bg-cyan-700",
             )}
           >
             {confirmLabel}
@@ -99,5 +99,5 @@ export function ConfirmDialog({
         </div>
       </div>
     </div>
-  )
+  );
 }

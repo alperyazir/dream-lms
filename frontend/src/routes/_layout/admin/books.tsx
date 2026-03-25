@@ -1,16 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, Download, ExternalLink, RefreshCw, UserPlus } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { AdminBookCard } from "@/components/books/AdminBookCard"
-import { BookCover } from "@/components/books/BookCover"
-import { BookDetailsDialog } from "@/components/books/BookDetailsDialog"
-import { QuickAssignDialog } from "@/components/books/QuickAssignDialog"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { LibraryFilters } from "@/components/library/LibraryFilters"
-import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  BookOpen,
+  Download,
+  ExternalLink,
+  RefreshCw,
+  UserPlus,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { AdminBookCard } from "@/components/books/AdminBookCard";
+import { BookCover } from "@/components/books/BookCover";
+import { BookDetailsDialog } from "@/components/books/BookDetailsDialog";
+import { QuickAssignDialog } from "@/components/books/QuickAssignDialog";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { LibraryFilters } from "@/components/library/LibraryFilters";
+import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -18,13 +24,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
-import { toast } from "@/hooks/use-toast"
-import { useLibraryFilters } from "@/hooks/useLibraryFilters"
-import { useViewPreference } from "@/hooks/useViewPreference"
-import { booksApi } from "@/services/booksApi"
-import type { Book } from "@/types/book"
+} from "@/components/ui/table";
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle";
+import { toast } from "@/hooks/use-toast";
+import { useLibraryFilters } from "@/hooks/useLibraryFilters";
+import { useViewPreference } from "@/hooks/useViewPreference";
+import { booksApi } from "@/services/booksApi";
+import type { Book } from "@/types/book";
 
 export const Route = createFileRoute("/_layout/admin/books")({
   component: () => (
@@ -37,38 +43,38 @@ export const Route = createFileRoute("/_layout/admin/books")({
     publisher: (search.publisher as string) || "",
     activity: (search.activity as string) || "",
   }),
-})
+});
 
 function AdminBooks() {
-  const [books, setBooks] = useState<Book[]>([])
-  const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useViewPreference("admin-library", "table")
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null)
-  const [assignBook, setAssignBook] = useState<Book | null>(null)
-  const [downloadBook, setDownloadBook] = useState<Book | null>(null)
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useViewPreference("admin-library", "table");
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [assignBook, setAssignBook] = useState<Book | null>(null);
+  const [downloadBook, setDownloadBook] = useState<Book | null>(null);
 
   const fetchBooks = async () => {
     try {
-      setLoading(true)
-      const response = await booksApi.getBooks({ limit: 100 })
-      setBooks(response.items)
+      setLoading(true);
+      const response = await booksApi.getBooks({ limit: 100 });
+      setBooks(response.items);
     } catch (error) {
-      console.error("Failed to fetch books:", error)
+      console.error("Failed to fetch books:", error);
       toast({
         title: "Error",
         description: "Failed to load books",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Fetch books on mount
   useEffect(() => {
-    fetchBooks()
+    fetchBooks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   // Use library filters hook
   const {
@@ -78,23 +84,23 @@ function AdminBooks() {
     publishers,
     resultCount,
     totalCount,
-  } = useLibraryFilters(books)
+  } = useLibraryFilters(books);
 
   const handleViewDetails = (book: Book) => {
-    setSelectedBook(book)
-  }
+    setSelectedBook(book);
+  };
 
   const handleAssignClick = (book: Book) => {
-    setAssignBook(book)
-  }
+    setAssignBook(book);
+  };
 
   const handleOpenFlowbook = useCallback((book: Book) => {
-    window.open(`/viewer/${book.id}`, "_blank")
-  }, [])
+    window.open(`/viewer/${book.id}`, "_blank");
+  }, []);
 
   const handleDownload = useCallback((book: Book) => {
-    setDownloadBook(book)
-  }, [])
+    setDownloadBook(book);
+  }, []);
 
   return (
     <div className="max-w-full p-6 space-y-8">
@@ -261,5 +267,5 @@ function AdminBooks() {
         />
       )}
     </div>
-  )
+  );
 }

@@ -1,12 +1,12 @@
-import { Puzzle } from "lucide-react"
-import { cn } from "@/lib/utils"
-import type { ActivityReference } from "@/types/flowbook"
-import { useFlowbookUIStore } from "../stores"
+import { Puzzle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { ActivityReference } from "@/types/flowbook";
+import { useFlowbookUIStore } from "../stores";
 
 interface ActivityIconProps {
-  activityRef: ActivityReference
-  pageWidth: number
-  pageHeight: number
+  activityRef: ActivityReference;
+  pageWidth: number;
+  pageHeight: number;
 }
 
 export function ActivityIcon({
@@ -14,16 +14,16 @@ export function ActivityIcon({
   pageWidth,
   pageHeight,
 }: ActivityIconProps) {
-  const { openActivity } = useFlowbookUIStore()
+  const { openActivity } = useFlowbookUIStore();
 
   // Calculate position as percentage of page dimensions
-  const leftPercent = (activityRef.x / pageWidth) * 100
-  const topPercent = (activityRef.y / pageHeight) * 100
+  const leftPercent = (activityRef.x / pageWidth) * 100;
+  const topPercent = (activityRef.y / pageHeight) * 100;
 
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent triggering zoom gestures
-    openActivity(activityRef.id)
-  }
+    e.stopPropagation(); // Prevent triggering zoom gestures
+    openActivity(activityRef.id);
+  };
 
   // Render circular icon button (same style as audio/video icons)
   return (
@@ -47,5 +47,5 @@ export function ActivityIcon({
     >
       <Puzzle className="h-3 w-3" />
     </button>
-  )
+  );
 }

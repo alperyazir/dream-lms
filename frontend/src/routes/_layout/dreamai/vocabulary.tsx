@@ -5,75 +5,75 @@
  * Browse and explore book vocabulary with audio playback and quick-add to quiz functionality.
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { BookText, ShoppingCart, Sparkles } from "lucide-react"
-import { useState } from "react"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { VocabularyFilters } from "@/components/DreamAI/VocabularyFilters"
-import { VocabularyTable } from "@/components/DreamAI/VocabularyTable"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { useQuizCart } from "@/hooks/useQuizCart"
-import { vocabularyExplorerApi } from "@/services/vocabularyExplorerApi"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { BookText, ShoppingCart, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { VocabularyFilters } from "@/components/DreamAI/VocabularyFilters";
+import { VocabularyTable } from "@/components/DreamAI/VocabularyTable";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useQuizCart } from "@/hooks/useQuizCart";
+import { vocabularyExplorerApi } from "@/services/vocabularyExplorerApi";
 import type {
   PaginationParams,
   VocabularyFilters as VocabularyFiltersType,
-} from "@/types/vocabulary-explorer"
+} from "@/types/vocabulary-explorer";
 
 export const Route = createFileRoute("/_layout/dreamai/vocabulary")({
   component: VocabularyExplorerPage,
-})
+});
 
 function VocabularyExplorerPage() {
-  const navigate = useNavigate()
-  const { getCartSize, clearCart } = useQuizCart()
-  const cartSize = getCartSize()
+  const navigate = useNavigate();
+  const { getCartSize, clearCart } = useQuizCart();
+  const cartSize = getCartSize();
 
-  const [filters, setFilters] = useState<VocabularyFiltersType | null>(null)
+  const [filters, setFilters] = useState<VocabularyFiltersType | null>(null);
   const [pagination, setPagination] = useState<PaginationParams>({
     page: 1,
     pageSize: 25,
-  })
+  });
 
   // Fetch books with vocabulary data
   const { data: books = [], isLoading: booksLoading } = useQuery({
     queryKey: ["vocabulary-books"],
     queryFn: vocabularyExplorerApi.getBooksWithVocabulary,
-  })
+  });
 
   // Fetch vocabulary when filters are set
   const { data: vocabularyData, isLoading: vocabularyLoading } = useQuery({
     queryKey: ["vocabulary", filters, pagination],
     queryFn: () => {
-      if (!filters) return null
-      return vocabularyExplorerApi.getVocabulary(filters, pagination)
+      if (!filters) return null;
+      return vocabularyExplorerApi.getVocabulary(filters, pagination);
     },
     enabled: !!filters,
-  })
+  });
 
   const handleFiltersChange = (newFilters: VocabularyFiltersType | null) => {
-    setFilters(newFilters)
+    setFilters(newFilters);
     // Reset to page 1 when filters change
-    setPagination((prev) => ({ ...prev, page: 1 }))
-  }
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
 
   const handlePageChange = (page: number) => {
-    setPagination((prev) => ({ ...prev, page }))
-  }
+    setPagination((prev) => ({ ...prev, page }));
+  };
 
   const handlePageSizeChange = (pageSize: number) => {
-    setPagination({ page: 1, pageSize })
-  }
+    setPagination({ page: 1, pageSize });
+  };
 
   const handleCreateQuiz = () => {
     // Navigate to generator page with selected words
     navigate({
       to: "/dreamai/generator",
       search: { source: "vocabulary-cart" },
-    })
-  }
+    });
+  };
 
   return (
     <PageContainer>
@@ -180,5 +180,5 @@ function VocabularyExplorerPage() {
         </Card>
       )}
     </PageContainer>
-  )
+  );
 }

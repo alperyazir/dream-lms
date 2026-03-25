@@ -6,7 +6,7 @@
  * from four options. Shows no feedback until quiz is submitted.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,35 +16,35 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import type { QuestionNavigationState } from "@/types/activity-player"
-import type { AIQuizPublic } from "@/types/ai-quiz"
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { QuestionNavigationState } from "@/types/activity-player";
+import type { AIQuizPublic } from "@/types/ai-quiz";
 
 /** @deprecated Use QuestionNavigationState from @/types/activity-player instead */
-export type AIQuizNavigationState = QuestionNavigationState
+export type AIQuizNavigationState = QuestionNavigationState;
 
 interface AIQuizPlayerProps {
   /** The quiz to display */
-  quiz: AIQuizPublic
+  quiz: AIQuizPublic;
   /** Callback when quiz is submitted */
-  onSubmit: (answers: Record<string, number>) => void
+  onSubmit: (answers: Record<string, number>) => void;
   /** Whether submission is in progress */
-  isSubmitting?: boolean
+  isSubmitting?: boolean;
   /** Initial answers (for resuming) */
-  initialAnswers?: Record<string, number>
+  initialAnswers?: Record<string, number>;
   /** Hide the submit button (when embedded in ActivityPlayer which has its own submit) */
-  hideSubmitButton?: boolean
+  hideSubmitButton?: boolean;
   /** Callback when answers change (for parent to track progress) */
-  onAnswersChange?: (answers: Record<string, number>) => void
+  onAnswersChange?: (answers: Record<string, number>) => void;
   /** External control: current question index (when controlled by parent) */
-  currentQuestionIndex?: number
+  currentQuestionIndex?: number;
   /** External control: callback when current question should change */
-  onQuestionIndexChange?: (index: number) => void
+  onQuestionIndexChange?: (index: number) => void;
   /** Callback to expose navigation state to parent */
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 export function AIQuizPlayer({
@@ -59,93 +59,94 @@ export function AIQuizPlayer({
   onNavigationStateChange,
 }: AIQuizPlayerProps) {
   // Internal current question index (used when not externally controlled)
-  const [internalIndex, setInternalIndex] = useState(0)
+  const [internalIndex, setInternalIndex] = useState(0);
   // Use external index if provided, otherwise internal
-  const isExternallyControlled = currentQuestionIndex !== undefined
+  const isExternallyControlled = currentQuestionIndex !== undefined;
   const currentIndex = isExternallyControlled
     ? currentQuestionIndex
-    : internalIndex
+    : internalIndex;
 
   // Setter that works for both internal and external control
   const setCurrentIndex = useCallback(
     (index: number) => {
       if (isExternallyControlled && onQuestionIndexChange) {
-        onQuestionIndexChange(index)
+        onQuestionIndexChange(index);
       } else {
-        setInternalIndex(index)
+        setInternalIndex(index);
       }
     },
     [isExternallyControlled, onQuestionIndexChange],
-  )
+  );
 
   // Selected answers map: questionId -> selected option index
-  const [answers, setAnswers] = useState<Record<string, number>>(initialAnswers)
+  const [answers, setAnswers] =
+    useState<Record<string, number>>(initialAnswers);
   // Confirm dialog visibility
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const totalQuestions = quiz.questions.length
-  const answeredCount = Object.keys(answers).length
-  const allAnswered = answeredCount === totalQuestions
+  const totalQuestions = quiz.questions.length;
+  const answeredCount = Object.keys(answers).length;
+  const allAnswered = answeredCount === totalQuestions;
 
   // Reset answers when initialAnswers changes (for Reset functionality)
   useEffect(() => {
-    setAnswers(initialAnswers)
+    setAnswers(initialAnswers);
     // Also reset to first question on reset
     if (Object.keys(initialAnswers).length === 0) {
       if (!isExternallyControlled) {
-        setInternalIndex(0)
+        setInternalIndex(0);
       } else if (onQuestionIndexChange) {
-        onQuestionIndexChange(0)
+        onQuestionIndexChange(0);
       }
     }
-  }, [initialAnswers, isExternallyControlled, onQuestionIndexChange])
+  }, [initialAnswers, isExternallyControlled, onQuestionIndexChange]);
 
   // Store callbacks in refs to avoid infinite loops
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
-  const onNavigationStateChangeRef = useRef(onNavigationStateChange)
-  onNavigationStateChangeRef.current = onNavigationStateChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
+  const onNavigationStateChangeRef = useRef(onNavigationStateChange);
+  onNavigationStateChangeRef.current = onNavigationStateChange;
 
   // Notify parent when answers change
   useEffect(() => {
-    const callback = onAnswersChangeRef.current
+    const callback = onAnswersChangeRef.current;
     if (callback) {
-      callback(answers)
+      callback(answers);
     }
-  }, [answers])
+  }, [answers]);
 
   // Track previous navigation state to avoid unnecessary updates
-  const prevNavStateRef = useRef<string>("")
+  const prevNavStateRef = useRef<string>("");
 
   // Notify parent of navigation state changes
   useEffect(() => {
-    const callback = onNavigationStateChangeRef.current
+    const callback = onNavigationStateChangeRef.current;
     if (callback) {
       // Calculate answered indices based on question order
-      const answeredIndices: number[] = []
-      const answeredItemIds: string[] = []
+      const answeredIndices: number[] = [];
+      const answeredItemIds: string[] = [];
       quiz.questions.forEach((q, index) => {
         if (answers[q.question_id] !== undefined) {
-          answeredIndices.push(index)
-          answeredItemIds.push(q.question_id)
+          answeredIndices.push(index);
+          answeredItemIds.push(q.question_id);
         }
-      })
+      });
 
       // Only call if state actually changed
-      const stateKey = `${currentIndex}-${totalQuestions}-${answeredItemIds.join(",")}`
+      const stateKey = `${currentIndex}-${totalQuestions}-${answeredItemIds.join(",")}`;
       if (prevNavStateRef.current !== stateKey) {
-        prevNavStateRef.current = stateKey
+        prevNavStateRef.current = stateKey;
         callback({
           currentIndex,
           totalItems: totalQuestions,
           answeredItemIds,
           answeredIndices,
-        })
+        });
       }
     }
-  }, [currentIndex, totalQuestions, answers, quiz.questions])
+  }, [currentIndex, totalQuestions, answers, quiz.questions]);
 
-  const currentQuestion = quiz.questions[currentIndex]
+  const currentQuestion = quiz.questions[currentIndex];
 
   // Handle option selection
   const handleSelectOption = useCallback(
@@ -153,56 +154,56 @@ export function AIQuizPlayer({
       setAnswers((prev) => ({
         ...prev,
         [questionId]: optionIndex,
-      }))
+      }));
     },
     [],
-  )
+  );
 
   // Navigate to previous question
   const handlePrevious = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
+      setCurrentIndex(currentIndex - 1);
     }
-  }, [currentIndex, setCurrentIndex])
+  }, [currentIndex, setCurrentIndex]);
 
   // Navigate to next question
   const handleNext = useCallback(() => {
     if (currentIndex < totalQuestions - 1) {
-      setCurrentIndex(currentIndex + 1)
+      setCurrentIndex(currentIndex + 1);
     }
-  }, [currentIndex, totalQuestions, setCurrentIndex])
+  }, [currentIndex, totalQuestions, setCurrentIndex]);
 
   // Handle submit button click
   const handleSubmitClick = useCallback(() => {
     if (allAnswered) {
-      setShowConfirmDialog(true)
+      setShowConfirmDialog(true);
     }
-  }, [allAnswered])
+  }, [allAnswered]);
 
   // Confirm and submit
   const handleConfirmSubmit = useCallback(() => {
-    setShowConfirmDialog(false)
-    onSubmit(answers)
-  }, [answers, onSubmit])
+    setShowConfirmDialog(false);
+    onSubmit(answers);
+  }, [answers, onSubmit]);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
-        handlePrevious()
+        handlePrevious();
       } else if (e.key === "ArrowRight") {
-        handleNext()
+        handleNext();
       } else if (e.key >= "1" && e.key <= "4") {
-        const optionIndex = parseInt(e.key, 10) - 1
+        const optionIndex = parseInt(e.key, 10) - 1;
         if (currentQuestion.options[optionIndex]) {
-          handleSelectOption(currentQuestion.question_id, optionIndex)
+          handleSelectOption(currentQuestion.question_id, optionIndex);
         }
       }
-    }
+    };
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handlePrevious, handleNext, handleSelectOption, currentQuestion])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handlePrevious, handleNext, handleSelectOption, currentQuestion]);
 
   return (
     <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
@@ -219,7 +220,7 @@ export function AIQuizPlayer({
           {/* Options */}
           <div className="flex flex-col gap-3">
             {currentQuestion.options.map((option, index) => {
-              const isSelected = answers[currentQuestion.question_id] === index
+              const isSelected = answers[currentQuestion.question_id] === index;
               return (
                 <Button
                   key={`${currentQuestion.question_id}-${index}`}
@@ -240,7 +241,7 @@ export function AIQuizPlayer({
                   </span>
                   <span className="flex-1">{option}</span>
                 </Button>
-              )
+              );
             })}
           </div>
         </CardContent>
@@ -286,7 +287,7 @@ export function AIQuizPlayer({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
 
-export default AIQuizPlayer
+export default AIQuizPlayer;

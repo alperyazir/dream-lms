@@ -16,13 +16,13 @@ import {
   Target,
   TrendingUp,
   Trophy,
-} from "lucide-react"
-import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Achievement } from "@/types/analytics"
+} from "lucide-react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Achievement } from "@/types/analytics";
 
 export interface AchievementBadgesProps {
-  achievements: Achievement[]
+  achievements: Achievement[];
 }
 
 // Map icon names to Lucide icons
@@ -37,27 +37,27 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   crown: Crown,
   sparkles: Sparkles,
   "trending-up": TrendingUp,
-}
+};
 
 // Get gradient colors based on achievement type
 const getGradient = (type: string): string => {
   switch (type) {
     case "perfect_score":
-      return "from-amber-400 to-yellow-500"
+      return "from-amber-400 to-yellow-500";
     case "streak":
-      return "from-orange-400 to-red-500"
+      return "from-orange-400 to-red-500";
     case "milestone":
-      return "from-purple-400 to-pink-500"
+      return "from-purple-400 to-pink-500";
     case "improvement":
-      return "from-green-400 to-emerald-500"
+      return "from-green-400 to-emerald-500";
     case "first_complete":
-      return "from-teal-400 to-cyan-500"
+      return "from-teal-400 to-cyan-500";
     case "performance":
-      return "from-blue-400 to-indigo-500"
+      return "from-blue-400 to-indigo-500";
     default:
-      return "from-teal-400 to-cyan-500"
+      return "from-teal-400 to-cyan-500";
   }
-}
+};
 
 export const AchievementBadges = React.memo(
   ({ achievements }: AchievementBadgesProps) => {
@@ -81,16 +81,16 @@ export const AchievementBadges = React.memo(
             </div>
           </CardContent>
         </Card>
-      )
+      );
     }
 
     const formatDate = (dateString: string) => {
-      const date = new Date(dateString)
+      const date = new Date(dateString);
       return date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
-      })
-    }
+      });
+    };
 
     return (
       <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
@@ -106,8 +106,8 @@ export const AchievementBadges = React.memo(
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {achievements.map((achievement) => {
-              const IconComponent = iconMap[achievement.icon] || Award
-              const gradient = getGradient(achievement.type)
+              const IconComponent = iconMap[achievement.icon] || Award;
+              const gradient = getGradient(achievement.type);
 
               return (
                 <div
@@ -130,13 +130,13 @@ export const AchievementBadges = React.memo(
                     {formatDate(achievement.earned_at)}
                   </p>
                 </div>
-              )
+              );
             })}
           </div>
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-AchievementBadges.displayName = "AchievementBadges"
+AchievementBadges.displayName = "AchievementBadges";

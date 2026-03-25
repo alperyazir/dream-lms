@@ -5,15 +5,15 @@
  * Displays individual recipients with role icons and organization info.
  */
 
-import { Building2, Check, GraduationCap, Shield, User } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
-import type { Recipient } from "@/types/message"
+import { Building2, Check, GraduationCap, Shield, User } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+import type { Recipient } from "@/types/message";
 
 export interface RecipientItemProps {
-  recipient: Recipient
-  selected?: boolean
-  onClick?: () => void
+  recipient: Recipient;
+  selected?: boolean;
+  onClick?: () => void;
 }
 
 /**
@@ -28,17 +28,17 @@ export function RecipientItem({
   const getRoleIcon = () => {
     switch (recipient.role) {
       case "publisher":
-        return <Building2 className="h-4 w-4 text-purple-500" />
+        return <Building2 className="h-4 w-4 text-purple-500" />;
       case "teacher":
-        return <GraduationCap className="h-4 w-4 text-blue-500" />
+        return <GraduationCap className="h-4 w-4 text-blue-500" />;
       case "student":
-        return <User className="h-4 w-4 text-green-500" />
+        return <User className="h-4 w-4 text-green-500" />;
       case "admin":
-        return <Shield className="h-4 w-4 text-orange-500" />
+        return <Shield className="h-4 w-4 text-orange-500" />;
       default:
-        return <User className="h-4 w-4" />
+        return <User className="h-4 w-4" />;
     }
-  }
+  };
 
   const getInitials = (name: string): string => {
     return name
@@ -46,8 +46,8 @@ export function RecipientItem({
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   return (
     <div
@@ -63,8 +63,8 @@ export function RecipientItem({
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={(e) => {
         if (onClick && (e.key === "Enter" || e.key === " ")) {
-          e.preventDefault()
-          onClick()
+          e.preventDefault();
+          onClick();
         }
       }}
     >
@@ -90,5 +90,5 @@ export function RecipientItem({
 
       {selected && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
     </div>
-  )
+  );
 }

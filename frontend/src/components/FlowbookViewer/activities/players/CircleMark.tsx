@@ -1,24 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import { cn } from "@/lib/utils"
-import { getPageImageUrl } from "@/services/booksApi"
-import type { ActivityReference } from "@/types/flowbook"
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import { getPageImageUrl } from "@/services/booksApi";
+import type { ActivityReference } from "@/types/flowbook";
 
 interface CircleMarkProps {
-  activity: ActivityReference
+  activity: ActivityReference;
 }
 
 interface Coordinates {
-  x: number
-  y: number
-  w: number
-  h: number
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 interface AnswerArea {
-  coords: Coordinates
-  isCorrect: boolean
-  text?: string
-  opacity?: number
+  coords: Coordinates;
+  isCorrect: boolean;
+  text?: string;
+  opacity?: number;
 }
 
 function AnimatedBorder({
@@ -26,23 +26,23 @@ function AnimatedBorder({
   height,
   type,
 }: {
-  width: number
-  height: number
-  type: "circle" | "markwithx"
+  width: number;
+  height: number;
+  type: "circle" | "markwithx";
 }) {
-  const strokeColor = type === "markwithx" ? "#ef4444" : "#3b82f6"
-  const strokeWidth = 4
+  const strokeColor = type === "markwithx" ? "#ef4444" : "#3b82f6";
+  const strokeWidth = 4;
 
-  const cx = width / 2
-  const cy = height / 2
-  const rx = cx - strokeWidth / 2
-  const ry = cy - strokeWidth / 2
+  const cx = width / 2;
+  const cy = height / 2;
+  const rx = cx - strokeWidth / 2;
+  const ry = cy - strokeWidth / 2;
 
   // Ramanujan's ellipse perimeter approximation
-  const a = Math.max(rx, 0)
-  const b = Math.max(ry, 0)
+  const a = Math.max(rx, 0);
+  const b = Math.max(ry, 0);
   const perimeter =
-    Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)))
+    Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
 
   return (
     <svg
@@ -77,304 +77,309 @@ function AnimatedBorder({
         `}
       </style>
     </svg>
-  )
+  );
 }
 
 export function CircleMark({ activity }: CircleMarkProps) {
-  const [selections, setSelections] = useState<Map<number, number>>(new Map())
-  const [showResults, setShowResults] = useState(false)
-  const [showCelebration, setShowCelebration] = useState(false)
-  const [imageScale, setImageScale] = useState({ x: 1, y: 1 })
-  const [imageLoaded, setImageLoaded] = useState(false)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [imageError, setImageError] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [selections, setSelections] = useState<Map<number, number>>(new Map());
+  const [showResults, setShowResults] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [imageScale, setImageScale] = useState({ x: 1, y: 1 });
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const imageRef = useRef<HTMLImageElement>(null)
-  const clapAudioRef = useRef<HTMLAudioElement | null>(null)
+  const imageRef = useRef<HTMLImageElement>(null);
+  const clapAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const config = activity.config as {
-    section_path?: string
-    section_image_url?: string
-    answer?: AnswerArea[]
-    circleCount?: number
-    markCount?: number
-    headerText?: string
-    type?: "circle" | "markwithx"
-  }
+    section_path?: string;
+    section_image_url?: string;
+    answer?: AnswerArea[];
+    circleCount?: number;
+    markCount?: number;
+    headerText?: string;
+    type?: "circle" | "markwithx";
+  };
 
-  const sectionPath = config.section_path || ""
-  const sectionImageUrl = config.section_image_url || ""
-  const answers = config.answer || []
+  const sectionPath = config.section_path || "";
+  const sectionImageUrl = config.section_image_url || "";
+  const answers = config.answer || [];
   const activityType =
-    config.type || (activity.type as "circle" | "markwithx") || "circle"
+    config.type || (activity.type as "circle" | "markwithx") || "circle";
 
-  let effectiveCircleCount = config.circleCount ?? 2
-  const isMultiSelectMode = effectiveCircleCount === -1
+  let effectiveCircleCount = config.circleCount ?? 2;
+  const isMultiSelectMode = effectiveCircleCount === -1;
   if (effectiveCircleCount === 0) {
-    effectiveCircleCount = 2
+    effectiveCircleCount = 2;
   }
 
   useEffect(() => {
-    clapAudioRef.current = new Audio("/sounds/clap.mp3")
-    clapAudioRef.current.volume = 0.8
-    clapAudioRef.current.load()
-  }, [])
+    clapAudioRef.current = new Audio("/sounds/clap.mp3");
+    clapAudioRef.current.volume = 0.8;
+    clapAudioRef.current.load();
+  }, []);
 
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
     const loadImage = async () => {
-      setIsLoading(true)
-      setImageError(false)
+      setIsLoading(true);
+      setImageError(false);
 
-      const imagePath = sectionImageUrl || sectionPath
+      const imagePath = sectionImageUrl || sectionPath;
       if (!imagePath) {
-        setIsLoading(false)
-        setImageError(true)
-        return
+        setIsLoading(false);
+        setImageError(true);
+        return;
       }
 
       try {
-        const url = await getPageImageUrl(imagePath)
+        const url = await getPageImageUrl(imagePath);
         if (isMounted && url) {
-          blobUrl = url
-          setImageUrl(url)
-          setIsLoading(false)
+          blobUrl = url;
+          setImageUrl(url);
+          setIsLoading(false);
         } else if (isMounted) {
-          setImageError(true)
-          setIsLoading(false)
+          setImageError(true);
+          setIsLoading(false);
         }
       } catch (error) {
-        console.error("Failed to load activity image:", error)
+        console.error("Failed to load activity image:", error);
         if (isMounted) {
-          setImageError(true)
-          setIsLoading(false)
+          setImageError(true);
+          setIsLoading(false);
         }
       }
-    }
+    };
 
-    loadImage()
+    loadImage();
 
     return () => {
-      isMounted = false
+      isMounted = false;
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [sectionImageUrl, sectionPath])
+    };
+  }, [sectionImageUrl, sectionPath]);
 
   const updateImageScale = useCallback(() => {
-    const img = imageRef.current
-    if (!img || !img.complete || img.naturalWidth === 0) return
+    const img = imageRef.current;
+    if (!img || !img.complete || img.naturalWidth === 0) return;
 
     requestAnimationFrame(() => {
-      const imgRect = img.getBoundingClientRect()
-      if (imgRect.width === 0 || imgRect.height === 0) return
+      const imgRect = img.getBoundingClientRect();
+      if (imgRect.width === 0 || imgRect.height === 0) return;
 
-      const xScale = imgRect.width / img.naturalWidth
-      const yScale = imgRect.height / img.naturalHeight
+      const xScale = imgRect.width / img.naturalWidth;
+      const yScale = imgRect.height / img.naturalHeight;
 
-      setImageScale({ x: xScale, y: yScale })
-      setImageLoaded(true)
-    })
-  }, [])
+      setImageScale({ x: xScale, y: yScale });
+      setImageLoaded(true);
+    });
+  }, []);
 
   useEffect(() => {
-    const img = imageRef.current
+    const img = imageRef.current;
     if (img) {
       if (img.complete) {
-        updateImageScale()
+        updateImageScale();
       } else {
-        img.addEventListener("load", updateImageScale)
+        img.addEventListener("load", updateImageScale);
       }
     }
 
-    window.addEventListener("resize", updateImageScale)
+    window.addEventListener("resize", updateImageScale);
     return () => {
-      window.removeEventListener("resize", updateImageScale)
+      window.removeEventListener("resize", updateImageScale);
       if (img) {
-        img.removeEventListener("load", updateImageScale)
+        img.removeEventListener("load", updateImageScale);
       }
-    }
-  }, [updateImageScale])
+    };
+  }, [updateImageScale]);
 
   const handleAreaClick = (answerIndex: number) => {
-    if (showResults) return
+    if (showResults) return;
 
-    const newSelections = new Map(selections)
+    const newSelections = new Map(selections);
 
     if (isMultiSelectMode) {
       const wasSelected = Array.from(newSelections.values()).includes(
         answerIndex,
-      )
+      );
       if (wasSelected) {
         for (const [qIdx, aIdx] of newSelections.entries()) {
           if (aIdx === answerIndex) {
-            newSelections.delete(qIdx)
-            break
+            newSelections.delete(qIdx);
+            break;
           }
         }
       } else {
-        const nextQIdx = newSelections.size
-        newSelections.set(nextQIdx, answerIndex)
+        const nextQIdx = newSelections.size;
+        newSelections.set(nextQIdx, answerIndex);
       }
     } else {
-      const questionIndex = Math.floor(answerIndex / effectiveCircleCount)
+      const questionIndex = Math.floor(answerIndex / effectiveCircleCount);
 
       if (newSelections.get(questionIndex) === answerIndex) {
-        newSelections.delete(questionIndex)
+        newSelections.delete(questionIndex);
       } else {
-        newSelections.set(questionIndex, answerIndex)
+        newSelections.set(questionIndex, answerIndex);
       }
     }
 
-    setSelections(newSelections)
-  }
+    setSelections(newSelections);
+  };
 
   const getQuestionIndex = (answerIndex: number): number => {
-    if (isMultiSelectMode) return 0
-    return Math.floor(answerIndex / effectiveCircleCount)
-  }
+    if (isMultiSelectMode) return 0;
+    return Math.floor(answerIndex / effectiveCircleCount);
+  };
 
   const isSelected = (answerIndex: number): boolean => {
-    return Array.from(selections.values()).includes(answerIndex)
-  }
+    return Array.from(selections.values()).includes(answerIndex);
+  };
 
   const isAnswerCorrect = (answerIndex: number): boolean => {
-    return answers[answerIndex]?.isCorrect === true
-  }
+    return answers[answerIndex]?.isCorrect === true;
+  };
 
   const getScaledCoords = (answerIndex: number) => {
-    const answer = answers[answerIndex]
-    if (!answer) return { left: 0, top: 0, width: 0, height: 0 }
+    const answer = answers[answerIndex];
+    if (!answer) return { left: 0, top: 0, width: 0, height: 0 };
     return {
       left: answer.coords.x * imageScale.x,
       top: answer.coords.y * imageScale.y,
       width: answer.coords.w * imageScale.x,
       height: answer.coords.h * imageScale.y,
-    }
-  }
+    };
+  };
 
   const playCelebration = useCallback(() => {
-    setShowCelebration(true)
+    setShowCelebration(true);
     if (clapAudioRef.current) {
-      clapAudioRef.current.currentTime = 0
-      clapAudioRef.current.play().catch(() => {})
+      clapAudioRef.current.currentTime = 0;
+      clapAudioRef.current.play().catch(() => {});
       setTimeout(() => {
         if (clapAudioRef.current) {
-          clapAudioRef.current.pause()
-          clapAudioRef.current.currentTime = 0
+          clapAudioRef.current.pause();
+          clapAudioRef.current.currentTime = 0;
         }
-      }, 1500)
+      }, 1500);
     }
-    setTimeout(() => setShowCelebration(false), 3000)
-  }, [])
+    setTimeout(() => setShowCelebration(false), 3000);
+  }, []);
 
   const handleReset = useCallback(() => {
-    setSelections(new Map())
-    setShowResults(false)
-    setShowCelebration(false)
-  }, [])
+    setSelections(new Map());
+    setShowResults(false);
+    setShowCelebration(false);
+  }, []);
 
   const handleCheckAnswers = useCallback(() => {
-    setShowResults(true)
+    setShowResults(true);
 
     const correctAnswerIndices = answers
       .map((a, i) => (a.isCorrect ? i : -1))
-      .filter((i) => i !== -1)
+      .filter((i) => i !== -1);
 
-    const selectedIndices = Array.from(selections.values())
+    const selectedIndices = Array.from(selections.values());
 
     const allCorrectSelected = correctAnswerIndices.every((i) =>
       selectedIndices.includes(i),
-    )
+    );
     const noIncorrectSelected = selectedIndices.every(
       (i) => answers[i]?.isCorrect,
-    )
+    );
 
     if (
       allCorrectSelected &&
       noIncorrectSelected &&
       selectedIndices.length > 0
     ) {
-      playCelebration()
+      playCelebration();
     }
-  }, [answers, selections, playCelebration])
+  }, [answers, selections, playCelebration]);
 
   const handleShowAnswers = useCallback(
     (show: boolean) => {
       if (show) {
-        const correctSelections = new Map<number, number>()
+        const correctSelections = new Map<number, number>();
         answers.forEach((answer, index) => {
           if (answer.isCorrect) {
             if (isMultiSelectMode) {
-              correctSelections.set(correctSelections.size, index)
+              correctSelections.set(correctSelections.size, index);
             } else {
-              const questionIndex = Math.floor(index / effectiveCircleCount)
-              correctSelections.set(questionIndex, index)
+              const questionIndex = Math.floor(index / effectiveCircleCount);
+              correctSelections.set(questionIndex, index);
             }
           }
-        })
-        setSelections(correctSelections)
-        setShowResults(true)
+        });
+        setSelections(correctSelections);
+        setShowResults(true);
       } else {
-        setSelections(new Map())
-        setShowResults(false)
+        setSelections(new Map());
+        setShowResults(false);
       }
     },
     [answers, effectiveCircleCount, isMultiSelectMode],
-  )
+  );
 
   const handleShowNextAnswer = useCallback(() => {
     const correctAnswerIndices = answers
       .map((a, i) => (a.isCorrect ? i : -1))
-      .filter((i) => i !== -1)
+      .filter((i) => i !== -1);
 
-    const selectedIndices = Array.from(selections.values())
+    const selectedIndices = Array.from(selections.values());
 
     for (const correctIndex of correctAnswerIndices) {
       if (!selectedIndices.includes(correctIndex)) {
-        const newSelections = new Map(selections)
+        const newSelections = new Map(selections);
         if (isMultiSelectMode) {
-          newSelections.set(newSelections.size, correctIndex)
+          newSelections.set(newSelections.size, correctIndex);
         } else {
-          const questionIndex = Math.floor(correctIndex / effectiveCircleCount)
-          newSelections.set(questionIndex, correctIndex)
+          const questionIndex = Math.floor(correctIndex / effectiveCircleCount);
+          newSelections.set(questionIndex, correctIndex);
         }
-        setSelections(newSelections)
-        setShowResults(true)
-        break
+        setSelections(newSelections);
+        setShowResults(true);
+        break;
       }
     }
-  }, [answers, selections, effectiveCircleCount, isMultiSelectMode])
+  }, [answers, selections, effectiveCircleCount, isMultiSelectMode]);
 
   useEffect(() => {
     const win = window as unknown as {
-      __activityReset?: () => void
-      __activityCheckAnswers?: () => void
-      __activityShowAnswers?: (show: boolean) => void
-      __activityShowNextAnswer?: () => void
-    }
-    win.__activityReset = handleReset
-    win.__activityCheckAnswers = handleCheckAnswers
-    win.__activityShowAnswers = handleShowAnswers
-    win.__activityShowNextAnswer = handleShowNextAnswer
+      __activityReset?: () => void;
+      __activityCheckAnswers?: () => void;
+      __activityShowAnswers?: (show: boolean) => void;
+      __activityShowNextAnswer?: () => void;
+    };
+    win.__activityReset = handleReset;
+    win.__activityCheckAnswers = handleCheckAnswers;
+    win.__activityShowAnswers = handleShowAnswers;
+    win.__activityShowNextAnswer = handleShowNextAnswer;
     return () => {
-      delete win.__activityReset
-      delete win.__activityCheckAnswers
-      delete win.__activityShowAnswers
-      delete win.__activityShowNextAnswer
-    }
-  }, [handleReset, handleCheckAnswers, handleShowAnswers, handleShowNextAnswer])
+      delete win.__activityReset;
+      delete win.__activityCheckAnswers;
+      delete win.__activityShowAnswers;
+      delete win.__activityShowNextAnswer;
+    };
+  }, [
+    handleReset,
+    handleCheckAnswers,
+    handleShowAnswers,
+    handleShowNextAnswer,
+  ]);
 
   if ((!sectionPath && !sectionImageUrl) || answers.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
         <p className="text-slate-500">No activity configured</p>
       </div>
-    )
+    );
   }
 
   if (isLoading) {
@@ -382,7 +387,7 @@ export function CircleMark({ activity }: CircleMarkProps) {
       <div className="flex h-full items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-cyan-500" />
       </div>
-    )
+    );
   }
 
   if (imageError || !imageUrl) {
@@ -393,7 +398,7 @@ export function CircleMark({ activity }: CircleMarkProps) {
           {sectionImageUrl || sectionPath || "No image path"}
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -453,10 +458,10 @@ export function CircleMark({ activity }: CircleMarkProps) {
 
             {imageLoaded &&
               answers.map((_, answerIndex) => {
-                const selected = isSelected(answerIndex)
-                const correct = isAnswerCorrect(answerIndex)
-                const scaledCoords = getScaledCoords(answerIndex)
-                const questionIndex = getQuestionIndex(answerIndex)
+                const selected = isSelected(answerIndex);
+                const correct = isAnswerCorrect(answerIndex);
+                const scaledCoords = getScaledCoords(answerIndex);
+                const questionIndex = getQuestionIndex(answerIndex);
 
                 return (
                   <button
@@ -516,7 +521,7 @@ export function CircleMark({ activity }: CircleMarkProps) {
                       </div>
                     )}
                   </button>
-                )
+                );
               })}
           </div>
         )}
@@ -528,5 +533,5 @@ export function CircleMark({ activity }: CircleMarkProps) {
         )}
       </div>
     </div>
-  )
+  );
 }

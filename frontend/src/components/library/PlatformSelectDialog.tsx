@@ -5,24 +5,24 @@
  * Dialog for selecting platform when downloading a book bundle.
  */
 
-import { AlertCircle, Apple, Download, Loader2, Monitor } from "lucide-react"
-import { useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { AlertCircle, Apple, Download, Loader2, Monitor } from "lucide-react";
+import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { booksApi, type Platform } from "@/services/booksApi"
+} from "@/components/ui/dialog";
+import { booksApi, type Platform } from "@/services/booksApi";
 
 interface PlatformOption {
-  id: Platform
-  label: string
-  description: string
-  icon: React.ReactNode
+  id: Platform;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
 }
 
 const platformOptions: PlatformOption[] = [
@@ -50,13 +50,13 @@ const platformOptions: PlatformOption[] = [
     description: "For Linux distributions",
     icon: <Monitor className="h-6 w-6" />,
   },
-]
+];
 
 interface PlatformSelectDialogProps {
-  bookId: number
-  bookTitle: string
-  isOpen: boolean
-  onClose: () => void
+  bookId: number;
+  bookTitle: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function PlatformSelectDialog({
@@ -65,36 +65,38 @@ export function PlatformSelectDialog({
   isOpen,
   onClose,
 }: PlatformSelectDialogProps) {
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handlePlatformSelect = async (platform: Platform) => {
-    setSelectedPlatform(platform)
-    setIsLoading(true)
-    setError(null)
+    setSelectedPlatform(platform);
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const response = await booksApi.requestBookBundle(bookId, platform)
+      const response = await booksApi.requestBookBundle(bookId, platform);
 
       // Redirect to download URL - browser handles the download
-      window.location.href = response.download_url
-      onClose()
+      window.location.href = response.download_url;
+      onClose();
     } catch (err) {
-      console.error("Failed to request bundle:", err)
-      setError("Failed to generate download link. Please try again.")
+      console.error("Failed to request bundle:", err);
+      setError("Failed to generate download link. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleClose = () => {
     if (!isLoading) {
-      setSelectedPlatform(null)
-      setError(null)
-      onClose()
+      setSelectedPlatform(null);
+      setError(null);
+      onClose();
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -105,7 +107,8 @@ export function PlatformSelectDialog({
             Download Book
           </DialogTitle>
           <DialogDescription>
-            Select a platform to download "{bookTitle}" as a standalone application.
+            Select a platform to download "{bookTitle}" as a standalone
+            application.
           </DialogDescription>
         </DialogHeader>
 
@@ -117,7 +120,9 @@ export function PlatformSelectDialog({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => selectedPlatform && handlePlatformSelect(selectedPlatform)}
+                onClick={() =>
+                  selectedPlatform && handlePlatformSelect(selectedPlatform)
+                }
               >
                 Retry
               </Button>
@@ -145,7 +150,9 @@ export function PlatformSelectDialog({
               )}
               <div className="text-center">
                 <div className="font-medium">{option.label}</div>
-                <div className="text-xs text-muted-foreground">{option.description}</div>
+                <div className="text-xs text-muted-foreground">
+                  {option.description}
+                </div>
               </div>
             </Button>
           ))}
@@ -156,5 +163,5 @@ export function PlatformSelectDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

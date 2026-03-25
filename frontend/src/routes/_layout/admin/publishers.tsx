@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   Check,
   ChevronLeft,
@@ -15,19 +15,19 @@ import {
   Trash2,
   UserPlus,
   X,
-} from "lucide-react"
-import { useEffect, useState } from "react"
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   AdminService,
   type PublisherAccountCreate,
   type PublisherAccountPublic,
   type PublisherAccountUpdate,
-} from "@/client"
-import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/client";
+import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -35,18 +35,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { PasswordInput } from "@/components/ui/password-input"
-import { Label } from "@/components/ui/label"
-import { PublisherLogo } from "@/components/ui/publisher-logo"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Label } from "@/components/ui/label";
+import { PublisherLogo } from "@/components/ui/publisher-logo";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -54,9 +54,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import useCustomToast from "@/hooks/useCustomToast"
-import { generateUsername } from "@/utils/usernameGenerator"
+} from "@/components/ui/table";
+import useCustomToast from "@/hooks/useCustomToast";
+import { generateUsername } from "@/utils/usernameGenerator";
 
 export const Route = createFileRoute("/_layout/admin/publishers")({
   component: () => (
@@ -64,57 +64,57 @@ export const Route = createFileRoute("/_layout/admin/publishers")({
       <AdminPublishers />
     </ErrorBoundary>
   ),
-})
+});
 
 function AdminPublishers() {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const PAGE_SIZE = 20
-  const [searchQuery, setSearchQuery] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const PAGE_SIZE = 20;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
 
   // Dialog states
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
-    useState(false)
+    useState(false);
   const [isPasswordResultDialogOpen, setIsPasswordResultDialogOpen] =
-    useState(false)
+    useState(false);
 
   // Selected account states
   const [selectedAccount, setSelectedAccount] =
-    useState<PublisherAccountPublic | null>(null)
+    useState<PublisherAccountPublic | null>(null);
   const [accountToDelete, setAccountToDelete] = useState<{
-    id: string
-    name: string
-  } | null>(null)
+    id: string;
+    name: string;
+  } | null>(null);
   const [accountToResetPassword, setAccountToResetPassword] = useState<{
-    userId: string
-    userName: string
-  } | null>(null)
+    userId: string;
+    userName: string;
+  } | null>(null);
 
   // Change password dialog states
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] =
-    useState(false)
+    useState(false);
   const [accountToChangePassword, setAccountToChangePassword] = useState<{
-    userId: string
-    userName: string
-  } | null>(null)
-  const [newPassword, setNewPassword] = useState("")
-  const [newPasswordConfirm, setNewPasswordConfirm] = useState("")
-  const [changePasswordError, setChangePasswordError] = useState("")
+    userId: string;
+    userName: string;
+  } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [changePasswordError, setChangePasswordError] = useState("");
 
   // Password result state
   const [passwordResult, setPasswordResult] = useState<{
-    passwordEmailed: boolean
-    temporaryPassword: string | null
-    message: string
-  } | null>(null)
-  const [passwordCopied, setPasswordCopied] = useState(false)
+    passwordEmailed: boolean;
+    temporaryPassword: string | null;
+    message: string;
+  } | null>(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
 
   // Form states
   const [newAccount, setNewAccount] = useState<PublisherAccountCreate>({
@@ -122,27 +122,27 @@ function AdminPublishers() {
     username: "",
     email: "",
     full_name: "",
-  })
+  });
   const [editAccount, setEditAccount] = useState<PublisherAccountUpdate>({
     dcs_publisher_id: null,
     username: null,
     email: null,
     full_name: null,
     is_active: null,
-  })
+  });
 
   // Debounce search for server-side filtering
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery)
-      setCurrentPage(1)
-      setSelectedIds(new Set())
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+      setSelectedIds(new Set());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch publisher USER accounts (server-side pagination)
-  const skip = (currentPage - 1) * PAGE_SIZE
+  const skip = (currentPage - 1) * PAGE_SIZE;
   const {
     data: accountsResponse,
     isLoading: isLoadingAccounts,
@@ -155,10 +155,10 @@ function AdminPublishers() {
         limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
       }),
-  })
-  const accounts = accountsResponse?.items ?? []
-  const totalAccounts = accountsResponse?.total ?? 0
-  const totalPages = Math.ceil(totalAccounts / PAGE_SIZE)
+  });
+  const accounts = accountsResponse?.items ?? [];
+  const totalAccounts = accountsResponse?.total ?? 0;
+  const totalPages = Math.ceil(totalAccounts / PAGE_SIZE);
 
   // Fetch DCS publishers for dropdown
   const { data: dcsPublishers = [], isLoading: isLoadingPublishers } = useQuery(
@@ -166,36 +166,36 @@ function AdminPublishers() {
       queryKey: ["dcsPublishers"],
       queryFn: () => AdminService.listPublishers(),
     },
-  )
+  );
 
   // Create account mutation
   const createMutation = useMutation({
     mutationFn: (data: PublisherAccountCreate) =>
       AdminService.createPublisherAccount({ requestBody: data }),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
-      setIsAddDialogOpen(false)
-      resetNewAccountForm()
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] });
+      setIsAddDialogOpen(false);
+      resetNewAccountForm();
 
       if (response.password_emailed) {
-        showSuccessToast("Account created. Password sent to email.")
+        showSuccessToast("Account created. Password sent to email.");
       } else if (response.temporary_password) {
         setPasswordResult({
           passwordEmailed: false,
           temporaryPassword: response.temporary_password,
           message: response.message || "Account created successfully.",
-        })
-        setIsPasswordResultDialogOpen(true)
+        });
+        setIsPasswordResultDialogOpen(true);
       } else {
-        showSuccessToast("Publisher account created successfully!")
+        showSuccessToast("Publisher account created successfully!");
       }
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to create account. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Update account mutation
   const updateMutation = useMutation({
@@ -203,37 +203,37 @@ function AdminPublishers() {
       userId,
       data,
     }: {
-      userId: string
-      data: PublisherAccountUpdate
+      userId: string;
+      data: PublisherAccountUpdate;
     }) => AdminService.updatePublisherAccount({ userId, requestBody: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
-      setIsEditDialogOpen(false)
-      setSelectedAccount(null)
-      showSuccessToast("Publisher account updated successfully!")
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] });
+      setIsEditDialogOpen(false);
+      setSelectedAccount(null);
+      showSuccessToast("Publisher account updated successfully!");
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to update account. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Delete account mutation
   const deleteMutation = useMutation({
     mutationFn: (userId: string) =>
       AdminService.deletePublisherAccount({ userId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
-      setAccountToDelete(null)
-      showSuccessToast("Publisher account deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] });
+      setAccountToDelete(null);
+      showSuccessToast("Publisher account deleted successfully!");
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to delete account. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Reset password mutation
   const resetPasswordMutation = useMutation({
@@ -243,17 +243,17 @@ function AdminPublishers() {
         passwordEmailed: response.password_emailed,
         temporaryPassword: response.temporary_password ?? null,
         message: response.message,
-      })
-      setIsResetPasswordDialogOpen(false)
-      setIsPasswordResultDialogOpen(true)
-      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
+      });
+      setIsResetPasswordDialogOpen(false);
+      setIsPasswordResultDialogOpen(true);
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] });
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to reset password. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Change password mutation
   const changePasswordMutation = useMutation({
@@ -263,24 +263,24 @@ function AdminPublishers() {
         requestBody: { password },
       }),
     onSuccess: () => {
-      setIsChangePasswordDialogOpen(false)
+      setIsChangePasswordDialogOpen(false);
       setPasswordResult({
         passwordEmailed: false,
         temporaryPassword: newPassword,
         message: "Password has been changed successfully.",
-      })
-      setIsPasswordResultDialogOpen(true)
-      setNewPassword("")
-      setNewPasswordConfirm("")
-      setChangePasswordError("")
-      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
+      });
+      setIsPasswordResultDialogOpen(true);
+      setNewPassword("");
+      setNewPasswordConfirm("");
+      setChangePasswordError("");
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] });
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to change password. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
@@ -289,48 +289,48 @@ function AdminPublishers() {
         ids.map((id) => AdminService.deletePublisherAccount({ userId: id })),
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] })
-      setSelectedIds(new Set())
-      setIsBulkDeleteDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["publisherAccounts"] });
+      setSelectedIds(new Set());
+      setIsBulkDeleteDialogOpen(false);
       showSuccessToast(
         `Successfully deleted ${selectedIds.size} publisher account(s)`,
-      )
+      );
     },
     onError: () => {
       showErrorToast(
         "Failed to delete some publisher accounts. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(accounts.map((a) => a.id)))
+      setSelectedIds(new Set(accounts.map((a) => a.id)));
     } else {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     }
-  }
+  };
 
   const handleSelectItem = (id: string, checked: boolean) => {
-    const newSelected = new Set(selectedIds)
+    const newSelected = new Set(selectedIds);
     if (checked) {
-      newSelected.add(id)
+      newSelected.add(id);
     } else {
-      newSelected.delete(id)
+      newSelected.delete(id);
     }
-    setSelectedIds(newSelected)
-  }
+    setSelectedIds(newSelected);
+  };
 
   const handleBulkDelete = () => {
     if (selectedIds.size > 0) {
-      setIsBulkDeleteDialogOpen(true)
+      setIsBulkDeleteDialogOpen(true);
     }
-  }
+  };
 
   const confirmBulkDelete = () => {
-    bulkDeleteMutation.mutate(Array.from(selectedIds))
-  }
+    bulkDeleteMutation.mutate(Array.from(selectedIds));
+  };
 
   // Helper functions
   const resetNewAccountForm = () => {
@@ -339,13 +339,13 @@ function AdminPublishers() {
       username: "",
       email: "",
       full_name: "",
-    })
-  }
+    });
+  };
 
   const handleOpenAddDialog = () => {
-    resetNewAccountForm()
-    setIsAddDialogOpen(true)
-  }
+    resetNewAccountForm();
+    setIsAddDialogOpen(true);
+  };
 
   const handleCreateAccount = () => {
     if (
@@ -353,111 +353,111 @@ function AdminPublishers() {
       !newAccount.email ||
       !newAccount.full_name
     ) {
-      showErrorToast("Please fill in all required fields")
-      return
+      showErrorToast("Please fill in all required fields");
+      return;
     }
-    createMutation.mutate(newAccount)
-  }
+    createMutation.mutate(newAccount);
+  };
 
   const handleOpenEditDialog = (account: PublisherAccountPublic) => {
-    setSelectedAccount(account)
+    setSelectedAccount(account);
     setEditAccount({
       dcs_publisher_id: account.dcs_publisher_id,
       username: account.username,
       email: account.email,
       full_name: account.full_name,
       is_active: account.is_active,
-    })
-    setIsEditDialogOpen(true)
-  }
+    });
+    setIsEditDialogOpen(true);
+  };
 
   const handleUpdateAccount = () => {
-    if (!selectedAccount) return
+    if (!selectedAccount) return;
     updateMutation.mutate({
       userId: selectedAccount.id,
       data: editAccount,
-    })
-  }
+    });
+  };
 
   const handleOpenDeleteDialog = (account: PublisherAccountPublic) => {
     setAccountToDelete({
       id: account.id,
       name: account.full_name || account.username,
-    })
-    setIsDeleteDialogOpen(true)
-  }
+    });
+    setIsDeleteDialogOpen(true);
+  };
 
   const confirmDeleteAccount = () => {
     if (accountToDelete) {
-      deleteMutation.mutate(accountToDelete.id)
+      deleteMutation.mutate(accountToDelete.id);
     }
-  }
+  };
 
   const handleOpenResetPasswordDialog = (account: PublisherAccountPublic) => {
     setAccountToResetPassword({
       userId: account.id,
       userName: account.full_name || account.username,
-    })
-    setIsResetPasswordDialogOpen(true)
-  }
+    });
+    setIsResetPasswordDialogOpen(true);
+  };
 
   const confirmResetPassword = () => {
     if (accountToResetPassword) {
-      resetPasswordMutation.mutate(accountToResetPassword.userId)
+      resetPasswordMutation.mutate(accountToResetPassword.userId);
     }
-  }
+  };
 
   const handleOpenChangePasswordDialog = (account: PublisherAccountPublic) => {
     setAccountToChangePassword({
       userId: account.id,
       userName: account.full_name || account.username,
-    })
-    setNewPassword("")
-    setNewPasswordConfirm("")
-    setChangePasswordError("")
-    setIsChangePasswordDialogOpen(true)
-  }
+    });
+    setNewPassword("");
+    setNewPasswordConfirm("");
+    setChangePasswordError("");
+    setIsChangePasswordDialogOpen(true);
+  };
 
   const confirmChangePassword = () => {
-    if (!accountToChangePassword) return
+    if (!accountToChangePassword) return;
     if (newPassword.length < 8) {
-      setChangePasswordError("Password must be at least 8 characters.")
-      return
+      setChangePasswordError("Password must be at least 8 characters.");
+      return;
     }
     if (newPassword !== newPasswordConfirm) {
-      setChangePasswordError("Passwords do not match.")
-      return
+      setChangePasswordError("Passwords do not match.");
+      return;
     }
-    setChangePasswordError("")
+    setChangePasswordError("");
     changePasswordMutation.mutate({
       userId: accountToChangePassword.userId,
       password: newPassword,
-    })
-  }
+    });
+  };
 
   const handleCopyPassword = async () => {
     if (passwordResult?.temporaryPassword) {
-      await navigator.clipboard.writeText(passwordResult.temporaryPassword)
-      setPasswordCopied(true)
-      showSuccessToast("Password copied to clipboard")
-      setTimeout(() => setPasswordCopied(false), 2000)
+      await navigator.clipboard.writeText(passwordResult.temporaryPassword);
+      setPasswordCopied(true);
+      showSuccessToast("Password copied to clipboard");
+      setTimeout(() => setPasswordCopied(false), 2000);
     }
-  }
+  };
 
   const closePasswordResultDialog = () => {
-    setIsPasswordResultDialogOpen(false)
-    setPasswordResult(null)
-    setAccountToResetPassword(null)
-    setAccountToChangePassword(null)
-    setPasswordCopied(false)
-  }
+    setIsPasswordResultDialogOpen(false);
+    setPasswordResult(null);
+    setAccountToResetPassword(null);
+    setAccountToChangePassword(null);
+    setPasswordCopied(false);
+  };
 
   // Get publisher name by ID
   const getPublisherName = (publisherId: number | null): string => {
-    if (!publisherId) return "N/A"
-    const publisher = dcsPublishers.find((p) => p.id === publisherId)
-    return publisher?.name || "Unknown"
-  }
+    if (!publisherId) return "N/A";
+    const publisher = dcsPublishers.find((p) => p.id === publisherId);
+    return publisher?.name || "Unknown";
+  };
 
   if (accountsError) {
     return (
@@ -466,7 +466,7 @@ function AdminPublishers() {
           Error loading publisher accounts. Please try again later.
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -661,7 +661,9 @@ function AdminPublishers() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenChangePasswordDialog(account)}
+                          onClick={() =>
+                            handleOpenChangePasswordDialog(account)
+                          }
                           disabled={changePasswordMutation.isPending}
                           className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                           title="Change Password"
@@ -701,8 +703,7 @@ function AdminPublishers() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {skip + 1} to{" "}
-            {Math.min(skip + PAGE_SIZE, totalAccounts)} of{" "}
+            Showing {skip + 1} to {Math.min(skip + PAGE_SIZE, totalAccounts)} of{" "}
             {totalAccounts}
           </div>
           <div className="flex items-center gap-2">
@@ -710,8 +711,8 @@ function AdminPublishers() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p - 1)
-                setSelectedIds(new Set())
+                setCurrentPage((p) => p - 1);
+                setSelectedIds(new Set());
               }}
               disabled={currentPage === 1}
             >
@@ -725,8 +726,8 @@ function AdminPublishers() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p + 1)
-                setSelectedIds(new Set())
+                setCurrentPage((p) => p + 1);
+                setSelectedIds(new Set());
               }}
               disabled={currentPage === totalPages}
             >
@@ -798,15 +799,15 @@ function AdminPublishers() {
                 placeholder="e.g., John Doe"
                 value={newAccount.full_name}
                 onChange={(e) => {
-                  const fullName = e.target.value
+                  const fullName = e.target.value;
                   // Auto-generate username with Turkish character support
-                  const generatedUsername = generateUsername(fullName)
+                  const generatedUsername = generateUsername(fullName);
 
                   setNewAccount({
                     ...newAccount,
                     full_name: fullName,
                     username: generatedUsername,
-                  })
+                  });
                 }}
               />
             </div>
@@ -1027,8 +1028,9 @@ function AdminPublishers() {
               Change Password
             </DialogTitle>
             <DialogDescription>
-              Set a new password for &ldquo;{accountToChangePassword?.userName}&rdquo;. The
-              publisher will be required to change it on next login.
+              Set a new password for &ldquo;{accountToChangePassword?.userName}
+              &rdquo;. The publisher will be required to change it on next
+              login.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1039,8 +1041,8 @@ function AdminPublishers() {
                 placeholder="Enter new password (min 8 characters)"
                 value={newPassword}
                 onChange={(e) => {
-                  setNewPassword(e.target.value)
-                  setChangePasswordError("")
+                  setNewPassword(e.target.value);
+                  setChangePasswordError("");
                 }}
               />
             </div>
@@ -1051,8 +1053,8 @@ function AdminPublishers() {
                 placeholder="Confirm new password"
                 value={newPasswordConfirm}
                 onChange={(e) => {
-                  setNewPasswordConfirm(e.target.value)
-                  setChangePasswordError("")
+                  setNewPasswordConfirm(e.target.value);
+                  setChangePasswordError("");
                 }}
               />
             </div>
@@ -1108,7 +1110,12 @@ function AdminPublishers() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-green-500" />
-              Password {accountToChangePassword ? "Changed" : accountToResetPassword ? "Reset" : "Generated"}
+              Password{" "}
+              {accountToChangePassword
+                ? "Changed"
+                : accountToResetPassword
+                  ? "Reset"
+                  : "Generated"}
             </DialogTitle>
             <DialogDescription>{passwordResult?.message}</DialogDescription>
           </DialogHeader>
@@ -1152,5 +1159,5 @@ function AdminPublishers() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

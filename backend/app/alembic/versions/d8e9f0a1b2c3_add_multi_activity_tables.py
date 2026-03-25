@@ -28,7 +28,8 @@ def upgrade() -> None:
     # Create assignment_student_activity_status enum (if not exists)
     connection = op.get_bind()
     connection.execute(
-        sa.text("""
+        sa.text(
+            """
             DO $$
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'assignmentstudentactivitystatus') THEN
@@ -36,62 +37,84 @@ def upgrade() -> None:
                 END IF;
             END
             $$;
-        """)
+        """
+        )
     )
 
     # Create assignment_activities junction table
     op.create_table(
-        'assignment_activities',
-        sa.Column('order_index', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('id', sa.Uuid(), nullable=False),
-        sa.Column('assignment_id', sa.Uuid(), nullable=False),
-        sa.Column('activity_id', sa.Uuid(), nullable=False),
-        sa.ForeignKeyConstraint(['assignment_id'], ['assignments.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['activity_id'], ['activities.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('assignment_id', 'activity_id', name='uq_assignment_activity')
+        "assignment_activities",
+        sa.Column("order_index", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("assignment_id", sa.Uuid(), nullable=False),
+        sa.Column("activity_id", sa.Uuid(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["assignment_id"], ["assignments.id"], ondelete="CASCADE"
+        ),
+        sa.ForeignKeyConstraint(["activity_id"], ["activities.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint(
+            "assignment_id", "activity_id", name="uq_assignment_activity"
+        ),
     )
     op.create_index(
-        op.f('ix_assignment_activities_assignment_id'),
-        'assignment_activities',
-        ['assignment_id'],
-        unique=False
+        op.f("ix_assignment_activities_assignment_id"),
+        "assignment_activities",
+        ["assignment_id"],
+        unique=False,
     )
     op.create_index(
-        op.f('ix_assignment_activities_activity_id'),
-        'assignment_activities',
-        ['activity_id'],
-        unique=False
+        op.f("ix_assignment_activities_activity_id"),
+        "assignment_activities",
+        ["activity_id"],
+        unique=False,
     )
 
     # Create assignment_student_activities table
     op.create_table(
-        'assignment_student_activities',
-        sa.Column('status', postgresql.ENUM('not_started', 'in_progress', 'completed', name='assignmentstudentactivitystatus', create_type=False), nullable=False, server_default='not_started'),
-        sa.Column('score', sa.Float(), nullable=True),
-        sa.Column('max_score', sa.Float(), nullable=False, server_default='100.0'),
-        sa.Column('response_data', sa.JSON(), nullable=True),
-        sa.Column('started_at', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('completed_at', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('id', sa.Uuid(), nullable=False),
-        sa.Column('assignment_student_id', sa.Uuid(), nullable=False),
-        sa.Column('activity_id', sa.Uuid(), nullable=False),
-        sa.ForeignKeyConstraint(['assignment_student_id'], ['assignment_students.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['activity_id'], ['activities.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('assignment_student_id', 'activity_id', name='uq_assignment_student_activity')
+        "assignment_student_activities",
+        sa.Column(
+            "status",
+            postgresql.ENUM(
+                "not_started",
+                "in_progress",
+                "completed",
+                name="assignmentstudentactivitystatus",
+                create_type=False,
+            ),
+            nullable=False,
+            server_default="not_started",
+        ),
+        sa.Column("score", sa.Float(), nullable=True),
+        sa.Column("max_score", sa.Float(), nullable=False, server_default="100.0"),
+        sa.Column("response_data", sa.JSON(), nullable=True),
+        sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("assignment_student_id", sa.Uuid(), nullable=False),
+        sa.Column("activity_id", sa.Uuid(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["assignment_student_id"], ["assignment_students.id"], ondelete="CASCADE"
+        ),
+        sa.ForeignKeyConstraint(["activity_id"], ["activities.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint(
+            "assignment_student_id",
+            "activity_id",
+            name="uq_assignment_student_activity",
+        ),
     )
     op.create_index(
-        op.f('ix_assignment_student_activities_assignment_student_id'),
-        'assignment_student_activities',
-        ['assignment_student_id'],
-        unique=False
+        op.f("ix_assignment_student_activities_assignment_student_id"),
+        "assignment_student_activities",
+        ["assignment_student_id"],
+        unique=False,
     )
     op.create_index(
-        op.f('ix_assignment_student_activities_activity_id'),
-        'assignment_student_activities',
-        ['activity_id'],
-        unique=False
+        op.f("ix_assignment_student_activities_activity_id"),
+        "assignment_student_activities",
+        ["activity_id"],
+        unique=False,
     )
 
     # Data migration: Create AssignmentActivity records for existing assignments
@@ -104,17 +127,20 @@ def upgrade() -> None:
     # Insert into assignment_activities junction table
     for assignment in assignments:
         connection.execute(
-            sa.text("""
+            sa.text(
+                """
                 INSERT INTO assignment_activities (id, assignment_id, activity_id, order_index)
                 VALUES (gen_random_uuid(), :assignment_id, :activity_id, 0)
-            """),
-            {"assignment_id": assignment.id, "activity_id": assignment.activity_id}
+            """
+            ),
+            {"assignment_id": assignment.id, "activity_id": assignment.activity_id},
         )
 
     # Data migration: Create AssignmentStudentActivity records for existing assignment_students
     # Copy status, score, and answers from assignment_students to assignment_student_activities
     assignment_students = connection.execute(
-        sa.text("""
+        sa.text(
+            """
             SELECT
                 ast.id as assignment_student_id,
                 a.activity_id,
@@ -126,17 +152,21 @@ def upgrade() -> None:
             FROM assignment_students ast
             JOIN assignments a ON ast.assignment_id = a.id
             WHERE a.activity_id IS NOT NULL
-        """)
+        """
+        )
     ).fetchall()
 
     for as_record in assignment_students:
         # Map AssignmentStatus to AssignmentStudentActivityStatus (they have same values)
-        status = as_record.status if as_record.status else 'not_started'
+        status = as_record.status if as_record.status else "not_started"
         # Convert dict to JSON string for proper insertion
-        response_data_json = json.dumps(as_record.answers_json) if as_record.answers_json else None
+        response_data_json = (
+            json.dumps(as_record.answers_json) if as_record.answers_json else None
+        )
 
         connection.execute(
-            sa.text("""
+            sa.text(
+                """
                 INSERT INTO assignment_student_activities
                 (id, assignment_student_id, activity_id, status, score, max_score, response_data, started_at, completed_at)
                 VALUES (
@@ -150,7 +180,8 @@ def upgrade() -> None:
                     :started_at,
                     :completed_at
                 )
-            """),
+            """
+            ),
             {
                 "assignment_student_id": as_record.assignment_student_id,
                 "activity_id": as_record.activity_id,
@@ -158,16 +189,13 @@ def upgrade() -> None:
                 "score": as_record.score,
                 "response_data": response_data_json,
                 "started_at": as_record.started_at,
-                "completed_at": as_record.completed_at
-            }
+                "completed_at": as_record.completed_at,
+            },
         )
 
     # Make activity_id nullable on assignments table (keeping for backward compatibility)
     op.alter_column(
-        'assignments',
-        'activity_id',
-        existing_type=sa.Uuid(),
-        nullable=True
+        "assignments", "activity_id", existing_type=sa.Uuid(), nullable=True
     )
 
 
@@ -178,7 +206,8 @@ def downgrade() -> None:
 
     # Update assignments with activity_id from junction table (first activity)
     connection.execute(
-        sa.text("""
+        sa.text(
+            """
             UPDATE assignments a
             SET activity_id = (
                 SELECT aa.activity_id
@@ -188,25 +217,34 @@ def downgrade() -> None:
                 LIMIT 1
             )
             WHERE a.activity_id IS NULL
-        """)
+        """
+        )
     )
 
     op.alter_column(
-        'assignments',
-        'activity_id',
-        existing_type=sa.Uuid(),
-        nullable=False
+        "assignments", "activity_id", existing_type=sa.Uuid(), nullable=False
     )
 
     # Drop assignment_student_activities table
-    op.drop_index(op.f('ix_assignment_student_activities_activity_id'), table_name='assignment_student_activities')
-    op.drop_index(op.f('ix_assignment_student_activities_assignment_student_id'), table_name='assignment_student_activities')
-    op.drop_table('assignment_student_activities')
+    op.drop_index(
+        op.f("ix_assignment_student_activities_activity_id"),
+        table_name="assignment_student_activities",
+    )
+    op.drop_index(
+        op.f("ix_assignment_student_activities_assignment_student_id"),
+        table_name="assignment_student_activities",
+    )
+    op.drop_table("assignment_student_activities")
 
     # Drop assignment_activities junction table
-    op.drop_index(op.f('ix_assignment_activities_activity_id'), table_name='assignment_activities')
-    op.drop_index(op.f('ix_assignment_activities_assignment_id'), table_name='assignment_activities')
-    op.drop_table('assignment_activities')
+    op.drop_index(
+        op.f("ix_assignment_activities_activity_id"), table_name="assignment_activities"
+    )
+    op.drop_index(
+        op.f("ix_assignment_activities_assignment_id"),
+        table_name="assignment_activities",
+    )
+    op.drop_table("assignment_activities")
 
     # Drop the enum type
     op.execute("DROP TYPE IF EXISTS assignmentstudentactivitystatus")

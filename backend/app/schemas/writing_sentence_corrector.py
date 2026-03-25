@@ -9,7 +9,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 WritingSCDifficulty = Literal["auto", "easy", "medium", "hard"]
 WritingSCErrorType = Literal["word_order", "grammar", "spelling", "mixed"]
 

@@ -1,23 +1,29 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, Download, ExternalLink, RefreshCw, UserPlus } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { FiBook } from "react-icons/fi"
-import { PublishersService } from "@/client"
-import { BookTableView } from "@/components/books/BookTableView"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { QuickAssignDialog } from "@/components/books/QuickAssignDialog"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { LibraryFilters } from "@/components/library/LibraryFilters"
-import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
-import { useLibraryFilters } from "@/hooks/useLibraryFilters"
-import { useViewPreference } from "@/hooks/useViewPreference"
-import { getAuthenticatedCoverUrl } from "@/services/booksApi"
-import type { Book } from "@/types/book"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  BookOpen,
+  Download,
+  ExternalLink,
+  RefreshCw,
+  UserPlus,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { FiBook } from "react-icons/fi";
+import { PublishersService } from "@/client";
+import { BookTableView } from "@/components/books/BookTableView";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { QuickAssignDialog } from "@/components/books/QuickAssignDialog";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { LibraryFilters } from "@/components/library/LibraryFilters";
+import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle";
+import { useLibraryFilters } from "@/hooks/useLibraryFilters";
+import { useViewPreference } from "@/hooks/useViewPreference";
+import { getAuthenticatedCoverUrl } from "@/services/booksApi";
+import type { Book } from "@/types/book";
 
 export const Route = createFileRoute("/_layout/publisher/library")({
   component: () => (
@@ -30,7 +36,7 @@ export const Route = createFileRoute("/_layout/publisher/library")({
     publisher: (search.publisher as string) || "",
     activity: (search.activity as string) || "",
   }),
-})
+});
 
 /**
  * Publisher Book Card - Story 19.6
@@ -38,47 +44,52 @@ export const Route = createFileRoute("/_layout/publisher/library")({
  * Note: Restored assign functionality using QuickAssignDialog pattern
  */
 interface PublisherBookCardProps {
-  book: Book
-  onAssignClick: () => void
-  onOpenFlowbook?: () => void
-  onDownload?: () => void
+  book: Book;
+  onAssignClick: () => void;
+  onOpenFlowbook?: () => void;
+  onDownload?: () => void;
 }
 
-function PublisherBookCard({ book, onAssignClick, onOpenFlowbook, onDownload }: PublisherBookCardProps) {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null)
-  const [isLoadingCover, setIsLoadingCover] = useState(true)
-  const [imageError, setImageError] = useState(false)
+function PublisherBookCard({
+  book,
+  onAssignClick,
+  onOpenFlowbook,
+  onDownload,
+}: PublisherBookCardProps) {
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [isLoadingCover, setIsLoadingCover] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   // Fetch authenticated cover URL
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
-    setImageError(false)
+    setImageError(false);
 
     async function fetchCover() {
       if (!book.cover_image_url) {
-        setIsLoadingCover(false)
-        return
+        setIsLoadingCover(false);
+        return;
       }
 
-      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url
-        setCoverUrl(url)
-        setIsLoadingCover(false)
+        blobUrl = url;
+        setCoverUrl(url);
+        setIsLoadingCover(false);
       }
     }
 
-    fetchCover()
+    fetchCover();
 
     return () => {
-      isMounted = false
+      isMounted = false;
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [book.cover_image_url])
+    };
+  }, [book.cover_image_url]);
 
   return (
     <Card className="h-full flex flex-col shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -164,33 +175,36 @@ function PublisherBookCard({ book, onAssignClick, onOpenFlowbook, onDownload }: 
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
 
 function PublisherLibraryPage() {
-  const [assignBook, setAssignBook] = useState<Book | null>(null)
-  const [downloadBook, setDownloadBook] = useState<Book | null>(null)
-  const [viewMode, setViewMode] = useViewPreference("publisher-library", "grid")
+  const [assignBook, setAssignBook] = useState<Book | null>(null);
+  const [downloadBook, setDownloadBook] = useState<Book | null>(null);
+  const [viewMode, setViewMode] = useViewPreference(
+    "publisher-library",
+    "grid",
+  );
 
   // Handle opening the assign dialog
   const handleAssignClick = (book: Book) => {
-    setAssignBook(book)
-  }
+    setAssignBook(book);
+  };
 
   const handleOpenFlowbook = useCallback((book: Book) => {
-    window.open(`/viewer/${book.id}`, "_blank")
-  }, [])
+    window.open(`/viewer/${book.id}`, "_blank");
+  }, []);
 
   const handleDownload = useCallback((book: Book) => {
-    setDownloadBook(book)
-  }, [])
+    setDownloadBook(book);
+  }, []);
 
   // Fetch books for this publisher only (much faster than fetching all books)
   const { data: booksData = [], isLoading: loading } = useQuery({
     queryKey: ["publisherMyBooks"],
     queryFn: () => PublishersService.listMyBooks(),
     staleTime: 30000, // Cache for 30 seconds
-  })
+  });
 
   // Map BookPublic to Book type expected by the card
   const books: Book[] = booksData.map((book) => ({
@@ -202,11 +216,11 @@ function PublisherLibraryPage() {
     description: null, // Not available in BookPublic
     cover_image_url: book.cover_url || null,
     activity_count: book.activity_count || 0,
-  }))
+  }));
 
   // Use library filters hook
   const { filters, setFilters, filteredBooks, resultCount, totalCount } =
-    useLibraryFilters(books)
+    useLibraryFilters(books);
 
   return (
     <PageContainer>
@@ -293,5 +307,5 @@ function PublisherLibraryPage() {
         />
       )}
     </PageContainer>
-  )
+  );
 }

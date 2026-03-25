@@ -65,7 +65,12 @@ def get_period_start(period: BenchmarkPeriod) -> datetime:
     if period == "weekly":
         # Start of current week (Monday)
         days_since_monday = now.weekday()
-        return now - timedelta(days=days_since_monday, hours=now.hour, minutes=now.minute, seconds=now.second)
+        return now - timedelta(
+            days=days_since_monday,
+            hours=now.hour,
+            minutes=now.minute,
+            seconds=now.second,
+        )
     elif period == "monthly":
         # Start of current month
         return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -79,7 +84,9 @@ def get_period_start(period: BenchmarkPeriod) -> datetime:
 
 def _get_activity_type_label(activity_type: str) -> str:
     """Get user-friendly label for activity type."""
-    return ACTIVITY_TYPE_LABELS.get(activity_type, activity_type.replace("_", " ").title())
+    return ACTIVITY_TYPE_LABELS.get(
+        activity_type, activity_type.replace("_", " ").title()
+    )
 
 
 def _generate_benchmark_message(
@@ -124,7 +131,11 @@ def _generate_benchmark_message(
             type="below_average",
             title="Opportunities for growth",
             description="Your class is close to the benchmark. "
-            + (f"Consider focusing on {weakest_activity}." if weakest_activity else "You're making progress!"),
+            + (
+                f"Consider focusing on {weakest_activity}."
+                if weakest_activity
+                else "You're making progress!"
+            ),
             icon="target",
             focus_area=weakest_activity,
         )
@@ -167,7 +178,9 @@ async def calculate_school_benchmark(
         select(func.count(distinct(Class.id)))
         .select_from(Class)
         .join(ClassStudent, ClassStudent.class_id == Class.id)
-        .join(AssignmentStudent, AssignmentStudent.student_id == ClassStudent.student_id)
+        .join(
+            AssignmentStudent, AssignmentStudent.student_id == ClassStudent.student_id
+        )
         .where(
             Class.school_id == school_id,
             AssignmentStudent.status == AssignmentStatus.completed,
@@ -290,7 +303,9 @@ async def calculate_publisher_benchmark(
         select(func.count(distinct(Class.id)))
         .select_from(Class)
         .join(ClassStudent, ClassStudent.class_id == Class.id)
-        .join(AssignmentStudent, AssignmentStudent.student_id == ClassStudent.student_id)
+        .join(
+            AssignmentStudent, AssignmentStudent.student_id == ClassStudent.student_id
+        )
         .join(Assignment, Assignment.id == AssignmentStudent.assignment_id)
         .where(
             Assignment.dcs_book_id.in_(book_ids),
@@ -421,7 +436,9 @@ async def calculate_activity_type_benchmarks(
     )
 
     class_result = await session.execute(class_scores_query)
-    class_scores = {row.activity_type: float(row.avg_score) for row in class_result.all()}
+    class_scores = {
+        row.activity_type: float(row.avg_score) for row in class_result.all()
+    }
 
     if not class_scores:
         return []
@@ -448,12 +465,16 @@ async def calculate_activity_type_benchmarks(
     )
 
     school_result = await session.execute(school_scores_query)
-    school_scores = {row.activity_type: float(row.avg_score) for row in school_result.all()}
+    school_scores = {
+        row.activity_type: float(row.avg_score) for row in school_result.all()
+    }
 
     # Build comparison list
     benchmarks = []
     for activity_type, class_avg in class_scores.items():
-        school_avg = school_scores.get(activity_type, class_avg)  # Default to class avg if no benchmark
+        school_avg = school_scores.get(
+            activity_type, class_avg
+        )  # Default to class avg if no benchmark
         difference = class_avg - school_avg
 
         benchmarks.append(
@@ -537,15 +558,12 @@ async def get_benchmark_trend(
             period_key = period_start.strftime("%Y-%m")
 
         # Class average for period
-        class_avg_query = (
-            select(func.avg(AssignmentStudent.score))
-            .where(
-                AssignmentStudent.student_id.in_(class_student_ids),
-                AssignmentStudent.status == AssignmentStatus.completed,
-                AssignmentStudent.completed_at >= period_start,
-                AssignmentStudent.completed_at < period_end,
-                AssignmentStudent.score.isnot(None),
-            )
+        class_avg_query = select(func.avg(AssignmentStudent.score)).where(
+            AssignmentStudent.student_id.in_(class_student_ids),
+            AssignmentStudent.status == AssignmentStatus.completed,
+            AssignmentStudent.completed_at >= period_start,
+            AssignmentStudent.completed_at < period_end,
+            AssignmentStudent.score.isnot(None),
         )
         class_result = await session.execute(class_avg_query)
         class_avg = class_result.scalar()
@@ -578,7 +596,10 @@ async def get_benchmark_trend(
                 select(func.avg(AssignmentStudent.score))
                 .select_from(AssignmentStudent)
                 .join(Assignment, Assignment.id == AssignmentStudent.assignment_id)
-                .join(ClassStudent, ClassStudent.student_id == AssignmentStudent.student_id)
+                .join(
+                    ClassStudent,
+                    ClassStudent.student_id == AssignmentStudent.student_id,
+                )
                 .join(Class, Class.id == ClassStudent.class_id)
                 .where(
                     Assignment.dcs_book_id.in_(book_ids),
@@ -598,7 +619,9 @@ async def get_benchmark_trend(
                 period_label=period_label,
                 class_average=round(float(class_avg), 1),
                 school_benchmark=round(float(school_avg), 1) if school_avg else None,
-                publisher_benchmark=round(float(publisher_avg), 1) if publisher_avg else None,
+                publisher_benchmark=(
+                    round(float(publisher_avg), 1) if publisher_avg else None
+                ),
             )
         )
 
@@ -628,9 +651,7 @@ async def get_class_benchmarks(
     """
     # Get class with relationships
     class_result = await session.execute(
-        select(Class)
-        .options(selectinload(Class.school))
-        .where(Class.id == class_id)
+        select(Class).options(selectinload(Class.school)).where(Class.id == class_id)
     )
     class_obj = class_result.scalar_one_or_none()
 
@@ -795,12 +816,9 @@ async def get_admin_benchmark_overview(
     schools_with_benchmarking = sum(1 for s in schools if s.benchmarking_enabled)
 
     # Calculate system-wide average score
-    system_avg_query = (
-        select(func.avg(AssignmentStudent.score))
-        .where(
-            AssignmentStudent.status == AssignmentStatus.completed,
-            AssignmentStudent.score.isnot(None),
-        )
+    system_avg_query = select(func.avg(AssignmentStudent.score)).where(
+        AssignmentStudent.status == AssignmentStatus.completed,
+        AssignmentStudent.score.isnot(None),
     )
     result = await session.execute(system_avg_query)
     system_average = result.scalar() or 0.0

@@ -2,15 +2,15 @@
  * AI Usage API Service
  */
 
-import axios from "axios"
+import axios from "axios";
 import type {
   ErrorResponse,
   ProviderBreakdown,
   UsageByTeacher,
   UsageByType,
   UsageSummary,
-} from "@/types/ai-usage"
-import { OpenAPI } from "../client"
+} from "@/types/ai-usage";
+import { OpenAPI } from "../client";
 
 /**
  * Create axios instance with OpenAPI config
@@ -19,15 +19,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -42,18 +42,18 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 export interface MyUsageResponse {
-  total_generations: number
-  monthly_quota: number
-  remaining_quota: number
+  total_generations: number;
+  monthly_quota: number;
+  remaining_quota: number;
 }
 
 export const aiUsageApi = {
@@ -64,8 +64,8 @@ export const aiUsageApi = {
   getMyUsage: async (): Promise<MyUsageResponse> => {
     const response = await apiClient.get<MyUsageResponse>(
       "/api/v1/ai/usage/my-usage",
-    )
-    return response.data
+    );
+    return response.data;
   },
 
   /**
@@ -75,15 +75,15 @@ export const aiUsageApi = {
     fromDate?: Date | null,
     toDate?: Date | null,
   ): Promise<UsageSummary> => {
-    const params = new URLSearchParams()
-    if (fromDate) params.append("from_date", fromDate.toISOString())
-    if (toDate) params.append("to_date", toDate.toISOString())
+    const params = new URLSearchParams();
+    if (fromDate) params.append("from_date", fromDate.toISOString());
+    if (toDate) params.append("to_date", toDate.toISOString());
 
-    const query = params.toString() ? `?${params.toString()}` : ""
+    const query = params.toString() ? `?${params.toString()}` : "";
     const response = await apiClient.get<UsageSummary>(
       `/api/v1/ai/usage/summary${query}`,
-    )
-    return response.data
+    );
+    return response.data;
   },
 
   /**
@@ -93,15 +93,15 @@ export const aiUsageApi = {
     fromDate?: Date | null,
     toDate?: Date | null,
   ): Promise<UsageByType[]> => {
-    const params = new URLSearchParams()
-    if (fromDate) params.append("from_date", fromDate.toISOString())
-    if (toDate) params.append("to_date", toDate.toISOString())
+    const params = new URLSearchParams();
+    if (fromDate) params.append("from_date", fromDate.toISOString());
+    if (toDate) params.append("to_date", toDate.toISOString());
 
-    const query = params.toString() ? `?${params.toString()}` : ""
+    const query = params.toString() ? `?${params.toString()}` : "";
     const response = await apiClient.get<UsageByType[]>(
       `/api/v1/ai/usage/by-type${query}`,
-    )
-    return response.data
+    );
+    return response.data;
   },
 
   /**
@@ -112,16 +112,16 @@ export const aiUsageApi = {
     toDate?: Date | null,
     limit = 100,
   ): Promise<UsageByTeacher[]> => {
-    const params = new URLSearchParams()
-    if (fromDate) params.append("from_date", fromDate.toISOString())
-    if (toDate) params.append("to_date", toDate.toISOString())
-    params.append("limit", limit.toString())
+    const params = new URLSearchParams();
+    if (fromDate) params.append("from_date", fromDate.toISOString());
+    if (toDate) params.append("to_date", toDate.toISOString());
+    params.append("limit", limit.toString());
 
-    const query = params.toString() ? `?${params.toString()}` : ""
+    const query = params.toString() ? `?${params.toString()}` : "";
     const response = await apiClient.get<UsageByTeacher[]>(
       `/api/v1/ai/usage/by-teacher${query}`,
-    )
-    return response.data
+    );
+    return response.data;
   },
 
   /**
@@ -131,15 +131,15 @@ export const aiUsageApi = {
     fromDate?: Date | null,
     toDate?: Date | null,
   ): Promise<ProviderBreakdown> => {
-    const params = new URLSearchParams()
-    if (fromDate) params.append("from_date", fromDate.toISOString())
-    if (toDate) params.append("to_date", toDate.toISOString())
+    const params = new URLSearchParams();
+    if (fromDate) params.append("from_date", fromDate.toISOString());
+    if (toDate) params.append("to_date", toDate.toISOString());
 
-    const query = params.toString() ? `?${params.toString()}` : ""
+    const query = params.toString() ? `?${params.toString()}` : "";
     const response = await apiClient.get<ProviderBreakdown>(
       `/api/v1/ai/usage/by-provider${query}`,
-    )
-    return response.data
+    );
+    return response.data;
   },
 
   /**
@@ -150,16 +150,16 @@ export const aiUsageApi = {
     toDate?: Date | null,
     limit = 100,
   ): Promise<ErrorResponse> => {
-    const params = new URLSearchParams()
-    if (fromDate) params.append("from_date", fromDate.toISOString())
-    if (toDate) params.append("to_date", toDate.toISOString())
-    params.append("limit", limit.toString())
+    const params = new URLSearchParams();
+    if (fromDate) params.append("from_date", fromDate.toISOString());
+    if (toDate) params.append("to_date", toDate.toISOString());
+    params.append("limit", limit.toString());
 
-    const query = params.toString() ? `?${params.toString()}` : ""
+    const query = params.toString() ? `?${params.toString()}` : "";
     const response = await apiClient.get<ErrorResponse>(
       `/api/v1/ai/usage/errors${query}`,
-    )
-    return response.data
+    );
+    return response.data;
   },
 
   /**
@@ -169,17 +169,17 @@ export const aiUsageApi = {
     fromDate?: Date | null,
     toDate?: Date | null,
   ): Promise<Blob> => {
-    const params = new URLSearchParams()
-    if (fromDate) params.append("from_date", fromDate.toISOString())
-    if (toDate) params.append("to_date", toDate.toISOString())
+    const params = new URLSearchParams();
+    if (fromDate) params.append("from_date", fromDate.toISOString());
+    if (toDate) params.append("to_date", toDate.toISOString());
 
-    const query = params.toString() ? `?${params.toString()}` : ""
+    const query = params.toString() ? `?${params.toString()}` : "";
     const response = await apiClient.get<Blob>(
       `/api/v1/ai/usage/export${query}`,
       {
         responseType: "blob",
       },
-    )
-    return response.data
+    );
+    return response.data;
   },
-}
+};

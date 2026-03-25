@@ -10,35 +10,35 @@
  * Story 9.x: Added Time Planning mode support
  */
 
-import { BookOpen, Search, Sparkles } from "lucide-react"
-import { useMemo, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import { BookOpen, Search, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useBookContent } from "@/hooks/useContentLibrary"
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useBookContent } from "@/hooks/useContentLibrary";
 import {
   ACTIVITY_TYPE_CONFIG,
   getActivityTypeColorClasses,
   getActivityTypeConfig,
-} from "@/lib/activityTypeConfig"
-import type { DateActivityGroup } from "@/types/assignment"
-import type { Book } from "@/types/book"
-import type { BookContentItem } from "@/types/content-library"
-import type { ContentItem } from "@/types/content-library"
-import { ActivitySelectionTabs } from "./ActivitySelectionTabs"
-import { StepPreviewAIContent } from "./StepPreviewAIContent"
+} from "@/lib/activityTypeConfig";
+import type { DateActivityGroup } from "@/types/assignment";
+import type { Book } from "@/types/book";
+import type { BookContentItem } from "@/types/content-library";
+import type { ContentItem } from "@/types/content-library";
+import { ActivitySelectionTabs } from "./ActivitySelectionTabs";
+import { StepPreviewAIContent } from "./StepPreviewAIContent";
 
 const AI_ACTIVITY_TYPES = Object.entries(ACTIVITY_TYPE_CONFIG)
   .filter(([, config]) => config.isAI)
-  .map(([key, config]) => ({ value: key, label: config.label }))
+  .map(([key, config]) => ({ value: key, label: config.label }));
 
 /** Convert BookContentItem to ContentItem for downstream compatibility */
 function toContentItem(item: BookContentItem): ContentItem {
@@ -60,22 +60,22 @@ function toContentItem(item: BookContentItem): ContentItem {
       id: item.created_by_id || "",
       name: item.created_by_name || "Unknown",
     },
-  }
+  };
 }
 
 interface StepSelectActivitiesProps {
-  bookId: string | number
-  book: Book
-  selectedActivityIds: string[]
-  onActivityIdsChange: (activityIds: string[]) => void
+  bookId: string | number;
+  book: Book;
+  selectedActivityIds: string[];
+  onActivityIdsChange: (activityIds: string[]) => void;
   // AI Content props
-  selectedContent: ContentItem | null
-  onContentSelect: (content: ContentItem | null) => void
+  selectedContent: ContentItem | null;
+  onContentSelect: (content: ContentItem | null) => void;
   // Time Planning mode props
-  timePlanningEnabled?: boolean
-  onTimePlanningChange?: (enabled: boolean) => void
-  dateGroups?: DateActivityGroup[]
-  onDateGroupsChange?: (groups: DateActivityGroup[]) => void
+  timePlanningEnabled?: boolean;
+  onTimePlanningChange?: (enabled: boolean) => void;
+  dateGroups?: DateActivityGroup[];
+  onDateGroupsChange?: (groups: DateActivityGroup[]) => void;
 }
 
 export function StepSelectActivities({
@@ -91,19 +91,19 @@ export function StepSelectActivities({
   onDateGroupsChange,
 }: StepSelectActivitiesProps) {
   // Determine active tab from current selections
-  const initialTab = selectedContent ? "ai_content" : "book_activities"
-  const [activeTab, setActiveTab] = useState(initialTab)
+  const initialTab = selectedContent ? "ai_content" : "book_activities";
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value)
+    setActiveTab(value);
     if (value === "book_activities") {
       // Clear AI content selection
-      onContentSelect(null)
+      onContentSelect(null);
     } else {
       // Clear book activity selections
-      onActivityIdsChange([])
+      onActivityIdsChange([]);
     }
-  }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -154,7 +154,7 @@ export function StepSelectActivities({
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
 
 /** AI Content tab: lists DCS AI content for the selected book */
@@ -163,29 +163,29 @@ function AIContentTab({
   selectedContent,
   onContentSelect,
 }: {
-  bookId: number
-  selectedContent: ContentItem | null
-  onContentSelect: (content: ContentItem | null) => void
+  bookId: number;
+  selectedContent: ContentItem | null;
+  onContentSelect: (content: ContentItem | null) => void;
 }) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [activityTypeFilter, setActivityTypeFilter] = useState<string>("all")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activityTypeFilter, setActivityTypeFilter] = useState<string>("all");
 
   const { data, isLoading } = useBookContent(bookId, {
     activity_type:
       activityTypeFilter !== "all" ? activityTypeFilter : undefined,
     page_size: 100,
-  })
+  });
 
   const contentItems = useMemo(() => {
-    const items = (data?.items ?? []).map(toContentItem)
-    if (!searchTerm) return items
-    const term = searchTerm.toLowerCase()
+    const items = (data?.items ?? []).map(toContentItem);
+    if (!searchTerm) return items;
+    const term = searchTerm.toLowerCase();
     return items.filter(
       (item) =>
         item.title.toLowerCase().includes(term) ||
         item.activity_type.toLowerCase().includes(term),
-    )
-  }, [data?.items, searchTerm])
+    );
+  }, [data?.items, searchTerm]);
 
   // Show content preview (Back button in wizard clears selection)
   if (selectedContent) {
@@ -193,7 +193,7 @@ function AIContentTab({
       <div className="flex flex-col flex-1 min-h-0 w-full max-w-4xl mx-auto">
         <StepPreviewAIContent content={selectedContent} bookId={bookId} />
       </div>
-    )
+    );
   }
 
   return (
@@ -210,7 +210,10 @@ function AIContentTab({
             className="pl-10"
           />
         </div>
-        <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
+        <Select
+          value={activityTypeFilter}
+          onValueChange={setActivityTypeFilter}
+        >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Activity type" />
           </SelectTrigger>
@@ -243,9 +246,9 @@ function AIContentTab({
       ) : (
         <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-2">
           {contentItems.map((content) => {
-            const config = getActivityTypeConfig(content.activity_type)
-            const colorClasses = getActivityTypeColorClasses(config.color)
-            const IconComponent = config.icon
+            const config = getActivityTypeConfig(content.activity_type);
+            const colorClasses = getActivityTypeColorClasses(config.color);
+            const IconComponent = config.icon;
 
             return (
               <div
@@ -256,9 +259,7 @@ function AIContentTab({
                 <div
                   className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses.bg}`}
                 >
-                  <IconComponent
-                    className={`w-5 h-5 ${colorClasses.text}`}
-                  />
+                  <IconComponent className={`w-5 h-5 ${colorClasses.text}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-sm text-foreground truncate">
@@ -277,10 +278,10 @@ function AIContentTab({
                   </div>
                 )}
               </div>
-            )
+            );
           })}
         </div>
       )}
     </div>
-  )
+  );
 }

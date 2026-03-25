@@ -45,10 +45,12 @@ def login_access_token(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return Token(
         access_token=security.create_access_token(
-            user.id, expires_delta=access_token_expires, extra_claims={"role": user.role}
+            user.id,
+            expires_delta=access_token_expires,
+            extra_claims={"role": user.role},
         ),
         must_change_password=user.must_change_password,
-        has_completed_tour=user.has_completed_tour
+        has_completed_tour=user.has_completed_tour,
     )
 
 

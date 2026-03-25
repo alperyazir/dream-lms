@@ -6,15 +6,15 @@
  * Used for conditional rendering of Resources sections across the app.
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { getBookVideos, type VideoInfo } from "@/services/booksApi"
+import { useQuery } from "@tanstack/react-query";
+import { getBookVideos, type VideoInfo } from "@/services/booksApi";
 
 export interface UseBookResourcesReturn {
-  videos: VideoInfo[]
-  hasVideos: boolean
-  hasAnyContent: boolean
-  isLoading: boolean
-  error: Error | null
+  videos: VideoInfo[];
+  hasVideos: boolean;
+  hasAnyContent: boolean;
+  isLoading: boolean;
+  error: Error | null;
 }
 
 /**
@@ -35,9 +35,9 @@ export function useBookResources(
     queryFn: () => getBookVideos(bookId!),
     enabled: !!bookId,
     staleTime: 5 * 60 * 1000, // 5 minutes
-  })
+  });
 
-  const videos = videosData?.videos ?? []
+  const videos = videosData?.videos ?? [];
 
   return {
     videos,
@@ -45,5 +45,5 @@ export function useBookResources(
     hasAnyContent: videos.length > 0, // Currently only videos, but extendable for other resource types
     isLoading,
     error: error as Error | null,
-  }
+  };
 }

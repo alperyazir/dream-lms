@@ -2,65 +2,69 @@
  * AI Usage Dashboard Page (Admin Only)
  */
 
-import { createFileRoute } from "@tanstack/react-router"
-import { subDays } from "date-fns"
-import { AlertCircle, Loader2 } from "lucide-react"
-import { useState } from "react"
-import { FiActivity } from "react-icons/fi"
-import { DateRangeFilter } from "@/components/Admin/AIUsage/DateRangeFilter"
-import { ExportButton } from "@/components/Admin/AIUsage/ExportButton"
-import { UsageByTeacherTable } from "@/components/Admin/AIUsage/UsageByTeacherTable"
-import { UsageSummaryCards } from "@/components/Admin/AIUsage/UsageSummaryCards"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { createFileRoute } from "@tanstack/react-router";
+import { subDays } from "date-fns";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { FiActivity } from "react-icons/fi";
+import { DateRangeFilter } from "@/components/Admin/AIUsage/DateRangeFilter";
+import { ExportButton } from "@/components/Admin/AIUsage/ExportButton";
+import { UsageByTeacherTable } from "@/components/Admin/AIUsage/UsageByTeacherTable";
+import { UsageSummaryCards } from "@/components/Admin/AIUsage/UsageSummaryCards";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   useAIUsageByProvider,
   useAIUsageByTeacher,
   useAIUsageByType,
   useAIUsageErrors,
   useAIUsageSummary,
-} from "@/hooks/useAIUsage"
-import type { DateRange } from "@/types/ai-usage"
+} from "@/hooks/useAIUsage";
+import type { DateRange } from "@/types/ai-usage";
 
 export const Route = createFileRoute("/_layout/admin/ai-usage")({
   component: AIUsageDashboard,
-})
+});
 
 function AIUsageDashboard() {
   const [dateRange, setDateRange] = useState<DateRange>({
     from: subDays(new Date(), 30),
     to: new Date(),
-  })
+  });
 
   const {
     data: summary,
     isLoading: summaryLoading,
     error: summaryError,
-  } = useAIUsageSummary(dateRange)
+  } = useAIUsageSummary(dateRange);
   const {
     data: byType,
     isLoading: byTypeLoading,
     error: byTypeError,
-  } = useAIUsageByType(dateRange)
+  } = useAIUsageByType(dateRange);
   const {
     data: byTeacher,
     isLoading: byTeacherLoading,
     error: byTeacherError,
-  } = useAIUsageByTeacher(dateRange)
+  } = useAIUsageByTeacher(dateRange);
   const {
     data: byProvider,
     isLoading: byProviderLoading,
     error: byProviderError,
-  } = useAIUsageByProvider(dateRange)
+  } = useAIUsageByProvider(dateRange);
   const {
     data: errors,
     isLoading: errorsLoading,
     error: errorsError,
-  } = useAIUsageErrors(dateRange)
+  } = useAIUsageErrors(dateRange);
 
   const hasAnyError =
-    summaryError || byTypeError || byTeacherError || byProviderError || errorsError
+    summaryError ||
+    byTypeError ||
+    byTeacherError ||
+    byProviderError ||
+    errorsError;
 
   return (
     <PageContainer>
@@ -123,7 +127,7 @@ function AIUsageDashboard() {
                 {byType.map((item) => {
                   const label = item.activity_type
                     .replace(/_/g, " ")
-                    .replace(/\b\w/g, (c) => c.toUpperCase())
+                    .replace(/\b\w/g, (c) => c.toUpperCase());
                   return (
                     <div
                       key={item.activity_type}
@@ -136,7 +140,9 @@ function AIUsageDashboard() {
                         <div className="w-full bg-muted rounded-full h-1.5 mt-1">
                           <div
                             className="bg-purple-500 h-1.5 rounded-full"
-                            style={{ width: `${Math.min(item.percentage, 100)}%` }}
+                            style={{
+                              width: `${Math.min(item.percentage, 100)}%`,
+                            }}
                           />
                         </div>
                       </div>
@@ -149,7 +155,7 @@ function AIUsageDashboard() {
                         </div>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             ) : (
@@ -309,7 +315,7 @@ function AIUsageDashboard() {
         </CardContent>
       </Card>
     </PageContainer>
-  )
+  );
 }
 
 function LoadingSpinner() {
@@ -317,7 +323,7 @@ function LoadingSpinner() {
     <div className="h-48 flex items-center justify-center">
       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
     </div>
-  )
+  );
 }
 
 function EmptyState({ message }: { message: string }) {
@@ -325,7 +331,7 @@ function EmptyState({ message }: { message: string }) {
     <div className="h-48 flex items-center justify-center">
       <p className="text-muted-foreground text-sm">{message}</p>
     </div>
-  )
+  );
 }
 
 function StatBlock({
@@ -333,14 +339,14 @@ function StatBlock({
   value,
   className,
 }: {
-  label: string
-  value: string
-  className?: string
+  label: string;
+  value: string;
+  className?: string;
 }) {
   return (
     <div>
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className={`text-xl font-bold mt-1 ${className ?? ""}`}>{value}</div>
     </div>
-  )
+  );
 }

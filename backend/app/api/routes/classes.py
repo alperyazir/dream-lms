@@ -33,13 +33,13 @@ from app.models import (
     UserRole,
 )
 from app.schemas.analytics import ClassAnalyticsResponse, ClassPeriodType
+from app.schemas.benchmarks import BenchmarkPeriod, ClassBenchmarkResponse
 from app.schemas.skill import (
     ClassSkillHeatmapResponse,
     SkillCategoryPublic,
     StudentSkillCell,
     StudentSkillRow,
 )
-from app.schemas.benchmarks import BenchmarkPeriod, ClassBenchmarkResponse
 from app.services.analytics_service import get_class_analytics
 from app.services.benchmark_service import get_class_benchmarks
 from app.services.cache_events import invalidate_for_event
@@ -69,16 +69,14 @@ async def _get_teacher_from_user(session: AsyncSession, user: User) -> Teacher:
     if not teacher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher record not found for this user"
+            detail="Teacher record not found for this user",
         )
 
     return teacher
 
 
 async def _verify_class_ownership(
-    session: AsyncSession,
-    class_id: uuid.UUID,
-    teacher_id: uuid.UUID
+    session: AsyncSession, class_id: uuid.UUID, teacher_id: uuid.UUID
 ) -> Class:
     """
     Verify that a class belongs to the given teacher.
@@ -95,27 +93,21 @@ async def _verify_class_ownership(
         HTTPException: 404 if class not found or not owned by teacher
     """
     result = await session.execute(
-        select(Class).where(
-            Class.id == class_id,
-            Class.teacher_id == teacher_id
-        )
+        select(Class).where(Class.id == class_id, Class.teacher_id == teacher_id)
     )
     class_obj = result.scalar_one_or_none()
 
     if not class_obj:
         # Return 404 to not expose existence of other teachers' classes
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Class not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
         )
 
     return class_obj
 
 
 async def _verify_student_ownership(
-    session: AsyncSession,
-    student_id: uuid.UUID,
-    teacher_id: uuid.UUID
+    session: AsyncSession, student_id: uuid.UUID, teacher_id: uuid.UUID
 ) -> Student:
     """
     Verify that a student was created by the given teacher.
@@ -138,7 +130,7 @@ async def _verify_student_ownership(
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Student {student_id} not found"
+            detail=f"Student {student_id} not found",
         )
 
     # Get student's user to check school affiliation via teacher
@@ -148,7 +140,7 @@ async def _verify_student_ownership(
     if not student_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student user record not found"
+            detail="Student user record not found",
         )
 
     # Verify teacher has access to this student by checking school relationship
@@ -159,8 +151,7 @@ async def _verify_student_ownership(
 
     if not teacher:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher not found"
         )
 
     # Check if student is enrolled in any class at the teacher's school
@@ -168,8 +159,7 @@ async def _verify_student_ownership(
         select(ClassStudent)
         .join(Class, ClassStudent.class_id == Class.id)
         .where(
-            ClassStudent.student_id == student_id,
-            Class.school_id == teacher.school_id
+            ClassStudent.student_id == student_id, Class.school_id == teacher.school_id
         )
     )
     student_in_school = result.first()
@@ -178,7 +168,7 @@ async def _verify_student_ownership(
         # Student not enrolled in any class at this teacher's school
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"  # Don't expose that student exists at different school
+            detail="Student not found",  # Don't expose that student exists at different school
         )
 
     return student
@@ -189,7 +179,7 @@ async def _verify_student_ownership(
     response_model=ClassResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create new class",
-    description="Creates a new class owned by the authenticated teacher."
+    description="Creates a new class owned by the authenticated teacher.",
 )
 @limiter.limit(RateLimits.WRITE)
 async def create_class(
@@ -197,7 +187,7 @@ async def create_class(
     *,
     session: AsyncSessionDep,
     class_in: ClassCreateByTeacher,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Create a new class.
@@ -220,7 +210,7 @@ async def create_class(
         academic_year=class_in.academic_year,
         is_active=class_in.is_active,
         teacher_id=teacher.id,
-        school_id=teacher.school_id
+        school_id=teacher.school_id,
     )
 
     session.add(class_obj)
@@ -236,7 +226,7 @@ async def create_class(
     "",
     response_model=list[ClassResponse],
     summary="List teacher's classes",
-    description="Returns all active classes owned by the authenticated teacher."
+    description="Returns all active classes owned by the authenticated teacher.",
 )
 @limiter.limit(RateLimits.READ)
 async def list_classes(
@@ -245,7 +235,7 @@ async def list_classes(
     session: AsyncSessionDep,
     current_user: User = require_role(UserRole.teacher),
     skip: int = 0,
-    limit: int = 20
+    limit: int = 20,
 ) -> Any:
     """
     List all classes for the current teacher.
@@ -259,13 +249,13 @@ async def list_classes(
     if skip < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Skip parameter must be non-negative"
+            detail="Skip parameter must be non-negative",
         )
 
     if limit < 1 or limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit parameter must be between 1 and 100"
+            detail="Limit parameter must be between 1 and 100",
         )
 
     # Get Teacher record
@@ -274,12 +264,9 @@ async def list_classes(
     # Query classes with student count using single SQL query with LEFT JOIN
     # This avoids N+1 query problem
     result = await session.execute(
-        select(
-            Class,
-            func.count(ClassStudent.id).label("student_count")
-        )
+        select(Class, func.count(ClassStudent.id).label("student_count"))
         .outerjoin(ClassStudent, Class.id == ClassStudent.class_id)
-        .where(Class.teacher_id == teacher.id, Class.is_active == True)
+        .where(Class.teacher_id == teacher.id, Class.is_active)
         .group_by(Class.id)
         .offset(skip)
         .limit(limit)
@@ -299,7 +286,7 @@ async def list_classes(
     "/{class_id}",
     response_model=ClassDetailResponse,
     summary="Get class details",
-    description="Returns detailed class information including enrolled students."
+    description="Returns detailed class information including enrolled students.",
 )
 @limiter.limit(RateLimits.READ)
 async def get_class_detail(
@@ -307,7 +294,7 @@ async def get_class_detail(
     *,
     session: AsyncSessionDep,
     class_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Get detailed information about a specific class.
@@ -337,14 +324,14 @@ async def get_class_detail(
                 id=student.id,
                 email=user.email,
                 full_name=user.full_name,
-                grade=student.grade_level
+                grade=student.grade_level,
             )
         )
 
     return ClassDetailResponse(
         **class_obj.model_dump(),
         student_count=len(enrolled_students),
-        enrolled_students=enrolled_students
+        enrolled_students=enrolled_students,
     )
 
 
@@ -352,7 +339,7 @@ async def get_class_detail(
     "/{class_id}",
     response_model=ClassResponse,
     summary="Update class",
-    description="Updates class details (name, grade, subject, academic year)."
+    description="Updates class details (name, grade, subject, academic year).",
 )
 @limiter.limit(RateLimits.WRITE)
 async def update_class(
@@ -361,7 +348,7 @@ async def update_class(
     session: AsyncSessionDep,
     class_id: uuid.UUID,
     class_in: ClassUpdate,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Update class information.
@@ -393,8 +380,7 @@ async def update_class(
 
     # Get student count
     count_result = await session.execute(
-        select(func.count(ClassStudent.id))
-        .where(ClassStudent.class_id == class_obj.id)
+        select(func.count(ClassStudent.id)).where(ClassStudent.class_id == class_obj.id)
     )
     student_count = count_result.scalar_one()
 
@@ -407,7 +393,7 @@ async def update_class(
     "/{class_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Archive class",
-    description="Archives a class (soft delete). Marks as inactive."
+    description="Archives a class (soft delete). Marks as inactive.",
 )
 @limiter.limit(RateLimits.WRITE)
 async def archive_class(
@@ -415,7 +401,7 @@ async def archive_class(
     *,
     session: AsyncSessionDep,
     class_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> None:
     """
     Archive a class (soft delete).
@@ -439,7 +425,7 @@ async def archive_class(
     "/{class_id}/students",
     status_code=status.HTTP_201_CREATED,
     summary="Add students to class",
-    description="Enrolls multiple students in a class. Students must belong to the teacher."
+    description="Enrolls multiple students in a class. Students must belong to the teacher.",
 )
 @limiter.limit(RateLimits.WRITE)
 async def add_students_to_class(
@@ -448,7 +434,7 @@ async def add_students_to_class(
     session: AsyncSessionDep,
     class_id: uuid.UUID,
     students_in: ClassStudentAdd,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Add students to a class.
@@ -462,7 +448,7 @@ async def add_students_to_class(
     teacher = await _get_teacher_from_user(session, current_user)
 
     # Verify ownership and get class
-    class_obj = await _verify_class_ownership(session, class_id, teacher.id)
+    await _verify_class_ownership(session, class_id, teacher.id)
 
     # Verify all students belong to teacher and create enrollments
     enrolled_count = 0
@@ -475,8 +461,7 @@ async def add_students_to_class(
         # Check if already enrolled
         result = await session.execute(
             select(ClassStudent).where(
-                ClassStudent.class_id == class_id,
-                ClassStudent.student_id == student_id
+                ClassStudent.class_id == class_id, ClassStudent.student_id == student_id
             )
         )
         existing = result.scalar_one_or_none()
@@ -486,21 +471,20 @@ async def add_students_to_class(
             continue
 
         # Create enrollment
-        enrollment = ClassStudent(
-            class_id=class_id,
-            student_id=student_id
-        )
+        enrollment = ClassStudent(class_id=class_id, student_id=student_id)
         session.add(enrollment)
         enrolled_count += 1
 
     await session.commit()
     if enrolled_count > 0:
-        await invalidate_for_event("teacher_classes_changed", user_id=str(current_user.id))
+        await invalidate_for_event(
+            "teacher_classes_changed", user_id=str(current_user.id)
+        )
 
     return {
         "message": f"Enrolled {enrolled_count} student(s), {skipped_count} already enrolled",
         "enrolled_count": enrolled_count,
-        "skipped_count": skipped_count
+        "skipped_count": skipped_count,
     }
 
 
@@ -508,7 +492,7 @@ async def add_students_to_class(
     "/{class_id}/students/{student_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Remove student from class",
-    description="Removes a student from a class enrollment."
+    description="Removes a student from a class enrollment.",
 )
 @limiter.limit(RateLimits.WRITE)
 async def remove_student_from_class(
@@ -517,7 +501,7 @@ async def remove_student_from_class(
     session: AsyncSessionDep,
     class_id: uuid.UUID,
     student_id: uuid.UUID,
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> None:
     """
     Remove a student from a class.
@@ -533,8 +517,7 @@ async def remove_student_from_class(
     # Find enrollment
     result = await session.execute(
         select(ClassStudent).where(
-            ClassStudent.class_id == class_id,
-            ClassStudent.student_id == student_id
+            ClassStudent.class_id == class_id, ClassStudent.student_id == student_id
         )
     )
     enrollment = result.scalar_one_or_none()
@@ -542,7 +525,7 @@ async def remove_student_from_class(
     if not enrollment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not enrolled in this class"
+            detail="Student not enrolled in this class",
         )
 
     # Delete enrollment
@@ -555,7 +538,7 @@ async def remove_student_from_class(
     "/{class_id}/analytics",
     response_model=ClassAnalyticsResponse,
     summary="Get class analytics",
-    description="Returns aggregated performance analytics for a class."
+    description="Returns aggregated performance analytics for a class.",
 )
 @limiter.limit(RateLimits.READ)
 async def get_class_analytics_endpoint(
@@ -564,7 +547,7 @@ async def get_class_analytics_endpoint(
     session: AsyncSessionDep,
     class_id: uuid.UUID,
     period: ClassPeriodType = "monthly",
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
     Get comprehensive analytics for a class.
@@ -585,7 +568,7 @@ async def get_class_analytics_endpoint(
     teacher = await _get_teacher_from_user(session, current_user)
 
     # Verify ownership and get class
-    class_obj = await _verify_class_ownership(session, class_id, teacher.id)
+    await _verify_class_ownership(session, class_id, teacher.id)
 
     # Get class analytics
     analytics = await get_class_analytics(class_id, period, session)
@@ -597,7 +580,7 @@ async def get_class_analytics_endpoint(
     "/{class_id}/benchmarks",
     response_model=ClassBenchmarkResponse,
     summary="Get class benchmarks",
-    description="Returns performance benchmarks comparing class against school/publisher averages."
+    description="Returns performance benchmarks comparing class against school/publisher averages.",
 )
 @limiter.limit(RateLimits.READ)
 async def get_class_benchmarks_endpoint(
@@ -606,7 +589,7 @@ async def get_class_benchmarks_endpoint(
     session: AsyncSessionDep,
     class_id: uuid.UUID,
     period: BenchmarkPeriod = "monthly",
-    current_user: User = require_role(UserRole.teacher)
+    current_user: User = require_role(UserRole.teacher),
 ) -> ClassBenchmarkResponse:
     """
     Get benchmark comparison data for a class.
@@ -641,15 +624,12 @@ async def get_class_benchmarks_endpoint(
         if not benchmarks.benchmarking_enabled:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=benchmarks.disabled_reason or "Benchmarking is disabled"
+                detail=benchmarks.disabled_reason or "Benchmarking is disabled",
             )
 
         return benchmarks
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 # =============================================================================
@@ -667,7 +647,9 @@ async def get_class_skill_heatmap(
     request: Request,
     class_id: uuid.UUID,
     session: AsyncSessionDep,
-    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.supervisor),
+    current_user: User = require_role(
+        UserRole.teacher, UserRole.admin, UserRole.supervisor
+    ),
 ) -> ClassSkillHeatmapResponse:
     """
     Get students x skills proficiency matrix for a class.
@@ -675,7 +657,6 @@ async def get_class_skill_heatmap(
     Returns a heatmap-ready data structure with per-student, per-skill proficiency
     and class averages.
     """
-    from sqlalchemy import distinct
 
     # Teacher access check
     if current_user.role == UserRole.teacher:
@@ -686,19 +667,23 @@ async def get_class_skill_heatmap(
         cls = result.scalar_one_or_none()
         if not cls:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Class not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
             )
 
     # Get all active skills
     skills_result = await session.execute(
-        select(SkillCategory).where(SkillCategory.is_active == True)
+        select(SkillCategory).where(SkillCategory.is_active)
     )
     all_skills = skills_result.scalars().all()
     skill_columns = [
         SkillCategoryPublic(
-            id=s.id, name=s.name, slug=s.slug, icon=s.icon,
-            color=s.color, description=s.description, is_active=s.is_active,
+            id=s.id,
+            name=s.name,
+            slug=s.slug,
+            icon=s.icon,
+            color=s.color,
+            description=s.description,
+            is_active=s.is_active,
         )
         for s in all_skills
     ]
@@ -759,7 +744,8 @@ async def get_class_skill_heatmap(
                 dp = data["data_points"]
                 proficiency = (
                     (data["total_score"] / data["total_max"] * 100)
-                    if data["total_max"] > 0 else None
+                    if data["total_max"] > 0
+                    else None
                 )
                 if dp < 3:
                     confidence = "insufficient"
@@ -783,11 +769,13 @@ async def get_class_skill_heatmap(
                 data_points=dp,
                 confidence=confidence,
             )
-        student_rows.append(StudentSkillRow(
-            student_id=student.id,
-            student_name=user.full_name,
-            skills=skills_dict,
-        ))
+        student_rows.append(
+            StudentSkillRow(
+                student_id=student.id,
+                student_name=user.full_name,
+                skills=skills_dict,
+            )
+        )
 
     # Class averages
     class_averages: dict[str, float | None] = {}

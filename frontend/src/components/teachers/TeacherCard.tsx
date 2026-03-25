@@ -1,20 +1,25 @@
-import { BookOpen, Building2, Trash2, Users } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { BookOpen, Building2, Trash2, Users } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 
 interface TeacherCardProps {
   teacher: {
-    id: string
-    user_full_name: string
-    user_email: string
-    school_name?: string | null
-    books_assigned?: number
-    classroom_count?: number
-  }
-  onEdit?: () => void
-  onViewDetails?: () => void
-  onDelete?: () => void
+    id: string;
+    user_full_name: string;
+    user_email: string;
+    school_name?: string | null;
+    books_assigned?: number;
+    classroom_count?: number;
+  };
+  onEdit?: () => void;
+  onViewDetails?: () => void;
+  onDelete?: () => void;
 }
 
 export function TeacherCard({
@@ -28,7 +33,7 @@ export function TeacherCard({
     .map((n) => n[0])
     .join("")
     .toUpperCase()
-    .slice(0, 2)
+    .slice(0, 2);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -88,5 +93,5 @@ export function TeacherCard({
         )}
       </CardFooter>
     </Card>
-  )
+  );
 }

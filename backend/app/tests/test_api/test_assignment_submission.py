@@ -63,7 +63,9 @@ def school_fixture(session: Session, test_publisher: Publisher) -> School:
 
 
 @pytest.fixture(name="test_teacher")
-def teacher_fixture(session: Session, teacher_user: User, test_school: School) -> Teacher:
+def teacher_fixture(
+    session: Session, teacher_user: User, test_school: School
+) -> Teacher:
     """Create a test teacher."""
     teacher = Teacher(
         id=uuid.uuid4(),
@@ -77,7 +79,9 @@ def teacher_fixture(session: Session, teacher_user: User, test_school: School) -
 
 
 @pytest.fixture(name="test_student")
-def student_fixture(session: Session, student_user: User, test_school: School) -> Student:
+def student_fixture(
+    session: Session, student_user: User, test_school: School
+) -> Student:
     """Create a test student."""
     student = Student(
         id=uuid.uuid4(),
@@ -329,7 +333,6 @@ class TestSubmitAssignment:
         """Test that submitting an already completed assignment returns existing result."""
         assignment, assignment_student = completed_assignment
         original_score = assignment_student.score
-        original_completed_at = assignment_student.completed_at
 
         submission_data = {
             "answers_json": {"type": "circle", "selections": {"0": 1}},

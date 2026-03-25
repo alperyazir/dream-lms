@@ -5,26 +5,30 @@ Story 27.20: Unified Activity Player Integration - Task 3
 This service handles creating assignments from AI-generated activity content.
 """
 
-from uuid import UUID
-from sqlmodel import Session, select
-from app.models import Assignment, AssignmentBase, ActivityType, Class, User
-from app.schemas.assignment import AssignmentCreate
-from typing import Dict, Any, List
 from datetime import datetime
+from typing import Any
+from uuid import UUID
+
+from sqlmodel import Session
+
+from app.models import ActivityType, Assignment, Class, User
 
 
 class AssignmentFromAIError(Exception):
     """Base exception for assignment creation from AI content"""
+
     pass
 
 
 class InvalidActivityTypeError(AssignmentFromAIError):
     """Raised when an invalid activity type is provided"""
+
     pass
 
 
 class ClassNotFoundError(AssignmentFromAIError):
     """Raised when the specified class doesn't exist"""
+
     pass
 
 
@@ -38,7 +42,7 @@ def create_assignment_from_ai_content(
     due_date: datetime | None,
     time_limit_minutes: int | None,
     activity_type: str,
-    activity_content: Dict[str, Any],
+    activity_content: dict[str, Any],
     generation_source: str,  # "book" | "material" | "manual"
     source_id: str | None = None,  # book_id or material_id
 ) -> Assignment:
@@ -130,8 +134,8 @@ def create_assignment_from_ai_content(
 def create_assignments_from_ai_batch(
     session: Session,
     *,
-    assignments_data: List[Dict[str, Any]],
-) -> List[Assignment]:
+    assignments_data: list[dict[str, Any]],
+) -> list[Assignment]:
     """
     Create multiple assignments from AI-generated content in a batch.
 
@@ -153,10 +157,7 @@ def create_assignments_from_ai_batch(
 
     try:
         for assignment_data in assignments_data:
-            assignment = create_assignment_from_ai_content(
-                session,
-                **assignment_data
-            )
+            assignment = create_assignment_from_ai_content(session, **assignment_data)
             created_assignments.append(assignment)
 
         return created_assignments

@@ -10,14 +10,14 @@
  * Get auth token from localStorage
  */
 function getAuthToken(): string | null {
-  return localStorage.getItem("access_token")
+  return localStorage.getItem("access_token");
 }
 
 /**
  * Get the API base URL from environment
  */
 function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL || ""
+  return import.meta.env.VITE_API_URL || "";
 }
 
 /**
@@ -33,39 +33,39 @@ function getApiBaseUrl(): string {
 export function getAudioUrl(bookId: string, audioPath: string): string {
   // Remove leading "./" and "books/{bookName}/" prefix
   // "./books/SwitchtoCLIL/audio/08.mp3" → "audio/08.mp3"
-  let cleanPath = audioPath
+  let cleanPath = audioPath;
 
   // Remove "./" prefix
   if (cleanPath.startsWith("./")) {
-    cleanPath = cleanPath.slice(2)
+    cleanPath = cleanPath.slice(2);
   }
 
   // Remove "books/{bookName}/" prefix if present
-  const booksMatch = cleanPath.match(/^books\/[^/]+\/(.+)$/)
+  const booksMatch = cleanPath.match(/^books\/[^/]+\/(.+)$/);
   if (booksMatch) {
-    cleanPath = booksMatch[1]
+    cleanPath = booksMatch[1];
   }
 
   // Include auth token for HTML5 audio element authentication
-  const token = getAuthToken()
-  const baseUrl = getApiBaseUrl()
-  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
+  const token = getAuthToken();
+  const baseUrl = getApiBaseUrl();
+  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
 
-  return `${baseUrl}/api/v1/books/${bookId}/media/${cleanPath}${tokenParam}`
+  return `${baseUrl}/api/v1/books/${bookId}/media/${cleanPath}${tokenParam}`;
 }
 
 /**
  * Audio extra configuration shape
  */
 export interface AudioExtra {
-  path: string
+  path: string;
 }
 
 /**
  * Type for activity objects that may have audio_extra
  */
 export interface ActivityWithAudio {
-  audio_extra: AudioExtra
+  audio_extra: AudioExtra;
 }
 
 /**
@@ -85,7 +85,7 @@ export function hasAudio(activity: unknown): activity is ActivityWithAudio {
     typeof (activity as { audio_extra: { path: unknown } }).audio_extra.path ===
       "string" &&
     (activity as { audio_extra: { path: string } }).audio_extra.path.length > 0
-  )
+  );
 }
 
 /**
@@ -96,7 +96,7 @@ export function hasAudio(activity: unknown): activity is ActivityWithAudio {
  */
 export function getAudioPath(activity: unknown): string | null {
   if (hasAudio(activity)) {
-    return activity.audio_extra.path
+    return activity.audio_extra.path;
   }
-  return null
+  return null;
 }

@@ -6,33 +6,33 @@
  * between activities, shared timer, and per-activity progress tracking.
  */
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { AlertCircle, Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { AssignmentIntroScreen } from "@/components/ActivityPlayers/AssignmentIntroScreen"
-import { MultiActivityPlayer } from "@/components/ActivityPlayers/MultiActivityPlayer"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { startMultiActivityAssignment } from "@/services/assignmentsApi"
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AssignmentIntroScreen } from "@/components/ActivityPlayers/AssignmentIntroScreen";
+import { MultiActivityPlayer } from "@/components/ActivityPlayers/MultiActivityPlayer";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { startMultiActivityAssignment } from "@/services/assignmentsApi";
 import type {
   MultiActivityStartResponse,
   MultiActivitySubmitResponse,
-} from "@/types/assignment"
+} from "@/types/assignment";
 
 export const Route = createFileRoute(
   "/_layout/student/assignments/$assignmentId/play-multi",
 )({
   component: MultiActivityPlayerPage,
-})
+});
 
 function MultiActivityPlayerPage() {
-  const { assignmentId } = Route.useParams()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const { assignmentId } = Route.useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Show intro screen before starting (skip for resumed assignments)
-  const [showIntro, setShowIntro] = useState(true)
+  const [showIntro, setShowIntro] = useState(true);
 
   // Fetch multi-activity assignment data
   const {
@@ -48,17 +48,17 @@ function MultiActivityPlayerPage() {
     gcTime: 0, // Don't cache for next mount - always fetch fresh on remount
     refetchOnWindowFocus: false, // Don't refetch when window gains focus
     refetchOnReconnect: false, // Don't refetch on network reconnect
-  })
+  });
 
   // Handle exit - return to assignment detail page
   const handleExit = async () => {
     // Invalidate + refetch cache so detail page shows updated status (in_progress)
-    await queryClient.invalidateQueries({ queryKey: ["studentAssignments"] })
+    await queryClient.invalidateQueries({ queryKey: ["studentAssignments"] });
     navigate({
       to: "/student/assignments/$assignmentId",
       params: { assignmentId },
-    })
-  }
+    });
+  };
 
   // Handle successful submission
   const handleSubmitSuccess = (response: MultiActivitySubmitResponse) => {
@@ -69,21 +69,21 @@ function MultiActivityPlayerPage() {
         score: Math.round(response.combined_score),
         completedAt: response.completed_at,
       },
-    })
-  }
+    });
+  };
 
   // Handle 409 Conflict - redirect to result page when assignment is already completed
   // Must be before any early returns to comply with Rules of Hooks
-  const errorStatus = (error as any)?.response?.status
+  const errorStatus = (error as any)?.response?.status;
   useEffect(() => {
     if (errorStatus === 409) {
       navigate({
         to: "/student/assignments/$assignmentId/result",
         params: { assignmentId },
         replace: true,
-      })
+      });
     }
-  }, [errorStatus, assignmentId, navigate])
+  }, [errorStatus, assignmentId, navigate]);
 
   // Loading state
   if (isLoading) {
@@ -94,14 +94,14 @@ function MultiActivityPlayerPage() {
           <p className="mt-4 text-muted-foreground">Loading assignment...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Error states
   if (error) {
-    const errorResponse = (error as any)?.response
-    const status = errorResponse?.status
-    const detail = errorResponse?.data?.detail || "An error occurred"
+    const errorResponse = (error as any)?.response;
+    const status = errorResponse?.status;
+    const detail = errorResponse?.data?.detail || "An error occurred";
 
     // 409 Conflict = Assignment already completed - show loading while redirecting
     if (status === 409) {
@@ -114,15 +114,15 @@ function MultiActivityPlayerPage() {
             </p>
           </div>
         </div>
-      )
+      );
     }
 
-    let errorTitle = "Error Loading Assignment"
-    let errorMessage = detail
+    let errorTitle = "Error Loading Assignment";
+    let errorMessage = detail;
 
     if (status === 404) {
-      errorTitle = "Assignment Not Found"
-      errorMessage = "This assignment doesn't exist or is not assigned to you."
+      errorTitle = "Assignment Not Found";
+      errorMessage = "This assignment doesn't exist or is not assigned to you.";
     }
 
     return (
@@ -140,11 +140,11 @@ function MultiActivityPlayerPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!assignment) {
-    return null
+    return null;
   }
 
   // Validate we have activities
@@ -166,11 +166,11 @@ function MultiActivityPlayerPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Skip intro for resumed assignments (already started)
-  const isResuming = assignment.time_spent_minutes > 0
+  const isResuming = assignment.time_spent_minutes > 0;
 
   // Show intro screen for new assignments
   if (showIntro && !isResuming) {
@@ -180,7 +180,7 @@ function MultiActivityPlayerPage() {
         onStart={() => setShowIntro(false)}
         onBack={handleExit}
       />
-    )
+    );
   }
 
   return (
@@ -200,5 +200,5 @@ function MultiActivityPlayerPage() {
       videoPath={assignment.video_path}
       resources={assignment.resources}
     />
-  )
+  );
 }

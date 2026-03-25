@@ -6,16 +6,16 @@
  * Includes a "Mix" card alongside API-driven skill cards.
  */
 
-import { Loader2, Sparkles } from "lucide-react"
-import { Label } from "@/components/ui/label"
-import type { SkillWithFormats } from "@/types/skill"
-import { SkillCard } from "./SkillCard"
+import { Loader2, Sparkles } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import type { SkillWithFormats } from "@/types/skill";
+import { SkillCard } from "./SkillCard";
 
 export interface SkillSelectionGridProps {
-  skills: SkillWithFormats[]
-  selectedSkillSlug: string | null
-  onSelect: (slug: string) => void
-  isLoading?: boolean
+  skills: SkillWithFormats[];
+  selectedSkillSlug: string | null;
+  onSelect: (slug: string) => void;
+  isLoading?: boolean;
 }
 
 export function SkillSelectionGrid({
@@ -32,7 +32,7 @@ export function SkillSelectionGrid({
           Loading skills...
         </span>
       </div>
-    )
+    );
   }
 
   return (
@@ -78,8 +78,7 @@ export function SkillSelectionGrid({
           isDisabled={false}
           onClick={() => onSelect("mix")}
         />
-
       </div>
     </div>
-  )
+  );
 }

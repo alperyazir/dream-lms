@@ -5,14 +5,15 @@ Revises: a68a623c28cd
 Create Date: 2025-12-21 21:52:35.436521
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 import sqlmodel.sql.sqltypes
 
 
 # revision identifiers, used by Alembic.
-revision = '1294713df196'
-down_revision = 'a68a623c28cd'
+revision = "1294713df196"
+down_revision = "a68a623c28cd"
 branch_labels = None
 depends_on = None
 
@@ -29,37 +30,41 @@ def upgrade():
     5. Drop publishers table
     """
     # Step 1: Add dcs_publisher_id columns
-    op.add_column('schools', sa.Column('dcs_publisher_id', sa.Integer(), nullable=True))
-    op.add_column('books', sa.Column('dcs_publisher_id', sa.Integer(), nullable=True))
+    op.add_column("schools", sa.Column("dcs_publisher_id", sa.Integer(), nullable=True))
+    op.add_column("books", sa.Column("dcs_publisher_id", sa.Integer(), nullable=True))
 
     # Step 2: Migrate data - copy publisher.dcs_id to schools/books.dcs_publisher_id
-    op.execute("""
+    op.execute(
+        """
         UPDATE schools s
         SET dcs_publisher_id = p.dcs_id
         FROM publishers p
         WHERE s.publisher_id = p.id
-    """)
+    """
+    )
 
-    op.execute("""
+    op.execute(
+        """
         UPDATE books b
         SET dcs_publisher_id = p.dcs_id
         FROM publishers p
         WHERE b.publisher_id = p.id
-    """)
+    """
+    )
 
     # Step 3: Drop foreign key constraints
-    op.drop_constraint('schools_publisher_id_fkey', 'schools', type_='foreignkey')
-    op.drop_constraint('books_publisher_id_fkey', 'books', type_='foreignkey')
+    op.drop_constraint("schools_publisher_id_fkey", "schools", type_="foreignkey")
+    op.drop_constraint("books_publisher_id_fkey", "books", type_="foreignkey")
 
     # Step 4: Drop old publisher_id columns
-    op.drop_column('schools', 'publisher_id')
-    op.drop_column('books', 'publisher_id')
+    op.drop_column("schools", "publisher_id")
+    op.drop_column("books", "publisher_id")
 
     # Step 5: Drop book_access table (no longer needed without publishers table)
-    op.drop_table('book_access')
+    op.drop_table("book_access")
 
     # Step 6: Drop publishers table
-    op.drop_table('publishers')
+    op.drop_table("publishers")
 
 
 def downgrade():

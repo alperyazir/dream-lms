@@ -5,9 +5,9 @@
  * Modal for creating URL link materials.
  */
 
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,16 +15,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import type { UrlLinkCreate } from "@/types/material"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { UrlLinkCreate } from "@/types/material";
 
 interface UrlLinkModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSave: (data: UrlLinkCreate) => Promise<void>
-  isSaving?: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (data: UrlLinkCreate) => Promise<void>;
+  isSaving?: boolean;
 }
 
 /**
@@ -32,10 +32,10 @@ interface UrlLinkModalProps {
  */
 function isValidUrl(url: string): boolean {
   try {
-    const parsed = new URL(url)
-    return parsed.protocol === "http:" || parsed.protocol === "https:"
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -48,62 +48,62 @@ export function UrlLinkModal({
   onSave,
   isSaving = false,
 }: UrlLinkModalProps) {
-  const [name, setName] = useState("")
-  const [url, setUrl] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [urlTouched, setUrlTouched] = useState(false)
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [urlTouched, setUrlTouched] = useState(false);
 
-  const urlValid = isValidUrl(url)
-  const showUrlValidation = urlTouched && url.length > 0
+  const urlValid = isValidUrl(url);
+  const showUrlValidation = urlTouched && url.length > 0;
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (open) {
-      setName("")
-      setUrl("")
-      setError(null)
-      setUrlTouched(false)
+      setName("");
+      setUrl("");
+      setError(null);
+      setUrlTouched(false);
     }
-  }, [open])
+  }, [open]);
 
   // Handle save
   const handleSave = async () => {
     // Validate
     if (!name.trim()) {
-      setError("Name is required")
-      return
+      setError("Name is required");
+      return;
     }
     if (!url.trim()) {
-      setError("URL is required")
-      return
+      setError("URL is required");
+      return;
     }
     if (!urlValid) {
-      setError("Please enter a valid URL (starting with http:// or https://)")
-      return
+      setError("Please enter a valid URL (starting with http:// or https://)");
+      return;
     }
 
-    setError(null)
+    setError(null);
 
     try {
       await onSave({
         name: name.trim(),
         url: url.trim(),
-      })
-      onOpenChange(false)
+      });
+      onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save link")
+      setError(err instanceof Error ? err.message : "Failed to save link");
     }
-  }
+  };
 
   // Handle cancel
   const handleCancel = () => {
-    onOpenChange(false)
-  }
+    onOpenChange(false);
+  };
 
   // Handle URL input blur
   const handleUrlBlur = () => {
-    setUrlTouched(true)
-  }
+    setUrlTouched(true);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -205,7 +205,7 @@ export function UrlLinkModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-UrlLinkModal.displayName = "UrlLinkModal"
+UrlLinkModal.displayName = "UrlLinkModal";

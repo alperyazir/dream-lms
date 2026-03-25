@@ -6,16 +6,13 @@ Provides text extraction from PDFs and language detection for AI content generat
 
 import logging
 import re
-import tempfile
-from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
-from langdetect import detect, LangDetectException
+from langdetect import LangDetectException, detect
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
 from app.schemas.teacher_material import TextExtractionResult
-
 
 logger = logging.getLogger(__name__)
 

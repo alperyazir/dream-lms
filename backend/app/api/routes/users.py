@@ -6,8 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import func, select
 from starlette.requests import Request
 
-from app.core.rate_limit import RateLimits, limiter
-
 from app import crud
 from app.api.deps import (
     CurrentUser,
@@ -15,6 +13,7 @@ from app.api.deps import (
     get_current_active_superuser,
 )
 from app.core.config import settings
+from app.core.rate_limit import RateLimits, limiter
 from app.core.security import get_password_hash, verify_password
 from app.models import (
     ChangeInitialPasswordRequest,
@@ -42,7 +41,9 @@ logger = logging.getLogger(__name__)
     response_model=UsersPublic,
 )
 @limiter.limit(RateLimits.READ)
-def read_users(request: Request, session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
+def read_users(
+    request: Request, session: SessionDep, skip: int = 0, limit: int = 100
+) -> Any:
     """
     Retrieve users.
     """
@@ -78,7 +79,7 @@ def create_user(request: Request, *, session: SessionDep, user_in: UserCreate) -
                 email_to=user_in.email,
                 username=user_in.email,
                 password=user_in.password,
-                full_name=user_in.full_name or ""
+                full_name=user_in.full_name or "",
             )
             send_email(
                 email_to=user_in.email,
@@ -93,7 +94,11 @@ def create_user(request: Request, *, session: SessionDep, user_in: UserCreate) -
 @router.patch("/me", response_model=UserPublic)
 @limiter.limit(RateLimits.WRITE)
 def update_user_me(
-    request: Request, *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
+    request: Request,
+    *,
+    session: SessionDep,
+    user_in: UserUpdateMe,
+    current_user: CurrentUser,
 ) -> Any:
     """
     Update own user.
@@ -117,7 +122,11 @@ def update_user_me(
 @router.patch("/me/password", response_model=Message)
 @limiter.limit(RateLimits.WRITE)
 def update_password_me(
-    request: Request, *, session: SessionDep, body: UpdatePassword, current_user: CurrentUser
+    request: Request,
+    *,
+    session: SessionDep,
+    body: UpdatePassword,
+    current_user: CurrentUser,
 ) -> Any:
     """
     Update own password.
@@ -129,7 +138,7 @@ def update_password_me(
     if current_user.role == UserRole.student:
         raise HTTPException(
             status_code=403,
-            detail="Students cannot change passwords. Please contact your teacher."
+            detail="Students cannot change passwords. Please contact your teacher.",
         )
 
     if not verify_password(body.current_password, current_user.hashed_password):
@@ -170,7 +179,7 @@ def change_initial_password(
     if current_user.role == UserRole.student:
         raise HTTPException(
             status_code=403,
-            detail="Students cannot change passwords. Please contact your teacher."
+            detail="Students cannot change passwords. Please contact your teacher.",
         )
 
     # Verify current password
@@ -180,7 +189,8 @@ def change_initial_password(
     # Validate new password is different
     if body.current_password == body.new_password:
         raise HTTPException(
-            status_code=400, detail="New password must be different from current password"
+            status_code=400,
+            detail="New password must be different from current password",
         )
 
     # Update password and clear must_change_password flag
@@ -190,18 +200,13 @@ def change_initial_password(
     session.commit()
     invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
 
-    return ChangePasswordResponse(
-        success=True,
-        message="Password changed successfully"
-    )
+    return ChangePasswordResponse(success=True, message="Password changed successfully")
 
 
 @router.post("/me/complete-tour", response_model=Message)
 @limiter.limit(RateLimits.WRITE)
 def complete_tour(
-    request: Request,
-    session: SessionDep,
-    current_user: CurrentUser
+    request: Request, session: SessionDep, current_user: CurrentUser
 ) -> Message:
     """
     Mark onboarding tour as completed for the current user.
@@ -225,7 +230,9 @@ def read_user_me(request: Request, current_user: CurrentUser) -> Any:
 
 @router.delete("/me", response_model=Message)
 @limiter.limit(RateLimits.WRITE)
-def delete_user_me(request: Request, session: SessionDep, current_user: CurrentUser) -> Any:
+def delete_user_me(
+    request: Request, session: SessionDep, current_user: CurrentUser
+) -> Any:
     """
     Delete own user.
     """

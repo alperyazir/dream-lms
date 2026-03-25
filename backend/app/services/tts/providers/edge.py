@@ -454,7 +454,7 @@ class EdgeTTSProvider(TTSProvider):
 
             # Capture trailing punctuation characters
             trailing = ""
-            while word_end < len(text) and text[word_end] in '.,;:!?\'")-]}>…':
+            while word_end < len(text) and text[word_end] in ".,;:!?'\")-]}>…":
                 trailing += text[word_end]
                 word_end += 1
 

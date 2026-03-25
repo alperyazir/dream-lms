@@ -9,7 +9,6 @@ Story 27.13: Sentence Builder Activity
 
 from typing import Any
 
-
 # System prompt for generating educational sentences from vocabulary/topics
 SENTENCE_GENERATION_SYSTEM_PROMPT = """You are an expert educational content creator specializing in creating engaging sentences for language learners.
 
@@ -91,23 +90,23 @@ SENTENCE_GENERATION_JSON_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "sentence": {
                         "type": "string",
-                        "description": "The generated sentence"
+                        "description": "The generated sentence",
                     },
                     "vocabulary_used": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Vocabulary words used in this sentence"
+                        "description": "Vocabulary words used in this sentence",
                     },
                     "grammar_focus": {
                         "type": "string",
-                        "description": "Main grammar pattern demonstrated"
-                    }
+                        "description": "Main grammar pattern demonstrated",
+                    },
                 },
-                "required": ["sentence", "vocabulary_used"]
-            }
+                "required": ["sentence", "vocabulary_used"],
+            },
         }
     },
-    "required": ["sentences"]
+    "required": ["sentences"],
 }
 
 
@@ -139,7 +138,7 @@ SENTENCE_GENERATION_DIFFICULTY_GUIDELINES = {
   - "[Subject] who/which [clause] [main verb] [object]."
   - "Although [clause], [main clause]."
   - "[Subject] has been [verb]-ing [object] since/for [time]."
-"""
+""",
 }
 
 
@@ -161,11 +160,7 @@ def build_sentence_generation_prompt(
     Returns:
         Formatted prompt string.
     """
-    word_ranges = {
-        "easy": "4-6 words",
-        "medium": "7-10 words",
-        "hard": "11+ words"
-    }
+    word_ranges = {"easy": "4-6 words", "medium": "7-10 words", "hard": "11+ words"}
 
     difficulty_guidelines = SENTENCE_GENERATION_DIFFICULTY_GUIDELINES.get(
         difficulty.lower(), SENTENCE_GENERATION_DIFFICULTY_GUIDELINES["medium"]
@@ -211,24 +206,24 @@ SENTENCE_QUALITY_JSON_SCHEMA = {
                 "properties": {
                     "sentence": {
                         "type": "string",
-                        "description": "The selected sentence"
+                        "description": "The selected sentence",
                     },
                     "quality_score": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 5,
-                        "description": "Quality score from 1 (poor) to 5 (excellent)"
+                        "description": "Quality score from 1 (poor) to 5 (excellent)",
                     },
                     "reason": {
                         "type": "string",
-                        "description": "Brief reason for selection"
-                    }
+                        "description": "Brief reason for selection",
+                    },
                 },
-                "required": ["sentence", "quality_score", "reason"]
-            }
+                "required": ["sentence", "quality_score", "reason"],
+            },
         }
     },
-    "required": ["selected_sentences"]
+    "required": ["selected_sentences"],
 }
 
 SENTENCE_DIFFICULTY_GUIDELINES = {
@@ -252,7 +247,7 @@ Hard sentences (11+ words):
 - Various tenses including perfect continuous
 - Advanced vocabulary (B2+ level)
 - Examples: "The scientist discovered a new species in the Amazon rainforest last year."
-"""
+""",
 }
 
 

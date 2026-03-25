@@ -5,80 +5,80 @@
  * No scoring — pending teacher review.
  */
 
-import { Mic, Pause, Play } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import type { FreeResponseResult } from "@/lib/resultParsers"
+import { Mic, Pause, Play } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { FreeResponseResult } from "@/lib/resultParsers";
 
 interface SpeakingOpenResponseResultsProps {
-  result: FreeResponseResult
-  hideSummary?: boolean
-  score?: number | null
+  result: FreeResponseResult;
+  hideSummary?: boolean;
+  score?: number | null;
 }
 
 function AudioPlayer({ src }: { src: string }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const animRef = useRef<number | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const animRef = useRef<number | null>(null);
 
   const updateProgress = useCallback(() => {
     if (audioRef.current) {
-      const current = audioRef.current.currentTime
-      const dur = audioRef.current.duration || 0
-      setProgress(dur > 0 ? (current / dur) * 100 : 0)
-      setDuration(dur)
+      const current = audioRef.current.currentTime;
+      const dur = audioRef.current.duration || 0;
+      setProgress(dur > 0 ? (current / dur) * 100 : 0);
+      setDuration(dur);
     }
     if (isPlaying) {
-      animRef.current = requestAnimationFrame(updateProgress)
+      animRef.current = requestAnimationFrame(updateProgress);
     }
-  }, [isPlaying])
+  }, [isPlaying]);
 
   useEffect(() => {
     if (isPlaying) {
-      animRef.current = requestAnimationFrame(updateProgress)
+      animRef.current = requestAnimationFrame(updateProgress);
     }
     return () => {
-      if (animRef.current) cancelAnimationFrame(animRef.current)
-    }
-  }, [isPlaying, updateProgress])
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  }, [isPlaying, updateProgress]);
 
   useEffect(() => {
     return () => {
       if (audioRef.current) {
-        audioRef.current.pause()
+        audioRef.current.pause();
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const togglePlay = () => {
     if (!audioRef.current) {
-      const audio = new Audio(src)
-      audioRef.current = audio
+      const audio = new Audio(src);
+      audioRef.current = audio;
       audio.onended = () => {
-        setIsPlaying(false)
-        setProgress(0)
-      }
-      audio.onloadedmetadata = () => setDuration(audio.duration)
+        setIsPlaying(false);
+        setProgress(0);
+      };
+      audio.onloadedmetadata = () => setDuration(audio.duration);
     }
 
     if (isPlaying) {
-      audioRef.current.pause()
-      setIsPlaying(false)
+      audioRef.current.pause();
+      setIsPlaying(false);
     } else {
-      audioRef.current.play().catch(() => {})
-      setIsPlaying(true)
+      audioRef.current.play().catch(() => {});
+      setIsPlaying(true);
     }
-  }
+  };
 
   const formatTime = (s: number) => {
-    if (!s || !isFinite(s)) return "0:00"
-    const m = Math.floor(s / 60)
-    const sec = Math.floor(s % 60)
-    return `${m}:${sec.toString().padStart(2, "0")}`
-  }
+    if (!s || !isFinite(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="flex items-center gap-3 rounded-lg bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 px-3 py-2">
@@ -104,7 +104,7 @@ function AudioPlayer({ src }: { src: string }) {
         {formatTime(duration)}
       </span>
     </div>
-  )
+  );
 }
 
 export function SpeakingOpenResponseResults({
@@ -113,10 +113,16 @@ export function SpeakingOpenResponseResults({
   score,
 }: SpeakingOpenResponseResultsProps) {
   return (
-    <div className={cn("mx-auto flex max-w-2xl flex-col gap-4", !hideSummary && "p-4")}>
+    <div
+      className={cn(
+        "mx-auto flex max-w-2xl flex-col gap-4",
+        !hideSummary && "p-4",
+      )}
+    >
       <div className="space-y-3">
         {result.item_results.map((item, index) => {
-          const hasAudio = item.submitted_text && item.submitted_text.startsWith("data:audio")
+          const hasAudio =
+            item.submitted_text && item.submitted_text.startsWith("data:audio");
 
           return (
             <Card
@@ -152,11 +158,11 @@ export function SpeakingOpenResponseResults({
                 </div>
               </CardContent>
             </Card>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
-export default SpeakingOpenResponseResults
+export default SpeakingOpenResponseResults;

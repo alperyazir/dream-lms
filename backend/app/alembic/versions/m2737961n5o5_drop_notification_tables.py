@@ -5,6 +5,7 @@ Revises: l1626850m4n4
 Create Date: 2026-03-04
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -46,12 +47,19 @@ def downgrade() -> None:
     op.create_table(
         "notifications",
         sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column("user_id", sa.Uuid(), sa.ForeignKey("user.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "user_id",
+            sa.Uuid(),
+            sa.ForeignKey("user.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("type", notification_type, nullable=False),
         sa.Column("title", sa.String(500), nullable=False),
         sa.Column("message", sa.Text(), nullable=False),
         sa.Column("link", sa.String(500), nullable=True),
-        sa.Column("is_read", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column(
+            "is_read", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
         sa.Column("created_at", sa.DateTime(), nullable=False),
     )
     op.create_index("ix_notifications_user_id", "notifications", ["user_id"])
@@ -61,18 +69,40 @@ def downgrade() -> None:
     op.create_table(
         "notification_preferences",
         sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column("user_id", sa.Uuid(), sa.ForeignKey("user.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "user_id",
+            sa.Uuid(),
+            sa.ForeignKey("user.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("notification_type", notification_type, nullable=False),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
-        sa.Column("email_enabled", sa.Boolean(), nullable=False, server_default=sa.text("false")),
-        sa.UniqueConstraint("user_id", "notification_type", name="uq_user_notification_type"),
+        sa.Column(
+            "enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")
+        ),
+        sa.Column(
+            "email_enabled",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.text("false"),
+        ),
+        sa.UniqueConstraint(
+            "user_id", "notification_type", name="uq_user_notification_type"
+        ),
     )
-    op.create_index("ix_notification_preferences_user_id", "notification_preferences", ["user_id"])
+    op.create_index(
+        "ix_notification_preferences_user_id", "notification_preferences", ["user_id"]
+    )
 
     op.create_table(
         "notification_mutes",
         sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column("user_id", sa.Uuid(), sa.ForeignKey("user.id", ondelete="CASCADE"), nullable=False, unique=True),
+        sa.Column(
+            "user_id",
+            sa.Uuid(),
+            sa.ForeignKey("user.id", ondelete="CASCADE"),
+            nullable=False,
+            unique=True,
+        ),
         sa.Column("muted_until", sa.DateTime(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
     )

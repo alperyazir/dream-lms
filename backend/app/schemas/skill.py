@@ -8,6 +8,7 @@ from sqlmodel import SQLModel
 
 class SkillCategoryPublic(SQLModel):
     """Public schema for skill categories."""
+
     id: uuid.UUID
     name: str
     slug: str
@@ -19,6 +20,7 @@ class SkillCategoryPublic(SQLModel):
 
 class ActivityFormatPublic(SQLModel):
     """Public schema for activity formats."""
+
     id: uuid.UUID
     name: str
     slug: str
@@ -28,6 +30,7 @@ class ActivityFormatPublic(SQLModel):
 
 class SkillWithFormatsResponse(SQLModel):
     """Skill category with its available activity formats."""
+
     skill: SkillCategoryPublic
     formats: list[ActivityFormatPublic]
 
@@ -39,6 +42,7 @@ class SkillWithFormatsResponse(SQLModel):
 
 class MixModeQuestion(BaseModel):
     """Single question in a Mix mode assignment with skill tagging."""
+
     question_id: str
     skill_id: uuid.UUID
     skill_slug: str
@@ -48,6 +52,7 @@ class MixModeQuestion(BaseModel):
 
 class MixModeSkillDistribution(BaseModel):
     """Skill distribution summary for Mix mode content."""
+
     # skill_slug → question count
     distribution: dict[str, int]
 
@@ -58,6 +63,7 @@ class MixModeContent(BaseModel):
     Used to validate/document the JSON stored in Assignment.activity_content
     when is_mix_mode=True.
     """
+
     questions: list[MixModeQuestion]
     skill_distribution: dict[str, int]
 
@@ -69,6 +75,7 @@ class MixModeContent(BaseModel):
 
 class SkillBreakdownItem(BaseModel):
     """Per-skill score breakdown for an assignment."""
+
     skill_id: uuid.UUID
     skill_name: str
     skill_slug: str
@@ -82,6 +89,7 @@ class SkillBreakdownItem(BaseModel):
 
 class AssignmentSkillBreakdownResponse(BaseModel):
     """Assignment skill breakdown with per-skill averages."""
+
     assignment_id: uuid.UUID
     primary_skill: SkillCategoryPublic | None
     activity_format: ActivityFormatPublic | None
@@ -95,7 +103,6 @@ class AssignmentSkillBreakdownResponse(BaseModel):
 
 from typing import Literal
 
-
 # =============================================================================
 # Class Skill Heatmap (Story 30.15)
 # =============================================================================
@@ -103,6 +110,7 @@ from typing import Literal
 
 class StudentSkillCell(BaseModel):
     """Single cell in the class skill heatmap."""
+
     proficiency: float | None  # 0-100, None if no data
     data_points: int
     confidence: Literal["insufficient", "low", "moderate", "high"]
@@ -110,6 +118,7 @@ class StudentSkillCell(BaseModel):
 
 class StudentSkillRow(BaseModel):
     """One student row in the class skill heatmap."""
+
     student_id: uuid.UUID
     student_name: str
     skills: dict[str, StudentSkillCell]  # keyed by skill_slug
@@ -117,6 +126,7 @@ class StudentSkillRow(BaseModel):
 
 class ClassSkillHeatmapResponse(BaseModel):
     """Class skill heatmap with students x skills matrix."""
+
     class_id: uuid.UUID
     class_name: str
     skill_columns: list[SkillCategoryPublic]
@@ -131,6 +141,7 @@ class ClassSkillHeatmapResponse(BaseModel):
 
 class SkillTrendPoint(BaseModel):
     """Single data point in a skill trend line."""
+
     date: str  # ISO date string
     score: float  # percentage 0-100
     assignment_name: str | None
@@ -139,6 +150,7 @@ class SkillTrendPoint(BaseModel):
 
 class SkillTrendLine(BaseModel):
     """Trend line for one skill."""
+
     skill_id: uuid.UUID
     skill_name: str
     skill_slug: str
@@ -149,6 +161,7 @@ class SkillTrendLine(BaseModel):
 
 class StudentSkillTrendsResponse(BaseModel):
     """Student skill trends over time."""
+
     student_id: uuid.UUID
     period: str
     trends: list[SkillTrendLine]
@@ -156,6 +169,7 @@ class StudentSkillTrendsResponse(BaseModel):
 
 class SkillProfileItem(BaseModel):
     """Per-skill proficiency data for a student."""
+
     skill_id: uuid.UUID
     skill_name: str
     skill_slug: str
@@ -169,6 +183,7 @@ class SkillProfileItem(BaseModel):
 
 class StudentSkillProfileResponse(BaseModel):
     """Complete student skill profile with per-skill proficiency."""
+
     student_id: uuid.UUID
     student_name: str
     skills: list[SkillProfileItem]

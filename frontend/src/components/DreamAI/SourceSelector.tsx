@@ -6,24 +6,27 @@
  * then shows modules for the selected book.
  */
 
-import { AlertCircle, BookOpen, Check, Loader2, Search } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-import { cn } from "@/lib/utils"
-import { getAuthenticatedCoverUrl, getBooks } from "@/services/booksApi"
-import { type AIModuleSummary, getBookAIModules } from "@/services/dcsAiDataApi"
-import type { Book } from "@/types/book"
+import { AlertCircle, BookOpen, Check, Loader2, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { getAuthenticatedCoverUrl, getBooks } from "@/services/booksApi";
+import {
+  type AIModuleSummary,
+  getBookAIModules,
+} from "@/services/dcsAiDataApi";
+import type { Book } from "@/types/book";
 
 interface SourceSelectorProps {
-  bookId: number | null
-  moduleIds: number[]
-  onBookChange: (bookId: number | null) => void
-  onModulesChange: (moduleIds: number[]) => void
+  bookId: number | null;
+  moduleIds: number[];
+  onBookChange: (bookId: number | null) => void;
+  onModulesChange: (moduleIds: number[]) => void;
 }
 
 export function SourceSelector({
@@ -32,107 +35,107 @@ export function SourceSelector({
   onBookChange,
   onModulesChange,
 }: SourceSelectorProps) {
-  const [books, setBooks] = useState<Book[]>([])
-  const [modules, setModules] = useState<AIModuleSummary[]>([])
-  const [isLoadingBooks, setIsLoadingBooks] = useState(false)
-  const [isLoadingModules, setIsLoadingModules] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [bookSearch, setBookSearch] = useState("")
-  const [coverUrls, setCoverUrls] = useState<Record<number, string>>({})
+  const [books, setBooks] = useState<Book[]>([]);
+  const [modules, setModules] = useState<AIModuleSummary[]>([]);
+  const [isLoadingBooks, setIsLoadingBooks] = useState(false);
+  const [isLoadingModules, setIsLoadingModules] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [bookSearch, setBookSearch] = useState("");
+  const [coverUrls, setCoverUrls] = useState<Record<number, string>>({});
 
   // Load cover URLs for books
   useEffect(() => {
     const loadCovers = async () => {
-      const urls: Record<number, string> = {}
+      const urls: Record<number, string> = {};
       for (const book of books) {
         if (book.cover_image_url) {
-          const url = await getAuthenticatedCoverUrl(book.cover_image_url)
-          if (url) urls[book.id] = url
+          const url = await getAuthenticatedCoverUrl(book.cover_image_url);
+          if (url) urls[book.id] = url;
         }
       }
-      setCoverUrls(urls)
-    }
-    if (books.length > 0) loadCovers()
-  }, [books])
+      setCoverUrls(urls);
+    };
+    if (books.length > 0) loadCovers();
+  }, [books]);
 
   // Filter books based on search
   const filteredBooks = useMemo(() => {
-    if (!bookSearch.trim()) return books
-    const searchLower = bookSearch.toLowerCase()
+    if (!bookSearch.trim()) return books;
+    const searchLower = bookSearch.toLowerCase();
     return books.filter((book) =>
       book.title.toLowerCase().includes(searchLower),
-    )
-  }, [books, bookSearch])
+    );
+  }, [books, bookSearch]);
 
   // Load books on mount
   useEffect(() => {
     const loadBooks = async () => {
       try {
-        setIsLoadingBooks(true)
-        setError(null)
-        const response = await getBooks()
-        setBooks(response.items || [])
+        setIsLoadingBooks(true);
+        setError(null);
+        const response = await getBooks();
+        setBooks(response.items || []);
       } catch (err) {
-        console.error("Failed to load books:", err)
-        setError("Failed to load books")
+        console.error("Failed to load books:", err);
+        setError("Failed to load books");
       } finally {
-        setIsLoadingBooks(false)
+        setIsLoadingBooks(false);
       }
-    }
+    };
 
-    loadBooks()
-  }, [])
+    loadBooks();
+  }, []);
 
   // Load AI modules when book is selected
   useEffect(() => {
     if (!bookId) {
-      setModules([])
-      return
+      setModules([]);
+      return;
     }
 
     const loadModules = async () => {
       try {
-        setIsLoadingModules(true)
-        setError(null)
-        const response = await getBookAIModules(bookId)
-        setModules(response.modules || [])
-        onModulesChange([])
+        setIsLoadingModules(true);
+        setError(null);
+        const response = await getBookAIModules(bookId);
+        setModules(response.modules || []);
+        onModulesChange([]);
       } catch (err: any) {
-        console.error("Failed to load AI modules:", err)
+        console.error("Failed to load AI modules:", err);
         const message =
           err.response?.data?.detail ||
-          "Failed to load AI modules. Book may not be AI-processed."
-        setError(message)
-        setModules([])
+          "Failed to load AI modules. Book may not be AI-processed.";
+        setError(message);
+        setModules([]);
       } finally {
-        setIsLoadingModules(false)
+        setIsLoadingModules(false);
       }
-    }
+    };
 
-    loadModules()
-  }, [bookId, onModulesChange])
+    loadModules();
+  }, [bookId, onModulesChange]);
 
   // Handle select all modules
   const handleSelectAll = () => {
-    const allModuleIds = modules.map((m) => m.module_id)
-    onModulesChange(allModuleIds)
-  }
+    const allModuleIds = modules.map((m) => m.module_id);
+    onModulesChange(allModuleIds);
+  };
 
   // Handle deselect all modules
   const handleDeselectAll = () => {
-    onModulesChange([])
-  }
+    onModulesChange([]);
+  };
 
   // Toggle module selection
   const toggleModule = (moduleId: number) => {
     if (moduleIds.includes(moduleId)) {
-      onModulesChange(moduleIds.filter((id) => id !== moduleId))
+      onModulesChange(moduleIds.filter((id) => id !== moduleId));
     } else {
-      onModulesChange([...moduleIds, moduleId])
+      onModulesChange([...moduleIds, moduleId]);
     }
-  }
+  };
 
-  const selectedBook = books.find((b) => b.id === bookId)
+  const selectedBook = books.find((b) => b.id === bookId);
 
   return (
     <div className="space-y-4">
@@ -300,5 +303,5 @@ export function SourceSelector({
         </div>
       )}
     </div>
-  )
+  );
 }

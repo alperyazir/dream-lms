@@ -1,6 +1,7 @@
 """
 Unit tests for user CRUD operations with username field
 """
+
 import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
@@ -85,6 +86,7 @@ def test_create_user_with_short_username_fails_validation(session: Session) -> N
     # Act & Assert
     # Pydantic validation should raise ValidationError before it reaches CRUD
     from pydantic import ValidationError
+
     with pytest.raises(ValidationError) as exc_info:
         UserCreate(
             email="test@example.com",
@@ -103,6 +105,7 @@ def test_create_user_with_long_username_fails_validation(session: Session) -> No
 
     # Act & Assert
     from pydantic import ValidationError
+
     with pytest.raises(ValidationError) as exc_info:
         UserCreate(
             email="test@example.com",
@@ -114,7 +117,9 @@ def test_create_user_with_long_username_fails_validation(session: Session) -> No
     assert "at most 50 characters" in str(exc_info.value).lower()
 
 
-def test_create_user_with_invalid_characters_in_username_fails(session: Session) -> None:
+def test_create_user_with_invalid_characters_in_username_fails(
+    session: Session,
+) -> None:
     """Test creating user with invalid characters in username fails."""
     # Arrange - username with spaces and special characters
     invalid_usernames = [
@@ -127,6 +132,7 @@ def test_create_user_with_invalid_characters_in_username_fails(session: Session)
 
     # Act & Assert
     from pydantic import ValidationError
+
     for invalid_username in invalid_usernames:
         with pytest.raises(ValidationError) as exc_info:
             UserCreate(
@@ -136,7 +142,9 @@ def test_create_user_with_invalid_characters_in_username_fails(session: Session)
                 role=UserRole.student,
             )
 
-        assert "letters, numbers, underscores, and hyphens" in str(exc_info.value).lower()
+        assert (
+            "letters, numbers, underscores, and hyphens" in str(exc_info.value).lower()
+        )
 
 
 def test_get_user_by_username_returns_correct_user(session: Session) -> None:

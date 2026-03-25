@@ -1,30 +1,30 @@
-import { useQuery } from "@tanstack/react-query"
-import { BookOpen, Building2, Loader2, User, Users } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen, Building2, Loader2, User, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { getBookAssignments } from "@/services/bookAssignmentsApi"
-import { booksApi } from "@/services/booksApi"
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { getBookAssignments } from "@/services/bookAssignmentsApi";
+import { booksApi } from "@/services/booksApi";
 
 interface TeacherDetailsDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   teacher: {
-    id: string
-    user_full_name: string
-    user_email: string
-    school_name?: string | null
-    school_id?: string
-    books_assigned?: number
-    classroom_count?: number
-  }
+    id: string;
+    user_full_name: string;
+    user_email: string;
+    school_name?: string | null;
+    school_id?: string;
+    books_assigned?: number;
+    classroom_count?: number;
+  };
 }
 
 export function TeacherDetailsDialog({
@@ -38,33 +38,33 @@ export function TeacherDetailsDialog({
     queryFn: () => booksApi.getBooks({ limit: 1000 }),
     enabled: open,
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   // Fetch book assignments for all books and filter by this teacher
   const { data: allBooks = [], isLoading: loadingBooks } = useQuery({
     queryKey: ["teacherBooks", teacher.id],
     queryFn: async () => {
       // Get all books
-      const books = booksData?.items || []
-      const teacherBooks = []
+      const books = booksData?.items || [];
+      const teacherBooks = [];
 
       // For each book, check if this teacher has it assigned
       for (const book of books) {
         try {
-          const assignments = await getBookAssignments(book.id)
+          const assignments = await getBookAssignments(book.id);
           const hasAssignment = assignments.some(
             (a) => a.teacher_id === teacher.id,
-          )
+          );
           if (hasAssignment) {
-            teacherBooks.push(book)
+            teacherBooks.push(book);
           }
         } catch (_error) {}
       }
 
-      return teacherBooks
+      return teacherBooks;
     },
     enabled: open && !!booksData,
-  })
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -163,5 +163,5 @@ export function TeacherDetailsDialog({
         </ScrollArea>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

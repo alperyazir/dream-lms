@@ -1,36 +1,36 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
   Building2,
   GraduationCap,
   Loader2,
   Users,
-} from "lucide-react"
-import { PublishersService } from "@/client"
-import { Badge } from "@/components/ui/badge"
+} from "lucide-react";
+import { PublishersService } from "@/client";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { getBookAssignments } from "@/services/bookAssignmentsApi"
-import { booksApi } from "@/services/booksApi"
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { getBookAssignments } from "@/services/bookAssignmentsApi";
+import { booksApi } from "@/services/booksApi";
 
 interface SchoolDetailsDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   school: {
-    id: string
-    name: string
-    address?: string | null
-    teacher_count?: number
-    student_count?: number
-    book_count?: number
-  }
+    id: string;
+    name: string;
+    address?: string | null;
+    teacher_count?: number;
+    student_count?: number;
+    book_count?: number;
+  };
 }
 
 export function SchoolDetailsDialog({
@@ -43,10 +43,10 @@ export function SchoolDetailsDialog({
     queryKey: ["publisherTeachers"],
     queryFn: () => PublishersService.listMyTeachers(),
     enabled: open,
-  })
+  });
 
-  const schoolTeachers = allTeachers.filter((t) => t.school_id === school.id)
-  const teacherIds = new Set(schoolTeachers.map((t) => t.id))
+  const schoolTeachers = allTeachers.filter((t) => t.school_id === school.id);
+  const teacherIds = new Set(schoolTeachers.map((t) => t.id));
 
   // Fetch all books to create a lookup
   const { data: booksData } = useQuery({
@@ -54,29 +54,29 @@ export function SchoolDetailsDialog({
     queryFn: () => booksApi.getBooks({ limit: 1000 }),
     enabled: open,
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   // Fetch book assignments by checking each teacher's assigned books
   const { data: schoolBooks = [], isLoading: loadingBooks } = useQuery({
     queryKey: ["schoolBooks", school.id, Array.from(teacherIds)],
     queryFn: async () => {
-      if (schoolTeachers.length === 0) return []
+      if (schoolTeachers.length === 0) return [];
 
-      const books = booksData?.items || []
-      if (books.length === 0) return []
+      const books = booksData?.items || [];
+      if (books.length === 0) return [];
 
-      const bookAssignmentMap = new Map()
+      const bookAssignmentMap = new Map();
 
       // Check each book for assignments to this school's teachers
       await Promise.all(
         books.map(async (book) => {
           try {
-            const assignments = await getBookAssignments(book.id)
+            const assignments = await getBookAssignments(book.id);
 
             // Filter assignments for teachers in this school
             const schoolAssignments = assignments.filter((assignment) =>
               teacherIds.has(assignment.teacher_id || ""),
-            )
+            );
 
             if (schoolAssignments.length > 0) {
               bookAssignmentMap.set(book.id, {
@@ -86,26 +86,26 @@ export function SchoolDetailsDialog({
                   .map((a) => {
                     const teacher = schoolTeachers.find(
                       (t) => t.id === a.teacher_id,
-                    )
-                    return teacher?.user_full_name || ""
+                    );
+                    return teacher?.user_full_name || "";
                   })
                   .filter(Boolean),
-              })
+              });
             }
           } catch (error) {
             console.error(
               `Error fetching assignments for book ${book.id}:`,
               error,
-            )
+            );
           }
         }),
-      )
+      );
 
-      return Array.from(bookAssignmentMap.values())
+      return Array.from(bookAssignmentMap.values());
     },
     enabled: open && !!booksData && schoolTeachers.length > 0,
     retry: 1,
-  })
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -271,5 +271,5 @@ export function SchoolDetailsDialog({
         </ScrollArea>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

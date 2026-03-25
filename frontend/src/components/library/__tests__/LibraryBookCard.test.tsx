@@ -3,10 +3,10 @@
  * Story 29.2: Create DCS Library Browser Page
  */
 
-import { fireEvent, render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
-import type { LibraryBook } from "@/types/library"
-import { LibraryBookCard } from "../LibraryBookCard"
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { LibraryBook } from "@/types/library";
+import { LibraryBookCard } from "../LibraryBookCard";
 
 // Mock BookCover component
 vi.mock("@/components/books/BookCover", () => ({
@@ -15,7 +15,7 @@ vi.mock("@/components/books/BookCover", () => ({
       {title} cover
     </div>
   ),
-}))
+}));
 
 const mockBook: LibraryBook = {
   id: 1,
@@ -26,96 +26,98 @@ const mockBook: LibraryBook = {
   publisher_name: "Dream Publisher",
   cover_image_url: "https://example.com/cover.jpg",
   activity_count: 8,
-}
+};
 
 describe("LibraryBookCard", () => {
   it("renders book card with title and publisher", () => {
-    render(<LibraryBookCard book={mockBook} />)
+    render(<LibraryBookCard book={mockBook} />);
 
-    expect(screen.getByText("Mathematics Grade 5")).toBeInTheDocument()
-    expect(screen.getByText("Dream Publisher")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Mathematics Grade 5")).toBeInTheDocument();
+    expect(screen.getByText("Dream Publisher")).toBeInTheDocument();
+  });
 
   it("renders book cover component", () => {
-    render(<LibraryBookCard book={mockBook} />)
+    render(<LibraryBookCard book={mockBook} />);
 
-    const bookCover = screen.getByTestId("book-cover")
-    expect(bookCover).toBeInTheDocument()
-    expect(bookCover).toHaveAttribute("data-title", "Mathematics Grade 5")
-  })
+    const bookCover = screen.getByTestId("book-cover");
+    expect(bookCover).toBeInTheDocument();
+    expect(bookCover).toHaveAttribute("data-title", "Mathematics Grade 5");
+  });
 
   it("displays activity count badge when activities exist", () => {
-    render(<LibraryBookCard book={mockBook} />)
+    render(<LibraryBookCard book={mockBook} />);
 
-    expect(screen.getByText("8 Activities")).toBeInTheDocument()
-  })
+    expect(screen.getByText("8 Activities")).toBeInTheDocument();
+  });
 
   it("displays singular activity text for one activity", () => {
     const bookWithOneActivity: LibraryBook = {
       ...mockBook,
       activity_count: 1,
-    }
+    };
 
-    render(<LibraryBookCard book={bookWithOneActivity} />)
+    render(<LibraryBookCard book={bookWithOneActivity} />);
 
-    expect(screen.getByText("1 Activity")).toBeInTheDocument()
-  })
+    expect(screen.getByText("1 Activity")).toBeInTheDocument();
+  });
 
   it("does not display activity badge when activity count is 0", () => {
     const bookWithNoActivities: LibraryBook = {
       ...mockBook,
       activity_count: 0,
-    }
+    };
 
-    render(<LibraryBookCard book={bookWithNoActivities} />)
+    render(<LibraryBookCard book={bookWithNoActivities} />);
 
-    expect(screen.queryByText(/Activities?/)).not.toBeInTheDocument()
-  })
+    expect(screen.queryByText(/Activities?/)).not.toBeInTheDocument();
+  });
 
   it("calls onPreview when preview button is clicked", () => {
-    const mockOnPreview = vi.fn()
-    render(<LibraryBookCard book={mockBook} onPreview={mockOnPreview} />)
+    const mockOnPreview = vi.fn();
+    render(<LibraryBookCard book={mockBook} onPreview={mockOnPreview} />);
 
-    const previewButton = screen.getByRole("button", { name: /preview/i })
-    fireEvent.click(previewButton)
+    const previewButton = screen.getByRole("button", { name: /preview/i });
+    fireEvent.click(previewButton);
 
-    expect(mockOnPreview).toHaveBeenCalledWith(mockBook)
-  })
+    expect(mockOnPreview).toHaveBeenCalledWith(mockBook);
+  });
 
   it("does not render footer actions when showActions is false", () => {
-    render(<LibraryBookCard book={mockBook} showActions={false} />)
+    render(<LibraryBookCard book={mockBook} showActions={false} />);
 
-    expect(screen.queryByRole("button", { name: /preview/i })).not.toBeInTheDocument()
-  })
+    expect(
+      screen.queryByRole("button", { name: /preview/i }),
+    ).not.toBeInTheDocument();
+  });
 
   it("renders preview button in footer by default", () => {
-    render(<LibraryBookCard book={mockBook} />)
+    render(<LibraryBookCard book={mockBook} />);
 
-    const previewButton = screen.getByRole("button", { name: /preview/i })
-    expect(previewButton).toBeInTheDocument()
-  })
+    const previewButton = screen.getByRole("button", { name: /preview/i });
+    expect(previewButton).toBeInTheDocument();
+  });
 
   it("handles book without cover image", () => {
     const bookWithoutCover: LibraryBook = {
       ...mockBook,
       cover_image_url: null,
-    }
+    };
 
-    render(<LibraryBookCard book={bookWithoutCover} />)
+    render(<LibraryBookCard book={bookWithoutCover} />);
 
-    const bookCover = screen.getByTestId("book-cover")
-    expect(bookCover).toBeInTheDocument()
-  })
+    const bookCover = screen.getByTestId("book-cover");
+    expect(bookCover).toBeInTheDocument();
+  });
 
   it("shows title attribute for long book titles", () => {
     const bookWithLongTitle: LibraryBook = {
       ...mockBook,
       title: "Very Long Book Title That Should Be Truncated in the UI",
-    }
+    };
 
-    render(<LibraryBookCard book={bookWithLongTitle} />)
+    render(<LibraryBookCard book={bookWithLongTitle} />);
 
-    const titleElement = screen.getByText(bookWithLongTitle.title)
-    expect(titleElement).toHaveAttribute("title", bookWithLongTitle.title)
-  })
-})
+    const titleElement = screen.getByText(bookWithLongTitle.title);
+    expect(titleElement).toHaveAttribute("title", bookWithLongTitle.title);
+  });
+});

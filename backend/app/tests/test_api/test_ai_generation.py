@@ -4,19 +4,16 @@ Tests for AI Generation API Endpoints.
 Tests vocabulary quiz API with authentication and authorization.
 """
 
-import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from fastapi.testclient import TestClient
 
-from app.models import User, UserRole
 from app.schemas.vocabulary_quiz import (
     VocabularyQuiz,
     VocabularyQuizQuestion,
 )
-
 
 # ============================================================================
 # Fixtures

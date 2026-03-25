@@ -1,6 +1,7 @@
 """
 Tests for teacher API endpoints
 """
+
 import re
 import uuid
 
@@ -26,12 +27,13 @@ def test_teacher_create_student(
     """Test teacher can create student successfully"""
     # Create publisher user and publisher
     from app.models import UserRole
+
     pub_user = User(
         id=uuid.uuid4(),
         email="pub@test.com",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
-        full_name="Publisher"
+        full_name="Publisher",
     )
     session.add(pub_user)
     session.flush()
@@ -40,7 +42,7 @@ def test_teacher_create_student(
         id=uuid.uuid4(),
         user_id=pub_user.id,
         name="Test Publisher",
-        contact_email="pub@test.com"
+        contact_email="pub@test.com",
     )
     session.add(publisher)
     session.flush()
@@ -50,7 +52,7 @@ def test_teacher_create_student(
         id=uuid.uuid4(),
         name="Test School",
         publisher_id=publisher.id,
-        address="School Address"
+        address="School Address",
     )
     session.add(school)
     session.flush()
@@ -59,7 +61,7 @@ def test_teacher_create_student(
         id=uuid.uuid4(),
         user_id=teacher_user.id,
         school_id=school.id,
-        subject_specialization="Mathematics"
+        subject_specialization="Mathematics",
     )
     session.add(teacher)
     session.commit()
@@ -68,13 +70,13 @@ def test_teacher_create_student(
         "user_email": "newstudent@example.com",
         "full_name": "New Student",
         "grade_level": "5th Grade",
-        "parent_email": "parent@example.com"
+        "parent_email": "parent@example.com",
     }
 
     response = client.post(
         f"{settings.API_V1_STR}/teachers/me/students",
         headers={"Authorization": f"Bearer {teacher_token}"},
-        json=student_data
+        json=student_data,
     )
 
     assert response.status_code == 201
@@ -102,7 +104,9 @@ def test_teacher_create_student(
     assert data["role_record"]["parent_email"] == student_data["parent_email"]
 
     # Verify in database
-    user = session.exec(select(User).where(User.email == student_data["user_email"])).first()
+    user = session.exec(
+        select(User).where(User.email == student_data["user_email"])
+    ).first()
     assert user is not None
     assert user.role.value == "student"
 
@@ -116,13 +120,12 @@ def test_teacher_list_students(
 ) -> None:
     """Test teacher sees students enrolled in their classes"""
     # Create publisher user and publisher
-    from app.models import 
     pub_user = User(
         id=uuid.uuid4(),
         email="pub@test.com",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
-        full_name="Publisher"
+        full_name="Publisher",
     )
     session.add(pub_user)
     session.flush()
@@ -131,7 +134,7 @@ def test_teacher_list_students(
         id=uuid.uuid4(),
         user_id=pub_user.id,
         name="Test Publisher",
-        contact_email="pub@test.com"
+        contact_email="pub@test.com",
     )
     session.add(publisher)
     session.flush()
@@ -141,7 +144,7 @@ def test_teacher_list_students(
         id=uuid.uuid4(),
         name="Test School",
         publisher_id=publisher.id,
-        address="School Address"
+        address="School Address",
     )
     session.add(school)
     session.flush()
@@ -150,7 +153,7 @@ def test_teacher_list_students(
         id=uuid.uuid4(),
         user_id=teacher_user.id,
         school_id=school.id,
-        subject_specialization="Science"
+        subject_specialization="Science",
     )
     session.add(teacher)
     session.flush()
@@ -161,7 +164,7 @@ def test_teacher_list_students(
         name="Science 101",
         teacher_id=teacher.id,
         school_id=school.id,
-        grade_level="6th Grade"
+        grade_level="6th Grade",
     )
     session.add(class_obj)
     session.flush()
@@ -172,15 +175,13 @@ def test_teacher_list_students(
         email="student1@example.com",
         hashed_password=get_password_hash("password"),
         role=UserRole.student,
-        full_name="Student One"
+        full_name="Student One",
     )
     session.add(student1_user)
     session.flush()
 
     student1 = Student(
-        id=uuid.uuid4(),
-        user_id=student1_user.id,
-        grade_level="6th Grade"
+        id=uuid.uuid4(), user_id=student1_user.id, grade_level="6th Grade"
     )
     session.add(student1)
     session.flush()
@@ -190,29 +191,23 @@ def test_teacher_list_students(
         email="student2@example.com",
         hashed_password=get_password_hash("password"),
         role=UserRole.student,
-        full_name="Student Two"
+        full_name="Student Two",
     )
     session.add(student2_user)
     session.flush()
 
     student2 = Student(
-        id=uuid.uuid4(),
-        user_id=student2_user.id,
-        grade_level="6th Grade"
+        id=uuid.uuid4(), user_id=student2_user.id, grade_level="6th Grade"
     )
     session.add(student2)
     session.flush()
 
     # Enroll students in class
     enrollment1 = ClassStudent(
-        id=uuid.uuid4(),
-        class_id=class_obj.id,
-        student_id=student1.id
+        id=uuid.uuid4(), class_id=class_obj.id, student_id=student1.id
     )
     enrollment2 = ClassStudent(
-        id=uuid.uuid4(),
-        class_id=class_obj.id,
-        student_id=student2.id
+        id=uuid.uuid4(), class_id=class_obj.id, student_id=student2.id
     )
     session.add_all([enrollment1, enrollment2])
     session.commit()
@@ -220,7 +215,7 @@ def test_teacher_list_students(
     # Request students as authenticated teacher
     response = client.get(
         f"{settings.API_V1_STR}/teachers/me/students",
-        headers={"Authorization": f"Bearer {teacher_token}"}
+        headers={"Authorization": f"Bearer {teacher_token}"},
     )
 
     assert response.status_code == 200
@@ -238,13 +233,12 @@ def test_teacher_receives_temporary_password(
 ) -> None:
     """Test response includes temp password when creating student (secure password flow)"""
     # Create publisher user and publisher
-    from app.models import 
     pub_user = User(
         id=uuid.uuid4(),
         email="pub2@test.com",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
-        full_name="Publisher"
+        full_name="Publisher",
     )
     session.add(pub_user)
     session.flush()
@@ -253,7 +247,7 @@ def test_teacher_receives_temporary_password(
         id=uuid.uuid4(),
         user_id=pub_user.id,
         name="Test Publisher",
-        contact_email="pub2@test.com"
+        contact_email="pub2@test.com",
     )
     session.add(publisher)
     session.flush()
@@ -263,7 +257,7 @@ def test_teacher_receives_temporary_password(
         id=uuid.uuid4(),
         name="Test School",
         publisher_id=publisher.id,
-        address="Address"
+        address="Address",
     )
     session.add(school)
     session.flush()
@@ -272,7 +266,7 @@ def test_teacher_receives_temporary_password(
         id=uuid.uuid4(),
         user_id=teacher_user.id,
         school_id=school.id,
-        subject_specialization="English"
+        subject_specialization="English",
     )
     session.add(teacher)
     session.commit()
@@ -281,13 +275,13 @@ def test_teacher_receives_temporary_password(
         "user_email": "student@example.com",
         "full_name": "Student",
         "grade_level": "7th Grade",
-        "parent_email": "parent@example.com"
+        "parent_email": "parent@example.com",
     }
 
     response = client.post(
         f"{settings.API_V1_STR}/teachers/me/students",
         headers={"Authorization": f"Bearer {teacher_token}"},
-        json=student_data
+        json=student_data,
     )
 
     assert response.status_code == 201
@@ -303,7 +297,7 @@ def test_teacher_receives_temporary_password(
     temp_password = data["temporary_password"]
     assert temp_password is not None
     assert len(temp_password) == 12
-    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', temp_password)
+    assert re.match(r"^[A-Za-z0-9!@#$%^&*]+$", temp_password)
 
 
 def test_students_appear_in_correct_teacher_list(
@@ -311,13 +305,12 @@ def test_students_appear_in_correct_teacher_list(
 ) -> None:
     """Test student enrolled in Class A appears for Teacher A"""
     # Create publisher user and publisher
-    from app.models import 
     pub_user = User(
         id=uuid.uuid4(),
         email="pub3@test.com",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
-        full_name="Publisher"
+        full_name="Publisher",
     )
     session.add(pub_user)
     session.flush()
@@ -326,7 +319,7 @@ def test_students_appear_in_correct_teacher_list(
         id=uuid.uuid4(),
         user_id=pub_user.id,
         name="Test Publisher",
-        contact_email="pub3@test.com"
+        contact_email="pub3@test.com",
     )
     session.add(publisher)
     session.flush()
@@ -336,7 +329,7 @@ def test_students_appear_in_correct_teacher_list(
         id=uuid.uuid4(),
         name="Test School",
         publisher_id=publisher.id,
-        address="Address"
+        address="Address",
     )
     session.add(school)
     session.flush()
@@ -346,7 +339,7 @@ def test_students_appear_in_correct_teacher_list(
         id=uuid.uuid4(),
         user_id=teacher_user.id,
         school_id=school.id,
-        subject_specialization="Math"
+        subject_specialization="Math",
     )
     session.add(teacher_a)
     session.flush()
@@ -357,7 +350,7 @@ def test_students_appear_in_correct_teacher_list(
         email="teacherb@example.com",
         hashed_password=get_password_hash("password"),
         role=UserRole.teacher,
-        full_name="Teacher B"
+        full_name="Teacher B",
     )
     session.add(teacher_b_user)
     session.flush()
@@ -366,7 +359,7 @@ def test_students_appear_in_correct_teacher_list(
         id=uuid.uuid4(),
         user_id=teacher_b_user.id,
         school_id=school.id,
-        subject_specialization="Science"
+        subject_specialization="Science",
     )
     session.add(teacher_b)
     session.flush()
@@ -377,14 +370,14 @@ def test_students_appear_in_correct_teacher_list(
         name="Math 101",
         teacher_id=teacher_a.id,
         school_id=school.id,
-        grade_level="8th Grade"
+        grade_level="8th Grade",
     )
     class_b = Class(
         id=uuid.uuid4(),
         name="Science 101",
         teacher_id=teacher_b.id,
         school_id=school.id,
-        grade_level="8th Grade"
+        grade_level="8th Grade",
     )
     session.add_all([class_a, class_b])
     session.flush()
@@ -395,24 +388,18 @@ def test_students_appear_in_correct_teacher_list(
         email="student@example.com",
         hashed_password=get_password_hash("password"),
         role=UserRole.student,
-        full_name="Student"
+        full_name="Student",
     )
     session.add(student_user)
     session.flush()
 
-    student = Student(
-        id=uuid.uuid4(),
-        user_id=student_user.id,
-        grade_level="8th Grade"
-    )
+    student = Student(id=uuid.uuid4(), user_id=student_user.id, grade_level="8th Grade")
     session.add(student)
     session.flush()
 
     # Enroll student in Teacher A's class only
     enrollment = ClassStudent(
-        id=uuid.uuid4(),
-        class_id=class_a.id,
-        student_id=student.id
+        id=uuid.uuid4(), class_id=class_a.id, student_id=student.id
     )
     session.add(enrollment)
     session.commit()
@@ -420,7 +407,7 @@ def test_students_appear_in_correct_teacher_list(
     # Request students as Teacher A
     response = client.get(
         f"{settings.API_V1_STR}/teachers/me/students",
-        headers={"Authorization": f"Bearer {teacher_token}"}
+        headers={"Authorization": f"Bearer {teacher_token}"},
     )
 
     assert response.status_code == 200

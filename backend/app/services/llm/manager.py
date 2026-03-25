@@ -153,7 +153,9 @@ class LLMManager:
 
         for provider in providers:
             try:
-                logger.info(f"Attempting generation with provider: {provider.get_name()}")
+                logger.info(
+                    f"Attempting generation with provider: {provider.get_name()}"
+                )
                 result = await provider.generate(prompt, options)
                 logger.info(
                     f"Generation successful with {provider.get_name()}: "
@@ -224,10 +226,14 @@ class LLMManager:
                     f"Attempting structured generation with provider: {provider.get_name()}"
                 )
                 result = await provider.generate_structured(prompt, schema, options)
-                logger.info(f"Structured generation successful with {provider.get_name()}")
+                logger.info(
+                    f"Structured generation successful with {provider.get_name()}"
+                )
                 # Store metadata for usage tracking
                 self.last_provider_name = provider.get_name()
-                self.last_generation_result = getattr(provider, 'last_generation_result', None)
+                self.last_generation_result = getattr(
+                    provider, "last_generation_result", None
+                )
                 return result
 
             except LLMRateLimitError as e:

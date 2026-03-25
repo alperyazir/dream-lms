@@ -7,8 +7,8 @@
  * so we use axios directly with the OpenAPI configuration.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   Activity,
   Book,
@@ -18,7 +18,7 @@ import type {
   BookStructureResponse,
   BooksFilter,
   PageActivity,
-} from "../types/book"
+} from "../types/book";
 
 /**
  * Create axios instance with OpenAPI config
@@ -27,14 +27,14 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
   // Set baseURL from OpenAPI config to ensure requests go to correct backend
-  config.baseURL = OpenAPI.BASE
+  config.baseURL = OpenAPI.BASE;
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     // Handle both sync and async token functions
     const tokenValue =
@@ -50,13 +50,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Get paginated list of books accessible to the current teacher
@@ -67,21 +67,22 @@ apiClient.interceptors.request.use(async (config) => {
 export async function getBooks(
   filters: BooksFilter = {},
 ): Promise<BookListResponse> {
-  const params = new URLSearchParams()
+  const params = new URLSearchParams();
 
-  if (filters.skip !== undefined) params.append("skip", filters.skip.toString())
+  if (filters.skip !== undefined)
+    params.append("skip", filters.skip.toString());
   if (filters.limit !== undefined)
-    params.append("limit", filters.limit.toString())
-  if (filters.search) params.append("search", filters.search)
-  if (filters.publisher) params.append("publisher", filters.publisher)
+    params.append("limit", filters.limit.toString());
+  if (filters.search) params.append("search", filters.search);
+  if (filters.publisher) params.append("publisher", filters.publisher);
   if (filters.activity_type)
-    params.append("activity_type", filters.activity_type)
+    params.append("activity_type", filters.activity_type);
 
-  const queryString = params.toString()
-  const url = `/api/v1/books${queryString ? `?${queryString}` : ""}`
+  const queryString = params.toString();
+  const url = `/api/v1/books${queryString ? `?${queryString}` : ""}`;
 
-  const response = await apiClient.get<BookListResponse>(url)
-  return response.data
+  const response = await apiClient.get<BookListResponse>(url);
+  return response.data;
 }
 
 /**
@@ -91,9 +92,9 @@ export async function getBooks(
  * @returns Promise with array of activities
  */
 export async function getBookActivities(bookId: string): Promise<Activity[]> {
-  const url = `/api/v1/books/${bookId}/activities`
-  const response = await apiClient.get<Activity[]>(url)
-  return response.data
+  const url = `/api/v1/books/${bookId}/activities`;
+  const response = await apiClient.get<Activity[]>(url);
+  return response.data;
 }
 
 /**
@@ -107,9 +108,9 @@ export async function getBookActivities(bookId: string): Promise<Activity[]> {
 export async function getBookById(bookId: number): Promise<Book | null> {
   // For now, fetch with high limit and filter client-side
   // This is not ideal for production but works for MVP
-  const response = await getBooks({ limit: 100 })
-  const book = response.items.find((b) => b.id === bookId)
-  return book || null
+  const response = await getBooks({ limit: 100 });
+  const book = response.items.find((b) => b.id === bookId);
+  return book || null;
 }
 
 /**
@@ -124,20 +125,20 @@ export async function getBookById(bookId: number): Promise<Book | null> {
 export async function getAuthenticatedCoverUrl(
   coverImageUrl: string | null,
 ): Promise<string | null> {
-  if (!coverImageUrl) return null
+  if (!coverImageUrl) return null;
 
   try {
     // Fetch image with authentication
     const response = await apiClient.get(coverImageUrl, {
       responseType: "blob",
-    })
+    });
 
     // Create blob URL
-    const blobUrl = URL.createObjectURL(response.data)
-    return blobUrl
+    const blobUrl = URL.createObjectURL(response.data);
+    return blobUrl;
   } catch (error) {
-    console.error("Failed to fetch book cover:", error)
-    return null
+    console.error("Failed to fetch book cover:", error);
+    return null;
   }
 }
 
@@ -158,54 +159,41 @@ export async function getActivityImageUrl(
   sectionPath: string | null,
 ): Promise<string | null> {
   if (!sectionPath || !bookId) {
-    console.warn("Missing required parameters for image URL:", {
-      bookId,
-      sectionPath,
-    })
-    return null
+    return null;
   }
 
   try {
     // Extract asset path from section_path
     // Convert "./books/BOOKNAME/images/M3/p30s1.png" to "images/M3/p30s1.png"
-    let assetPath = sectionPath
-    const booksPrefix = /^\.\/books\/[^/]+\//
+    let assetPath = sectionPath;
+    const booksPrefix = /^\.\/books\/[^/]+\//;
     if (booksPrefix.test(sectionPath)) {
-      assetPath = sectionPath.replace(booksPrefix, "")
+      assetPath = sectionPath.replace(booksPrefix, "");
     }
 
     // Remove leading slash if present
     if (assetPath.startsWith("/")) {
-      assetPath = assetPath.substring(1)
+      assetPath = assetPath.substring(1);
     }
 
     // Construct backend proxy URL
-    const url = `/api/v1/books/${bookId}/assets/${assetPath}`
-
-    console.log("Fetching activity image:", {
-      bookId,
-      sectionPath,
-      assetPath,
-      url,
-    })
+    const url = `/api/v1/books/${bookId}/assets/${assetPath}`;
 
     // Fetch image with authentication
     const response = await apiClient.get(url, {
       responseType: "blob",
-    })
+    });
 
     // Create blob URL
-    const blobUrl = URL.createObjectURL(response.data)
+    const blobUrl = URL.createObjectURL(response.data);
 
-    console.log("Activity image loaded successfully, blob URL created")
-
-    return blobUrl
+    return blobUrl;
   } catch (error) {
     console.error("Failed to fetch activity image:", error, {
       bookId,
       sectionPath,
-    })
-    return null
+    });
+    return null;
   }
 }
 
@@ -228,59 +216,46 @@ export async function getActivityAudioUrl(
   audioPath: string | null,
 ): Promise<string | null> {
   if (!audioPath || !bookId) {
-    console.warn("Missing required parameters for audio URL:", {
-      bookId,
-      audioPath,
-    })
-    return null
+    return null;
   }
 
   try {
     // Extract asset path from audio_path
     // Convert "./books/BOOKNAME/audio/08.mp3" to "audio/08.mp3"
-    let assetPath = audioPath
-    const booksPrefix = /^\.\/books\/[^/]+\//
+    let assetPath = audioPath;
+    const booksPrefix = /^\.\/books\/[^/]+\//;
     if (booksPrefix.test(audioPath)) {
-      assetPath = audioPath.replace(booksPrefix, "")
+      assetPath = audioPath.replace(booksPrefix, "");
     }
 
     // Remove leading "./" if still present
     if (assetPath.startsWith("./")) {
-      assetPath = assetPath.substring(2)
+      assetPath = assetPath.substring(2);
     }
 
     // Remove leading slash if present
     if (assetPath.startsWith("/")) {
-      assetPath = assetPath.substring(1)
+      assetPath = assetPath.substring(1);
     }
 
     // Use the media streaming endpoint for audio
-    const url = `/api/v1/books/${bookId}/media/${assetPath}`
-
-    console.log("Fetching activity audio:", {
-      bookId,
-      audioPath,
-      assetPath,
-      url,
-    })
+    const url = `/api/v1/books/${bookId}/media/${assetPath}`;
 
     // Fetch audio with authentication
     const response = await apiClient.get(url, {
       responseType: "blob",
-    })
+    });
 
     // Create blob URL
-    const blobUrl = URL.createObjectURL(response.data)
+    const blobUrl = URL.createObjectURL(response.data);
 
-    console.log("Activity audio loaded successfully, blob URL created")
-
-    return blobUrl
+    return blobUrl;
   } catch (error) {
     console.error("Failed to fetch activity audio:", error, {
       bookId,
       audioPath,
-    })
-    return null
+    });
+    return null;
   }
 }
 
@@ -290,19 +265,19 @@ export async function getActivityAudioUrl(
  * Video information from DCS
  */
 export interface VideoInfo {
-  path: string
-  name: string
-  size_bytes: number
-  has_subtitles: boolean
+  path: string;
+  name: string;
+  size_bytes: number;
+  has_subtitles: boolean;
 }
 
 /**
  * Response from book videos endpoint
  */
 export interface BookVideosResponse {
-  book_id: string
-  videos: VideoInfo[]
-  total_count: number
+  book_id: string;
+  videos: VideoInfo[];
+  total_count: number;
 }
 
 /**
@@ -316,16 +291,16 @@ export interface BookVideosResponse {
 export async function getBookVideos(
   bookId: string | number,
 ): Promise<BookVideosResponse> {
-  const url = `/api/v1/books/${bookId}/videos`
-  const response = await apiClient.get<BookVideosResponse>(url)
-  return response.data
+  const url = `/api/v1/books/${bookId}/videos`;
+  const response = await apiClient.get<BookVideosResponse>(url);
+  return response.data;
 }
 
 /**
  * Get auth token from localStorage
  */
 function getAuthToken(): string | null {
-  return localStorage.getItem("access_token")
+  return localStorage.getItem("access_token");
 }
 
 /**
@@ -341,9 +316,9 @@ function getAuthToken(): string | null {
  * @returns The URL to stream video with auth token
  */
 export function getVideoStreamUrl(bookId: string, videoPath: string): string {
-  const token = getAuthToken()
-  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
-  return `${OpenAPI.BASE}/api/v1/books/${bookId}/media/${videoPath}${tokenParam}`
+  const token = getAuthToken();
+  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
+  return `${OpenAPI.BASE}/api/v1/books/${bookId}/media/${videoPath}${tokenParam}`;
 }
 
 /**
@@ -359,10 +334,10 @@ export function getVideoStreamUrl(bookId: string, videoPath: string): string {
  * @returns The URL to fetch subtitles (replaces .mp4 with .srt) with auth token
  */
 export function getSubtitleUrl(bookId: string, videoPath: string): string {
-  const subtitlePath = videoPath.replace(/\.[^.]+$/, ".srt")
-  const token = getAuthToken()
-  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
-  return `${OpenAPI.BASE}/api/v1/books/${bookId}/media/${subtitlePath}${tokenParam}`
+  const subtitlePath = videoPath.replace(/\.[^.]+$/, ".srt");
+  const token = getAuthToken();
+  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
+  return `${OpenAPI.BASE}/api/v1/books/${bookId}/media/${subtitlePath}${tokenParam}`;
 }
 
 // --- Story 8.2: Page-Based Activity Selection ---
@@ -376,9 +351,9 @@ export function getSubtitleUrl(bookId: string, videoPath: string): string {
  * @returns Promise with book pages grouped by module
  */
 export async function getBookPages(bookId: string): Promise<BookPagesResponse> {
-  const url = `/api/v1/books/${bookId}/pages`
-  const response = await apiClient.get<BookPagesResponse>(url)
-  return response.data
+  const url = `/api/v1/books/${bookId}/pages`;
+  const response = await apiClient.get<BookPagesResponse>(url);
+  return response.data;
 }
 
 /**
@@ -396,16 +371,16 @@ export async function getPageActivities(
   pageNumber: number,
   moduleName?: string,
 ): Promise<PageActivity[]> {
-  const params = new URLSearchParams()
+  const params = new URLSearchParams();
   if (moduleName) {
-    params.append("module_name", moduleName)
+    params.append("module_name", moduleName);
   }
 
-  const queryString = params.toString()
-  const url = `/api/v1/books/${bookId}/pages/${pageNumber}/activities${queryString ? `?${queryString}` : ""}`
+  const queryString = params.toString();
+  const url = `/api/v1/books/${bookId}/pages/${pageNumber}/activities${queryString ? `?${queryString}` : ""}`;
 
-  const response = await apiClient.get<PageActivity[]>(url)
-  return response.data
+  const response = await apiClient.get<PageActivity[]>(url);
+  return response.data;
 }
 
 /**
@@ -420,20 +395,20 @@ export async function getPageActivities(
 export async function getPageThumbnailUrl(
   thumbnailUrl: string,
 ): Promise<string | null> {
-  if (!thumbnailUrl) return null
+  if (!thumbnailUrl) return null;
 
   try {
     // Fetch image with authentication
     const response = await apiClient.get(thumbnailUrl, {
       responseType: "blob",
-    })
+    });
 
     // Create blob URL
-    const blobUrl = URL.createObjectURL(response.data)
-    return blobUrl
+    const blobUrl = URL.createObjectURL(response.data);
+    return blobUrl;
   } catch (error) {
-    console.error("Failed to fetch page thumbnail:", error)
-    return null
+    console.error("Failed to fetch page thumbnail:", error);
+    return null;
   }
 }
 
@@ -450,9 +425,9 @@ export async function getPageThumbnailUrl(
 export async function getBookPagesDetail(
   bookId: string,
 ): Promise<BookPagesDetailResponse> {
-  const url = `/api/v1/books/${bookId}/pages/detail`
-  const response = await apiClient.get<BookPagesDetailResponse>(url)
-  return response.data
+  const url = `/api/v1/books/${bookId}/pages/detail`;
+  const response = await apiClient.get<BookPagesDetailResponse>(url);
+  return response.data;
 }
 
 /**
@@ -466,18 +441,18 @@ export async function getBookPagesDetail(
 export async function getPageImageUrl(
   imageUrl: string,
 ): Promise<string | null> {
-  if (!imageUrl) return null
+  if (!imageUrl) return null;
 
   try {
     const response = await apiClient.get(imageUrl, {
       responseType: "blob",
-    })
+    });
 
-    const blobUrl = URL.createObjectURL(response.data)
-    return blobUrl
+    const blobUrl = URL.createObjectURL(response.data);
+    return blobUrl;
   } catch (error) {
-    console.error("Failed to fetch page image:", error)
-    return null
+    console.error("Failed to fetch page image:", error);
+    return null;
   }
 }
 
@@ -492,18 +467,18 @@ export async function getPageImageUrl(
  * @returns Promise with blob URL string, or null if fetch fails
  */
 export async function getMediaUrl(mediaUrl: string): Promise<string | null> {
-  if (!mediaUrl) return null
+  if (!mediaUrl) return null;
 
   try {
     const response = await apiClient.get(mediaUrl, {
       responseType: "blob",
-    })
+    });
 
-    const blobUrl = URL.createObjectURL(response.data)
-    return blobUrl
+    const blobUrl = URL.createObjectURL(response.data);
+    return blobUrl;
   } catch (error) {
-    console.error("Failed to fetch media:", error)
-    return null
+    console.error("Failed to fetch media:", error);
+    return null;
   }
 }
 
@@ -516,9 +491,9 @@ export async function getMediaUrl(mediaUrl: string): Promise<string | null> {
  * @returns Promise with book data
  */
 export async function getBook(bookId: string | number): Promise<Book> {
-  const url = `/api/v1/books/${bookId}`
-  const response = await apiClient.get<Book>(url)
-  return response.data
+  const url = `/api/v1/books/${bookId}`;
+  const response = await apiClient.get<Book>(url);
+  return response.data;
 }
 
 // --- Story 9.5: Activity Selection Tabs ---
@@ -537,9 +512,9 @@ export async function getBook(bookId: string | number): Promise<Book> {
 export async function getBookStructure(
   bookId: string | number,
 ): Promise<BookStructureResponse> {
-  const url = `/api/v1/books/${bookId}/structure`
-  const response = await apiClient.get<BookStructureResponse>(url)
-  return response.data
+  const url = `/api/v1/books/${bookId}/structure`;
+  const response = await apiClient.get<BookStructureResponse>(url);
+  return response.data;
 }
 
 // --- Story 29.3: Book Bundle Download ---
@@ -547,16 +522,16 @@ export async function getBookStructure(
 /**
  * Platform options for standalone app bundle download
  */
-export type Platform = "mac" | "win" | "win7-8" | "linux"
+export type Platform = "mac" | "win" | "win7-8" | "linux";
 
 /**
  * Response from book bundle request
  */
 export interface BundleResponse {
-  download_url: string
-  file_name: string
-  file_size: number
-  expires_at: string | null
+  download_url: string;
+  file_name: string;
+  file_size: number;
+  expires_at: string | null;
 }
 
 /**
@@ -575,9 +550,9 @@ export async function requestBookBundle(
   bookId: string | number,
   platform: Platform,
 ): Promise<BundleResponse> {
-  const url = `/api/v1/books/${bookId}/bundle`
-  const response = await apiClient.post<BundleResponse>(url, { platform })
-  return response.data
+  const url = `/api/v1/books/${bookId}/bundle`;
+  const response = await apiClient.post<BundleResponse>(url, { platform });
+  return response.data;
 }
 
 /**
@@ -602,6 +577,6 @@ export const booksApi = {
   getVideoStreamUrl,
   getSubtitleUrl,
   requestBookBundle,
-}
+};
 
-export default booksApi
+export default booksApi;

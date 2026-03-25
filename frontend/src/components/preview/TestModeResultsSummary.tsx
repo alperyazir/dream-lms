@@ -5,8 +5,8 @@
  * Shows per-activity scores without saving to backend.
  */
 
-import { CheckCircle, Clock, XCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { CheckCircle, Clock, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,15 +14,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
-import type { PreviewResults } from "../ActivityPlayers/MultiActivityPlayer"
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import type { PreviewResults } from "../ActivityPlayers/MultiActivityPlayer";
 
 interface TestModeResultsSummaryProps {
-  isOpen: boolean
-  onClose: () => void
-  results: PreviewResults | null
-  onRetry?: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  results: PreviewResults | null;
+  onRetry?: () => void;
 }
 
 export function TestModeResultsSummary({
@@ -32,20 +32,20 @@ export function TestModeResultsSummary({
   onRetry,
 }: TestModeResultsSummaryProps) {
   if (!results) {
-    return null
+    return null;
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-600 dark:text-green-400"
-    if (score >= 60) return "text-yellow-600 dark:text-yellow-400"
-    return "text-red-600 dark:text-red-400"
-  }
+    if (score >= 80) return "text-green-600 dark:text-green-400";
+    if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
+  };
 
   const getProgressColor = (score: number) => {
-    if (score >= 80) return "bg-green-500"
-    if (score >= 60) return "bg-yellow-500"
-    return "bg-red-500"
-  }
+    if (score >= 80) return "bg-green-500";
+    if (score >= 60) return "bg-yellow-500";
+    return "bg-red-500";
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -145,5 +145,5 @@ export function TestModeResultsSummary({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

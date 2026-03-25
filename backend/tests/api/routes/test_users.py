@@ -49,7 +49,11 @@ def test_create_user_new_email(
     ):
         username = random_email()
         password = random_lower_string()
-        data = {"email": username, "password": password, "username": username.split("@")[0] + random_lower_string()[:8]}
+        data = {
+            "email": username,
+            "password": password,
+            "username": username.split("@")[0] + random_lower_string()[:8],
+        }
         r = client.post(
             f"{settings.API_V1_STR}/users/",
             headers=superuser_token_headers,
@@ -127,7 +131,11 @@ def test_create_user_existing_username(
     password = random_lower_string()
     user_in = _make_user_create(email=username, password=password)
     crud.create_user(session=db, user_create=user_in)
-    data = {"email": username, "password": password, "username": username.split("@")[0] + random_lower_string()[:8]}
+    data = {
+        "email": username,
+        "password": password,
+        "username": username.split("@")[0] + random_lower_string()[:8],
+    }
     r = client.post(
         f"{settings.API_V1_STR}/users/",
         headers=superuser_token_headers,
@@ -143,7 +151,11 @@ def test_create_user_by_normal_user(
 ) -> None:
     username = random_email()
     password = random_lower_string()
-    data = {"email": username, "password": password, "username": username.split("@")[0] + random_lower_string()[:8]}
+    data = {
+        "email": username,
+        "password": password,
+        "username": username.split("@")[0] + random_lower_string()[:8],
+    }
     r = client.post(
         f"{settings.API_V1_STR}/users/",
         headers=normal_user_token_headers,
@@ -292,7 +304,12 @@ def test_register_user(client: TestClient, db: Session) -> None:
     username = random_email()
     password = random_lower_string()
     full_name = random_lower_string()
-    data = {"email": username, "password": password, "full_name": full_name, "username": username.split("@")[0] + random_lower_string()[:8]}
+    data = {
+        "email": username,
+        "password": password,
+        "full_name": full_name,
+        "username": username.split("@")[0] + random_lower_string()[:8],
+    }
     r = client.post(
         f"{settings.API_V1_STR}/users/signup",
         json=data,

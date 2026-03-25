@@ -2,6 +2,7 @@
 API tests for publisher /me endpoints.
 Story 25.3: Restore Publisher /me Endpoints
 """
+
 import uuid
 from unittest.mock import AsyncMock, patch
 
@@ -97,7 +98,7 @@ def publisher_token_with_dcs(client: TestClient, publisher_user_with_dcs: User) 
     """Get access token for publisher user with DCS link."""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": publisher_user_with_dcs.email, "password": "pubpassword"}
+        data={"username": publisher_user_with_dcs.email, "password": "pubpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -108,14 +109,16 @@ def publisher_token_no_dcs(client: TestClient, publisher_user_no_dcs: User) -> s
     """Get access token for publisher user without DCS link."""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": publisher_user_no_dcs.email, "password": "pubpassword"}
+        data={"username": publisher_user_no_dcs.email, "password": "pubpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
 
 
 @pytest.fixture
-def publisher_school(session: Session, publisher_user_with_dcs: User) -> School:  # noqa: ARG001
+def publisher_school(
+    session: Session, publisher_user_with_dcs: User
+) -> School:  # noqa: ARG001
     """Create a school belonging to the publisher."""
     school = School(
         id=uuid.uuid4(),
@@ -147,7 +150,9 @@ def another_publisher_school(session: Session) -> School:
 
 
 @pytest.fixture
-def teacher_in_publisher_school(session: Session, publisher_school: School) -> tuple[User, Teacher]:
+def teacher_in_publisher_school(
+    session: Session, publisher_school: School
+) -> tuple[User, Teacher]:
     """Create a teacher in the publisher's school."""
     user = User(
         id=uuid.uuid4(),

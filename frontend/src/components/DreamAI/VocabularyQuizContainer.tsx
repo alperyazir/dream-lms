@@ -8,27 +8,27 @@
  * - Results display after submission
  */
 
-import { useCallback, useState } from "react"
-import { VocabularyQuizPlayer } from "@/components/ActivityPlayers/VocabularyQuizPlayer"
-import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQuizResults"
-import { vocabularyQuizApi } from "@/services/vocabularyQuizApi"
+import { useCallback, useState } from "react";
+import { VocabularyQuizPlayer } from "@/components/ActivityPlayers/VocabularyQuizPlayer";
+import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQuizResults";
+import { vocabularyQuizApi } from "@/services/vocabularyQuizApi";
 import type {
   VocabularyQuiz,
   VocabularyQuizGenerationRequest,
   VocabularyQuizPublic,
   VocabularyQuizResult,
-} from "@/types/vocabulary-quiz"
-import { VocabularyQuizForm } from "./VocabularyQuizForm"
+} from "@/types/vocabulary-quiz";
+import { VocabularyQuizForm } from "./VocabularyQuizForm";
 
-type QuizPhase = "form" | "preview" | "playing" | "results"
+type QuizPhase = "form" | "preview" | "playing" | "results";
 
 interface VocabularyQuizContainerProps {
   /** Initial quiz ID to load (for students accessing shared quiz) */
-  initialQuizId?: string
+  initialQuizId?: string;
   /** Whether to show the generation form (for teachers) */
-  showForm?: boolean
+  showForm?: boolean;
   /** Callback when quiz is completed */
-  onComplete?: (result: VocabularyQuizResult) => void
+  onComplete?: (result: VocabularyQuizResult) => void;
 }
 
 export function VocabularyQuizContainer({
@@ -38,27 +38,27 @@ export function VocabularyQuizContainer({
 }: VocabularyQuizContainerProps) {
   const [phase, setPhase] = useState<QuizPhase>(
     initialQuizId ? "playing" : "form",
-  )
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Quiz data
   const [generatedQuiz, setGeneratedQuiz] = useState<VocabularyQuiz | null>(
     null,
-  )
+  );
   const [publicQuiz, setPublicQuiz] = useState<VocabularyQuizPublic | null>(
     null,
-  )
-  const [result, setResult] = useState<VocabularyQuizResult | null>(null)
+  );
+  const [result, setResult] = useState<VocabularyQuizResult | null>(null);
 
   // Generate a new quiz
   const handleGenerate = useCallback(
     async (request: VocabularyQuizGenerationRequest) => {
       try {
-        setIsLoading(true)
-        setError(null)
-        const quiz = await vocabularyQuizApi.generateQuiz(request)
-        setGeneratedQuiz(quiz)
+        setIsLoading(true);
+        setError(null);
+        const quiz = await vocabularyQuizApi.generateQuiz(request);
+        setGeneratedQuiz(quiz);
         // Also create public version for the player
         setPublicQuiz({
           quiz_id: quiz.quiz_id,
@@ -73,93 +73,93 @@ export function VocabularyQuizContainer({
             cefr_level: q.cefr_level,
             question_type: q.question_type,
           })),
-        })
-        setPhase("preview")
+        });
+        setPhase("preview");
       } catch (err: any) {
         const message =
           err?.response?.data?.detail ||
           err?.message ||
-          "Failed to generate quiz. Please try again."
-        setError(message)
+          "Failed to generate quiz. Please try again.";
+        setError(message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
     [],
-  )
+  );
 
   // Load existing quiz by ID
   const loadQuiz = useCallback(async (quizId: string) => {
     try {
-      setIsLoading(true)
-      setError(null)
-      const quiz = await vocabularyQuizApi.getQuiz(quizId)
-      setPublicQuiz(quiz)
-      setPhase("playing")
+      setIsLoading(true);
+      setError(null);
+      const quiz = await vocabularyQuizApi.getQuiz(quizId);
+      setPublicQuiz(quiz);
+      setPhase("playing");
     } catch (err: any) {
       const message =
         err?.response?.data?.detail ||
         err?.message ||
-        "Failed to load quiz. Please try again."
-      setError(message)
+        "Failed to load quiz. Please try again.";
+      setError(message);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   // Start the quiz (from preview)
   const handleStartQuiz = useCallback(() => {
-    setPhase("playing")
-  }, [])
+    setPhase("playing");
+  }, []);
 
   // Submit quiz answers
   const handleSubmit = useCallback(
     async (answers: Record<string, string>) => {
-      if (!publicQuiz) return
+      if (!publicQuiz) return;
 
       try {
-        setIsLoading(true)
-        setError(null)
+        setIsLoading(true);
+        setError(null);
         const quizResult = await vocabularyQuizApi.submitQuiz(
           publicQuiz.quiz_id,
           {
             answers,
           },
-        )
-        setResult(quizResult)
-        setPhase("results")
-        onComplete?.(quizResult)
+        );
+        setResult(quizResult);
+        setPhase("results");
+        onComplete?.(quizResult);
       } catch (err: any) {
         const message =
           err?.response?.data?.detail ||
           err?.message ||
-          "Failed to submit quiz. Please try again."
-        setError(message)
+          "Failed to submit quiz. Please try again.";
+        setError(message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
     [publicQuiz, onComplete],
-  )
+  );
 
   // Retry the quiz
   const handleRetry = useCallback(() => {
-    setResult(null)
-    setPhase("playing")
-  }, [])
+    setResult(null);
+    setPhase("playing");
+  }, []);
 
   // Go back to form
   const handleBackToForm = useCallback(() => {
-    setGeneratedQuiz(null)
-    setPublicQuiz(null)
-    setResult(null)
-    setError(null)
-    setPhase("form")
-  }, [])
+    setGeneratedQuiz(null);
+    setPublicQuiz(null);
+    setResult(null);
+    setError(null);
+    setPhase("form");
+  }, []);
 
   // Load initial quiz if provided
   if (initialQuizId && !publicQuiz && !isLoading && !error) {
-    loadQuiz(initialQuizId)
+    loadQuiz(initialQuizId);
   }
 
   // Render based on current phase
@@ -170,7 +170,7 @@ export function VocabularyQuizContainer({
         isGenerating={isLoading}
         error={error}
       />
-    )
+    );
   }
 
   if (phase === "preview" && generatedQuiz && publicQuiz) {
@@ -209,7 +209,7 @@ export function VocabularyQuizContainer({
           </ul>
         </div>
       </div>
-    )
+    );
   }
 
   if (phase === "playing" && publicQuiz) {
@@ -219,7 +219,7 @@ export function VocabularyQuizContainer({
         onSubmit={handleSubmit}
         isSubmitting={isLoading}
       />
-    )
+    );
   }
 
   if (phase === "results" && result) {
@@ -229,7 +229,7 @@ export function VocabularyQuizContainer({
         onRetry={handleRetry}
         onBack={showForm ? handleBackToForm : undefined}
       />
-    )
+    );
   }
 
   // Loading or error state
@@ -241,7 +241,7 @@ export function VocabularyQuizContainer({
           <p className="text-muted-foreground">Loading quiz...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -262,10 +262,10 @@ export function VocabularyQuizContainer({
           )}
         </div>
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }
 
-export default VocabularyQuizContainer
+export default VocabularyQuizContainer;

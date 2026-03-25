@@ -1,266 +1,275 @@
-import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { cn } from "@/lib/utils"
-import { getPageImageUrl } from "@/services/booksApi"
-import { useFlowbookBookStore, useFlowbookUIStore } from "../stores"
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import { getPageImageUrl } from "@/services/booksApi";
+import { useFlowbookBookStore, useFlowbookUIStore } from "../stores";
 
-const THUMBNAIL_WIDTH = 52
-const THUMBNAIL_HEIGHT = 72
-const ITEM_WIDTH = THUMBNAIL_WIDTH + 8
+const THUMBNAIL_WIDTH = 52;
+const THUMBNAIL_HEIGHT = 72;
+const ITEM_WIDTH = THUMBNAIL_WIDTH + 8;
 
 // Momentum physics
-const FRICTION = 0.95
-const MIN_VELOCITY = 0.5
+const FRICTION = 0.95;
+const MIN_VELOCITY = 0.5;
 
 export function ThumbnailStrip() {
   const { config, currentPageIndex, currentModuleIndex, goToPage, goToModule } =
-    useFlowbookBookStore()
-  const { isThumbnailStripOpen, toggleThumbnailStrip } = useFlowbookUIStore()
+    useFlowbookBookStore();
+  const { isThumbnailStripOpen, toggleThumbnailStrip } = useFlowbookUIStore();
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const activeRef = useRef<HTMLButtonElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLButtonElement>(null);
 
   // Mouse drag state
-  const isDraggingRef = useRef(false)
-  const startXRef = useRef(0)
-  const scrollLeftRef = useRef(0)
-  const hasDraggedRef = useRef(false)
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const hasDraggedRef = useRef(false);
 
   // Momentum state
-  const velocityRef = useRef(0)
-  const lastXRef = useRef(0)
-  const lastTimeRef = useRef(0)
-  const animationRef = useRef<number | null>(null)
+  const velocityRef = useRef(0);
+  const lastXRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  const animationRef = useRef<number | null>(null);
 
   // Store blob URLs for thumbnails
-  const [blobUrls, setBlobUrls] = useState<Record<number, string>>({})
-  const loadingRef = useRef<Set<number>>(new Set())
+  const [blobUrls, setBlobUrls] = useState<Record<number, string>>({});
+  const loadingRef = useRef<Set<number>>(new Set());
 
-  const allPages = config?.pages ?? []
-  const modules = config?.modules ?? []
+  const allPages = config?.pages ?? [];
+  const modules = config?.modules ?? [];
 
   // Check if image needs authentication
   const needsAuth = useCallback((imageUrl: string) => {
     if (imageUrl.startsWith("/") && !imageUrl.startsWith("/api/")) {
-      return false
+      return false;
     }
-    return true
-  }, [])
+    return true;
+  }, []);
 
   // Load thumbnails in visible range
   const loadVisibleThumbnails = useCallback(() => {
-    if (!config || !isThumbnailStripOpen) return
+    if (!config || !isThumbnailStripOpen) return;
 
-    const container = scrollContainerRef.current
+    const container = scrollContainerRef.current;
 
-    let startIdx: number
-    let endIdx: number
+    let startIdx: number;
+    let endIdx: number;
 
     if (container && container.clientWidth > 0) {
-      const scrollPos = container.scrollLeft
-      const containerWidth = container.clientWidth
-      startIdx = Math.max(0, Math.floor(scrollPos / ITEM_WIDTH) - 3)
+      const scrollPos = container.scrollLeft;
+      const containerWidth = container.clientWidth;
+      startIdx = Math.max(0, Math.floor(scrollPos / ITEM_WIDTH) - 3);
       endIdx = Math.min(
         allPages.length - 1,
         Math.ceil((scrollPos + containerWidth) / ITEM_WIDTH) + 3,
-      )
+      );
     } else {
-      startIdx = Math.max(0, currentPageIndex - 5)
-      endIdx = Math.min(allPages.length - 1, currentPageIndex + 10)
+      startIdx = Math.max(0, currentPageIndex - 5);
+      endIdx = Math.min(allPages.length - 1, currentPageIndex + 10);
     }
 
     for (let pageIndex = startIdx; pageIndex <= endIdx; pageIndex++) {
-      const page = allPages[pageIndex]
-      if (!page) continue
+      const page = allPages[pageIndex];
+      if (!page) continue;
 
-      if (blobUrls[pageIndex] || loadingRef.current.has(pageIndex)) continue
+      if (blobUrls[pageIndex] || loadingRef.current.has(pageIndex)) continue;
 
-      const imageUrl = page.image
+      const imageUrl = page.image;
 
       if (!needsAuth(imageUrl)) {
-        setBlobUrls((prev) => ({ ...prev, [pageIndex]: imageUrl }))
-        continue
+        setBlobUrls((prev) => ({ ...prev, [pageIndex]: imageUrl }));
+        continue;
       }
 
-      loadingRef.current.add(pageIndex)
+      loadingRef.current.add(pageIndex);
 
       getPageImageUrl(imageUrl)
         .then((blobUrl) => {
           if (blobUrl) {
-            setBlobUrls((prev) => ({ ...prev, [pageIndex]: blobUrl }))
+            setBlobUrls((prev) => ({ ...prev, [pageIndex]: blobUrl }));
           }
         })
         .catch((err) => {
-          console.error(`Failed to load thumbnail ${pageIndex}:`, err)
+          console.error(`Failed to load thumbnail ${pageIndex}:`, err);
         })
         .finally(() => {
-          loadingRef.current.delete(pageIndex)
-        })
+          loadingRef.current.delete(pageIndex);
+        });
     }
-  }, [allPages, blobUrls, config, isThumbnailStripOpen, needsAuth, currentPageIndex])
+  }, [
+    allPages,
+    blobUrls,
+    config,
+    isThumbnailStripOpen,
+    needsAuth,
+    currentPageIndex,
+  ]);
 
   // Load initial thumbnails when strip opens
   useEffect(() => {
     if (isThumbnailStripOpen) {
-      loadVisibleThumbnails()
-      const timer = setTimeout(loadVisibleThumbnails, 350)
-      return () => clearTimeout(timer)
+      loadVisibleThumbnails();
+      const timer = setTimeout(loadVisibleThumbnails, 350);
+      return () => clearTimeout(timer);
     }
-  }, [isThumbnailStripOpen, loadVisibleThumbnails])
+  }, [isThumbnailStripOpen, loadVisibleThumbnails]);
 
   // Load more on scroll
   useEffect(() => {
-    const container = scrollContainerRef.current
-    if (!container || !isThumbnailStripOpen) return
+    const container = scrollContainerRef.current;
+    if (!container || !isThumbnailStripOpen) return;
 
-    const handleScroll = () => loadVisibleThumbnails()
-    container.addEventListener("scroll", handleScroll, { passive: true })
-    return () => container.removeEventListener("scroll", handleScroll)
-  }, [isThumbnailStripOpen, loadVisibleThumbnails])
+    const handleScroll = () => loadVisibleThumbnails();
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [isThumbnailStripOpen, loadVisibleThumbnails]);
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
-    const urls = blobUrls
+    const urls = blobUrls;
     return () => {
       Object.values(urls).forEach((url) => {
         if (url.startsWith("blob:")) {
-          URL.revokeObjectURL(url)
+          URL.revokeObjectURL(url);
         }
-      })
-    }
-  }, [])
+      });
+    };
+  }, []);
 
   // Auto-scroll to center current page when strip opens or page changes
   useEffect(() => {
-    if (!isThumbnailStripOpen) return
+    if (!isThumbnailStripOpen) return;
 
     const centerCurrentPage = () => {
-      const container = scrollContainerRef.current
-      if (!container || container.clientWidth === 0) return
+      const container = scrollContainerRef.current;
+      if (!container || container.clientWidth === 0) return;
 
-      const containerWidth = container.clientWidth
+      const containerWidth = container.clientWidth;
       const targetScroll =
-        currentPageIndex * ITEM_WIDTH - containerWidth / 2 + THUMBNAIL_WIDTH / 2
+        currentPageIndex * ITEM_WIDTH -
+        containerWidth / 2 +
+        THUMBNAIL_WIDTH / 2;
 
       container.scrollTo({
         left: Math.max(0, targetScroll),
         behavior: "smooth",
-      })
-    }
+      });
+    };
 
-    centerCurrentPage()
-    const timer = setTimeout(centerCurrentPage, 350)
-    return () => clearTimeout(timer)
-  }, [isThumbnailStripOpen, currentPageIndex])
+    centerCurrentPage();
+    const timer = setTimeout(centerCurrentPage, 350);
+    return () => clearTimeout(timer);
+  }, [isThumbnailStripOpen, currentPageIndex]);
 
   // Momentum animation loop
   const animateMomentum = useCallback(() => {
-    const container = scrollContainerRef.current
-    if (!container) return
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
-    velocityRef.current *= FRICTION
+    velocityRef.current *= FRICTION;
 
     if (Math.abs(velocityRef.current) < MIN_VELOCITY) {
-      animationRef.current = null
-      return
+      animationRef.current = null;
+      return;
     }
 
-    container.scrollLeft -= velocityRef.current
-    animationRef.current = requestAnimationFrame(animateMomentum)
-  }, [])
+    container.scrollLeft -= velocityRef.current;
+    animationRef.current = requestAnimationFrame(animateMomentum);
+  }, []);
 
   // Stop momentum
   const stopMomentum = useCallback(() => {
     if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current)
-      animationRef.current = null
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
-    velocityRef.current = 0
-  }, [])
+    velocityRef.current = 0;
+  }, []);
 
   // Mouse handlers with momentum
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      const container = scrollContainerRef.current
-      if (!container) return
+      const container = scrollContainerRef.current;
+      if (!container) return;
 
-      stopMomentum()
+      stopMomentum();
 
-      isDraggingRef.current = true
-      hasDraggedRef.current = false
-      startXRef.current = e.pageX
-      scrollLeftRef.current = container.scrollLeft
+      isDraggingRef.current = true;
+      hasDraggedRef.current = false;
+      startXRef.current = e.pageX;
+      scrollLeftRef.current = container.scrollLeft;
 
-      lastXRef.current = e.pageX
-      lastTimeRef.current = performance.now()
-      velocityRef.current = 0
+      lastXRef.current = e.pageX;
+      lastTimeRef.current = performance.now();
+      velocityRef.current = 0;
 
-      container.style.cursor = "grabbing"
-      container.style.userSelect = "none"
+      container.style.cursor = "grabbing";
+      container.style.userSelect = "none";
     },
     [stopMomentum],
-  )
+  );
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const container = scrollContainerRef.current
-    if (!isDraggingRef.current || !container) return
+    const container = scrollContainerRef.current;
+    if (!isDraggingRef.current || !container) return;
 
-    e.preventDefault()
-    const dx = e.pageX - startXRef.current
+    e.preventDefault();
+    const dx = e.pageX - startXRef.current;
 
     if (Math.abs(dx) > 5) {
-      hasDraggedRef.current = true
+      hasDraggedRef.current = true;
     }
 
-    container.scrollLeft = scrollLeftRef.current - dx
+    container.scrollLeft = scrollLeftRef.current - dx;
 
-    const now = performance.now()
-    const dt = now - lastTimeRef.current
+    const now = performance.now();
+    const dt = now - lastTimeRef.current;
     if (dt > 0) {
-      const moved = e.pageX - lastXRef.current
-      velocityRef.current = (moved / dt) * 16
+      const moved = e.pageX - lastXRef.current;
+      velocityRef.current = (moved / dt) * 16;
     }
-    lastXRef.current = e.pageX
-    lastTimeRef.current = now
-  }, [])
+    lastXRef.current = e.pageX;
+    lastTimeRef.current = now;
+  }, []);
 
   const handleMouseUp = useCallback(() => {
-    const container = scrollContainerRef.current
-    if (!container || !isDraggingRef.current) return
+    const container = scrollContainerRef.current;
+    if (!container || !isDraggingRef.current) return;
 
-    isDraggingRef.current = false
-    container.style.cursor = "grab"
-    container.style.userSelect = ""
+    isDraggingRef.current = false;
+    container.style.cursor = "grab";
+    container.style.userSelect = "";
 
     if (Math.abs(velocityRef.current) > MIN_VELOCITY) {
-      animationRef.current = requestAnimationFrame(animateMomentum)
+      animationRef.current = requestAnimationFrame(animateMomentum);
     }
-  }, [animateMomentum])
+  }, [animateMomentum]);
 
   const handleMouseLeave = useCallback(() => {
-    handleMouseUp()
-  }, [handleMouseUp])
+    handleMouseUp();
+  }, [handleMouseUp]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current)
-    }
-  }, [])
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, []);
 
   // Handle page click
   const handlePageClick = useCallback(
     (pageIndex: number) => {
       if (hasDraggedRef.current) {
-        hasDraggedRef.current = false
-        return
+        hasDraggedRef.current = false;
+        return;
       }
-      goToPage(pageIndex)
+      goToPage(pageIndex);
     },
     [goToPage],
-  )
+  );
 
-  if (!config) return null
+  if (!config) return null;
 
   return (
     <div className="flex-shrink-0 ml-[76px] mr-[76px] pb-2">
@@ -328,10 +337,10 @@ export function ThumbnailStrip() {
               onMouseLeave={handleMouseLeave}
             >
               {allPages.map((page, pageIndex) => {
-                const isActive = pageIndex === currentPageIndex
-                const thumbnailSrc = blobUrls[pageIndex]
+                const isActive = pageIndex === currentPageIndex;
+                const thumbnailSrc = blobUrls[pageIndex];
                 const isLoading =
-                  loadingRef.current.has(pageIndex) && !thumbnailSrc
+                  loadingRef.current.has(pageIndex) && !thumbnailSrc;
 
                 return (
                   <button
@@ -346,7 +355,9 @@ export function ThumbnailStrip() {
                     <span
                       className={cn(
                         "mb-1 text-xs tabular-nums",
-                        isActive ? "text-cyan-600 font-semibold" : "text-slate-400",
+                        isActive
+                          ? "text-cyan-600 font-semibold"
+                          : "text-slate-400",
                       )}
                     >
                       {pageIndex + 1}
@@ -360,7 +371,10 @@ export function ThumbnailStrip() {
                           ? "border-cyan-500 shadow-md shadow-cyan-100 scale-105"
                           : "border-transparent group-hover:border-slate-300 group-hover:shadow",
                       )}
-                      style={{ width: THUMBNAIL_WIDTH, height: THUMBNAIL_HEIGHT }}
+                      style={{
+                        width: THUMBNAIL_WIDTH,
+                        height: THUMBNAIL_HEIGHT,
+                      }}
                     >
                       {!thumbnailSrc ? (
                         <div className="flex h-full w-full items-center justify-center bg-slate-100">
@@ -382,12 +396,12 @@ export function ThumbnailStrip() {
                       )}
                     </div>
                   </button>
-                )
+                );
               })}
             </div>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

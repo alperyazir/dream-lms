@@ -1,11 +1,9 @@
 """Tests for utility functions."""
 
-import pytest
 from sqlmodel import Session
 
 from app import crud
-from app.core.config import settings
-from app.models import User, UserCreate, UserRole
+from app.models import UserCreate, UserRole
 from app.utils import generate_username_from_name
 
 

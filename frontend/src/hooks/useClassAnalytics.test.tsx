@@ -4,13 +4,13 @@
  * Task 10: Frontend Component Tests
  */
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { renderHook, waitFor } from "@testing-library/react"
-import type { ReactNode } from "react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import * as classesApi from "@/services/classesApi"
-import type { ClassAnalyticsResponse } from "@/types/analytics"
-import { useClassAnalytics } from "./useClassAnalytics"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as classesApi from "@/services/classesApi";
+import type { ClassAnalyticsResponse } from "@/types/analytics";
+import { useClassAnalytics } from "./useClassAnalytics";
 
 // Mock the API module
 vi.mock("@/services/classesApi", () => ({
@@ -21,7 +21,7 @@ vi.mock("@/services/classesApi", () => ({
   default: {
     getClassAnalytics: vi.fn(),
   },
-}))
+}));
 
 // Mock analytics response
 const mockClassAnalyticsResponse: ClassAnalyticsResponse = {
@@ -98,10 +98,10 @@ const mockClassAnalyticsResponse: ClassAnalyticsResponse = {
       trend: "up",
     },
   ],
-}
+};
 
 describe("useClassAnalytics", () => {
-  let queryClient: QueryClient
+  let queryClient: QueryClient;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -109,20 +109,20 @@ describe("useClassAnalytics", () => {
         queries: { retry: false },
         mutations: { retry: false },
       },
-    })
-    vi.clearAllMocks()
-  })
+    });
+    vi.clearAllMocks();
+  });
 
   const createWrapper = () => {
     return ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    )
-  }
+    );
+  };
 
   it("returns correct properties", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -130,13 +130,13 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
-    expect(result.current).toHaveProperty("analytics")
-    expect(result.current).toHaveProperty("isLoading")
-    expect(result.current).toHaveProperty("error")
-    expect(result.current).toHaveProperty("refetch")
-  })
+    expect(result.current).toHaveProperty("analytics");
+    expect(result.current).toHaveProperty("isLoading");
+    expect(result.current).toHaveProperty("error");
+    expect(result.current).toHaveProperty("refetch");
+  });
 
   it("starts with isLoading true and null analytics", () => {
     vi.mocked(classesApi.getClassAnalytics).mockImplementation(
@@ -144,7 +144,7 @@ describe("useClassAnalytics", () => {
         new Promise((resolve) =>
           setTimeout(() => resolve(mockClassAnalyticsResponse), 1000),
         ),
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -152,17 +152,17 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
-    expect(result.current.isLoading).toBe(true)
-    expect(result.current.analytics).toBeNull()
-    expect(result.current.error).toBeNull()
-  })
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.analytics).toBeNull();
+    expect(result.current.error).toBeNull();
+  });
 
   it("calls getClassAnalytics with correct parameters", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -171,22 +171,22 @@ describe("useClassAnalytics", () => {
           period: "weekly",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
     expect(classesApi.getClassAnalytics).toHaveBeenCalledWith(
       "test-class-123",
       "weekly",
-    )
-  })
+    );
+  });
 
   it("uses default period of monthly when not specified", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -194,22 +194,22 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
     expect(classesApi.getClassAnalytics).toHaveBeenCalledWith(
       "test-class-123",
       "monthly",
-    )
-  })
+    );
+  });
 
   it("returns analytics data on successful fetch", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -217,23 +217,23 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.analytics).not.toBeNull()
-    })
+      expect(result.current.analytics).not.toBeNull();
+    });
 
-    expect(result.current.isLoading).toBe(false)
-    expect(result.current.analytics?.class_name).toBe("Math 101")
-    expect(result.current.analytics?.summary.avg_score).toBe(78.5)
-    expect(result.current.analytics?.summary.active_students).toBe(22)
-  })
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.analytics?.class_name).toBe("Math 101");
+    expect(result.current.analytics?.summary.avg_score).toBe(78.5);
+    expect(result.current.analytics?.summary.active_students).toBe(22);
+  });
 
   it("sets error state on failed fetch", async () => {
     const mockError = new Error(
       "Network error - failed to fetch class analytics",
-    )
-    vi.mocked(classesApi.getClassAnalytics).mockRejectedValue(mockError)
+    );
+    vi.mocked(classesApi.getClassAnalytics).mockRejectedValue(mockError);
 
     const { result } = renderHook(
       () =>
@@ -241,20 +241,20 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.error).toBeTruthy()
-    })
+      expect(result.current.error).toBeTruthy();
+    });
 
-    expect(result.current.isLoading).toBe(false)
-    expect(result.current.analytics).toBeNull()
-  })
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.analytics).toBeNull();
+  });
 
   it("does not fetch when classId is empty", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     renderHook(
       () =>
@@ -262,18 +262,18 @@ describe("useClassAnalytics", () => {
           classId: "",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     // Wait a bit to ensure no fetch happens
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-    expect(classesApi.getClassAnalytics).not.toHaveBeenCalled()
-  })
+    expect(classesApi.getClassAnalytics).not.toHaveBeenCalled();
+  });
 
   it("refetches data when classId changes", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result, rerender } = renderHook(
       ({ classId }) =>
@@ -284,32 +284,32 @@ describe("useClassAnalytics", () => {
         wrapper: createWrapper(),
         initialProps: { classId: "class-1" },
       },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
     expect(classesApi.getClassAnalytics).toHaveBeenCalledWith(
       "class-1",
       "monthly",
-    )
+    );
 
     // Change classId
-    rerender({ classId: "class-2" })
+    rerender({ classId: "class-2" });
 
     await waitFor(() => {
       expect(classesApi.getClassAnalytics).toHaveBeenCalledWith(
         "class-2",
         "monthly",
-      )
-    })
-  })
+      );
+    });
+  });
 
   it("refetches data when period changes", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result, rerender } = renderHook(
       ({ period }) =>
@@ -323,32 +323,32 @@ describe("useClassAnalytics", () => {
           period: "monthly" as "monthly" | "weekly" | "semester" | "ytd",
         },
       },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
     expect(classesApi.getClassAnalytics).toHaveBeenCalledWith(
       "test-class-123",
       "monthly",
-    )
+    );
 
     // Change period
-    rerender({ period: "weekly" as const })
+    rerender({ period: "weekly" as const });
 
     await waitFor(() => {
       expect(classesApi.getClassAnalytics).toHaveBeenCalledWith(
         "test-class-123",
         "weekly",
-      )
-    })
-  })
+      );
+    });
+  });
 
   it("provides refetch function that works correctly", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -356,24 +356,24 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
-    expect(classesApi.getClassAnalytics).toHaveBeenCalledTimes(1)
+    expect(classesApi.getClassAnalytics).toHaveBeenCalledTimes(1);
 
     // Call refetch
-    await result.current.refetch()
+    await result.current.refetch();
 
-    expect(classesApi.getClassAnalytics).toHaveBeenCalledTimes(2)
-  })
+    expect(classesApi.getClassAnalytics).toHaveBeenCalledTimes(2);
+  });
 
   it("caches data with 5 minute stale time", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     // First render
     const { result: result1 } = renderHook(
@@ -382,13 +382,13 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result1.current.isLoading).toBe(false)
-    })
+      expect(result1.current.isLoading).toBe(false);
+    });
 
-    expect(classesApi.getClassAnalytics).toHaveBeenCalledTimes(1)
+    expect(classesApi.getClassAnalytics).toHaveBeenCalledTimes(1);
 
     // Second render with same params should use cache
     const { result: result2 } = renderHook(
@@ -397,20 +397,20 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result2.current.isLoading).toBe(false)
-    })
+      expect(result2.current.isLoading).toBe(false);
+    });
 
     // Should still be 1 call due to caching
-    expect(classesApi.getClassAnalytics).toHaveBeenCalledTimes(1)
-  })
+    expect(classesApi.getClassAnalytics).toHaveBeenCalledTimes(1);
+  });
 
   it("returns correct leaderboard data", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -418,21 +418,21 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.analytics).not.toBeNull()
-    })
+      expect(result.current.analytics).not.toBeNull();
+    });
 
-    expect(result.current.analytics?.leaderboard).toHaveLength(3)
-    expect(result.current.analytics?.leaderboard[0].name).toBe("Alice Smith")
-    expect(result.current.analytics?.leaderboard[0].rank).toBe(1)
-  })
+    expect(result.current.analytics?.leaderboard).toHaveLength(3);
+    expect(result.current.analytics?.leaderboard[0].name).toBe("Alice Smith");
+    expect(result.current.analytics?.leaderboard[0].rank).toBe(1);
+  });
 
   it("returns correct struggling students data", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -440,25 +440,25 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.analytics).not.toBeNull()
-    })
+      expect(result.current.analytics).not.toBeNull();
+    });
 
-    expect(result.current.analytics?.struggling_students).toHaveLength(2)
+    expect(result.current.analytics?.struggling_students).toHaveLength(2);
     expect(result.current.analytics?.struggling_students[0].name).toBe(
       "Dan Brown",
-    )
+    );
     expect(result.current.analytics?.struggling_students[0].alert_reason).toBe(
       "Score below 60%",
-    )
-  })
+    );
+  });
 
   it("returns correct score distribution data", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -466,25 +466,25 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.analytics).not.toBeNull()
-    })
+      expect(result.current.analytics).not.toBeNull();
+    });
 
-    expect(result.current.analytics?.score_distribution).toHaveLength(5)
+    expect(result.current.analytics?.score_distribution).toHaveLength(5);
     expect(result.current.analytics?.score_distribution[0].range_label).toBe(
       "0-59%",
-    )
+    );
     expect(result.current.analytics?.score_distribution[4].range_label).toBe(
       "90-100%",
-    )
-  })
+    );
+  });
 
   it("returns correct trend data", async () => {
     vi.mocked(classesApi.getClassAnalytics).mockResolvedValue(
       mockClassAnalyticsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -492,17 +492,17 @@ describe("useClassAnalytics", () => {
           classId: "test-class-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.analytics).not.toBeNull()
-    })
+      expect(result.current.analytics).not.toBeNull();
+    });
 
-    expect(result.current.analytics?.trends).toHaveLength(2)
+    expect(result.current.analytics?.trends).toHaveLength(2);
     expect(result.current.analytics?.trends[0].metric_name).toBe(
       "Average Score",
-    )
-    expect(result.current.analytics?.trends[0].trend).toBe("up")
-    expect(result.current.analytics?.trends[0].change_percent).toBe(4.4)
-  })
-})
+    );
+    expect(result.current.analytics?.trends[0].trend).toBe("up");
+    expect(result.current.analytics?.trends[0].change_percent).toBe(4.4);
+  });
+});

@@ -1,7 +1,7 @@
-import { Link } from "@tanstack/react-router"
-import { ChevronDown, LogOut, User } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Link } from "@tanstack/react-router";
+import { ChevronDown, LogOut, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,9 +9,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import useAuth from "@/hooks/useAuth"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dropdown-menu";
+import useAuth from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 // Helper to get role display info
 function getRoleInfo(role: string) {
@@ -21,25 +21,25 @@ function getRoleInfo(role: string) {
     publisher: { label: "Publisher", color: "text-purple-500" },
     teacher: { label: "Teacher", color: "text-blue-500" },
     student: { label: "Student", color: "text-primary" },
-  }
-  return roleMap[role] || { label: role, color: "text-muted-foreground" }
+  };
+  return roleMap[role] || { label: role, color: "text-muted-foreground" };
 }
 
 const UserMenu = () => {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
-    logout()
-  }
+    logout();
+  };
 
-  const roleInfo = getRoleInfo(user?.role || "")
+  const roleInfo = getRoleInfo(user?.role || "");
   const initials =
     user?.full_name
       ?.split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2) || "U"
+      .slice(0, 2) || "U";
 
   return (
     <DropdownMenu>
@@ -115,7 +115,7 @@ const UserMenu = () => {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
-}
+  );
+};
 
-export default UserMenu
+export default UserMenu;

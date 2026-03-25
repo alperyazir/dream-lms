@@ -7,7 +7,7 @@ of fetching full module text, reducing bandwidth and token usage.
 """
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from app.services.dcs_ai import DCSAIServiceClient
 
@@ -57,8 +57,7 @@ async def get_metadata_context(
         raise ValueError(f"Book {book_id} AI data not found")
 
     requested_modules = [
-        m for m in modules_metadata.modules
-        if m.module_id in module_ids
+        m for m in modules_metadata.modules if m.module_id in module_ids
     ]
 
     if not requested_modules:

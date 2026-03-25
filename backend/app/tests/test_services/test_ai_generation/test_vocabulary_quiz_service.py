@@ -5,8 +5,9 @@ Tests quiz generation, distractor selection, and error handling
 with mocked DCS AI client.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from app.schemas.dcs_ai_data import (
     ProcessingMetadata,
@@ -15,7 +16,6 @@ from app.schemas.dcs_ai_data import (
 )
 from app.schemas.vocabulary_quiz import VocabularyQuizGenerationRequest
 from app.services.ai_generation.vocabulary_quiz_service import (
-    CEFR_LEVELS,
     InsufficientVocabularyError,
     VocabularyQuizService,
     get_adjacent_cefr_levels,
@@ -24,7 +24,6 @@ from app.services.dcs_ai.exceptions import (
     DCSAIDataNotFoundError,
     DCSAIDataNotReadyError,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -295,9 +294,7 @@ class TestVocabularyQuizServiceGenerateQuiz:
             await quiz_service.generate_quiz(request)
 
     @pytest.mark.asyncio
-    async def test_generate_quiz_book_not_found(
-        self, quiz_service, mock_dcs_ai_client
-    ):
+    async def test_generate_quiz_book_not_found(self, quiz_service, mock_dcs_ai_client):
         """Test error when book has no AI data."""
         mock_dcs_ai_client.is_book_processed.return_value = False
         mock_dcs_ai_client.get_processing_status.return_value = None
@@ -413,11 +410,12 @@ class TestQuizStorageService:
     async def test_save_and_get_quiz(self):
         """Test saving and retrieving a quiz."""
         from datetime import datetime, timezone
-        from app.services.ai_generation.quiz_storage_service import QuizStorageService
+
         from app.schemas.vocabulary_quiz import (
             VocabularyQuiz,
             VocabularyQuizQuestion,
         )
+        from app.services.ai_generation.quiz_storage_service import QuizStorageService
 
         storage = QuizStorageService()
 
@@ -462,11 +460,12 @@ class TestQuizStorageService:
         """Test submission returns correct score."""
         from datetime import datetime, timezone
         from uuid import uuid4
-        from app.services.ai_generation.quiz_storage_service import QuizStorageService
+
         from app.schemas.vocabulary_quiz import (
             VocabularyQuiz,
             VocabularyQuizQuestion,
         )
+        from app.services.ai_generation.quiz_storage_service import QuizStorageService
 
         storage = QuizStorageService()
         student_id = uuid4()
@@ -504,7 +503,7 @@ class TestQuizStorageService:
         # Submit with 1 correct and 1 wrong
         answers = {
             "q1": "correct1",  # Correct
-            "q2": "wrong1",    # Wrong
+            "q2": "wrong1",  # Wrong
         }
 
         result = await storage.save_submission(
@@ -527,11 +526,12 @@ class TestQuizStorageService:
         """Test getting results after submission."""
         from datetime import datetime, timezone
         from uuid import uuid4
-        from app.services.ai_generation.quiz_storage_service import QuizStorageService
+
         from app.schemas.vocabulary_quiz import (
             VocabularyQuiz,
             VocabularyQuizQuestion,
         )
+        from app.services.ai_generation.quiz_storage_service import QuizStorageService
 
         storage = QuizStorageService()
         student_id = uuid4()

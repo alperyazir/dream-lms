@@ -76,9 +76,7 @@ class ListeningFillBlankService:
                 self._dcs_client, request.book_id, request.module_ids
             )
         except ValueError as e:
-            raise DCSAIDataNotFoundError(
-                message=str(e), book_id=request.book_id
-            ) from e
+            raise DCSAIDataNotFoundError(message=str(e), book_id=request.book_id) from e
 
         language = request.language or ctx.language
 
@@ -174,11 +172,17 @@ class ListeningFillBlankService:
             raise ListeningFillBlankError("No valid items could be generated.")
 
         # 5. Generate TTS audio for each item and upload to DCS
-        logger.info(f"TTS manager={'yes' if self._tts_manager else 'no'}, DCS client={'yes' if self._dcs_ai_content_client else 'no'}")
+        logger.info(
+            f"TTS manager={'yes' if self._tts_manager else 'no'}, DCS client={'yes' if self._dcs_ai_content_client else 'no'}"
+        )
         if self._tts_manager:
             try:
-                await self._generate_audio(items, language, book_id=request.book_id, content_id=activity_id)
-                logger.info(f"TTS audio generated for {sum(1 for i in items if i.audio_status == 'ready')}/{len(items)} items, sample url={items[0].audio_url if items else 'none'}")
+                await self._generate_audio(
+                    items, language, book_id=request.book_id, content_id=activity_id
+                )
+                logger.info(
+                    f"TTS audio generated for {sum(1 for i in items if i.audio_status == 'ready')}/{len(items)} items, sample url={items[0].audio_url if items else 'none'}"
+                )
             except Exception as e:
                 logger.warning(f"TTS audio generation failed (non-blocking): {e}")
         else:
@@ -195,12 +199,17 @@ class ListeningFillBlankService:
             created_at=datetime.now(timezone.utc),
         )
 
-        logger.info(f"Listening fill-blank generated: id={activity_id}, items={len(items)}")
+        logger.info(
+            f"Listening fill-blank generated: id={activity_id}, items={len(items)}"
+        )
         return activity
 
     async def _generate_audio(
-        self, items: list[ListeningFillBlankItem], language: str,
-        book_id: int | None = None, content_id: str | None = None,
+        self,
+        items: list[ListeningFillBlankItem],
+        language: str,
+        book_id: int | None = None,
+        content_id: str | None = None,
     ) -> None:
         """Generate TTS for each item's full_sentence and upload to DCS."""
 
@@ -222,25 +231,36 @@ class ListeningFillBlankService:
                     },
                 )
                 dcs_content_id = dcs_entry.get("content_id") or dcs_entry.get("id")
-                logger.info(f"DCS content entry created for listening FB audio: {dcs_content_id}")
+                logger.info(
+                    f"DCS content entry created for listening FB audio: {dcs_content_id}"
+                )
             except Exception as e:
-                logger.warning(f"Failed to create DCS content entry, will fall back to TTS URLs: {e}")
+                logger.warning(
+                    f"Failed to create DCS content entry, will fall back to TTS URLs: {e}"
+                )
 
         async def _gen_single(item: ListeningFillBlankItem) -> None:
             options = AudioGenerationOptions(language=language)
             for attempt in range(2):
                 try:
-                    result = await self._tts_manager.generate_audio(item.full_sentence, options)
+                    result = await self._tts_manager.generate_audio(
+                        item.full_sentence, options
+                    )
                     # Upload to DCS if available
                     if dcs_content_id and self._dcs_ai_content_client and book_id:
                         try:
                             filename = f"{item.item_id}.mp3"
                             await self._dcs_ai_content_client.upload_audio(
-                                book_id, dcs_content_id, filename, result.audio_data,
+                                book_id,
+                                dcs_content_id,
+                                filename,
+                                result.audio_data,
                             )
                             item.audio_url = f"/api/v1/ai/content/{book_id}/{dcs_content_id}/audio/{filename}"
                         except Exception as upload_err:
-                            logger.warning(f"DCS upload failed for {item.item_id}, using TTS URL: {upload_err}")
+                            logger.warning(
+                                f"DCS upload failed for {item.item_id}, using TTS URL: {upload_err}"
+                            )
                             item.audio_url = (
                                 f"/api/v1/ai/tts/audio"
                                 f"?text={quote(item.full_sentence, safe='')}"

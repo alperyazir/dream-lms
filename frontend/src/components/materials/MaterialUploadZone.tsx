@@ -5,30 +5,30 @@
  * Drag-and-drop file upload with validation and progress tracking.
  */
 
-import { Upload, X } from "lucide-react"
-import type React from "react"
-import { useCallback, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/utils"
-import type { StorageQuota, UploadingFile } from "@/types/material"
+import { Upload, X } from "lucide-react";
+import type React from "react";
+import { useCallback, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import type { StorageQuota, UploadingFile } from "@/types/material";
 import {
   ALLOWED_EXTENSIONS,
   getMaterialType,
   MAX_FILE_SIZE,
   validateFile,
-} from "@/types/material"
-import { MaterialTypeIcon } from "./MaterialTypeIcon"
+} from "@/types/material";
+import { MaterialTypeIcon } from "./MaterialTypeIcon";
 
 interface MaterialUploadZoneProps {
   onUpload: (
     file: File,
     onProgress: (progress: number) => void,
-  ) => Promise<void>
-  quota: StorageQuota | null
-  disabled?: boolean
-  className?: string
+  ) => Promise<void>;
+  quota: StorageQuota | null;
+  disabled?: boolean;
+  className?: string;
 }
 
 /**
@@ -40,48 +40,48 @@ export function MaterialUploadZone({
   disabled = false,
   className,
 }: MaterialUploadZoneProps) {
-  const [isDragging, setIsDragging] = useState(false)
-  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([])
-  const [errors, setErrors] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isDisabled = disabled || (quota?.is_full ?? false)
+  const isDisabled = disabled || (quota?.is_full ?? false);
 
   // Handle file selection
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
-      if (isDisabled) return
+      if (isDisabled) return;
 
-      const fileArray = Array.from(files)
-      const validationErrors: string[] = []
-      const validFiles: File[] = []
+      const fileArray = Array.from(files);
+      const validationErrors: string[] = [];
+      const validFiles: File[] = [];
 
       // Validate files
       for (const file of fileArray) {
-        const validation = validateFile(file)
+        const validation = validateFile(file);
         if (!validation.valid) {
-          validationErrors.push(`${file.name}: ${validation.error}`)
+          validationErrors.push(`${file.name}: ${validation.error}`);
         } else {
-          validFiles.push(file)
+          validFiles.push(file);
         }
       }
 
       // Check quota for total size
       if (quota && validFiles.length > 0) {
-        const totalSize = validFiles.reduce((sum, f) => sum + f.size, 0)
-        const availableSpace = quota.quota_bytes - quota.used_bytes
+        const totalSize = validFiles.reduce((sum, f) => sum + f.size, 0);
+        const availableSpace = quota.quota_bytes - quota.used_bytes;
         if (totalSize > availableSpace) {
           validationErrors.push(
             `Not enough storage space. ${formatBytes(totalSize)} needed, ${formatBytes(availableSpace)} available.`,
-          )
+          );
           // Clear valid files since we can't upload them
-          validFiles.length = 0
+          validFiles.length = 0;
         }
       }
 
-      setErrors((prev) => [...prev, ...validationErrors])
+      setErrors((prev) => [...prev, ...validationErrors]);
 
-      if (validFiles.length === 0) return
+      if (validFiles.length === 0) return;
 
       // Create upload entries
       const newUploading: UploadingFile[] = validFiles.map((file) => ({
@@ -89,9 +89,9 @@ export function MaterialUploadZone({
         file,
         progress: 0,
         status: "pending" as const,
-      }))
+      }));
 
-      setUploadingFiles((prev) => [...prev, ...newUploading])
+      setUploadingFiles((prev) => [...prev, ...newUploading]);
 
       // Upload files sequentially
       for (const uploading of newUploading) {
@@ -101,13 +101,13 @@ export function MaterialUploadZone({
             prev.map((f) =>
               f.id === uploading.id ? { ...f, status: "uploading" } : f,
             ),
-          )
+          );
 
           await onUpload(uploading.file, (progress) => {
             setUploadingFiles((prev) =>
               prev.map((f) => (f.id === uploading.id ? { ...f, progress } : f)),
-            )
-          })
+            );
+          });
 
           // Mark as complete
           setUploadingFiles((prev) =>
@@ -116,94 +116,96 @@ export function MaterialUploadZone({
                 ? { ...f, status: "complete", progress: 100 }
                 : f,
             ),
-          )
+          );
         } catch (error) {
           const errorMessage =
-            error instanceof Error ? error.message : "Upload failed"
+            error instanceof Error ? error.message : "Upload failed";
           setUploadingFiles((prev) =>
             prev.map((f) =>
               f.id === uploading.id
                 ? { ...f, status: "error", error: errorMessage }
                 : f,
             ),
-          )
+          );
         }
       }
 
       // Clear completed files after a delay
       setTimeout(() => {
-        setUploadingFiles((prev) => prev.filter((f) => f.status !== "complete"))
-      }, 2000)
+        setUploadingFiles((prev) =>
+          prev.filter((f) => f.status !== "complete"),
+        );
+      }, 2000);
     },
     [isDisabled, onUpload, quota],
-  )
+  );
 
   // Drag event handlers
   const handleDragEnter = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      if (!isDisabled) setIsDragging(true)
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isDisabled) setIsDragging(true);
     },
     [isDisabled],
-  )
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsDragging(false)
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
 
       if (!isDisabled) {
-        handleFiles(e.dataTransfer.files)
+        handleFiles(e.dataTransfer.files);
       }
     },
     [isDisabled, handleFiles],
-  )
+  );
 
   // Click to upload
   const handleClick = useCallback(() => {
     if (!isDisabled) {
-      fileInputRef.current?.click()
+      fileInputRef.current?.click();
     }
-  }, [isDisabled])
+  }, [isDisabled]);
 
   const handleFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files) {
-        handleFiles(e.target.files)
+        handleFiles(e.target.files);
       }
       // Reset input
-      e.target.value = ""
+      e.target.value = "";
     },
     [handleFiles],
-  )
+  );
 
   // Remove error
   const removeError = useCallback((index: number) => {
-    setErrors((prev) => prev.filter((_, i) => i !== index))
-  }, [])
+    setErrors((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
   // Remove uploading file
   const removeUploadingFile = useCallback((id: string) => {
-    setUploadingFiles((prev) => prev.filter((f) => f.id !== id))
-  }, [])
+    setUploadingFiles((prev) => prev.filter((f) => f.id !== id));
+  }, []);
 
   // Build accept string
   const acceptString = Object.keys(ALLOWED_EXTENSIONS)
     .map((ext) => `.${ext}`)
-    .join(",")
+    .join(",");
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -249,8 +251,8 @@ export function MaterialUploadZone({
                 variant="outline"
                 className="border-teal-600 text-teal-600 hover:bg-teal-50"
                 onClick={(e) => {
-                  e.stopPropagation()
-                  handleClick()
+                  e.stopPropagation();
+                  handleClick();
                 }}
               >
                 Select Files
@@ -280,7 +282,7 @@ export function MaterialUploadZone({
       {uploadingFiles.length > 0 && (
         <div className="space-y-2">
           {uploadingFiles.map((uploadingFile) => {
-            const materialType = getMaterialType(uploadingFile.file)
+            const materialType = getMaterialType(uploadingFile.file);
             return (
               <Card key={uploadingFile.id} className="p-3">
                 <div className="flex items-center gap-3">
@@ -324,7 +326,7 @@ export function MaterialUploadZone({
                   )}
                 </div>
               </Card>
-            )
+            );
           })}
         </div>
       )}
@@ -355,19 +357,19 @@ export function MaterialUploadZone({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 /**
  * Format bytes to human-readable string
  */
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B"
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes === 0) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024)
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-MaterialUploadZone.displayName = "MaterialUploadZone"
+MaterialUploadZone.displayName = "MaterialUploadZone";

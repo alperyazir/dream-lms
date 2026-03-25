@@ -5,27 +5,27 @@
  * Adapts options based on selected skill and format.
  */
 
-import { Headphones } from "lucide-react"
-import { useEffect } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
+import { Headphones } from "lucide-react";
+import { useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
 interface GenerationConfigPanelProps {
-  skillSlug: string
-  formatSlug: string | null
-  options: Record<string, any>
-  onOptionChange: (key: string, value: any) => void
-  isMixMode?: boolean
+  skillSlug: string;
+  formatSlug: string | null;
+  options: Record<string, any>;
+  onOptionChange: (key: string, value: any) => void;
+  isMixMode?: boolean;
 }
 
 export function GenerationConfigPanel({
@@ -35,16 +35,16 @@ export function GenerationConfigPanel({
   onOptionChange,
   isMixMode,
 }: GenerationConfigPanelProps) {
-  const difficulty = options.difficulty || "auto"
-  const count = options.count || 10
-  const isReading = !isMixMode && skillSlug === "reading"
+  const difficulty = options.difficulty || "auto";
+  const count = options.count || 10;
+  const isReading = !isMixMode && skillSlug === "reading";
 
   const difficultyOptions = [
     { value: "auto", label: "Auto" },
     { value: "easy", label: "Easy" },
     { value: "medium", label: "Medium" },
     { value: "hard", label: "Hard" },
-  ]
+  ];
 
   return (
     <div className="space-y-4">
@@ -118,9 +118,8 @@ export function GenerationConfigPanel({
       {!isMixMode && skillSlug === "listening" && (
         <ListeningOptions options={options} onOptionChange={onOptionChange} />
       )}
-
     </div>
-  )
+  );
 }
 
 /** Listening-specific: voice picker */
@@ -128,8 +127,8 @@ function ListeningOptions({
   options,
   onOptionChange,
 }: {
-  options: Record<string, any>
-  onOptionChange: (key: string, value: any) => void
+  options: Record<string, any>;
+  onOptionChange: (key: string, value: any) => void;
 }) {
   return (
     <div className="space-y-2">
@@ -150,7 +149,7 @@ function ListeningOptions({
         </SelectContent>
       </Select>
     </div>
-  )
+  );
 }
 
 /** Reading: passage count + questions per passage + passage word count */
@@ -158,18 +157,19 @@ function ReadingOptions({
   options,
   onOptionChange,
 }: {
-  options: Record<string, any>
-  onOptionChange: (key: string, value: any) => void
+  options: Record<string, any>;
+  onOptionChange: (key: string, value: any) => void;
 }) {
   // Initialize defaults on mount so form state matches what's displayed
   useEffect(() => {
-    if (options.count === undefined) onOptionChange("count", 5)
-    if (options.passage_count === undefined) onOptionChange("passage_count", 1)
-    if (options.generate_audio === undefined) onOptionChange("generate_audio", true)
-  }, [])
+    if (options.count === undefined) onOptionChange("count", 5);
+    if (options.passage_count === undefined) onOptionChange("passage_count", 1);
+    if (options.generate_audio === undefined)
+      onOptionChange("generate_audio", true);
+  }, []);
 
-  const passageCount = options.passage_count ?? 1
-  const questionsPerPassage = options.count ?? 5
+  const passageCount = options.passage_count ?? 1;
+  const questionsPerPassage = options.count ?? 5;
 
   return (
     <>
@@ -240,7 +240,9 @@ function ReadingOptions({
           </div>
           <Switch
             checked={!!options.generate_audio}
-            onCheckedChange={(checked) => onOptionChange("generate_audio", checked)}
+            onCheckedChange={(checked) =>
+              onOptionChange("generate_audio", checked)
+            }
           />
         </div>
 
@@ -267,7 +269,7 @@ function ReadingOptions({
         )}
       </div>
     </>
-  )
+  );
 }
 
 /** Curated Edge TTS voices for reading passage narration */
@@ -277,5 +279,4 @@ const NARRATOR_VOICES = [
   { id: "en-US-GuyNeural", label: "Guy — Male, Clear" },
   { id: "en-GB-SoniaNeural", label: "Sonia — Female, British" },
   { id: "en-GB-RyanNeural", label: "Ryan — Male, British" },
-]
-
+];

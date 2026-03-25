@@ -5,13 +5,13 @@
  * Shows detected language from book/material with flag icon and warning if uncertain.
  */
 
-import { AlertTriangle, Globe } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
+import { AlertTriangle, Globe } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface LanguageIndicatorProps {
-  language: string | null
-  isUncertain?: boolean
+  language: string | null;
+  isUncertain?: boolean;
 }
 
 // Language code to flag emoji mapping
@@ -30,7 +30,7 @@ const LANGUAGE_FLAGS: Record<string, string> = {
   tr: "🇹🇷", // Turkish
   pl: "🇵🇱", // Polish
   nl: "🇳🇱", // Dutch
-}
+};
 
 // Language code to display name mapping
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -48,22 +48,22 @@ const LANGUAGE_NAMES: Record<string, string> = {
   tr: "Turkish",
   pl: "Polish",
   nl: "Dutch",
-}
+};
 
 /**
  * Get flag emoji for language code
  */
 function getLanguageFlag(languageCode: string): string {
-  const code = languageCode.toLowerCase().substring(0, 2)
-  return LANGUAGE_FLAGS[code] || "🌐"
+  const code = languageCode.toLowerCase().substring(0, 2);
+  return LANGUAGE_FLAGS[code] || "🌐";
 }
 
 /**
  * Get language display name
  */
 function getLanguageName(languageCode: string): string {
-  const code = languageCode.toLowerCase().substring(0, 2)
-  return LANGUAGE_NAMES[code] || languageCode
+  const code = languageCode.toLowerCase().substring(0, 2);
+  return LANGUAGE_NAMES[code] || languageCode;
 }
 
 export function LanguageIndicator({
@@ -72,11 +72,11 @@ export function LanguageIndicator({
 }: LanguageIndicatorProps) {
   // Don't show anything if language not yet detected
   if (!language) {
-    return null
+    return null;
   }
 
-  const flag = getLanguageFlag(language)
-  const name = getLanguageName(language)
+  const flag = getLanguageFlag(language);
+  const name = getLanguageName(language);
 
   if (isUncertain) {
     return (
@@ -91,7 +91,7 @@ export function LanguageIndicator({
           </div>
         </AlertDescription>
       </Alert>
-    )
+    );
   }
 
   return (
@@ -109,5 +109,5 @@ export function LanguageIndicator({
         </div>
       </AlertDescription>
     </Alert>
-  )
+  );
 }

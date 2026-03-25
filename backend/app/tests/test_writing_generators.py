@@ -15,7 +15,6 @@ from app.schemas.writing_fill_blank import (
     WritingFillBlankRequest,
 )
 
-
 # ---------------------------------------------------------------------------
 # Writing Fill-Blank Schema Tests
 # ---------------------------------------------------------------------------
@@ -60,8 +59,14 @@ class TestWritingFillBlankSchemas:
             sentence="The park was _______ in the morning.",
             difficulty="A2",
         )
-        assert not hasattr(public, "correct_answer") or "correct_answer" not in public.model_fields
-        assert not hasattr(public, "acceptable_answers") or "acceptable_answers" not in public.model_fields
+        assert (
+            not hasattr(public, "correct_answer")
+            or "correct_answer" not in public.model_fields
+        )
+        assert (
+            not hasattr(public, "acceptable_answers")
+            or "acceptable_answers" not in public.model_fields
+        )
 
     def test_activity_schema(self) -> None:
         activity = WritingFillBlankActivity(
@@ -154,13 +159,20 @@ class TestWritingPrompts:
         from app.services.ai_generation.prompts.writing_prompts import (
             WRITING_SB_SYSTEM_PROMPT,
         )
-        assert "expressive" in WRITING_SB_SYSTEM_PROMPT.lower() or "writing" in WRITING_SB_SYSTEM_PROMPT.lower()
-        assert "grammar" in WRITING_SB_SYSTEM_PROMPT.lower()  # distinguishes from grammar
+
+        assert (
+            "expressive" in WRITING_SB_SYSTEM_PROMPT.lower()
+            or "writing" in WRITING_SB_SYSTEM_PROMPT.lower()
+        )
+        assert (
+            "grammar" in WRITING_SB_SYSTEM_PROMPT.lower()
+        )  # distinguishes from grammar
 
     def test_fb_system_prompt_multiple_answers(self) -> None:
         from app.services.ai_generation.prompts.writing_prompts import (
             WRITING_FB_SYSTEM_PROMPT,
         )
+
         assert "multiple" in WRITING_FB_SYSTEM_PROMPT.lower()
         assert "word choice" in WRITING_FB_SYSTEM_PROMPT.lower()
 
@@ -168,7 +180,10 @@ class TestWritingPrompts:
         from app.services.ai_generation.prompts.writing_prompts import (
             WRITING_FB_JSON_SCHEMA,
         )
-        item_props = WRITING_FB_JSON_SCHEMA["properties"]["items"]["items"]["properties"]
+
+        item_props = WRITING_FB_JSON_SCHEMA["properties"]["items"]["items"][
+            "properties"
+        ]
         assert "context" in item_props
         assert "acceptable_answers" in item_props
         assert "correct_answer" in item_props
@@ -177,7 +192,10 @@ class TestWritingPrompts:
         from app.services.ai_generation.prompts.writing_prompts import (
             WRITING_SB_JSON_SCHEMA,
         )
-        item_props = WRITING_SB_JSON_SCHEMA["properties"]["sentences"]["items"]["properties"]
+
+        item_props = WRITING_SB_JSON_SCHEMA["properties"]["sentences"]["items"][
+            "properties"
+        ]
         assert "sentence" in item_props
         assert "context" in item_props
 
@@ -194,7 +212,9 @@ class TestWritingSentenceBuilderService:
     def mock_dcs_client(self) -> MagicMock:
         client = MagicMock()
         module_mock = MagicMock()
-        module_mock.text = "Summer holidays are a time for adventure. People travel to new places."
+        module_mock.text = (
+            "Summer holidays are a time for adventure. People travel to new places."
+        )
         module_mock.title = "Unit 3: Holidays"
         module_mock.topics = ["Travel", "Holidays"]
         module_mock.language = "en"
@@ -205,18 +225,20 @@ class TestWritingSentenceBuilderService:
     @pytest.fixture
     def mock_llm_manager(self) -> MagicMock:
         manager = MagicMock()
-        manager.generate_structured = AsyncMock(return_value={
-            "sentences": [
-                {
-                    "sentence": "I love visiting beautiful places during summer.",
-                    "context": "Describing your favorite travel experience.",
-                },
-                {
-                    "sentence": "The mountains looked amazing at sunset.",
-                    "context": "Writing about nature.",
-                },
-            ]
-        })
+        manager.generate_structured = AsyncMock(
+            return_value={
+                "sentences": [
+                    {
+                        "sentence": "I love visiting beautiful places during summer.",
+                        "context": "Describing your favorite travel experience.",
+                    },
+                    {
+                        "sentence": "The mountains looked amazing at sunset.",
+                        "context": "Writing about nature.",
+                    },
+                ]
+            }
+        )
         return manager
 
     @pytest.mark.asyncio
@@ -229,7 +251,9 @@ class TestWritingSentenceBuilderService:
 
         service = WritingSentenceBuilderService(mock_dcs_client, mock_llm_manager)
         activity = await service.generate_activity(
-            book_id=1, module_ids=[10], sentence_count=5,
+            book_id=1,
+            module_ids=[10],
+            sentence_count=5,
         )
         assert isinstance(activity, SentenceBuilderActivity)
         assert len(activity.sentences) == 2
@@ -245,7 +269,9 @@ class TestWritingSentenceBuilderService:
 
         service = WritingSentenceBuilderService(mock_dcs_client, mock_llm_manager)
         activity = await service.generate_activity(
-            book_id=1, module_ids=[10], sentence_count=5,
+            book_id=1,
+            module_ids=[10],
+            sentence_count=5,
         )
         for item in activity.sentences:
             correct_words = item.correct_sentence.split()
@@ -285,7 +311,9 @@ class TestWritingFillBlankService:
     def mock_dcs_client(self) -> MagicMock:
         client = MagicMock()
         module_mock = MagicMock()
-        module_mock.text = "The weather was wonderful today. Students enjoyed the outdoor activities."
+        module_mock.text = (
+            "The weather was wonderful today. Students enjoyed the outdoor activities."
+        )
         module_mock.title = "Unit 4: Weather"
         module_mock.topics = ["Weather", "Seasons"]
         module_mock.language = "en"
@@ -296,24 +324,31 @@ class TestWritingFillBlankService:
     @pytest.fixture
     def mock_llm_manager(self) -> MagicMock:
         manager = MagicMock()
-        manager.generate_structured = AsyncMock(return_value={
-            "items": [
-                {
-                    "context": "Describing the weather to a friend.",
-                    "sentence": "The sunset was _______ yesterday evening.",
-                    "correct_answer": "beautiful",
-                    "acceptable_answers": ["beautiful", "amazing", "wonderful", "stunning"],
-                    "difficulty": "A2",
-                },
-                {
-                    "context": "Writing about your weekend.",
-                    "sentence": "We had a _______ time at the park.",
-                    "correct_answer": "great",
-                    "acceptable_answers": ["great", "wonderful", "fantastic"],
-                    "difficulty": "A2",
-                },
-            ]
-        })
+        manager.generate_structured = AsyncMock(
+            return_value={
+                "items": [
+                    {
+                        "context": "Describing the weather to a friend.",
+                        "sentence": "The sunset was _______ yesterday evening.",
+                        "correct_answer": "beautiful",
+                        "acceptable_answers": [
+                            "beautiful",
+                            "amazing",
+                            "wonderful",
+                            "stunning",
+                        ],
+                        "difficulty": "A2",
+                    },
+                    {
+                        "context": "Writing about your weekend.",
+                        "sentence": "We had a _______ time at the park.",
+                        "correct_answer": "great",
+                        "acceptable_answers": ["great", "wonderful", "fantastic"],
+                        "difficulty": "A2",
+                    },
+                ]
+            }
+        )
         return manager
 
     @pytest.mark.asyncio
@@ -353,15 +388,22 @@ class TestWritingFillBlankService:
         self, mock_dcs_client: MagicMock, mock_llm_manager: MagicMock
     ) -> None:
         """Even if LLM doesn't include correct_answer in acceptable_answers, service adds it."""
-        mock_llm_manager.generate_structured = AsyncMock(return_value={
-            "items": [{
-                "context": "Writing a postcard.",
-                "sentence": "The hotel was _______.",
-                "correct_answer": "lovely",
-                "acceptable_answers": ["nice", "great"],  # "lovely" not included
-                "difficulty": "A2",
-            }]
-        })
+        mock_llm_manager.generate_structured = AsyncMock(
+            return_value={
+                "items": [
+                    {
+                        "context": "Writing a postcard.",
+                        "sentence": "The hotel was _______.",
+                        "correct_answer": "lovely",
+                        "acceptable_answers": [
+                            "nice",
+                            "great",
+                        ],  # "lovely" not included
+                        "difficulty": "A2",
+                    }
+                ]
+            }
+        )
         from app.services.ai_generation.writing_fill_blank_service import (
             WritingFillBlankService,
         )
@@ -425,7 +467,9 @@ class TestWritingFillBlankStorage:
         )
 
     @pytest.mark.asyncio
-    async def test_save_and_get(self, sample_activity: WritingFillBlankActivity) -> None:
+    async def test_save_and_get(
+        self, sample_activity: WritingFillBlankActivity
+    ) -> None:
         from app.services.ai_generation.quiz_storage_service import QuizStorageService
 
         storage = QuizStorageService()
@@ -445,7 +489,10 @@ class TestWritingFillBlankStorage:
         public = await storage.get_writing_fill_blank_activity_public("wfb-test-001")
         assert public is not None
         assert isinstance(public, WritingFillBlankActivityPublic)
-        assert not hasattr(public.items[0], "correct_answer") or "correct_answer" not in public.items[0].model_fields
+        assert (
+            not hasattr(public.items[0], "correct_answer")
+            or "correct_answer" not in public.items[0].model_fields
+        )
 
     @pytest.mark.asyncio
     async def test_nonexistent_returns_none(self) -> None:

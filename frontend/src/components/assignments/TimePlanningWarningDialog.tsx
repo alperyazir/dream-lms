@@ -14,13 +14,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 interface TimePlanningWarningDialogProps {
-  open: boolean
-  onConfirm: () => void
-  onCancel: () => void
-  activityCount: number
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  activityCount: number;
 }
 
 export function TimePlanningWarningDialog({
@@ -58,5 +58,5 @@ export function TimePlanningWarningDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

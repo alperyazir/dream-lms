@@ -2,17 +2,15 @@
 Tests for AI Usage API Endpoints - Story 27.22
 """
 
-import uuid
 from datetime import UTC, datetime, timedelta
-from io import StringIO
 
 import pytest
+from app.schemas.user import UserRole
 from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.security import create_access_token
 from app.models import Teacher, User
-from app.schemas.user import UserRole
 from app.services.usage_tracking_service import log_llm_usage, log_tts_usage
 
 
@@ -235,9 +233,7 @@ async def test_get_usage_by_provider(
     # Check TTS providers
     assert len(data["tts_providers"]) == 1  # edge_tts
 
-    edge = next(
-        (p for p in data["tts_providers"] if p["provider"] == "edge_tts"), None
-    )
+    edge = next((p for p in data["tts_providers"] if p["provider"] == "edge_tts"), None)
     assert edge is not None
     assert edge["count"] == 1
 

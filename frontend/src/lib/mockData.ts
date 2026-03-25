@@ -13,9 +13,9 @@
  * @returns ISO date string
  */
 function getRelativeDate(daysOffset: number): string {
-  const date = new Date()
-  date.setDate(date.getDate() + daysOffset)
-  return date.toISOString().split("T")[0]
+  const date = new Date();
+  date.setDate(date.getDate() + daysOffset);
+  return date.toISOString().split("T")[0];
 }
 
 /**
@@ -30,10 +30,10 @@ function getRelativeDateTime(
   hours: number = 23,
   minutes: number = 59,
 ): string {
-  const date = new Date()
-  date.setDate(date.getDate() + daysOffset)
-  date.setHours(hours, minutes, 59, 0)
-  return date.toISOString()
+  const date = new Date();
+  date.setDate(date.getDate() + daysOffset);
+  date.setHours(hours, minutes, 59, 0);
+  return date.toISOString();
 }
 
 // ============================================================================
@@ -41,80 +41,80 @@ function getRelativeDateTime(
 // ============================================================================
 
 export interface SystemStats {
-  totalUsers: number
-  totalPublishers: number
-  totalTeachers: number
-  totalStudents: number
-  activeSchools: number
-  totalBooks: number
-  totalAssignments: number
+  totalUsers: number;
+  totalPublishers: number;
+  totalTeachers: number;
+  totalStudents: number;
+  activeSchools: number;
+  totalBooks: number;
+  totalAssignments: number;
 }
 
 export interface ActivityFeedItem {
-  id: string
-  user: string
-  avatar: string
-  action: string
-  timestamp: string
+  id: string;
+  user: string;
+  avatar: string;
+  action: string;
+  timestamp: string;
 }
 
 export interface ChartDataPoint {
-  name: string
-  value: number
+  name: string;
+  value: number;
 }
 
 export interface School {
-  id: string
-  name: string
-  location: string
-  teacherCount: number
-  studentCount: number
+  id: string;
+  name: string;
+  location: string;
+  teacherCount: number;
+  studentCount: number;
 }
 
 export interface Publisher {
-  id: string
-  name: string
-  email: string
-  booksPublished: number
-  schoolsServed: number
-  joinedDate: string
+  id: string;
+  name: string;
+  email: string;
+  booksPublished: number;
+  schoolsServed: number;
+  joinedDate: string;
 }
 
 export interface Teacher {
-  id: string
-  name: string
-  email: string
-  school: string
-  classCount: number
-  studentCount: number
+  id: string;
+  name: string;
+  email: string;
+  school: string;
+  classCount: number;
+  studentCount: number;
 }
 
 export interface Book {
-  id: string
-  title: string
-  publisher: string
-  publisherId: string
-  coverUrl: string
-  description: string
-  grade: string // e.g., "K", "1", "2-3", "4-5", "6-8"
-  activityCount: number
-  created_at: string
+  id: string;
+  title: string;
+  publisher: string;
+  publisherId: string;
+  coverUrl: string;
+  description: string;
+  grade: string; // e.g., "K", "1", "2-3", "4-5", "6-8"
+  activityCount: number;
+  created_at: string;
 }
 
 export interface Activity {
-  id: string
-  bookId: string
-  dream_activity_id: string
-  title: string
+  id: string;
+  bookId: string;
+  dream_activity_id: string;
+  title: string;
   activityType:
     | "dragdroppicture"
     | "dragdroppicturegroup"
     | "matchTheWords"
     | "circle"
     | "markwithx"
-    | "puzzleFindWords"
-  order_index: number
-  duration_minutes?: number
+    | "puzzleFindWords";
+  order_index: number;
+  duration_minutes?: number;
 }
 
 // ============================================================================
@@ -127,161 +127,161 @@ export interface Activity {
  * Story 10.2: Frontend Audio Player Component
  */
 export interface AudioExtra {
-  path: string
+  path: string;
 }
 
 export interface Coordinates {
-  x: number
-  y: number
-  w: number
-  h: number
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export interface DragDropAnswer {
-  no: number
-  coords: Coordinates
-  text: string
+  no: number;
+  coords: Coordinates;
+  text: string;
 }
 
 export interface DragDropPictureActivity {
-  id: string
-  bookId: string
-  type: "dragdroppicture"
-  section_path: string // Background image URL
-  words: string[] // Draggable word bank
-  answer: DragDropAnswer[] // Correct placements
-  audio_extra?: AudioExtra // Story 10.2: Optional audio content
+  id: string;
+  bookId: string;
+  type: "dragdroppicture";
+  section_path: string; // Background image URL
+  words: string[]; // Draggable word bank
+  answer: DragDropAnswer[]; // Correct placements
+  audio_extra?: AudioExtra; // Story 10.2: Optional audio content
 }
 
 export interface DragDropGroupAnswer {
-  no: number
-  coords: Coordinates
-  group: string[] // Multiple correct answers for this drop zone (category)
+  no: number;
+  coords: Coordinates;
+  group: string[]; // Multiple correct answers for this drop zone (category)
 }
 
 export interface DragDropPictureGroupActivity {
-  id: string
-  bookId: string
-  type: "dragdroppicturegroup"
-  section_path: string // Background image URL
-  words: string[] // Draggable word bank
-  answer: DragDropGroupAnswer[] // Drop zones with multiple correct answers
-  audio_extra?: AudioExtra // Story 10.2: Optional audio content
+  id: string;
+  bookId: string;
+  type: "dragdroppicturegroup";
+  section_path: string; // Background image URL
+  words: string[]; // Draggable word bank
+  answer: DragDropGroupAnswer[]; // Drop zones with multiple correct answers
+  audio_extra?: AudioExtra; // Story 10.2: Optional audio content
 }
 
 export interface MatchWord {
-  word: string
+  word: string;
 }
 
 export interface MatchSentence {
-  sentence: string
-  word: string // Correct matching term
-  image_path?: string // Optional image for the sentence
+  sentence: string;
+  word: string; // Correct matching term
+  image_path?: string; // Optional image for the sentence
 }
 
 export interface MatchTheWordsActivity {
-  id: string
-  bookId: string
-  type: "matchTheWords"
-  headerText: string
-  match_words: MatchWord[]
-  sentences: MatchSentence[]
-  audio_extra?: AudioExtra // Story 10.2: Optional audio content
+  id: string;
+  bookId: string;
+  type: "matchTheWords";
+  headerText: string;
+  match_words: MatchWord[];
+  sentences: MatchSentence[];
+  audio_extra?: AudioExtra; // Story 10.2: Optional audio content
 }
 
 export interface CircleAnswer {
-  coords: Coordinates
-  isCorrect: boolean
+  coords: Coordinates;
+  isCorrect: boolean;
 }
 
 export interface CircleActivity {
-  id: string
-  bookId: string
-  type: "circle" | "markwithx"
-  circleCount?: number // Max selections per group (-1 = multi-select, 0 or undefined = 2/true-false, >0 = specific count)
-  section_path: string // Background image
-  answer: CircleAnswer[]
-  audio_extra?: AudioExtra // Story 10.2: Optional audio content
+  id: string;
+  bookId: string;
+  type: "circle" | "markwithx";
+  circleCount?: number; // Max selections per group (-1 = multi-select, 0 or undefined = 2/true-false, >0 = specific count)
+  section_path: string; // Background image
+  answer: CircleAnswer[];
+  audio_extra?: AudioExtra; // Story 10.2: Optional audio content
 }
 
 export interface PuzzleFindWordsActivity {
-  id: string
-  bookId: string
-  type: "puzzleFindWords"
-  headerText: string
-  words: string[] // Words to find in grid
-  audio_extra?: AudioExtra // Story 10.2: Optional audio content
+  id: string;
+  bookId: string;
+  type: "puzzleFindWords";
+  headerText: string;
+  words: string[]; // Words to find in grid
+  audio_extra?: AudioExtra; // Story 10.2: Optional audio content
 }
 
 // Story 27.20: AI-generated activity types
 export interface AIActivityBase {
-  type: string
-  content: any // The actual quiz/activity data (VocabularyQuizPublic, AIQuizPublic, etc.)
+  type: string;
+  content: any; // The actual quiz/activity data (VocabularyQuizPublic, AIQuizPublic, etc.)
 }
 
 export interface VocabularyQuizActivity extends AIActivityBase {
-  type: "vocabulary_quiz"
+  type: "vocabulary_quiz";
 }
 
 export interface AIQuizActivity extends AIActivityBase {
-  type: "ai_quiz"
+  type: "ai_quiz";
 }
 
 export interface ReadingComprehensionActivity extends AIActivityBase {
-  type: "reading_comprehension"
+  type: "reading_comprehension";
 }
 
 export interface SentenceBuilderActivity extends AIActivityBase {
-  type: "sentence_builder"
+  type: "sentence_builder";
 }
 
 export interface WordBuilderActivity extends AIActivityBase {
-  type: "word_builder"
+  type: "word_builder";
 }
 
 // Story 30.11: New skill-based activity types
 export interface ListeningQuizActivity extends AIActivityBase {
-  type: "listening_quiz"
+  type: "listening_quiz";
 }
 
 export interface ListeningFillBlankActivity extends AIActivityBase {
-  type: "listening_fill_blank"
+  type: "listening_fill_blank";
 }
 
 export interface GrammarFillBlankActivity extends AIActivityBase {
-  type: "grammar_fill_blank"
+  type: "grammar_fill_blank";
 }
 
 export interface WritingFillBlankActivity extends AIActivityBase {
-  type: "writing_fill_blank"
+  type: "writing_fill_blank";
 }
 
 export interface WritingSentenceCorrectorActivity extends AIActivityBase {
-  type: "writing_sentence_corrector"
+  type: "writing_sentence_corrector";
 }
 
 export interface WritingFreeResponseActivity extends AIActivityBase {
-  type: "writing_free_response"
+  type: "writing_free_response";
 }
 
 export interface ListeningSentenceBuilderActivity extends AIActivityBase {
-  type: "listening_sentence_builder"
+  type: "listening_sentence_builder";
 }
 
 export interface ListeningWordBuilderActivity extends AIActivityBase {
-  type: "listening_word_builder"
+  type: "listening_word_builder";
 }
 
 export interface VocabularyMatchingActivity extends AIActivityBase {
-  type: "vocabulary_matching"
+  type: "vocabulary_matching";
 }
 
 export interface SpeakingOpenResponseActivity extends AIActivityBase {
-  type: "speaking_open_response"
+  type: "speaking_open_response";
 }
 
 export interface MixModeActivity extends AIActivityBase {
-  type: "mix_mode"
+  type: "mix_mode";
 }
 
 export type ActivityConfig =
@@ -307,88 +307,88 @@ export type ActivityConfig =
   | ListeningWordBuilderActivity
   | VocabularyMatchingActivity
   | SpeakingOpenResponseActivity
-  | MixModeActivity
+  | MixModeActivity;
 
 // ============================================================================
 
 export interface AssignmentFull {
-  id: string
-  teacherId: string
-  activityId: string
-  bookId: string
-  name: string
-  instructions: string
-  due_date: string // ISO datetime
-  time_limit_minutes?: number
-  created_at: string
-  completionRate: number // 0-100 percentage
+  id: string;
+  teacherId: string;
+  activityId: string;
+  bookId: string;
+  name: string;
+  instructions: string;
+  due_date: string; // ISO datetime
+  time_limit_minutes?: number;
+  created_at: string;
+  completionRate: number; // 0-100 percentage
 }
 
 export interface AssignmentStudent {
-  id: string
-  assignmentId: string
-  studentId: string
-  studentName: string
-  status: "not_started" | "in_progress" | "completed"
-  score?: number // 0-100 percentage
-  started_at?: string
-  completed_at?: string
-  time_spent_minutes?: number
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  studentName: string;
+  status: "not_started" | "in_progress" | "completed";
+  score?: number; // 0-100 percentage
+  started_at?: string;
+  completed_at?: string;
+  time_spent_minutes?: number;
 }
 
 export interface ClassData {
-  id: string
-  name: string
-  subject: string
-  studentCount: number
-  averageScore: number
+  id: string;
+  name: string;
+  subject: string;
+  studentCount: number;
+  averageScore: number;
 }
 
 export interface Assignment {
-  id: string
-  name: string
-  className: string
-  dueDate: string
-  completionRate: number
-  status: "completed" | "in-progress" | "upcoming"
+  id: string;
+  name: string;
+  className: string;
+  dueDate: string;
+  completionRate: number;
+  status: "completed" | "in-progress" | "upcoming";
 }
 
 export interface Deadline {
-  id: string
-  assignmentName: string
-  className: string
-  dueDate: string
+  id: string;
+  assignmentName: string;
+  className: string;
+  dueDate: string;
 }
 
 export interface AssignmentDue {
-  id: string
-  name: string
-  subject: string
-  dueDate: string
-  status: "due-today" | "due-week" | "upcoming"
+  id: string;
+  name: string;
+  subject: string;
+  dueDate: string;
+  status: "due-today" | "due-week" | "upcoming";
 }
 
 export interface ScoreHistory {
-  assignmentName: string
-  score: number
-  date: string
+  assignmentName: string;
+  score: number;
+  date: string;
 }
 
 export interface Feedback {
-  id: string
-  assignmentName: string
-  teacherName: string
-  comment: string
-  score: number
-  date: string
+  id: string;
+  assignmentName: string;
+  teacherName: string;
+  comment: string;
+  score: number;
+  date: string;
 }
 
 export interface Achievement {
-  id: string
-  title: string
-  description: string
-  icon: string
-  earnedDate: string
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  earnedDate: string;
 }
 
 // ============================================================================
@@ -396,61 +396,61 @@ export interface Achievement {
 // ============================================================================
 
 export interface AnalyticsDataPoint {
-  id: string
-  date: string // ISO 8601 date
-  student_id: string
+  id: string;
+  date: string; // ISO 8601 date
+  student_id: string;
   activity_type:
     | "dragdroppicture"
     | "dragdroppicturegroup"
     | "matchTheWords"
     | "circle"
     | "markwithx"
-    | "puzzleFindWords"
-  score: number // 0-100
-  time_spent_minutes: number
-  assignment_id: string
+    | "puzzleFindWords";
+  score: number; // 0-100
+  time_spent_minutes: number;
+  assignment_id: string;
 }
 
 export interface StudentAnalytics {
-  student_id: string
-  student_name: string
-  avg_score: number
-  completed_count: number
-  strengths: string[] // Activity types with high scores
-  weaknesses: string[] // Activity types needing improvement
-  recent_scores: number[] // Last 10 scores for trend analysis
+  student_id: string;
+  student_name: string;
+  avg_score: number;
+  completed_count: number;
+  strengths: string[]; // Activity types with high scores
+  weaknesses: string[]; // Activity types needing improvement
+  recent_scores: number[]; // Last 10 scores for trend analysis
 }
 
 export interface Message {
-  id: string
-  from_id: string
-  from_name: string
-  to_id: string
-  to_name: string
-  subject: string
-  body: string
-  timestamp: string // ISO 8601
-  read: boolean
+  id: string;
+  from_id: string;
+  from_name: string;
+  to_id: string;
+  to_name: string;
+  subject: string;
+  body: string;
+  timestamp: string; // ISO 8601
+  read: boolean;
 }
 
 export interface Conversation {
-  id: string
-  participant_id: string
-  participant_name: string
-  participant_avatar: string
-  messages: Message[]
-  unread_count: number
-  last_message_preview: string
-  last_message_timestamp: string
+  id: string;
+  participant_id: string;
+  participant_name: string;
+  participant_avatar: string;
+  messages: Message[];
+  unread_count: number;
+  last_message_preview: string;
+  last_message_timestamp: string;
 }
 
 export interface Material {
-  id: string
-  name: string
-  type: "pdf" | "image" | "video"
-  size: number // in bytes
-  uploaded_at: string // ISO 8601
-  shared_with: string[] // Array of class IDs or student IDs
+  id: string;
+  name: string;
+  type: "pdf" | "image" | "video";
+  size: number; // in bytes
+  uploaded_at: string; // ISO 8601
+  shared_with: string[]; // Array of class IDs or student IDs
 }
 
 // ============================================================================
@@ -676,7 +676,7 @@ export const adminDashboardData = {
     { name: "Classes", value: 42 },
     { name: "Schools", value: 12 },
   ] as ChartDataPoint[],
-}
+};
 
 // ============================================================================
 // PUBLISHER DASHBOARD DATA
@@ -818,7 +818,7 @@ export const publisherDashboardData = {
     totalBooks: 8,
     teachersCreated: 23,
   },
-}
+};
 
 // ============================================================================
 // TEACHER DASHBOARD DATA
@@ -925,7 +925,7 @@ export const teacherDashboardData = {
     { name: "Week 3", value: 85 },
     { name: "Week 4", value: 88 },
   ] as ChartDataPoint[],
-}
+};
 
 // ============================================================================
 // STUDENT DASHBOARD DATA
@@ -945,7 +945,7 @@ export const studentDashboardData = {
     completedAssignments: 0,
     upcomingAssignments: 0,
   },
-}
+};
 
 // ============================================================================
 // BOOKS & ASSIGNMENTS DATA (Story 2.4)
@@ -954,12 +954,12 @@ export const studentDashboardData = {
 /**
  * Mock Books - 12 books across different grades and publishers
  */
-export const mockBooks: Book[] = []
+export const mockBooks: Book[] = [];
 
 /**
  * Mock Activities - 20 activities across all 6 activity types
  */
-export const mockActivities: Activity[] = []
+export const mockActivities: Activity[] = [];
 
 /*
   // Book 1 - Grammar Essentials
@@ -1157,7 +1157,7 @@ export const mockActivities: Activity[] = []
 /**
  * Mock Activity Configs - Detailed configuration for interactive activities (Story 2.5)
  */
-export const mockActivityConfigs: ActivityConfig[] = []
+export const mockActivityConfigs: ActivityConfig[] = [];
 
 /*
   // DragDropPicture Activity 1 - Parts of Speech
@@ -1324,7 +1324,7 @@ export const mockStudents = [
   { id: "8", name: "Lisa Anderson", email: "lisa.a@school.edu" },
   { id: "9", name: "Robert Taylor", email: "robert.t@school.edu" },
   { id: "10", name: "Jennifer Lee", email: "jennifer.l@school.edu" },
-]
+];
 
 /**
  * Mock Classes - For assignment wizard selection
@@ -1333,12 +1333,12 @@ export const mockClasses = [
   { id: "1", name: "Math 101", studentCount: 28 },
   { id: "2", name: "Science Advanced", studentCount: 24 },
   { id: "3", name: "English Literature", studentCount: 30 },
-]
+];
 
 /**
  * Mock Assignments - 15 assignments with varied statuses
  */
-export const mockAssignments: AssignmentFull[] = []
+export const mockAssignments: AssignmentFull[] = [];
 
 /*
   {
@@ -1655,7 +1655,7 @@ export const mockAssignmentStudents: AssignmentStudent[] = [
     completed_at: getRelativeDateTime(-3, 14, 28),
     time_spent_minutes: 28,
   },
-]
+];
 
 // ============================================================================
 // ANALYTICS, MESSAGING, MATERIALS MOCK DATA (Story 2.6)
@@ -2263,7 +2263,7 @@ export const mockAnalyticsData: AnalyticsDataPoint[] = [
     time_spent_minutes: 17,
     assignment_id: "5",
   },
-]
+];
 
 /**
  * Mock Student Analytics - Aggregate performance data for 8 students
@@ -2341,7 +2341,7 @@ export const mockStudentAnalytics: StudentAnalytics[] = [
     weaknesses: [],
     recent_scores: [91, 93, 89, 92, 90],
   },
-]
+];
 
 /**
  * Mock Messages - 20+ messages across 5 conversations
@@ -2532,7 +2532,7 @@ const mockMessagesRaw: Message[] = [
     timestamp: getRelativeDateTime(-6, 10, 45),
     read: false,
   },
-]
+];
 
 /**
  * Mock Conversations - 5 conversation threads
@@ -2603,7 +2603,7 @@ export const mockConversations: Conversation[] = [
       "Will do! I'll include before/after analytics and some anonymized student...",
     last_message_timestamp: getRelativeDateTime(-6, 10, 45),
   },
-]
+];
 
 /**
  * Mock Materials - 12 educational materials with various file types
@@ -2705,4 +2705,4 @@ export const mockMaterials: Material[] = [
     uploaded_at: getRelativeDateTime(-1, 16, 20),
     shared_with: [], // Not shared yet
   },
-]
+];

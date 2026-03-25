@@ -6,60 +6,68 @@
  * letter bank to spell vocabulary words. Click-to-place interaction.
  */
 
-import { ArrowRight, Check, Lightbulb, Loader2, Pause, Play, Trash2 } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { useSoundContext } from "@/hooks/useSoundEffects"
-import { cn } from "@/lib/utils"
-import type { QuestionNavigationState } from "@/types/activity-player"
+import {
+  ArrowRight,
+  Check,
+  Lightbulb,
+  Loader2,
+  Pause,
+  Play,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useSoundContext } from "@/hooks/useSoundEffects";
+import { cn } from "@/lib/utils";
+import type { QuestionNavigationState } from "@/types/activity-player";
 import type {
   LetterWithIndex,
   WordBuilderActivityPublic,
   WordBuilderSubmission,
-} from "@/types/word-builder"
+} from "@/types/word-builder";
 import {
   getFeedbackMessage,
   initializeLettersWithIndices,
-} from "@/types/word-builder"
+} from "@/types/word-builder";
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array]
+  const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return shuffled
+  return shuffled;
 }
 
 interface WordBuilderPlayerProps {
   /** The activity to display */
-  activity: WordBuilderActivityPublic
+  activity: WordBuilderActivityPublic;
   /** Callback when activity is submitted */
-  onSubmit: (submission: WordBuilderSubmission) => void
+  onSubmit: (submission: WordBuilderSubmission) => void;
   /** Whether submission is in progress */
-  isSubmitting?: boolean
+  isSubmitting?: boolean;
   /** Callback when a word is spelled correctly (for audio) */
-  onWordCorrect?: (audioUrl: string | null) => void
+  onWordCorrect?: (audioUrl: string | null) => void;
   /** Hide the submit button (when embedded in ActivityPlayer which has its own submit) */
-  hideSubmitButton?: boolean
+  hideSubmitButton?: boolean;
   /** Callback when answers change (for parent to track progress) */
-  onAnswersChange?: (answers: Record<string, string>) => void
+  onAnswersChange?: (answers: Record<string, string>) => void;
   /** External control: current word index (when controlled by parent) */
-  currentWordIndex?: number
+  currentWordIndex?: number;
   /** External control: callback when current word changes (for hybrid control - player can advance) */
-  onWordIndexChange?: (index: number) => void
+  onWordIndexChange?: (index: number) => void;
   /** Callback to expose navigation state to parent */
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 interface WordState {
-  placedLetters: LetterWithIndex[]
-  availableLetters: LetterWithIndex[]
-  attempts: number
-  isCorrect: boolean | null
-  isChecking: boolean
+  placedLetters: LetterWithIndex[];
+  availableLetters: LetterWithIndex[];
+  attempts: number;
+  isCorrect: boolean | null;
+  isChecking: boolean;
 }
 
 export function WordBuilderPlayer({
@@ -74,94 +82,96 @@ export function WordBuilderPlayer({
   onNavigationStateChange,
 }: WordBuilderPlayerProps) {
   // Internal current word index (used when not externally controlled)
-  const [internalIndex, setInternalIndex] = useState(0)
+  const [internalIndex, setInternalIndex] = useState(0);
   // Use external index if provided, otherwise internal
-  const isExternallyControlled = currentWordIndex !== undefined
-  const currentIndex = isExternallyControlled ? currentWordIndex : internalIndex
+  const isExternallyControlled = currentWordIndex !== undefined;
+  const currentIndex = isExternallyControlled
+    ? currentWordIndex
+    : internalIndex;
 
   // Setter that works for both internal and external control (hybrid - player can advance)
   const setCurrentIndex = useCallback(
     (index: number) => {
       if (isExternallyControlled && onWordIndexChange) {
-        onWordIndexChange(index)
+        onWordIndexChange(index);
       } else {
-        setInternalIndex(index)
+        setInternalIndex(index);
       }
     },
     [isExternallyControlled, onWordIndexChange],
-  )
-  const [wordStates, setWordStates] = useState<Record<string, WordState>>({})
-  const [showSuccess, _setShowSuccess] = useState(false)
-  const [isShaking, setIsShaking] = useState(false)
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
-  const [audioLoading, setAudioLoading] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const { play: playSound } = useSoundContext()
+  );
+  const [wordStates, setWordStates] = useState<Record<string, WordState>>({});
+  const [showSuccess, _setShowSuccess] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { play: playSound } = useSoundContext();
 
-  const totalWords = activity.words.length
+  const totalWords = activity.words.length;
 
   // Store callbacks in refs to avoid infinite loops
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
-  const onNavigationStateChangeRef = useRef(onNavigationStateChange)
-  onNavigationStateChangeRef.current = onNavigationStateChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
+  const onNavigationStateChangeRef = useRef(onNavigationStateChange);
+  onNavigationStateChangeRef.current = onNavigationStateChange;
 
   // Notify parent when answers change
   useEffect(() => {
-    const callback = onAnswersChangeRef.current
+    const callback = onAnswersChangeRef.current;
     if (callback) {
-      const answers: Record<string, string> = {}
+      const answers: Record<string, string> = {};
       activity.words.forEach((word) => {
-        const state = wordStates[word.item_id]
+        const state = wordStates[word.item_id];
         if (state) {
           answers[word.item_id] = state.placedLetters
             .map((l) => l.letter)
-            .join("")
+            .join("");
         }
-      })
-      callback(answers)
+      });
+      callback(answers);
     }
-  }, [wordStates, activity.words])
+  }, [wordStates, activity.words]);
 
   // Memoize navigation state components to prevent infinite loops
   const { answeredItemIds, answeredIndices } = useMemo(() => {
-    const indices: number[] = []
-    const itemIds: string[] = []
+    const indices: number[] = [];
+    const itemIds: string[] = [];
     activity.words.forEach((word, index) => {
-      const state = wordStates[word.item_id]
+      const state = wordStates[word.item_id];
       // Consider a word "answered" if all letters have been placed
       if (state && state.placedLetters.length === word.letter_count) {
-        indices.push(index)
-        itemIds.push(word.item_id)
+        indices.push(index);
+        itemIds.push(word.item_id);
       }
-    })
-    return { answeredItemIds: itemIds, answeredIndices: indices }
-  }, [wordStates, activity.words])
+    });
+    return { answeredItemIds: itemIds, answeredIndices: indices };
+  }, [wordStates, activity.words]);
 
   // Track previous navigation state to avoid unnecessary updates
-  const prevNavStateRef = useRef<string>("")
+  const prevNavStateRef = useRef<string>("");
 
   // Notify parent of navigation state changes
   useEffect(() => {
-    const callback = onNavigationStateChangeRef.current
+    const callback = onNavigationStateChangeRef.current;
     if (callback) {
       // Only call if state actually changed
-      const stateKey = `${currentIndex}-${totalWords}-${answeredItemIds.join(",")}`
+      const stateKey = `${currentIndex}-${totalWords}-${answeredItemIds.join(",")}`;
       if (prevNavStateRef.current !== stateKey) {
-        prevNavStateRef.current = stateKey
+        prevNavStateRef.current = stateKey;
         callback({
           currentIndex,
           totalItems: totalWords,
           answeredItemIds,
           answeredIndices,
-        })
+        });
       }
     }
-  }, [currentIndex, totalWords, answeredItemIds, answeredIndices])
+  }, [currentIndex, totalWords, answeredItemIds, answeredIndices]);
 
-  const currentWord = activity.words[currentIndex]
-  const isCompleted = currentIndex >= totalWords
-  const progress = (currentIndex / totalWords) * 100
+  const currentWord = activity.words[currentIndex];
+  const isCompleted = currentIndex >= totalWords;
+  const progress = (currentIndex / totalWords) * 100;
 
   // Initialize state for current word
   useEffect(() => {
@@ -177,64 +187,67 @@ export function WordBuilderPlayer({
           isCorrect: null,
           isChecking: false,
         },
-      }))
+      }));
     }
-  }, [currentWord, wordStates])
+  }, [currentWord, wordStates]);
 
-  const currentState = currentWord ? wordStates[currentWord.item_id] : null
+  const currentState = currentWord ? wordStates[currentWord.item_id] : null;
 
   // Play/pause audio
-  const playAudio = useCallback((audioUrl: string | null, audioData?: { audio_base64?: string }) => {
-    const src = audioData?.audio_base64
-      ? `data:audio/mpeg;base64,${audioData.audio_base64}`
-      : audioUrl
-    if (!src || !audioRef.current) return
-    const audio = audioRef.current
-    if (isAudioPlaying) {
-      audio.pause()
-      setIsAudioPlaying(false)
-    } else {
-      audio.src = src
-      setAudioLoading(true)
-      audio
-        .play()
-        .then(() => {
-          setIsAudioPlaying(true)
-          setAudioLoading(false)
-        })
-        .catch(() => setAudioLoading(false))
-    }
-  }, [isAudioPlaying])
+  const playAudio = useCallback(
+    (audioUrl: string | null, audioData?: { audio_base64?: string }) => {
+      const src = audioData?.audio_base64
+        ? `data:audio/mpeg;base64,${audioData.audio_base64}`
+        : audioUrl;
+      if (!src || !audioRef.current) return;
+      const audio = audioRef.current;
+      if (isAudioPlaying) {
+        audio.pause();
+        setIsAudioPlaying(false);
+      } else {
+        audio.src = src;
+        setAudioLoading(true);
+        audio
+          .play()
+          .then(() => {
+            setIsAudioPlaying(true);
+            setAudioLoading(false);
+          })
+          .catch(() => setAudioLoading(false));
+      }
+    },
+    [isAudioPlaying],
+  );
 
   // Audio ended handler
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    const onEnded = () => setIsAudioPlaying(false)
-    audio.addEventListener("ended", onEnded)
-    return () => audio.removeEventListener("ended", onEnded)
-  }, [])
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onEnded = () => setIsAudioPlaying(false);
+    audio.addEventListener("ended", onEnded);
+    return () => audio.removeEventListener("ended", onEnded);
+  }, []);
 
   // Reset audio state on word change
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.pause()
-      setIsAudioPlaying(false)
+      audioRef.current.pause();
+      setIsAudioPlaying(false);
     }
-  }, [currentIndex])
+  }, [currentIndex]);
 
   // Handle clicking a letter in the letter bank
   const handleLetterBankClick = useCallback(
     (letterWithIndex: LetterWithIndex, bankIndex: number) => {
-      if (!currentWord || !currentState || currentState.isCorrect) return
-      playSound("drop")
+      if (!currentWord || !currentState || currentState.isCorrect) return;
+      playSound("drop");
 
       setWordStates((prev) => {
-        const state = prev[currentWord.item_id]
-        if (!state) return prev
+        const state = prev[currentWord.item_id];
+        if (!state) return prev;
 
-        const newAvailable = [...state.availableLetters]
-        newAvailable.splice(bankIndex, 1)
+        const newAvailable = [...state.availableLetters];
+        newAvailable.splice(bankIndex, 1);
 
         return {
           ...prev,
@@ -244,24 +257,24 @@ export function WordBuilderPlayer({
             availableLetters: newAvailable,
             isCorrect: null,
           },
-        }
-      })
+        };
+      });
     },
     [currentWord, currentState, playSound],
-  )
+  );
 
   // Handle clicking a placed letter to return it
   const handlePlacedLetterClick = useCallback(
     (letterWithIndex: LetterWithIndex, placedIndex: number) => {
-      if (!currentWord || !currentState || currentState.isCorrect) return
-      playSound("drag")
+      if (!currentWord || !currentState || currentState.isCorrect) return;
+      playSound("drag");
 
       setWordStates((prev) => {
-        const state = prev[currentWord.item_id]
-        if (!state) return prev
+        const state = prev[currentWord.item_id];
+        if (!state) return prev;
 
-        const newPlaced = [...state.placedLetters]
-        newPlaced.splice(placedIndex, 1)
+        const newPlaced = [...state.placedLetters];
+        newPlaced.splice(placedIndex, 1);
 
         return {
           ...prev,
@@ -271,15 +284,15 @@ export function WordBuilderPlayer({
             availableLetters: [...state.availableLetters, letterWithIndex],
             isCorrect: null,
           },
-        }
-      })
+        };
+      });
     },
     [currentWord, currentState, playSound],
-  )
+  );
 
   // Clear all placed letters
   const handleClearAll = useCallback(() => {
-    if (!currentWord || !currentState || currentState.isCorrect) return
+    if (!currentWord || !currentState || currentState.isCorrect) return;
 
     setWordStates((prev) => ({
       ...prev,
@@ -291,28 +304,28 @@ export function WordBuilderPlayer({
         ),
         isCorrect: null,
       },
-    }))
-  }, [currentWord, currentState])
+    }));
+  }, [currentWord, currentState]);
 
   // Move to next word
   const handleNextWord = useCallback(() => {
     if (currentIndex < totalWords - 1) {
-      setCurrentIndex(currentIndex + 1)
+      setCurrentIndex(currentIndex + 1);
     } else {
       // All words done - submit
-      const answers: Record<string, string> = {}
-      const attempts: Record<string, number> = {}
+      const answers: Record<string, string> = {};
+      const attempts: Record<string, number> = {};
 
       activity.words.forEach((word) => {
-        const state = wordStates[word.item_id]
+        const state = wordStates[word.item_id];
         if (state) {
           answers[word.item_id] = state.placedLetters
             .map((l) => l.letter)
-            .join("")
-          attempts[word.item_id] = state.attempts
+            .join("");
+          attempts[word.item_id] = state.attempts;
         }
-      })
-      onSubmit({ answers, attempts })
+      });
+      onSubmit({ answers, attempts });
     }
   }, [
     currentIndex,
@@ -321,11 +334,11 @@ export function WordBuilderPlayer({
     wordStates,
     onSubmit,
     setCurrentIndex,
-  ])
+  ]);
 
   // Move to next word (no immediate answer checking - deferred to submission)
   const handleCheckAnswer = useCallback(() => {
-    if (!currentWord || !currentState) return
+    if (!currentWord || !currentState) return;
 
     // Check if all letters are placed
     if (currentState.placedLetters.length === currentWord.letter_count) {
@@ -338,18 +351,18 @@ export function WordBuilderPlayer({
           attempts: prev[currentWord.item_id].attempts + 1,
           isChecking: false,
         },
-      }))
-      handleNextWord()
+      }));
+      handleNextWord();
     } else {
       // Not all letters placed - show shake animation
-      setIsShaking(true)
-      setTimeout(() => setIsShaking(false), 500)
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
     }
-  }, [currentWord, currentState, handleNextWord])
+  }, [currentWord, currentState, handleNextWord]);
 
   // Calculate if all letters are placed for current word
   const allLettersPlaced =
-    currentState?.placedLetters.length === currentWord?.letter_count
+    currentState?.placedLetters.length === currentWord?.letter_count;
 
   if (isCompleted) {
     return (
@@ -362,7 +375,7 @@ export function WordBuilderPlayer({
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -376,10 +389,14 @@ export function WordBuilderPlayer({
           {currentWord && (
             <div className="flex flex-col items-center gap-3">
               {/* Audio play button */}
-              {(activity.hint_type === "audio" || activity.hint_type === "both") &&
-                (currentWord.audio_url || currentWord.audio_data?.audio_base64) && (
+              {(activity.hint_type === "audio" ||
+                activity.hint_type === "both") &&
+                (currentWord.audio_url ||
+                  currentWord.audio_data?.audio_base64) && (
                   <button
-                    onClick={() => playAudio(currentWord.audio_url, currentWord.audio_data)}
+                    onClick={() =>
+                      playAudio(currentWord.audio_url, currentWord.audio_data)
+                    }
                     className={cn(
                       "flex items-center justify-center w-14 h-14 rounded-full transition-all shadow-md",
                       isAudioPlaying
@@ -402,7 +419,9 @@ export function WordBuilderPlayer({
                 <div className="rounded-lg bg-gradient-to-r from-teal-50 to-cyan-50 p-4 w-full dark:from-teal-950/50 dark:to-cyan-950/50">
                   <div className="flex items-start gap-3">
                     <Lightbulb className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-base text-gray-800 dark:text-gray-200">{currentWord.definition}</p>
+                    <p className="text-base text-gray-800 dark:text-gray-200">
+                      {currentWord.definition}
+                    </p>
                   </div>
                 </div>
               )}
@@ -451,9 +470,7 @@ export function WordBuilderPlayer({
             {currentState?.placedLetters.map((letterWithIndex, index) => (
               <button
                 key={`placed-${letterWithIndex.letter}-${letterWithIndex.originalIndex}`}
-                onClick={() =>
-                  handlePlacedLetterClick(letterWithIndex, index)
-                }
+                onClick={() => handlePlacedLetterClick(letterWithIndex, index)}
                 disabled={showSuccess}
                 className={cn(
                   "w-10 h-10 rounded-lg border-2 font-bold text-lg transition-all uppercase",
@@ -473,8 +490,7 @@ export function WordBuilderPlayer({
               currentState.placedLetters.length < currentWord.letter_count &&
               Array.from({
                 length:
-                  currentWord.letter_count -
-                  currentState.placedLetters.length,
+                  currentWord.letter_count - currentState.placedLetters.length,
               }).map((_, index) => (
                 <div
                   key={`slot-${index}`}
@@ -542,7 +558,7 @@ export function WordBuilderPlayer({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
-export default WordBuilderPlayer
+export default WordBuilderPlayer;

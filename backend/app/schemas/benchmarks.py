@@ -22,8 +22,12 @@ class BenchmarkData(BaseModel):
     """
 
     level: BenchmarkLevel
-    average_score: float = Field(ge=0, le=100, description="Average score as percentage")
-    completion_rate: float = Field(ge=0, le=100, description="Completion rate as percentage")
+    average_score: float = Field(
+        ge=0, le=100, description="Average score as percentage"
+    )
+    completion_rate: float = Field(
+        ge=0, le=100, description="Completion rate as percentage"
+    )
     sample_size: int = Field(ge=0, description="Number of classes in benchmark")
     period: BenchmarkPeriod
     is_available: bool = Field(
@@ -80,7 +84,9 @@ class BenchmarkMessage(BaseModel):
     [Source: Story 5.7 AC: 10, 11]
     """
 
-    type: Literal["excelling", "above_average", "at_average", "below_average", "needs_focus"]
+    type: Literal[
+        "excelling", "above_average", "at_average", "below_average", "needs_focus"
+    ]
     title: str
     description: str
     icon: str  # e.g., "trophy", "star", "chart-up", "target"
@@ -151,7 +157,9 @@ class SchoolBenchmarkSummary(BaseModel):
     benchmarking_enabled: bool
     class_count: int
     average_score: float | None = None  # None if not enough data
-    performance_status: Literal["above_average", "average", "below_average"] | None = None
+    performance_status: Literal["above_average", "average", "below_average"] | None = (
+        None
+    )
 
 
 class ActivityTypeStat(BaseModel):

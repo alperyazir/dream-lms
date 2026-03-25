@@ -120,7 +120,16 @@ def validate_file_content(file_content: bytes, filename: str) -> None:
             )
 
     # Check for dangerous extensions in filename
-    dangerous_extensions = [".exe", ".bat", ".cmd", ".sh", ".php", ".js", ".html", ".htm"]
+    dangerous_extensions = [
+        ".exe",
+        ".bat",
+        ".cmd",
+        ".sh",
+        ".php",
+        ".js",
+        ".html",
+        ".htm",
+    ]
     lower_filename = (filename or "").lower()
     for ext in dangerous_extensions:
         if lower_filename.endswith(ext):
@@ -158,7 +167,9 @@ def get_or_create_quota(session: Session, teacher_id: uuid.UUID) -> TeacherStora
     return quota
 
 
-def check_quota(session: Session, teacher_id: uuid.UUID, file_size: int) -> TeacherStorageQuota:
+def check_quota(
+    session: Session, teacher_id: uuid.UUID, file_size: int
+) -> TeacherStorageQuota:
     """
     Check if teacher has enough quota for upload.
 
@@ -261,7 +272,9 @@ def quota_to_response(quota: TeacherStorageQuota) -> StorageQuotaResponse:
     Returns:
         StorageQuotaResponse schema
     """
-    used_percentage = (quota.used_bytes / quota.quota_bytes) * 100 if quota.quota_bytes > 0 else 0
+    used_percentage = (
+        (quota.used_bytes / quota.quota_bytes) * 100 if quota.quota_bytes > 0 else 0
+    )
 
     return StorageQuotaResponse(
         used_bytes=quota.used_bytes,

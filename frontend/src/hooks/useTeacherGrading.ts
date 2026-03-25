@@ -2,13 +2,13 @@
  * Custom hook for teacher grading of writing/speaking submissions
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { gradeActivity, getPendingReviews } from "@/services/assignmentsApi"
-import type { TeacherGradeRequest } from "@/types/analytics"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { gradeActivity, getPendingReviews } from "@/services/assignmentsApi";
+import type { TeacherGradeRequest } from "@/types/analytics";
 
 interface UseTeacherGradingOptions {
-  assignmentId: string
-  studentId: string
+  assignmentId: string;
+  studentId: string;
 }
 
 /**
@@ -19,7 +19,7 @@ export function useTeacherGrading({
   assignmentId,
   studentId,
 }: UseTeacherGradingOptions) {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: (data: TeacherGradeRequest) =>
@@ -27,21 +27,21 @@ export function useTeacherGrading({
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["assignment-results", assignmentId],
-      })
+      });
       queryClient.invalidateQueries({
         queryKey: ["student-answers", assignmentId, studentId],
-      })
+      });
       queryClient.invalidateQueries({
         queryKey: ["pending-reviews"],
-      })
+      });
     },
-  })
+  });
 
   return {
     gradeSubmission: mutation.mutateAsync,
     isGrading: mutation.isPending,
     gradeError: mutation.error,
-  }
+  };
 }
 
 /**
@@ -52,12 +52,12 @@ export function usePendingReviews() {
     queryKey: ["pending-reviews"],
     queryFn: () => getPendingReviews(),
     staleTime: 2 * 60 * 1000, // 2 minutes
-  })
+  });
 
   return {
     pendingReviews: data ?? null,
     isLoading,
     error,
     refetch,
-  }
+  };
 }

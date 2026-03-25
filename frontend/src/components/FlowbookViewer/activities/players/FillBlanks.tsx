@@ -1,210 +1,215 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import { cn } from "@/lib/utils"
-import type { ActivityReference } from "@/types/flowbook"
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import type { ActivityReference } from "@/types/flowbook";
 
 interface FillBlanksProps {
-  activity: ActivityReference
+  activity: ActivityReference;
 }
 
 interface Sentence {
-  sentence: string
-  sentence_after?: string
-  word: string
+  sentence: string;
+  sentence_after?: string;
+  word: string;
 }
 
 interface BlankState {
-  value: string
-  isCorrect?: boolean
+  value: string;
+  isCorrect?: boolean;
 }
 
 export function FillBlanks({ activity }: FillBlanksProps) {
-  const [blanks, setBlanks] = useState<Map<number, BlankState>>(new Map())
-  const [showResults, setShowResults] = useState(false)
-  const [showCelebration, setShowCelebration] = useState(false)
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
+  const [blanks, setBlanks] = useState<Map<number, BlankState>>(new Map());
+  const [showResults, setShowResults] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
-  const clapAudioRef = useRef<HTMLAudioElement | null>(null)
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const clapAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const config = activity.config as {
-    words?: string[]
-    sentences?: Sentence[]
-    headerText?: string
-  }
+    words?: string[];
+    sentences?: Sentence[];
+    headerText?: string;
+  };
 
-  const words = config.words || []
-  const sentences = config.sentences || []
+  const words = config.words || [];
+  const sentences = config.sentences || [];
 
   useEffect(() => {
-    clapAudioRef.current = new Audio("/sounds/clap.mp3")
-    clapAudioRef.current.volume = 0.8
-    clapAudioRef.current.load()
-  }, [])
+    clapAudioRef.current = new Audio("/sounds/clap.mp3");
+    clapAudioRef.current.volume = 0.8;
+    clapAudioRef.current.load();
+  }, []);
 
   useEffect(() => {
     if (sentences.length > 0 && inputRefs.current[0]) {
-      inputRefs.current[0]?.focus()
+      inputRefs.current[0]?.focus();
     }
-  }, [sentences.length])
+  }, [sentences.length]);
 
   const handleInputChange = (index: number, value: string) => {
-    if (showResults) return
-    const newBlanks = new Map(blanks)
-    newBlanks.set(index, { value })
-    setBlanks(newBlanks)
-  }
+    if (showResults) return;
+    const newBlanks = new Map(blanks);
+    newBlanks.set(index, { value });
+    setBlanks(newBlanks);
+  };
 
   const handleWordBankClick = (word: string) => {
-    if (showResults) return
+    if (showResults) return;
 
-    const targetIndex = focusedIndex ?? findNextEmptyBlank()
-    if (targetIndex === null) return
+    const targetIndex = focusedIndex ?? findNextEmptyBlank();
+    if (targetIndex === null) return;
 
-    const newBlanks = new Map(blanks)
-    newBlanks.set(targetIndex, { value: word })
-    setBlanks(newBlanks)
+    const newBlanks = new Map(blanks);
+    newBlanks.set(targetIndex, { value: word });
+    setBlanks(newBlanks);
 
-    const nextEmpty = findNextEmptyBlank(targetIndex + 1)
+    const nextEmpty = findNextEmptyBlank(targetIndex + 1);
     if (nextEmpty !== null) {
-      setFocusedIndex(nextEmpty)
-      inputRefs.current[nextEmpty]?.focus()
+      setFocusedIndex(nextEmpty);
+      inputRefs.current[nextEmpty]?.focus();
     }
-  }
+  };
 
   const findNextEmptyBlank = (startFrom = 0): number | null => {
     for (let i = startFrom; i < sentences.length; i++) {
-      const blank = blanks.get(i)
+      const blank = blanks.get(i);
       if (!blank || !blank.value.trim()) {
-        return i
+        return i;
       }
     }
     for (let i = 0; i < startFrom; i++) {
-      const blank = blanks.get(i)
+      const blank = blanks.get(i);
       if (!blank || !blank.value.trim()) {
-        return i
+        return i;
       }
     }
-    return null
-  }
+    return null;
+  };
 
   const isWordUsed = (word: string): boolean => {
     for (const [, blank] of blanks) {
       if (blank.value.toLowerCase() === word.toLowerCase()) {
-        return true
+        return true;
       }
     }
-    return false
-  }
+    return false;
+  };
 
   const playCelebration = useCallback(() => {
-    setShowCelebration(true)
+    setShowCelebration(true);
     if (clapAudioRef.current) {
-      clapAudioRef.current.currentTime = 0
-      clapAudioRef.current.play().catch(() => {})
+      clapAudioRef.current.currentTime = 0;
+      clapAudioRef.current.play().catch(() => {});
       setTimeout(() => {
         if (clapAudioRef.current) {
-          clapAudioRef.current.pause()
-          clapAudioRef.current.currentTime = 0
+          clapAudioRef.current.pause();
+          clapAudioRef.current.currentTime = 0;
         }
-      }, 1500)
+      }, 1500);
     }
-    setTimeout(() => setShowCelebration(false), 3000)
-  }, [])
+    setTimeout(() => setShowCelebration(false), 3000);
+  }, []);
 
   const handleReset = useCallback(() => {
-    setBlanks(new Map())
-    setShowResults(false)
-    setShowCelebration(false)
-    setFocusedIndex(null)
+    setBlanks(new Map());
+    setShowResults(false);
+    setShowCelebration(false);
+    setFocusedIndex(null);
     if (inputRefs.current[0]) {
-      inputRefs.current[0]?.focus()
+      inputRefs.current[0]?.focus();
     }
-  }, [])
+  }, []);
 
   const handleCheckAnswers = useCallback(() => {
-    const newBlanks = new Map<number, BlankState>()
-    let allCorrect = true
+    const newBlanks = new Map<number, BlankState>();
+    let allCorrect = true;
 
     sentences.forEach((sentence, index) => {
-      const blank = blanks.get(index)
-      const userAnswer = blank?.value?.trim().toLowerCase() || ""
-      const correctAnswer = sentence.word.toLowerCase()
-      const isCorrect = userAnswer === correctAnswer
+      const blank = blanks.get(index);
+      const userAnswer = blank?.value?.trim().toLowerCase() || "";
+      const correctAnswer = sentence.word.toLowerCase();
+      const isCorrect = userAnswer === correctAnswer;
 
       newBlanks.set(index, {
         value: blank?.value || "",
         isCorrect,
-      })
+      });
 
-      if (!isCorrect) allCorrect = false
-    })
+      if (!isCorrect) allCorrect = false;
+    });
 
-    setBlanks(newBlanks)
-    setShowResults(true)
+    setBlanks(newBlanks);
+    setShowResults(true);
 
     if (allCorrect && sentences.length > 0) {
-      playCelebration()
+      playCelebration();
     }
-  }, [blanks, sentences, playCelebration])
+  }, [blanks, sentences, playCelebration]);
 
   const handleShowAnswers = useCallback(
     (show: boolean) => {
       if (show) {
-        const newBlanks = new Map<number, BlankState>()
+        const newBlanks = new Map<number, BlankState>();
         sentences.forEach((sentence, index) => {
           newBlanks.set(index, {
             value: sentence.word,
             isCorrect: true,
-          })
-        })
-        setBlanks(newBlanks)
-        setShowResults(true)
+          });
+        });
+        setBlanks(newBlanks);
+        setShowResults(true);
       } else {
-        setBlanks(new Map())
-        setShowResults(false)
+        setBlanks(new Map());
+        setShowResults(false);
       }
     },
     [sentences],
-  )
+  );
 
   const handleShowNextAnswer = useCallback(() => {
-    const newBlanks = new Map(blanks)
+    const newBlanks = new Map(blanks);
 
     for (let i = 0; i < sentences.length; i++) {
-      const blank = blanks.get(i)
+      const blank = blanks.get(i);
       const isCorrect =
-        blank?.value?.trim().toLowerCase() === sentences[i].word.toLowerCase()
+        blank?.value?.trim().toLowerCase() === sentences[i].word.toLowerCase();
 
       if (!isCorrect) {
         newBlanks.set(i, {
           value: sentences[i].word,
           isCorrect: true,
-        })
-        setBlanks(newBlanks)
-        setShowResults(true)
-        break
+        });
+        setBlanks(newBlanks);
+        setShowResults(true);
+        break;
       }
     }
-  }, [blanks, sentences])
+  }, [blanks, sentences]);
 
   useEffect(() => {
     const win = window as unknown as {
-      __activityReset?: () => void
-      __activityCheckAnswers?: () => void
-      __activityShowAnswers?: (show: boolean) => void
-      __activityShowNextAnswer?: () => void
-    }
-    win.__activityReset = handleReset
-    win.__activityCheckAnswers = handleCheckAnswers
-    win.__activityShowAnswers = handleShowAnswers
-    win.__activityShowNextAnswer = handleShowNextAnswer
+      __activityReset?: () => void;
+      __activityCheckAnswers?: () => void;
+      __activityShowAnswers?: (show: boolean) => void;
+      __activityShowNextAnswer?: () => void;
+    };
+    win.__activityReset = handleReset;
+    win.__activityCheckAnswers = handleCheckAnswers;
+    win.__activityShowAnswers = handleShowAnswers;
+    win.__activityShowNextAnswer = handleShowNextAnswer;
     return () => {
-      delete win.__activityReset
-      delete win.__activityCheckAnswers
-      delete win.__activityShowAnswers
-      delete win.__activityShowNextAnswer
-    }
-  }, [handleReset, handleCheckAnswers, handleShowAnswers, handleShowNextAnswer])
+      delete win.__activityReset;
+      delete win.__activityCheckAnswers;
+      delete win.__activityShowAnswers;
+      delete win.__activityShowNextAnswer;
+    };
+  }, [
+    handleReset,
+    handleCheckAnswers,
+    handleShowAnswers,
+    handleShowNextAnswer,
+  ]);
 
   if (sentences.length === 0) {
     return (
@@ -213,12 +218,12 @@ export function FillBlanks({ activity }: FillBlanksProps) {
           No sentences configured for this activity
         </p>
       </div>
-    )
+    );
   }
 
   const filledCount = Array.from(blanks.values()).filter((b) =>
     b.value.trim(),
-  ).length
+  ).length;
 
   return (
     <div className="relative flex h-full flex-col select-none">
@@ -257,7 +262,7 @@ export function FillBlanks({ activity }: FillBlanksProps) {
             Word Bank:
           </span>
           {words.map((word, i) => {
-            const used = isWordUsed(word)
+            const used = isWordUsed(word);
             return (
               <button
                 key={i}
@@ -272,15 +277,15 @@ export function FillBlanks({ activity }: FillBlanksProps) {
               >
                 {word}
               </button>
-            )
+            );
           })}
         </div>
       )}
 
       <div className="flex-1 space-y-4 overflow-auto">
         {sentences.map((sentence, index) => {
-          const blank = blanks.get(index)
-          const isCorrect = blank?.isCorrect
+          const blank = blanks.get(index);
+          const isCorrect = blank?.isCorrect;
 
           return (
             <div
@@ -297,7 +302,7 @@ export function FillBlanks({ activity }: FillBlanksProps) {
               <div className="relative inline-flex items-center">
                 <input
                   ref={(el) => {
-                    inputRefs.current[index] = el
+                    inputRefs.current[index] = el;
                   }}
                   type="text"
                   value={blank?.value || ""}
@@ -341,7 +346,7 @@ export function FillBlanks({ activity }: FillBlanksProps) {
                 </span>
               )}
             </div>
-          )
+          );
         })}
       </div>
 
@@ -371,5 +376,5 @@ export function FillBlanks({ activity }: FillBlanksProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

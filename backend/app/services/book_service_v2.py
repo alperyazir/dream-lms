@@ -28,10 +28,7 @@ class BookService:
             self.client = await get_dream_storage_client()
         return self.client
 
-    async def list_books(
-        self,
-        publisher_id: int | None = None
-    ) -> list[BookPublic]:
+    async def list_books(self, publisher_id: int | None = None) -> list[BookPublic]:
         """
         Get books from DCS, optionally filtered by publisher.
 
@@ -49,9 +46,7 @@ class BookService:
 
         # Use cache-aside pattern
         return await self.cache.get_or_fetch(
-            cache_key,
-            lambda: self._fetch_books(publisher_id),
-            ttl=600  # 10 minutes
+            cache_key, lambda: self._fetch_books(publisher_id), ttl=600  # 10 minutes
         )
 
     async def _fetch_books(self, publisher_id: int | None = None) -> list[BookPublic]:
@@ -87,9 +82,7 @@ class BookService:
         """
         cache_key = CacheKeys.book_by_id(str(book_id))
         return await self.cache.get_or_fetch(
-            cache_key,
-            lambda: self._fetch_book(book_id),
-            ttl=600  # 10 minutes
+            cache_key, lambda: self._fetch_book(book_id), ttl=600  # 10 minutes
         )
 
     async def _fetch_book(self, book_id: int) -> BookPublic | None:
@@ -146,11 +139,12 @@ class BookService:
         except Exception as e:
             logger.warning(f"Batch book fetch failed, falling back to individual: {e}")
             import asyncio
+
             individual = await asyncio.gather(
                 *(self.get_book(bid) for bid in missing_ids),
                 return_exceptions=True,
             )
-            for bid, book in zip(missing_ids, individual):
+            for bid, book in zip(missing_ids, individual, strict=False):
                 if not isinstance(book, BaseException) and book is not None:
                     result[bid] = book
 
@@ -170,7 +164,7 @@ class BookService:
         return await self.cache.get_or_fetch(
             cache_key,
             lambda: self._fetch_book_config(book_id),
-            ttl=3600  # 1 hour - config rarely changes
+            ttl=3600,  # 1 hour - config rarely changes
         )
 
     async def _fetch_book_config(self, book_id: int) -> dict[str, Any] | None:

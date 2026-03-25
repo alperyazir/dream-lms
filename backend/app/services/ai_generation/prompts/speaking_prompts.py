@@ -6,7 +6,6 @@ Speaking Open Response: topic-based speaking prompts from book content.
 
 from typing import Any
 
-
 # ============================================================
 # Speaking Open Response Prompts
 # ============================================================
@@ -31,13 +30,11 @@ SPEAKING_OR_DIFFICULTY_GUIDELINES = {
 - Describe, list, or give simple opinions.
 - Use familiar, everyday topics.
 - Example: "Tell me about your favorite food. What does it taste like?" (15-30 seconds)""",
-
     "medium": """## Medium (A2-B1):
 - Moderate prompts requiring 30-60 seconds of speech.
 - Compare, explain, or give opinions with reasons.
 - Requires some structured thinking.
 - Example: "Compare two seasons. Which do you prefer and why?" (30-60 seconds)""",
-
     "hard": """## Hard (B1-B2):
 - Complex prompts requiring 60-90 seconds of speech.
 - Analyze, argue, or tell detailed narratives.
@@ -105,7 +102,13 @@ SPEAKING_OR_JSON_SCHEMA: dict[str, Any] = {
                         "description": "3-5 criteria for teacher grading.",
                     },
                 },
-                "required": ["prompt", "context", "max_seconds", "difficulty", "grading_rubric"],
+                "required": [
+                    "prompt",
+                    "context",
+                    "max_seconds",
+                    "difficulty",
+                    "grading_rubric",
+                ],
             },
         },
     },
@@ -127,7 +130,9 @@ def build_speaking_open_response_prompt(
         difficulty.lower(), SPEAKING_OR_DIFFICULTY_GUIDELINES["medium"]
     )
     topics_str = ", ".join(topics) if topics else "General"
-    min_seconds, max_seconds = _SPEAKING_OR_TIME_RANGES.get(difficulty.lower(), (30, 60))
+    min_seconds, max_seconds = _SPEAKING_OR_TIME_RANGES.get(
+        difficulty.lower(), (30, 60)
+    )
 
     context_excerpt = ""
     if context_text:

@@ -2,10 +2,10 @@
  * QuestionEditor Component Tests (Story 27.19)
  */
 
-import { fireEvent, render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
-import { type QuestionData, QuestionEditor } from "./QuestionEditor"
+import { type QuestionData, QuestionEditor } from "./QuestionEditor";
 
 const mockQuestion: QuestionData = {
   question_id: "q1",
@@ -16,7 +16,7 @@ const mockQuestion: QuestionData = {
   explanation: "Paris is the capital and largest city of France.",
   source_module_id: 1,
   difficulty: "easy",
-}
+};
 
 describe("QuestionEditor", () => {
   it("renders question details correctly", () => {
@@ -28,19 +28,19 @@ describe("QuestionEditor", () => {
         onDelete={vi.fn()}
         onRegenerate={vi.fn()}
       />,
-    )
+    );
 
-    expect(screen.getByText("Question 1")).toBeInTheDocument()
+    expect(screen.getByText("Question 1")).toBeInTheDocument();
     expect(
       screen.getByText("What is the capital of France?"),
-    ).toBeInTheDocument()
-    expect(screen.getByText("A) London")).toBeInTheDocument()
-    expect(screen.getByText("B) Paris")).toBeInTheDocument()
-    expect(screen.getByText(/Paris is the capital/)).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+    expect(screen.getByText("A) London")).toBeInTheDocument();
+    expect(screen.getByText("B) Paris")).toBeInTheDocument();
+    expect(screen.getByText(/Paris is the capital/)).toBeInTheDocument();
+  });
 
   it("calls onUpdate when question text is edited", () => {
-    const onUpdate = vi.fn()
+    const onUpdate = vi.fn();
 
     render(
       <QuestionEditor
@@ -50,24 +50,24 @@ describe("QuestionEditor", () => {
         onDelete={vi.fn()}
         onRegenerate={vi.fn()}
       />,
-    )
+    );
 
-    const questionText = screen.getByText("What is the capital of France?")
-    fireEvent.click(questionText)
+    const questionText = screen.getByText("What is the capital of France?");
+    fireEvent.click(questionText);
 
-    const textarea = screen.getByRole("textbox")
+    const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, {
       target: { value: "What is the capital of Germany?" },
-    })
-    fireEvent.blur(textarea)
+    });
+    fireEvent.blur(textarea);
 
     expect(onUpdate).toHaveBeenCalledWith({
       question_text: "What is the capital of Germany?",
-    })
-  })
+    });
+  });
 
   it("calls onDelete when delete button is clicked", () => {
-    const onDelete = vi.fn()
+    const onDelete = vi.fn();
 
     render(
       <QuestionEditor
@@ -77,16 +77,16 @@ describe("QuestionEditor", () => {
         onDelete={onDelete}
         onRegenerate={vi.fn()}
       />,
-    )
+    );
 
-    const deleteButton = screen.getByLabelText("Delete question")
-    fireEvent.click(deleteButton)
+    const deleteButton = screen.getByLabelText("Delete question");
+    fireEvent.click(deleteButton);
 
-    expect(onDelete).toHaveBeenCalled()
-  })
+    expect(onDelete).toHaveBeenCalled();
+  });
 
   it("calls onRegenerate when regenerate button is clicked", () => {
-    const onRegenerate = vi.fn()
+    const onRegenerate = vi.fn();
 
     render(
       <QuestionEditor
@@ -96,13 +96,13 @@ describe("QuestionEditor", () => {
         onDelete={vi.fn()}
         onRegenerate={onRegenerate}
       />,
-    )
+    );
 
-    const regenerateButton = screen.getByLabelText("Regenerate question")
-    fireEvent.click(regenerateButton)
+    const regenerateButton = screen.getByLabelText("Regenerate question");
+    fireEvent.click(regenerateButton);
 
-    expect(onRegenerate).toHaveBeenCalled()
-  })
+    expect(onRegenerate).toHaveBeenCalled();
+  });
 
   it("shows correct answer indicator", () => {
     render(
@@ -113,8 +113,8 @@ describe("QuestionEditor", () => {
         onDelete={vi.fn()}
         onRegenerate={vi.fn()}
       />,
-    )
+    );
 
-    expect(screen.getByText("Correct")).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("Correct")).toBeInTheDocument();
+  });
+});

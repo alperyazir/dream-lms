@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -6,22 +6,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 
 interface School {
-  id: string
-  name: string
-  address?: string | null
-  teacher_count?: number
-  student_count?: number
-  book_count?: number
+  id: string;
+  name: string;
+  address?: string | null;
+  teacher_count?: number;
+  student_count?: number;
+  book_count?: number;
 }
 
 interface SchoolListViewProps {
-  schools: School[]
-  onEdit?: (school: School) => void
-  onDelete?: (school: School) => void
-  onViewDetails?: (school: School) => void
+  schools: School[];
+  onEdit?: (school: School) => void;
+  onDelete?: (school: School) => void;
+  onViewDetails?: (school: School) => void;
 }
 
 export function SchoolListView({
@@ -105,5 +105,5 @@ export function SchoolListView({
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

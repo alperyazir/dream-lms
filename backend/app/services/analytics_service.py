@@ -1,6 +1,5 @@
 """Analytics service for student performance calculations - Stories 5.1, 5.2, 5.3, 5.4."""
 
-import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -193,8 +192,10 @@ async def get_student_analytics(
     # Calculate summary metrics
     total_completed = len(completed_assignments)
     avg_score = (
-        sum(asgn.score for asgn, _, _ in completed_assignments if asgn.score is not None) /
-        total_completed
+        sum(
+            asgn.score for asgn, _, _ in completed_assignments if asgn.score is not None
+        )
+        / total_completed
         if total_completed > 0
         else 0.0
     )
@@ -228,9 +229,7 @@ async def get_student_analytics(
             time_spent_minutes=asgn.time_spent_minutes or 0,
         )
         for asgn, assignment, _ in sorted(
-            completed_assignments,
-            key=lambda x: x[0].completed_at,
-            reverse=True
+            completed_assignments, key=lambda x: x[0].completed_at, reverse=True
         )[:10]
     ]
 
@@ -255,7 +254,15 @@ async def get_student_analytics(
     activity_breakdown_data: dict[str, tuple[list[int], int]] = {}
     for asgn, assignment, activity in completed_assignments:
         if asgn.score is not None:
-            act_type = activity.activity_type if activity else (assignment.activity_type.value if assignment.activity_type else "unknown")
+            act_type = (
+                activity.activity_type
+                if activity
+                else (
+                    assignment.activity_type.value
+                    if assignment.activity_type
+                    else "unknown"
+                )
+            )
             if act_type not in activity_breakdown_data:
                 activity_breakdown_data[act_type] = ([], 0)
             scores, count = activity_breakdown_data[act_type]
@@ -304,7 +311,8 @@ async def get_student_analytics(
 
     # Time analytics
     total_time = sum(
-        asgn.time_spent_minutes for asgn, _, _ in completed_assignments
+        asgn.time_spent_minutes
+        for asgn, _, _ in completed_assignments
         if asgn.time_spent_minutes
     )
     avg_time_per_assignment = (
@@ -320,13 +328,17 @@ async def get_student_analytics(
     total_time_this_week = sum(
         asgn.time_spent_minutes
         for asgn, _, _ in completed_assignments
-        if asgn.completed_at and asgn.completed_at >= week_start and asgn.time_spent_minutes
+        if asgn.completed_at
+        and asgn.completed_at >= week_start
+        and asgn.time_spent_minutes
     )
 
     total_time_this_month = sum(
         asgn.time_spent_minutes
         for asgn, _, _ in completed_assignments
-        if asgn.completed_at and asgn.completed_at >= month_start and asgn.time_spent_minutes
+        if asgn.completed_at
+        and asgn.completed_at >= month_start
+        and asgn.time_spent_minutes
     )
 
     time_analytics = TimeAnalytics(
@@ -340,7 +352,7 @@ async def get_student_analytics(
         student=StudentInfo(
             id=str(student.id),
             name=user.full_name or user.email,
-            photo_url=None,  # TODO: Add profile photo support
+            photo_url=None,
         ),
         summary=summary,
         recent_activity=recent_activity,
@@ -430,11 +442,21 @@ async def get_class_analytics(
                 active_students=0,
             ),
             score_distribution=[
-                ScoreDistributionBucket(range_label="0-59%", min_score=0, max_score=59, count=0),
-                ScoreDistributionBucket(range_label="60-69%", min_score=60, max_score=69, count=0),
-                ScoreDistributionBucket(range_label="70-79%", min_score=70, max_score=79, count=0),
-                ScoreDistributionBucket(range_label="80-89%", min_score=80, max_score=89, count=0),
-                ScoreDistributionBucket(range_label="90-100%", min_score=90, max_score=100, count=0),
+                ScoreDistributionBucket(
+                    range_label="0-59%", min_score=0, max_score=59, count=0
+                ),
+                ScoreDistributionBucket(
+                    range_label="60-69%", min_score=60, max_score=69, count=0
+                ),
+                ScoreDistributionBucket(
+                    range_label="70-79%", min_score=70, max_score=79, count=0
+                ),
+                ScoreDistributionBucket(
+                    range_label="80-89%", min_score=80, max_score=89, count=0
+                ),
+                ScoreDistributionBucket(
+                    range_label="90-100%", min_score=90, max_score=100, count=0
+                ),
             ],
             leaderboard=[],
             struggling_students=[],
@@ -459,7 +481,8 @@ async def get_class_analytics(
     current_period_submissions = [
         (asgn_student, assignment, activity, student, user)
         for asgn_student, assignment, activity, student, user in all_submissions
-        if asgn_student.completed_at and asgn_student.completed_at >= current_start_naive
+        if asgn_student.completed_at
+        and asgn_student.completed_at >= current_start_naive
     ]
 
     # Filter for previous period
@@ -490,7 +513,9 @@ async def get_class_analytics(
     avg_score = sum(scores) / len(scores) if scores else 0.0
 
     # Completion rate
-    completion_rate = total_completed / total_submissions if total_submissions > 0 else 0.0
+    completion_rate = (
+        total_completed / total_submissions if total_submissions > 0 else 0.0
+    )
 
     summary = ClassAnalyticsSummary(
         avg_score=round(avg_score, 1),
@@ -507,9 +532,7 @@ async def get_class_analytics(
                 student_scores[student.id] = []
             student_scores[student.id].append(asgn_student.score)
 
-    student_averages = [
-        sum(scores) / len(scores) for scores in student_scores.values()
-    ]
+    student_averages = [sum(scores) / len(scores) for scores in student_scores.values()]
 
     # Count students in each bucket
     buckets = [
@@ -618,7 +641,15 @@ async def get_class_analytics(
     skill_perf_data: dict[str, list[float]] = {}
     for asgn_student, assignment, activity, _, _ in completed_submissions:
         if asgn_student.score is not None:
-            act_type = activity.activity_type if activity else (assignment.activity_type.value if assignment.activity_type else "unknown")
+            act_type = (
+                activity.activity_type
+                if activity
+                else (
+                    assignment.activity_type.value
+                    if assignment.activity_type
+                    else "unknown"
+                )
+            )
             skill_name = _ACTIVITY_TYPE_SKILL_SLUG.get(act_type, act_type)
             # Capitalize skill name for display
             display_name = skill_name.replace("_", " ").title()
@@ -647,7 +678,9 @@ async def get_class_analytics(
     ]
 
     current_avg = sum(current_scores) / len(current_scores) if current_scores else 0.0
-    previous_avg = sum(previous_scores) / len(previous_scores) if previous_scores else 0.0
+    previous_avg = (
+        sum(previous_scores) / len(previous_scores) if previous_scores else 0.0
+    )
 
     if previous_avg > 0:
         change_pct = ((current_avg - previous_avg) / previous_avg) * 100
@@ -675,7 +708,9 @@ async def get_class_analytics(
     previous_completed = len(previous_period_submissions)
 
     if previous_completed > 0:
-        completion_change = ((current_completed - previous_completed) / previous_completed) * 100
+        completion_change = (
+            (current_completed - previous_completed) / previous_completed
+        ) * 100
     else:
         completion_change = 0.0
 
@@ -752,7 +787,9 @@ async def get_assignment_detailed_results(
         config_json = activity.config_json
     else:
         # Content Library assignment - use assignment.activity_type and activity_content
-        activity_type = assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        activity_type = (
+            assignment.activity_type.value if assignment.activity_type else "ai_quiz"
+        )
         config_json = assignment.activity_content or {}
 
     # Get all student submissions for this assignment
@@ -795,7 +832,8 @@ async def get_assignment_detailed_results(
     scores = [
         asgn_student.score
         for asgn_student, _, _ in submissions
-        if asgn_student.status == AssignmentStatus.completed and asgn_student.score is not None
+        if asgn_student.status == AssignmentStatus.completed
+        and asgn_student.score is not None
     ]
 
     score_statistics = None
@@ -842,7 +880,11 @@ async def get_assignment_detailed_results(
     question_analysis = await _analyze_activity_answers(
         activity_type,
         config_json,
-        [asgn_student for asgn_student, _, _ in submissions if asgn_student.answers_json],
+        [
+            asgn_student
+            for asgn_student, _, _ in submissions
+            if asgn_student.answers_json
+        ],
     )
 
     return AssignmentDetailedResultsResponse(
@@ -880,9 +922,13 @@ def _extract_rubric_hints(config_json: dict, activity_type: str) -> list[str] | 
     elif activity_type == "speaking_open_response":
         # Speaking activities store grading_rubric at content level or per-item
         if isinstance(content, dict):
-            if "grading_rubric" in content and isinstance(content["grading_rubric"], list):
+            if "grading_rubric" in content and isinstance(
+                content["grading_rubric"], list
+            ):
                 hints.extend(content["grading_rubric"])
-            elif "rubric_hints" in content and isinstance(content["rubric_hints"], list):
+            elif "rubric_hints" in content and isinstance(
+                content["rubric_hints"], list
+            ):
                 hints.extend(content["rubric_hints"])
             items = content.get("items", [])
             if isinstance(items, list):
@@ -968,7 +1014,10 @@ async def get_student_assignment_answers(
 
     # Extract rubric hints for manual-grading activities
     rubric_hints = None
-    if activity_type_str in ("writing_free_response", "speaking_open_response") and config_json:
+    if (
+        activity_type_str in ("writing_free_response", "speaking_open_response")
+        and config_json
+    ):
         rubric_hints = _extract_rubric_hints(config_json, activity_type_str)
 
     return StudentAnswersResponse(
@@ -1331,7 +1380,7 @@ def _analyze_word_search_activity(
         return ActivityTypeAnalysis(activity_type=activity_type)
 
     # Count how many times each word was found
-    word_found_count: dict[str, int] = {word: 0 for word in target_words}
+    word_found_count: dict[str, int] = dict.fromkeys(target_words, 0)
     total_attempts = len(submissions)
 
     for submission in submissions:
@@ -1488,7 +1537,10 @@ async def get_teacher_insights(
 
     # Sort by severity (critical first) then by affected count
     filtered_insights.sort(
-        key=lambda x: (0 if x.severity == InsightSeverity.CRITICAL else 1, -x.affected_count)
+        key=lambda x: (
+            0 if x.severity == InsightSeverity.CRITICAL else 1,
+            -x.affected_count,
+        )
     )
 
     response = TeacherInsightsResponse(
@@ -1534,7 +1586,12 @@ async def _detect_low_performing_assignments(
     result = await session.execute(query)
     low_perf_assignments = result.all()
 
-    for assignment_id, assignment_name, avg_score, total_submissions in low_perf_assignments:
+    for (
+        assignment_id,
+        assignment_name,
+        avg_score,
+        total_submissions,
+    ) in low_perf_assignments:
         # Determine severity
         if avg_score < 50 or total_submissions > 5:
             severity = InsightSeverity.CRITICAL
@@ -1588,7 +1645,9 @@ async def _detect_common_misconceptions(
     for assignment, activity, asgn_student in submissions:
         if assignment.id not in assignment_submissions:
             assignment_submissions[assignment.id] = []
-        assignment_submissions[assignment.id].append((assignment, activity, asgn_student))
+        assignment_submissions[assignment.id].append(
+            (assignment, activity, asgn_student)
+        )
 
     # Analyze each assignment
     for assignment_id, assignment_data in assignment_submissions.items():
@@ -1621,7 +1680,9 @@ async def _detect_common_misconceptions(
 
                 question_totals[question_id] += 1
                 answer_str = str(answer) if answer else "(empty)"
-                question_stats[question_id][answer_str] = question_stats[question_id].get(answer_str, 0) + 1
+                question_stats[question_id][answer_str] = (
+                    question_stats[question_id].get(answer_str, 0) + 1
+                )
 
         # Check for misconceptions
         for question_id, correct_answer in correct_answers.items():
@@ -1638,7 +1699,8 @@ async def _detect_common_misconceptions(
             if incorrect_percentage > 60:
                 # Find most common wrong answer
                 wrong_answers = [
-                    (ans, count) for ans, count in question_stats[question_id].items()
+                    (ans, count)
+                    for ans, count in question_stats[question_id].items()
                     if ans != correct_answer
                 ]
                 wrong_answers.sort(key=lambda x: -x[1])
@@ -1763,7 +1825,11 @@ async def _detect_struggling_students(
 
         # Check thresholds
         if past_due_count > 3:
-            severity = InsightSeverity.CRITICAL if past_due_count > 5 else InsightSeverity.MODERATE
+            severity = (
+                InsightSeverity.CRITICAL
+                if past_due_count > 5
+                else InsightSeverity.MODERATE
+            )
             insights.append(
                 InsightCard(
                     id=f"struggling_student_pastdue_{student_id}",
@@ -1828,7 +1894,9 @@ async def _detect_activity_type_struggles(
             continue
 
         if avg_score < 60:
-            severity = InsightSeverity.CRITICAL if avg_score < 50 else InsightSeverity.MODERATE
+            severity = (
+                InsightSeverity.CRITICAL if avg_score < 50 else InsightSeverity.MODERATE
+            )
             insights.append(
                 InsightCard(
                     id=f"activity_type_struggle_{activity_type}",
@@ -1882,20 +1950,21 @@ async def _detect_time_management_issues(
         # Find students with unusually short time + low score
         threshold_time = avg_time * 0.25  # Less than 25% of average time
 
-        rushing_query = (
-            select(func.count(AssignmentStudent.id))
-            .where(
-                AssignmentStudent.assignment_id == assignment_id,
-                AssignmentStudent.status == AssignmentStatus.completed,
-                AssignmentStudent.time_spent_minutes < threshold_time,
-                AssignmentStudent.score < 60,
-            )
+        rushing_query = select(func.count(AssignmentStudent.id)).where(
+            AssignmentStudent.assignment_id == assignment_id,
+            AssignmentStudent.status == AssignmentStatus.completed,
+            AssignmentStudent.time_spent_minutes < threshold_time,
+            AssignmentStudent.score < 60,
         )
         rushing_result = await session.execute(rushing_query)
         rushing_count = rushing_result.scalar_one()
 
         if rushing_count >= 2:
-            severity = InsightSeverity.CRITICAL if rushing_count > 3 else InsightSeverity.MODERATE
+            severity = (
+                InsightSeverity.CRITICAL
+                if rushing_count > 3
+                else InsightSeverity.MODERATE
+            )
             insights.append(
                 InsightCard(
                     id=f"time_management_{assignment_id}",
@@ -1928,7 +1997,9 @@ async def get_insight_detail(
     """
     # First get all current insights
     insights_response = await get_teacher_insights(teacher_id, session)
-    insight_card = next((i for i in insights_response.insights if i.id == insight_id), None)
+    insight_card = next(
+        (i for i in insights_response.insights if i.id == insight_id), None
+    )
 
     if not insight_card:
         return None
@@ -1943,8 +2014,10 @@ async def get_insight_detail(
         assignment_id_str = insight_id.replace("low_perf_assignment_", "")
         try:
             assignment_uuid = uuid.UUID(assignment_id_str)
-            related_assignments, affected_students = await _get_assignment_insight_details(
-                assignment_uuid, teacher_id, session
+            related_assignments, affected_students = (
+                await _get_assignment_insight_details(
+                    assignment_uuid, teacher_id, session
+                )
             )
         except ValueError:
             pass
@@ -1975,16 +2048,18 @@ async def get_insight_detail(
 
     elif insight_id.startswith("activity_type_struggle_"):
         activity_type = insight_id.replace("activity_type_struggle_", "")
-        related_assignments, affected_students = await _get_activity_type_insight_details(
-            activity_type, teacher_id, session
+        related_assignments, affected_students = (
+            await _get_activity_type_insight_details(activity_type, teacher_id, session)
         )
 
     elif insight_id.startswith("time_management_"):
         assignment_id_str = insight_id.replace("time_management_", "")
         try:
             assignment_uuid = uuid.UUID(assignment_id_str)
-            related_assignments, affected_students = await _get_time_management_insight_details(
-                assignment_uuid, teacher_id, session
+            related_assignments, affected_students = (
+                await _get_time_management_insight_details(
+                    assignment_uuid, teacher_id, session
+                )
             )
         except ValueError:
             pass
@@ -2016,15 +2091,12 @@ async def _get_assignment_insight_details(
         return [], []
 
     # Get submission stats
-    stats_query = (
-        select(
-            func.avg(AssignmentStudent.score).label("avg_score"),
-            func.count(AssignmentStudent.id).label("total"),
-        )
-        .where(
-            AssignmentStudent.assignment_id == assignment_id,
-            AssignmentStudent.status == AssignmentStatus.completed,
-        )
+    stats_query = select(
+        func.avg(AssignmentStudent.score).label("avg_score"),
+        func.count(AssignmentStudent.id).label("total"),
+    ).where(
+        AssignmentStudent.assignment_id == assignment_id,
+        AssignmentStudent.status == AssignmentStatus.completed,
     )
     stats_result = await session.execute(stats_query)
     stats = stats_result.one()
@@ -2074,7 +2146,10 @@ async def _get_assignment_insight_details(
 
 
 async def _get_misconception_insight_details(
-    assignment_id: uuid.UUID, question_id: str, teacher_id: uuid.UUID, session: AsyncSession
+    assignment_id: uuid.UUID,
+    question_id: str,
+    teacher_id: uuid.UUID,
+    session: AsyncSession,
 ) -> tuple[list[RelatedAssignment], list[AffectedStudent], list[RelatedQuestion]]:
     """Get details for a misconception insight."""
     related_assignments = []
@@ -2097,19 +2172,18 @@ async def _get_misconception_insight_details(
         return [], [], []
 
     assignment, activity = row
-    correct_answers = _extract_correct_answers(activity.activity_type, activity.config_json)
+    correct_answers = _extract_correct_answers(
+        activity.activity_type, activity.config_json
+    )
     correct_answer = correct_answers.get(question_id, "")
 
     # Get submission stats
-    stats_query = (
-        select(
-            func.avg(AssignmentStudent.score).label("avg_score"),
-            func.count(AssignmentStudent.id).label("total"),
-        )
-        .where(
-            AssignmentStudent.assignment_id == assignment_id,
-            AssignmentStudent.status == AssignmentStatus.completed,
-        )
+    stats_query = select(
+        func.avg(AssignmentStudent.score).label("avg_score"),
+        func.count(AssignmentStudent.id).label("total"),
+    ).where(
+        AssignmentStudent.assignment_id == assignment_id,
+        AssignmentStudent.status == AssignmentStatus.completed,
     )
     stats_result = await session.execute(stats_query)
     stats = stats_result.one()
@@ -2125,7 +2199,9 @@ async def _get_misconception_insight_details(
             assignment_id=str(assignment_id),
             name=assignment.name,
             avg_score=round(stats[0] or 0, 1),
-            completion_rate=round((stats[1] or 0) / total_assigned if total_assigned > 0 else 0, 2),
+            completion_rate=round(
+                (stats[1] or 0) / total_assigned if total_assigned > 0 else 0, 2
+            ),
         )
     )
 
@@ -2146,7 +2222,10 @@ async def _get_misconception_insight_details(
     total_responses = 0
 
     for asgn_student, student, user in students_result.all():
-        if not asgn_student.answers_json or question_id not in asgn_student.answers_json:
+        if (
+            not asgn_student.answers_json
+            or question_id not in asgn_student.answers_json
+        ):
             continue
 
         total_responses += 1
@@ -2163,8 +2242,14 @@ async def _get_misconception_insight_details(
             wrong_answer_counts[answer] = wrong_answer_counts.get(answer, 0) + 1
 
     # Find most common wrong answer
-    common_wrong = max(wrong_answer_counts.items(), key=lambda x: x[1])[0] if wrong_answer_counts else None
-    incorrect_pct = (len(affected_students) / total_responses * 100) if total_responses > 0 else 0
+    common_wrong = (
+        max(wrong_answer_counts.items(), key=lambda x: x[1])[0]
+        if wrong_answer_counts
+        else None
+    )
+    incorrect_pct = (
+        (len(affected_students) / total_responses * 100) if total_responses > 0 else 0
+    )
 
     related_questions.append(
         RelatedQuestion(
@@ -2219,7 +2304,9 @@ async def _get_student_insight_details(
         AffectedStudent(
             student_id=str(student_id),
             name=user.full_name or user.email,
-            relevant_metric=f"Avg Score: {stats[0]:.1f}%" if stats[0] else "No completed work",
+            relevant_metric=(
+                f"Avg Score: {stats[0]:.1f}%" if stats[0] else "No completed work"
+            ),
         )
     )
 
@@ -2242,7 +2329,9 @@ async def _get_student_insight_details(
                 assignment_id=str(assignment.id),
                 name=assignment.name,
                 avg_score=asgn_student.score or 0,
-                completion_rate=1.0 if asgn_student.status == AssignmentStatus.completed else 0.0,
+                completion_rate=(
+                    1.0 if asgn_student.status == AssignmentStatus.completed else 0.0
+                ),
             )
         )
 
@@ -2291,7 +2380,9 @@ async def _get_activity_type_insight_details(
                 assignment_id=str(assignment_id),
                 name=name,
                 avg_score=round(avg_score or 0, 1),
-                completion_rate=round(total / total_assigned if total_assigned > 0 else 0, 2),
+                completion_rate=round(
+                    total / total_assigned if total_assigned > 0 else 0, 2
+                ),
             )
         )
 
@@ -2350,27 +2441,21 @@ async def _get_time_management_insight_details(
         return [], []
 
     # Get average time
-    avg_time_query = (
-        select(func.avg(AssignmentStudent.time_spent_minutes))
-        .where(
-            AssignmentStudent.assignment_id == assignment_id,
-            AssignmentStudent.status == AssignmentStatus.completed,
-            AssignmentStudent.time_spent_minutes > 0,
-        )
+    avg_time_query = select(func.avg(AssignmentStudent.time_spent_minutes)).where(
+        AssignmentStudent.assignment_id == assignment_id,
+        AssignmentStudent.status == AssignmentStatus.completed,
+        AssignmentStudent.time_spent_minutes > 0,
     )
     avg_time_result = await session.execute(avg_time_query)
     avg_time = avg_time_result.scalar_one() or 0
 
     # Get stats
-    stats_query = (
-        select(
-            func.avg(AssignmentStudent.score),
-            func.count(AssignmentStudent.id),
-        )
-        .where(
-            AssignmentStudent.assignment_id == assignment_id,
-            AssignmentStudent.status == AssignmentStatus.completed,
-        )
+    stats_query = select(
+        func.avg(AssignmentStudent.score),
+        func.count(AssignmentStudent.id),
+    ).where(
+        AssignmentStudent.assignment_id == assignment_id,
+        AssignmentStudent.status == AssignmentStatus.completed,
     )
     stats_result = await session.execute(stats_query)
     stats = stats_result.one()
@@ -2386,7 +2471,9 @@ async def _get_time_management_insight_details(
             assignment_id=str(assignment_id),
             name=assignment.name,
             avg_score=round(stats[0] or 0, 1),
-            completion_rate=round((stats[1] or 0) / total_assigned if total_assigned > 0 else 0, 2),
+            completion_rate=round(
+                (stats[1] or 0) / total_assigned if total_assigned > 0 else 0, 2
+            ),
         )
     )
 
@@ -2487,7 +2574,13 @@ def get_student_progress_period_start(period: StudentProgressPeriod) -> datetime
     if period == "this_week":
         # Start of this week (Monday)
         days_since_monday = now.weekday()
-        return now - timedelta(days=days_since_monday, hours=now.hour, minutes=now.minute, seconds=now.second, microseconds=now.microsecond)
+        return now - timedelta(
+            days=days_since_monday,
+            hours=now.hour,
+            minutes=now.minute,
+            seconds=now.second,
+            microseconds=now.microsecond,
+        )
     elif period == "this_month":
         # Start of this month
         return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -2497,7 +2590,9 @@ def get_student_progress_period_start(period: StudentProgressPeriod) -> datetime
 
 def _get_activity_type_label(activity_type: str) -> str:
     """Get user-friendly label for activity type."""
-    return ACTIVITY_TYPE_LABELS.get(activity_type, activity_type.replace("_", " ").title())
+    return ACTIVITY_TYPE_LABELS.get(
+        activity_type, activity_type.replace("_", " ").title()
+    )
 
 
 def _generate_improvement_tips(
@@ -2550,9 +2645,7 @@ def _generate_improvement_tips(
             "challenging activities."
         )
     elif avg_score >= 80:
-        tips.append(
-            "Great work! Review any mistakes to push your score even higher."
-        )
+        tips.append("Great work! Review any mistakes to push your score even higher.")
     elif avg_score >= 70:
         tips.append(
             "You're doing well! Take your time on each question to improve accuracy."
@@ -2751,7 +2844,9 @@ def _determine_improvement_trend(
     x_mean = (n - 1) / 2
     y_mean = sum(recent_scores) / n
 
-    numerator = sum((i - x_mean) * (score - y_mean) for i, score in enumerate(recent_scores))
+    numerator = sum(
+        (i - x_mean) * (score - y_mean) for i, score in enumerate(recent_scores)
+    )
     denominator = sum((i - x_mean) ** 2 for i in range(n))
 
     if denominator == 0:
@@ -2819,7 +2914,8 @@ async def get_student_progress(
     # Filter for period if needed
     if period_start_naive:
         period_completed = [
-            row for row in all_completed
+            row
+            for row in all_completed
             if row[0].completed_at and row[0].completed_at >= period_start_naive
         ]
     else:
@@ -2837,9 +2933,7 @@ async def get_student_progress(
     streak_start_date = None
     if current_streak > 0:
         completed_dates = [
-            row[0].completed_at.date()
-            for row in all_completed
-            if row[0].completed_at
+            row[0].completed_at.date() for row in all_completed if row[0].completed_at
         ]
         if completed_dates:
             today = datetime.now(UTC).date()
@@ -2848,7 +2942,8 @@ async def get_student_progress(
 
     # Determine improvement trend (use last 10 scores)
     recent_scores_for_trend = [
-        row[0].score for row in reversed(period_completed[:10])
+        row[0].score
+        for row in reversed(period_completed[:10])
         if row[0].score is not None
     ]
     improvement_trend = _determine_improvement_trend(recent_scores_for_trend)
@@ -2863,7 +2958,7 @@ async def get_student_progress(
 
     # Build score trend (for chart)
     score_trend = []
-    for asgn_student, assignment, activity in period_completed:
+    for asgn_student, assignment, _activity in period_completed:
         if asgn_student.completed_at and asgn_student.score is not None:
             score_trend.append(
                 ScoreTrendPoint(
@@ -2877,7 +2972,7 @@ async def get_student_progress(
 
     # Activity type breakdown
     activity_data: dict[str, tuple[list[int], int]] = {}
-    for asgn_student, assignment, activity in period_completed:
+    for asgn_student, _assignment, activity in period_completed:
         if asgn_student.score is not None:
             act_type = activity.activity_type if activity else "content_library"
             if act_type not in activity_data:
@@ -2945,10 +3040,7 @@ async def get_student_progress(
         if row[0].completed_at and row[0].completed_at >= month_start
     )
 
-    total_time = sum(
-        row[0].time_spent_minutes or 0
-        for row in period_completed
-    )
+    total_time = sum(row[0].time_spent_minutes or 0 for row in period_completed)
     avg_time_per = total_time / total_completed if total_completed > 0 else 0.0
 
     study_time = StudyTimeStats(

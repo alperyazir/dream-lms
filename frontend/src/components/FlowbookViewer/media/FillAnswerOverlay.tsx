@@ -1,10 +1,10 @@
-import { useState } from "react"
-import type { FillAnswerArea } from "@/types/flowbook"
+import { useState } from "react";
+import type { FillAnswerArea } from "@/types/flowbook";
 
 interface FillAnswerOverlayProps {
-  fillAnswer: FillAnswerArea
-  pageWidth: number
-  pageHeight: number
+  fillAnswer: FillAnswerArea;
+  pageWidth: number;
+  pageHeight: number;
 }
 
 export function FillAnswerOverlay({
@@ -12,18 +12,18 @@ export function FillAnswerOverlay({
   pageWidth,
   pageHeight,
 }: FillAnswerOverlayProps) {
-  const [isVisible, setIsVisible] = useState(false)
+  const [isVisible, setIsVisible] = useState(false);
 
   // Calculate position as percentage of page dimensions
-  const left = (fillAnswer.x / pageWidth) * 100
-  const top = (fillAnswer.y / pageHeight) * 100
-  const width = (fillAnswer.width / pageWidth) * 100
-  const height = (fillAnswer.height / pageHeight) * 100
+  const left = (fillAnswer.x / pageWidth) * 100;
+  const top = (fillAnswer.y / pageHeight) * 100;
+  const width = (fillAnswer.width / pageWidth) * 100;
+  const height = (fillAnswer.height / pageHeight) * 100;
 
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setIsVisible(!isVisible)
-  }
+    e.stopPropagation();
+    setIsVisible(!isVisible);
+  };
 
   return (
     <button
@@ -52,7 +52,8 @@ export function FillAnswerOverlay({
             style={{
               fontSize: `${height * 0.7}vh`,
               lineHeight: 1,
-              textShadow: "0 0 3px white, 0 0 3px white, 0 0 3px white, 0 0 3px white",
+              textShadow:
+                "0 0 3px white, 0 0 3px white, 0 0 3px white, 0 0 3px white",
               whiteSpace: "nowrap",
             }}
           >
@@ -61,5 +62,5 @@ export function FillAnswerOverlay({
         )}
       </div>
     </button>
-  )
+  );
 }

@@ -6,14 +6,14 @@
  * and a pulsing neural-network inspired aesthetic.
  */
 
-import { Brain, Sparkles, Zap, BookOpen, Pen } from "lucide-react"
-import { useEffect, useState, useMemo } from "react"
+import { Brain, Sparkles, Zap, BookOpen, Pen } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
 
 interface AIGeneratingAnimationProps {
   /** Activity type being generated */
-  activityType?: string | null
+  activityType?: string | null;
   /** Custom message to display */
-  message?: string
+  message?: string;
 }
 
 const STATUS_MESSAGES = [
@@ -23,7 +23,7 @@ const STATUS_MESSAGES = [
   "Generating distractors",
   "Validating answers",
   "Polishing output",
-]
+];
 
 const MIX_MESSAGES = [
   "Analyzing content for skill coverage",
@@ -32,53 +32,53 @@ const MIX_MESSAGES = [
   "Building grammar exercises",
   "Creating reading comprehension",
   "Assembling multi-skill activity",
-]
+];
 
 export function AIGeneratingAnimation({
   activityType,
   message,
 }: AIGeneratingAnimationProps) {
-  const [messageIdx, setMessageIdx] = useState(0)
-  const [elapsed, setElapsed] = useState(0)
+  const [messageIdx, setMessageIdx] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
 
-  const isMix = activityType === "mix_mode" || activityType === "mix"
+  const isMix = activityType === "mix_mode" || activityType === "mix";
 
   const messages = useMemo(() => {
-    if (message) return [message]
-    if (isMix) return MIX_MESSAGES
-    return STATUS_MESSAGES
-  }, [message, isMix])
+    if (message) return [message];
+    if (isMix) return MIX_MESSAGES;
+    return STATUS_MESSAGES;
+  }, [message, isMix]);
 
   // Rotate status messages
   useEffect(() => {
     const interval = setInterval(() => {
-      setMessageIdx((prev) => (prev + 1) % messages.length)
-    }, 2800)
-    return () => clearInterval(interval)
-  }, [messages])
+      setMessageIdx((prev) => (prev + 1) % messages.length);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [messages]);
 
   // Elapsed timer
   useEffect(() => {
-    const interval = setInterval(() => setElapsed((p) => p + 1), 1000)
-    return () => clearInterval(interval)
-  }, [])
+    const interval = setInterval(() => setElapsed((p) => p + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getTitle = () => {
     switch (activityType) {
       case "ai_quiz":
       case "vocabulary_quiz":
-        return "Generating Quiz"
+        return "Generating Quiz";
       case "reading_comprehension":
-        return "Building Passages"
+        return "Building Passages";
       case "grammar_fill_blank":
-        return "Creating Exercises"
+        return "Creating Exercises";
       case "mix_mode":
       case "mix":
-        return "Mixing Skills"
+        return "Mixing Skills";
       default:
-        return "Generating Content"
+        return "Generating Content";
     }
-  }
+  };
 
   return (
     <div className="h-full flex-1 flex flex-col items-center justify-center relative overflow-hidden">
@@ -164,5 +164,5 @@ export function AIGeneratingAnimation({
         {elapsed}s elapsed
       </p>
     </div>
-  )
+  );
 }

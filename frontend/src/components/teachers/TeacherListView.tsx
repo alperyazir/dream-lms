@@ -1,6 +1,6 @@
-import { ArrowUpDown, Trash2 } from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { ArrowUpDown, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -8,22 +8,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 
 interface Teacher {
-  id: string
-  user_full_name: string
-  user_email: string
-  school_name?: string | null
-  books_assigned?: number
-  classroom_count?: number
+  id: string;
+  user_full_name: string;
+  user_email: string;
+  school_name?: string | null;
+  books_assigned?: number;
+  classroom_count?: number;
 }
 
 interface TeacherListViewProps {
-  teachers: Teacher[]
-  onEdit?: (teacher: Teacher) => void
-  onViewDetails?: (teacher: Teacher) => void
-  onDelete?: (teacher: Teacher) => void
+  teachers: Teacher[];
+  onEdit?: (teacher: Teacher) => void;
+  onViewDetails?: (teacher: Teacher) => void;
+  onDelete?: (teacher: Teacher) => void;
 }
 
 type SortKey =
@@ -31,8 +31,8 @@ type SortKey =
   | "user_email"
   | "school_name"
   | "books_assigned"
-  | "classroom_count"
-type SortOrder = "asc" | "desc"
+  | "classroom_count";
+type SortOrder = "asc" | "desc";
 
 export function TeacherListView({
   teachers,
@@ -40,41 +40,41 @@ export function TeacherListView({
   onViewDetails,
   onDelete,
 }: TeacherListViewProps) {
-  const [sortKey, setSortKey] = useState<SortKey>("user_full_name")
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
+  const [sortKey, setSortKey] = useState<SortKey>("user_full_name");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
-      setSortKey(key)
-      setSortOrder("asc")
+      setSortKey(key);
+      setSortOrder("asc");
     }
-  }
+  };
 
   const sortedTeachers = [...teachers].sort((a, b) => {
-    let aVal: string | number | null | undefined = a[sortKey]
-    let bVal: string | number | null | undefined = b[sortKey]
+    let aVal: string | number | null | undefined = a[sortKey];
+    let bVal: string | number | null | undefined = b[sortKey];
 
     // Handle null/undefined values
-    if (aVal === null || aVal === undefined) aVal = ""
-    if (bVal === null || bVal === undefined) bVal = ""
+    if (aVal === null || aVal === undefined) aVal = "";
+    if (bVal === null || bVal === undefined) bVal = "";
 
     // Convert to lowercase for string comparison
-    if (typeof aVal === "string") aVal = aVal.toLowerCase()
-    if (typeof bVal === "string") bVal = bVal.toLowerCase()
+    if (typeof aVal === "string") aVal = aVal.toLowerCase();
+    if (typeof bVal === "string") bVal = bVal.toLowerCase();
 
-    if (aVal < bVal) return sortOrder === "asc" ? -1 : 1
-    if (aVal > bVal) return sortOrder === "asc" ? 1 : -1
-    return 0
-  })
+    if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
 
   const SortButton = ({
     column,
     label,
   }: {
-    column: SortKey
-    label: string
+    column: SortKey;
+    label: string;
   }) => (
     <Button
       variant="ghost"
@@ -85,7 +85,7 @@ export function TeacherListView({
       {label}
       <ArrowUpDown className="ml-2 h-3 w-3" />
     </Button>
-  )
+  );
 
   return (
     <div className="border rounded-md">
@@ -174,5 +174,5 @@ export function TeacherListView({
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

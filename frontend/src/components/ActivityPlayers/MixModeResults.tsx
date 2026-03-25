@@ -5,23 +5,27 @@
  * for correct/incorrect, and format-specific display.
  */
 
-import { CheckCircle2, XCircle, Clock } from "lucide-react"
-import { cn } from "@/lib/utils"
-import type { MixModeQuestionResult, MixModeResult } from "@/lib/resultParsers"
+import { CheckCircle2, XCircle, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { MixModeQuestionResult, MixModeResult } from "@/lib/resultParsers";
 
 interface MixModeResultsProps {
-  result: MixModeResult
-  hideSummary?: boolean
+  result: MixModeResult;
+  hideSummary?: boolean;
 }
 
 function formatLabel(skill: string, format: string): string {
-  const skillLabel = skill.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  const formatLabel = format.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  return `${skillLabel} • ${formatLabel}`
+  const skillLabel = skill
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+  const formatLabel = format
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return `${skillLabel} • ${formatLabel}`;
 }
 
 export function MixModeResults({ result, hideSummary }: MixModeResultsProps) {
-  const { question_results, auto_scored, pending_review } = result
+  const { question_results, auto_scored, pending_review } = result;
 
   return (
     <div className="space-y-4">
@@ -56,23 +60,23 @@ export function MixModeResults({ result, hideSummary }: MixModeResultsProps) {
         <QuestionResultCard key={qr.question_id} result={qr} index={idx} />
       ))}
     </div>
-  )
+  );
 }
 
 function QuestionResultCard({
   result,
   index,
 }: {
-  result: MixModeQuestionResult
-  index: number
+  result: MixModeQuestionResult;
+  index: number;
 }) {
-  const isPending = result.status === "pending_review"
-  const isCorrect = result.is_correct
+  const isPending = result.status === "pending_review";
+  const isCorrect = result.is_correct;
   const borderColor = isPending
     ? "border-l-amber-400"
     : isCorrect
       ? "border-l-green-500"
-      : "border-l-red-500"
+      : "border-l-red-500";
 
   return (
     <div
@@ -108,19 +112,20 @@ function QuestionResultCard({
       {/* Format-specific content */}
       <FormatResultDisplay result={result} />
     </div>
-  )
+  );
 }
 
 function FormatResultDisplay({ result }: { result: MixModeQuestionResult }) {
-  const { format_slug, question_data, student_answer } = result
+  const { format_slug, question_data, student_answer } = result;
 
   switch (format_slug) {
     case "mcq":
     case "multiple_choice":
     case "comprehension": {
-      const options: string[] = question_data.options || []
-      const correctIdx = question_data.correct_index
-      const studentIdx = student_answer !== undefined ? parseInt(student_answer, 10) : null
+      const options: string[] = question_data.options || [];
+      const correctIdx = question_data.correct_index;
+      const studentIdx =
+        student_answer !== undefined ? parseInt(student_answer, 10) : null;
       return (
         <div className="space-y-2">
           {question_data.passage && (
@@ -133,15 +138,18 @@ function FormatResultDisplay({ result }: { result: MixModeQuestionResult }) {
           </p>
           <div className="mt-2 space-y-1">
             {options.map((opt, idx) => {
-              const isStudentChoice = studentIdx === idx
-              const isCorrectChoice = correctIdx === idx
+              const isStudentChoice = studentIdx === idx;
+              const isCorrectChoice = correctIdx === idx;
               return (
                 <div
                   key={idx}
                   className={cn(
                     "rounded px-3 py-1.5 text-sm",
-                    isCorrectChoice && "bg-green-50 font-medium text-green-800 dark:bg-green-900/20 dark:text-green-300",
-                    isStudentChoice && !isCorrectChoice && "bg-red-50 text-red-700 line-through dark:bg-red-900/20 dark:text-red-400",
+                    isCorrectChoice &&
+                      "bg-green-50 font-medium text-green-800 dark:bg-green-900/20 dark:text-green-300",
+                    isStudentChoice &&
+                      !isCorrectChoice &&
+                      "bg-red-50 text-red-700 line-through dark:bg-red-900/20 dark:text-red-400",
                   )}
                 >
                   <span className="mr-2 font-medium">
@@ -151,7 +159,7 @@ function FormatResultDisplay({ result }: { result: MixModeQuestionResult }) {
                   {isCorrectChoice && " ✓"}
                   {isStudentChoice && !isCorrectChoice && " ✗"}
                 </div>
-              )
+              );
             })}
           </div>
           {question_data.explanation && (
@@ -160,7 +168,7 @@ function FormatResultDisplay({ result }: { result: MixModeQuestionResult }) {
             </p>
           )}
         </div>
-      )
+      );
     }
 
     case "fill_blank": {
@@ -171,70 +179,86 @@ function FormatResultDisplay({ result }: { result: MixModeQuestionResult }) {
           </p>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Your answer:</span>
-            <span className={cn(
-              "font-medium",
-              result.is_correct ? "text-green-600" : "text-red-600",
-            )}>
+            <span
+              className={cn(
+                "font-medium",
+                result.is_correct ? "text-green-600" : "text-red-600",
+              )}
+            >
               {student_answer || "(empty)"}
             </span>
           </div>
           {!result.is_correct && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Correct:</span>
-              <span className="font-medium text-green-600">{question_data.correct_answer}</span>
+              <span className="font-medium text-green-600">
+                {question_data.correct_answer}
+              </span>
             </div>
           )}
         </div>
-      )
+      );
     }
 
     case "word_builder": {
       return (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{question_data.definition}</p>
+          <p className="text-sm text-muted-foreground">
+            {question_data.definition}
+          </p>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Your word:</span>
-            <span className={cn(
-              "font-mono font-medium tracking-wider",
-              result.is_correct ? "text-green-600" : "text-red-600",
-            )}>
+            <span
+              className={cn(
+                "font-mono font-medium tracking-wider",
+                result.is_correct ? "text-green-600" : "text-red-600",
+              )}
+            >
               {student_answer || "(empty)"}
             </span>
           </div>
           {!result.is_correct && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Correct:</span>
-              <span className="font-mono font-medium text-green-600">{question_data.word}</span>
+              <span className="font-mono font-medium text-green-600">
+                {question_data.word}
+              </span>
             </div>
           )}
         </div>
-      )
+      );
     }
 
     case "sentence_builder": {
-      let placedWords: string[] = []
+      let placedWords: string[] = [];
       try {
-        placedWords = student_answer ? JSON.parse(student_answer) : []
-      } catch { /* ignore */ }
+        placedWords = student_answer ? JSON.parse(student_answer) : [];
+      } catch {
+        /* ignore */
+      }
       return (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Your sentence:</span>
-            <span className={cn(
-              "font-medium",
-              result.is_correct ? "text-green-600" : "text-red-600",
-            )}>
+            <span
+              className={cn(
+                "font-medium",
+                result.is_correct ? "text-green-600" : "text-red-600",
+              )}
+            >
               {placedWords.join(" ") || "(empty)"}
             </span>
           </div>
           {!result.is_correct && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Correct:</span>
-              <span className="font-medium text-green-600">{question_data.correct_sentence}</span>
+              <span className="font-medium text-green-600">
+                {question_data.correct_sentence}
+              </span>
             </div>
           )}
         </div>
-      )
+      );
     }
 
     case "matching": {
@@ -243,44 +267,54 @@ function FormatResultDisplay({ result }: { result: MixModeQuestionResult }) {
           <p className="font-medium">{question_data.word}</p>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Your answer:</span>
-            <span className={cn(
-              "font-medium",
-              result.is_correct ? "text-green-600" : "text-red-600",
-            )}>
+            <span
+              className={cn(
+                "font-medium",
+                result.is_correct ? "text-green-600" : "text-red-600",
+              )}
+            >
               {student_answer || "(empty)"}
             </span>
           </div>
           {!result.is_correct && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Correct:</span>
-              <span className="font-medium text-green-600">{question_data.definition}</span>
+              <span className="font-medium text-green-600">
+                {question_data.definition}
+              </span>
             </div>
           )}
         </div>
-      )
+      );
     }
 
     case "sentence_corrector": {
       return (
         <div className="space-y-2">
-          <p className="text-sm text-red-600 line-through">{question_data.incorrect_sentence}</p>
+          <p className="text-sm text-red-600 line-through">
+            {question_data.incorrect_sentence}
+          </p>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Your correction:</span>
-            <span className={cn(
-              "font-medium",
-              result.is_correct ? "text-green-600" : "text-red-600",
-            )}>
+            <span
+              className={cn(
+                "font-medium",
+                result.is_correct ? "text-green-600" : "text-red-600",
+              )}
+            >
               {student_answer || "(empty)"}
             </span>
           </div>
           {!result.is_correct && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Correct:</span>
-              <span className="font-medium text-green-600">{question_data.correct_sentence}</span>
+              <span className="font-medium text-green-600">
+                {question_data.correct_sentence}
+              </span>
             </div>
           )}
         </div>
-      )
+      );
     }
 
     case "free_response":
@@ -290,13 +324,19 @@ function FormatResultDisplay({ result }: { result: MixModeQuestionResult }) {
           <p className="font-medium">{question_data.prompt}</p>
           <div className="rounded bg-gray-50 p-3 text-sm dark:bg-neutral-700">
             {student_answer === "recorded" ? (
-              <span className="text-muted-foreground italic">Audio recording submitted</span>
+              <span className="text-muted-foreground italic">
+                Audio recording submitted
+              </span>
             ) : (
-              student_answer || <span className="text-muted-foreground italic">No response</span>
+              student_answer || (
+                <span className="text-muted-foreground italic">
+                  No response
+                </span>
+              )
             )}
           </div>
         </div>
-      )
+      );
     }
 
     default:
@@ -304,6 +344,6 @@ function FormatResultDisplay({ result }: { result: MixModeQuestionResult }) {
         <p className="text-sm text-muted-foreground">
           Format not supported for review: {format_slug}
         </p>
-      )
+      );
   }
 }

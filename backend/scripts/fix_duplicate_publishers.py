@@ -22,11 +22,11 @@ from pathlib import Path
 # Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlmodel import Session, select
 from sqlalchemy import func
+from sqlmodel import Session, select
 
 from app.core.db import engine
-from app.models import Publisher, Book, BookAccess, User
+from app.models import Book, Publisher, User
 
 
 def fix_duplicate_publishers():
@@ -45,7 +45,9 @@ def fix_duplicate_publishers():
             publishers_by_name[pub.name].append(pub)
 
         # Find duplicates (same name, multiple records)
-        duplicates = {name: pubs for name, pubs in publishers_by_name.items() if len(pubs) > 1}
+        duplicates = {
+            name: pubs for name, pubs in publishers_by_name.items() if len(pubs) > 1
+        }
 
         if not duplicates:
             print("✅ No duplicate publishers found. Database is clean.")
@@ -65,7 +67,9 @@ def fix_duplicate_publishers():
             for pub in pubs:
                 # Count books for this publisher
                 book_count = session.exec(
-                    select(func.count()).select_from(Book).where(Book.publisher_id == pub.id)
+                    select(func.count())
+                    .select_from(Book)
+                    .where(Book.publisher_id == pub.id)
                 ).one()
 
                 # Get user if exists
@@ -88,13 +92,15 @@ def fix_duplicate_publishers():
                 fixes_to_apply.append((pub_with_books, pubs_with_users))
 
         if not fixes_to_apply:
-            print("⚠️  No fixes to apply (no publisher with both books and users to link)")
+            print(
+                "⚠️  No fixes to apply (no publisher with both books and users to link)"
+            )
             return
 
         # Now apply fixes
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🔧 FIXING DUPLICATES")
-        print("="*60 + "\n")
+        print("=" * 60 + "\n")
 
         for pub_with_books, pubs_with_users in fixes_to_apply:
             print(f"Fixing publisher: '{pub_with_books.name}'")
@@ -108,9 +114,13 @@ def fix_duplicate_publishers():
             print(f"  Will link user: {username_to_link} ({user_id_to_link})")
 
             # Step 1: DELETE all duplicate publishers (the ones with users but no books)
-            print(f"\n  Step 1: Deleting {len(pubs_with_users)} duplicate publisher(s)...")
+            print(
+                f"\n  Step 1: Deleting {len(pubs_with_users)} duplicate publisher(s)..."
+            )
             for dup_pub, dup_user in pubs_with_users:
-                print(f"    → Deleting publisher {dup_pub.id} (linked to {dup_user.username})")
+                print(
+                    f"    → Deleting publisher {dup_pub.id} (linked to {dup_user.username})"
+                )
                 session.delete(dup_pub)
 
             # Flush deletes to clear the unique constraint
@@ -118,13 +128,15 @@ def fix_duplicate_publishers():
             print("    ✓ Duplicates deleted")
 
             # Step 2: Now link the user to the publisher with books
-            print(f"\n  Step 2: Linking user '{username_to_link}' to publisher {pub_with_books.id}...")
+            print(
+                f"\n  Step 2: Linking user '{username_to_link}' to publisher {pub_with_books.id}..."
+            )
             pub_with_books.user_id = user_id_to_link
             session.flush()
             print("    ✓ User linked")
 
             if len(pubs_with_users) > 1:
-                print(f"\n  ⚠️  Warning: Only first user linked. Orphaned users:")
+                print("\n  ⚠️  Warning: Only first user linked. Orphaned users:")
                 for _, extra_user in pubs_with_users[1:]:
                     print(f"     - {extra_user.username} (needs new publisher record)")
 
@@ -133,14 +145,16 @@ def fix_duplicate_publishers():
         print("\n✅ All changes committed successfully!")
 
         # Show final state
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("📊 FINAL STATE")
-        print("="*60 + "\n")
+        print("=" * 60 + "\n")
 
         final_publishers = session.exec(select(Publisher)).all()
         for pub in final_publishers:
             book_count = session.exec(
-                select(func.count()).select_from(Book).where(Book.publisher_id == pub.id)
+                select(func.count())
+                .select_from(Book)
+                .where(Book.publisher_id == pub.id)
             ).one()
             user = session.get(User, pub.user_id) if pub.user_id else None
 
@@ -157,5 +171,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

@@ -1,78 +1,78 @@
-import { Volume2 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { cn } from "@/lib/utils"
-import { getMediaUrl } from "@/services/booksApi"
-import type { AudioReference } from "@/types/flowbook"
-import { useFlowbookAudioStore } from "../stores"
+import { Volume2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import { getMediaUrl } from "@/services/booksApi";
+import type { AudioReference } from "@/types/flowbook";
+import { useFlowbookAudioStore } from "../stores";
 
 interface AudioIconProps {
-  audioRef: AudioReference
-  pageWidth: number
-  pageHeight: number
+  audioRef: AudioReference;
+  pageWidth: number;
+  pageHeight: number;
 }
 
 export function AudioIcon({ audioRef, pageWidth, pageHeight }: AudioIconProps) {
-  const { currentSrc, isPlaying, play, pause } = useFlowbookAudioStore()
-  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const { currentSrc, isPlaying, play, pause } = useFlowbookAudioStore();
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   // Build authenticated audio URL using blob (HTML5 audio can't send Authorization headers)
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
     const loadUrl = async () => {
       try {
         // Check URL type
         const isRemoteUrl =
-          audioRef.src.startsWith("http") || audioRef.src.startsWith("/api")
+          audioRef.src.startsWith("http") || audioRef.src.startsWith("/api");
 
         if (isRemoteUrl) {
           // Fetch as blob with Authorization header
-          const url = await getMediaUrl(audioRef.src)
+          const url = await getMediaUrl(audioRef.src);
           if (isMounted && url) {
-            blobUrl = url
-            setAudioUrl(url)
+            blobUrl = url;
+            setAudioUrl(url);
           }
         } else {
           // Local development fallback - direct URL
           if (isMounted) {
-            setAudioUrl(audioRef.src)
+            setAudioUrl(audioRef.src);
           }
         }
       } catch (error) {
-        console.error("Failed to get audio URL:", error)
+        console.error("Failed to get audio URL:", error);
       }
-    }
+    };
 
-    loadUrl()
+    loadUrl();
 
     return () => {
-      isMounted = false
+      isMounted = false;
       // Revoke blob URL on cleanup
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [audioRef.src])
+    };
+  }, [audioRef.src]);
 
-  const isActive = audioUrl && currentSrc === audioUrl && isPlaying
+  const isActive = audioUrl && currentSrc === audioUrl && isPlaying;
 
   // Calculate position as percentage of page dimensions
-  const leftPercent = (audioRef.x / pageWidth) * 100
-  const topPercent = (audioRef.y / pageHeight) * 100
+  const leftPercent = (audioRef.x / pageWidth) * 100;
+  const topPercent = (audioRef.y / pageHeight) * 100;
 
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent triggering zoom gestures
-    if (!audioUrl) return
+    e.stopPropagation(); // Prevent triggering zoom gestures
+    if (!audioUrl) return;
 
     if (isActive) {
-      pause()
+      pause();
     } else {
-      play(audioUrl)
+      play(audioUrl);
     }
-  }
+  };
 
-  if (!audioUrl) return null
+  if (!audioUrl) return null;
 
   return (
     <button
@@ -96,5 +96,5 @@ export function AudioIcon({ audioRef, pageWidth, pageHeight }: AudioIconProps) {
     >
       <Volume2 className={cn("h-3 w-3", isActive && "animate-pulse")} />
     </button>
-  )
+  );
 }

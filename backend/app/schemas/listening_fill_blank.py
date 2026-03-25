@@ -12,7 +12,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 ListeningFBDifficulty = Literal["auto", "easy", "medium", "hard"]
 
 
@@ -48,7 +47,8 @@ class ListeningFillBlankItem(BaseModel):
         description="Shuffled list of correct words + distractors for tap-to-fill.",
     )
     audio_url: str | None = Field(
-        default=None, description="URL to TTS audio of full_sentence.",
+        default=None,
+        description="URL to TTS audio of full_sentence.",
     )
     audio_status: Literal["pending", "ready", "failed"] = Field(default="pending")
     difficulty: str = Field(description="CEFR level (A1, A2, B1, B2).")

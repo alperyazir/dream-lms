@@ -2,6 +2,7 @@
 Tests for welcome email functionality.
 Story 17.2: Implement Welcome Email for New Users
 """
+
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -19,7 +20,7 @@ class TestGenerateNewAccountEmail:
             email_to="test@example.com",
             username="testuser",
             password="temp123",
-            full_name="Test User"
+            full_name="Test User",
         )
 
         # Check subject line format
@@ -40,7 +41,7 @@ class TestGenerateNewAccountEmail:
             email_to="test@example.com",
             username="testuser",
             password="temp123",
-            full_name=""
+            full_name="",
         )
 
         # Should use username as fallback
@@ -53,7 +54,7 @@ class TestGenerateNewAccountEmail:
             email_to="test@example.com",
             username="testuser",
             password="temp123",
-            full_name="Test User"
+            full_name="Test User",
         )
 
         # Subject should contain "Welcome to"
@@ -65,7 +66,7 @@ class TestGenerateNewAccountEmail:
             email_to="test@example.com",
             username="testuser",
             password="temp123",
-            full_name="Test User"
+            full_name="Test User",
         )
 
         # Should contain login link
@@ -79,7 +80,7 @@ class TestGenerateNewAccountEmail:
             email_to="test@example.com",
             username="testuser",
             password="temp123",
-            full_name="Test User"
+            full_name="Test User",
         )
 
         html = email_data.html_content
@@ -93,16 +94,20 @@ class TestPublisherCreationEmail:
     @patch("app.api.routes.admin.send_email")
     @patch("app.api.routes.admin.generate_new_account_email")
     def test_email_sent_when_smtp_configured(
-        self, mock_generate_email, mock_send_email, mock_settings,
-        client: TestClient, session: Session, admin_token: str
+        self,
+        mock_generate_email,
+        mock_send_email,
+        mock_settings,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
     ):
         """Test welcome email is sent when SMTP is configured [17.2 AC: 1]"""
         mock_settings.emails_enabled = True
         mock_settings.PROJECT_NAME = "Dream LMS"
         mock_settings.FRONTEND_HOST = "http://localhost"
         mock_generate_email.return_value = MagicMock(
-            subject="Welcome",
-            html_content="<html>Welcome</html>"
+            subject="Welcome", html_content="<html>Welcome</html>"
         )
 
         response = client.post(
@@ -113,8 +118,8 @@ class TestPublisherCreationEmail:
                 "username": "testpub",
                 "user_email": "pub@example.com",
                 "full_name": "Test Publisher User",
-                "contact_email": "contact@example.com"
-            }
+                "contact_email": "contact@example.com",
+            },
         )
 
         if response.status_code == 201:
@@ -128,8 +133,12 @@ class TestPublisherCreationEmail:
     @patch("app.api.routes.admin.settings")
     @patch("app.api.routes.admin.send_email")
     def test_fallback_when_email_fails(
-        self, mock_send_email, mock_settings,
-        client: TestClient, session: Session, admin_token: str
+        self,
+        mock_send_email,
+        mock_settings,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
     ):
         """Test password returned when email sending fails [17.2 AC: 5-6]"""
         mock_settings.emails_enabled = True
@@ -145,8 +154,8 @@ class TestPublisherCreationEmail:
                 "username": "testpub2",
                 "user_email": "pub2@example.com",
                 "full_name": "Test Publisher User 2",
-                "contact_email": "contact2@example.com"
-            }
+                "contact_email": "contact2@example.com",
+            },
         )
 
         if response.status_code == 201:
@@ -154,13 +163,20 @@ class TestPublisherCreationEmail:
             # Should return temporary password when email fails
             assert data.get("temporary_password") is not None
             assert data.get("password_emailed") is False
-            assert "failed" in data.get("message", "").lower() or "share" in data.get("message", "").lower()
+            assert (
+                "failed" in data.get("message", "").lower()
+                or "share" in data.get("message", "").lower()
+            )
 
     @patch("app.api.routes.admin.settings")
     @patch("app.api.routes.admin.send_email")
     def test_no_email_when_smtp_disabled(
-        self, mock_send_email, mock_settings,
-        client: TestClient, session: Session, admin_token: str
+        self,
+        mock_send_email,
+        mock_settings,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
     ):
         """Test no email attempt when SMTP is disabled [17.2 AC: 5]"""
         mock_settings.emails_enabled = False
@@ -173,8 +189,8 @@ class TestPublisherCreationEmail:
                 "username": "testpub3",
                 "user_email": "pub3@example.com",
                 "full_name": "Test Publisher User 3",
-                "contact_email": "contact3@example.com"
-            }
+                "contact_email": "contact3@example.com",
+            },
         )
 
         if response.status_code == 201:
@@ -199,7 +215,7 @@ class TestTeacherCreationEmail:
             email_to="teacher@example.com",
             username="testteacher",
             password="temppass123",
-            full_name="Test Teacher User"
+            full_name="Test Teacher User",
         )
 
         # Verify email contains teacher's full name
@@ -215,16 +231,20 @@ class TestStudentCreationEmail:
     @patch("app.api.routes.admin.send_email")
     @patch("app.api.routes.admin.generate_new_account_email")
     def test_email_sent_with_full_name(
-        self, mock_generate_email, mock_send_email, mock_settings,
-        client: TestClient, session: Session, admin_token: str
+        self,
+        mock_generate_email,
+        mock_send_email,
+        mock_settings,
+        client: TestClient,
+        session: Session,
+        admin_token: str,
     ):
         """Test welcome email includes full_name for students [17.2 AC: 4]"""
         mock_settings.emails_enabled = True
         mock_settings.PROJECT_NAME = "Dream LMS"
         mock_settings.FRONTEND_HOST = "http://localhost"
         mock_generate_email.return_value = MagicMock(
-            subject="Welcome",
-            html_content="<html>Welcome</html>"
+            subject="Welcome", html_content="<html>Welcome</html>"
         )
 
         response = client.post(
@@ -234,8 +254,8 @@ class TestStudentCreationEmail:
                 "username": "teststudent",
                 "user_email": "student@example.com",
                 "full_name": "Test Student User",
-                "grade_level": "10"
-            }
+                "grade_level": "10",
+            },
         )
 
         if response.status_code == 201:

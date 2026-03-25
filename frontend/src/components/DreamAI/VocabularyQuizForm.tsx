@@ -5,37 +5,37 @@
  * Allows teachers to configure quiz parameters: book, modules, length, CEFR levels.
  */
 
-import { BookOpen, Loader2, Sparkles } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
+import { BookOpen, Loader2, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { booksApi } from "@/services/booksApi"
-import type { Book, BookStructureResponse } from "@/types/book"
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { booksApi } from "@/services/booksApi";
+import type { Book, BookStructureResponse } from "@/types/book";
 import type {
   CEFRLevel,
   QuizLength,
   VocabularyQuizGenerationRequest,
-} from "@/types/vocabulary-quiz"
-import { CEFR_LEVELS, QUIZ_LENGTH_OPTIONS } from "@/types/vocabulary-quiz"
+} from "@/types/vocabulary-quiz";
+import { CEFR_LEVELS, QUIZ_LENGTH_OPTIONS } from "@/types/vocabulary-quiz";
 
 interface VocabularyQuizFormProps {
   /** Callback when quiz generation is requested */
-  onGenerate: (request: VocabularyQuizGenerationRequest) => void
+  onGenerate: (request: VocabularyQuizGenerationRequest) => void;
   /** Whether generation is in progress */
-  isGenerating?: boolean
+  isGenerating?: boolean;
   /** Error message to display */
-  error?: string | null
+  error?: string | null;
 }
 
 export function VocabularyQuizForm({
@@ -44,114 +44,116 @@ export function VocabularyQuizForm({
   error = null,
 }: VocabularyQuizFormProps) {
   // Books data
-  const [books, setBooks] = useState<Book[]>([])
-  const [loadingBooks, setLoadingBooks] = useState(true)
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loadingBooks, setLoadingBooks] = useState(true);
 
   // Selected book and its structure
-  const [selectedBookId, setSelectedBookId] = useState<number | null>(null)
+  const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
   const [bookStructure, setBookStructure] =
-    useState<BookStructureResponse | null>(null)
-  const [loadingStructure, setLoadingStructure] = useState(false)
+    useState<BookStructureResponse | null>(null);
+  const [loadingStructure, setLoadingStructure] = useState(false);
 
   // Form state
-  const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set())
-  const [allModulesSelected, setAllModulesSelected] = useState(true)
-  const [quizLength, setQuizLength] = useState<QuizLength>(10)
+  const [selectedModules, setSelectedModules] = useState<Set<string>>(
+    new Set(),
+  );
+  const [allModulesSelected, setAllModulesSelected] = useState(true);
+  const [quizLength, setQuizLength] = useState<QuizLength>(10);
   const [selectedCefrLevels, setSelectedCefrLevels] = useState<Set<CEFRLevel>>(
     new Set(),
-  )
-  const [includeAudio, setIncludeAudio] = useState(true)
+  );
+  const [includeAudio, setIncludeAudio] = useState(true);
 
   // Load books on mount
   useEffect(() => {
     async function loadBooks() {
       try {
-        setLoadingBooks(true)
-        const response = await booksApi.getBooks({ limit: 100 })
-        setBooks(response.items)
+        setLoadingBooks(true);
+        const response = await booksApi.getBooks({ limit: 100 });
+        setBooks(response.items);
       } catch (err) {
-        console.error("Failed to load books:", err)
+        console.error("Failed to load books:", err);
       } finally {
-        setLoadingBooks(false)
+        setLoadingBooks(false);
       }
     }
-    loadBooks()
-  }, [])
+    loadBooks();
+  }, []);
 
   // Load book structure when book is selected
   useEffect(() => {
     async function loadStructure() {
       if (!selectedBookId) {
-        setBookStructure(null)
-        return
+        setBookStructure(null);
+        return;
       }
 
       try {
-        setLoadingStructure(true)
-        const structure = await booksApi.getBookStructure(selectedBookId)
-        setBookStructure(structure)
+        setLoadingStructure(true);
+        const structure = await booksApi.getBookStructure(selectedBookId);
+        setBookStructure(structure);
         // Reset module selection when book changes
-        setSelectedModules(new Set())
-        setAllModulesSelected(true)
+        setSelectedModules(new Set());
+        setAllModulesSelected(true);
       } catch (err) {
-        console.error("Failed to load book structure:", err)
-        setBookStructure(null)
+        console.error("Failed to load book structure:", err);
+        setBookStructure(null);
       } finally {
-        setLoadingStructure(false)
+        setLoadingStructure(false);
       }
     }
-    loadStructure()
-  }, [selectedBookId])
+    loadStructure();
+  }, [selectedBookId]);
 
   // Handle book selection
   const handleBookChange = useCallback((value: string) => {
-    setSelectedBookId(parseInt(value, 10))
-  }, [])
+    setSelectedBookId(parseInt(value, 10));
+  }, []);
 
   // Handle all modules toggle
   const handleAllModulesToggle = useCallback((checked: boolean) => {
-    setAllModulesSelected(checked)
+    setAllModulesSelected(checked);
     if (checked) {
-      setSelectedModules(new Set())
+      setSelectedModules(new Set());
     }
-  }, [])
+  }, []);
 
   // Handle individual module toggle
   const handleModuleToggle = useCallback(
     (moduleName: string, checked: boolean) => {
       setSelectedModules((prev) => {
-        const next = new Set(prev)
+        const next = new Set(prev);
         if (checked) {
-          next.add(moduleName)
+          next.add(moduleName);
         } else {
-          next.delete(moduleName)
+          next.delete(moduleName);
         }
-        return next
-      })
+        return next;
+      });
       // If modules are manually selected, uncheck "all modules"
       if (checked) {
-        setAllModulesSelected(false)
+        setAllModulesSelected(false);
       }
     },
     [],
-  )
+  );
 
   // Handle CEFR level toggle
   const handleCefrToggle = useCallback((level: CEFRLevel, checked: boolean) => {
     setSelectedCefrLevels((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (checked) {
-        next.add(level)
+        next.add(level);
       } else {
-        next.delete(level)
+        next.delete(level);
       }
-      return next
-    })
-  }, [])
+      return next;
+    });
+  }, []);
 
   // Handle form submission
   const handleSubmit = useCallback(() => {
-    if (!selectedBookId) return
+    if (!selectedBookId) return;
 
     // Get module IDs from selected module names
     const moduleIds: number[] | undefined =
@@ -159,7 +161,7 @@ export function VocabularyQuizForm({
         ? undefined // All modules
         : bookStructure?.modules
             .filter((m) => selectedModules.has(m.name))
-            .map((_, index) => index + 1) // Using 1-based index as module ID
+            .map((_, index) => index + 1); // Using 1-based index as module ID
 
     const request: VocabularyQuizGenerationRequest = {
       book_id: selectedBookId,
@@ -170,9 +172,9 @@ export function VocabularyQuizForm({
           ? Array.from(selectedCefrLevels)
           : undefined,
       include_audio: includeAudio,
-    }
+    };
 
-    onGenerate(request)
+    onGenerate(request);
   }, [
     selectedBookId,
     allModulesSelected,
@@ -182,9 +184,9 @@ export function VocabularyQuizForm({
     selectedCefrLevels,
     includeAudio,
     onGenerate,
-  ])
+  ]);
 
-  const isFormValid = selectedBookId !== null
+  const isFormValid = selectedBookId !== null;
 
   return (
     <Card className="mx-auto max-w-2xl shadow-lg">
@@ -375,7 +377,7 @@ export function VocabularyQuizForm({
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-export default VocabularyQuizForm
+export default VocabularyQuizForm;

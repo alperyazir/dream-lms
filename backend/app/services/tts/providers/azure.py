@@ -409,9 +409,7 @@ class AzureTTSProvider(TTSProvider):
                 # Calculate duration from audio_duration if available
                 duration_ms = 0
                 if result.audio_duration:
-                    duration_ms = int(
-                        result.audio_duration.total_seconds() * 1000
-                    )
+                    duration_ms = int(result.audio_duration.total_seconds() * 1000)
 
                 logger.debug(
                     f"Generated audio: {len(audio_data)} bytes, "

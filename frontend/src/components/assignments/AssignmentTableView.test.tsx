@@ -1,7 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react"
-import { vi } from "vitest"
-import type { AssignmentListItem } from "@/types/assignment"
-import { AssignmentTableView } from "./AssignmentTableView"
+import { fireEvent, render, screen } from "@testing-library/react";
+import { vi } from "vitest";
+import type { AssignmentListItem } from "@/types/assignment";
+import { AssignmentTableView } from "./AssignmentTableView";
 
 const mockAssignments: AssignmentListItem[] = [
   {
@@ -42,7 +42,7 @@ const mockAssignments: AssignmentListItem[] = [
     scheduled_publish_date: null,
     status: "draft",
   },
-]
+];
 
 describe("AssignmentTableView", () => {
   const mockHandlers = {
@@ -50,41 +50,41 @@ describe("AssignmentTableView", () => {
     onEdit: vi.fn(),
     onDelete: vi.fn(),
     onSort: vi.fn(),
-  }
+  };
 
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   it("renders table with assignments", () => {
     render(
       <AssignmentTableView assignments={mockAssignments} {...mockHandlers} />,
-    )
+    );
 
-    expect(screen.getByText("Assignment 1")).toBeInTheDocument()
-    expect(screen.getByText("Assignment 2")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Assignment 1")).toBeInTheDocument();
+    expect(screen.getByText("Assignment 2")).toBeInTheDocument();
+  });
 
   it("displays empty state when no assignments", () => {
-    render(<AssignmentTableView assignments={[]} {...mockHandlers} />)
+    render(<AssignmentTableView assignments={[]} {...mockHandlers} />);
 
-    expect(screen.getByText("No assignments found")).toBeInTheDocument()
-  })
+    expect(screen.getByText("No assignments found")).toBeInTheDocument();
+  });
 
   it("calls onView when view button is clicked", () => {
     render(
       <AssignmentTableView assignments={mockAssignments} {...mockHandlers} />,
-    )
+    );
 
-    const viewButtons = screen.getAllByRole("button")
+    const viewButtons = screen.getAllByRole("button");
     const firstViewButton = viewButtons.find((btn) =>
       btn.querySelector('svg[class*="lucide-eye"]'),
-    )
+    );
     if (firstViewButton) {
-      fireEvent.click(firstViewButton)
-      expect(mockHandlers.onView).toHaveBeenCalledWith(mockAssignments[0])
+      fireEvent.click(firstViewButton);
+      expect(mockHandlers.onView).toHaveBeenCalledWith(mockAssignments[0]);
     }
-  })
+  });
 
   it("calls onSort when sortable column is clicked", () => {
     render(
@@ -93,29 +93,29 @@ describe("AssignmentTableView", () => {
         {...mockHandlers}
         sortBy="due_date"
       />,
-    )
+    );
 
-    const dueDateHeader = screen.getByText(/Due Date/)
-    fireEvent.click(dueDateHeader)
-    expect(mockHandlers.onSort).toHaveBeenCalledWith("due_date")
-  })
+    const dueDateHeader = screen.getByText(/Due Date/);
+    fireEvent.click(dueDateHeader);
+    expect(mockHandlers.onSort).toHaveBeenCalledWith("due_date");
+  });
 
   it("displays dash for null due dates", () => {
     render(
       <AssignmentTableView assignments={mockAssignments} {...mockHandlers} />,
-    )
+    );
 
-    const cells = screen.getAllByRole("cell")
-    const hasDash = cells.some((cell) => cell.textContent === "-")
-    expect(hasDash).toBe(true)
-  })
+    const cells = screen.getAllByRole("cell");
+    const hasDash = cells.some((cell) => cell.textContent === "-");
+    expect(hasDash).toBe(true);
+  });
 
   it("displays student count correctly", () => {
     render(
       <AssignmentTableView assignments={mockAssignments} {...mockHandlers} />,
-    )
+    );
 
-    expect(screen.getByText("10 students")).toBeInTheDocument()
-    expect(screen.getByText("5 students")).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("10 students")).toBeInTheDocument();
+    expect(screen.getByText("5 students")).toBeInTheDocument();
+  });
+});

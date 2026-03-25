@@ -13,8 +13,6 @@ from sqlmodel import and_, case, func, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models import (
-    Assignment,
-    AssignmentStudent,
     Class,
     ClassStudent,
     DirectMessage,
@@ -72,6 +70,7 @@ async def get_allowed_recipients(
     Returns:
         List of allowed recipients
     """
+
     def _to_recipient(row: Any) -> RecipientPublic:
         name = row.full_name or (row.email.split("@")[0] if row.email else "Unknown")
         return RecipientPublic(
@@ -86,36 +85,35 @@ async def get_allowed_recipients(
 
     if user_role == UserRole.admin:
         # Admins can message all teachers, publishers, and students
-        query = (
-            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
-            .where(
-                User.role.in_([UserRole.teacher, UserRole.publisher, UserRole.student]),
-                User.id != user_id,
-            )
+        query = select(
+            User.id, User.full_name, User.email, User.role, User.dcs_publisher_id
+        ).where(
+            User.role.in_([UserRole.teacher, UserRole.publisher, UserRole.student]),
+            User.id != user_id,
         )
         result = await db.execute(query)
         recipients = [_to_recipient(row) for row in result.all()]
 
     elif user_role == UserRole.supervisor:
         # Supervisors can message all users (admin, publisher, teacher, student)
-        query = (
-            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
-            .where(
-                User.role.in_([UserRole.admin, UserRole.publisher, UserRole.teacher, UserRole.student]),
-                User.id != user_id,
-            )
+        query = select(
+            User.id, User.full_name, User.email, User.role, User.dcs_publisher_id
+        ).where(
+            User.role.in_(
+                [UserRole.admin, UserRole.publisher, UserRole.teacher, UserRole.student]
+            ),
+            User.id != user_id,
         )
         result = await db.execute(query)
         recipients = [_to_recipient(row) for row in result.all()]
 
     elif user_role == UserRole.publisher:
         # Publishers can message all admins and all teachers
-        query = (
-            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
-            .where(
-                User.role.in_([UserRole.admin, UserRole.teacher]),
-                User.id != user_id,
-            )
+        query = select(
+            User.id, User.full_name, User.email, User.role, User.dcs_publisher_id
+        ).where(
+            User.role.in_([UserRole.admin, UserRole.teacher]),
+            User.id != user_id,
         )
         result = await db.execute(query)
         recipients = [_to_recipient(row) for row in result.all()]
@@ -130,15 +128,21 @@ async def get_allowed_recipients(
         # Filter by teacher_id first, then join to students
         if teacher_id:
             student_query = (
-                select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
-                .join(Student, Student.user_id == User.id)
-                .join(
-                    ClassStudent,
-                    ClassStudent.student_id == Student.id
+                select(
+                    User.id,
+                    User.full_name,
+                    User.email,
+                    User.role,
+                    User.dcs_publisher_id,
                 )
+                .join(Student, Student.user_id == User.id)
+                .join(ClassStudent, ClassStudent.student_id == Student.id)
                 .join(
                     Class,
-                    and_(Class.id == ClassStudent.class_id, Class.teacher_id == teacher_id)
+                    and_(
+                        Class.id == ClassStudent.class_id,
+                        Class.teacher_id == teacher_id,
+                    ),
                 )
                 .distinct()
             )
@@ -157,7 +161,9 @@ async def get_allowed_recipients(
         # Students can only message teachers of their classes
         # Start from ClassStudent filtered by student_id to use index
         query = (
-            select(User.id, User.full_name, User.email, User.role, User.dcs_publisher_id)
+            select(
+                User.id, User.full_name, User.email, User.role, User.dcs_publisher_id
+            )
             .select_from(ClassStudent)
             .where(ClassStudent.student_id == student_id)
             .join(Class, Class.id == ClassStudent.class_id)
@@ -192,9 +198,7 @@ async def _enrich_publisher_organization_names(
     publisher_service = get_publisher_service()
 
     # Find all publisher recipients
-    publisher_recipient_ids = [
-        r.user_id for r in recipients if r.role == "publisher"
-    ]
+    publisher_recipient_ids = [r.user_id for r in recipients if r.role == "publisher"]
 
     if not publisher_recipient_ids:
         return
@@ -217,7 +221,7 @@ async def _enrich_publisher_organization_names(
         return_exceptions=True,
     )
     publisher_name_map: dict[int, str] = {}
-    for dcs_id, result in zip(unique_dcs_ids, fetch_results):
+    for dcs_id, result in zip(unique_dcs_ids, fetch_results, strict=False):
         if isinstance(result, BaseException):
             logger.warning(f"Failed to fetch publisher {dcs_id} name: {result}")
         elif result is not None:
@@ -462,8 +466,7 @@ async def get_conversations(
             DirectMessage.sent_at,
             DirectMessage.is_read,
             DirectMessage.sender_id,
-        )
-        .where(
+        ).where(
             or_(
                 DirectMessage.sender_id == user_id,
                 DirectMessage.recipient_id == user_id,
@@ -476,8 +479,7 @@ async def get_conversations(
         select(
             messages_with_partner.c.partner_id,
             func.max(messages_with_partner.c.sent_at).label("max_sent_at"),
-        )
-        .group_by(messages_with_partner.c.partner_id)
+        ).group_by(messages_with_partner.c.partner_id)
     ).subquery()
 
     # Get unread count per partner (messages received from partner that are unread)
@@ -553,7 +555,8 @@ async def get_conversations(
     conversations = [
         ConversationPublic(
             participant_id=row.partner_id,
-            participant_name=row.full_name or (row.email.split("@")[0] if row.email else "Unknown"),
+            participant_name=row.full_name
+            or (row.email.split("@")[0] if row.email else "Unknown"),
             participant_email=row.email,
             participant_role=row.role.value,
             last_message_preview=row.last_message[:100] if row.last_message else "",
@@ -624,8 +627,7 @@ async def get_thread(
     # Mark unread messages as read
     if mark_as_read:
         unread_messages = [
-            m for m in messages
-            if m.recipient_id == user_id and not m.is_read
+            m for m in messages if m.recipient_id == user_id and not m.is_read
         ]
         for msg in unread_messages:
             msg.is_read = True
@@ -635,7 +637,9 @@ async def get_thread(
             await db.commit()
 
     def _name(u: User) -> str:
-        return u.full_name or (u.email.split("@")[0] if u.email else u.username or "Unknown")
+        return u.full_name or (
+            u.email.split("@")[0] if u.email else u.username or "Unknown"
+        )
 
     # Convert to response format
     message_responses = []

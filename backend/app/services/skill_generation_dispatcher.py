@@ -20,20 +20,20 @@ logger = logging.getLogger(__name__)
 GeneratorKey = Literal[
     "vocabulary_quiz",
     "word_builder",
-    "ai_quiz",           # generic MCQ (CLIL)
-    "grammar_quiz",      # grammar-focused MCQ fork
+    "ai_quiz",  # generic MCQ (CLIL)
+    "grammar_quiz",  # grammar-focused MCQ fork
     "sentence_builder",
     "reading_comprehension",
-    "listening_quiz",         # listening audio + MCQ (Story 30.4)
-    "listening_fill_blank",   # listening audio + fill blank (Story 30.5)
-    "grammar_fill_blank",          # grammar fill-in-the-blank (Story 30.6)
-    "writing_sentence_corrector",   # writing sentence corrector (replaces sentence_builder)
-    "writing_fill_blank",          # writing fill-in-the-blank (Story 30.7)
-    "writing_free_response",       # writing free response (open-ended)
+    "listening_quiz",  # listening audio + MCQ (Story 30.4)
+    "listening_fill_blank",  # listening audio + fill blank (Story 30.5)
+    "grammar_fill_blank",  # grammar fill-in-the-blank (Story 30.6)
+    "writing_sentence_corrector",  # writing sentence corrector (replaces sentence_builder)
+    "writing_fill_blank",  # writing fill-in-the-blank (Story 30.7)
+    "writing_free_response",  # writing free response (open-ended)
     "listening_sentence_builder",  # listening audio + sentence ordering
-    "listening_word_builder",      # listening audio + letter ordering
-    "vocabulary_matching",         # vocabulary word-definition matching
-    "speaking_open_response",      # speaking open response (open-ended)
+    "listening_word_builder",  # listening audio + letter ordering
+    "vocabulary_matching",  # vocabulary word-definition matching
+    "speaking_open_response",  # speaking open response (open-ended)
 ]
 
 
@@ -57,26 +57,39 @@ GENERATOR_MAP: dict[tuple[str, str], tuple[GeneratorKey | None, str]] = {
     ("vocabulary", "multiple_choice"): ("vocabulary_quiz", "vocabulary_quiz"),
     ("vocabulary", "word_builder"): ("word_builder", "word_builder"),
     ("vocabulary", "matching"): ("vocabulary_matching", "vocabulary_matching"),
-
     # Grammar skill
     ("grammar", "multiple_choice"): ("grammar_quiz", "ai_quiz"),
     ("grammar", "sentence_builder"): ("sentence_builder", "sentence_builder"),
-    ("grammar", "fill_blank"): ("grammar_fill_blank", "grammar_fill_blank"),  # Story 30.6
-
+    ("grammar", "fill_blank"): (
+        "grammar_fill_blank",
+        "grammar_fill_blank",
+    ),  # Story 30.6
     # Reading skill
     ("reading", "comprehension"): ("reading_comprehension", "reading_comprehension"),
-
     # Listening skill
-    ("listening", "multiple_choice"): ("listening_quiz", "listening_quiz"),  # Story 30.4
-    ("listening", "fill_blank"): ("listening_fill_blank", "listening_fill_blank"),  # Story 30.5
-    ("listening", "sentence_builder"): ("listening_sentence_builder", "listening_sentence_builder"),
+    ("listening", "multiple_choice"): (
+        "listening_quiz",
+        "listening_quiz",
+    ),  # Story 30.4
+    ("listening", "fill_blank"): (
+        "listening_fill_blank",
+        "listening_fill_blank",
+    ),  # Story 30.5
+    ("listening", "sentence_builder"): (
+        "listening_sentence_builder",
+        "listening_sentence_builder",
+    ),
     ("listening", "word_builder"): ("listening_word_builder", "listening_word_builder"),
-
     # Writing skill
-    ("writing", "sentence_corrector"): ("writing_sentence_corrector", "writing_sentence_corrector"),
-    ("writing", "fill_blank"): ("writing_fill_blank", "writing_fill_blank"),  # Story 30.7
+    ("writing", "sentence_corrector"): (
+        "writing_sentence_corrector",
+        "writing_sentence_corrector",
+    ),
+    ("writing", "fill_blank"): (
+        "writing_fill_blank",
+        "writing_fill_blank",
+    ),  # Story 30.7
     ("writing", "free_response"): ("writing_free_response", "writing_free_response"),
-
     # Speaking skill
     ("speaking", "open_response"): ("speaking_open_response", "speaking_open_response"),
 }
@@ -167,8 +180,6 @@ def dispatch(
             detail=f"Generator for ({skill_slug}, {format_slug}) is not yet implemented. Coming soon!",
         )
 
-    logger.info(
-        f"Dispatched ({skill_slug}, {format_slug}) → {generator_key}"
-    )
+    logger.info(f"Dispatched ({skill_slug}, {format_slug}) → {generator_key}")
 
     return result

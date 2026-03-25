@@ -1,4 +1,4 @@
-import React from "react"
+import React from "react";
 import {
   CartesianGrid,
   Legend,
@@ -9,11 +9,11 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
+} from "recharts";
 
 export interface StudentProgressChartProps {
-  scores: number[]
-  dates?: string[]
+  scores: number[];
+  dates?: string[];
 }
 
 /**
@@ -24,18 +24,18 @@ export const StudentProgressChart = React.memo(
   ({ scores, dates }: StudentProgressChartProps) => {
     // Calculate average score
     const averageScore =
-      scores.reduce((sum, score) => sum + score, 0) / scores.length
+      scores.reduce((sum, score) => sum + score, 0) / scores.length;
 
     // Prepare chart data
     const chartData = scores.map((score, index) => ({
       assignment: `A${index + 1}`,
       score,
       date: dates?.[index] || `Assignment ${index + 1}`,
-    }))
+    }));
 
     // Find best and worst performances
-    const maxScore = Math.max(...scores)
-    const minScore = Math.min(...scores)
+    const maxScore = Math.max(...scores);
+    const minScore = Math.min(...scores);
 
     return (
       <div
@@ -90,8 +90,8 @@ export const StudentProgressChart = React.memo(
               stroke="#14B8A6"
               strokeWidth={3}
               dot={(props: any) => {
-                const { cx, cy, payload } = props
-                const score = payload.score
+                const { cx, cy, payload } = props;
+                const score = payload.score;
 
                 // Highlight best and worst scores
                 if (score === maxScore) {
@@ -104,7 +104,7 @@ export const StudentProgressChart = React.memo(
                       stroke="#fff"
                       strokeWidth={2}
                     />
-                  )
+                  );
                 }
                 if (score === minScore) {
                   return (
@@ -116,7 +116,7 @@ export const StudentProgressChart = React.memo(
                       stroke="#fff"
                       strokeWidth={2}
                     />
-                  )
+                  );
                 }
                 return (
                   <circle
@@ -127,7 +127,7 @@ export const StudentProgressChart = React.memo(
                     stroke="#fff"
                     strokeWidth={2}
                   />
-                )
+                );
               }}
               activeDot={{ r: 7 }}
               name="Score"
@@ -176,8 +176,8 @@ export const StudentProgressChart = React.memo(
           </tbody>
         </table>
       </div>
-    )
+    );
   },
-)
+);
 
-StudentProgressChart.displayName = "StudentProgressChart"
+StudentProgressChart.displayName = "StudentProgressChart";

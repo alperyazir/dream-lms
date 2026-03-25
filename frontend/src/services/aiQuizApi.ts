@@ -5,15 +5,15 @@
  * This service provides functions to interact with the AI Quiz API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   AIQuiz,
   AIQuizGenerationRequest,
   AIQuizPublic,
   AIQuizResult,
   AIQuizSubmission,
-} from "../types/ai-quiz"
+} from "../types/ai-quiz";
 
 /**
  * Create axios instance with OpenAPI config
@@ -22,15 +22,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -45,13 +45,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Generate a new AI quiz from book modules using LLM
@@ -62,11 +62,9 @@ apiClient.interceptors.request.use(async (config) => {
 export async function generateAIQuiz(
   request: AIQuizGenerationRequest,
 ): Promise<AIQuiz> {
-  const url = "/api/v1/ai/quiz/generate"
-  // Debug: log the request payload
-  console.log("AI Quiz Generation Request:", JSON.stringify(request, null, 2))
-  const response = await apiClient.post<AIQuiz>(url, request)
-  return response.data
+  const url = "/api/v1/ai/quiz/generate";
+  const response = await apiClient.post<AIQuiz>(url, request);
+  return response.data;
 }
 
 /**
@@ -76,9 +74,9 @@ export async function generateAIQuiz(
  * @returns Promise with the public quiz view
  */
 export async function getAIQuiz(quizId: string): Promise<AIQuizPublic> {
-  const url = `/api/v1/ai/quiz/${quizId}`
-  const response = await apiClient.get<AIQuizPublic>(url)
-  return response.data
+  const url = `/api/v1/ai/quiz/${quizId}`;
+  const response = await apiClient.get<AIQuizPublic>(url);
+  return response.data;
 }
 
 /**
@@ -92,10 +90,10 @@ export async function submitAIQuiz(
   quizId: string,
   answers: Record<string, number>,
 ): Promise<AIQuizResult> {
-  const url = `/api/v1/ai/quiz/${quizId}/submit`
-  const submission: AIQuizSubmission = { answers }
-  const response = await apiClient.post<AIQuizResult>(url, submission)
-  return response.data
+  const url = `/api/v1/ai/quiz/${quizId}/submit`;
+  const submission: AIQuizSubmission = { answers };
+  const response = await apiClient.post<AIQuizResult>(url, submission);
+  return response.data;
 }
 
 /**
@@ -107,15 +105,15 @@ export async function submitAIQuiz(
 export async function getAIQuizResult(
   quizId: string,
 ): Promise<AIQuizResult | null> {
-  const url = `/api/v1/ai/quiz/${quizId}/result`
+  const url = `/api/v1/ai/quiz/${quizId}/result`;
   try {
-    const response = await apiClient.get<AIQuizResult>(url)
-    return response.data
+    const response = await apiClient.get<AIQuizResult>(url);
+    return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null
+      return null;
     }
-    throw error
+    throw error;
   }
 }
 
@@ -127,6 +125,6 @@ export const aiQuizApi = {
   getAIQuiz,
   submitAIQuiz,
   getAIQuizResult,
-}
+};
 
-export default aiQuizApi
+export default aiQuizApi;

@@ -70,7 +70,10 @@ def check_answer(
     # Typo tolerance
     if typo_tolerance:
         for variant in all_answers:
-            if len(variant) >= 3 and levenshtein_distance(student, variant) <= max_distance:
+            if (
+                len(variant) >= 3
+                and levenshtein_distance(student, variant) <= max_distance
+            ):
                 return True, "typo"
 
     return False, "wrong"

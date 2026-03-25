@@ -12,13 +12,13 @@ import {
   Target,
   TrendingUp,
   Trophy,
-} from "lucide-react"
-import React from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import type { BenchmarkMessage as BenchmarkMessageType } from "@/types/benchmarks"
+} from "lucide-react";
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import type { BenchmarkMessage as BenchmarkMessageType } from "@/types/benchmarks";
 
 export interface BenchmarkMessageProps {
-  message: BenchmarkMessageType
+  message: BenchmarkMessageType;
 }
 
 /**
@@ -27,17 +27,17 @@ export interface BenchmarkMessageProps {
 function getMessageIcon(type: BenchmarkMessageType["type"]) {
   switch (type) {
     case "excelling":
-      return Trophy
+      return Trophy;
     case "above_average":
-      return TrendingUp
+      return TrendingUp;
     case "at_average":
-      return Target
+      return Target;
     case "below_average":
-      return AlertTriangle
+      return AlertTriangle;
     case "needs_focus":
-      return BookOpen
+      return BookOpen;
     default:
-      return Sparkles
+      return Sparkles;
   }
 }
 
@@ -45,10 +45,10 @@ function getMessageIcon(type: BenchmarkMessageType["type"]) {
  * Get styling based on message type
  */
 function getMessageStyles(type: BenchmarkMessageType["type"]): {
-  borderColor: string
-  bgGradient: string
-  iconColor: string
-  titleColor: string
+  borderColor: string;
+  bgGradient: string;
+  iconColor: string;
+  titleColor: string;
 } {
   switch (type) {
     case "excelling":
@@ -58,7 +58,7 @@ function getMessageStyles(type: BenchmarkMessageType["type"]): {
           "bg-gradient-to-r from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-orange-900/20",
         iconColor: "text-yellow-500",
         titleColor: "text-yellow-700 dark:text-yellow-400",
-      }
+      };
     case "above_average":
       return {
         borderColor: "border-green-300 dark:border-green-700",
@@ -66,7 +66,7 @@ function getMessageStyles(type: BenchmarkMessageType["type"]): {
           "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20",
         iconColor: "text-green-500",
         titleColor: "text-green-700 dark:text-green-400",
-      }
+      };
     case "at_average":
       return {
         borderColor: "border-blue-300 dark:border-blue-700",
@@ -74,7 +74,7 @@ function getMessageStyles(type: BenchmarkMessageType["type"]): {
           "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20",
         iconColor: "text-blue-500",
         titleColor: "text-blue-700 dark:text-blue-400",
-      }
+      };
     case "below_average":
       return {
         borderColor: "border-orange-300 dark:border-orange-700",
@@ -82,7 +82,7 @@ function getMessageStyles(type: BenchmarkMessageType["type"]): {
           "bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20",
         iconColor: "text-orange-500",
         titleColor: "text-orange-700 dark:text-orange-400",
-      }
+      };
     case "needs_focus":
       return {
         borderColor: "border-red-300 dark:border-red-700",
@@ -90,7 +90,7 @@ function getMessageStyles(type: BenchmarkMessageType["type"]): {
           "bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20",
         iconColor: "text-red-500",
         titleColor: "text-red-700 dark:text-red-400",
-      }
+      };
     default:
       return {
         borderColor: "border-gray-300 dark:border-gray-700",
@@ -98,14 +98,14 @@ function getMessageStyles(type: BenchmarkMessageType["type"]): {
           "bg-gradient-to-r from-gray-50 to-slate-50 dark:from-neutral-900/20 dark:to-slate-900/20",
         iconColor: "text-gray-500",
         titleColor: "text-gray-700 dark:text-gray-400",
-      }
+      };
   }
 }
 
 export const BenchmarkMessage = React.memo(
   ({ message }: BenchmarkMessageProps) => {
-    const Icon = getMessageIcon(message.type)
-    const styles = getMessageStyles(message.type)
+    const Icon = getMessageIcon(message.type);
+    const styles = getMessageStyles(message.type);
 
     return (
       <Card
@@ -143,8 +143,8 @@ export const BenchmarkMessage = React.memo(
           </div>
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-BenchmarkMessage.displayName = "BenchmarkMessage"
+BenchmarkMessage.displayName = "BenchmarkMessage";

@@ -9,7 +9,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 WritingFRDifficulty = Literal["auto", "easy", "medium", "hard"]
 
 

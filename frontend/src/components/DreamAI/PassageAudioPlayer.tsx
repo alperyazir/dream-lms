@@ -6,34 +6,41 @@
  * Includes an inline voice picker to regenerate audio with a different voice.
  */
 
-import { Loader2, Pause, Play, RefreshCw, Volume2, VolumeX } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import {
+  Loader2,
+  Pause,
+  Play,
+  RefreshCw,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
-import { cn } from "@/lib/utils"
-import type { WordTimestamp } from "@/types/reading-comprehension"
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
+import type { WordTimestamp } from "@/types/reading-comprehension";
 
 export interface PassageAudioPlayerProps {
-  audioBase64: string
-  wordTimestamps: WordTimestamp[]
-  durationSeconds: number
-  className?: string
+  audioBase64: string;
+  wordTimestamps: WordTimestamp[];
+  durationSeconds: number;
+  className?: string;
   /** Called when user wants to regenerate audio with a different voice */
-  onRegenerateAudio?: (voiceId: string) => void
+  onRegenerateAudio?: (voiceId: string) => void;
   /** True while audio is being regenerated */
-  isRegenerating?: boolean
+  isRegenerating?: boolean;
 }
 
 /** Edge TTS voices available for passage narration */
@@ -43,15 +50,15 @@ const VOICES = [
   { id: "en-US-GuyNeural", label: "Guy — Male, Clear" },
   { id: "en-GB-SoniaNeural", label: "Sonia — Female, British" },
   { id: "en-GB-RyanNeural", label: "Ryan — Male, British" },
-]
+];
 
-const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "0:00"
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, "0")}`
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 export function PassageAudioPlayer({
@@ -62,155 +69,155 @@ export function PassageAudioPlayer({
   onRegenerateAudio,
   isRegenerating,
 }: PassageAudioPlayerProps) {
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const animFrameRef = useRef<number>(0)
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const animFrameRef = useRef<number>(0);
 
-  const [blobUrl, setBlobUrl] = useState<string | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(durationSeconds)
-  const [playbackSpeed, setPlaybackSpeed] = useState(1)
-  const [isMuted, setIsMuted] = useState(false)
-  const [activeWordIndex, setActiveWordIndex] = useState<number>(-1)
-  const [selectedVoice, setSelectedVoice] = useState(VOICES[0].id)
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(durationSeconds);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [activeWordIndex, setActiveWordIndex] = useState<number>(-1);
+  const [selectedVoice, setSelectedVoice] = useState(VOICES[0].id);
 
   // Convert base64 to blob URL on mount
   useEffect(() => {
-    const bytes = atob(audioBase64)
-    const arr = new Uint8Array(bytes.length)
+    const bytes = atob(audioBase64);
+    const arr = new Uint8Array(bytes.length);
     for (let i = 0; i < bytes.length; i++) {
-      arr[i] = bytes.charCodeAt(i)
+      arr[i] = bytes.charCodeAt(i);
     }
-    const blob = new Blob([arr], { type: "audio/mpeg" })
-    const url = URL.createObjectURL(blob)
-    setBlobUrl(url)
+    const blob = new Blob([arr], { type: "audio/mpeg" });
+    const url = URL.createObjectURL(blob);
+    setBlobUrl(url);
 
     return () => {
-      URL.revokeObjectURL(url)
-    }
-  }, [audioBase64])
+      URL.revokeObjectURL(url);
+    };
+  }, [audioBase64]);
 
   // Binary search for the active word at a given time
   const findActiveWord = useCallback(
     (time: number): number => {
-      if (wordTimestamps.length === 0) return -1
+      if (wordTimestamps.length === 0) return -1;
 
-      let lo = 0
-      let hi = wordTimestamps.length - 1
+      let lo = 0;
+      let hi = wordTimestamps.length - 1;
 
       while (lo <= hi) {
-        const mid = (lo + hi) >>> 1
-        const wt = wordTimestamps[mid]
+        const mid = (lo + hi) >>> 1;
+        const wt = wordTimestamps[mid];
         if (time < wt.start) {
-          hi = mid - 1
+          hi = mid - 1;
         } else if (time >= wt.end) {
-          lo = mid + 1
+          lo = mid + 1;
         } else {
-          return mid
+          return mid;
         }
       }
-      return -1
+      return -1;
     },
     [wordTimestamps],
-  )
+  );
 
   // Animation frame loop for tracking playback position
   const tick = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio || audio.paused) return
+    const audio = audioRef.current;
+    if (!audio || audio.paused) return;
 
-    const t = audio.currentTime
-    setCurrentTime(t)
-    setActiveWordIndex(findActiveWord(t))
-    animFrameRef.current = requestAnimationFrame(tick)
-  }, [findActiveWord])
+    const t = audio.currentTime;
+    setCurrentTime(t);
+    setActiveWordIndex(findActiveWord(t));
+    animFrameRef.current = requestAnimationFrame(tick);
+  }, [findActiveWord]);
 
   // Start/stop animation frame when play state changes
   useEffect(() => {
     if (isPlaying) {
-      animFrameRef.current = requestAnimationFrame(tick)
+      animFrameRef.current = requestAnimationFrame(tick);
     } else {
-      cancelAnimationFrame(animFrameRef.current)
+      cancelAnimationFrame(animFrameRef.current);
     }
-    return () => cancelAnimationFrame(animFrameRef.current)
-  }, [isPlaying, tick])
+    return () => cancelAnimationFrame(animFrameRef.current);
+  }, [isPlaying, tick]);
 
   // Audio event listeners
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    const onPlay = () => setIsPlaying(true)
-    const onPause = () => setIsPlaying(false)
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
     const onEnded = () => {
-      setIsPlaying(false)
-      setActiveWordIndex(-1)
-      setCurrentTime(0)
-    }
+      setIsPlaying(false);
+      setActiveWordIndex(-1);
+      setCurrentTime(0);
+    };
     const onLoadedMetadata = () => {
       if (audio.duration && Number.isFinite(audio.duration)) {
-        setDuration(audio.duration)
+        setDuration(audio.duration);
       }
-    }
+    };
 
-    audio.addEventListener("play", onPlay)
-    audio.addEventListener("pause", onPause)
-    audio.addEventListener("ended", onEnded)
-    audio.addEventListener("loadedmetadata", onLoadedMetadata)
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
+    audio.addEventListener("ended", onEnded);
+    audio.addEventListener("loadedmetadata", onLoadedMetadata);
 
     return () => {
-      audio.removeEventListener("play", onPlay)
-      audio.removeEventListener("pause", onPause)
-      audio.removeEventListener("ended", onEnded)
-      audio.removeEventListener("loadedmetadata", onLoadedMetadata)
-    }
-  }, [blobUrl])
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("loadedmetadata", onLoadedMetadata);
+    };
+  }, [blobUrl]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      audioRef.current?.pause()
-      cancelAnimationFrame(animFrameRef.current)
-    }
-  }, [])
+      audioRef.current?.pause();
+      cancelAnimationFrame(animFrameRef.current);
+    };
+  }, []);
 
   const togglePlay = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = audioRef.current;
+    if (!audio) return;
     if (isPlaying) {
-      audio.pause()
+      audio.pause();
     } else {
-      audio.play().catch(console.error)
+      audio.play().catch(console.error);
     }
-  }, [isPlaying])
+  }, [isPlaying]);
 
   const handleSeek = useCallback(
     (value: number[]) => {
-      const audio = audioRef.current
-      if (!audio || !duration) return
-      const newTime = (value[0] / 100) * duration
-      audio.currentTime = newTime
-      setCurrentTime(newTime)
-      setActiveWordIndex(findActiveWord(newTime))
+      const audio = audioRef.current;
+      if (!audio || !duration) return;
+      const newTime = (value[0] / 100) * duration;
+      audio.currentTime = newTime;
+      setCurrentTime(newTime);
+      setActiveWordIndex(findActiveWord(newTime));
     },
     [duration, findActiveWord],
-  )
+  );
 
   const handleSpeedChange = useCallback((speed: number) => {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.playbackRate = speed
-    setPlaybackSpeed(speed)
-  }, [])
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.playbackRate = speed;
+    setPlaybackSpeed(speed);
+  }, []);
 
   const toggleMute = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.muted = !isMuted
-    setIsMuted(!isMuted)
-  }, [isMuted])
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.muted = !isMuted;
+    setIsMuted(!isMuted);
+  }, [isMuted]);
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   if (!blobUrl) {
     return (
@@ -218,7 +225,7 @@ export function PassageAudioPlayer({
         <Loader2 className="h-4 w-4 animate-spin" />
         Preparing audio...
       </div>
-    )
+    );
   }
 
   return (
@@ -240,12 +247,12 @@ export function PassageAudioPlayer({
                     : "hover:bg-blue-100 dark:hover:bg-blue-800/40",
                 )}
                 onClick={() => {
-                  const audio = audioRef.current
+                  const audio = audioRef.current;
                   if (audio) {
-                    audio.currentTime = wt.start
-                    setCurrentTime(wt.start)
-                    setActiveWordIndex(i)
-                    if (!isPlaying) audio.play().catch(console.error)
+                    audio.currentTime = wt.start;
+                    setCurrentTime(wt.start);
+                    setActiveWordIndex(i);
+                    if (!isPlaying) audio.play().catch(console.error);
                   }
                 }}
               >
@@ -375,5 +382,5 @@ export function PassageAudioPlayer({
         </div>
       )}
     </div>
-  )
+  );
 }

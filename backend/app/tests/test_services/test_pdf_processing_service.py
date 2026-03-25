@@ -8,15 +8,12 @@ Tests cover:
 - Error handling for corrupted/encrypted PDFs
 """
 
-import io
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException, UploadFile
 
 from app.services.pdf_processing_service import (
-    MIN_EXTRACTION_LENGTH,
-    PDFProcessingError,
     PDFProcessingService,
     get_pdf_processing_service,
 )

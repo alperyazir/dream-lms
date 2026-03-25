@@ -33,7 +33,9 @@ def cleanup_non_admin_users(skip_confirmation: bool = False):
 
         print(f"🔍 Found {len(users_to_delete)} non-admin users:")
         for user in users_to_delete:
-            print(f"  - {user.username} ({user.role.value}) - {user.email or 'no email'}")
+            print(
+                f"  - {user.username} ({user.role.value}) - {user.email or 'no email'}"
+            )
 
         # Confirm deletion
         if not skip_confirmation:
@@ -63,7 +65,9 @@ def cleanup_non_admin_users(skip_confirmation: bool = False):
         session.commit()
 
         print(f"\n✅ Successfully deleted {deleted_count} users!")
-        print("   All related records (publishers, teachers, students, etc.) have been removed.")
+        print(
+            "   All related records (publishers, teachers, students, etc.) have been removed."
+        )
 
         # Show remaining admin users
         admin_statement = select(User).where(User.role == UserRole.admin)
@@ -74,11 +78,13 @@ def cleanup_non_admin_users(skip_confirmation: bool = False):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Remove all non-admin users from database")
+    parser = argparse.ArgumentParser(
+        description="Remove all non-admin users from database"
+    )
     parser.add_argument(
         "--confirm",
         action="store_true",
-        help="Skip confirmation prompt and delete immediately"
+        help="Skip confirmation prompt and delete immediately",
     )
     args = parser.parse_args()
 

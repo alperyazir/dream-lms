@@ -8,118 +8,118 @@
  * - Single/Double page view toggle
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { booksApi } from "@/services/booksApi"
-import type { ActivityMarker, ModuleInfo, PageDetail } from "@/types/book"
-import { SUPPORTED_ACTIVITY_TYPES } from "@/types/book"
+import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { booksApi } from "@/services/booksApi";
+import type { ActivityMarker, ModuleInfo, PageDetail } from "@/types/book";
+import { SUPPORTED_ACTIVITY_TYPES } from "@/types/book";
 
 interface PageViewerProps {
-  bookId: string | number
-  selectedActivityIds: Set<string>
-  onActivityToggle: (activityId: string, activity: ActivityMarker) => void
+  bookId: string | number;
+  selectedActivityIds: Set<string>;
+  onActivityToggle: (activityId: string, activity: ActivityMarker) => void;
 }
 
-type ViewMode = "single" | "double"
+type ViewMode = "single" | "double";
 
 export function PageViewer({
   bookId,
   selectedActivityIds,
   onActivityToggle,
 }: PageViewerProps) {
-  const [currentPageIndex, setCurrentPageIndex] = useState(0)
-  const [viewMode, setViewMode] = useState<ViewMode>("double")
-  const [pageInput, setPageInput] = useState("")
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<ViewMode>("double");
+  const [pageInput, setPageInput] = useState("");
 
   // Fetch book pages with activity coordinates
   const { data, isLoading, error } = useQuery({
     queryKey: ["book-pages-detail", bookId],
     queryFn: () => booksApi.getBookPagesDetail(String(bookId)),
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   // All pages as flat list
-  const pages = data?.pages || []
+  const pages = data?.pages || [];
 
   // Find which module the current page belongs to
   const currentModuleName = useMemo(() => {
-    if (!data?.modules || pages.length === 0) return ""
+    if (!data?.modules || pages.length === 0) return "";
     for (const module of data.modules) {
-      const endIndex = module.first_page_index + module.page_count
+      const endIndex = module.first_page_index + module.page_count;
       if (
         currentPageIndex >= module.first_page_index &&
         currentPageIndex < endIndex
       ) {
-        return module.name
+        return module.name;
       }
     }
-    return data.modules[0]?.name || ""
-  }, [data, currentPageIndex, pages.length])
+    return data.modules[0]?.name || "";
+  }, [data, currentPageIndex, pages.length]);
 
   // Handle module click - jump to first page of module
   const handleModuleClick = useCallback((module: ModuleInfo) => {
-    setCurrentPageIndex(module.first_page_index)
-    setPageInput("")
-  }, [])
+    setCurrentPageIndex(module.first_page_index);
+    setPageInput("");
+  }, []);
 
   // Handle page navigation
   const handlePrevPage = useCallback(() => {
     if (viewMode === "double") {
-      setCurrentPageIndex((prev) => Math.max(0, prev - 2))
+      setCurrentPageIndex((prev) => Math.max(0, prev - 2));
     } else {
-      setCurrentPageIndex((prev) => Math.max(0, prev - 1))
+      setCurrentPageIndex((prev) => Math.max(0, prev - 1));
     }
-  }, [viewMode])
+  }, [viewMode]);
 
   const handleNextPage = useCallback(() => {
-    const maxIndex = pages.length - 1
+    const maxIndex = pages.length - 1;
     if (viewMode === "double") {
-      setCurrentPageIndex((prev) => Math.min(maxIndex - 1, prev + 2))
+      setCurrentPageIndex((prev) => Math.min(maxIndex - 1, prev + 2));
     } else {
-      setCurrentPageIndex((prev) => Math.min(maxIndex, prev + 1))
+      setCurrentPageIndex((prev) => Math.min(maxIndex, prev + 1));
     }
-  }, [viewMode, pages.length])
+  }, [viewMode, pages.length]);
 
   // Handle page input
   const handlePageInputSubmit = useCallback(
     (e: React.FormEvent) => {
-      e.preventDefault()
-      const pageNum = parseInt(pageInput, 10)
-      if (Number.isNaN(pageNum)) return
+      e.preventDefault();
+      const pageNum = parseInt(pageInput, 10);
+      if (Number.isNaN(pageNum)) return;
 
-      const index = pages.findIndex((p) => p.page_number === pageNum)
+      const index = pages.findIndex((p) => p.page_number === pageNum);
       if (index >= 0) {
         if (viewMode === "double" && index % 2 !== 0) {
-          setCurrentPageIndex(Math.max(0, index - 1))
+          setCurrentPageIndex(Math.max(0, index - 1));
         } else {
-          setCurrentPageIndex(index)
+          setCurrentPageIndex(index);
         }
       }
-      setPageInput("")
+      setPageInput("");
     },
     [pageInput, pages, viewMode],
-  )
+  );
 
   // Get pages to display based on view mode
   const visiblePages = useMemo(() => {
     if (viewMode === "single") {
-      return pages[currentPageIndex] ? [pages[currentPageIndex]] : []
+      return pages[currentPageIndex] ? [pages[currentPageIndex]] : [];
     }
-    const result: PageDetail[] = []
-    if (pages[currentPageIndex]) result.push(pages[currentPageIndex])
-    if (pages[currentPageIndex + 1]) result.push(pages[currentPageIndex + 1])
-    return result
-  }, [pages, currentPageIndex, viewMode])
+    const result: PageDetail[] = [];
+    if (pages[currentPageIndex]) result.push(pages[currentPageIndex]);
+    if (pages[currentPageIndex + 1]) result.push(pages[currentPageIndex + 1]);
+    return result;
+  }, [pages, currentPageIndex, viewMode]);
 
   // Check if can navigate
-  const canGoPrev = currentPageIndex > 0
+  const canGoPrev = currentPageIndex > 0;
   const canGoNext =
     viewMode === "double"
       ? currentPageIndex < pages.length - 2
-      : currentPageIndex < pages.length - 1
+      : currentPageIndex < pages.length - 1;
 
   if (isLoading) {
     return (
@@ -127,7 +127,7 @@ export function PageViewer({
         <Skeleton className="w-32 h-full" />
         <Skeleton className="flex-1 h-full" />
       </div>
-    )
+    );
   }
 
   if (error || !data) {
@@ -135,7 +135,7 @@ export function PageViewer({
       <div className="text-center py-8 text-muted-foreground">
         Failed to load book pages
       </div>
-    )
+    );
   }
 
   return (
@@ -223,9 +223,7 @@ export function PageViewer({
 
         {/* Pages Container */}
         <div className="flex-1 h-full min-w-0 min-h-0 px-1 py-1 overflow-hidden flex items-center justify-center">
-          <div
-            className="flex gap-3 justify-center items-center h-full"
-          >
+          <div className="flex gap-3 justify-center items-center h-full">
             {visiblePages.map((page, index) => (
               <PageWithMarkers
                 key={index}
@@ -254,17 +252,17 @@ export function PageViewer({
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 // --- Page with Activity Markers ---
 
 interface PageWithMarkersProps {
-  page: PageDetail
-  selectedActivityIds: Set<string>
-  onActivityToggle: (activityId: string, activity: ActivityMarker) => void
-  viewMode: ViewMode
-  visiblePageCount: number
+  page: PageDetail;
+  selectedActivityIds: Set<string>;
+  onActivityToggle: (activityId: string, activity: ActivityMarker) => void;
+  viewMode: ViewMode;
+  visiblePageCount: number;
 }
 
 function PageWithMarkers({
@@ -274,119 +272,119 @@ function PageWithMarkers({
   viewMode,
   visiblePageCount,
 }: PageWithMarkersProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [showSkeleton, setShowSkeleton] = useState(true)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const [imageDimensions, setImageDimensions] = useState<{
-    width: number
-    height: number
-  } | null>(null)
+    width: number;
+    height: number;
+  } | null>(null);
 
   // Load page image — keep old image visible while new one loads
   useEffect(() => {
-    let isMounted = true
-    let skeletonTimer: ReturnType<typeof setTimeout>
+    let isMounted = true;
+    let skeletonTimer: ReturnType<typeof setTimeout>;
 
     const loadImage = async () => {
       // Only show skeleton if loading takes more than 300ms
       skeletonTimer = setTimeout(() => {
-        if (isMounted) setShowSkeleton(true)
-      }, 300)
+        if (isMounted) setShowSkeleton(true);
+      }, 300);
 
       try {
-        const url = await booksApi.getPageImageUrl(page.image_url)
+        const url = await booksApi.getPageImageUrl(page.image_url);
         if (isMounted && url) {
-          const img = new Image()
+          const img = new Image();
           img.onload = () => {
             if (isMounted) {
-              clearTimeout(skeletonTimer)
+              clearTimeout(skeletonTimer);
               setImageDimensions({
                 width: img.naturalWidth,
                 height: img.naturalHeight,
-              })
-              setImageUrl(url)
-              setIsLoading(false)
-              setShowSkeleton(false)
+              });
+              setImageUrl(url);
+              setIsLoading(false);
+              setShowSkeleton(false);
             }
-          }
+          };
           img.onerror = () => {
             if (isMounted) {
-              clearTimeout(skeletonTimer)
-              setIsLoading(false)
-              setShowSkeleton(false)
+              clearTimeout(skeletonTimer);
+              setIsLoading(false);
+              setShowSkeleton(false);
             }
-          }
-          img.src = url
+          };
+          img.src = url;
         }
       } catch {
         if (isMounted) {
-          clearTimeout(skeletonTimer)
-          setIsLoading(false)
-          setShowSkeleton(false)
+          clearTimeout(skeletonTimer);
+          setIsLoading(false);
+          setShowSkeleton(false);
         }
       }
-    }
+    };
 
     // Don't clear imageUrl — keep showing old page while new one loads
-    setIsLoading(true)
-    setShowSkeleton(false)
-    loadImage()
+    setIsLoading(true);
+    setShowSkeleton(false);
+    loadImage();
 
     return () => {
-      isMounted = false
-      clearTimeout(skeletonTimer)
-    }
-  }, [page.image_url])
+      isMounted = false;
+      clearTimeout(skeletonTimer);
+    };
+  }, [page.image_url]);
 
   // Calculate rendered dimensions
   const [renderedDimensions, setRenderedDimensions] = useState<{
-    width: number
-    height: number
-    offsetX: number
-    offsetY: number
-  } | null>(null)
+    width: number;
+    height: number;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current || !imageDimensions) return
+    if (!containerRef.current || !imageDimensions) return;
 
     const updateDimensions = () => {
-      const container = containerRef.current
-      if (!container) return
+      const container = containerRef.current;
+      if (!container) return;
 
-      const containerWidth = container.clientWidth
-      const containerHeight = container.clientHeight
-      const imageAspect = imageDimensions.width / imageDimensions.height
-      const containerAspect = containerWidth / containerHeight
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      const imageAspect = imageDimensions.width / imageDimensions.height;
+      const containerAspect = containerWidth / containerHeight;
 
-      let renderedWidth: number
-      let renderedHeight: number
+      let renderedWidth: number;
+      let renderedHeight: number;
 
       if (imageAspect > containerAspect) {
-        renderedWidth = containerWidth
-        renderedHeight = containerWidth / imageAspect
+        renderedWidth = containerWidth;
+        renderedHeight = containerWidth / imageAspect;
       } else {
-        renderedHeight = containerHeight
-        renderedWidth = containerHeight * imageAspect
+        renderedHeight = containerHeight;
+        renderedWidth = containerHeight * imageAspect;
       }
 
-      const offsetX = (containerWidth - renderedWidth) / 2
-      const offsetY = (containerHeight - renderedHeight) / 2
+      const offsetX = (containerWidth - renderedWidth) / 2;
+      const offsetY = (containerHeight - renderedHeight) / 2;
 
       setRenderedDimensions({
         width: renderedWidth,
         height: renderedHeight,
         offsetX,
         offsetY,
-      })
-    }
+      });
+    };
 
-    updateDimensions()
-    window.addEventListener("resize", updateDimensions)
-    return () => window.removeEventListener("resize", updateDimensions)
-  }, [imageDimensions])
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, [imageDimensions]);
 
-  const useSingleSizing = viewMode === "single" || visiblePageCount === 1
+  const useSingleSizing = viewMode === "single" || visiblePageCount === 1;
 
   return (
     <div
@@ -430,22 +428,22 @@ function PageWithMarkers({
         </span>
       </div>
     </div>
-  )
+  );
 }
 
 // --- Activity Markers Overlay ---
 
 interface ActivityMarkersOverlayProps {
-  activities: ActivityMarker[]
-  imageDimensions: { width: number; height: number }
+  activities: ActivityMarker[];
+  imageDimensions: { width: number; height: number };
   renderedDimensions: {
-    width: number
-    height: number
-    offsetX: number
-    offsetY: number
-  }
-  selectedActivityIds: Set<string>
-  onActivityToggle: (activityId: string, activity: ActivityMarker) => void
+    width: number;
+    height: number;
+    offsetX: number;
+    offsetY: number;
+  };
+  selectedActivityIds: Set<string>;
+  onActivityToggle: (activityId: string, activity: ActivityMarker) => void;
 }
 
 function ActivityMarkersOverlay({
@@ -458,7 +456,7 @@ function ActivityMarkersOverlay({
   // Filter to only show supported activity types
   const supportedActivities = activities.filter((a) =>
     SUPPORTED_ACTIVITY_TYPES.has(a.activity_type),
-  )
+  );
 
   return (
     <div
@@ -471,15 +469,15 @@ function ActivityMarkersOverlay({
       }}
     >
       {supportedActivities.map((activity) => {
-        if (!activity.coords) return null
+        if (!activity.coords) return null;
 
-        const isSelected = selectedActivityIds.has(activity.id)
+        const isSelected = selectedActivityIds.has(activity.id);
 
-        const scaleX = renderedDimensions.width / imageDimensions.width
-        const scaleY = renderedDimensions.height / imageDimensions.height
+        const scaleX = renderedDimensions.width / imageDimensions.width;
+        const scaleY = renderedDimensions.height / imageDimensions.height;
 
-        const left = activity.coords.x * scaleX
-        const top = activity.coords.y * scaleY
+        const left = activity.coords.x * scaleX;
+        const top = activity.coords.y * scaleY;
 
         return (
           <button
@@ -547,10 +545,10 @@ function ActivityMarkersOverlay({
               </div>
             </div>
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
-export default PageViewer
+export default PageViewer;

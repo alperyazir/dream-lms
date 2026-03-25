@@ -5,7 +5,7 @@
  * Including selected videos and teacher materials (Story 13.3)
  */
 
-import { format } from "date-fns"
+import { format } from "date-fns";
 import {
   BookOpen,
   Calendar,
@@ -15,21 +15,21 @@ import {
   FolderOpen,
   Users,
   Video,
-} from "lucide-react"
+} from "lucide-react";
 import {
   getMaterialTypeLabel,
   MaterialTypeIcon,
-} from "@/components/materials/MaterialTypeIcon"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { AssignmentFormData } from "@/types/assignment"
-import { ACTIVITY_TYPE_CONFIG, type Activity, type Book } from "@/types/book"
-import type { MaterialType } from "@/types/material"
+} from "@/components/materials/MaterialTypeIcon";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { AssignmentFormData } from "@/types/assignment";
+import { ACTIVITY_TYPE_CONFIG, type Activity, type Book } from "@/types/book";
+import type { MaterialType } from "@/types/material";
 
 interface StepReviewCreateProps {
-  activity: Activity
-  book: Book
-  formData: AssignmentFormData
+  activity: Activity;
+  book: Book;
+  formData: AssignmentFormData;
 }
 
 export function StepReviewCreate({
@@ -37,11 +37,11 @@ export function StepReviewCreate({
   book,
   formData,
 }: StepReviewCreateProps) {
-  const activityConfig = ACTIVITY_TYPE_CONFIG[activity.activity_type]
+  const activityConfig = ACTIVITY_TYPE_CONFIG[activity.activity_type];
 
   // Calculate total recipients count
   const totalRecipients =
-    formData.class_ids.length + formData.student_ids.length
+    formData.class_ids.length + formData.student_ids.length;
 
   return (
     <div className="space-y-6">
@@ -242,5 +242,5 @@ export function StepReviewCreate({
         </p>
       </div>
     </div>
-  )
+  );
 }

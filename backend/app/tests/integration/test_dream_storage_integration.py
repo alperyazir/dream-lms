@@ -97,7 +97,9 @@ async def test_download_asset_from_real_api(client):
     # Try to download config.json (should always exist)
     book = books[0]
     try:
-        asset_data = await client.download_asset(book.publisher, book.book_name, "config.json")
+        asset_data = await client.download_asset(
+            book.publisher, book.book_name, "config.json"
+        )
 
         # Should return bytes
         assert isinstance(asset_data, bytes)
@@ -124,13 +126,13 @@ async def test_404_error_for_nonexistent_book(client):
 async def test_token_reuse_across_requests(client):
     """Test that token is reused across multiple API calls."""
     # Make first request
-    books1 = await client.get_books()
+    await client.get_books()
 
     # Get current token
     token1 = client._token
 
     # Make second request
-    books2 = await client.get_books()
+    await client.get_books()
 
     # Token should be the same (reused)
     token2 = client._token

@@ -268,7 +268,9 @@ async def run_publish_scheduled_assignments(
     logger.info("Starting scheduled assignment publishing")
 
     try:
-        result = await publish_scheduled_assignments(session, arq_pool=request.app.state.arq_pool)
+        result = await publish_scheduled_assignments(
+            session, arq_pool=request.app.state.arq_pool
+        )
     except Exception as e:
         logger.error(f"Error publishing scheduled assignments: {e}")
         raise HTTPException(

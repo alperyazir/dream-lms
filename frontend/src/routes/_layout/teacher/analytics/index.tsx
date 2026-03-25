@@ -1,24 +1,28 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
   Users,
-} from "lucide-react"
-import { useState } from "react"
-import { FiBarChart2 } from "react-icons/fi"
-import { type ClassResponse, type StudentPublic, TeachersService } from "@/client"
-import { getMyStudentsPaginated } from "@/services/teachersApi"
-import { ClassAnalyticsPanel } from "@/components/analytics/ClassAnalyticsPanel"
-import { StudentAnalyticsPanel } from "@/components/analytics/StudentAnalyticsPanel"
-import { PageHeader } from "@/components/Common/PageContainer"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+} from "lucide-react";
+import { useState } from "react";
+import { FiBarChart2 } from "react-icons/fi";
+import {
+  type ClassResponse,
+  type StudentPublic,
+  TeachersService,
+} from "@/client";
+import { getMyStudentsPaginated } from "@/services/teachersApi";
+import { ClassAnalyticsPanel } from "@/components/analytics/ClassAnalyticsPanel";
+import { StudentAnalyticsPanel } from "@/components/analytics/StudentAnalyticsPanel";
+import { PageHeader } from "@/components/Common/PageContainer";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -26,75 +30,75 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_layout/teacher/analytics/")({
   component: AnalyticsHub,
-})
+});
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 20;
 
 function AnalyticsHub() {
   const [selectedStudent, setSelectedStudent] = useState<{
-    id: string
-    name: string
-  } | null>(null)
+    id: string;
+    name: string;
+  } | null>(null);
   const [selectedClass, setSelectedClass] = useState<{
-    id: string
-    name: string
-  } | null>(null)
-  const [studentSearch, setStudentSearch] = useState("")
-  const [classSearch, setClassSearch] = useState("")
-  const [studentPage, setStudentPage] = useState(1)
-  const [classPage, setClassPage] = useState(1)
+    id: string;
+    name: string;
+  } | null>(null);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [classSearch, setClassSearch] = useState("");
+  const [studentPage, setStudentPage] = useState(1);
+  const [classPage, setClassPage] = useState(1);
 
   const { data: students = [], isLoading: studentsLoading } = useQuery<
     StudentPublic[]
   >({
     queryKey: ["teacherStudents"],
     queryFn: async () => {
-      const res = await getMyStudentsPaginated(500, 0)
-      return res.items
+      const res = await getMyStudentsPaginated(500, 0);
+      return res.items;
     },
-  })
+  });
 
   const { data: classes = [], isLoading: classesLoading } = useQuery<
     ClassResponse[]
   >({
     queryKey: ["teacherClasses"],
     queryFn: () => TeachersService.listMyClasses(),
-  })
+  });
 
   // Filtered students
   const filteredStudents = students.filter((student) => {
-    if (!studentSearch) return true
-    const q = studentSearch.toLowerCase()
+    if (!studentSearch) return true;
+    const q = studentSearch.toLowerCase();
     return (
       student.user_full_name?.toLowerCase().includes(q) ||
       student.user_username?.toLowerCase().includes(q)
-    )
-  })
-  const totalStudentPages = Math.ceil(filteredStudents.length / PAGE_SIZE)
+    );
+  });
+  const totalStudentPages = Math.ceil(filteredStudents.length / PAGE_SIZE);
   const paginatedStudents = filteredStudents.slice(
     (studentPage - 1) * PAGE_SIZE,
     studentPage * PAGE_SIZE,
-  )
+  );
 
   // Filtered classes
   const filteredClasses = classes.filter((cls) => {
-    if (!classSearch) return true
-    const q = classSearch.toLowerCase()
+    if (!classSearch) return true;
+    const q = classSearch.toLowerCase();
     return (
       cls.name?.toLowerCase().includes(q) ||
       cls.subject?.toLowerCase().includes(q)
-    )
-  })
-  const totalClassPages = Math.ceil(filteredClasses.length / PAGE_SIZE)
+    );
+  });
+  const totalClassPages = Math.ceil(filteredClasses.length / PAGE_SIZE);
   const paginatedClasses = filteredClasses.slice(
     (classPage - 1) * PAGE_SIZE,
     classPage * PAGE_SIZE,
-  )
+  );
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
@@ -108,8 +112,8 @@ function AnalyticsHub() {
         defaultValue="students"
         className="w-full"
         onValueChange={() => {
-          setStudentPage(1)
-          setClassPage(1)
+          setStudentPage(1);
+          setClassPage(1);
         }}
       >
         <TabsList className="grid w-full grid-cols-2 max-w-sm">
@@ -130,8 +134,8 @@ function AnalyticsHub() {
             placeholder="Search students by name or username..."
             value={studentSearch}
             onChange={(e) => {
-              setStudentSearch(e.target.value)
-              setStudentPage(1)
+              setStudentSearch(e.target.value);
+              setStudentPage(1);
             }}
             className="max-w-md"
           />
@@ -156,7 +160,7 @@ function AnalyticsHub() {
                         .split(" ")
                         .map((n) => n[0])
                         .join("")
-                        .toUpperCase()
+                        .toUpperCase();
                       return (
                         <TableRow
                           key={student.id}
@@ -189,14 +193,18 @@ function AnalyticsHub() {
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </TableCell>
                         </TableRow>
-                      )
+                      );
                     })}
                   </TableBody>
                 </Table>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Users className="h-10 w-10 mb-3 opacity-40" />
-                  <p>{studentSearch ? "No students match your search." : "No students found."}</p>
+                  <p>
+                    {studentSearch
+                      ? "No students match your search."
+                      : "No students found."}
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -243,8 +251,8 @@ function AnalyticsHub() {
             placeholder="Search classrooms by name or subject..."
             value={classSearch}
             onChange={(e) => {
-              setClassSearch(e.target.value)
-              setClassPage(1)
+              setClassSearch(e.target.value);
+              setClassPage(1);
             }}
             className="max-w-md"
           />
@@ -299,14 +307,18 @@ function AnalyticsHub() {
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </TableCell>
                         </TableRow>
-                      )
+                      );
                     })}
                   </TableBody>
                 </Table>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <BarChart3 className="h-10 w-10 mb-3 opacity-40" />
-                  <p>{classSearch ? "No classrooms match your search." : "No classrooms found."}</p>
+                  <p>
+                    {classSearch
+                      ? "No classrooms match your search."
+                      : "No classrooms found."}
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -353,7 +365,7 @@ function AnalyticsHub() {
         studentName={selectedStudent?.name}
         open={!!selectedStudent}
         onOpenChange={(open) => {
-          if (!open) setSelectedStudent(null)
+          if (!open) setSelectedStudent(null);
         }}
       />
 
@@ -363,9 +375,9 @@ function AnalyticsHub() {
         className={selectedClass?.name}
         open={!!selectedClass}
         onOpenChange={(open) => {
-          if (!open) setSelectedClass(null)
+          if (!open) setSelectedClass(null);
         }}
       />
     </div>
-  )
+  );
 }

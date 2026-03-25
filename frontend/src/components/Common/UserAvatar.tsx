@@ -1,15 +1,15 @@
-import { User } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { User } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface UserAvatarProps {
   /** Avatar URL, can be null/undefined for default avatar */
-  avatarUrl?: string | null | undefined
+  avatarUrl?: string | null | undefined;
   /** User's full name for alt text */
-  name?: string | null
+  name?: string | null;
   /** Size variant */
-  size?: "xs" | "sm" | "md" | "lg" | "xl"
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   /** Additional class names */
-  className?: string
+  className?: string;
 }
 
 const sizeClasses = {
@@ -18,7 +18,7 @@ const sizeClasses = {
   md: "w-10 h-10",
   lg: "w-14 h-14",
   xl: "w-20 h-20",
-}
+};
 
 const iconSizes = {
   xs: "w-3 h-3",
@@ -26,7 +26,7 @@ const iconSizes = {
   md: "w-5 h-5",
   lg: "w-7 h-7",
   xl: "w-10 h-10",
-}
+};
 
 /**
  * Reusable avatar component that displays user's avatar or a default icon
@@ -37,7 +37,7 @@ export function UserAvatar({
   size = "md",
   className,
 }: UserAvatarProps) {
-  const displayName = name || "User"
+  const displayName = name || "User";
   return (
     <div
       className={cn(
@@ -56,7 +56,7 @@ export function UserAvatar({
         <User className={cn("text-muted-foreground", iconSizes[size])} />
       )}
     </div>
-  )
+  );
 }
 
-export default UserAvatar
+export default UserAvatar;

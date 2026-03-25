@@ -4,29 +4,29 @@
  * Tab-based selection with student counts and smart student selection
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { Search, User as UserIcon, Users } from "lucide-react"
-import { useMemo, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { teachersApi } from "@/services/teachersApi"
-import type { AssignmentFormData } from "@/types/assignment"
-import { SelectedRecipientsPanel } from "./SelectedRecipientsPanel"
+import { useQuery } from "@tanstack/react-query";
+import { Search, User as UserIcon, Users } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { teachersApi } from "@/services/teachersApi";
+import type { AssignmentFormData } from "@/types/assignment";
+import { SelectedRecipientsPanel } from "./SelectedRecipientsPanel";
 
 interface StepSelectRecipientsProps {
-  formData: AssignmentFormData
-  onFormDataChange: (data: Partial<AssignmentFormData>) => void
+  formData: AssignmentFormData;
+  onFormDataChange: (data: Partial<AssignmentFormData>) => void;
 }
 
 export function StepSelectRecipients({
   formData,
   onFormDataChange,
 }: StepSelectRecipientsProps) {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch classes
   const {
@@ -36,7 +36,7 @@ export function StepSelectRecipients({
   } = useQuery({
     queryKey: ["teacher-classes"],
     queryFn: teachersApi.getMyClasses,
-  })
+  });
 
   // Fetch all students
   const {
@@ -46,78 +46,78 @@ export function StepSelectRecipients({
   } = useQuery({
     queryKey: ["teacher-students"],
     queryFn: teachersApi.getMyStudents,
-  })
+  });
 
   // Get students in selected classes
   const studentsInSelectedClasses = useMemo(() => {
     // This would ideally come from the backend, but for now we'll just return empty
     // since we don't have class membership data in the frontend
-    return new Set<string>()
-  }, [])
+    return new Set<string>();
+  }, []);
 
   // Filter students by search term
   const filteredStudents = useMemo(() => {
-    if (!searchTerm) return allStudents
-    const searchLower = searchTerm.toLowerCase()
+    if (!searchTerm) return allStudents;
+    const searchLower = searchTerm.toLowerCase();
     return allStudents.filter(
       (student) =>
         student.user_full_name.toLowerCase().includes(searchLower) ||
         student.user_email.toLowerCase().includes(searchLower) ||
         student.user_username.toLowerCase().includes(searchLower),
-    )
-  }, [allStudents, searchTerm])
+    );
+  }, [allStudents, searchTerm]);
 
   // Calculate total student count
   const totalStudentCount = useMemo(() => {
     const classStudentCount = classes
       .filter((c) => formData.class_ids.includes(c.id))
-      .reduce((acc, cls) => acc + (cls.student_count || 0), 0)
+      .reduce((acc, cls) => acc + (cls.student_count || 0), 0);
     return {
       fromClasses: classStudentCount,
       fromIndividual: formData.student_ids.length,
       total: classStudentCount + formData.student_ids.length,
-    }
-  }, [formData.class_ids, formData.student_ids, classes])
+    };
+  }, [formData.class_ids, formData.student_ids, classes]);
 
   // Handle class selection toggle
   const handleClassToggle = (classId: string) => {
     const newClassIds = formData.class_ids.includes(classId)
       ? formData.class_ids.filter((id) => id !== classId)
-      : [...formData.class_ids, classId]
-    onFormDataChange({ class_ids: newClassIds })
-  }
+      : [...formData.class_ids, classId];
+    onFormDataChange({ class_ids: newClassIds });
+  };
 
   // Handle student selection toggle
   const handleStudentToggle = (studentId: string) => {
     const newStudentIds = formData.student_ids.includes(studentId)
       ? formData.student_ids.filter((id) => id !== studentId)
-      : [...formData.student_ids, studentId]
-    onFormDataChange({ student_ids: newStudentIds })
-  }
+      : [...formData.student_ids, studentId];
+    onFormDataChange({ student_ids: newStudentIds });
+  };
 
   // Handle "Select All Classes" toggle
   const handleSelectAllClasses = () => {
     if (formData.class_ids.length === classes.length) {
-      onFormDataChange({ class_ids: [] })
+      onFormDataChange({ class_ids: [] });
     } else {
-      onFormDataChange({ class_ids: classes.map((c) => c.id) })
+      onFormDataChange({ class_ids: classes.map((c) => c.id) });
     }
-  }
+  };
 
   // Handle "Select All Students" toggle
   const handleSelectAllStudents = () => {
     if (formData.student_ids.length === filteredStudents.length) {
-      onFormDataChange({ student_ids: [] })
+      onFormDataChange({ student_ids: [] });
     } else {
-      onFormDataChange({ student_ids: filteredStudents.map((s) => s.id) })
+      onFormDataChange({ student_ids: filteredStudents.map((s) => s.id) });
     }
-  }
+  };
 
   const allClassesSelected =
-    classes.length > 0 && formData.class_ids.length === classes.length
+    classes.length > 0 && formData.class_ids.length === classes.length;
   const allStudentsSelected =
     filteredStudents.length > 0 &&
-    formData.student_ids.length === filteredStudents.length
+    formData.student_ids.length === filteredStudents.length;
 
   return (
     <div className="grid grid-cols-[1fr,400px] gap-6 h-full">
@@ -326,9 +326,9 @@ export function StepSelectRecipients({
                       <div className="space-y-2">
                         {filteredStudents.map((student) => {
                           const isInSelectedClass =
-                            studentsInSelectedClasses.has(student.id)
+                            studentsInSelectedClasses.has(student.id);
                           const isIndividuallySelected =
-                            formData.student_ids.includes(student.id)
+                            formData.student_ids.includes(student.id);
 
                           return (
                             <Card
@@ -380,7 +380,7 @@ export function StepSelectRecipients({
                                 </div>
                               </CardContent>
                             </Card>
-                          )
+                          );
                         })}
                       </div>
                     )}
@@ -408,14 +408,14 @@ export function StepSelectRecipients({
         onRemoveClass={(classId) => {
           onFormDataChange({
             class_ids: formData.class_ids.filter((id) => id !== classId),
-          })
+          });
         }}
         onRemoveStudent={(studentId) => {
           onFormDataChange({
             student_ids: formData.student_ids.filter((id) => id !== studentId),
-          })
+          });
         }}
       />
     </div>
-  )
+  );
 }

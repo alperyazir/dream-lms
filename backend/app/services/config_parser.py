@@ -122,8 +122,14 @@ def parse_book_config(config_dict: dict) -> list[ActivityData]:
                     title = activity.get("headerText")
                     if not title:
                         # Generate default title from type
-                        title = activity_type.replace("_", " ").replace("The", "the").title()
-                        logger.debug(f"Generated title '{title}' for activity type {activity_type}")
+                        title = (
+                            activity_type.replace("_", " ")
+                            .replace("The", "the")
+                            .title()
+                        )
+                        logger.debug(
+                            f"Generated title '{title}' for activity type {activity_type}"
+                        )
 
                     # Calculate order index: (module_idx * 1000) + (page_num * 10) + section_idx
                     order_index = (module_idx * 1000) + (page_number * 10) + section_idx

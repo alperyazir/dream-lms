@@ -34,7 +34,9 @@ class GenerationRequestV2(BaseModel):
 
     # Generation parameters
     difficulty: Literal["easy", "medium", "hard", "auto"] = "auto"
-    count: int = Field(default=10, ge=1, le=50, description="Number of items to generate")
+    count: int = Field(
+        default=10, ge=1, le=50, description="Number of items to generate"
+    )
     language: str | None = None
     include_audio: bool = True
     extra_config: dict[str, Any] | None = Field(
@@ -52,7 +54,9 @@ class GenerationRequestV2(BaseModel):
                 raise ValueError("module_ids is required for book_module source")
         elif self.source_type == "teacher_material":
             if not self.material_text:
-                raise ValueError("material_text is required for teacher_material source")
+                raise ValueError(
+                    "material_text is required for teacher_material source"
+                )
         return self
 
     @model_validator(mode="after")
@@ -68,7 +72,9 @@ class GenerationResponseV2(BaseModel):
 
     # Generated content
     content_id: str = Field(description="Unique ID for this generated content")
-    activity_type: str = Field(description="Internal activity type (e.g., ai_quiz, vocabulary_quiz)")
+    activity_type: str = Field(
+        description="Internal activity type (e.g., ai_quiz, vocabulary_quiz)"
+    )
     content: dict[str, Any] = Field(description="Generated activity content")
 
     # Skill metadata

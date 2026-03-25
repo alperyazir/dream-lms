@@ -144,7 +144,9 @@ class MixModeService:
         # Backfill: if we got fewer than requested, generate more from successful skills
         shortfall = total_count - len(all_questions)
         if shortfall > 0 and successful_skills:
-            logger.info(f"Mix mode: backfilling {shortfall} questions from successful skills")
+            logger.info(
+                f"Mix mode: backfilling {shortfall} questions from successful skills"
+            )
             backfill_tasks = []
             for idx in range(shortfall):
                 alloc = successful_skills[idx % len(successful_skills)]
@@ -160,7 +162,9 @@ class MixModeService:
                         cefr_level=cefr_level,
                     )
                 )
-            backfill_results = await asyncio.gather(*backfill_tasks, return_exceptions=True)
+            backfill_results = await asyncio.gather(
+                *backfill_tasks, return_exceptions=True
+            )
             for br in backfill_results:
                 if not isinstance(br, Exception):
                     all_questions.extend(br)
@@ -169,7 +173,14 @@ class MixModeService:
         all_questions = all_questions[:total_count]
 
         # Group by skill_slug then format_slug (no shuffle — groups stay together)
-        skill_order = ["vocabulary", "grammar", "reading", "listening", "writing", "speaking"]
+        skill_order = [
+            "vocabulary",
+            "grammar",
+            "reading",
+            "listening",
+            "writing",
+            "speaking",
+        ]
         all_questions.sort(
             key=lambda q: (
                 skill_order.index(q.skill_slug) if q.skill_slug in skill_order else 99,
@@ -187,7 +198,7 @@ class MixModeService:
             if q.format_slug not in skill_distribution[key]["formats"]:
                 skill_distribution[key]["formats"].append(q.format_slug)
 
-        skills_present = set(q.skill_slug for q in all_questions)
+        skills_present = {q.skill_slug for q in all_questions}
 
         return MixModeActivity(
             activity_id=str(uuid4()),
@@ -207,7 +218,7 @@ class MixModeService:
         """Analyze module text to determine skill weights."""
         words = text.split()
         word_count = len(words)
-        unique_words = len(set(w.lower() for w in words))
+        unique_words = len({w.lower() for w in words})
 
         result = ContentAnalysisResult()
 
@@ -226,7 +237,9 @@ class MixModeService:
             result.reading_weight = 0.5
 
         # Listening weight: higher for dialogue content
-        dialogue_markers = len(re.findall(r'["\'](.*?)["\']|said|asked|told|replied', text, re.IGNORECASE))
+        dialogue_markers = len(
+            re.findall(r'["\'](.*?)["\']|said|asked|told|replied', text, re.IGNORECASE)
+        )
         if dialogue_markers > 3:
             result.listening_weight = 1.5
 
@@ -234,10 +247,13 @@ class MixModeService:
         result.grammar_weight = 1.0
 
         # Writing weight: higher for expressive/topic-rich content
-        expressive_markers = len(re.findall(
-            r'\b(opinion|describe|explain|imagine|think|feel|believe|prefer)\b',
-            text, re.IGNORECASE,
-        ))
+        expressive_markers = len(
+            re.findall(
+                r"\b(opinion|describe|explain|imagine|think|feel|believe|prefer)\b",
+                text,
+                re.IGNORECASE,
+            )
+        )
         if expressive_markers > 2:
             result.writing_weight = 1.3
 
@@ -324,7 +340,9 @@ class MixModeService:
                 logger.warning(f"Mix mode: no handler for {skill_slug}×{format_slug}")
 
         except Exception as e:
-            logger.warning(f"Mix mode: failed to generate {skill_slug}×{format_slug}: {e}")
+            logger.warning(
+                f"Mix mode: failed to generate {skill_slug}×{format_slug}: {e}"
+            )
 
         return questions
 
@@ -359,67 +377,104 @@ class MixModeService:
     # =====================================================================
 
     async def _gen_vocabulary_mcq(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.services.ai_generation.prompts.mcq_prompts import (
-            MCQ_JSON_SCHEMA, MCQ_SYSTEM_PROMPT, build_mcq_prompt,
+            MCQ_JSON_SCHEMA,
+            MCQ_SYSTEM_PROMPT,
+            build_mcq_prompt,
         )
+
         module = await self._dcs_client.get_module_detail(book_id, module_ids[0])
         if not module or not module.text:
             return []
         topics = module.topics or [module.title]
         prompt = build_mcq_prompt(
-            question_count=count, difficulty=difficulty, language=language or "en",
-            topics=topics, vocabulary=[], module_title=module.title,
+            question_count=count,
+            difficulty=difficulty,
+            language=language or "en",
+            topics=topics,
+            vocabulary=[],
+            module_title=module.title,
             cefr_level=cefr_level,
         )
         response = await self._llm_manager.generate_structured(
-            prompt=f"{MCQ_SYSTEM_PROMPT}\n\n{prompt}", schema=MCQ_JSON_SCHEMA,
+            prompt=f"{MCQ_SYSTEM_PROMPT}\n\n{prompt}",
+            schema=MCQ_JSON_SCHEMA,
         )
         return [
             MixModeQuestion(
-                question_id=str(uuid4()), skill_slug="vocabulary",
-                format_slug="multiple_choice", question_data=raw,
+                question_id=str(uuid4()),
+                skill_slug="vocabulary",
+                format_slug="multiple_choice",
+                question_data=raw,
             )
             for raw in (response.get("questions") or [])[:count]
         ]
 
     async def _gen_word_builder(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.word_builder import WordBuilderRequest
         from app.services.ai_generation.word_builder_service import WordBuilderService
+
         service = WordBuilderService(self._dcs_client, self._tts_manager)
         request = WordBuilderRequest(
-            book_id=book_id, module_ids=module_ids, word_count=max(3, count),
+            book_id=book_id,
+            module_ids=module_ids,
+            word_count=max(3, count),
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="vocabulary",
-                format_slug="word_builder", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="vocabulary",
+                format_slug="word_builder",
+                question_data=item.model_dump(),
             )
             for item in activity.words[:count]
         ]
 
     async def _gen_vocabulary_matching(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.vocabulary_matching import VocabularyMatchingRequest
-        from app.services.ai_generation.vocabulary_matching_service import VocabularyMatchingService
+        from app.services.ai_generation.vocabulary_matching_service import (
+            VocabularyMatchingService,
+        )
+
         service = VocabularyMatchingService(self._dcs_client)
         request = VocabularyMatchingRequest(
-            book_id=book_id, module_ids=module_ids, pair_count=max(2, count),
+            book_id=book_id,
+            module_ids=module_ids,
+            pair_count=max(2, count),
             include_audio=False,
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=pair.pair_id, skill_slug="vocabulary",
-                format_slug="matching", question_data=pair.model_dump(),
+                question_id=pair.pair_id,
+                skill_slug="vocabulary",
+                format_slug="matching",
+                question_data=pair.model_dump(),
             )
             for pair in activity.pairs[:count]
         ]
@@ -429,70 +484,112 @@ class MixModeService:
     # =====================================================================
 
     async def _gen_grammar_mcq(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.services.ai_generation.prompts.mcq_prompts import (
-            GRAMMAR_MCQ_SYSTEM_PROMPT, MCQ_JSON_SCHEMA, build_mcq_prompt,
+            GRAMMAR_MCQ_SYSTEM_PROMPT,
+            MCQ_JSON_SCHEMA,
+            build_mcq_prompt,
         )
+
         module = await self._dcs_client.get_module_detail(book_id, module_ids[0])
         if not module or not module.text:
             return []
         topics = module.topics or [module.title]
         prompt = build_mcq_prompt(
-            question_count=count, difficulty=difficulty, language=language or "en",
-            topics=topics, vocabulary=[], module_title=module.title,
+            question_count=count,
+            difficulty=difficulty,
+            language=language or "en",
+            topics=topics,
+            vocabulary=[],
+            module_title=module.title,
             cefr_level=cefr_level,
         )
         response = await self._llm_manager.generate_structured(
-            prompt=f"{GRAMMAR_MCQ_SYSTEM_PROMPT}\n\n{prompt}", schema=MCQ_JSON_SCHEMA,
+            prompt=f"{GRAMMAR_MCQ_SYSTEM_PROMPT}\n\n{prompt}",
+            schema=MCQ_JSON_SCHEMA,
         )
         return [
             MixModeQuestion(
-                question_id=str(uuid4()), skill_slug="grammar",
-                format_slug="multiple_choice", question_data=raw,
+                question_id=str(uuid4()),
+                skill_slug="grammar",
+                format_slug="multiple_choice",
+                question_data=raw,
             )
             for raw in (response.get("questions") or [])[:count]
         ]
 
     async def _gen_grammar_fill_blank(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.grammar_fill_blank import GrammarFillBlankRequest
-        from app.services.ai_generation.grammar_fill_blank_service import GrammarFillBlankService
+        from app.services.ai_generation.grammar_fill_blank_service import (
+            GrammarFillBlankService,
+        )
+
         service = GrammarFillBlankService(self._dcs_client, self._llm_manager)
         request = GrammarFillBlankRequest(
-            book_id=book_id, module_ids=module_ids,
-            item_count=max(5, count), difficulty=difficulty, language=language,
+            book_id=book_id,
+            module_ids=module_ids,
+            item_count=max(5, count),
+            difficulty=difficulty,
+            language=language,
             mode="word_bank",
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="grammar",
-                format_slug="fill_blank", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="grammar",
+                format_slug="fill_blank",
+                question_data=item.model_dump(),
             )
             for item in activity.items[:count]
         ]
 
     async def _gen_sentence_builder(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.sentence_builder import SentenceBuilderRequest
-        from app.services.ai_generation.sentence_builder_service import SentenceBuilderService
-        service = SentenceBuilderService(self._dcs_client, self._llm_manager, self._tts_manager)
+        from app.services.ai_generation.sentence_builder_service import (
+            SentenceBuilderService,
+        )
+
+        service = SentenceBuilderService(
+            self._dcs_client, self._llm_manager, self._tts_manager
+        )
         request = SentenceBuilderRequest(
-            book_id=book_id, module_ids=module_ids,
-            sentence_count=max(3, count), difficulty=difficulty,
+            book_id=book_id,
+            module_ids=module_ids,
+            sentence_count=max(3, count),
+            difficulty=difficulty,
             include_audio=False,
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="grammar",
-                format_slug="sentence_builder", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="grammar",
+                format_slug="sentence_builder",
+                question_data=item.model_dump(),
             )
             for item in activity.sentences[:count]
         ]
@@ -502,15 +599,26 @@ class MixModeService:
     # =====================================================================
 
     async def _gen_reading_comprehension(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.reading_comprehension import ReadingComprehensionRequest
-        from app.services.ai_generation.reading_comprehension_service import ReadingComprehensionService
+        from app.services.ai_generation.reading_comprehension_service import (
+            ReadingComprehensionService,
+        )
+
         service = ReadingComprehensionService(self._dcs_client, self._llm_manager)
         request = ReadingComprehensionRequest(
-            book_id=book_id, module_id=module_ids[0], module_ids=module_ids,
-            question_count=max(3, count), difficulty=difficulty,
+            book_id=book_id,
+            module_id=module_ids[0],
+            module_ids=module_ids,
+            question_count=max(3, count),
+            difficulty=difficulty,
         )
         activity = await service.generate_activity(request)
         # Include passage text with each question for context
@@ -527,6 +635,7 @@ class MixModeService:
                 result = await provider.generate_passage_audio(text=passage_text)
 
                 import base64
+
                 audio_bytes = base64.b64decode(result.audio_base64)
 
                 # Create DCS content entry for this passage audio
@@ -550,10 +659,15 @@ class MixModeService:
 
                 # Upload audio file
                 await self._dcs_ai_content_client.upload_audio(
-                    book_id, content_id, "passage.mp3", audio_bytes,
+                    book_id,
+                    content_id,
+                    "passage.mp3",
+                    audio_bytes,
                 )
 
-                passage_audio_url = f"/api/v1/ai/content/{book_id}/{content_id}/audio/passage.mp3"
+                passage_audio_url = (
+                    f"/api/v1/ai/content/{book_id}/{content_id}/audio/passage.mp3"
+                )
                 word_timestamps = [ts.model_dump() for ts in result.word_timestamps]
                 logger.info(
                     f"Passage audio uploaded to DCS: book_id={book_id}, content_id={content_id}"
@@ -573,10 +687,14 @@ class MixModeService:
                 data["passage_audio_url"] = passage_audio_url
             if word_timestamps:
                 data["word_timestamps"] = word_timestamps
-            questions.append(MixModeQuestion(
-                question_id=q.question_id, skill_slug="reading",
-                format_slug="comprehension", question_data=data,
-            ))
+            questions.append(
+                MixModeQuestion(
+                    question_id=q.question_id,
+                    skill_slug="reading",
+                    format_slug="comprehension",
+                    question_data=data,
+                )
+            )
         return questions
 
     # =====================================================================
@@ -584,61 +702,117 @@ class MixModeService:
     # =====================================================================
 
     async def _gen_listening_fill_blank(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.listening_fill_blank import ListeningFillBlankRequest
-        from app.services.ai_generation.listening_fill_blank_service import ListeningFillBlankService
-        service = ListeningFillBlankService(self._dcs_client, self._llm_manager, self._tts_manager, dcs_ai_content_client=self._dcs_ai_content_client)
+        from app.services.ai_generation.listening_fill_blank_service import (
+            ListeningFillBlankService,
+        )
+
+        service = ListeningFillBlankService(
+            self._dcs_client,
+            self._llm_manager,
+            self._tts_manager,
+            dcs_ai_content_client=self._dcs_ai_content_client,
+        )
         request = ListeningFillBlankRequest(
-            book_id=book_id, module_ids=module_ids,
-            item_count=max(5, count), difficulty=difficulty, language=language,
+            book_id=book_id,
+            module_ids=module_ids,
+            item_count=max(5, count),
+            difficulty=difficulty,
+            language=language,
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="listening",
-                format_slug="fill_blank", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="listening",
+                format_slug="fill_blank",
+                question_data=item.model_dump(),
             )
             for item in activity.items[:count]
         ]
 
     async def _gen_listening_sentence_builder(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
-        from app.schemas.listening_sentence_builder import ListeningSentenceBuilderRequest
-        from app.services.ai_generation.listening_sentence_builder_service import ListeningSentenceBuilderService
-        service = ListeningSentenceBuilderService(self._dcs_client, self._llm_manager, self._tts_manager, dcs_ai_content_client=self._dcs_ai_content_client)
+        from app.schemas.listening_sentence_builder import (
+            ListeningSentenceBuilderRequest,
+        )
+        from app.services.ai_generation.listening_sentence_builder_service import (
+            ListeningSentenceBuilderService,
+        )
+
+        service = ListeningSentenceBuilderService(
+            self._dcs_client,
+            self._llm_manager,
+            self._tts_manager,
+            dcs_ai_content_client=self._dcs_ai_content_client,
+        )
         request = ListeningSentenceBuilderRequest(
-            book_id=book_id, module_ids=module_ids,
-            sentence_count=max(3, count), difficulty=difficulty, language=language,
+            book_id=book_id,
+            module_ids=module_ids,
+            sentence_count=max(3, count),
+            difficulty=difficulty,
+            language=language,
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="listening",
-                format_slug="sentence_builder", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="listening",
+                format_slug="sentence_builder",
+                question_data=item.model_dump(),
             )
             for item in activity.sentences[:count]
         ]
 
     async def _gen_listening_word_builder(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.listening_word_builder import ListeningWordBuilderRequest
-        from app.services.ai_generation.listening_word_builder_service import ListeningWordBuilderService
-        service = ListeningWordBuilderService(self._dcs_client, self._llm_manager, self._tts_manager, dcs_ai_content_client=self._dcs_ai_content_client)
+        from app.services.ai_generation.listening_word_builder_service import (
+            ListeningWordBuilderService,
+        )
+
+        service = ListeningWordBuilderService(
+            self._dcs_client,
+            self._llm_manager,
+            self._tts_manager,
+            dcs_ai_content_client=self._dcs_ai_content_client,
+        )
         request = ListeningWordBuilderRequest(
-            book_id=book_id, module_ids=module_ids,
-            word_count=max(3, count), difficulty=difficulty, language=language,
+            book_id=book_id,
+            module_ids=module_ids,
+            word_count=max(3, count),
+            difficulty=difficulty,
+            language=language,
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="listening",
-                format_slug="word_builder", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="listening",
+                format_slug="word_builder",
+                question_data=item.model_dump(),
             )
             for item in activity.words[:count]
         ]
@@ -648,81 +822,135 @@ class MixModeService:
     # =====================================================================
 
     async def _gen_writing_fill_blank(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.writing_fill_blank import WritingFillBlankRequest
-        from app.services.ai_generation.writing_fill_blank_service import WritingFillBlankService
+        from app.services.ai_generation.writing_fill_blank_service import (
+            WritingFillBlankService,
+        )
+
         service = WritingFillBlankService(self._dcs_client, self._llm_manager)
         request = WritingFillBlankRequest(
-            book_id=book_id, module_ids=module_ids,
-            item_count=max(5, count), difficulty=difficulty, language=language,
+            book_id=book_id,
+            module_ids=module_ids,
+            item_count=max(5, count),
+            difficulty=difficulty,
+            language=language,
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="writing",
-                format_slug="fill_blank", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="writing",
+                format_slug="fill_blank",
+                question_data=item.model_dump(),
             )
             for item in activity.items[:count]
         ]
 
     async def _gen_writing_sentence_corrector(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
-        from app.schemas.writing_sentence_corrector import WritingSentenceCorrectorRequest
-        from app.services.ai_generation.writing_sentence_corrector_service import WritingSentenceCorrectorService
+        from app.schemas.writing_sentence_corrector import (
+            WritingSentenceCorrectorRequest,
+        )
+        from app.services.ai_generation.writing_sentence_corrector_service import (
+            WritingSentenceCorrectorService,
+        )
+
         service = WritingSentenceCorrectorService(self._dcs_client, self._llm_manager)
         request = WritingSentenceCorrectorRequest(
-            book_id=book_id, module_ids=module_ids,
-            item_count=max(3, count), difficulty=difficulty, language=language,
+            book_id=book_id,
+            module_ids=module_ids,
+            item_count=max(3, count),
+            difficulty=difficulty,
+            language=language,
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="writing",
-                format_slug="sentence_corrector", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="writing",
+                format_slug="sentence_corrector",
+                question_data=item.model_dump(),
             )
             for item in activity.items[:count]
         ]
 
     async def _gen_writing_free_response(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.writing_free_response import WritingFreeResponseRequest
-        from app.services.ai_generation.writing_free_response_service import WritingFreeResponseService
+        from app.services.ai_generation.writing_free_response_service import (
+            WritingFreeResponseService,
+        )
+
         service = WritingFreeResponseService(self._dcs_client, self._llm_manager)
         request = WritingFreeResponseRequest(
-            book_id=book_id, module_ids=module_ids,
-            item_count=max(1, count), difficulty=difficulty, language=language,
+            book_id=book_id,
+            module_ids=module_ids,
+            item_count=max(1, count),
+            difficulty=difficulty,
+            language=language,
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="writing",
-                format_slug="free_response", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="writing",
+                format_slug="free_response",
+                question_data=item.model_dump(),
             )
             for item in activity.items[:count]
         ]
 
     async def _gen_speaking_open_response(
-        self, book_id: int, module_ids: list[int], count: int,
-        difficulty: str, language: str, cefr_level: str,
+        self,
+        book_id: int,
+        module_ids: list[int],
+        count: int,
+        difficulty: str,
+        language: str,
+        cefr_level: str,
     ) -> list[MixModeQuestion]:
         from app.schemas.speaking_open_response import SpeakingOpenResponseRequest
-        from app.services.ai_generation.speaking_open_response_service import SpeakingOpenResponseService
+        from app.services.ai_generation.speaking_open_response_service import (
+            SpeakingOpenResponseService,
+        )
+
         service = SpeakingOpenResponseService(self._dcs_client, self._llm_manager)
         request = SpeakingOpenResponseRequest(
-            book_id=book_id, module_ids=module_ids,
-            item_count=max(1, count), difficulty=difficulty, language=language,
+            book_id=book_id,
+            module_ids=module_ids,
+            item_count=max(1, count),
+            difficulty=difficulty,
+            language=language,
         )
         activity = await service.generate_activity(request)
         return [
             MixModeQuestion(
-                question_id=item.item_id, skill_slug="speaking",
-                format_slug="open_response", question_data=item.model_dump(),
+                question_id=item.item_id,
+                skill_slug="speaking",
+                format_slug="open_response",
+                question_data=item.model_dump(),
             )
             for item in activity.items[:count]
         ]

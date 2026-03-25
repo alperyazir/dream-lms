@@ -1,24 +1,24 @@
-import { Link } from "@tanstack/react-router"
-import { Award, Clock, ExternalLink, Target } from "lucide-react"
-import { useMemo } from "react"
-import { SkillProfileCard } from "@/components/analytics/SkillProfileCard"
-import { StudentProgressChart } from "@/components/charts/StudentProgressChart"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Link } from "@tanstack/react-router";
+import { Award, Clock, ExternalLink, Target } from "lucide-react";
+import { useMemo } from "react";
+import { SkillProfileCard } from "@/components/analytics/SkillProfileCard";
+import { StudentProgressChart } from "@/components/charts/StudentProgressChart";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
-import { useStudentAnalytics } from "@/hooks/useStudentAnalytics"
+} from "@/components/ui/sheet";
+import { useStudentAnalytics } from "@/hooks/useStudentAnalytics";
 
 interface StudentAnalyticsPanelProps {
-  studentId: string | null
-  studentName?: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  studentId: string | null;
+  studentName?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function StudentAnalyticsPanel({
@@ -30,21 +30,21 @@ export function StudentAnalyticsPanel({
   const { analytics, isLoading } = useStudentAnalytics({
     studentId: studentId ?? "",
     period: "30d",
-  })
+  });
 
   const chartData = useMemo(() => {
-    if (!analytics) return null
+    if (!analytics) return null;
     return {
       scores: analytics.performance_trend.map((p) => p.score),
       dates: analytics.performance_trend.map((p) => p.date),
-    }
-  }, [analytics])
+    };
+  }, [analytics]);
 
   const initials = (analytics?.student.name ?? studentName ?? "?")
     .split(" ")
     .map((n) => n[0])
     .join("")
-    .toUpperCase()
+    .toUpperCase();
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -164,5 +164,5 @@ export function StudentAnalyticsPanel({
         )}
       </SheetContent>
     </Sheet>
-  )
+  );
 }

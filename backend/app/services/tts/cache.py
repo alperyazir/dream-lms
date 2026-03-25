@@ -225,7 +225,8 @@ class AudioCache:
 
         with self._lock:
             expired_keys = [
-                key for key, entry in self._cache.items()
+                key
+                for key, entry in self._cache.items()
                 if current_time > entry.expires_at
             ]
             for key in expired_keys:

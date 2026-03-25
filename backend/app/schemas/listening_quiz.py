@@ -12,7 +12,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 # Sub-skill types for listening questions
 ListeningSubSkill = Literal["gist", "detail", "discrimination"]
 

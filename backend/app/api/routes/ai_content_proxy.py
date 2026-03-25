@@ -19,8 +19,10 @@ from fastapi.responses import StreamingResponse
 from starlette.requests import Request
 
 from app.core.rate_limit import RateLimits, limiter
-
-from app.services.dcs_ai_content_client import DCSAIContentClient, get_dcs_ai_content_client
+from app.services.dcs_ai_content_client import (
+    DCSAIContentClient,
+    get_dcs_ai_content_client,
+)
 from app.services.dream_storage_client import DreamCentralStorageClient
 
 logger = logging.getLogger(__name__)
@@ -163,15 +165,13 @@ async def list_book_content(
     # Exclude internal-only entries (e.g. passage audio storage)
     _HIDDEN_TYPES = {"passage_audio", "listening_audio"}
     all_items = [
-        item for item in all_items
-        if item.get("activity_type") not in _HIDDEN_TYPES
+        item for item in all_items if item.get("activity_type") not in _HIDDEN_TYPES
     ]
 
     # Filter by activity_type if provided
     if activity_type:
         all_items = [
-            item for item in all_items
-            if item.get("activity_type") == activity_type
+            item for item in all_items if item.get("activity_type") == activity_type
         ]
 
     total = len(all_items)
@@ -184,19 +184,23 @@ async def list_book_content(
     # Map to expected frontend shape
     items = []
     for item in page_items:
-        items.append({
-            "content_id": item.get("content_id") or item.get("id", ""),
-            "activity_type": item.get("activity_type", ""),
-            "title": item.get("title", "Untitled"),
-            "item_count": item.get("item_count", 0),
-            "has_audio": item.get("has_audio", False),
-            "difficulty": item.get("difficulty"),
-            "language": item.get("language"),
-            "created_by_id": item.get("created_by_id"),
-            "created_by_name": item.get("created_by_name"),
-            "created_at": item.get("created_at") or item.get("created") or item.get("last_modified"),
-            "book_id": book_id,
-        })
+        items.append(
+            {
+                "content_id": item.get("content_id") or item.get("id", ""),
+                "activity_type": item.get("activity_type", ""),
+                "title": item.get("title", "Untitled"),
+                "item_count": item.get("item_count", 0),
+                "has_audio": item.get("has_audio", False),
+                "difficulty": item.get("difficulty"),
+                "language": item.get("language"),
+                "created_by_id": item.get("created_by_id"),
+                "created_by_name": item.get("created_by_name"),
+                "created_at": item.get("created_at")
+                or item.get("created")
+                or item.get("last_modified"),
+                "book_id": book_id,
+            }
+        )
 
     return {
         "items": items,

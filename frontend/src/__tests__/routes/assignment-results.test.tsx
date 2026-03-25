@@ -4,14 +4,14 @@
  * Task 11: Frontend Component Tests
  */
 
-import { render, screen, within } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import type { ReactNode } from "react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   AssignmentDetailedResultsResponse,
   StudentAnswersResponse,
-} from "@/types/analytics"
+} from "@/types/analytics";
 
 // Mock the assignmentsApi module
 vi.mock("@/services/assignmentsApi", () => ({
@@ -25,7 +25,7 @@ vi.mock("@/services/assignmentsApi", () => ({
     getAssignmentDetailedResults: vi.fn(),
     getStudentAnswers: vi.fn(),
   },
-}))
+}));
 
 // Mock Recharts to avoid canvas-related errors in tests
 vi.mock("recharts", () => ({
@@ -41,7 +41,7 @@ vi.mock("recharts", () => ({
   YAxis: () => <div data-testid="y-axis" />,
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
   Tooltip: () => <div data-testid="tooltip" />,
-}))
+}));
 
 // Mock detailed results response
 const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
@@ -144,7 +144,7 @@ const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
     fill_in_blank: null,
     word_search: null,
   },
-}
+};
 
 // Mock student answers response
 const mockStudentAnswersResponse: StudentAnswersResponse = {
@@ -163,14 +163,14 @@ const mockStudentAnswersResponse: StudentAnswersResponse = {
   },
   activity_type: "dragdroppicture",
   config_json: null,
-}
+};
 
 describe("AssignmentDetailPage - Results Tab", () => {
-  const user = userEvent.setup()
+  const user = userEvent.setup();
 
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   // Helper component that renders the dashboard with mock data
   function TestableAssignmentResultsDashboard({
@@ -187,18 +187,18 @@ describe("AssignmentDetailPage - Results Tab", () => {
     onViewDetails,
     onCloseDialog,
   }: {
-    isLoading?: boolean
-    error?: Error | null
-    results?: AssignmentDetailedResultsResponse | null
-    activeTab?: string
-    onTabChange?: (tab: string) => void
-    statusFilter?: string
-    onStatusFilterChange?: (status: string) => void
-    selectedStudentId?: string | null
-    studentAnswers?: StudentAnswersResponse | null
-    studentAnswersLoading?: boolean
-    onViewDetails?: (studentId: string) => void
-    onCloseDialog?: () => void
+    isLoading?: boolean;
+    error?: Error | null;
+    results?: AssignmentDetailedResultsResponse | null;
+    activeTab?: string;
+    onTabChange?: (tab: string) => void;
+    statusFilter?: string;
+    onStatusFilterChange?: (status: string) => void;
+    selectedStudentId?: string | null;
+    studentAnswers?: StudentAnswersResponse | null;
+    studentAnswersLoading?: boolean;
+    onViewDetails?: (studentId: string) => void;
+    onCloseDialog?: () => void;
   }) {
     // Loading state
     if (isLoading) {
@@ -214,7 +214,7 @@ describe("AssignmentDetailPage - Results Tab", () => {
             </p>
           </div>
         </div>
-      )
+      );
     }
 
     // Error state
@@ -235,14 +235,14 @@ describe("AssignmentDetailPage - Results Tab", () => {
             </p>
           </div>
         </div>
-      )
+      );
     }
 
     // Filter students
     const filteredStudents = results.student_results.filter((student) => {
-      if (statusFilter === "all") return true
-      return student.status === statusFilter
-    })
+      if (statusFilter === "all") return true;
+      return student.status === statusFilter;
+    });
 
     return (
       <div className="container mx-auto px-4 py-8">
@@ -567,25 +567,25 @@ describe("AssignmentDetailPage - Results Tab", () => {
           </div>
         )}
       </div>
-    )
+    );
   }
 
   describe("Loading State", () => {
     it("displays loading spinner while fetching data", () => {
       render(
         <TestableAssignmentResultsDashboard isLoading={true} results={null} />,
-      )
+      );
 
-      expect(screen.getByTestId("loading-spinner")).toBeInTheDocument()
+      expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
       expect(
         screen.getByText("Loading assignment results..."),
-      ).toBeInTheDocument()
-    })
-  })
+      ).toBeInTheDocument();
+    });
+  });
 
   describe("Error State", () => {
     it("displays error message when API fails", () => {
-      const testError = new Error("Network error - failed to fetch results")
+      const testError = new Error("Network error - failed to fetch results");
 
       render(
         <TestableAssignmentResultsDashboard
@@ -593,13 +593,13 @@ describe("AssignmentDetailPage - Results Tab", () => {
           error={testError}
           results={null}
         />,
-      )
+      );
 
-      expect(screen.getByText("Error Loading Assignment")).toBeInTheDocument()
+      expect(screen.getByText("Error Loading Assignment")).toBeInTheDocument();
       expect(screen.getByTestId("error-message")).toHaveTextContent(
         "Network error - failed to fetch results",
-      )
-    })
+      );
+    });
 
     it("displays default error message when no error details", () => {
       render(
@@ -608,13 +608,13 @@ describe("AssignmentDetailPage - Results Tab", () => {
           error={null}
           results={null}
         />,
-      )
+      );
 
-      expect(screen.getByText("Error Loading Assignment")).toBeInTheDocument()
+      expect(screen.getByText("Error Loading Assignment")).toBeInTheDocument();
       expect(screen.getByTestId("error-message")).toHaveTextContent(
         "Unable to load assignment details. Please try again later.",
-      )
-    })
+      );
+    });
 
     it("renders back button in error state", () => {
       render(
@@ -623,264 +623,264 @@ describe("AssignmentDetailPage - Results Tab", () => {
           error={new Error("test")}
           results={null}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("back-button")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByTestId("back-button")).toBeInTheDocument();
+    });
+  });
 
   describe("Assignment Header", () => {
     it("renders assignment name correctly", () => {
-      render(<TestableAssignmentResultsDashboard />)
+      render(<TestableAssignmentResultsDashboard />);
 
       expect(screen.getByTestId("assignment-name")).toHaveTextContent(
         "Math Quiz 1",
-      )
-    })
+      );
+    });
 
     it("renders activity type", () => {
-      render(<TestableAssignmentResultsDashboard />)
+      render(<TestableAssignmentResultsDashboard />);
 
       expect(screen.getByTestId("activity-type")).toHaveTextContent(
         "dragdroppicture",
-      )
-    })
+      );
+    });
 
     it("renders due date", () => {
-      render(<TestableAssignmentResultsDashboard />)
+      render(<TestableAssignmentResultsDashboard />);
 
-      expect(screen.getByTestId("due-date")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("due-date")).toBeInTheDocument();
+    });
 
     it("renders completion badge", () => {
-      render(<TestableAssignmentResultsDashboard />)
+      render(<TestableAssignmentResultsDashboard />);
 
       expect(screen.getByTestId("completion-badge")).toHaveTextContent(
         "75% Complete",
-      )
-    })
+      );
+    });
 
     it("renders back button", () => {
-      render(<TestableAssignmentResultsDashboard />)
+      render(<TestableAssignmentResultsDashboard />);
 
-      expect(screen.getByTestId("back-button")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByTestId("back-button")).toBeInTheDocument();
+    });
+  });
 
   describe("Tabs Navigation", () => {
     it("renders both tabs", () => {
-      render(<TestableAssignmentResultsDashboard />)
+      render(<TestableAssignmentResultsDashboard />);
 
-      expect(screen.getByTestId("tab-results")).toBeInTheDocument()
-      expect(screen.getByTestId("tab-students")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("tab-results")).toBeInTheDocument();
+      expect(screen.getByTestId("tab-students")).toBeInTheDocument();
+    });
 
     it("shows results tab content by default", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
-      expect(screen.getByTestId("results-tab-content")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("results-tab-content")).toBeInTheDocument();
+    });
 
     it("calls onTabChange when tab is clicked", async () => {
-      const onTabChange = vi.fn()
+      const onTabChange = vi.fn();
       render(
         <TestableAssignmentResultsDashboard
           activeTab="results"
           onTabChange={onTabChange}
         />,
-      )
+      );
 
-      await user.click(screen.getByTestId("tab-students"))
-      expect(onTabChange).toHaveBeenCalledWith("students")
-    })
-  })
+      await user.click(screen.getByTestId("tab-students"));
+      expect(onTabChange).toHaveBeenCalledWith("students");
+    });
+  });
 
   describe("Results Tab - Completion Overview", () => {
     it("renders completion overview section", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
-      expect(screen.getByTestId("completion-overview")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("completion-overview")).toBeInTheDocument();
+    });
 
     it("displays correct completion counts", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
-      expect(screen.getByTestId("completed-count")).toHaveTextContent("18")
-      expect(screen.getByTestId("in-progress-count")).toHaveTextContent("3")
-      expect(screen.getByTestId("not-started-count")).toHaveTextContent("2")
-      expect(screen.getByTestId("past-due-count")).toHaveTextContent("1")
-    })
+      expect(screen.getByTestId("completed-count")).toHaveTextContent("18");
+      expect(screen.getByTestId("in-progress-count")).toHaveTextContent("3");
+      expect(screen.getByTestId("not-started-count")).toHaveTextContent("2");
+      expect(screen.getByTestId("past-due-count")).toHaveTextContent("1");
+    });
 
     it("displays progress bar with correct percentage", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
-      expect(screen.getByTestId("progress-bar")).toHaveTextContent("75%")
-    })
-  })
+      expect(screen.getByTestId("progress-bar")).toHaveTextContent("75%");
+    });
+  });
 
   describe("Results Tab - Score Statistics", () => {
     it("renders score statistics section", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
-      expect(screen.getByTestId("score-statistics")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("score-statistics")).toBeInTheDocument();
+    });
 
     it("displays correct score values", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
-      expect(screen.getByTestId("avg-score")).toHaveTextContent("78.5%")
-      expect(screen.getByTestId("median-score")).toHaveTextContent("80%")
-      expect(screen.getByTestId("highest-score")).toHaveTextContent("100%")
-      expect(screen.getByTestId("lowest-score")).toHaveTextContent("45%")
-    })
+      expect(screen.getByTestId("avg-score")).toHaveTextContent("78.5%");
+      expect(screen.getByTestId("median-score")).toHaveTextContent("80%");
+      expect(screen.getByTestId("highest-score")).toHaveTextContent("100%");
+      expect(screen.getByTestId("lowest-score")).toHaveTextContent("45%");
+    });
 
     it("displays empty state when no scores available", () => {
       const noScoresResults = {
         ...mockDetailedResultsResponse,
         score_statistics: null,
-      }
+      };
       render(
         <TestableAssignmentResultsDashboard
           activeTab="results"
           results={noScoresResults}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("no-score-statistics")).toBeInTheDocument()
-      expect(screen.getByText("No scores available yet")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByTestId("no-score-statistics")).toBeInTheDocument();
+      expect(screen.getByText("No scores available yet")).toBeInTheDocument();
+    });
+  });
 
   describe("Results Tab - Most Missed Questions", () => {
     it("renders most missed questions section", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
-      expect(screen.getByTestId("most-missed-questions")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("most-missed-questions")).toBeInTheDocument();
+    });
 
     it("displays correct number of missed questions", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
-      const missedQuestions = screen.getAllByTestId("missed-question")
-      expect(missedQuestions).toHaveLength(1)
-    })
+      const missedQuestions = screen.getAllByTestId("missed-question");
+      expect(missedQuestions).toHaveLength(1);
+    });
 
     it("displays question details correctly", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
-      const missedQuestion = screen.getByTestId("missed-question")
+      const missedQuestion = screen.getByTestId("missed-question");
       expect(
         within(missedQuestion).getByTestId("missed-rank"),
-      ).toHaveTextContent("#1")
+      ).toHaveTextContent("#1");
       expect(
         within(missedQuestion).getByTestId("missed-text"),
-      ).toHaveTextContent("Match the banana")
+      ).toHaveTextContent("Match the banana");
       expect(
         within(missedQuestion).getByTestId("missed-percentage"),
-      ).toHaveTextContent("65%")
-    })
+      ).toHaveTextContent("65%");
+    });
 
     it("displays common wrong answer when available", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="results" />)
+      render(<TestableAssignmentResultsDashboard activeTab="results" />);
 
       expect(screen.getByTestId("common-wrong-answer")).toHaveTextContent(
         "wrong",
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe("Results Tab - Question Analysis Empty States", () => {
     it("displays empty state when no question analysis", () => {
       const noAnalysisResults = {
         ...mockDetailedResultsResponse,
         question_analysis: null,
-      }
+      };
       render(
         <TestableAssignmentResultsDashboard
           activeTab="results"
           results={noAnalysisResults}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("no-question-analysis")).toBeInTheDocument()
+      expect(screen.getByTestId("no-question-analysis")).toBeInTheDocument();
       expect(
         screen.getByText("No question-level analysis available yet"),
-      ).toBeInTheDocument()
-    })
-  })
+      ).toBeInTheDocument();
+    });
+  });
 
   describe("Students Tab - Table Display", () => {
     it("renders students table when students exist", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
-      expect(screen.getByTestId("students-table")).toBeInTheDocument()
-      const rows = screen.getAllByTestId("student-row")
-      expect(rows).toHaveLength(4)
-    })
+      expect(screen.getByTestId("students-table")).toBeInTheDocument();
+      const rows = screen.getAllByTestId("student-row");
+      expect(rows).toHaveLength(4);
+    });
 
     it("displays student names correctly", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
-      expect(screen.getByText("Alice Smith")).toBeInTheDocument()
-      expect(screen.getByText("Bob Jones")).toBeInTheDocument()
-      expect(screen.getByText("Carol White")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Alice Smith")).toBeInTheDocument();
+      expect(screen.getByText("Bob Jones")).toBeInTheDocument();
+      expect(screen.getByText("Carol White")).toBeInTheDocument();
+    });
 
     it("displays student scores correctly", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
-      const rows = screen.getAllByTestId("student-row")
+      const rows = screen.getAllByTestId("student-row");
       expect(within(rows[0]).getByTestId("student-score")).toHaveTextContent(
         "95%",
-      )
+      );
       expect(within(rows[1]).getByTestId("student-score")).toHaveTextContent(
         "80%",
-      )
+      );
       expect(within(rows[2]).getByTestId("student-score")).toHaveTextContent(
         "—",
-      )
-    })
+      );
+    });
 
     it("displays student status correctly", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
-      const rows = screen.getAllByTestId("student-row")
+      const rows = screen.getAllByTestId("student-row");
       expect(within(rows[0]).getByTestId("student-status")).toHaveTextContent(
         "completed",
-      )
+      );
       expect(within(rows[2]).getByTestId("student-status")).toHaveTextContent(
         "in_progress",
-      )
-    })
+      );
+    });
 
     it("displays student count", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
       expect(screen.getByTestId("student-count")).toHaveTextContent(
         "Showing 4 of 4 students",
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe("Students Tab - Status Filtering", () => {
     it("renders status filter dropdown", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
-      expect(screen.getByTestId("status-filter")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("status-filter")).toBeInTheDocument();
+    });
 
     it("displays all filter options", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
-      const select = screen.getByTestId("status-filter")
-      const options = within(select).getAllByRole("option")
+      const select = screen.getByTestId("status-filter");
+      const options = within(select).getAllByRole("option");
 
-      expect(options).toHaveLength(4)
-      expect(options[0]).toHaveValue("all")
-      expect(options[1]).toHaveValue("not_started")
-      expect(options[2]).toHaveValue("in_progress")
-      expect(options[3]).toHaveValue("completed")
-    })
+      expect(options).toHaveLength(4);
+      expect(options[0]).toHaveValue("all");
+      expect(options[1]).toHaveValue("not_started");
+      expect(options[2]).toHaveValue("in_progress");
+      expect(options[3]).toHaveValue("completed");
+    });
 
     it("filters students when status filter changes", () => {
       render(
@@ -888,27 +888,30 @@ describe("AssignmentDetailPage - Results Tab", () => {
           activeTab="students"
           statusFilter="completed"
         />,
-      )
+      );
 
-      const rows = screen.getAllByTestId("student-row")
-      expect(rows).toHaveLength(2) // Only completed students
+      const rows = screen.getAllByTestId("student-row");
+      expect(rows).toHaveLength(2); // Only completed students
       expect(screen.getByTestId("student-count")).toHaveTextContent(
         "Showing 2 of 4 students",
-      )
-    })
+      );
+    });
 
     it("calls onStatusFilterChange when filter is changed", async () => {
-      const onStatusFilterChange = vi.fn()
+      const onStatusFilterChange = vi.fn();
       render(
         <TestableAssignmentResultsDashboard
           activeTab="students"
           onStatusFilterChange={onStatusFilterChange}
         />,
-      )
+      );
 
-      await user.selectOptions(screen.getByTestId("status-filter"), "completed")
-      expect(onStatusFilterChange).toHaveBeenCalledWith("completed")
-    })
+      await user.selectOptions(
+        screen.getByTestId("status-filter"),
+        "completed",
+      );
+      expect(onStatusFilterChange).toHaveBeenCalledWith("completed");
+    });
 
     it("displays empty state when no students match filter", () => {
       const noMatchResults = {
@@ -916,62 +919,62 @@ describe("AssignmentDetailPage - Results Tab", () => {
         student_results: mockDetailedResultsResponse.student_results.filter(
           (s) => s.status === "completed",
         ),
-      }
+      };
       render(
         <TestableAssignmentResultsDashboard
           activeTab="students"
           results={noMatchResults}
           statusFilter="not_started"
         />,
-      )
+      );
 
       expect(screen.getByTestId("no-students")).toHaveTextContent(
         "No students found matching your filters.",
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe("Students Tab - View Details", () => {
     it("renders view details button for each student", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
-      const buttons = screen.getAllByTestId("view-details-btn")
-      expect(buttons).toHaveLength(4)
-    })
+      const buttons = screen.getAllByTestId("view-details-btn");
+      expect(buttons).toHaveLength(4);
+    });
 
     it("disables view details button for not_started students", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
-      const rows = screen.getAllByTestId("student-row")
-      const notStartedRow = rows[3] // Dan Brown - not_started
-      const button = within(notStartedRow).getByTestId("view-details-btn")
-      expect(button).toBeDisabled()
-    })
+      const rows = screen.getAllByTestId("student-row");
+      const notStartedRow = rows[3]; // Dan Brown - not_started
+      const button = within(notStartedRow).getByTestId("view-details-btn");
+      expect(button).toBeDisabled();
+    });
 
     it("enables view details button for completed students", () => {
-      render(<TestableAssignmentResultsDashboard activeTab="students" />)
+      render(<TestableAssignmentResultsDashboard activeTab="students" />);
 
-      const rows = screen.getAllByTestId("student-row")
-      const completedRow = rows[0] // Alice Smith - completed
-      const button = within(completedRow).getByTestId("view-details-btn")
-      expect(button).not.toBeDisabled()
-    })
+      const rows = screen.getAllByTestId("student-row");
+      const completedRow = rows[0]; // Alice Smith - completed
+      const button = within(completedRow).getByTestId("view-details-btn");
+      expect(button).not.toBeDisabled();
+    });
 
     it("calls onViewDetails when button is clicked", async () => {
-      const onViewDetails = vi.fn()
+      const onViewDetails = vi.fn();
       render(
         <TestableAssignmentResultsDashboard
           activeTab="students"
           onViewDetails={onViewDetails}
         />,
-      )
+      );
 
-      const rows = screen.getAllByTestId("student-row")
-      const button = within(rows[0]).getByTestId("view-details-btn")
-      await user.click(button)
-      expect(onViewDetails).toHaveBeenCalledWith("s1")
-    })
-  })
+      const rows = screen.getAllByTestId("student-row");
+      const button = within(rows[0]).getByTestId("view-details-btn");
+      await user.click(button);
+      expect(onViewDetails).toHaveBeenCalledWith("s1");
+    });
+  });
 
   describe("Student Answers Dialog", () => {
     it("renders dialog when student is selected", () => {
@@ -980,10 +983,10 @@ describe("AssignmentDetailPage - Results Tab", () => {
           activeTab="students"
           selectedStudentId="s1"
         />,
-      )
+      );
 
-      expect(screen.getByTestId("student-answers-dialog")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("student-answers-dialog")).toBeInTheDocument();
+    });
 
     it("does not render dialog when no student selected", () => {
       render(
@@ -991,12 +994,12 @@ describe("AssignmentDetailPage - Results Tab", () => {
           activeTab="students"
           selectedStudentId={null}
         />,
-      )
+      );
 
       expect(
         screen.queryByTestId("student-answers-dialog"),
-      ).not.toBeInTheDocument()
-    })
+      ).not.toBeInTheDocument();
+    });
 
     it("displays loading state in dialog", () => {
       render(
@@ -1005,11 +1008,13 @@ describe("AssignmentDetailPage - Results Tab", () => {
           selectedStudentId="s1"
           studentAnswersLoading={true}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("dialog-loading")).toBeInTheDocument()
-      expect(screen.getByText("Loading student answers...")).toBeInTheDocument()
-    })
+      expect(screen.getByTestId("dialog-loading")).toBeInTheDocument();
+      expect(
+        screen.getByText("Loading student answers..."),
+      ).toBeInTheDocument();
+    });
 
     it("displays student answers when loaded", () => {
       render(
@@ -1018,13 +1023,15 @@ describe("AssignmentDetailPage - Results Tab", () => {
           selectedStudentId="s1"
           studentAnswersLoading={false}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("dialog-content")).toBeInTheDocument()
-      expect(screen.getByTestId("answer-status")).toHaveTextContent("completed")
-      expect(screen.getByTestId("answer-score")).toHaveTextContent("95%")
-      expect(screen.getByTestId("answer-time")).toHaveTextContent("12 minutes")
-    })
+      expect(screen.getByTestId("dialog-content")).toBeInTheDocument();
+      expect(screen.getByTestId("answer-status")).toHaveTextContent(
+        "completed",
+      );
+      expect(screen.getByTestId("answer-score")).toHaveTextContent("95%");
+      expect(screen.getByTestId("answer-time")).toHaveTextContent("12 minutes");
+    });
 
     it("displays answers JSON", () => {
       render(
@@ -1033,11 +1040,11 @@ describe("AssignmentDetailPage - Results Tab", () => {
           selectedStudentId="s1"
           studentAnswersLoading={false}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("answers-json")).toBeInTheDocument()
-      expect(screen.getByTestId("answers-json")).toHaveTextContent("zone1")
-    })
+      expect(screen.getByTestId("answers-json")).toBeInTheDocument();
+      expect(screen.getByTestId("answers-json")).toHaveTextContent("zone1");
+    });
 
     it("displays error state when answers fail to load", () => {
       render(
@@ -1047,27 +1054,27 @@ describe("AssignmentDetailPage - Results Tab", () => {
           studentAnswersLoading={false}
           studentAnswers={null}
         />,
-      )
+      );
 
       expect(screen.getByTestId("dialog-error")).toHaveTextContent(
         "Unable to load student answers.",
-      )
-    })
+      );
+    });
 
     it("calls onCloseDialog when close button is clicked", async () => {
-      const onCloseDialog = vi.fn()
+      const onCloseDialog = vi.fn();
       render(
         <TestableAssignmentResultsDashboard
           activeTab="students"
           selectedStudentId="s1"
           onCloseDialog={onCloseDialog}
         />,
-      )
+      );
 
-      await user.click(screen.getByTestId("close-dialog"))
-      expect(onCloseDialog).toHaveBeenCalled()
-    })
-  })
+      await user.click(screen.getByTestId("close-dialog"));
+      expect(onCloseDialog).toHaveBeenCalled();
+    });
+  });
 
   describe("Edge Cases", () => {
     it("handles zero values correctly", () => {
@@ -1086,54 +1093,54 @@ describe("AssignmentDetailPage - Results Tab", () => {
           highest_score: 0,
           lowest_score: 0,
         },
-      }
+      };
 
       render(
         <TestableAssignmentResultsDashboard
           activeTab="results"
           results={zeroData}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("completed-count")).toHaveTextContent("0")
-      expect(screen.getByTestId("avg-score")).toHaveTextContent("0.0%")
+      expect(screen.getByTestId("completed-count")).toHaveTextContent("0");
+      expect(screen.getByTestId("avg-score")).toHaveTextContent("0.0%");
       expect(screen.getByTestId("completion-badge")).toHaveTextContent(
         "0% Complete",
-      )
-    })
+      );
+    });
 
     it("handles missing due date", () => {
       const noDueDateResults = {
         ...mockDetailedResultsResponse,
         due_date: null,
-      }
+      };
 
       render(
         <TestableAssignmentResultsDashboard
           activeTab="results"
           results={noDueDateResults}
         />,
-      )
+      );
 
-      expect(screen.queryByTestId("due-date")).not.toBeInTheDocument()
-    })
+      expect(screen.queryByTestId("due-date")).not.toBeInTheDocument();
+    });
 
     it("handles empty student results", () => {
       const emptyStudentsResults = {
         ...mockDetailedResultsResponse,
         student_results: [],
-      }
+      };
 
       render(
         <TestableAssignmentResultsDashboard
           activeTab="students"
           results={emptyStudentsResults}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("no-students")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByTestId("no-students")).toBeInTheDocument();
+    });
+  });
 
   describe("Activity Type Specific Analysis", () => {
     it("renders word matching errors for matchTheWords activity", () => {
@@ -1155,26 +1162,26 @@ describe("AssignmentDetailPage - Results Tab", () => {
           fill_in_blank: null,
           word_search: null,
         },
-      }
+      };
 
       render(
         <TestableAssignmentResultsDashboard
           activeTab="results"
           results={wordMatchingResults}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("word-matching-errors")).toBeInTheDocument()
-      const row = screen.getByTestId("word-error-row")
-      expect(within(row).getByTestId("error-word")).toHaveTextContent("apple")
+      expect(screen.getByTestId("word-matching-errors")).toBeInTheDocument();
+      const row = screen.getByTestId("word-error-row");
+      expect(within(row).getByTestId("error-word")).toHaveTextContent("apple");
       expect(within(row).getByTestId("correct-match")).toHaveTextContent(
         "manzana",
-      )
+      );
       expect(within(row).getByTestId("incorrect-match")).toHaveTextContent(
         "naranja",
-      )
-      expect(within(row).getByTestId("error-count")).toHaveTextContent("5")
-    })
+      );
+      expect(within(row).getByTestId("error-count")).toHaveTextContent("5");
+    });
 
     it("renders word search analysis for puzzleFindWords activity", () => {
       const wordSearchResults: AssignmentDetailedResultsResponse = {
@@ -1201,22 +1208,22 @@ describe("AssignmentDetailPage - Results Tab", () => {
             },
           ],
         },
-      }
+      };
 
       render(
         <TestableAssignmentResultsDashboard
           activeTab="results"
           results={wordSearchResults}
         />,
-      )
+      );
 
-      expect(screen.getByTestId("word-search-analysis")).toBeInTheDocument()
-      const rows = screen.getAllByTestId("word-search-row")
-      expect(rows).toHaveLength(2)
+      expect(screen.getByTestId("word-search-analysis")).toBeInTheDocument();
+      const rows = screen.getAllByTestId("word-search-row");
+      expect(rows).toHaveLength(2);
       expect(within(rows[0]).getByTestId("search-word")).toHaveTextContent(
         "CAT",
-      )
-      expect(within(rows[0]).getByTestId("find-rate")).toHaveTextContent("90%")
-    })
-  })
-})
+      );
+      expect(within(rows[0]).getByTestId("find-rate")).toHaveTextContent("90%");
+    });
+  });
+});

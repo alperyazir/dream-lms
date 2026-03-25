@@ -5,15 +5,15 @@
  * This service provides functions to interact with the AI Word Builder API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   WordBuilderActivity,
   WordBuilderActivityPublic,
   WordBuilderRequest,
   WordBuilderResult,
   WordBuilderSubmission,
-} from "../types/word-builder"
+} from "../types/word-builder";
 
 /**
  * Create axios instance with OpenAPI config
@@ -22,15 +22,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -45,13 +45,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Generate a new word builder activity from book vocabulary
@@ -62,9 +62,9 @@ apiClient.interceptors.request.use(async (config) => {
 export async function generateActivity(
   request: WordBuilderRequest,
 ): Promise<WordBuilderActivity> {
-  const url = "/api/v1/ai/word-builder/generate"
-  const response = await apiClient.post<WordBuilderActivity>(url, request)
-  return response.data
+  const url = "/api/v1/ai/word-builder/generate";
+  const response = await apiClient.post<WordBuilderActivity>(url, request);
+  return response.data;
 }
 
 /**
@@ -76,9 +76,9 @@ export async function generateActivity(
 export async function getActivity(
   activityId: string,
 ): Promise<WordBuilderActivityPublic> {
-  const url = `/api/v1/ai/word-builder/${activityId}`
-  const response = await apiClient.get<WordBuilderActivityPublic>(url)
-  return response.data
+  const url = `/api/v1/ai/word-builder/${activityId}`;
+  const response = await apiClient.get<WordBuilderActivityPublic>(url);
+  return response.data;
 }
 
 /**
@@ -92,9 +92,9 @@ export async function submitWords(
   activityId: string,
   submission: WordBuilderSubmission,
 ): Promise<WordBuilderResult> {
-  const url = `/api/v1/ai/word-builder/${activityId}/submit`
-  const response = await apiClient.post<WordBuilderResult>(url, submission)
-  return response.data
+  const url = `/api/v1/ai/word-builder/${activityId}/submit`;
+  const response = await apiClient.post<WordBuilderResult>(url, submission);
+  return response.data;
 }
 
 /**
@@ -106,15 +106,15 @@ export async function submitWords(
 export async function getActivityResult(
   activityId: string,
 ): Promise<WordBuilderResult | null> {
-  const url = `/api/v1/ai/word-builder/${activityId}/result`
+  const url = `/api/v1/ai/word-builder/${activityId}/result`;
   try {
-    const response = await apiClient.get<WordBuilderResult>(url)
-    return response.data
+    const response = await apiClient.get<WordBuilderResult>(url);
+    return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null
+      return null;
     }
-    throw error
+    throw error;
   }
 }
 
@@ -126,6 +126,6 @@ export const wordBuilderApi = {
   getActivity,
   submitWords,
   getActivityResult,
-}
+};
 
-export default wordBuilderApi
+export default wordBuilderApi;

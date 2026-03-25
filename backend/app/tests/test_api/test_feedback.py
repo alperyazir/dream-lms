@@ -744,7 +744,7 @@ def test_published_feedback_creates_notification(
     # Check system message was created
     query = select(DirectMessage).where(
         DirectMessage.recipient_id == student_user.id,
-        DirectMessage.is_system == True,
+        DirectMessage.is_system,
         DirectMessage.message_category == "feedback_received",
     )
     result = session.execute(query)
@@ -778,7 +778,7 @@ def test_draft_feedback_does_not_create_system_message(
     # Check no system message was created
     query = select(DirectMessage).where(
         DirectMessage.recipient_id == student_user.id,
-        DirectMessage.is_system == True,
+        DirectMessage.is_system,
         DirectMessage.message_category == "feedback_received",
     )
     result = session.execute(query)
@@ -812,7 +812,7 @@ def test_publishing_draft_creates_system_message(
     # Verify no system message yet
     query = select(DirectMessage).where(
         DirectMessage.recipient_id == student_user.id,
-        DirectMessage.is_system == True,
+        DirectMessage.is_system,
         DirectMessage.message_category == "feedback_received",
     )
     result = session.execute(query)
@@ -1190,7 +1190,7 @@ def test_badge_notification_includes_badge_names(
     sys_msg = session.exec(
         select(DirectMessage)
         .where(DirectMessage.recipient_id == feedback_setup["student_user"].id)
-        .where(DirectMessage.is_system == True)
+        .where(DirectMessage.is_system)
         .where(DirectMessage.message_category == "feedback_received")
         .order_by(DirectMessage.sent_at.desc())
     ).first()

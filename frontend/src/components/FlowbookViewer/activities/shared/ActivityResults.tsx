@@ -1,11 +1,11 @@
-import { Check, RotateCcw, Trophy } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Check, RotateCcw, Trophy } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ActivityResultsProps {
-  score: number
-  total: number
-  onRetry: () => void
-  onClose?: () => void
+  score: number;
+  total: number;
+  onRetry: () => void;
+  onClose?: () => void;
 }
 
 export function ActivityResults({
@@ -14,9 +14,9 @@ export function ActivityResults({
   onRetry,
   onClose,
 }: ActivityResultsProps) {
-  const percentage = Math.round((score / total) * 100)
-  const isPerfect = score === total
-  const isGood = percentage >= 70
+  const percentage = Math.round((score / total) * 100);
+  const isPerfect = score === total;
+  const isGood = percentage >= 70;
 
   return (
     <div className="rounded-lg bg-white p-6 text-center shadow-lg">
@@ -67,5 +67,5 @@ export function ActivityResults({
         )}
       </div>
     </div>
-  )
+  );
 }

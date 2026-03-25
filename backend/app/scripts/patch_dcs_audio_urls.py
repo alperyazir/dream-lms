@@ -19,7 +19,9 @@ from app.models import TeacherGeneratedContent  # noqa: E402
 from app.services.dcs_ai_content_client import DCSAIContentClient  # noqa: E402
 from app.services.dream_storage_client import DreamCentralStorageClient  # noqa: E402
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s"
+)
 logger = logging.getLogger("patch_audio_urls")
 
 AUDIO_TYPES = {
@@ -98,7 +100,9 @@ async def patch():
                     r.dcs_content_id = new_id
                     s.add(r)
 
-                logger.info(f"Patched {r.activity_type}: {old_id} -> {new_id or old_id}")
+                logger.info(
+                    f"Patched {r.activity_type}: {old_id} -> {new_id or old_id}"
+                )
                 patched += 1
 
             await s.commit()

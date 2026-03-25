@@ -1,35 +1,35 @@
-import { Search, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { ACTIVITY_TYPE_CONFIG } from "@/types/book"
+} from "@/components/ui/select";
+import { ACTIVITY_TYPE_CONFIG } from "@/types/book";
 
 export interface LibraryFiltersState {
-  search: string
-  publisher: string
-  activityType: string
+  search: string;
+  publisher: string;
+  activityType: string;
 }
 
 interface LibraryFiltersProps {
-  filters: LibraryFiltersState
-  onChange: (filters: LibraryFiltersState) => void
-  publishers?: string[]
-  showPublisherFilter?: boolean
-  resultCount?: number
-  totalCount?: number
+  filters: LibraryFiltersState;
+  onChange: (filters: LibraryFiltersState) => void;
+  publishers?: string[];
+  showPublisherFilter?: boolean;
+  resultCount?: number;
+  totalCount?: number;
 }
 
 const emptyFilters: LibraryFiltersState = {
   search: "",
   publisher: "",
   activityType: "",
-}
+};
 
 export function LibraryFilters({
   filters,
@@ -40,9 +40,9 @@ export function LibraryFilters({
   totalCount,
 }: LibraryFiltersProps) {
   const hasActiveFilters =
-    filters.search || filters.publisher || filters.activityType
+    filters.search || filters.publisher || filters.activityType;
 
-  const handleClear = () => onChange(emptyFilters)
+  const handleClear = () => onChange(emptyFilters);
 
   return (
     <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -116,5 +116,5 @@ export function LibraryFilters({
         </span>
       )}
     </div>
-  )
+  );
 }

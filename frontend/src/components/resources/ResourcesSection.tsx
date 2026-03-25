@@ -10,23 +10,23 @@
  * - Assignment views (where applicable)
  */
 
-import { Eye, Upload, Video } from "lucide-react"
-import { useState } from "react"
-import { VideoPreviewModal } from "@/components/ActivityPlayers/VideoPreviewModal"
-import { AttachMaterialDialog } from "@/components/materials/AttachMaterialDialog"
-import { Button } from "@/components/ui/button"
-import { useBookResources } from "@/hooks/useBookResources"
-import { cn } from "@/lib/utils"
-import type { VideoInfo } from "@/services/booksApi"
-import type { Material } from "@/types/material"
-import { AddMaterialButton } from "./AddMaterialButton"
-import { ResourcesSectionSkeleton } from "./ResourcesSectionSkeleton"
+import { Eye, Upload, Video } from "lucide-react";
+import { useState } from "react";
+import { VideoPreviewModal } from "@/components/ActivityPlayers/VideoPreviewModal";
+import { AttachMaterialDialog } from "@/components/materials/AttachMaterialDialog";
+import { Button } from "@/components/ui/button";
+import { useBookResources } from "@/hooks/useBookResources";
+import { cn } from "@/lib/utils";
+import type { VideoInfo } from "@/services/booksApi";
+import type { Material } from "@/types/material";
+import { AddMaterialButton } from "./AddMaterialButton";
+import { ResourcesSectionSkeleton } from "./ResourcesSectionSkeleton";
 
 export interface ResourcesSectionProps {
-  bookId: string | number
-  showUploadButton?: boolean
-  assignmentId?: string
-  className?: string
+  bookId: string | number;
+  showUploadButton?: boolean;
+  assignmentId?: string;
+  className?: string;
 }
 
 export function ResourcesSection({
@@ -35,36 +35,36 @@ export function ResourcesSection({
   assignmentId,
   className,
 }: ResourcesSectionProps) {
-  const { videos, hasAnyContent, isLoading, error } = useBookResources(bookId)
-  const [previewVideo, setPreviewVideo] = useState<VideoInfo | null>(null)
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-  const [newMaterial, setNewMaterial] = useState<Material | null>(null)
+  const { videos, hasAnyContent, isLoading, error } = useBookResources(bookId);
+  const [previewVideo, setPreviewVideo] = useState<VideoInfo | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [newMaterial, setNewMaterial] = useState<Material | null>(null);
 
   // Don't render anything if no content and no upload capability (after loading)
   if (!isLoading && !hasAnyContent && !showUploadButton) {
-    return null
+    return null;
   }
 
   // Show skeleton while loading
   if (isLoading) {
-    return <ResourcesSectionSkeleton className={className} />
+    return <ResourcesSectionSkeleton className={className} />;
   }
 
   // Handle error state - hide section on error
   if (error) {
-    console.error("Failed to load resources:", error)
-    return null
+    console.error("Failed to load resources:", error);
+    return null;
   }
 
   const handlePreviewVideo = (video: VideoInfo) => {
-    setPreviewVideo(video)
-    setIsPreviewOpen(true)
-  }
+    setPreviewVideo(video);
+    setIsPreviewOpen(true);
+  };
 
   const handleUploadComplete = (material: Material) => {
-    setNewMaterial(material)
+    setNewMaterial(material);
     // Optionally show attach dialog or notification
-  }
+  };
 
   return (
     <>
@@ -153,5 +153,5 @@ export function ResourcesSection({
         showAttachButton={false}
       />
     </>
-  )
+  );
 }

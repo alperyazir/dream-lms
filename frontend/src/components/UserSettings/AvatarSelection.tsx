@@ -1,12 +1,12 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Check, RefreshCw, Sparkles, Trash2, User } from "lucide-react"
-import { useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-import useAuth from "@/hooks/useAuth"
-import useCustomToast from "@/hooks/useCustomToast"
-import { cn } from "@/lib/utils"
-import { avatarsApi } from "@/services/avatarsApi"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Check, RefreshCw, Sparkles, Trash2, User } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import useAuth from "@/hooks/useAuth";
+import useCustomToast from "@/hooks/useCustomToast";
+import { cn } from "@/lib/utils";
+import { avatarsApi } from "@/services/avatarsApi";
 
 // DiceBear styles with display names
 const DICEBEAR_STYLES = [
@@ -30,86 +30,89 @@ const DICEBEAR_STYLES = [
   { id: "identicon", name: "Identicon", description: "Geometric patterns" },
   { id: "shapes", name: "Shapes", description: "Abstract shapes" },
   { id: "rings", name: "Rings", description: "Colorful rings" },
-] as const
+] as const;
 
 // Generate DiceBear URL
 const getDiceBearUrl = (style: string, seed: string) => {
-  return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=128`
-}
+  return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=128`;
+};
 
 // Generate random seeds for avatar grid
 const generateSeeds = (count: number, prefix: string) => {
-  return Array.from({ length: count }, (_, i) => `${prefix}-${i}-${Date.now()}`)
-}
+  return Array.from(
+    { length: count },
+    (_, i) => `${prefix}-${i}-${Date.now()}`,
+  );
+};
 
 const AvatarSelection = () => {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const { user: currentUser } = useAuth()
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const { user: currentUser } = useAuth();
 
-  const [selectedStyle, setSelectedStyle] = useState<string>("adventurer")
-  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
-  const [randomSeed, setRandomSeed] = useState(Date.now())
+  const [selectedStyle, setSelectedStyle] = useState<string>("adventurer");
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [randomSeed, setRandomSeed] = useState(Date.now());
 
   // Generate seeds for current style
   const avatarSeeds = useMemo(() => {
-    return generateSeeds(24, `${selectedStyle}-${randomSeed}`)
-  }, [selectedStyle, randomSeed])
+    return generateSeeds(24, `${selectedStyle}-${randomSeed}`);
+  }, [selectedStyle, randomSeed]);
 
   // Select avatar mutation - save DiceBear URL
   const selectMutation = useMutation({
     mutationFn: (avatarUrl: string) =>
       avatarsApi.setAvatarUrl({ avatar_url: avatarUrl }),
     onSuccess: () => {
-      showSuccessToast("Avatar updated successfully!")
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
-      setSelectedAvatar(null)
+      showSuccessToast("Avatar updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      setSelectedAvatar(null);
     },
     onError: () => {
-      showErrorToast("Failed to update avatar.")
+      showErrorToast("Failed to update avatar.");
     },
-  })
+  });
 
   // Remove avatar mutation
   const removeMutation = useMutation({
     mutationFn: avatarsApi.removeAvatar,
     onSuccess: () => {
-      showSuccessToast("Avatar removed successfully.")
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+      showSuccessToast("Avatar removed successfully.");
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     },
     onError: () => {
-      showErrorToast("Failed to remove avatar.")
+      showErrorToast("Failed to remove avatar.");
     },
-  })
+  });
 
   const handleStyleChange = (styleId: string) => {
-    setSelectedStyle(styleId)
-    setSelectedAvatar(null)
-  }
+    setSelectedStyle(styleId);
+    setSelectedAvatar(null);
+  };
 
   const handleAvatarSelect = (seed: string) => {
-    const url = getDiceBearUrl(selectedStyle, seed)
-    setSelectedAvatar(url)
-  }
+    const url = getDiceBearUrl(selectedStyle, seed);
+    setSelectedAvatar(url);
+  };
 
   const handleConfirmSelection = () => {
     if (selectedAvatar) {
-      selectMutation.mutate(selectedAvatar)
+      selectMutation.mutate(selectedAvatar);
     }
-  }
+  };
 
   const handleRemoveAvatar = () => {
-    removeMutation.mutate()
-  }
+    removeMutation.mutate();
+  };
 
   const handleRefresh = () => {
-    setRandomSeed(Date.now())
-    setSelectedAvatar(null)
-  }
+    setRandomSeed(Date.now());
+    setSelectedAvatar(null);
+  };
 
-  const isProcessing = selectMutation.isPending || removeMutation.isPending
-  const currentAvatarUrl = currentUser?.avatar_url
-  const currentStyleInfo = DICEBEAR_STYLES.find((s) => s.id === selectedStyle)
+  const isProcessing = selectMutation.isPending || removeMutation.isPending;
+  const currentAvatarUrl = currentUser?.avatar_url;
+  const currentStyleInfo = DICEBEAR_STYLES.find((s) => s.id === selectedStyle);
 
   return (
     <div className="space-y-6">
@@ -231,8 +234,8 @@ const AvatarSelection = () => {
       {/* Avatar Grid */}
       <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
         {avatarSeeds.map((seed) => {
-          const avatarUrl = getDiceBearUrl(selectedStyle, seed)
-          const isSelected = selectedAvatar === avatarUrl
+          const avatarUrl = getDiceBearUrl(selectedStyle, seed);
+          const isSelected = selectedAvatar === avatarUrl;
 
           return (
             <button
@@ -264,7 +267,7 @@ const AvatarSelection = () => {
                 </div>
               )}
             </button>
-          )
+          );
         })}
       </div>
 
@@ -288,7 +291,7 @@ const AvatarSelection = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default AvatarSelection
+export default AvatarSelection;

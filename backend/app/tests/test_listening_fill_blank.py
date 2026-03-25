@@ -13,7 +13,6 @@ from app.schemas.listening_fill_blank import (
     ListeningFillBlankRequest,
 )
 
-
 # ---------------------------------------------------------------------------
 # Schema Tests
 # ---------------------------------------------------------------------------
@@ -24,7 +23,10 @@ class TestListeningFillBlankRequestSchema:
 
     def test_valid_request(self) -> None:
         req = ListeningFillBlankRequest(
-            book_id=1, module_ids=[10], item_count=10, difficulty="medium",
+            book_id=1,
+            module_ids=[10],
+            item_count=10,
+            difficulty="medium",
         )
         assert req.item_count == 10
         assert req.typo_tolerance is True
@@ -37,11 +39,13 @@ class TestListeningFillBlankRequestSchema:
 
     def test_min_item_count(self) -> None:
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             ListeningFillBlankRequest(book_id=1, module_ids=[10], item_count=2)
 
     def test_max_item_count(self) -> None:
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             ListeningFillBlankRequest(book_id=1, module_ids=[10], item_count=25)
 
@@ -125,51 +129,65 @@ class TestAnswerMatching:
 
     def test_exact_match(self) -> None:
         from app.lib.answer_matching import check_answer
+
         is_correct, match_type = check_answer("sleeping", "sleeping")
         assert is_correct is True
         assert match_type == "exact"
 
     def test_case_insensitive(self) -> None:
         from app.lib.answer_matching import check_answer
+
         is_correct, _ = check_answer("Sleeping", "sleeping")
         assert is_correct is True
 
     def test_whitespace_trimmed(self) -> None:
         from app.lib.answer_matching import check_answer
+
         is_correct, _ = check_answer("  sleeping  ", "sleeping")
         assert is_correct is True
 
     def test_variant_match(self) -> None:
         from app.lib.answer_matching import check_answer
+
         is_correct, match_type = check_answer(
-            "sleepin", "sleeping", acceptable_answers=["sleepin"],
+            "sleepin",
+            "sleeping",
+            acceptable_answers=["sleepin"],
         )
         assert is_correct is True
         assert match_type == "variant"
 
     def test_typo_tolerance(self) -> None:
         from app.lib.answer_matching import check_answer
+
         is_correct, match_type = check_answer(
-            "sleepng", "sleeping", typo_tolerance=True,
+            "sleepng",
+            "sleeping",
+            typo_tolerance=True,
         )
         assert is_correct is True
         assert match_type == "typo"
 
     def test_typo_tolerance_disabled(self) -> None:
         from app.lib.answer_matching import check_answer
+
         is_correct, match_type = check_answer(
-            "sleepng", "sleeping", typo_tolerance=False,
+            "sleepng",
+            "sleeping",
+            typo_tolerance=False,
         )
         assert is_correct is False
         assert match_type == "wrong"
 
     def test_too_many_errors_rejected(self) -> None:
         from app.lib.answer_matching import check_answer
+
         is_correct, _ = check_answer("slpng", "sleeping", typo_tolerance=True)
         assert is_correct is False
 
     def test_empty_answer(self) -> None:
         from app.lib.answer_matching import check_answer
+
         is_correct, match_type = check_answer("", "sleeping")
         assert is_correct is False
         assert match_type == "wrong"
@@ -177,11 +195,13 @@ class TestAnswerMatching:
     def test_short_word_no_typo_tolerance(self) -> None:
         """Words shorter than 3 chars should not get typo tolerance."""
         from app.lib.answer_matching import check_answer
+
         is_correct, _ = check_answer("at", "an", typo_tolerance=True)
         assert is_correct is False
 
     def test_levenshtein_distance(self) -> None:
         from app.lib.answer_matching import levenshtein_distance
+
         assert levenshtein_distance("kitten", "sitting") == 3
         assert levenshtein_distance("abc", "abc") == 0
         assert levenshtein_distance("abc", "ab") == 1
@@ -199,6 +219,7 @@ class TestListeningFBPrompts:
         from app.services.ai_generation.prompts.listening_fill_blank_prompts import (
             build_listening_fill_blank_prompt,
         )
+
         prompt = build_listening_fill_blank_prompt(
             item_count=10,
             difficulty="easy",
@@ -215,6 +236,7 @@ class TestListeningFBPrompts:
         from app.services.ai_generation.prompts.listening_fill_blank_prompts import (
             LISTENING_FB_SYSTEM_PROMPT,
         )
+
         assert "fill-in-the-blank" in LISTENING_FB_SYSTEM_PROMPT.lower()
         assert "NEVER remove" in LISTENING_FB_SYSTEM_PROMPT
         assert "article" in LISTENING_FB_SYSTEM_PROMPT.lower()
@@ -223,7 +245,10 @@ class TestListeningFBPrompts:
         from app.services.ai_generation.prompts.listening_fill_blank_prompts import (
             LISTENING_FB_JSON_SCHEMA,
         )
-        item_props = LISTENING_FB_JSON_SCHEMA["properties"]["items"]["items"]["properties"]
+
+        item_props = LISTENING_FB_JSON_SCHEMA["properties"]["items"]["items"][
+            "properties"
+        ]
         assert "full_sentence" in item_props
         assert "display_sentence" in item_props
         assert "missing_word" in item_props
@@ -288,6 +313,7 @@ class TestListeningFillBlankService:
         from app.services.ai_generation.listening_fill_blank_service import (
             ListeningFillBlankService,
         )
+
         service = ListeningFillBlankService(mock_dcs, mock_llm, mock_tts)
         req = ListeningFillBlankRequest(book_id=1, module_ids=[10])
         activity = await service.generate_activity(req)
@@ -301,6 +327,7 @@ class TestListeningFillBlankService:
         from app.services.ai_generation.listening_fill_blank_service import (
             ListeningFillBlankService,
         )
+
         service = ListeningFillBlankService(mock_dcs, mock_llm, mock_tts)
         req = ListeningFillBlankRequest(book_id=1, module_ids=[10])
         activity = await service.generate_activity(req)
@@ -343,16 +370,21 @@ class TestListeningFillBlankService:
             await service.generate_activity(req)
 
     @pytest.mark.asyncio
-    async def test_acceptable_answers_includes_correct(self, mock_dcs, mock_llm, mock_tts) -> None:
+    async def test_acceptable_answers_includes_correct(
+        self, mock_dcs, mock_llm, mock_tts
+    ) -> None:
         from app.services.ai_generation.listening_fill_blank_service import (
             ListeningFillBlankService,
         )
+
         service = ListeningFillBlankService(mock_dcs, mock_llm, mock_tts)
         req = ListeningFillBlankRequest(book_id=1, module_ids=[10])
         activity = await service.generate_activity(req)
 
         for item in activity.items:
-            assert item.missing_word.lower() in [a.lower() for a in item.acceptable_answers]
+            assert item.missing_word.lower() in [
+                a.lower() for a in item.acceptable_answers
+            ]
 
 
 # ---------------------------------------------------------------------------

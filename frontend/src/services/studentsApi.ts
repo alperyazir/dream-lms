@@ -6,15 +6,15 @@
  * This service provides functions to interact with the Students API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   PeriodType,
   StudentAnalyticsResponse,
   StudentProgressPeriod,
   StudentProgressResponse,
-} from "../types/analytics"
-import type { Student } from "../types/teacher"
+} from "../types/analytics";
+import type { Student } from "../types/teacher";
 
 /**
  * Create axios instance with OpenAPI config
@@ -23,16 +23,16 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
   // Set baseURL dynamically to ensure it uses the value set in main.tsx
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     // Handle both sync and async token functions
     const tokenValue =
@@ -48,13 +48,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Get comprehensive performance analytics for a student
@@ -67,11 +67,11 @@ export async function getStudentAnalytics(
   studentId: string,
   period: PeriodType = "30d",
 ): Promise<StudentAnalyticsResponse> {
-  const url = `/api/v1/students/${studentId}/analytics`
+  const url = `/api/v1/students/${studentId}/analytics`;
   const response = await apiClient.get<StudentAnalyticsResponse>(url, {
     params: { period },
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -83,11 +83,11 @@ export async function getStudentAnalytics(
 export async function getStudentProgress(
   period: StudentProgressPeriod = "this_month",
 ): Promise<StudentProgressResponse> {
-  const url = "/api/v1/students/me/progress"
+  const url = "/api/v1/students/me/progress";
   const response = await apiClient.get<StudentProgressResponse>(url, {
     params: { period },
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -96,20 +96,20 @@ export async function getStudentProgress(
  * @returns Promise with array of unassigned students
  */
 export async function getUnassignedStudents(): Promise<Student[]> {
-  const url = "/api/v1/students/unassigned"
-  const response = await apiClient.get<Student[]>(url)
-  return response.data
+  const url = "/api/v1/students/unassigned";
+  const response = await apiClient.get<Student[]>(url);
+  return response.data;
 }
 
 /**
  * Story 28.1: Student Password Response type
  */
 export interface StudentPasswordResponse {
-  student_id: string
-  username: string
-  full_name: string
-  password: string | null
-  message: string | null
+  student_id: string;
+  username: string;
+  full_name: string;
+  password: string | null;
+  message: string | null;
 }
 
 /**
@@ -123,9 +123,9 @@ export interface StudentPasswordResponse {
 export async function getStudentPassword(
   studentId: string,
 ): Promise<StudentPasswordResponse> {
-  const url = `/api/v1/admin/students/${studentId}/password`
-  const response = await apiClient.get<StudentPasswordResponse>(url)
-  return response.data
+  const url = `/api/v1/admin/students/${studentId}/password`;
+  const response = await apiClient.get<StudentPasswordResponse>(url);
+  return response.data;
 }
 
 /**
@@ -141,11 +141,11 @@ export async function setStudentPassword(
   studentId: string,
   password: string,
 ): Promise<StudentPasswordResponse> {
-  const url = `/api/v1/admin/students/${studentId}/password`
+  const url = `/api/v1/admin/students/${studentId}/password`;
   const response = await apiClient.put<StudentPasswordResponse>(url, {
     password,
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -157,6 +157,6 @@ export const studentsApi = {
   getUnassignedStudents,
   getStudentPassword,
   setStudentPassword,
-}
+};
 
-export default studentsApi
+export default studentsApi;

@@ -8,28 +8,28 @@ provider-specific pricing.
 # LLM Cost per 1K tokens (USD)
 LLM_COSTS = {
     "deepseek": {
-        "input": 0.00014,   # $0.14 per 1M input tokens
+        "input": 0.00014,  # $0.14 per 1M input tokens
         "output": 0.00028,  # $0.28 per 1M output tokens
     },
     "gemini": {
-        "input": 0.0,       # Free tier (Gemini 1.5 Flash)
+        "input": 0.0,  # Free tier (Gemini 1.5 Flash)
         "output": 0.0,
     },
     "openai_gpt4": {
-        "input": 0.01,      # $10 per 1M tokens
-        "output": 0.03,     # $30 per 1M tokens
+        "input": 0.01,  # $10 per 1M tokens
+        "output": 0.03,  # $30 per 1M tokens
     },
     "openai_gpt35": {
-        "input": 0.0005,    # $0.50 per 1M tokens
-        "output": 0.0015,   # $1.50 per 1M tokens
+        "input": 0.0005,  # $0.50 per 1M tokens
+        "output": 0.0015,  # $1.50 per 1M tokens
     },
 }
 
 # TTS Cost per character (USD)
 TTS_COSTS = {
-    "edge_tts": 0.0,          # Free (Microsoft Edge TTS)
-    "azure_tts": 0.000004,    # $4 per 1M characters (Azure Neural TTS)
-    "google_tts": 0.000004,   # $4 per 1M characters
+    "edge_tts": 0.0,  # Free (Microsoft Edge TTS)
+    "azure_tts": 0.000004,  # $4 per 1M characters (Azure Neural TTS)
+    "google_tts": 0.000004,  # $4 per 1M characters
 }
 
 

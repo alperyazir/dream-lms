@@ -19,7 +19,10 @@ from app.schemas.vocabulary_quiz import (
     VocabularyQuizQuestion,
 )
 from app.services.dcs_ai.client import DCSAIServiceClient
-from app.services.dcs_ai.exceptions import DCSAIDataNotFoundError, DCSAIDataNotReadyError
+from app.services.dcs_ai.exceptions import (
+    DCSAIDataNotFoundError,
+    DCSAIDataNotReadyError,
+)
 from app.services.llm import LLMManager
 
 logger = logging.getLogger(__name__)
@@ -166,15 +169,11 @@ class VocabularyQuizService:
             )
 
         # Fetch vocabulary - either from specific modules or all modules
-        vocabulary = await self._fetch_vocabulary(
-            request.book_id, request.module_ids
-        )
+        vocabulary = await self._fetch_vocabulary(request.book_id, request.module_ids)
 
         # Filter by CEFR level if specified
         if request.cefr_levels:
-            vocabulary = [
-                w for w in vocabulary if w.level in request.cefr_levels
-            ]
+            vocabulary = [w for w in vocabulary if w.level in request.cefr_levels]
             logger.debug(
                 f"Filtered by CEFR levels {request.cefr_levels}: {len(vocabulary)} words"
             )
@@ -231,9 +230,7 @@ class VocabularyQuizService:
         )
 
         # Determine module IDs used
-        module_ids = request.module_ids or list(
-            set(w.module_id for w in vocabulary)
-        )
+        module_ids = request.module_ids or list({w.module_id for w in vocabulary})
 
         quiz = VocabularyQuiz(
             quiz_id=str(uuid4()),
@@ -340,17 +337,23 @@ class VocabularyQuizService:
             elif question_type in ("synonym", "antonym"):
                 # Synonym/Antonym question: show original word, answer is synonym/antonym
                 # Generate the synonym/antonym using LLM
-                generated_word = await self._generate_synonym_or_antonym(word.word, question_type)
+                generated_word = await self._generate_synonym_or_antonym(
+                    word.word, question_type
+                )
                 if generated_word and generated_word.lower() != word.word.lower():
                     correct_answer = generated_word
-                    question_prompt = await self._get_question_prompt(word, question_type)
+                    question_prompt = await self._get_question_prompt(
+                        word, question_type
+                    )
                 else:
                     # Fallback to definition if can't generate synonym/antonym
                     logger.warning(
                         f"Could not generate {question_type} for '{word.word}', falling back to definition"
                     )
                     question_type = "definition"
-                    question_prompt = await self._get_question_prompt(word, "definition")
+                    question_prompt = await self._get_question_prompt(
+                        word, "definition"
+                    )
                     correct_answer = word.word
 
             # Select distractors (excluding the correct answer)
@@ -417,9 +420,7 @@ class VocabularyQuizService:
             return self._get_simple_question_prompt(word, question_type)
 
         try:
-            question_text = await self._generate_mcq_question(
-                word, question_type
-            )
+            question_text = await self._generate_mcq_question(word, question_type)
             return question_text
         except Exception as e:
             logger.error(
@@ -537,7 +538,9 @@ Question:"""
         if not result.endswith("?"):
             result += "?"
 
-        logger.debug(f"Generated MCQ question for '{word.word}' ({question_type}): '{result}'")
+        logger.debug(
+            f"Generated MCQ question for '{word.word}' ({question_type}): '{result}'"
+        )
         return result
 
     async def _generate_synonym_or_antonym(
@@ -590,7 +593,7 @@ Antonym:"""
             # Remove any prefixes
             for prefix in ["synonym:", "antonym:", "answer:"]:
                 if result.lower().startswith(prefix):
-                    result = result[len(prefix):].strip()
+                    result = result[len(prefix) :].strip()
             # Get first word only
             result = result.split()[0] if result.split() else ""
             # Remove punctuation
@@ -600,7 +603,9 @@ Antonym:"""
                 logger.debug(f"Generated {relation_type} for '{word}': '{result}'")
                 return result
             else:
-                logger.warning(f"Generated {relation_type} '{result}' is same as original word '{word}'")
+                logger.warning(
+                    f"Generated {relation_type} '{result}' is same as original word '{word}'"
+                )
                 return None
 
         except Exception as e:
@@ -637,39 +642,33 @@ Antonym:"""
         if exclude_word:
             exclude_words.add(exclude_word.lower())
 
-        candidates = [
-            w for w in vocabulary_pool if w.word.lower() not in exclude_words
-        ]
+        candidates = [w for w in vocabulary_pool if w.word.lower() not in exclude_words]
 
         if not candidates:
-            logger.warning(
-                f"No distractor candidates for word: {target_word.word}"
-            )
+            logger.warning(f"No distractor candidates for word: {target_word.word}")
             return []
 
         # Priority 1: Same level, same module
         same_level_same_module = [
-            w for w in candidates
+            w
+            for w in candidates
             if w.level == target_word.level and w.module_id == target_word.module_id
         ]
 
         # Priority 2: Same level, different module
         same_level_diff_module = [
-            w for w in candidates
+            w
+            for w in candidates
             if w.level == target_word.level and w.module_id != target_word.module_id
         ]
 
         # Priority 3: Adjacent levels
         adjacent_levels = get_adjacent_cefr_levels(target_word.level)
-        adjacent_level_words = [
-            w for w in candidates if w.level in adjacent_levels
-        ]
+        adjacent_level_words = [w for w in candidates if w.level in adjacent_levels]
 
         # Build priority order pool
         priority_pool = (
-            same_level_same_module
-            + same_level_diff_module
-            + adjacent_level_words
+            same_level_same_module + same_level_diff_module + adjacent_level_words
         )
 
         # If we have enough in priority pool, use it

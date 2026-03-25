@@ -8,11 +8,11 @@
  * - Save to library or create assignments
  */
 
-import { AlertCircle } from "lucide-react"
+import { AlertCircle } from "lucide-react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface ContentReviewProps {
   activityType:
@@ -21,11 +21,11 @@ export interface ContentReviewProps {
     | "reading"
     | "matching"
     | "sentence_builder"
-    | "word_builder"
-  activityId: string
-  activityData: any // Will be typed based on activity type
-  onSave?: () => void
-  onCancel?: () => void
+    | "word_builder";
+  activityId: string;
+  activityData: any; // Will be typed based on activity type
+  onSave?: () => void;
+  onCancel?: () => void;
 }
 
 export function ContentReview({
@@ -38,43 +38,43 @@ export function ContentReview({
   const getActivityTypeName = () => {
     switch (activityType) {
       case "ai_quiz":
-        return "Quiz"
+        return "Quiz";
       case "vocabulary_quiz":
-        return "Vocabulary Quiz"
+        return "Vocabulary Quiz";
       case "reading":
-        return "Reading Comprehension"
+        return "Reading Comprehension";
       case "matching":
-        return "Vocabulary Matching"
+        return "Vocabulary Matching";
       case "sentence_builder":
-        return "Sentence Builder"
+        return "Sentence Builder";
       case "word_builder":
-        return "Word Builder"
+        return "Word Builder";
       default:
-        return "Content"
+        return "Content";
     }
-  }
+  };
 
   const getItemCount = () => {
     if (activityType === "ai_quiz" || activityType === "vocabulary_quiz") {
-      return activityData?.questions?.length || 0
+      return activityData?.questions?.length || 0;
     }
     if (activityType === "matching") {
-      return activityData?.pairs?.length || 0
+      return activityData?.pairs?.length || 0;
     }
     if (activityType === "sentence_builder") {
-      return activityData?.sentences?.length || 0
+      return activityData?.sentences?.length || 0;
     }
     if (activityType === "word_builder") {
-      return activityData?.words?.length || 0
+      return activityData?.words?.length || 0;
     }
     if (activityType === "reading") {
-      return activityData?.questions?.length || 0
+      return activityData?.questions?.length || 0;
     }
-    return 0
-  }
+    return 0;
+  };
 
   if (!activityData) {
-    return <ContentReviewSkeleton />
+    return <ContentReviewSkeleton />;
   }
 
   return (
@@ -105,7 +105,7 @@ export function ContentReview({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 function ContentReviewSkeleton() {
@@ -130,5 +130,5 @@ function ContentReviewSkeleton() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

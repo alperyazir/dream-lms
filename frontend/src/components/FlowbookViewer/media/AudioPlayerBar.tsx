@@ -1,8 +1,8 @@
-import { Volume2, VolumeX, X } from "lucide-react"
-import { useCallback } from "react"
-import { cn } from "@/lib/utils"
-import { PLAYBACK_SPEEDS, useFlowbookAudioStore } from "../stores"
-import { AudioPlayer } from "./AudioPlayer"
+import { Volume2, VolumeX, X } from "lucide-react";
+import { useCallback } from "react";
+import { cn } from "@/lib/utils";
+import { PLAYBACK_SPEEDS, useFlowbookAudioStore } from "../stores";
+import { AudioPlayer } from "./AudioPlayer";
 
 export function AudioPlayerBar() {
   const {
@@ -14,25 +14,25 @@ export function AudioPlayerBar() {
     setVolume,
     setPlaybackRate,
     toggleMute,
-  } = useFlowbookAudioStore()
+  } = useFlowbookAudioStore();
 
   // Only show if there's an audio source
-  const isVisible = !!currentSrc
+  const isVisible = !!currentSrc;
 
   // Memoize to prevent AudioPlayer from recreating audio element
   const handleEnded = useCallback(() => {
-    stop()
-  }, [stop])
+    stop();
+  }, [stop]);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVolume(parseFloat(e.target.value))
-  }
+    setVolume(parseFloat(e.target.value));
+  };
 
   const cyclePlaybackRate = () => {
-    const currentIndex = PLAYBACK_SPEEDS.indexOf(playbackRate)
-    const nextIndex = (currentIndex + 1) % PLAYBACK_SPEEDS.length
-    setPlaybackRate(PLAYBACK_SPEEDS[nextIndex])
-  }
+    const currentIndex = PLAYBACK_SPEEDS.indexOf(playbackRate);
+    const nextIndex = (currentIndex + 1) % PLAYBACK_SPEEDS.length;
+    setPlaybackRate(PLAYBACK_SPEEDS[nextIndex]);
+  };
 
   return (
     <div
@@ -120,5 +120,5 @@ export function AudioPlayerBar() {
         )}
       </div>
     </div>
-  )
+  );
 }

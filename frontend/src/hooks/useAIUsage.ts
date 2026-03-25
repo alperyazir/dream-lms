@@ -2,9 +2,9 @@
  * Custom hook for AI Usage data
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { aiUsageApi } from "@/services/aiUsageApi"
-import type { DateRange } from "@/types/ai-usage"
+import { useQuery } from "@tanstack/react-query";
+import { aiUsageApi } from "@/services/aiUsageApi";
+import type { DateRange } from "@/types/ai-usage";
 
 /**
  * Hook to get current user's own AI usage (teacher-accessible)
@@ -15,7 +15,7 @@ export function useMyAIUsage() {
     queryKey: ["ai-usage", "my-usage"],
     queryFn: () => aiUsageApi.getMyUsage(),
     staleTime: 30000, // 30 seconds
-  })
+  });
 }
 
 export function useAIUsageSummary(dateRange: DateRange) {
@@ -23,7 +23,7 @@ export function useAIUsageSummary(dateRange: DateRange) {
     queryKey: ["ai-usage", "summary", dateRange.from, dateRange.to],
     queryFn: () => aiUsageApi.getSummary(dateRange.from, dateRange.to),
     staleTime: 60000, // 1 minute
-  })
+  });
 }
 
 export function useAIUsageByType(dateRange: DateRange) {
@@ -31,7 +31,7 @@ export function useAIUsageByType(dateRange: DateRange) {
     queryKey: ["ai-usage", "by-type", dateRange.from, dateRange.to],
     queryFn: () => aiUsageApi.getByType(dateRange.from, dateRange.to),
     staleTime: 60000,
-  })
+  });
 }
 
 export function useAIUsageByTeacher(dateRange: DateRange, limit = 100) {
@@ -39,7 +39,7 @@ export function useAIUsageByTeacher(dateRange: DateRange, limit = 100) {
     queryKey: ["ai-usage", "by-teacher", dateRange.from, dateRange.to, limit],
     queryFn: () => aiUsageApi.getByTeacher(dateRange.from, dateRange.to, limit),
     staleTime: 60000,
-  })
+  });
 }
 
 export function useAIUsageByProvider(dateRange: DateRange) {
@@ -47,7 +47,7 @@ export function useAIUsageByProvider(dateRange: DateRange) {
     queryKey: ["ai-usage", "by-provider", dateRange.from, dateRange.to],
     queryFn: () => aiUsageApi.getByProvider(dateRange.from, dateRange.to),
     staleTime: 60000,
-  })
+  });
 }
 
 export function useAIUsageErrors(dateRange: DateRange, limit = 100) {
@@ -55,5 +55,5 @@ export function useAIUsageErrors(dateRange: DateRange, limit = 100) {
     queryKey: ["ai-usage", "errors", dateRange.from, dateRange.to, limit],
     queryFn: () => aiUsageApi.getErrors(dateRange.from, dateRange.to, limit),
     staleTime: 30000, // 30 seconds for errors
-  })
+  });
 }

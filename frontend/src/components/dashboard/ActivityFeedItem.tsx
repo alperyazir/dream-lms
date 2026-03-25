@@ -1,11 +1,11 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface ActivityFeedItemProps {
-  user: string
-  avatar: string
-  action: string
-  timestamp: string
+  user: string;
+  avatar: string;
+  action: string;
+  timestamp: string;
 }
 
 export function ActivityFeedItem({
@@ -33,5 +33,5 @@ export function ActivityFeedItem({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

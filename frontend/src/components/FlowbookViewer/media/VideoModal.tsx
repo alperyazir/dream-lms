@@ -1,15 +1,15 @@
-import { X } from "lucide-react"
-import { useEffect, useRef } from "react"
-import { createPortal } from "react-dom"
-import { cn } from "@/lib/utils"
-import { VideoPlayer } from "./VideoPlayer"
+import { X } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { cn } from "@/lib/utils";
+import { VideoPlayer } from "./VideoPlayer";
 
 interface VideoModalProps {
-  src: string
-  poster?: string
-  subtitleSrc?: string
-  isOpen: boolean
-  onClose: () => void
+  src: string;
+  poster?: string;
+  subtitleSrc?: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function VideoModal({
@@ -19,39 +19,39 @@ export function VideoModal({
   isOpen,
   onClose,
 }: VideoModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
-        onClose()
+        onClose();
       }
-    }
+    };
 
-    document.addEventListener("keydown", handleEscape)
-    return () => document.removeEventListener("keydown", handleEscape)
-  }, [isOpen, onClose])
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen, onClose]);
 
   // Prevent body scroll when modal open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden"
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = ""
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = ""
-    }
-  }, [isOpen])
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === modalRef.current) {
-      onClose()
+      onClose();
     }
-  }
+  };
 
   const modalContent = (
     <div
@@ -94,8 +94,8 @@ export function VideoModal({
         </div>
       </div>
     </div>
-  )
+  );
 
   // Use portal to render at document body for proper z-index stacking
-  return createPortal(modalContent, document.body)
+  return createPortal(modalContent, document.body);
 }

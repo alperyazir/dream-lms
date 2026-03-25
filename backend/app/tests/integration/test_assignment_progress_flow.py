@@ -147,7 +147,9 @@ async def test_full_save_resume_submit_workflow(
         config_json={
             "type": "circle",
             "question": "Select the correct answer",
-            "answer": [{"coords": {"x": 10, "y": 20, "w": 30, "h": 40}, "isCorrect": True}],
+            "answer": [
+                {"coords": {"x": 10, "y": 20, "w": 30, "h": 40}, "isCorrect": True}
+            ],
         },
     )
     session.add(activity)

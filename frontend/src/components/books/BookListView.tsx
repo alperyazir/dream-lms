@@ -10,10 +10,10 @@
  * - Row click navigates to book detail
  */
 
-import { Link } from "@tanstack/react-router"
-import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
+import { Link } from "@tanstack/react-router";
+import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -21,61 +21,61 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { getAuthenticatedCoverUrl } from "@/services/booksApi"
-import type { Book } from "@/types/book"
+} from "@/components/ui/table";
+import { getAuthenticatedCoverUrl } from "@/services/booksApi";
+import type { Book } from "@/types/book";
 
 export interface BookListViewProps {
-  books: Book[]
+  books: Book[];
 }
 
-type SortField = "title" | "publisher_name" | "activity_count"
-type SortDirection = "asc" | "desc"
+type SortField = "title" | "publisher_name" | "activity_count";
+type SortDirection = "asc" | "desc";
 
 /**
  * Book cover thumbnail with authenticated URL loading
  */
 function BookCoverThumbnail({ book }: { book: Book }) {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [imageError, setImageError] = useState(false)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
-    setImageError(false)
+    setImageError(false);
 
     async function fetchCover() {
       if (!book.cover_image_url) {
-        setIsLoading(false)
-        return
+        setIsLoading(false);
+        return;
       }
 
-      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url
-        setCoverUrl(url)
-        setIsLoading(false)
+        blobUrl = url;
+        setCoverUrl(url);
+        setIsLoading(false);
       }
     }
 
-    fetchCover()
+    fetchCover();
 
     return () => {
-      isMounted = false
+      isMounted = false;
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [book.cover_image_url])
+    };
+  }, [book.cover_image_url]);
 
   if (isLoading) {
     return (
       <div className="w-10 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center flex-shrink-0">
         <BookOpen className="w-5 h-5 text-gray-400 animate-pulse" />
       </div>
-    )
+    );
   }
 
   if (coverUrl && !imageError) {
@@ -86,14 +86,14 @@ function BookCoverThumbnail({ book }: { book: Book }) {
         className="w-10 h-14 object-cover rounded flex-shrink-0"
         onError={() => setImageError(true)}
       />
-    )
+    );
   }
 
   return (
     <div className="w-10 h-14 bg-gradient-to-br from-teal-100 to-teal-200 rounded flex items-center justify-center flex-shrink-0">
       <BookOpen className="w-5 h-5 text-teal-600" />
     </div>
-  )
+  );
 }
 
 /**
@@ -104,54 +104,54 @@ function SortIcon({
   currentField,
   direction,
 }: {
-  field: SortField
-  currentField: SortField | null
-  direction: SortDirection
+  field: SortField;
+  currentField: SortField | null;
+  direction: SortDirection;
 }) {
   if (currentField !== field) {
-    return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />
+    return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
   }
   return direction === "asc" ? (
     <ArrowUp className="ml-1 h-3 w-3 text-primary" />
   ) : (
     <ArrowDown className="ml-1 h-3 w-3 text-primary" />
-  )
+  );
 }
 
 export function BookListView({ books }: BookListViewProps) {
-  const [sortField, setSortField] = useState<SortField | null>(null)
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   // Handle sort click
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       // Toggle direction
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
-      setSortField(field)
-      setSortDirection("asc")
+      setSortField(field);
+      setSortDirection("asc");
     }
-  }
+  };
 
   // Sort books
   const sortedBooks = [...books].sort((a, b) => {
-    if (!sortField) return 0
+    if (!sortField) return 0;
 
-    let comparison = 0
+    let comparison = 0;
     switch (sortField) {
       case "title":
-        comparison = a.title.localeCompare(b.title)
-        break
+        comparison = a.title.localeCompare(b.title);
+        break;
       case "publisher_name":
-        comparison = a.publisher_name.localeCompare(b.publisher_name)
-        break
+        comparison = a.publisher_name.localeCompare(b.publisher_name);
+        break;
       case "activity_count":
-        comparison = a.activity_count - b.activity_count
-        break
+        comparison = a.activity_count - b.activity_count;
+        break;
     }
 
-    return sortDirection === "asc" ? comparison : -comparison
-  })
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
 
   return (
     <div className="rounded-md border">
@@ -258,5 +258,5 @@ export function BookListView({ books }: BookListViewProps) {
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

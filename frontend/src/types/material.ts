@@ -13,94 +13,94 @@ export type MaterialType =
   | "audio"
   | "video"
   | "url"
-  | "text_note"
+  | "text_note";
 
 /**
  * Material response from API
  */
 export interface Material {
-  id: string
-  name: string
-  type: MaterialType
-  file_size: number | null
-  mime_type: string | null
-  original_filename: string | null
-  url: string | null
-  text_content: string | null
-  created_at: string
-  updated_at: string
-  download_url: string | null
+  id: string;
+  name: string;
+  type: MaterialType;
+  file_size: number | null;
+  mime_type: string | null;
+  original_filename: string | null;
+  url: string | null;
+  text_content: string | null;
+  created_at: string;
+  updated_at: string;
+  download_url: string | null;
 }
 
 /**
  * Storage quota information
  */
 export interface StorageQuota {
-  used_bytes: number
-  quota_bytes: number
-  used_percentage: number
-  is_warning: boolean
-  is_full: boolean
+  used_bytes: number;
+  quota_bytes: number;
+  used_percentage: number;
+  is_warning: boolean;
+  is_full: boolean;
 }
 
 /**
  * Response when listing materials
  */
 export interface MaterialListResponse {
-  materials: Material[]
-  total_count: number
-  quota: StorageQuota
+  materials: Material[];
+  total_count: number;
+  quota: StorageQuota;
 }
 
 /**
  * Response after uploading a file or creating a material
  */
 export interface UploadResponse {
-  material: Material
-  quota: StorageQuota
+  material: Material;
+  quota: StorageQuota;
 }
 
 /**
  * Request to create a text note
  */
 export interface TextNoteCreate {
-  name: string
-  content: string
+  name: string;
+  content: string;
 }
 
 /**
  * Request to update a text note
  */
 export interface TextNoteUpdate {
-  name?: string
-  content?: string
+  name?: string;
+  content?: string;
 }
 
 /**
  * Request to create a URL link
  */
 export interface UrlLinkCreate {
-  name: string
-  url: string
+  name: string;
+  url: string;
 }
 
 /**
  * Request to update material name
  */
 export interface MaterialUpdate {
-  name: string
+  name: string;
 }
 
 /**
  * Upload state for tracking progress of multiple files
  */
 export interface UploadingFile {
-  id: string
-  file: File
-  progress: number
-  status: "pending" | "uploading" | "complete" | "error"
-  error?: string
-  material?: Material
+  id: string;
+  file: File;
+  progress: number;
+  status: "pending" | "uploading" | "complete" | "error";
+  error?: string;
+  material?: Material;
 }
 
 /**
@@ -127,7 +127,7 @@ export const ALLOWED_EXTENSIONS: Record<string, MaterialType> = {
   mp4: "video",
   webm: "video",
   mov: "video",
-}
+};
 
 /**
  * Allowed MIME types by material type
@@ -155,17 +155,17 @@ export const ALLOWED_MIME_TYPES: Record<string, MaterialType> = {
   "video/mp4": "video",
   "video/webm": "video",
   "video/quicktime": "video",
-}
+};
 
 /**
  * Maximum file size in bytes (100MB)
  */
-export const MAX_FILE_SIZE = 100 * 1024 * 1024
+export const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 /**
  * Maximum text note content size in bytes (50KB)
  */
-export const MAX_TEXT_NOTE_SIZE = 50 * 1024
+export const MAX_TEXT_NOTE_SIZE = 50 * 1024;
 
 /**
  * Display names for material types
@@ -177,7 +177,7 @@ export const MATERIAL_TYPE_LABELS: Record<MaterialType, string> = {
   video: "Video",
   url: "URL Link",
   text_note: "Text Note",
-}
+};
 
 /**
  * Get material type from file
@@ -185,16 +185,16 @@ export const MATERIAL_TYPE_LABELS: Record<MaterialType, string> = {
 export function getMaterialType(file: File): MaterialType | null {
   // Try MIME type first
   if (file.type && ALLOWED_MIME_TYPES[file.type]) {
-    return ALLOWED_MIME_TYPES[file.type]
+    return ALLOWED_MIME_TYPES[file.type];
   }
 
   // Fall back to extension
-  const extension = file.name.split(".").pop()?.toLowerCase()
+  const extension = file.name.split(".").pop()?.toLowerCase();
   if (extension && ALLOWED_EXTENSIONS[extension]) {
-    return ALLOWED_EXTENSIONS[extension]
+    return ALLOWED_EXTENSIONS[extension];
   }
 
-  return null
+  return null;
 }
 
 /**
@@ -206,17 +206,17 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
     return {
       valid: false,
       error: `File size exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit`,
-    }
+    };
   }
 
   // Check file type
-  const type = getMaterialType(file)
+  const type = getMaterialType(file);
   if (!type) {
     return {
       valid: false,
       error: "File type not supported",
-    }
+    };
   }
 
-  return { valid: true }
+  return { valid: true };
 }

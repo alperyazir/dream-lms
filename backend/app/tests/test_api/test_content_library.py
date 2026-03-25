@@ -52,7 +52,9 @@ def content_teacher_user(session: Session) -> User:
 
 
 @pytest.fixture
-def content_teacher(session: Session, content_teacher_user: User, test_school: School) -> Teacher:
+def content_teacher(
+    session: Session, content_teacher_user: User, test_school: School
+) -> Teacher:
     """Create a teacher profile."""
     teacher = Teacher(
         user_id=content_teacher_user.id,
@@ -97,7 +99,9 @@ def second_teacher_user(session: Session) -> User:
 
 
 @pytest.fixture
-def second_teacher(session: Session, second_teacher_user: User, test_school: School) -> Teacher:
+def second_teacher(
+    session: Session, second_teacher_user: User, test_school: School
+) -> Teacher:
     """Create a second teacher profile."""
     teacher = Teacher(
         user_id=second_teacher_user.id,
@@ -176,7 +180,7 @@ class TestListLibraryContent:
     @pytest.mark.asyncio
     async def test_list_library_with_content(
         self,
-       client,
+        client,
         content_teacher_token: str,
         book_content: TeacherGeneratedContent,
         material_content: TeacherGeneratedContent,

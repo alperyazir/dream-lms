@@ -4,19 +4,19 @@
  * Story 4.8 - Activity Progress Persistence (Save & Resume)
  */
 
-import { formatDistanceToNow } from "date-fns"
-import { Button } from "@/components/ui/button"
+import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 interface ActivityFooterProps {
-  onExit: () => void
-  onSave: () => void
-  onSubmit: () => void
-  isComplete: boolean
-  isSaving?: boolean
-  isSubmitting?: boolean
-  lastSavedAt?: Date | null
+  onExit: () => void;
+  onSave: () => void;
+  onSubmit: () => void;
+  isComplete: boolean;
+  isSaving?: boolean;
+  isSubmitting?: boolean;
+  lastSavedAt?: Date | null;
   /** When false, the submit button is hidden (e.g. not on last question yet) */
-  showSubmit?: boolean
+  showSubmit?: boolean;
 }
 
 export function ActivityFooter({
@@ -177,5 +177,5 @@ export function ActivityFooter({
         </div>
       </div>
     </footer>
-  )
+  );
 }

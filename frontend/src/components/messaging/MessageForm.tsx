@@ -1,13 +1,13 @@
-import { Send } from "lucide-react"
-import React, { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
+import { Send } from "lucide-react";
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 export interface MessageFormProps {
-  onSendMessage: (messageBody: string) => void
-  maxLength?: number
-  placeholder?: string
+  onSendMessage: (messageBody: string) => void;
+  maxLength?: number;
+  placeholder?: string;
 }
 
 /**
@@ -20,37 +20,37 @@ export const MessageForm = React.memo(
     maxLength = 1000,
     placeholder = "Type your message...",
   }: MessageFormProps) => {
-    const [messageBody, setMessageBody] = useState("")
-    const [isSending, setIsSending] = useState(false)
+    const [messageBody, setMessageBody] = useState("");
+    const [isSending, setIsSending] = useState(false);
 
-    const characterCount = messageBody.length
-    const isOverLimit = characterCount > maxLength
-    const isValid = messageBody.trim().length > 0 && !isOverLimit
+    const characterCount = messageBody.length;
+    const isOverLimit = characterCount > maxLength;
+    const isValid = messageBody.trim().length > 0 && !isOverLimit;
 
     const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault()
+      e.preventDefault();
 
-      if (!isValid || isSending) return
+      if (!isValid || isSending) return;
 
-      setIsSending(true)
+      setIsSending(true);
 
       try {
-        await onSendMessage(messageBody.trim())
-        setMessageBody("") // Clear form after sending
+        await onSendMessage(messageBody.trim());
+        setMessageBody(""); // Clear form after sending
       } catch (error) {
-        console.error("Error sending message:", error)
+        console.error("Error sending message:", error);
       } finally {
-        setIsSending(false)
+        setIsSending(false);
       }
-    }
+    };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       // Send on Ctrl+Enter or Cmd+Enter
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault()
-        handleSubmit(e)
+        e.preventDefault();
+        handleSubmit(e);
       }
-    }
+    };
 
     return (
       <form
@@ -104,8 +104,8 @@ export const MessageForm = React.memo(
           </div>
         </div>
       </form>
-    )
+    );
   },
-)
+);
 
-MessageForm.displayName = "MessageForm"
+MessageForm.displayName = "MessageForm";

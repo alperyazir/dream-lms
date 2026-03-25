@@ -5,67 +5,67 @@
  * Used by the Content Library page to select which book's content to browse.
  */
 
-import { BookOpen, Check, Loader2, Search } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { Input } from "@/components/ui/input"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-import { cn } from "@/lib/utils"
-import { getAuthenticatedCoverUrl, getBooks } from "@/services/booksApi"
-import type { Book } from "@/types/book"
+import { BookOpen, Check, Loader2, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { getAuthenticatedCoverUrl, getBooks } from "@/services/booksApi";
+import type { Book } from "@/types/book";
 
 interface BookSelectorProps {
-  selectedBookId: number | null
-  onBookSelect: (id: number | null) => void
+  selectedBookId: number | null;
+  onBookSelect: (id: number | null) => void;
 }
 
 export function BookSelector({
   selectedBookId,
   onBookSelect,
 }: BookSelectorProps) {
-  const [books, setBooks] = useState<Book[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [bookSearch, setBookSearch] = useState("")
-  const [coverUrls, setCoverUrls] = useState<Record<number, string>>({})
+  const [books, setBooks] = useState<Book[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [bookSearch, setBookSearch] = useState("");
+  const [coverUrls, setCoverUrls] = useState<Record<number, string>>({});
 
   // Load cover URLs for books
   useEffect(() => {
     const loadCovers = async () => {
-      const urls: Record<number, string> = {}
+      const urls: Record<number, string> = {};
       for (const book of books) {
         if (book.cover_image_url) {
-          const url = await getAuthenticatedCoverUrl(book.cover_image_url)
-          if (url) urls[book.id] = url
+          const url = await getAuthenticatedCoverUrl(book.cover_image_url);
+          if (url) urls[book.id] = url;
         }
       }
-      setCoverUrls(urls)
-    }
-    if (books.length > 0) loadCovers()
-  }, [books])
+      setCoverUrls(urls);
+    };
+    if (books.length > 0) loadCovers();
+  }, [books]);
 
   // Filter books based on search
   const filteredBooks = useMemo(() => {
-    if (!bookSearch.trim()) return books
-    const searchLower = bookSearch.toLowerCase()
+    if (!bookSearch.trim()) return books;
+    const searchLower = bookSearch.toLowerCase();
     return books.filter((book) =>
       book.title.toLowerCase().includes(searchLower),
-    )
-  }, [books, bookSearch])
+    );
+  }, [books, bookSearch]);
 
   // Load books on mount
   useEffect(() => {
     const loadBooks = async () => {
       try {
-        setIsLoading(true)
-        const response = await getBooks()
-        setBooks(response.items || [])
+        setIsLoading(true);
+        const response = await getBooks();
+        setBooks(response.items || []);
       } catch (err) {
-        console.error("Failed to load books:", err)
+        console.error("Failed to load books:", err);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
-    loadBooks()
-  }, [])
+    };
+    loadBooks();
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -140,5 +140,5 @@ export function BookSelector({
         </div>
       )}
     </div>
-  )
+  );
 }

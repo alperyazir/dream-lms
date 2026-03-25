@@ -18,7 +18,7 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import select
 
@@ -29,8 +29,7 @@ from app.services.config_parser import parse_book_config
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -73,8 +72,7 @@ async def import_activities_for_book(book_id: int, session: AsyncSession) -> dic
 
     # Filter for supported activity types only
     supported_activities = [
-        a for a in activity_data_list
-        if a.activity_type in SUPPORTED_ACTIVITY_TYPES
+        a for a in activity_data_list if a.activity_type in SUPPORTED_ACTIVITY_TYPES
     ]
 
     logger.info(
@@ -132,9 +130,7 @@ async def main():
 
     # Create database session
     engine = create_async_engine(str(settings.SQLALCHEMY_DATABASE_URI), echo=False)
-    async_session = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     # Get all books from DCS
     logger.info("Fetching books from DCS...")
@@ -159,7 +155,9 @@ async def main():
     logger.info("=" * 80)
 
     success_count = sum(1 for r in results if r["status"] == "success")
-    total_created = sum(r.get("created", 0) for r in results if r["status"] == "success")
+    total_created = sum(
+        r.get("created", 0) for r in results if r["status"] == "success"
+    )
 
     logger.info(f"Total books processed: {len(results)}")
     logger.info(f"Successful imports: {success_count}")

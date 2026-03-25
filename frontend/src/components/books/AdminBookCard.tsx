@@ -1,15 +1,15 @@
-import { Download, ExternalLink, Eye, UserPlus } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import type { Book } from "@/types/book"
-import { BookCover } from "./BookCover"
+import { Download, ExternalLink, Eye, UserPlus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import type { Book } from "@/types/book";
+import { BookCover } from "./BookCover";
 
 interface AdminBookCardProps {
-  book: Book
-  onViewDetails: () => void
-  onAssign?: () => void
-  onOpenFlowbook?: () => void
-  onDownload?: () => void
+  book: Book;
+  onViewDetails: () => void;
+  onAssign?: () => void;
+  onOpenFlowbook?: () => void;
+  onDownload?: () => void;
 }
 
 export function AdminBookCard({
@@ -89,5 +89,5 @@ export function AdminBookCard({
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }

@@ -8,15 +8,13 @@ import csv
 import io
 import logging
 from datetime import datetime
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Query, Response
 from sqlmodel import select
 from starlette.requests import Request
 
-from app.core.rate_limit import RateLimits, limiter
-
 from app.api.deps import AsyncSessionDep, CurrentUser, require_role
+from app.core.rate_limit import RateLimits, limiter
 from app.models import User, UserRole
 from app.services.redis_cache import cache_get, cache_set
 from app.services.usage_analytics_service import UsageAnalyticsService
@@ -43,8 +41,8 @@ async def get_my_usage(
         - monthly_quota: Monthly generation quota limit
         - remaining_quota: Remaining generations this month
     """
-    from app.models import Teacher
     from app.core.config import settings
+    from app.models import Teacher
 
     # Cache AI usage (changes only when teacher generates content)
     cache_key = f"user:{current_user.id}:ai_usage"
@@ -73,7 +71,9 @@ async def get_my_usage(
     reset_date = teacher.ai_quota_reset_date
 
     # Reset if we're in a new month
-    if reset_date.year < now.year or (reset_date.year == now.year and reset_date.month < now.month):
+    if reset_date.year < now.year or (
+        reset_date.year == now.year and reset_date.month < now.month
+    ):
         teacher.ai_generations_used = 0
         teacher.ai_quota_reset_date = now
         session.add(teacher)
@@ -201,7 +201,9 @@ async def get_usage_by_teacher(
             "total_generations": item.total_generations,
             "estimated_cost": item.estimated_cost,
             "top_activity_type": item.top_activity_type,
-            "last_activity_date": item.last_activity_date.isoformat() if item.last_activity_date else None,
+            "last_activity_date": (
+                item.last_activity_date.isoformat() if item.last_activity_date else None
+            ),
         }
         for item in usage_by_teacher
     ]
@@ -333,37 +335,41 @@ async def export_usage_data(
     writer = csv.writer(output)
 
     # Write header
-    writer.writerow([
-        "Timestamp",
-        "Teacher ID",
-        "Operation Type",
-        "Activity Type",
-        "Provider",
-        "Input Tokens",
-        "Output Tokens",
-        "Audio Characters",
-        "Estimated Cost (USD)",
-        "Duration (ms)",
-        "Success",
-        "Error Message",
-    ])
+    writer.writerow(
+        [
+            "Timestamp",
+            "Teacher ID",
+            "Operation Type",
+            "Activity Type",
+            "Provider",
+            "Input Tokens",
+            "Output Tokens",
+            "Audio Characters",
+            "Estimated Cost (USD)",
+            "Duration (ms)",
+            "Success",
+            "Error Message",
+        ]
+    )
 
     # Write data rows
     for log in logs:
-        writer.writerow([
-            log.timestamp.isoformat(),
-            str(log.teacher_id),
-            log.operation_type,
-            log.activity_type,
-            log.provider,
-            log.input_tokens,
-            log.output_tokens,
-            log.audio_characters,
-            f"{log.estimated_cost:.8f}",
-            log.duration_ms,
-            "Yes" if log.success else "No",
-            log.error_message or "",
-        ])
+        writer.writerow(
+            [
+                log.timestamp.isoformat(),
+                str(log.teacher_id),
+                log.operation_type,
+                log.activity_type,
+                log.provider,
+                log.input_tokens,
+                log.output_tokens,
+                log.audio_characters,
+                f"{log.estimated_cost:.8f}",
+                log.duration_ms,
+                "Yes" if log.success else "No",
+                log.error_message or "",
+            ]
+        )
 
     # Generate filename with date range
     from_str = from_date.strftime("%Y%m%d") if from_date else "all"

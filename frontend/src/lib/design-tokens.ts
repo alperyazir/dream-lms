@@ -35,7 +35,7 @@ export const colors = {
     900: "#164E63",
     950: "#083344",
   },
-} as const
+} as const;
 
 export const spacing = {
   xs: "0.25rem", // 4px
@@ -45,7 +45,7 @@ export const spacing = {
   xl: "2rem", // 32px
   "2xl": "3rem", // 48px
   "3xl": "4rem", // 64px
-} as const
+} as const;
 
 export const typography = {
   fontFamily: {
@@ -68,14 +68,14 @@ export const typography = {
     semibold: 600,
     bold: 700,
   },
-} as const
+} as const;
 
 export const shadows = {
   neuroSm: "2px 2px 4px rgba(0,0,0,0.2), -2px -2px 4px rgba(255,255,255,0.05)",
   neuro: "4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05)",
   neuroLg:
     "8px 8px 16px rgba(0,0,0,0.2), -8px -8px 16px rgba(255,255,255,0.05)",
-} as const
+} as const;
 
 export const borderRadius = {
   sm: "0.25rem", // 4px
@@ -83,4 +83,4 @@ export const borderRadius = {
   lg: "0.75rem", // 12px
   xl: "1rem", // 16px
   full: "9999px", // Fully rounded
-} as const
+} as const;

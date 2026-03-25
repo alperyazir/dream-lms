@@ -100,7 +100,9 @@ class ReadingComprehensionService:
 
         try:
             ctx = await get_metadata_context(
-                self._dcs_client, request.book_id, all_module_ids,
+                self._dcs_client,
+                request.book_id,
+                all_module_ids,
             )
         except ValueError as e:
             raise DCSAIDataNotFoundError(
@@ -118,9 +120,7 @@ class ReadingComprehensionService:
         # 2. Determine difficulty level
         if request.difficulty == "auto":
             difficulty = map_cefr_to_difficulty(ctx.difficulty_level)
-            logger.info(
-                f"Auto difficulty: CEFR={ctx.difficulty_level} -> {difficulty}"
-            )
+            logger.info(f"Auto difficulty: CEFR={ctx.difficulty_level} -> {difficulty}")
         else:
             difficulty = request.difficulty
 
@@ -138,7 +138,11 @@ class ReadingComprehensionService:
         user_prompt = build_reading_prompt(
             module_title=combined_title,
             topics=ctx.topics,
-            context_sample="\n".join(ctx.module_summaries) if ctx.module_summaries else "(Use topics and vocabulary as guidance)",
+            context_sample=(
+                "\n".join(ctx.module_summaries)
+                if ctx.module_summaries
+                else "(Use topics and vocabulary as guidance)"
+            ),
             question_count=request.question_count,
             question_types=request.question_types,
             difficulty=difficulty,
@@ -225,7 +229,9 @@ class ReadingComprehensionService:
                     question_text=q.get("question", ""),
                     options=options if question_type != "short_answer" else None,
                     correct_answer=q.get("correct_answer", ""),
-                    correct_index=correct_index if question_type != "short_answer" else None,
+                    correct_index=(
+                        correct_index if question_type != "short_answer" else None
+                    ),
                     explanation=q.get("explanation", ""),
                     passage_reference=q.get("passage_reference", ""),
                 )
@@ -238,7 +244,11 @@ class ReadingComprehensionService:
 
         # 6. Build and return activity
         # Use passage index for title if multi-passage, otherwise combined module title
-        if request.passage_index and request.total_passages and request.total_passages > 1:
+        if (
+            request.passage_index
+            and request.total_passages
+            and request.total_passages > 1
+        ):
             activity_title = f"Passage {request.passage_index}"
         else:
             activity_title = combined_title

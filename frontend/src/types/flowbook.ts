@@ -8,40 +8,40 @@
 // ============================================================================
 
 export interface BookConfig {
-  id?: string
-  title: string
-  cover: string
-  version?: string
-  modules: Module[]
-  pages: Page[]
+  id?: string;
+  title: string;
+  cover: string;
+  version?: string;
+  modules: Module[];
+  pages: Page[];
 }
 
 export interface Module {
-  id: string
-  name: string
-  startPage: number
-  endPage?: number
+  id: string;
+  name: string;
+  startPage: number;
+  endPage?: number;
 }
 
 export interface Page {
-  id: string
-  image: string
-  audio?: AudioReference[]
-  video?: VideoReference[]
-  activities?: ActivityReference[]
-  fillAnswers?: FillAnswerArea[]
-  sections?: Section[]
+  id: string;
+  image: string;
+  audio?: AudioReference[];
+  video?: VideoReference[];
+  activities?: ActivityReference[];
+  fillAnswers?: FillAnswerArea[];
+  sections?: Section[];
 }
 
 export interface Section {
-  id: string
-  title: string
-  startPage: number
-  endPage: number
-  audio?: AudioReference[]
-  video?: VideoReference[]
-  activities?: ActivityReference[]
-  fillAnswers?: FillAnswerArea[]
+  id: string;
+  title: string;
+  startPage: number;
+  endPage: number;
+  audio?: AudioReference[];
+  video?: VideoReference[];
+  activities?: ActivityReference[];
+  fillAnswers?: FillAnswerArea[];
 }
 
 // ============================================================================
@@ -49,32 +49,32 @@ export interface Section {
 // ============================================================================
 
 export interface AudioReference {
-  id: string
-  src: string
-  x: number
-  y: number
-  width?: number
-  height?: number
+  id: string;
+  src: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
 }
 
 export interface VideoReference {
-  id: string
-  src: string
-  poster?: string
-  subtitleSrc?: string
-  x: number
-  y: number
-  width?: number
-  height?: number
+  id: string;
+  src: string;
+  poster?: string;
+  subtitleSrc?: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
 }
 
 export interface FillAnswerArea {
-  id: string
-  x: number
-  y: number
-  width: number
-  height: number
-  text: string
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text: string;
 }
 
 // ============================================================================
@@ -82,13 +82,13 @@ export interface FillAnswerArea {
 // ============================================================================
 
 export interface ActivityReference {
-  id: string
-  type: ActivityType
-  x: number
-  y: number
-  width: number
-  height: number
-  config: Record<string, unknown>
+  id: string;
+  type: ActivityType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  config: Record<string, unknown>;
 }
 
 export type ActivityType =
@@ -98,115 +98,115 @@ export type ActivityType =
   | "fillPicture"
   | "circleMark"
   | "fillBlanks"
-  | "wordSearch"
+  | "wordSearch";
 
 // ============================================================================
 // UI State Types
 // ============================================================================
 
-export type ViewMode = "single" | "double"
+export type ViewMode = "single" | "double";
 
-export type SidebarPanel = "none" | "toc" | "activities" | "tools" | "settings"
+export type SidebarPanel = "none" | "toc" | "activities" | "tools" | "settings";
 
 // ============================================================================
 // Activity Config Types (for specific activity players)
 // ============================================================================
 
 export interface MatchTheWordsConfig {
-  title?: string
-  instructions?: string
-  leftItems: Array<{ id: string; text: string }>
-  rightItems: Array<{ id: string; text: string }>
-  correctMatches: Record<string, string>
+  title?: string;
+  instructions?: string;
+  leftItems: Array<{ id: string; text: string }>;
+  rightItems: Array<{ id: string; text: string }>;
+  correctMatches: Record<string, string>;
 }
 
 export interface DragDropPictureConfig {
-  title?: string
-  instructions?: string
-  backgroundImage?: string
+  title?: string;
+  instructions?: string;
+  backgroundImage?: string;
   items: Array<{
-    id: string
-    text?: string
-    image?: string
-  }>
+    id: string;
+    text?: string;
+    image?: string;
+  }>;
   dropZones: Array<{
-    id: string
-    x: number
-    y: number
-    width: number
-    height: number
-    acceptsItemId: string
-  }>
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    acceptsItemId: string;
+  }>;
 }
 
 export interface DragDropPictureGroupConfig {
-  title?: string
-  instructions?: string
-  backgroundImage?: string
+  title?: string;
+  instructions?: string;
+  backgroundImage?: string;
   groups: Array<{
-    id: string
-    label: string
-    x: number
-    y: number
-    width: number
-    height: number
-  }>
+    id: string;
+    label: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
   items: Array<{
-    id: string
-    text?: string
-    image?: string
-    correctGroupId: string
-  }>
+    id: string;
+    text?: string;
+    image?: string;
+    correctGroupId: string;
+  }>;
 }
 
 export interface FillPictureConfig {
-  title?: string
-  instructions?: string
-  backgroundImage?: string
+  title?: string;
+  instructions?: string;
+  backgroundImage?: string;
   clickAreas: Array<{
-    id: string
-    x: number
-    y: number
-    width: number
-    height: number
-    correctAnswer: boolean
-  }>
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    correctAnswer: boolean;
+  }>;
 }
 
 export interface CircleMarkConfig {
-  title?: string
-  instructions?: string
-  backgroundImage?: string
+  title?: string;
+  instructions?: string;
+  backgroundImage?: string;
   options: Array<{
-    id: string
-    x: number
-    y: number
-    width: number
-    height: number
-    isCorrect: boolean
-  }>
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    isCorrect: boolean;
+  }>;
 }
 
 export interface FillBlanksConfig {
-  title?: string
-  instructions?: string
+  title?: string;
+  instructions?: string;
   sentences: Array<{
-    id: string
-    text: string // Text with __BLANK__ placeholders
+    id: string;
+    text: string; // Text with __BLANK__ placeholders
     blanks: Array<{
-      id: string
-      correctAnswer: string
-      alternatives?: string[]
-    }>
-  }>
+      id: string;
+      correctAnswer: string;
+      alternatives?: string[];
+    }>;
+  }>;
 }
 
 export interface WordSearchConfig {
-  title?: string
-  instructions?: string
-  grid: string[][]
-  words: string[]
-  foundWords?: string[]
+  title?: string;
+  instructions?: string;
+  grid: string[][];
+  words: string[];
+  foundWords?: string[];
 }
 
 // ============================================================================
@@ -215,15 +215,15 @@ export interface WordSearchConfig {
 
 export interface FlowbookViewerProps {
   /** Book configuration to display */
-  bookConfig: BookConfig
+  bookConfig: BookConfig;
   /** Callback when close button is clicked */
-  onClose?: () => void
+  onClose?: () => void;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
   /** Initial page index (0-based) */
-  initialPage?: number
+  initialPage?: number;
   /** Whether to show the thumbnail strip */
-  showThumbnails?: boolean
+  showThumbnails?: boolean;
   /** Whether to show navigation controls */
-  showNavigation?: boolean
+  showNavigation?: boolean;
 }

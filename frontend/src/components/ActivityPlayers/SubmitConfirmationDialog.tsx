@@ -10,7 +10,7 @@
  * NOT about correctness - just whether the student has provided all answers.
  */
 
-import { useMemo } from "react"
+import { useMemo } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,18 +20,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import type { ActivityConfig } from "@/lib/mockData"
-import type { ActivityState, ActivityWithConfig } from "@/types/assignment"
+} from "@/components/ui/alert-dialog";
+import type { ActivityConfig } from "@/lib/mockData";
+import type { ActivityState, ActivityWithConfig } from "@/types/assignment";
 
 export interface SubmitConfirmationDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onConfirm: () => void
-  activitiesCompleted: number
-  totalActivities: number
-  activityStates: Map<string, ActivityState>
-  activities: ActivityWithConfig[]
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  activitiesCompleted: number;
+  totalActivities: number;
+  activityStates: Map<string, ActivityState>;
+  activities: ActivityWithConfig[];
 }
 
 /**
@@ -42,60 +42,60 @@ function isActivityFullyAnswered(
   activity: ActivityWithConfig,
   state: ActivityState | undefined,
 ): boolean {
-  if (!state?.responseData) return false
+  if (!state?.responseData) return false;
 
-  const config = activity.config_json as ActivityConfig
-  const responseData = state.responseData
+  const config = activity.config_json as ActivityConfig;
+  const responseData = state.responseData;
 
   // Get the number of expected answers based on activity type
   switch (config.type) {
     case "dragdroppicture":
     case "dragdroppicturegroup": {
       // Check if all drop zones have answers
-      const expectedCount = config.answer?.length || 0
-      const answersObj = responseData.answers || responseData
-      const filledCount = Object.keys(answersObj).length
-      return filledCount >= expectedCount
+      const expectedCount = config.answer?.length || 0;
+      const answersObj = responseData.answers || responseData;
+      const filledCount = Object.keys(answersObj).length;
+      return filledCount >= expectedCount;
     }
 
     case "matchTheWords": {
       // Check if all sentences have matching words
-      const expectedCount = config.sentences?.length || 0
-      const answersObj = responseData.answers || responseData
-      const filledCount = Object.keys(answersObj).length
-      return filledCount >= expectedCount
+      const expectedCount = config.sentences?.length || 0;
+      const answersObj = responseData.answers || responseData;
+      const filledCount = Object.keys(answersObj).length;
+      return filledCount >= expectedCount;
     }
 
     case "circle":
     case "markwithx": {
       // Check if all question groups have selections
-      const circleCount = config.circleCount ?? 2
-      const effectiveCircleCount = circleCount === 0 ? 2 : circleCount
-      const isMultiSelect = circleCount === -1
+      const circleCount = config.circleCount ?? 2;
+      const effectiveCircleCount = circleCount === 0 ? 2 : circleCount;
+      const isMultiSelect = circleCount === -1;
 
       if (isMultiSelect) {
         // For multi-select, just need at least one selection
-        const answersObj = responseData.answers || responseData
-        return Object.keys(answersObj).length > 0
+        const answersObj = responseData.answers || responseData;
+        return Object.keys(answersObj).length > 0;
       }
 
       // For question grouping mode, need one answer per group
-      const totalOptions = config.answer?.length || 0
-      const expectedGroups = Math.ceil(totalOptions / effectiveCircleCount)
-      const answersObj = responseData.answers || responseData
-      const filledCount = Object.keys(answersObj).length
-      return filledCount >= expectedGroups
+      const totalOptions = config.answer?.length || 0;
+      const expectedGroups = Math.ceil(totalOptions / effectiveCircleCount);
+      const answersObj = responseData.answers || responseData;
+      const filledCount = Object.keys(answersObj).length;
+      return filledCount >= expectedGroups;
     }
 
     case "puzzleFindWords": {
       // Check if any words have been found
-      const foundWords = responseData.words || responseData.answers || []
-      return Array.isArray(foundWords) && foundWords.length > 0
+      const foundWords = responseData.words || responseData.answers || [];
+      return Array.isArray(foundWords) && foundWords.length > 0;
     }
 
     default:
       // Fallback: check if responseData has any content
-      return Object.keys(responseData).length > 0
+      return Object.keys(responseData).length > 0;
   }
 }
 
@@ -108,22 +108,22 @@ export function SubmitConfirmationDialog({
 }: SubmitConfirmationDialogProps) {
   // Check which activities are incomplete (have unfilled answers)
   const incompleteActivities = useMemo(() => {
-    const incomplete: { index: number; title: string }[] = []
+    const incomplete: { index: number; title: string }[] = [];
 
     activities.forEach((activity, index) => {
-      const state = activityStates.get(activity.id)
+      const state = activityStates.get(activity.id);
       if (!isActivityFullyAnswered(activity, state)) {
         incomplete.push({
           index: index + 1,
           title: activity.title || `Activity ${index + 1}`,
-        })
+        });
       }
-    })
+    });
 
-    return incomplete
-  }, [activities, activityStates])
+    return incomplete;
+  }, [activities, activityStates]);
 
-  const allComplete = incompleteActivities.length === 0
+  const allComplete = incompleteActivities.length === 0;
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -183,5 +183,5 @@ export function SubmitConfirmationDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

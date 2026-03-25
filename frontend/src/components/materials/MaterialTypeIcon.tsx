@@ -5,13 +5,13 @@
  * Displays appropriate icon based on material type.
  */
 
-import { FileText, Image, Link, Music, StickyNote, Video } from "lucide-react"
-import type { MaterialType } from "@/types/material"
+import { FileText, Image, Link, Music, StickyNote, Video } from "lucide-react";
+import type { MaterialType } from "@/types/material";
 
 interface MaterialTypeIconProps {
-  type: MaterialType
-  className?: string
-  size?: "sm" | "md" | "lg"
+  type: MaterialType;
+  className?: string;
+  size?: "sm" | "md" | "lg";
 }
 
 const iconMap: Record<
@@ -24,7 +24,7 @@ const iconMap: Record<
   video: Video,
   url: Link,
   text_note: StickyNote,
-}
+};
 
 const colorMap: Record<MaterialType, string> = {
   document: "text-red-500",
@@ -33,13 +33,13 @@ const colorMap: Record<MaterialType, string> = {
   video: "text-purple-500",
   url: "text-cyan-500",
   text_note: "text-amber-500",
-}
+};
 
 const sizeMap: Record<string, string> = {
   sm: "h-4 w-4",
   md: "h-5 w-5",
   lg: "h-6 w-6",
-}
+};
 
 /**
  * MaterialTypeIcon displays an icon and color based on material type
@@ -49,11 +49,11 @@ export function MaterialTypeIcon({
   className = "",
   size = "md",
 }: MaterialTypeIconProps) {
-  const Icon = iconMap[type] || FileText
-  const color = colorMap[type] || "text-gray-500"
-  const sizeClass = sizeMap[size]
+  const Icon = iconMap[type] || FileText;
+  const color = colorMap[type] || "text-gray-500";
+  const sizeClass = sizeMap[size];
 
-  return <Icon className={`${sizeClass} ${color} ${className}`} />
+  return <Icon className={`${sizeClass} ${color} ${className}`} />;
 }
 
 /**
@@ -67,8 +67,8 @@ export function getMaterialTypeLabel(type: MaterialType): string {
     video: "Video",
     url: "URL Link",
     text_note: "Text Note",
-  }
-  return labels[type] || type
+  };
+  return labels[type] || type;
 }
 
-MaterialTypeIcon.displayName = "MaterialTypeIcon"
+MaterialTypeIcon.displayName = "MaterialTypeIcon";

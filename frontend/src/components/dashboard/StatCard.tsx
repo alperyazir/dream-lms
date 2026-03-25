@@ -1,14 +1,14 @@
-import { ArrowDown, ArrowUp } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { ArrowDown, ArrowUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface StatCardProps {
-  icon: React.ReactNode
-  label: string
-  value: string | number
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
   trend?: {
-    value: number
-    direction: "up" | "down"
-  }
+    value: number;
+    direction: "up" | "down";
+  };
 }
 
 export function StatCard({ icon, label, value, trend }: StatCardProps) {
@@ -69,5 +69,5 @@ export function StatCard({ icon, label, value, trend }: StatCardProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

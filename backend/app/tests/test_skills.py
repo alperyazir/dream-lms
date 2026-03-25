@@ -1,7 +1,5 @@
 """Tests for Skill Category & Activity Format (Story 30.1)."""
 
-import uuid
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -11,9 +9,7 @@ from app.models import (
     ActivityFormat,
     SkillCategory,
     SkillFormatCombination,
-    User,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -25,16 +21,28 @@ def seed_skills_fixture(session: Session) -> dict:
     """Seed skill categories, formats, and combinations for testing."""
     # Skills
     listening = SkillCategory(
-        name="Listening", slug="listening", icon="ear", color="blue",
-        display_order=1, is_active=True,
+        name="Listening",
+        slug="listening",
+        icon="ear",
+        color="blue",
+        display_order=1,
+        is_active=True,
     )
     reading = SkillCategory(
-        name="Reading", slug="reading", icon="book-open", color="green",
-        display_order=2, is_active=True,
+        name="Reading",
+        slug="reading",
+        icon="book-open",
+        color="green",
+        display_order=2,
+        is_active=True,
     )
     speaking = SkillCategory(
-        name="Speaking", slug="speaking", icon="mic", color="purple",
-        display_order=4, is_active=False,
+        name="Speaking",
+        slug="speaking",
+        icon="mic",
+        color="purple",
+        display_order=4,
+        is_active=False,
     )
     session.add_all([listening, reading, speaking])
     session.flush()
@@ -47,21 +55,30 @@ def seed_skills_fixture(session: Session) -> dict:
 
     # Combinations
     c1 = SkillFormatCombination(
-        skill_id=listening.id, format_id=mcq.id,
-        display_order=1, generation_prompt_key="listening_quiz",
+        skill_id=listening.id,
+        format_id=mcq.id,
+        display_order=1,
+        generation_prompt_key="listening_quiz",
     )
     c2 = SkillFormatCombination(
-        skill_id=listening.id, format_id=fill.id,
-        display_order=2, generation_prompt_key="listening_fill_blank",
+        skill_id=listening.id,
+        format_id=fill.id,
+        display_order=2,
+        generation_prompt_key="listening_fill_blank",
     )
     c3 = SkillFormatCombination(
-        skill_id=reading.id, format_id=mcq.id,
-        display_order=1, generation_prompt_key="reading_quiz",
+        skill_id=reading.id,
+        format_id=mcq.id,
+        display_order=1,
+        generation_prompt_key="reading_quiz",
     )
     # Inactive combo for Speaking (should not appear)
     c4 = SkillFormatCombination(
-        skill_id=speaking.id, format_id=mcq.id,
-        display_order=1, is_available=True, generation_prompt_key="speaking_quiz",
+        skill_id=speaking.id,
+        format_id=mcq.id,
+        display_order=1,
+        is_available=True,
+        generation_prompt_key="speaking_quiz",
     )
     session.add_all([c1, c2, c3, c4])
     session.commit()
@@ -86,8 +103,11 @@ class TestSkillCategoryModel:
     def test_create_skill_category(self, session: Session) -> None:
         """Test basic SkillCategory creation."""
         skill = SkillCategory(
-            name="Vocabulary", slug="vocabulary", icon="text",
-            color="teal", display_order=5,
+            name="Vocabulary",
+            slug="vocabulary",
+            icon="text",
+            color="teal",
+            display_order=5,
         )
         session.add(skill)
         session.commit()
@@ -101,11 +121,15 @@ class TestSkillCategoryModel:
 
     def test_unique_slug_constraint(self, session: Session) -> None:
         """Test that duplicate slugs raise an error."""
-        s1 = SkillCategory(name="Skill A", slug="same_slug", icon="x", color="red", display_order=0)
+        s1 = SkillCategory(
+            name="Skill A", slug="same_slug", icon="x", color="red", display_order=0
+        )
         session.add(s1)
         session.commit()
 
-        s2 = SkillCategory(name="Skill B", slug="same_slug", icon="y", color="blue", display_order=1)
+        s2 = SkillCategory(
+            name="Skill B", slug="same_slug", icon="y", color="blue", display_order=1
+        )
         session.add(s2)
         with pytest.raises(Exception):  # IntegrityError
             session.commit()
@@ -113,11 +137,15 @@ class TestSkillCategoryModel:
 
     def test_unique_name_constraint(self, session: Session) -> None:
         """Test that duplicate names raise an error."""
-        s1 = SkillCategory(name="Same Name", slug="slug_a", icon="x", color="red", display_order=0)
+        s1 = SkillCategory(
+            name="Same Name", slug="slug_a", icon="x", color="red", display_order=0
+        )
         session.add(s1)
         session.commit()
 
-        s2 = SkillCategory(name="Same Name", slug="slug_b", icon="y", color="blue", display_order=1)
+        s2 = SkillCategory(
+            name="Same Name", slug="slug_b", icon="y", color="blue", display_order=1
+        )
         session.add(s2)
         with pytest.raises(Exception):
             session.commit()
@@ -130,7 +158,9 @@ class TestActivityFormatModel:
     def test_create_activity_format(self, session: Session) -> None:
         """Test basic ActivityFormat creation."""
         fmt = ActivityFormat(
-            name="Matching", slug="matching", description="Match items",
+            name="Matching",
+            slug="matching",
+            description="Match items",
         )
         session.add(fmt)
         session.commit()
@@ -155,7 +185,9 @@ class TestActivityFormatModel:
 class TestSkillFormatCombinationModel:
     """Test SkillFormatCombination model constraints."""
 
-    def test_unique_skill_format_pair(self, session: Session, seed_skills: dict) -> None:
+    def test_unique_skill_format_pair(
+        self, session: Session, seed_skills: dict
+    ) -> None:
         """Test that duplicate (skill_id, format_id) pairs raise an error."""
         dup = SkillFormatCombination(
             skill_id=seed_skills["listening"].id,

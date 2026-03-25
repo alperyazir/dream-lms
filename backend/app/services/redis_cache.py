@@ -12,10 +12,10 @@ import asyncio
 import logging
 import random
 import uuid
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 import orjson
-
 import redis as redis_sync
 import redis.asyncio as redis
 
@@ -110,7 +110,9 @@ async def cache_set(key: str, value: Any, ttl: int = 3600) -> None:
     try:
         # Add ±20% jitter to prevent all caches expiring simultaneously
         jittered_ttl = int(ttl * (0.8 + random.random() * 0.4))
-        await client.setex(key, max(jittered_ttl, 1), orjson.dumps(value, default=str).decode())
+        await client.setex(
+            key, max(jittered_ttl, 1), orjson.dumps(value, default=str).decode()
+        )
     except Exception as e:
         logger.debug("Cache set error for %s: %s", key, e)
 
@@ -210,6 +212,7 @@ async def cache_get_or_fetch(
 # Synchronous helpers (native sync Redis client — no threads/event loops)
 # ---------------------------------------------------------------------------
 
+
 def cache_get_sync(key: str) -> Any | None:
     """Synchronous cache get using native sync Redis client."""
     client = _redis_sync_client
@@ -232,7 +235,9 @@ def cache_set_sync(key: str, value: Any, ttl: int = 3600) -> None:
         return
     try:
         jittered_ttl = int(ttl * (0.8 + random.random() * 0.4))
-        client.setex(key, max(jittered_ttl, 1), orjson.dumps(value, default=str).decode())
+        client.setex(
+            key, max(jittered_ttl, 1), orjson.dumps(value, default=str).decode()
+        )
     except Exception as e:
         logger.debug("Sync cache set error for %s: %s", key, e)
 

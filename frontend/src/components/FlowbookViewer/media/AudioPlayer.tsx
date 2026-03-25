@@ -1,22 +1,22 @@
-import { Loader2, Pause, Play } from "lucide-react"
-import { useRef, useState } from "react"
-import { cn } from "@/lib/utils"
-import { useAudioPlayer } from "../hooks/useAudioPlayer"
+import { Loader2, Pause, Play } from "lucide-react";
+import { useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import { useAudioPlayer } from "../hooks/useAudioPlayer";
 
 function formatTime(seconds: number): string {
-  if (!isFinite(seconds) || seconds < 0) return "0:00"
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, "0")}`
+  if (!isFinite(seconds) || seconds < 0) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 interface AudioPlayerProps {
-  src: string
-  onEnded?: () => void
-  volume?: number
-  playbackRate?: number
-  compact?: boolean
-  autoPlay?: boolean
+  src: string;
+  onEnded?: () => void;
+  volume?: number;
+  playbackRate?: number;
+  compact?: boolean;
+  autoPlay?: boolean;
 }
 
 export function AudioPlayer({
@@ -27,56 +27,49 @@ export function AudioPlayer({
   compact = false,
   autoPlay = false,
 }: AudioPlayerProps) {
-  const {
-    isPlaying,
-    isLoading,
-    error,
-    currentTime,
-    duration,
-    toggle,
-    seek,
-  } = useAudioPlayer(src, { onEnded, volume, playbackRate, autoPlay })
+  const { isPlaying, isLoading, error, currentTime, duration, toggle, seek } =
+    useAudioPlayer(src, { onEnded, volume, playbackRate, autoPlay });
 
-  const progressRef = useRef<HTMLDivElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
+  const progressRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!progressRef.current) return
-    const rect = progressRef.current.getBoundingClientRect()
+    if (!progressRef.current) return;
+    const rect = progressRef.current.getBoundingClientRect();
     const percent = Math.max(
       0,
       Math.min(1, (e.clientX - rect.left) / rect.width),
-    )
-    seek(percent * duration)
-  }
+    );
+    seek(percent * duration);
+  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    setIsDragging(true)
-    handleProgressClick(e)
-  }
+    setIsDragging(true);
+    handleProgressClick(e);
+  };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isDragging) {
-      handleProgressClick(e)
+      handleProgressClick(e);
     }
-  }
+  };
 
   const handleMouseUp = () => {
-    setIsDragging(false)
-  }
+    setIsDragging(false);
+  };
 
   const handleMouseLeave = () => {
-    setIsDragging(false)
-  }
+    setIsDragging(false);
+  };
 
   if (error) {
     return (
       <div className="flex items-center gap-2 text-sm text-red-400">
         <span>Failed to load audio</span>
       </div>
-    )
+    );
   }
 
   return (
@@ -155,5 +148,5 @@ export function AudioPlayer({
         </span>
       </div>
     </div>
-  )
+  );
 }

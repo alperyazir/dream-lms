@@ -8,8 +8,8 @@
  * - Status indicators (not_started, in_progress, completed)
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   addMonths,
   endOfMonth,
@@ -19,7 +19,7 @@ import {
   startOfMonth,
   startOfWeek,
   subMonths,
-} from "date-fns"
+} from "date-fns";
 import {
   BookOpen,
   Calendar as CalendarIcon,
@@ -30,28 +30,28 @@ import {
   Grid,
   List,
   PlayCircle,
-} from "lucide-react"
-import { useMemo, useState } from "react"
-import { FiCalendar } from "react-icons/fi"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { FiCalendar } from "react-icons/fi";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getStudentCalendarAssignments,
   type StudentCalendarFilters,
-} from "@/services/assignmentsApi"
+} from "@/services/assignmentsApi";
 import type {
   AssignmentStatus,
   StudentCalendarAssignmentItem,
-} from "@/types/assignment"
+} from "@/types/assignment";
 
 export const Route = createFileRoute("/_layout/student/calendar")({
   component: () => (
@@ -59,20 +59,20 @@ export const Route = createFileRoute("/_layout/student/calendar")({
       <StudentCalendarPage />
     </ErrorBoundary>
   ),
-})
+});
 
-type ViewMode = "calendar" | "list"
+type ViewMode = "calendar" | "list";
 
 function StudentCalendarPage() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   // State for current month
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState<ViewMode>("calendar")
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>("calendar");
 
   // Calculate date range for current month view
-  const monthStart = startOfMonth(currentDate)
-  const monthEnd = endOfMonth(currentDate)
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
 
   // Build filter params
   const filterParams: StudentCalendarFilters = useMemo(
@@ -81,7 +81,7 @@ function StudentCalendarPage() {
       endDate: format(addMonths(monthEnd, 1), "yyyy-MM-dd"),
     }),
     [monthStart, monthEnd],
-  )
+  );
 
   // Fetch calendar assignments
   const {
@@ -91,52 +91,52 @@ function StudentCalendarPage() {
   } = useQuery({
     queryKey: ["student-calendar-assignments", filterParams],
     queryFn: () => getStudentCalendarAssignments(filterParams),
-  })
+  });
 
   // Navigate to previous/next month
-  const goToPreviousMonth = () => setCurrentDate(subMonths(currentDate, 1))
-  const goToNextMonth = () => setCurrentDate(addMonths(currentDate, 1))
-  const goToToday = () => setCurrentDate(new Date())
+  const goToPreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
+  const goToNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const goToToday = () => setCurrentDate(new Date());
 
   // Generate calendar grid days
   const calendarDays = useMemo(() => {
-    const days: Date[] = []
-    const start = startOfWeek(monthStart, { weekStartsOn: 0 }) // Start on Sunday
+    const days: Date[] = [];
+    const start = startOfWeek(monthStart, { weekStartsOn: 0 }); // Start on Sunday
 
     // Generate 6 weeks (42 days) to ensure full coverage
     for (let i = 0; i < 42; i++) {
-      days.push(new Date(start.getTime() + i * 24 * 60 * 60 * 1000))
+      days.push(new Date(start.getTime() + i * 24 * 60 * 60 * 1000));
     }
 
-    return days
-  }, [monthStart])
+    return days;
+  }, [monthStart]);
 
   // Get assignments for a specific date
   const getAssignmentsForDate = (
     date: Date,
   ): StudentCalendarAssignmentItem[] => {
-    if (!calendarData?.assignments_by_date) return []
-    const dateKey = format(date, "yyyy-MM-dd")
-    return calendarData.assignments_by_date[dateKey] || []
-  }
+    if (!calendarData?.assignments_by_date) return [];
+    const dateKey = format(date, "yyyy-MM-dd");
+    return calendarData.assignments_by_date[dateKey] || [];
+  };
 
   // Get all assignments as flat list
   const allAssignments = useMemo(() => {
-    if (!calendarData?.assignments_by_date) return []
+    if (!calendarData?.assignments_by_date) return [];
     const assignments: (StudentCalendarAssignmentItem & { dateKey: string })[] =
-      []
+      [];
     for (const [dateKey, dateAssignments] of Object.entries(
       calendarData.assignments_by_date,
     )) {
       for (const assignment of dateAssignments) {
-        assignments.push({ ...assignment, dateKey })
+        assignments.push({ ...assignment, dateKey });
       }
     }
     // Sort by date
     return assignments.sort(
       (a, b) => new Date(a.dateKey).getTime() - new Date(b.dateKey).getTime(),
-    )
-  }, [calendarData])
+    );
+  }, [calendarData]);
 
   // Get badge styles for status
   const getStatusBadge = (status: AssignmentStatus) => {
@@ -147,30 +147,30 @@ function StudentCalendarPage() {
             "border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20",
           label: "Completed",
           Icon: CheckCircle,
-        }
+        };
       case "in_progress":
         return {
           className:
             "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
           label: "In Progress",
           Icon: PlayCircle,
-        }
+        };
       default:
         return {
           className:
             "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-neutral-800",
           label: "Not Started",
           Icon: Clock,
-        }
+        };
     }
-  }
+  };
 
   // Render assignment item (used in both calendar cell and list view)
   const renderAssignmentItem = (
     assignment: StudentCalendarAssignmentItem,
     isCompact = false,
   ) => {
-    const statusBadge = getStatusBadge(assignment.status)
+    const statusBadge = getStatusBadge(assignment.status);
 
     if (isCompact) {
       // Compact pill for calendar cell
@@ -194,7 +194,7 @@ function StudentCalendarPage() {
             <AssignmentPopoverContent assignment={assignment} />
           </PopoverContent>
         </Popover>
-      )
+      );
     }
 
     // Full card for list view
@@ -238,8 +238,8 @@ function StudentCalendarPage() {
           </div>
         </CardContent>
       </Card>
-    )
-  }
+    );
+  };
 
   return (
     <PageContainer>
@@ -321,9 +321,9 @@ function StudentCalendarPage() {
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
               {calendarDays.map((day, index) => {
-                const dayAssignments = getAssignmentsForDate(day)
-                const isCurrentMonth = isSameMonth(day, currentDate)
-                const isDayToday = isToday(day)
+                const dayAssignments = getAssignmentsForDate(day);
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isDayToday = isToday(day);
 
                 return (
                   <div
@@ -394,7 +394,7 @@ function StudentCalendarPage() {
                       )}
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </CardContent>
@@ -425,10 +425,10 @@ function StudentCalendarPage() {
                       const dateLabel = format(
                         new Date(assignment.dateKey),
                         "EEEE, MMMM d",
-                      )
-                      if (!acc[dateLabel]) acc[dateLabel] = []
-                      acc[dateLabel].push(assignment)
-                      return acc
+                      );
+                      if (!acc[dateLabel]) acc[dateLabel] = [];
+                      acc[dateLabel].push(assignment);
+                      return acc;
                     },
                     {} as Record<string, StudentCalendarAssignmentItem[]>,
                   ),
@@ -450,17 +450,17 @@ function StudentCalendarPage() {
         </Card>
       )}
     </PageContainer>
-  )
+  );
 }
 
 // Assignment Popover Content Component
 function AssignmentPopoverContent({
   assignment,
 }: {
-  assignment: StudentCalendarAssignmentItem
+  assignment: StudentCalendarAssignmentItem;
 }) {
-  const navigate = useNavigate()
-  const statusBadge = getStatusBadgeHelper(assignment.status)
+  const navigate = useNavigate();
+  const statusBadge = getStatusBadgeHelper(assignment.status);
 
   return (
     <div className="space-y-3">
@@ -509,7 +509,7 @@ function AssignmentPopoverContent({
             : "Start Assignment"}
       </Button>
     </div>
-  )
+  );
 }
 
 // Helper function for status badge (to avoid code duplication)
@@ -521,21 +521,21 @@ function getStatusBadgeHelper(status: AssignmentStatus) {
           "border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20",
         label: "Completed",
         Icon: CheckCircle,
-      }
+      };
     case "in_progress":
       return {
         className:
           "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
         label: "In Progress",
         Icon: PlayCircle,
-      }
+      };
     default:
       return {
         className:
           "border-gray-400 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-neutral-800",
         label: "Not Started",
         Icon: Clock,
-      }
+      };
   }
 }
 
@@ -558,5 +558,5 @@ function CalendarSkeleton() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

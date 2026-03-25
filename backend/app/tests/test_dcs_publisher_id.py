@@ -2,11 +2,11 @@
 Unit tests for dcs_publisher_id field on User model.
 Story 25.1: Backend User Model DCS Publisher Link
 """
-import pytest
+
 from sqlmodel import Session
 
 from app import crud
-from app.models import UserCreate, UserUpdate, UserPublic, UserRole
+from app.models import UserCreate, UserPublic, UserRole, UserUpdate
 
 
 def test_create_user_without_dcs_publisher_id(session: Session) -> None:
@@ -137,7 +137,7 @@ def test_dcs_publisher_id_field_exists_on_user_create_schema() -> None:
     )
 
     # Assert
-    assert hasattr(user_create, 'dcs_publisher_id')
+    assert hasattr(user_create, "dcs_publisher_id")
     assert user_create.dcs_publisher_id == 22222
 
 
@@ -147,7 +147,7 @@ def test_dcs_publisher_id_field_exists_on_user_update_schema() -> None:
     user_update = UserUpdate(dcs_publisher_id=33333)
 
     # Assert
-    assert hasattr(user_update, 'dcs_publisher_id')
+    assert hasattr(user_update, "dcs_publisher_id")
     assert user_update.dcs_publisher_id == 33333
 
 

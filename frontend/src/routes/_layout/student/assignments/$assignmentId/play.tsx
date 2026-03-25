@@ -1,22 +1,22 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { AlertCircle, Loader2 } from "lucide-react"
-import { ActivityPlayer } from "@/components/ActivityPlayers/ActivityPlayer"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import type { ActivityConfig } from "@/lib/mockData"
-import { startAssignment } from "@/services/assignmentsApi"
-import type { ActivityStartResponse } from "@/types/assignment"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { ActivityPlayer } from "@/components/ActivityPlayers/ActivityPlayer";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import type { ActivityConfig } from "@/lib/mockData";
+import { startAssignment } from "@/services/assignmentsApi";
+import type { ActivityStartResponse } from "@/types/assignment";
 
 export const Route = createFileRoute(
   "/_layout/student/assignments/$assignmentId/play",
 )({
   component: ActivityPlayerPage,
-})
+});
 
 function ActivityPlayerPage() {
-  const { assignmentId } = Route.useParams()
-  const navigate = useNavigate()
+  const { assignmentId } = Route.useParams();
+  const navigate = useNavigate();
 
   // Fetch activity data using start endpoint
   // Story 4.8: Always refetch to get latest saved progress
@@ -30,14 +30,14 @@ function ActivityPlayerPage() {
     retry: false,
     staleTime: 0, // Always refetch to get latest progress_json
     gcTime: 0, // Don't cache - we want fresh data every time
-  })
+  });
 
   const handleExit = () => {
     navigate({
       to: "/student/assignments/$assignmentId",
       params: { assignmentId },
-    })
-  }
+    });
+  };
 
   // Loading state
   if (isLoading) {
@@ -48,24 +48,24 @@ function ActivityPlayerPage() {
           <p className="mt-4 text-muted-foreground">Loading activity...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Error states
   if (error) {
-    const errorResponse = (error as any)?.response
-    const status = errorResponse?.status
-    const detail = errorResponse?.data?.detail || "An error occurred"
+    const errorResponse = (error as any)?.response;
+    const status = errorResponse?.status;
+    const detail = errorResponse?.data?.detail || "An error occurred";
 
-    let errorTitle = "Error Loading Activity"
-    let errorMessage = detail
+    let errorTitle = "Error Loading Activity";
+    let errorMessage = detail;
 
     if (status === 404) {
-      errorTitle = "Assignment Not Found"
-      errorMessage = "This assignment doesn't exist or is not assigned to you."
+      errorTitle = "Assignment Not Found";
+      errorMessage = "This assignment doesn't exist or is not assigned to you.";
     } else if (status === 409) {
-      errorTitle = "Assignment Already Completed"
-      errorMessage = "You have already completed this assignment."
+      errorTitle = "Assignment Already Completed";
+      errorMessage = "You have already completed this assignment.";
     }
 
     return (
@@ -83,28 +83,22 @@ function ActivityPlayerPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!activity) {
-    return null
+    return null;
   }
 
   // Parse config_json
-  let activityConfig: ActivityConfig
+  let activityConfig: ActivityConfig;
   try {
     activityConfig =
       typeof activity.config_json === "string"
         ? JSON.parse(activity.config_json)
-        : activity.config_json
-
-    // Story 4.2: Log config for testing
-    console.log("=== ACTIVITY CONFIG ===")
-    console.log("Activity Type:", activity.activity_type)
-    console.log("Config:", JSON.stringify(activityConfig, null, 2))
-    console.log("=======================")
+        : activity.config_json;
   } catch (error) {
-    console.error("Failed to parse activity config:", error)
+    console.error("Failed to parse activity config:", error);
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="w-full max-w-md">
@@ -120,7 +114,7 @@ function ActivityPlayerPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -137,5 +131,5 @@ function ActivityPlayerPage() {
       initialProgress={activity.progress_json}
       initialTimeSpent={activity.time_spent_minutes}
     />
-  )
+  );
 }

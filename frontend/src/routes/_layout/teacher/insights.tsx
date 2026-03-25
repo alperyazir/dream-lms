@@ -5,7 +5,7 @@
  * This route has been removed. Redirecting to dashboard.
  */
 
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_layout/teacher/insights")({
   beforeLoad: () => {
@@ -13,6 +13,6 @@ export const Route = createFileRoute("/_layout/teacher/insights")({
     throw redirect({
       to: "/teacher",
       replace: true,
-    })
+    });
   },
-})
+});

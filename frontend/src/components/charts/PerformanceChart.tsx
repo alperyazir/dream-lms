@@ -1,4 +1,4 @@
-import React from "react"
+import React from "react";
 import {
   CartesianGrid,
   Legend,
@@ -8,19 +8,19 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
+} from "recharts";
 
 export interface PerformanceChartProps {
   data: Array<{
-    date: string
-    score: number
-    activity_type?: string
-  }>
+    date: string;
+    score: number;
+    activity_type?: string;
+  }>;
   filters?: {
-    dateRange?: string
-    classId?: string
-    studentId?: string
-  }
+    dateRange?: string;
+    classId?: string;
+    studentId?: string;
+  };
 }
 
 /**
@@ -43,8 +43,8 @@ export const PerformanceChart = React.memo(
               tick={{ fontSize: 12 }}
               tickFormatter={(value) => {
                 // Format date as MM/DD
-                const date = new Date(value)
-                return `${date.getMonth() + 1}/${date.getDate()}`
+                const date = new Date(value);
+                return `${date.getMonth() + 1}/${date.getDate()}`;
               }}
             />
             <YAxis
@@ -65,8 +65,8 @@ export const PerformanceChart = React.memo(
                 padding: "8px",
               }}
               labelFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString()
+                const date = new Date(value);
+                return date.toLocaleDateString();
               }}
               formatter={(value: number) => [`${value}%`, "Score"]}
             />
@@ -106,8 +106,8 @@ export const PerformanceChart = React.memo(
           </tbody>
         </table>
       </div>
-    )
+    );
   },
-)
+);
 
-PerformanceChart.displayName = "PerformanceChart"
+PerformanceChart.displayName = "PerformanceChart";

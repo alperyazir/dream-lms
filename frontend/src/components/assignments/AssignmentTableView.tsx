@@ -1,9 +1,9 @@
-import { Link } from "@tanstack/react-router"
-import { ClipboardCheck, Eye, Pencil, Trash2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Progress } from "@/components/ui/progress"
+import { Link } from "@tanstack/react-router";
+import { ClipboardCheck, Eye, Pencil, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -11,20 +11,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { AssignmentListItem } from "@/types/assignment"
-import { AssignmentStatusBadge } from "./AssignmentStatusBadge"
+} from "@/components/ui/table";
+import type { AssignmentListItem } from "@/types/assignment";
+import { AssignmentStatusBadge } from "./AssignmentStatusBadge";
 
 interface AssignmentTableViewProps {
-  assignments: AssignmentListItem[]
-  onView: (assignment: AssignmentListItem) => void
-  onEdit?: (assignment: AssignmentListItem) => void
-  onDelete: (assignment: AssignmentListItem) => void
-  sortBy?: string
-  onSort?: (column: string) => void
-  selectedIds?: Set<string>
-  onSelect?: (id: string, checked: boolean) => void
-  onSelectAll?: (checked: boolean) => void
+  assignments: AssignmentListItem[];
+  onView: (assignment: AssignmentListItem) => void;
+  onEdit?: (assignment: AssignmentListItem) => void;
+  onDelete: (assignment: AssignmentListItem) => void;
+  sortBy?: string;
+  onSort?: (column: string) => void;
+  selectedIds?: Set<string>;
+  onSelect?: (id: string, checked: boolean) => void;
+  onSelectAll?: (checked: boolean) => void;
 }
 
 export function AssignmentTableView({
@@ -39,14 +39,14 @@ export function AssignmentTableView({
   onSelectAll,
 }: AssignmentTableViewProps) {
   const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "-"
-    const date = new Date(dateStr)
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })
-  }
+    });
+  };
 
   return (
     <div className="border rounded-md">
@@ -95,7 +95,7 @@ export function AssignmentTableView({
                   ? Math.round(
                       (assignment.completed / assignment.total_students) * 100,
                     )
-                  : 0
+                  : 0;
 
               return (
                 <TableRow
@@ -144,7 +144,11 @@ export function AssignmentTableView({
                         <Link
                           to="/teacher/assignments/$assignmentId"
                           params={{ assignmentId: assignment.id }}
-                          search={{ tab: "students", openGrade: true, gradeStudentId: undefined }}
+                          search={{
+                            tab: "students",
+                            openGrade: true,
+                            gradeStudentId: undefined,
+                          }}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Badge
@@ -187,11 +191,11 @@ export function AssignmentTableView({
                     </div>
                   </TableCell>
                 </TableRow>
-              )
+              );
             })
           )}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

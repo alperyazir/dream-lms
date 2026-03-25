@@ -1,13 +1,13 @@
-import { Calendar, TrendingUp } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Calendar, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
 export interface AssignmentRowProps {
-  name: string
-  className: string
-  dueDate: string
-  completionRate: number
+  name: string;
+  className: string;
+  dueDate: string;
+  completionRate: number;
 }
 
 export function AssignmentRow({
@@ -17,25 +17,25 @@ export function AssignmentRow({
   completionRate,
 }: AssignmentRowProps) {
   const getBadgeVariant = () => {
-    if (completionRate >= 80) return "default"
-    if (completionRate >= 50) return "secondary"
-    return "outline"
-  }
+    if (completionRate >= 80) return "default";
+    if (completionRate >= 50) return "secondary";
+    return "outline";
+  };
 
   const getCompletionColor = () => {
-    if (completionRate >= 80) return "text-green-500"
-    if (completionRate >= 50) return "text-yellow-500"
-    return "text-red-500"
-  }
+    if (completionRate >= 80) return "text-green-500";
+    if (completionRate >= 50) return "text-yellow-500";
+    return "text-red-500";
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })
-  }
+    });
+  };
 
   return (
     <Card className="shadow-neuro-sm border-gray-100 dark:border-gray-800">
@@ -75,5 +75,5 @@ export function AssignmentRow({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

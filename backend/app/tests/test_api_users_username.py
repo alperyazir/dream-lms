@@ -1,6 +1,7 @@
 """
 Integration tests for User API endpoints with username field
 """
+
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -15,7 +16,7 @@ def test_get_users_includes_username_field(
     # Act
     response = client.get(
         f"{settings.API_V1_STR}/users/",
-        headers={"Authorization": f"Bearer {admin_token}"}
+        headers={"Authorization": f"Bearer {admin_token}"},
     )
 
     # Assert
@@ -40,14 +41,14 @@ def test_create_user_with_username_succeeds(
         "username": "newuser123",
         "password": "password123",
         "full_name": "New User",
-        "role": "student"
+        "role": "student",
     }
 
     # Act
     response = client.post(
         f"{settings.API_V1_STR}/users/",
         json=user_data,
-        headers={"Authorization": f"Bearer {admin_token}"}
+        headers={"Authorization": f"Bearer {admin_token}"},
     )
 
     # Assert
@@ -68,14 +69,14 @@ def test_create_user_without_username_fails_validation(
         # Missing username field
         "password": "password123",
         "full_name": "No Username",
-        "role": "student"
+        "role": "student",
     }
 
     # Act
     response = client.post(
         f"{settings.API_V1_STR}/users/",
         json=user_data,
-        headers={"Authorization": f"Bearer {admin_token}"}
+        headers={"Authorization": f"Bearer {admin_token}"},
     )
 
     # Assert
@@ -94,14 +95,14 @@ def test_create_user_with_duplicate_username_fails(
         "username": admin_user.username,  # Duplicate username
         "password": "password123",
         "full_name": "Duplicate Username",
-        "role": "student"
+        "role": "student",
     }
 
     # Act
     response = client.post(
         f"{settings.API_V1_STR}/users/",
         json=user_data,
-        headers={"Authorization": f"Bearer {admin_token}"}
+        headers={"Authorization": f"Bearer {admin_token}"},
     )
 
     # Assert
@@ -110,14 +111,12 @@ def test_create_user_with_duplicate_username_fails(
     assert "Username already taken" in error_data["detail"]
 
 
-def test_email_based_login_still_works(
-    client: TestClient, admin_user: User
-) -> None:
+def test_email_based_login_still_works(client: TestClient, admin_user: User) -> None:
     """Test existing email-based login still works after migration (IV1)."""
     # Act
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": admin_user.email, "password": "adminpassword"}
+        data={"username": admin_user.email, "password": "adminpassword"},
     )
 
     # Assert
@@ -128,7 +127,11 @@ def test_email_based_login_still_works(
 
 
 def test_all_seeded_users_have_valid_usernames(
-    session: Session, admin_user: User, publisher_user: User, teacher_user: User, student_user: User
+    session: Session,
+    admin_user: User,
+    publisher_user: User,
+    teacher_user: User,
+    student_user: User,
 ) -> None:
     """Test all seeded users have valid usernames after init_db (IV2)."""
     # Arrange - users created by fixtures
@@ -150,18 +153,18 @@ def test_all_seeded_users_have_valid_usernames(
 
         # Check username format (alphanumeric, underscore, hyphen only)
         import re
-        assert re.match(r'^[a-zA-Z0-9_-]+$', user.username), \
-            f"User {user.email} has invalid username format: {user.username}"
+
+        assert re.match(
+            r"^[a-zA-Z0-9_-]+$", user.username
+        ), f"User {user.email} has invalid username format: {user.username}"
 
 
-def test_get_user_me_includes_username(
-    client: TestClient, admin_token: str
-) -> None:
+def test_get_user_me_includes_username(client: TestClient, admin_token: str) -> None:
     """Test GET /api/v1/users/me includes username field."""
     # Act
     response = client.get(
         f"{settings.API_V1_STR}/users/me",
-        headers={"Authorization": f"Bearer {admin_token}"}
+        headers={"Authorization": f"Bearer {admin_token}"},
     )
 
     # Assert

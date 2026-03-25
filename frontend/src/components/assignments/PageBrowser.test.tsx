@@ -4,21 +4,21 @@
  * Tests for the page browser component with module tabs
  */
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen, waitFor } from "@testing-library/react"
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import type { BookPagesResponse, PageInfo } from "@/types/book"
-import { getPageKey, PageBrowser } from "./PageBrowser"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { BookPagesResponse, PageInfo } from "@/types/book";
+import { getPageKey, PageBrowser } from "./PageBrowser";
 
 // Mock IntersectionObserver for Node.js test environment
 class MockIntersectionObserver implements IntersectionObserver {
-  observe = vi.fn()
-  unobserve = vi.fn()
-  disconnect = vi.fn()
-  takeRecords = vi.fn(() => [])
-  root = null
-  rootMargin = ""
-  thresholds = [] as readonly number[]
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+  takeRecords = vi.fn(() => []);
+  root = null;
+  rootMargin = "";
+  thresholds = [] as readonly number[];
 
   constructor(callback: IntersectionObserverCallback) {
     setTimeout(() => {
@@ -35,25 +35,25 @@ class MockIntersectionObserver implements IntersectionObserver {
           },
         ],
         this,
-      )
-    }, 0)
+      );
+    }, 0);
   }
 }
 
 beforeAll(() => {
   window.IntersectionObserver =
-    MockIntersectionObserver as unknown as typeof IntersectionObserver
-})
+    MockIntersectionObserver as unknown as typeof IntersectionObserver;
+});
 
 // Mock the booksApi
 vi.mock("@/services/booksApi", () => ({
   booksApi: {
     getBookPages: vi.fn(),
   },
-}))
+}));
 
 // Import the mocked module
-import { booksApi } from "@/services/booksApi"
+import { booksApi } from "@/services/booksApi";
 
 const mockBookPagesResponse: BookPagesResponse = {
   book_id: "book-123",
@@ -72,7 +72,7 @@ const mockBookPagesResponse: BookPagesResponse = {
   ],
   total_pages: 3,
   total_activities: 6,
-}
+};
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -83,14 +83,14 @@ function createTestQueryClient() {
         staleTime: 0,
       },
     },
-  })
+  });
 }
 
 function renderWithClient(ui: React.ReactElement) {
-  const queryClient = createTestQueryClient()
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
-  )
+  );
 }
 
 describe("PageBrowser", () => {
@@ -98,54 +98,54 @@ describe("PageBrowser", () => {
     bookId: "book-123",
     selectedPages: new Map<string, PageInfo>(),
     onTogglePage: vi.fn(),
-  }
+  };
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(booksApi.getBookPages).mockResolvedValue(mockBookPagesResponse)
-  })
+    vi.clearAllMocks();
+    vi.mocked(booksApi.getBookPages).mockResolvedValue(mockBookPagesResponse);
+  });
 
   it("shows loading skeletons while fetching", () => {
     vi.mocked(booksApi.getBookPages).mockImplementation(
       () => new Promise(() => {}), // Never resolves
-    )
+    );
 
-    const { container } = renderWithClient(<PageBrowser {...defaultProps} />)
+    const { container } = renderWithClient(<PageBrowser {...defaultProps} />);
 
     // Check for skeleton elements
-    const skeletons = container.querySelectorAll(".animate-pulse")
-    expect(skeletons.length).toBeGreaterThan(0)
-  })
+    const skeletons = container.querySelectorAll(".animate-pulse");
+    expect(skeletons.length).toBeGreaterThan(0);
+  });
 
   it("renders module tabs when data loads", async () => {
-    renderWithClient(<PageBrowser {...defaultProps} />)
+    renderWithClient(<PageBrowser {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Module 1")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Module 1")).toBeInTheDocument();
+    });
 
-    expect(screen.getByText("Module 2")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Module 2")).toBeInTheDocument();
+  });
 
   it("shows page count in module tabs", async () => {
-    renderWithClient(<PageBrowser {...defaultProps} />)
+    renderWithClient(<PageBrowser {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("(2)")).toBeInTheDocument() // Module 1 has 2 pages
-    })
+      expect(screen.getByText("(2)")).toBeInTheDocument(); // Module 1 has 2 pages
+    });
 
-    expect(screen.getByText("(1)")).toBeInTheDocument() // Module 2 has 1 page
-  })
+    expect(screen.getByText("(1)")).toBeInTheDocument(); // Module 2 has 1 page
+  });
 
   it("renders page thumbnails for active module", async () => {
-    renderWithClient(<PageBrowser {...defaultProps} />)
+    renderWithClient(<PageBrowser {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Page 1")).toBeInTheDocument()
-    })
+      expect(screen.getByText("Page 1")).toBeInTheDocument();
+    });
 
-    expect(screen.getByText("Page 2")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Page 2")).toBeInTheDocument();
+  });
 
   it("shows empty state when no pages found", async () => {
     vi.mocked(booksApi.getBookPages).mockResolvedValue({
@@ -153,34 +153,34 @@ describe("PageBrowser", () => {
       modules: [],
       total_pages: 0,
       total_activities: 0,
-    })
+    });
 
-    renderWithClient(<PageBrowser {...defaultProps} />)
+    renderWithClient(<PageBrowser {...defaultProps} />);
 
     await waitFor(() => {
       expect(
         screen.getByText(/no pages with activities found/i),
-      ).toBeInTheDocument()
-    })
-  })
+      ).toBeInTheDocument();
+    });
+  });
 
   it("shows error state when API fails", async () => {
-    vi.mocked(booksApi.getBookPages).mockRejectedValue(new Error("API Error"))
+    vi.mocked(booksApi.getBookPages).mockRejectedValue(new Error("API Error"));
 
-    renderWithClient(<PageBrowser {...defaultProps} />)
+    renderWithClient(<PageBrowser {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText(/failed to load pages/i)).toBeInTheDocument()
-    })
-  })
-})
+      expect(screen.getByText(/failed to load pages/i)).toBeInTheDocument();
+    });
+  });
+});
 
 describe("getPageKey", () => {
   it("generates correct key format", () => {
-    expect(getPageKey("Module 1", 5)).toBe("Module 1:5")
-  })
+    expect(getPageKey("Module 1", 5)).toBe("Module 1:5");
+  });
 
   it("handles special characters in module name", () => {
-    expect(getPageKey("Module: Test", 10)).toBe("Module: Test:10")
-  })
-})
+    expect(getPageKey("Module: Test", 10)).toBe("Module: Test:10");
+  });
+});

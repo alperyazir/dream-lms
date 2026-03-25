@@ -1,14 +1,14 @@
-import { MessageSquare, Star } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { MessageSquare, Star } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface FeedbackItemProps {
-  assignmentName: string
-  teacherName: string
-  comment: string
-  score: number
-  date: string
+  assignmentName: string;
+  teacherName: string;
+  comment: string;
+  score: number;
+  date: string;
 }
 
 export function FeedbackItem({
@@ -19,28 +19,28 @@ export function FeedbackItem({
   date,
 }: FeedbackItemProps) {
   const getScoreColor = () => {
-    if (score >= 90) return "bg-green-500"
-    if (score >= 80) return "bg-teal-500"
-    if (score >= 70) return "bg-yellow-500"
-    return "bg-red-500"
-  }
+    if (score >= 90) return "bg-green-500";
+    if (score >= 80) return "bg-teal-500";
+    if (score >= 70) return "bg-yellow-500";
+    return "bg-red-500";
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })
-  }
+    });
+  };
 
   const getInitials = (name: string) => {
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
-      .toUpperCase()
-  }
+      .toUpperCase();
+  };
 
   return (
     <Card className="shadow-neuro-sm border-teal-100 dark:border-teal-900">
@@ -76,5 +76,5 @@ export function FeedbackItem({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

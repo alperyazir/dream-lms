@@ -7,18 +7,18 @@
  * - Selection state (checkmark overlay)
  */
 
-import { Check } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { booksApi } from "@/services/booksApi"
+import { Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { booksApi } from "@/services/booksApi";
 
 interface PageThumbnailProps {
-  thumbnailUrl: string
-  pageNumber: number
-  activityCount: number
-  isSelected: boolean
-  onClick: () => void
+  thumbnailUrl: string;
+  pageNumber: number;
+  activityCount: number;
+  isSelected: boolean;
+  onClick: () => void;
 }
 
 export function PageThumbnail({
@@ -28,73 +28,73 @@ export function PageThumbnail({
   isSelected,
   onClick,
 }: PageThumbnailProps) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [hasError, setHasError] = useState(false)
-  const [isVisible, setIsVisible] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Lazy loading with IntersectionObserver
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setIsVisible(true)
-          observer.disconnect()
+          setIsVisible(true);
+          observer.disconnect();
         }
       },
       { threshold: 0.1 },
-    )
+    );
 
     if (containerRef.current) {
-      observer.observe(containerRef.current)
+      observer.observe(containerRef.current);
     }
 
-    return () => observer.disconnect()
-  }, [])
+    return () => observer.disconnect();
+  }, []);
 
   // Fetch authenticated image URL when visible
   useEffect(() => {
-    if (!isVisible || !thumbnailUrl) return
+    if (!isVisible || !thumbnailUrl) return;
 
-    let isMounted = true
+    let isMounted = true;
 
     const loadImage = async () => {
       try {
-        setIsLoading(true)
-        const blobUrl = await booksApi.getPageThumbnailUrl(thumbnailUrl)
+        setIsLoading(true);
+        const blobUrl = await booksApi.getPageThumbnailUrl(thumbnailUrl);
         if (isMounted) {
-          setImageUrl(blobUrl)
-          setIsLoading(false)
+          setImageUrl(blobUrl);
+          setIsLoading(false);
         }
       } catch (error) {
         if (isMounted) {
-          console.error("Failed to load page thumbnail:", error)
-          setHasError(true)
-          setIsLoading(false)
+          console.error("Failed to load page thumbnail:", error);
+          setHasError(true);
+          setIsLoading(false);
         }
       }
-    }
+    };
 
-    loadImage()
+    loadImage();
 
     return () => {
-      isMounted = false
+      isMounted = false;
       // Clean up blob URL
       if (imageUrl) {
-        URL.revokeObjectURL(imageUrl)
+        URL.revokeObjectURL(imageUrl);
       }
-    }
-  }, [isVisible, thumbnailUrl, imageUrl])
+    };
+  }, [isVisible, thumbnailUrl, imageUrl]);
 
   // Clean up blob URL on unmount
   useEffect(() => {
     return () => {
       if (imageUrl) {
-        URL.revokeObjectURL(imageUrl)
+        URL.revokeObjectURL(imageUrl);
       }
-    }
-  }, [imageUrl])
+    };
+  }, [imageUrl]);
 
   return (
     <div
@@ -151,5 +151,5 @@ export function PageThumbnail({
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -10,21 +10,21 @@ export const READING_QUESTION_TYPES = [
   "mcq",
   "true_false",
   "short_answer",
-] as const
-export type ReadingQuestionType = (typeof READING_QUESTION_TYPES)[number]
+] as const;
+export type ReadingQuestionType = (typeof READING_QUESTION_TYPES)[number];
 
 /**
  * Valid difficulty levels
  */
-export const READING_DIFFICULTIES = ["auto", "easy", "medium", "hard"] as const
-export type ReadingDifficulty = (typeof READING_DIFFICULTIES)[number]
+export const READING_DIFFICULTIES = ["auto", "easy", "medium", "hard"] as const;
+export type ReadingDifficulty = (typeof READING_DIFFICULTIES)[number];
 
 /**
  * Question count constraints
  */
-export const READING_MIN_QUESTIONS = 1
-export const READING_MAX_QUESTIONS = 10
-export const READING_DEFAULT_QUESTIONS = 5
+export const READING_MIN_QUESTIONS = 1;
+export const READING_MAX_QUESTIONS = 10;
+export const READING_DEFAULT_QUESTIONS = 5;
 
 /**
  * Request payload for generating a reading comprehension activity.
@@ -32,140 +32,140 @@ export const READING_DEFAULT_QUESTIONS = 5
  * then generate comprehension questions about that passage.
  */
 export interface ReadingComprehensionRequest {
-  book_id: number
-  module_id: number
-  module_ids?: number[]
-  question_count?: number
-  question_types?: ReadingQuestionType[]
-  difficulty?: ReadingDifficulty
+  book_id: number;
+  module_id: number;
+  module_ids?: number[];
+  question_count?: number;
+  question_types?: ReadingQuestionType[];
+  difficulty?: ReadingDifficulty;
 }
 
 /**
  * A single comprehension question with correct answer (teacher view)
  */
 export interface ReadingComprehensionQuestion {
-  question_id: string
-  question_type: ReadingQuestionType
-  question_text: string
-  options: string[] | null
-  correct_answer: string
-  correct_index: number | null
-  explanation: string
-  passage_reference: string
+  question_id: string;
+  question_type: ReadingQuestionType;
+  question_text: string;
+  options: string[] | null;
+  correct_answer: string;
+  correct_index: number | null;
+  explanation: string;
+  passage_reference: string;
 }
 
 /**
  * A single comprehension question without correct answer (student view)
  */
 export interface ReadingComprehensionQuestionPublic {
-  question_id: string
-  question_type: ReadingQuestionType
-  question_text: string
-  options: string[] | null
+  question_id: string;
+  question_type: ReadingQuestionType;
+  question_text: string;
+  options: string[] | null;
 }
 
 /**
  * Word-level timestamp for audio synchronization
  */
 export interface WordTimestamp {
-  word: string
-  start: number
-  end: number
+  word: string;
+  start: number;
+  end: number;
 }
 
 /**
  * Audio data for a passage narration with word highlighting
  */
 export interface PassageAudioData {
-  audio_base64: string
-  word_timestamps: WordTimestamp[]
-  duration_seconds: number
+  audio_base64: string;
+  word_timestamps: WordTimestamp[];
+  duration_seconds: number;
 }
 
 /**
  * Full reading comprehension activity with correct answers (teacher view)
  */
 export interface ReadingComprehensionActivity {
-  activity_id: string
-  book_id: number
-  module_id: number
-  module_title: string
-  passage: string
-  passage_pages: number[]
-  questions: ReadingComprehensionQuestion[]
-  difficulty: string
-  language: string
-  created_at: string
-  passage_audio?: PassageAudioData | null
+  activity_id: string;
+  book_id: number;
+  module_id: number;
+  module_title: string;
+  passage: string;
+  passage_pages: number[];
+  questions: ReadingComprehensionQuestion[];
+  difficulty: string;
+  language: string;
+  created_at: string;
+  passage_audio?: PassageAudioData | null;
 }
 
 /**
  * Public reading comprehension activity without correct answers (student view)
  */
 export interface ReadingComprehensionActivityPublic {
-  activity_id: string
-  book_id: number
-  module_id: number
-  module_title: string
-  passage: string
-  passage_pages: number[]
-  questions: ReadingComprehensionQuestionPublic[]
-  difficulty: string
-  language: string
-  created_at: string
-  question_count: number
-  passage_audio?: PassageAudioData | null
+  activity_id: string;
+  book_id: number;
+  module_id: number;
+  module_title: string;
+  passage: string;
+  passage_pages: number[];
+  questions: ReadingComprehensionQuestionPublic[];
+  difficulty: string;
+  language: string;
+  created_at: string;
+  question_count: number;
+  passage_audio?: PassageAudioData | null;
 }
 
 /**
  * A single answer in a submission
  */
 export interface ReadingComprehensionAnswer {
-  question_id: string
-  answer_index?: number | null
-  answer_text?: string | null
+  question_id: string;
+  answer_index?: number | null;
+  answer_text?: string | null;
 }
 
 /**
  * Request payload for submitting reading comprehension answers
  */
 export interface ReadingComprehensionSubmission {
-  answers: ReadingComprehensionAnswer[]
+  answers: ReadingComprehensionAnswer[];
 }
 
 /**
  * Result for a single question after submission
  */
 export interface ReadingComprehensionQuestionResult {
-  question_id: string
-  question_type: ReadingQuestionType
-  question_text: string
-  options: string[] | null
-  correct_answer: string
-  correct_index: number | null
-  student_answer_index: number | null
-  student_answer_text: string | null
-  is_correct: boolean
-  similarity_score: number | null
-  explanation: string
-  passage_reference: string
+  question_id: string;
+  question_type: ReadingQuestionType;
+  question_text: string;
+  options: string[] | null;
+  correct_answer: string;
+  correct_index: number | null;
+  student_answer_index: number | null;
+  student_answer_text: string | null;
+  is_correct: boolean;
+  similarity_score: number | null;
+  explanation: string;
+  passage_reference: string;
 }
 
 /**
  * Overall activity result after submission
  */
 export interface ReadingComprehensionResult {
-  activity_id: string
-  student_id: string
-  score: number
-  total: number
-  percentage: number
-  question_results: ReadingComprehensionQuestionResult[]
-  score_by_type: Record<string, { correct: number; total: number }>
-  submitted_at: string
-  difficulty: string
-  passage: string
-  module_title: string
+  activity_id: string;
+  student_id: string;
+  score: number;
+  total: number;
+  percentage: number;
+  question_results: ReadingComprehensionQuestionResult[];
+  score_by_type: Record<string, { correct: number; total: number }>;
+  submitted_at: string;
+  difficulty: string;
+  passage: string;
+  module_title: string;
 }
 
 /**
@@ -177,7 +177,7 @@ export type ReadingComprehensionState =
   | "in_progress"
   | "submitting"
   | "completed"
-  | "error"
+  | "error";
 
 /**
  * Reading comprehension container state
@@ -186,7 +186,7 @@ export type ReadingComprehensionContainerState =
   | "form"
   | "generating"
   | "playing"
-  | "results"
+  | "results";
 
 /**
  * Type guard to check if activity has correct answers (full activity)
@@ -196,7 +196,7 @@ export function isFullActivity(
 ): activity is ReadingComprehensionActivity {
   return (
     activity.questions.length > 0 && "correct_answer" in activity.questions[0]
-  )
+  );
 }
 
 /**
@@ -208,7 +208,7 @@ export function isPublicActivity(
   return (
     activity.questions.length > 0 &&
     !("correct_answer" in activity.questions[0])
-  )
+  );
 }
 
 /**
@@ -219,8 +219,8 @@ export function getQuestionTypeLabel(type: ReadingQuestionType): string {
     mcq: "Multiple Choice",
     true_false: "True/False",
     short_answer: "Short Answer",
-  }
-  return labels[type] || type
+  };
+  return labels[type] || type;
 }
 
 /**
@@ -231,8 +231,8 @@ export function getQuestionTypeAbbrev(type: ReadingQuestionType): string {
     mcq: "MCQ",
     true_false: "T/F",
     short_answer: "SA",
-  }
-  return abbrevs[type] || type
+  };
+  return abbrevs[type] || type;
 }
 
 /**
@@ -246,8 +246,8 @@ export function getDifficultyLabel(
     easy: "Easy",
     medium: "Medium",
     hard: "Hard",
-  }
-  return labels[difficulty] || difficulty
+  };
+  return labels[difficulty] || difficulty;
 }
 
 /**
@@ -256,12 +256,12 @@ export function getDifficultyLabel(
 export function getDifficultyColor(difficulty: string): string {
   switch (difficulty.toLowerCase()) {
     case "easy":
-      return "text-green-600"
+      return "text-green-600";
     case "medium":
-      return "text-yellow-600"
+      return "text-yellow-600";
     case "hard":
-      return "text-red-600"
+      return "text-red-600";
     default:
-      return "text-gray-600"
+      return "text-gray-600";
   }
 }

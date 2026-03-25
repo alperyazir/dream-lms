@@ -1,15 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { ChevronLeft, ChevronRight, Eye, Trash2, X } from "lucide-react"
-import { useState } from "react"
-import { FiClipboard } from "react-icons/fi"
-import { AdminService } from "@/client"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight, Eye, Trash2, X } from "lucide-react";
+import { useState } from "react";
+import { FiClipboard } from "react-icons/fi";
+import { AdminService } from "@/client";
 import type {
   AssignmentListResponse,
   AssignmentWithTeacher,
-} from "@/client/types.gen"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
+} from "@/client/types.gen";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,19 +19,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -39,8 +39,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { toast } from "@/hooks/use-toast"
+} from "@/components/ui/table";
+import { toast } from "@/hooks/use-toast";
 
 export const Route = createFileRoute("/_layout/admin/assignments")({
   component: () => (
@@ -48,37 +48,37 @@ export const Route = createFileRoute("/_layout/admin/assignments")({
       <AdminAssignmentsPage />
     </ErrorBoundary>
   ),
-})
+});
 
 interface AssignmentFilters {
-  teacher_id?: string
-  status?: string
-  search?: string
+  teacher_id?: string;
+  status?: string;
+  search?: string;
 }
 
 function AdminAssignmentsPage() {
-  const queryClient = useQueryClient()
-  const [filters, setFilters] = useState<AssignmentFilters>({})
-  const [skip, setSkip] = useState(0)
-  const limit = 50
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState<AssignmentFilters>({});
+  const [skip, setSkip] = useState(0);
+  const limit = 50;
 
   // Selection + bulk delete state
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
 
   // Delete assignment state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] =
-    useState<AssignmentWithTeacher | null>(null)
+    useState<AssignmentWithTeacher | null>(null);
 
   // Fetch teachers for filter dropdown (Story 20.1: AC 6)
   const { data: teachersData } = useQuery({
     queryKey: ["admin-teachers"],
     queryFn: async () => {
-      const response = await AdminService.listTeachers({ limit: 1000 })
-      return response
+      const response = await AdminService.listTeachers({ limit: 1000 });
+      return response;
     },
-  })
+  });
 
   // Fetch assignments
   const { data, isLoading } = useQuery<AssignmentListResponse>({
@@ -90,32 +90,32 @@ function AdminAssignmentsPage() {
         teacherId: filters.teacher_id,
         status: filters.status,
         search: filters.search,
-      })
-      return response as AssignmentListResponse
+      });
+      return response as AssignmentListResponse;
     },
-  })
+  });
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (assignmentId: string) =>
       AdminService.deleteAssignment({ assignmentId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-assignments"] });
       toast({
         title: "Success",
         description: "Assignment deleted successfully",
-      })
-      setDeleteDialogOpen(false)
-      setAssignmentToDelete(null)
+      });
+      setDeleteDialogOpen(false);
+      setAssignmentToDelete(null);
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to delete assignment",
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
@@ -124,85 +124,85 @@ function AdminAssignmentsPage() {
         ids.map((id) => AdminService.deleteAssignment({ assignmentId: id })),
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-assignments"] })
-      const count = selectedIds.size
-      setSelectedIds(new Set())
-      setIsBulkDeleteDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["admin-assignments"] });
+      const count = selectedIds.size;
+      setSelectedIds(new Set());
+      setIsBulkDeleteDialogOpen(false);
       toast({
         title: "Success",
         description: `Successfully deleted ${count} assignment(s)`,
-      })
+      });
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to delete some assignments",
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked && data) {
-      setSelectedIds(new Set(data.items.map((a) => a.id)))
+      setSelectedIds(new Set(data.items.map((a) => a.id)));
     } else {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     }
-  }
+  };
 
   const handleSelect = (id: string, checked: boolean) => {
-    const newSelected = new Set(selectedIds)
+    const newSelected = new Set(selectedIds);
     if (checked) {
-      newSelected.add(id)
+      newSelected.add(id);
     } else {
-      newSelected.delete(id)
+      newSelected.delete(id);
     }
-    setSelectedIds(newSelected)
-  }
+    setSelectedIds(newSelected);
+  };
 
   const handleBulkDelete = () => {
     if (selectedIds.size > 0) {
-      setIsBulkDeleteDialogOpen(true)
+      setIsBulkDeleteDialogOpen(true);
     }
-  }
+  };
 
   const confirmBulkDelete = () => {
-    bulkDeleteMutation.mutate(Array.from(selectedIds))
-  }
+    bulkDeleteMutation.mutate(Array.from(selectedIds));
+  };
 
   const handleDelete = (assignment: AssignmentWithTeacher) => {
-    setAssignmentToDelete(assignment)
-    setDeleteDialogOpen(true)
-  }
+    setAssignmentToDelete(assignment);
+    setDeleteDialogOpen(true);
+  };
 
   const confirmDelete = () => {
     if (assignmentToDelete) {
-      deleteMutation.mutate(assignmentToDelete.id)
+      deleteMutation.mutate(assignmentToDelete.id);
     }
-  }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { label: string; className: string }> = {
       published: { label: "Active", className: "bg-green-500" },
       draft: { label: "Draft", className: "bg-gray-500" },
       scheduled: { label: "Scheduled", className: "bg-blue-500" },
-    }
+    };
     const config = variants[status] || {
       label: status,
       className: "bg-gray-500",
-    }
-    return <Badge className={config.className}>{config.label}</Badge>
-  }
+    };
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
 
   const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "No due date"
+    if (!dateStr) return "No due date";
     return new Date(dateStr).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })
-  }
+    });
+  };
 
   return (
     <PageContainer>
@@ -401,8 +401,8 @@ function AdminAssignmentsPage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setSkip(Math.max(0, skip - limit))
-                setSelectedIds(new Set())
+                setSkip(Math.max(0, skip - limit));
+                setSelectedIds(new Set());
               }}
               disabled={skip === 0}
             >
@@ -417,8 +417,8 @@ function AdminAssignmentsPage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setSkip(skip + limit)
-                setSelectedIds(new Set())
+                setSkip(skip + limit);
+                setSelectedIds(new Set());
               }}
               disabled={skip + limit >= data.total}
             >
@@ -491,5 +491,5 @@ function AdminAssignmentsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </PageContainer>
-  )
+  );
 }

@@ -17,7 +17,9 @@ router = APIRouter()
 
 
 @router.get("/quick-login-users")
-def get_quick_login_users(db: Session = Depends(get_db)) -> dict[str, list[dict[str, str | None]]]:
+def get_quick_login_users(
+    db: Session = Depends(get_db),
+) -> dict[str, list[dict[str, str | None]]]:
     """
     Get users for quick test login (development only).
 
@@ -35,11 +37,7 @@ def get_quick_login_users(db: Session = Depends(get_db)) -> dict[str, list[dict[
 
     result: dict[str, list[dict[str, str | None]]] = {}
     for role in UserRole:
-        users = db.exec(
-            select(User)
-            .where(User.role == role)
-            .limit(5)
-        ).all()
+        users = db.exec(select(User).where(User.role == role).limit(5)).all()
 
         result[role.value] = [
             {
@@ -66,9 +64,7 @@ def reset_quick_login_passwords(db: Session = Depends(get_db)) -> dict[str, str 
         raise HTTPException(status_code=404, detail="Not found")
 
     # Get all non-admin users
-    users = db.exec(
-        select(User).where(User.role != UserRole.admin)
-    ).all()
+    users = db.exec(select(User).where(User.role != UserRole.admin)).all()
 
     count = 0
     for user in users:
@@ -165,5 +161,9 @@ async def instant_login(
         "token_type": "bearer",
     }
     # Cache for slightly less than token expiry
-    await cache_set(cache_key, token_response, ttl=min(int(access_token_expires.total_seconds()) - 60, 3600))
+    await cache_set(
+        cache_key,
+        token_response,
+        ttl=min(int(access_token_expires.total_seconds()) - 60, 3600),
+    )
     return token_response

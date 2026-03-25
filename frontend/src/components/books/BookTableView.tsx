@@ -1,7 +1,7 @@
-import { BookOpen, Download, ExternalLink, Eye } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { BookOpen, Download, ExternalLink, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -9,55 +9,55 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { getAuthenticatedCoverUrl } from "@/services/booksApi"
-import type { Book } from "@/types/book"
+} from "@/components/ui/tooltip";
+import { getAuthenticatedCoverUrl } from "@/services/booksApi";
+import type { Book } from "@/types/book";
 
 interface BookTableViewProps {
-  books: Book[]
-  onViewDetails?: (book: Book) => void
-  onAssign?: (book: Book) => void
-  onOpenFlowbook?: (book: Book) => void
-  onDownload?: (book: Book) => void
-  showAssignButton?: boolean
-  showViewDetails?: boolean
+  books: Book[];
+  onViewDetails?: (book: Book) => void;
+  onAssign?: (book: Book) => void;
+  onOpenFlowbook?: (book: Book) => void;
+  onDownload?: (book: Book) => void;
+  showAssignButton?: boolean;
+  showViewDetails?: boolean;
 }
 
 function BookCoverThumbnail({ book }: { book: Book }) {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null)
-  const [imageError, setImageError] = useState(false)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
-    setImageError(false)
+    setImageError(false);
 
     async function fetchCover() {
-      if (!book.cover_image_url) return
+      if (!book.cover_image_url) return;
 
-      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url
-        setCoverUrl(url)
+        blobUrl = url;
+        setCoverUrl(url);
       }
     }
 
-    fetchCover()
+    fetchCover();
 
     return () => {
-      isMounted = false
+      isMounted = false;
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [book.cover_image_url])
+    };
+  }, [book.cover_image_url]);
 
   if (coverUrl && !imageError) {
     return (
@@ -67,14 +67,14 @@ function BookCoverThumbnail({ book }: { book: Book }) {
         className="w-12 h-16 object-cover rounded"
         onError={() => setImageError(true)}
       />
-    )
+    );
   }
 
   return (
     <div className="w-12 h-16 bg-muted rounded flex items-center justify-center">
       <BookOpen className="h-6 w-6 text-muted-foreground" />
     </div>
-  )
+  );
 }
 
 export function BookTableView({
@@ -136,8 +136,8 @@ export function BookTableView({
                             variant="ghost"
                             size="icon"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              onOpenFlowbook(book)
+                              e.stopPropagation();
+                              onOpenFlowbook(book);
                             }}
                           >
                             <ExternalLink className="h-4 w-4" />
@@ -153,8 +153,8 @@ export function BookTableView({
                             variant="ghost"
                             size="icon"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              onDownload(book)
+                              e.stopPropagation();
+                              onDownload(book);
                             }}
                           >
                             <Download className="h-4 w-4" />
@@ -170,8 +170,8 @@ export function BookTableView({
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              onViewDetails(book)
+                              e.stopPropagation();
+                              onViewDetails(book);
                             }}
                           >
                             <Eye className="h-4 w-4 mr-1" />
@@ -186,8 +186,8 @@ export function BookTableView({
                         variant="outline"
                         size="sm"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          onAssign(book)
+                          e.stopPropagation();
+                          onAssign(book);
                         }}
                       >
                         Assign
@@ -201,5 +201,5 @@ export function BookTableView({
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

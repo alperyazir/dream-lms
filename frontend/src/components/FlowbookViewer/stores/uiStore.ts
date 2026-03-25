@@ -1,36 +1,36 @@
-import { create } from "zustand"
-import type { SidebarPanel, ViewMode } from "@/types/flowbook"
+import { create } from "zustand";
+import type { SidebarPanel, ViewMode } from "@/types/flowbook";
 
-const ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3]
-const MIN_ZOOM = 1
-const MAX_ZOOM = ZOOM_LEVELS[ZOOM_LEVELS.length - 1]
+const ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3];
+const MIN_ZOOM = 1;
+const MAX_ZOOM = ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
 
 interface FlowbookUIState {
-  viewMode: ViewMode
-  zoomLevel: number
-  panX: number
-  panY: number
-  isPanning: boolean
-  activeActivityId: string | null
-  isThumbnailStripOpen: boolean
-  sidebarPanel: SidebarPanel
+  viewMode: ViewMode;
+  zoomLevel: number;
+  panX: number;
+  panY: number;
+  isPanning: boolean;
+  activeActivityId: string | null;
+  isThumbnailStripOpen: boolean;
+  sidebarPanel: SidebarPanel;
 
-  setViewMode: (mode: ViewMode) => void
-  setZoomLevel: (level: number) => void
-  zoomIn: () => void
-  zoomOut: () => void
-  resetZoom: () => void
-  setPan: (x: number, y: number) => void
-  resetPan: () => void
-  setIsPanning: (isPanning: boolean) => void
-  resetView: () => void
-  setActiveActivityId: (id: string | null) => void
-  openActivity: (id: string) => void
-  closeActivity: () => void
-  toggleThumbnailStrip: () => void
-  setThumbnailStripOpen: (open: boolean) => void
-  setSidebarPanel: (panel: SidebarPanel) => void
-  reset: () => void
+  setViewMode: (mode: ViewMode) => void;
+  setZoomLevel: (level: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetZoom: () => void;
+  setPan: (x: number, y: number) => void;
+  resetPan: () => void;
+  setIsPanning: (isPanning: boolean) => void;
+  resetView: () => void;
+  setActiveActivityId: (id: string | null) => void;
+  openActivity: (id: string) => void;
+  closeActivity: () => void;
+  toggleThumbnailStrip: () => void;
+  setThumbnailStripOpen: (open: boolean) => void;
+  setSidebarPanel: (panel: SidebarPanel) => void;
+  reset: () => void;
 }
 
 const initialState = {
@@ -42,7 +42,7 @@ const initialState = {
   activeActivityId: null,
   isThumbnailStripOpen: false,
   sidebarPanel: "none" as SidebarPanel,
-}
+};
 
 export const useFlowbookUIStore = create<FlowbookUIState>()((set, get) => ({
   ...initialState,
@@ -50,36 +50,36 @@ export const useFlowbookUIStore = create<FlowbookUIState>()((set, get) => ({
   setViewMode: (viewMode) => set({ viewMode }),
 
   setZoomLevel: (zoomLevel) => {
-    const clampedZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel))
+    const clampedZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel));
     if (clampedZoom <= 1) {
-      set({ zoomLevel: clampedZoom, panX: 0, panY: 0 })
+      set({ zoomLevel: clampedZoom, panX: 0, panY: 0 });
     } else {
-      set({ zoomLevel: clampedZoom })
+      set({ zoomLevel: clampedZoom });
     }
   },
 
   zoomIn: () => {
-    const { zoomLevel } = get()
-    const currentIndex = ZOOM_LEVELS.findIndex((z) => z >= zoomLevel)
+    const { zoomLevel } = get();
+    const currentIndex = ZOOM_LEVELS.findIndex((z) => z >= zoomLevel);
     if (currentIndex < ZOOM_LEVELS.length - 1) {
-      set({ zoomLevel: ZOOM_LEVELS[currentIndex + 1] })
+      set({ zoomLevel: ZOOM_LEVELS[currentIndex + 1] });
     } else if (currentIndex === -1) {
-      set({ zoomLevel: ZOOM_LEVELS[ZOOM_LEVELS.length - 1] })
+      set({ zoomLevel: ZOOM_LEVELS[ZOOM_LEVELS.length - 1] });
     }
   },
 
   zoomOut: () => {
-    const { zoomLevel } = get()
-    const currentIndex = ZOOM_LEVELS.findIndex((z) => z >= zoomLevel)
+    const { zoomLevel } = get();
+    const currentIndex = ZOOM_LEVELS.findIndex((z) => z >= zoomLevel);
     if (currentIndex > 0) {
-      const newZoom = ZOOM_LEVELS[currentIndex - 1]
+      const newZoom = ZOOM_LEVELS[currentIndex - 1];
       if (newZoom <= 1) {
-        set({ zoomLevel: newZoom, panX: 0, panY: 0 })
+        set({ zoomLevel: newZoom, panX: 0, panY: 0 });
       } else {
-        set({ zoomLevel: newZoom })
+        set({ zoomLevel: newZoom });
       }
     } else if (currentIndex === 0) {
-      set({ zoomLevel: ZOOM_LEVELS[0], panX: 0, panY: 0 })
+      set({ zoomLevel: ZOOM_LEVELS[0], panX: 0, panY: 0 });
     }
   },
 
@@ -108,6 +108,6 @@ export const useFlowbookUIStore = create<FlowbookUIState>()((set, get) => ({
   setSidebarPanel: (sidebarPanel) => set({ sidebarPanel }),
 
   reset: () => set(initialState),
-}))
+}));
 
-export { ZOOM_LEVELS, MIN_ZOOM, MAX_ZOOM }
+export { ZOOM_LEVELS, MIN_ZOOM, MAX_ZOOM };

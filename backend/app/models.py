@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
 class UserRole(str, Enum):
     """User role enumeration for RBAC"""
+
     admin = "admin"
     supervisor = "supervisor"
     publisher = "publisher"
@@ -40,6 +41,7 @@ class UserRole(str, Enum):
 
 class AvatarType(str, Enum):
     """Avatar type enumeration"""
+
     custom = "custom"  # User uploaded custom image
     predefined = "predefined"  # User selected from predefined avatars
 
@@ -59,20 +61,17 @@ def validate_username_format(username: str | None) -> str | None:
     """
     if username is None:
         return username
-    if not re.match(r'^[a-zA-Z0-9_.\-]+$', username):
-        raise ValueError('Username must contain only letters, numbers, underscores, hyphens, and dots')
+    if not re.match(r"^[a-zA-Z0-9_.\-]+$", username):
+        raise ValueError(
+            "Username must contain only letters, numbers, underscores, hyphens, and dots"
+        )
     return username
 
 
 # Shared properties
 class UserBase(SQLModel):
     email: str | None = Field(default=None, unique=True, index=True, max_length=255)
-    username: str = Field(
-        unique=True,
-        index=True,
-        min_length=3,
-        max_length=50
-    )
+    username: str = Field(unique=True, index=True, min_length=3, max_length=50)
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
@@ -80,10 +79,10 @@ class UserBase(SQLModel):
     dcs_publisher_id: int | None = Field(
         default=None,
         index=True,
-        description="DCS Publisher ID - only set for publisher role users"
+        description="DCS Publisher ID - only set for publisher role users",
     )
 
-    @field_validator('username')
+    @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
         """Validate username format."""
@@ -103,7 +102,7 @@ class UserUpdate(UserBase):
     password: str | None = Field(default=None, min_length=1, max_length=40)
     dcs_publisher_id: int | None = Field(default=None)  # type: ignore
 
-    @field_validator('username')
+    @field_validator("username")
     @classmethod
     def validate_username(cls, v: str | None) -> str | None:
         """Validate username format."""
@@ -115,7 +114,7 @@ class UserUpdateMe(SQLModel):
     email: EmailStr | None = Field(default=None, max_length=255)
     username: str | None = Field(default=None, min_length=3, max_length=50)
 
-    @field_validator('username')
+    @field_validator("username")
     @classmethod
     def validate_username(cls, v: str | None) -> str | None:
         """Validate username format."""
@@ -129,12 +128,14 @@ class UpdatePassword(SQLModel):
 
 class ChangeInitialPasswordRequest(SQLModel):
     """Request body for changing initial/temporary password"""
+
     current_password: str = Field(min_length=1)
     new_password: str = Field(min_length=8, max_length=40)
 
 
 class ChangePasswordResponse(SQLModel):
     """Response for password change"""
+
     success: bool
     message: str
 
@@ -143,8 +144,12 @@ class ChangePasswordResponse(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    must_change_password: bool = Field(default=False)  # True for new users requiring password change
-    has_completed_tour: bool = Field(default=False)  # True after user completes onboarding tour
+    must_change_password: bool = Field(
+        default=False
+    )  # True for new users requiring password change
+    has_completed_tour: bool = Field(
+        default=False
+    )  # True after user completes onboarding tour
 
     # Encrypted password for teacher viewing (students only)
     # Stores Fernet-encrypted password so teachers can help students who forgot
@@ -152,11 +157,17 @@ class User(UserBase, table=True):
 
     # Avatar fields
     avatar_url: str | None = Field(default=None, max_length=500)  # URL to avatar image
-    avatar_type: AvatarType | None = Field(default=None, sa_column=Column(SAEnum(AvatarType)))  # Type of avatar
+    avatar_type: AvatarType | None = Field(
+        default=None, sa_column=Column(SAEnum(AvatarType))
+    )  # Type of avatar
 
     # Relationships to role-specific tables (one-to-one, optional)
-    teacher: Optional["Teacher"] = Relationship(back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    student: Optional["Student"] = Relationship(back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    teacher: Optional["Teacher"] = Relationship(
+        back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
+    student: Optional["Student"] = Relationship(
+        back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
 
 
 # Properties to return via API, id is always required
@@ -203,26 +214,33 @@ class NewPassword(SQLModel):
 
 # --- School Models ---
 
+
 class SchoolBase(SQLModel):
     """Shared School properties"""
+
     name: str = Field(max_length=255)
     address: str | None = Field(default=None)
     contact_info: str | None = Field(default=None)
-    benchmarking_enabled: bool = Field(default=True, description="Enable performance benchmarking for this school")
+    benchmarking_enabled: bool = Field(
+        default=True, description="Enable performance benchmarking for this school"
+    )
 
 
 class SchoolCreate(SchoolBase):
     """Properties to receive via API on School creation"""
+
     dcs_publisher_id: int
 
 
 class SchoolCreateByPublisher(SchoolBase):
     """Properties to receive via API on School creation by Publisher (publisher_id set automatically)"""
+
     pass
 
 
 class SchoolUpdate(SQLModel):
     """Properties to receive via API on School update"""
+
     name: str | None = Field(default=None, max_length=255)
     address: str | None = Field(default=None)
     contact_info: str | None = Field(default=None)
@@ -232,20 +250,30 @@ class SchoolUpdate(SQLModel):
 
 class School(SchoolBase, table=True):
     """School database model"""
+
     __tablename__ = "schools"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    dcs_publisher_id: int = Field(index=True, description="Publisher ID in Dream Central Storage")
+    dcs_publisher_id: int = Field(
+        index=True, description="Publisher ID in Dream Central Storage"
+    )
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    teachers: list["Teacher"] = Relationship(back_populates="school", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    classes: list["Class"] = Relationship(back_populates="school", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    teachers: list["Teacher"] = Relationship(
+        back_populates="school",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+    classes: list["Class"] = Relationship(
+        back_populates="school",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 class SchoolPublic(SchoolBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     dcs_publisher_id: int
     created_at: datetime
@@ -254,19 +282,23 @@ class SchoolPublic(SchoolBase):
 
 # --- Teacher Models ---
 
+
 class TeacherBase(SQLModel):
     """Shared Teacher properties"""
+
     subject_specialization: str | None = Field(default=None, max_length=255)
 
 
 class TeacherCreate(TeacherBase):
     """Properties to receive via API on Teacher creation"""
+
     user_id: uuid.UUID
     school_id: uuid.UUID
 
 
 class TeacherUpdate(SQLModel):
     """Properties to receive via API on Teacher update"""
+
     school_id: uuid.UUID | None = Field(default=None)
     subject_specialization: str | None = Field(default=None, max_length=255)
     user_email: str | None = Field(default=None, max_length=255)
@@ -276,27 +308,45 @@ class TeacherUpdate(SQLModel):
 
 class Teacher(TeacherBase, table=True):
     """Teacher database model"""
+
     __tablename__ = "teachers"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", unique=True, index=True, ondelete="CASCADE")
-    school_id: uuid.UUID = Field(foreign_key="schools.id", index=True, ondelete="CASCADE")
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", unique=True, index=True, ondelete="CASCADE"
+    )
+    school_id: uuid.UUID = Field(
+        foreign_key="schools.id", index=True, ondelete="CASCADE"
+    )
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # AI Usage Tracking
     ai_generations_used: int = Field(default=0)  # Count of AI generations this month
-    ai_quota_reset_date: datetime = Field(default_factory=lambda: datetime.now(UTC))  # Last reset date
+    ai_quota_reset_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC)
+    )  # Last reset date
 
     # Relationships
-    user: User = Relationship(back_populates="teacher", sa_relationship_kwargs={"passive_deletes": True})
-    school: School = Relationship(back_populates="teachers", sa_relationship_kwargs={"passive_deletes": True})
-    classes: list["Class"] = Relationship(back_populates="teacher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    assignments: list["Assignment"] = Relationship(back_populates="teacher", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    user: User = Relationship(
+        back_populates="teacher", sa_relationship_kwargs={"passive_deletes": True}
+    )
+    school: School = Relationship(
+        back_populates="teachers", sa_relationship_kwargs={"passive_deletes": True}
+    )
+    classes: list["Class"] = Relationship(
+        back_populates="teacher",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+    assignments: list["Assignment"] = Relationship(
+        back_populates="teacher",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 class TeacherPublic(TeacherBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     user_id: uuid.UUID
     user_email: str
@@ -309,6 +359,7 @@ class TeacherPublic(TeacherBase):
 
 class TeacherCreateAPI(SQLModel):
     """Properties for API endpoint teacher creation (includes user creation)"""
+
     username: str = Field(min_length=3, max_length=50)
     user_email: EmailStr = Field(max_length=255)
     full_name: str = Field(max_length=255)
@@ -318,19 +369,23 @@ class TeacherCreateAPI(SQLModel):
 
 # --- Student Models ---
 
+
 class StudentBase(SQLModel):
     """Shared Student properties"""
+
     grade_level: str | None = Field(default=None, max_length=50)
     parent_email: str | None = Field(default=None, max_length=255)
 
 
 class StudentCreate(StudentBase):
     """Properties to receive via API on Student creation"""
+
     user_id: uuid.UUID
 
 
 class StudentUpdate(SQLModel):
     """Properties to receive via API on Student update"""
+
     user_email: str | None = Field(default=None, max_length=255)
     user_username: str | None = Field(default=None, min_length=3, max_length=50)
     user_full_name: str | None = Field(default=None, max_length=255)
@@ -340,23 +395,42 @@ class StudentUpdate(SQLModel):
 
 class Student(StudentBase, table=True):
     """Student database model"""
+
     __tablename__ = "students"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", unique=True, index=True, ondelete="CASCADE")
-    created_by_teacher_id: uuid.UUID | None = Field(default=None, foreign_key="teachers.id", index=True, ondelete="SET NULL")
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", unique=True, index=True, ondelete="CASCADE"
+    )
+    created_by_teacher_id: uuid.UUID | None = Field(
+        default=None, foreign_key="teachers.id", index=True, ondelete="SET NULL"
+    )
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    user: User = Relationship(back_populates="student", sa_relationship_kwargs={"passive_deletes": True})
-    created_by_teacher: Optional["Teacher"] = Relationship(sa_relationship_kwargs={"passive_deletes": True, "foreign_keys": "[Student.created_by_teacher_id]"})
-    class_enrollments: list["ClassStudent"] = Relationship(back_populates="student", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    assignment_submissions: list["AssignmentStudent"] = Relationship(back_populates="student", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    user: User = Relationship(
+        back_populates="student", sa_relationship_kwargs={"passive_deletes": True}
+    )
+    created_by_teacher: Optional["Teacher"] = Relationship(
+        sa_relationship_kwargs={
+            "passive_deletes": True,
+            "foreign_keys": "[Student.created_by_teacher_id]",
+        }
+    )
+    class_enrollments: list["ClassStudent"] = Relationship(
+        back_populates="student",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+    assignment_submissions: list["AssignmentStudent"] = Relationship(
+        back_populates="student",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 class StudentPublic(StudentBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     user_id: uuid.UUID
     user_email: str | None = None
@@ -371,6 +445,7 @@ class StudentPublic(StudentBase):
 
 class StudentCreateAPI(SQLModel):
     """Properties for API endpoint student creation (includes user creation)"""
+
     username: str = Field(min_length=3, max_length=50)
     user_email: EmailStr | None = Field(default=None, max_length=255)
     full_name: str = Field(max_length=255)
@@ -382,8 +457,10 @@ class StudentCreateAPI(SQLModel):
 
 # --- Student Password Management (Story 28.1) ---
 
+
 class StudentPasswordResponse(SQLModel):
     """Response for viewing/setting student password"""
+
     student_id: uuid.UUID
     username: str
     full_name: str
@@ -393,11 +470,13 @@ class StudentPasswordResponse(SQLModel):
 
 class SetStudentPasswordRequest(SQLModel):
     """Request body for setting a student's password"""
+
     password: str = Field(min_length=1, max_length=50)
 
 
 class ChangePublisherPasswordRequest(SQLModel):
     """Request body for admin setting a publisher's password"""
+
     password: str = Field(min_length=8, max_length=40)
 
 
@@ -408,8 +487,11 @@ class UserCreationResponse(SQLModel):
     Security: temporary_password is only included when user has no email.
     When user has email, password_emailed=True and temporary_password is None.
     """
+
     user: UserPublic
-    role_record: TeacherPublic | StudentPublic  # Publishers managed in DCS, not created via API
+    role_record: (
+        TeacherPublic | StudentPublic
+    )  # Publishers managed in DCS, not created via API
     temporary_password: str | None = None  # Only set if user has no email
     password_emailed: bool = False  # True if email was sent
     message: str = ""  # Status message
@@ -420,6 +502,7 @@ class PasswordResetResponse(SQLModel):
 
     Never contains the actual password unless user has no email address.
     """
+
     success: bool
     message: str
     password_emailed: bool  # True if password was sent via email
@@ -428,8 +511,10 @@ class PasswordResetResponse(SQLModel):
 
 # --- Supervisor Models (Story 14.2) ---
 
+
 class SupervisorCreateAPI(SQLModel):
     """Properties for API endpoint supervisor creation"""
+
     username: str = Field(min_length=3, max_length=50)
     user_email: EmailStr | None = Field(default=None, max_length=255)
     full_name: str = Field(max_length=255)
@@ -437,6 +522,7 @@ class SupervisorCreateAPI(SQLModel):
 
 class SupervisorUpdate(SQLModel):
     """Properties for updating a supervisor"""
+
     full_name: str | None = Field(default=None, max_length=255)
     email: EmailStr | None = Field(default=None, max_length=255)
     username: str | None = Field(default=None, min_length=3, max_length=50)
@@ -445,6 +531,7 @@ class SupervisorUpdate(SQLModel):
 
 class SupervisorPublic(SQLModel):
     """Public supervisor response schema"""
+
     id: uuid.UUID
     full_name: str | None
     email: str | None
@@ -456,6 +543,7 @@ class SupervisorPublic(SQLModel):
 
 class SupervisorCreateResponse(SQLModel):
     """Response schema for supervisor creation"""
+
     user: UserPublic
     temporary_password: str | None = None
     password_emailed: bool = False
@@ -465,6 +553,7 @@ class SupervisorCreateResponse(SQLModel):
 # Dashboard statistics
 class DashboardStats(SQLModel):
     """Dashboard statistics for admin view"""
+
     total_users: int
     total_publishers: int
     total_teachers: int
@@ -478,8 +567,10 @@ class DashboardStats(SQLModel):
 
 # --- Class Models ---
 
+
 class ClassBase(SQLModel):
     """Shared Class properties"""
+
     name: str = Field(max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
     subject: str | None = Field(default=None, max_length=100)
@@ -489,17 +580,20 @@ class ClassBase(SQLModel):
 
 class ClassCreate(ClassBase):
     """Properties to receive via API on Class creation"""
+
     teacher_id: uuid.UUID
     school_id: uuid.UUID
 
 
 class ClassCreateByTeacher(ClassBase):
     """Properties to receive via API on Class creation by Teacher (teacher_id and school_id set automatically from teacher's record)"""
+
     pass
 
 
 class ClassUpdate(SQLModel):
     """Properties to receive via API on Class update"""
+
     name: str | None = Field(default=None, max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
     subject: str | None = Field(default=None, max_length=100)
@@ -509,22 +603,35 @@ class ClassUpdate(SQLModel):
 
 class Class(ClassBase, table=True):
     """Class database model"""
+
     __tablename__ = "classes"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
-    school_id: uuid.UUID = Field(foreign_key="schools.id", index=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID = Field(
+        foreign_key="teachers.id", index=True, ondelete="CASCADE"
+    )
+    school_id: uuid.UUID = Field(
+        foreign_key="schools.id", index=True, ondelete="CASCADE"
+    )
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    teacher: Teacher = Relationship(back_populates="classes", sa_relationship_kwargs={"passive_deletes": True})
-    school: School = Relationship(back_populates="classes", sa_relationship_kwargs={"passive_deletes": True})
-    class_students: list["ClassStudent"] = Relationship(back_populates="class_obj", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    teacher: Teacher = Relationship(
+        back_populates="classes", sa_relationship_kwargs={"passive_deletes": True}
+    )
+    school: School = Relationship(
+        back_populates="classes", sa_relationship_kwargs={"passive_deletes": True}
+    )
+    class_students: list["ClassStudent"] = Relationship(
+        back_populates="class_obj",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 class ClassPublic(ClassBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     teacher_id: uuid.UUID
     school_id: uuid.UUID
@@ -534,17 +641,20 @@ class ClassPublic(ClassBase):
 
 class ClassResponse(ClassPublic):
     """Class response with computed student count"""
+
     student_count: int = Field(default=0, description="Number of enrolled students")
 
 
 class ClassListItem(ClassBase):
     """Slim class response for list views (no timestamps or foreign keys)"""
+
     id: uuid.UUID
     student_count: int = Field(default=0)
 
 
 class StudentInClass(SQLModel):
     """Student info for class detail response"""
+
     id: uuid.UUID
     email: str
     full_name: str
@@ -553,43 +663,59 @@ class StudentInClass(SQLModel):
 
 class ClassDetailResponse(ClassResponse):
     """Class detail response with enrolled students"""
+
     enrolled_students: list[StudentInClass] = Field(default_factory=list)
 
 
 # --- ClassStudent Junction Table ---
 
+
 class ClassStudentBase(SQLModel):
     """Shared ClassStudent properties"""
+
     pass
 
 
 class ClassStudentCreate(ClassStudentBase):
     """Properties to receive via API on ClassStudent creation"""
+
     class_id: uuid.UUID
     student_id: uuid.UUID
 
 
 class ClassStudent(ClassStudentBase, table=True):
     """Junction table for class enrollments"""
+
     __tablename__ = "class_students"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    class_id: uuid.UUID = Field(foreign_key="classes.id", index=True, ondelete="CASCADE")
-    student_id: uuid.UUID = Field(foreign_key="students.id", index=True, ondelete="CASCADE")
+    class_id: uuid.UUID = Field(
+        foreign_key="classes.id", index=True, ondelete="CASCADE"
+    )
+    student_id: uuid.UUID = Field(
+        foreign_key="students.id", index=True, ondelete="CASCADE"
+    )
     enrolled_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # SQLAlchemy-level unique constraint
     __table_args__ = (
-        UniqueConstraint('class_id', 'student_id', name='uq_class_student'),
+        UniqueConstraint("class_id", "student_id", name="uq_class_student"),
     )
 
     # Relationships
-    class_obj: Class = Relationship(back_populates="class_students", sa_relationship_kwargs={"passive_deletes": True})
-    student: Student = Relationship(back_populates="class_enrollments", sa_relationship_kwargs={"passive_deletes": True})
+    class_obj: Class = Relationship(
+        back_populates="class_students",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    student: Student = Relationship(
+        back_populates="class_enrollments",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 class ClassStudentPublic(ClassStudentBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     class_id: uuid.UUID
     student_id: uuid.UUID
@@ -598,94 +724,35 @@ class ClassStudentPublic(ClassStudentBase):
 
 class ClassStudentAdd(SQLModel):
     """Schema for adding students to a class"""
-    student_ids: list[uuid.UUID] = Field(description="List of student UUIDs to add to the class")
+
+    student_ids: list[uuid.UUID] = Field(
+        description="List of student UUIDs to add to the class"
+    )
 
 
 # --- Book Models ---
-
-# DEPRECATED: Book models removed in Story 24.3 - Books now fetched from DCS
-# These classes are kept temporarily for backward compatibility during migration
-# TODO: Remove after migration is complete and all tests are updated
-
-# class BookStatus(str, Enum):
-#     """Book status enumeration"""
-#     published = "published"
-#     draft = "draft"
-#     archived = "archived"
-
-
-# class BookBase(SQLModel):
-#     """Shared Book properties"""
-#     dream_storage_id: str = Field(unique=True, index=True, max_length=255)
-#     title: str = Field(max_length=500)
-#     book_name: str = Field(max_length=255)
-#     publisher_name: str = Field(max_length=255)
-#     language: str | None = Field(default=None, max_length=50)
-#     category: str | None = Field(default=None, max_length=100)
-#     status: BookStatus = Field(default=BookStatus.published)
-#     description: str | None = Field(default=None)
-#     cover_image_url: str | None = Field(default=None)
-#     config_json: dict = Field(default_factory=dict, sa_column=Column(JSON))
-#     # Activity metadata from Dream Central Storage (source of truth for counts)
-#     dcs_activity_count: int | None = Field(default=None)  # Total activity count from DCS
-#     dcs_activity_details: dict | None = Field(default=None, sa_column=Column(JSON))  # Activity breakdown by type
-
-
-# class BookCreate(BookBase):
-#     """Properties to receive via API on Book creation"""
-#     dcs_publisher_id: int
-
-
-# class BookUpdate(SQLModel):
-#     """Properties to receive via API on Book update"""
-#     title: str | None = Field(default=None, max_length=500)
-#     description: str | None = Field(default=None)
-#     cover_image_url: str | None = Field(default=None)
-
-
-# class Book(BookBase, table=True):
-#     """Book database model"""
-#     __tablename__ = "books"
-
-#     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-#     dcs_publisher_id: int = Field(index=True, description="Publisher ID in Dream Central Storage")
-#     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-#     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-#     synced_at: datetime | None = Field(default=None)
-
-#     # Relationships
-#     activities: list["Activity"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-#     assignments: list["Assignment"] = Relationship(back_populates="book", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-
-
-# class BookPublic(BookBase):
-#     """Properties to return via API"""
-#     id: uuid.UUID
-#     dcs_publisher_id: int
-#     created_at: datetime
-#     updated_at: datetime
-#     synced_at: datetime | None
-
-# Use BookPublic from schemas.book instead (DCS-based, with integer IDs)
-
-
+# Book models removed in Story 24.3 - Books now fetched from DCS.
+# Use BookPublic from schemas.book instead (DCS-based, with integer IDs).
 
 
 # --- BookAssignment Model (Story 9.4) ---
 
+
 class BookAssignmentBase(SQLModel):
     """Shared BookAssignment properties"""
+
     pass
 
 
 class BookAssignmentCreate(SQLModel):
     """Properties to receive via API on BookAssignment creation"""
+
     book_id: int  # DCS book ID
     school_id: uuid.UUID | None = None
     teacher_id: uuid.UUID | None = None
 
-    @model_validator(mode='after')
-    def validate_target(self) -> 'BookAssignmentCreate':
+    @model_validator(mode="after")
+    def validate_target(self) -> "BookAssignmentCreate":
         """Validate that at least one of school_id or teacher_id is set"""
         if self.school_id is None and self.teacher_id is None:
             raise ValueError("At least one of school_id or teacher_id must be provided")
@@ -694,42 +761,66 @@ class BookAssignmentCreate(SQLModel):
 
 class BulkBookAssignmentCreate(SQLModel):
     """Properties for bulk book assignment creation"""
+
     book_id: int  # DCS book ID
     school_id: uuid.UUID
-    teacher_ids: list[uuid.UUID] | None = None  # If None/empty, assigns to entire school
-    assign_to_all_teachers: bool = False  # If True, assigns to school level (all teachers)
+    teacher_ids: list[uuid.UUID] | None = (
+        None  # If None/empty, assigns to entire school
+    )
+    assign_to_all_teachers: bool = (
+        False  # If True, assigns to school level (all teachers)
+    )
 
 
 class BookAssignment(SQLModel, table=True):
     """Book assignment model - controls which schools/teachers have access to books"""
+
     __tablename__ = "book_assignments"
     __table_args__ = (
         # Prevent duplicate assignments
-        UniqueConstraint("dcs_book_id", "school_id", "teacher_id", name="uq_book_assignment"),
+        UniqueConstraint(
+            "dcs_book_id", "school_id", "teacher_id", name="uq_book_assignment"
+        ),
         # Ensure at least one of school_id or teacher_id is set
         CheckConstraint(
             "school_id IS NOT NULL OR teacher_id IS NOT NULL",
-            name="ck_book_assignment_target"
+            name="ck_book_assignment_target",
         ),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     # DCS book reference (no foreign key - books table removed)
     dcs_book_id: int = Field(index=True)
-    school_id: uuid.UUID | None = Field(default=None, foreign_key="schools.id", index=True, ondelete="CASCADE")
-    teacher_id: uuid.UUID | None = Field(default=None, foreign_key="teachers.id", index=True, ondelete="CASCADE")
-    assigned_by: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
+    school_id: uuid.UUID | None = Field(
+        default=None, foreign_key="schools.id", index=True, ondelete="CASCADE"
+    )
+    teacher_id: uuid.UUID | None = Field(
+        default=None, foreign_key="teachers.id", index=True, ondelete="CASCADE"
+    )
+    assigned_by: uuid.UUID = Field(
+        foreign_key="user.id", index=True, ondelete="CASCADE"
+    )
     assigned_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
     # book relationship removed - use BookService to fetch book data by dcs_book_id
-    school: Optional["School"] = Relationship(sa_relationship_kwargs={"passive_deletes": True})
-    teacher: Optional["Teacher"] = Relationship(sa_relationship_kwargs={"passive_deletes": True})
-    assigner: User = Relationship(sa_relationship_kwargs={"passive_deletes": True, "foreign_keys": "[BookAssignment.assigned_by]"})
+    school: Optional["School"] = Relationship(
+        sa_relationship_kwargs={"passive_deletes": True}
+    )
+    teacher: Optional["Teacher"] = Relationship(
+        sa_relationship_kwargs={"passive_deletes": True}
+    )
+    assigner: User = Relationship(
+        sa_relationship_kwargs={
+            "passive_deletes": True,
+            "foreign_keys": "[BookAssignment.assigned_by]",
+        }
+    )
 
 
 class BookAssignmentPublic(SQLModel):
     """Properties to return via API"""
+
     id: uuid.UUID
     book_id: int  # DCS book ID
     school_id: uuid.UUID | None
@@ -740,6 +831,7 @@ class BookAssignmentPublic(SQLModel):
 
 class BookAssignmentResponse(SQLModel):
     """Full book assignment response with related entity info"""
+
     id: uuid.UUID
     book_id: int  # DCS book ID
     book_title: str
@@ -756,6 +848,7 @@ class BookAssignmentResponse(SQLModel):
 
 class BookAssignmentListResponse(SQLModel):
     """Paginated list of book assignments"""
+
     items: list[BookAssignmentResponse]
     total: int
     skip: int
@@ -764,8 +857,10 @@ class BookAssignmentListResponse(SQLModel):
 
 # --- Activity Models ---
 
+
 class ActivityType(str, Enum):
     """Activity type enumeration"""
+
     # Existing DCS book activity types
     matchTheWords = "matchTheWords"
     dragdroppicture = "dragdroppicture"
@@ -796,6 +891,7 @@ class ActivityType(str, Enum):
 
 class ActivityBase(SQLModel):
     """Shared Activity properties"""
+
     dream_activity_id: str | None = Field(default=None, max_length=255)
     module_name: str = Field(max_length=255)
     page_number: int
@@ -808,11 +904,13 @@ class ActivityBase(SQLModel):
 
 class ActivityCreate(ActivityBase):
     """Properties to receive via API on Activity creation"""
+
     book_id: int  # DCS book ID
 
 
 class ActivityUpdate(SQLModel):
     """Properties to receive via API on Activity update"""
+
     dream_activity_id: str | None = Field(default=None, max_length=255)
     activity_type: ActivityType | None = Field(default=None)
     title: str | None = Field(default=None, max_length=500)
@@ -822,6 +920,7 @@ class ActivityUpdate(SQLModel):
 
 class Activity(ActivityBase, table=True):
     """Activity database model"""
+
     __tablename__ = "activities"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -832,14 +931,24 @@ class Activity(ActivityBase, table=True):
 
     # Relationships
     # book relationship removed - use BookService to fetch book data by dcs_book_id
-    assignments: list["Assignment"] = Relationship(back_populates="activity", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    assignments: list["Assignment"] = Relationship(
+        back_populates="activity",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
     # New relationships for multi-activity support
-    assignment_activities: list["AssignmentActivity"] = Relationship(back_populates="activity", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    student_activity_progress: list["AssignmentStudentActivity"] = Relationship(back_populates="activity", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    assignment_activities: list["AssignmentActivity"] = Relationship(
+        back_populates="activity",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+    student_activity_progress: list["AssignmentStudentActivity"] = Relationship(
+        back_populates="activity",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 class ActivityPublic(ActivityBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     book_id: int  # DCS book ID
     created_at: datetime
@@ -864,6 +973,7 @@ class ActivityPublic(ActivityBase):
 
 class ActivityResponse(SQLModel):
     """Activity response schema for book detail"""
+
     id: uuid.UUID
     book_id: int  # DCS book ID
     activity_type: ActivityType
@@ -887,6 +997,7 @@ class ActivityResponse(SQLModel):
 
 class AssignmentPublishStatus(str, Enum):
     """Assignment publishing status"""
+
     draft = "draft"
     scheduled = "scheduled"
     published = "published"
@@ -895,6 +1006,7 @@ class AssignmentPublishStatus(str, Enum):
 
 class AssignmentBase(SQLModel):
     """Shared Assignment properties"""
+
     name: str = Field(max_length=500)
     instructions: str | None = Field(default=None)
     due_date: datetime | None = Field(default=None)
@@ -911,30 +1023,42 @@ class AssignmentBase(SQLModel):
     # For AI-generated activities, store activity type and content directly
     activity_type: ActivityType | None = Field(default=None)
     activity_content: dict | None = Field(default=None, sa_column=Column(JSON))
-    generation_source: str | None = Field(default=None, max_length=50)  # "book" | "material" | "manual"
-    source_id: str | None = Field(default=None, max_length=255)  # book_id or material_id
+    generation_source: str | None = Field(
+        default=None, max_length=50
+    )  # "book" | "material" | "manual"
+    source_id: str | None = Field(
+        default=None, max_length=255
+    )  # book_id or material_id
 
 
 class AssignmentCreate(AssignmentBase):
     """Properties to receive via API on Assignment creation"""
+
     teacher_id: uuid.UUID
     book_id: int  # DCS book ID
     # Backward compatible: either activity_id OR activity_ids must be provided
     activity_id: uuid.UUID | None = None
     activity_ids: list[uuid.UUID] | None = None
 
-    @model_validator(mode='after')
-    def validate_activity_ids(self) -> 'AssignmentCreate':
+    @model_validator(mode="after")
+    def validate_activity_ids(self) -> "AssignmentCreate":
         """Validate that either activity_id OR activity_ids is provided"""
-        if self.activity_id is None and (self.activity_ids is None or len(self.activity_ids) == 0):
+        if self.activity_id is None and (
+            self.activity_ids is None or len(self.activity_ids) == 0
+        ):
             raise ValueError("Either activity_id or activity_ids must be provided")
-        if self.activity_id is not None and self.activity_ids is not None and len(self.activity_ids) > 0:
+        if (
+            self.activity_id is not None
+            and self.activity_ids is not None
+            and len(self.activity_ids) > 0
+        ):
             raise ValueError("Cannot provide both activity_id and activity_ids")
         return self
 
 
 class AssignmentUpdate(SQLModel):
     """Properties to receive via API on Assignment update"""
+
     name: str | None = Field(default=None, max_length=500)
     instructions: str | None = Field(default=None)
     due_date: datetime | None = Field(default=None)
@@ -943,14 +1067,19 @@ class AssignmentUpdate(SQLModel):
 
 class Assignment(AssignmentBase, table=True):
     """Assignment database model"""
+
     __tablename__ = "assignments"
 
     model_config = {"validate_assignment": True}
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID = Field(
+        foreign_key="teachers.id", index=True, ondelete="CASCADE"
+    )
     # Keep activity_id for backward compatibility during migration
-    activity_id: uuid.UUID | None = Field(default=None, foreign_key="activities.id", index=True, ondelete="CASCADE")
+    activity_id: uuid.UUID | None = Field(
+        default=None, foreign_key="activities.id", index=True, ondelete="CASCADE"
+    )
     # DCS book reference (no foreign key - books table removed)
     dcs_book_id: int = Field(index=True)
     # Skill classification (Epic 30 - Story 30.2)
@@ -965,12 +1094,22 @@ class Assignment(AssignmentBase, table=True):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    teacher: Teacher = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
-    activity: Optional["Activity"] = Relationship(back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True})
+    teacher: Teacher = Relationship(
+        back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True}
+    )
+    activity: Optional["Activity"] = Relationship(
+        back_populates="assignments", sa_relationship_kwargs={"passive_deletes": True}
+    )
     # book relationship removed - use BookService to fetch book data by dcs_book_id
-    assignment_students: list["AssignmentStudent"] = Relationship(back_populates="assignment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    assignment_students: list["AssignmentStudent"] = Relationship(
+        back_populates="assignment",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
     # New relationship for multi-activity support
-    assignment_activities: list["AssignmentActivity"] = Relationship(back_populates="assignment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    assignment_activities: list["AssignmentActivity"] = Relationship(
+        back_populates="assignment",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
     # Skill classification relationships (Epic 30)
     primary_skill: Optional["SkillCategory"] = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Assignment.primary_skill_id]"}
@@ -990,8 +1129,8 @@ class Assignment(AssignmentBase, table=True):
         """Check if assignment has multiple activities"""
         return len(self.assignment_activities) > 1
 
-    @model_validator(mode='after')
-    def validate_time_limit(self) -> 'Assignment':
+    @model_validator(mode="after")
+    def validate_time_limit(self) -> "Assignment":
         """Validate time_limit_minutes is positive"""
         if self.time_limit_minutes is not None and self.time_limit_minutes <= 0:
             raise ValueError("time_limit_minutes must be greater than 0")
@@ -1000,6 +1139,7 @@ class Assignment(AssignmentBase, table=True):
 
 class AssignmentPublic(AssignmentBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     teacher_id: uuid.UUID
     book_id: int  # DCS book ID
@@ -1019,35 +1159,49 @@ class AssignmentPublic(AssignmentBase):
 
 class AssignmentActivityBase(SQLModel):
     """Shared AssignmentActivity properties"""
+
     order_index: int = Field(default=0, ge=0)
 
 
 class AssignmentActivityCreate(AssignmentActivityBase):
     """Properties to receive via API on AssignmentActivity creation"""
+
     assignment_id: uuid.UUID
     activity_id: uuid.UUID
 
 
 class AssignmentActivity(AssignmentActivityBase, table=True):
     """Junction table linking assignments to activities with ordering"""
+
     __tablename__ = "assignment_activities"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    assignment_id: uuid.UUID = Field(foreign_key="assignments.id", index=True, ondelete="CASCADE")
-    activity_id: uuid.UUID = Field(foreign_key="activities.id", index=True, ondelete="CASCADE")
+    assignment_id: uuid.UUID = Field(
+        foreign_key="assignments.id", index=True, ondelete="CASCADE"
+    )
+    activity_id: uuid.UUID = Field(
+        foreign_key="activities.id", index=True, ondelete="CASCADE"
+    )
 
     # SQLAlchemy-level unique constraint
     __table_args__ = (
-        UniqueConstraint('assignment_id', 'activity_id', name='uq_assignment_activity'),
+        UniqueConstraint("assignment_id", "activity_id", name="uq_assignment_activity"),
     )
 
     # Relationships
-    assignment: "Assignment" = Relationship(back_populates="assignment_activities", sa_relationship_kwargs={"passive_deletes": True})
-    activity: "Activity" = Relationship(back_populates="assignment_activities", sa_relationship_kwargs={"passive_deletes": True})
+    assignment: "Assignment" = Relationship(
+        back_populates="assignment_activities",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    activity: "Activity" = Relationship(
+        back_populates="assignment_activities",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 class AssignmentActivityPublic(AssignmentActivityBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     assignment_id: uuid.UUID
     activity_id: uuid.UUID
@@ -1055,8 +1209,10 @@ class AssignmentActivityPublic(AssignmentActivityBase):
 
 # --- AssignmentStudent Junction Table ---
 
+
 class AssignmentStatus(str, Enum):
     """Assignment completion status"""
+
     not_started = "not_started"
     in_progress = "in_progress"
     completed = "completed"
@@ -1064,6 +1220,7 @@ class AssignmentStatus(str, Enum):
 
 class AssignmentStudentBase(SQLModel):
     """Shared AssignmentStudent properties"""
+
     status: AssignmentStatus = Field(default=AssignmentStatus.not_started)
     score: float | None = Field(default=None, ge=0, le=100)
     answers_json: dict | None = Field(default=None, sa_column=Column(JSON))
@@ -1077,12 +1234,14 @@ class AssignmentStudentBase(SQLModel):
 
 class AssignmentStudentCreate(AssignmentStudentBase):
     """Properties to receive via API on AssignmentStudent creation"""
+
     assignment_id: uuid.UUID
     student_id: uuid.UUID
 
 
 class AssignmentStudentUpdate(SQLModel):
     """Properties to receive via API on AssignmentStudent update"""
+
     status: AssignmentStatus | None = Field(default=None)
     score: int | None = Field(default=None, ge=0, le=100)
     answers_json: dict | None = Field(default=None, sa_column=Column(JSON))
@@ -1095,26 +1254,43 @@ class AssignmentStudentUpdate(SQLModel):
 
 class AssignmentStudent(AssignmentStudentBase, table=True):
     """Assignment-student junction table for tracking progress"""
+
     __tablename__ = "assignment_students"
 
     model_config = {"validate_assignment": True}
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    assignment_id: uuid.UUID = Field(foreign_key="assignments.id", index=True, ondelete="CASCADE")
-    student_id: uuid.UUID = Field(foreign_key="students.id", index=True, ondelete="CASCADE")
+    assignment_id: uuid.UUID = Field(
+        foreign_key="assignments.id", index=True, ondelete="CASCADE"
+    )
+    student_id: uuid.UUID = Field(
+        foreign_key="students.id", index=True, ondelete="CASCADE"
+    )
 
     # SQLAlchemy-level unique constraint
     __table_args__ = (
-        UniqueConstraint('assignment_id', 'student_id', name='uq_assignment_student'),
+        UniqueConstraint("assignment_id", "student_id", name="uq_assignment_student"),
     )
 
     # Relationships
-    assignment: Assignment = Relationship(back_populates="assignment_students", sa_relationship_kwargs={"passive_deletes": True})
-    student: Student = Relationship(back_populates="assignment_submissions", sa_relationship_kwargs={"passive_deletes": True})
+    assignment: Assignment = Relationship(
+        back_populates="assignment_students",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    student: Student = Relationship(
+        back_populates="assignment_submissions",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
     # New relationship for per-activity progress
-    activity_progress: list["AssignmentStudentActivity"] = Relationship(back_populates="assignment_student", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    activity_progress: list["AssignmentStudentActivity"] = Relationship(
+        back_populates="assignment_student",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
     # Feedback relationship (one-to-one)
-    feedback: Optional["Feedback"] = Relationship(back_populates="assignment_student", sa_relationship_kwargs={"uselist": False, "cascade": "all, delete-orphan"})
+    feedback: Optional["Feedback"] = Relationship(
+        back_populates="assignment_student",
+        sa_relationship_kwargs={"uselist": False, "cascade": "all, delete-orphan"},
+    )
 
     def calculate_combined_score(self) -> float | None:
         """Calculate combined score from ALL activities as percentage (0-100).
@@ -1149,8 +1325,8 @@ class AssignmentStudent(AssignmentStudentBase, table=True):
             for ap in self.activity_progress
         )
 
-    @model_validator(mode='after')
-    def validate_score(self) -> 'AssignmentStudent':
+    @model_validator(mode="after")
+    def validate_score(self) -> "AssignmentStudent":
         """Validate score is between 0 and 100"""
         if self.score is not None and (self.score < 0 or self.score > 100):
             raise ValueError("score must be between 0 and 100")
@@ -1159,12 +1335,12 @@ class AssignmentStudent(AssignmentStudentBase, table=True):
 
 class AssignmentStudentPublic(AssignmentStudentBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     assignment_id: uuid.UUID
     student_id: uuid.UUID
     # New field for per-activity progress
     activity_progress: list["AssignmentStudentActivityPublic"] = []
-
 
 
 # ============================================================================
@@ -1174,6 +1350,7 @@ class AssignmentStudentPublic(AssignmentStudentBase):
 
 class AssignmentStudentActivityStatus(str, Enum):
     """Per-activity completion status"""
+
     not_started = "not_started"
     in_progress = "in_progress"
     completed = "completed"
@@ -1181,7 +1358,10 @@ class AssignmentStudentActivityStatus(str, Enum):
 
 class AssignmentStudentActivityBase(SQLModel):
     """Shared AssignmentStudentActivity properties"""
-    status: AssignmentStudentActivityStatus = Field(default=AssignmentStudentActivityStatus.not_started)
+
+    status: AssignmentStudentActivityStatus = Field(
+        default=AssignmentStudentActivityStatus.not_started
+    )
     score: float | None = Field(default=None, ge=0)
     max_score: float = Field(default=100.0, ge=0)
     response_data: dict | None = Field(default=None, sa_column=Column(JSON))
@@ -1191,12 +1371,14 @@ class AssignmentStudentActivityBase(SQLModel):
 
 class AssignmentStudentActivityCreate(AssignmentStudentActivityBase):
     """Properties to receive via API on AssignmentStudentActivity creation"""
+
     assignment_student_id: uuid.UUID
     activity_id: uuid.UUID
 
 
 class AssignmentStudentActivityUpdate(SQLModel):
     """Properties to receive via API on AssignmentStudentActivity update"""
+
     status: AssignmentStudentActivityStatus | None = None
     score: float | None = None
     max_score: float | None = None
@@ -1207,24 +1389,40 @@ class AssignmentStudentActivityUpdate(SQLModel):
 
 class AssignmentStudentActivity(AssignmentStudentActivityBase, table=True):
     """Per-activity progress tracking for assignment students"""
+
     __tablename__ = "assignment_student_activities"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    assignment_student_id: uuid.UUID = Field(foreign_key="assignment_students.id", index=True, ondelete="CASCADE")
-    activity_id: uuid.UUID = Field(foreign_key="activities.id", index=True, ondelete="CASCADE")
+    assignment_student_id: uuid.UUID = Field(
+        foreign_key="assignment_students.id", index=True, ondelete="CASCADE"
+    )
+    activity_id: uuid.UUID = Field(
+        foreign_key="activities.id", index=True, ondelete="CASCADE"
+    )
 
     # SQLAlchemy-level unique constraint
     __table_args__ = (
-        UniqueConstraint('assignment_student_id', 'activity_id', name='uq_assignment_student_activity'),
+        UniqueConstraint(
+            "assignment_student_id",
+            "activity_id",
+            name="uq_assignment_student_activity",
+        ),
     )
 
     # Relationships
-    assignment_student: "AssignmentStudent" = Relationship(back_populates="activity_progress", sa_relationship_kwargs={"passive_deletes": True})
-    activity: "Activity" = Relationship(back_populates="student_activity_progress", sa_relationship_kwargs={"passive_deletes": True})
+    assignment_student: "AssignmentStudent" = Relationship(
+        back_populates="activity_progress",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    activity: "Activity" = Relationship(
+        back_populates="student_activity_progress",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 class AssignmentStudentActivityPublic(AssignmentStudentActivityBase):
     """Properties to return via API"""
+
     id: uuid.UUID
     assignment_student_id: uuid.UUID
     activity_id: uuid.UUID
@@ -1237,24 +1435,31 @@ class AssignmentStudentActivityPublic(AssignmentStudentActivityBase):
 
 class StudentBulkImportRow(SQLModel):
     """Schema for student bulk import row from Excel"""
+
     first_name: str = Field(max_length=255, alias="First Name")
     last_name: str = Field(max_length=255, alias="Last Name")
     email: EmailStr = Field(max_length=255, alias="Email")
     grade_level: str | None = Field(default=None, max_length=50, alias="Grade Level")
-    parent_email: EmailStr | None = Field(default=None, max_length=255, alias="Parent Email")
+    parent_email: EmailStr | None = Field(
+        default=None, max_length=255, alias="Parent Email"
+    )
 
 
 class TeacherBulkImportRow(SQLModel):
     """Schema for teacher bulk import row from Excel"""
+
     first_name: str = Field(max_length=255, alias="First Name")
     last_name: str = Field(max_length=255, alias="Last Name")
     email: EmailStr = Field(max_length=255, alias="Email")
     school_id: uuid.UUID = Field(alias="School ID")
-    subject_specialization: str | None = Field(default=None, max_length=255, alias="Subject Specialization")
+    subject_specialization: str | None = Field(
+        default=None, max_length=255, alias="Subject Specialization"
+    )
 
 
 class PublisherBulkImportRow(SQLModel):
     """Schema for publisher bulk import row from Excel"""
+
     first_name: str = Field(max_length=255, alias="First Name")
     last_name: str = Field(max_length=255, alias="Last Name")
     email: EmailStr = Field(max_length=255, alias="Email")
@@ -1264,6 +1469,7 @@ class PublisherBulkImportRow(SQLModel):
 
 class BulkImportErrorDetail(SQLModel):
     """Details of a single bulk import validation error"""
+
     row_number: int
     field: str | None = None
     message: str
@@ -1271,6 +1477,7 @@ class BulkImportErrorDetail(SQLModel):
 
 class BulkImportResponse(SQLModel):
     """Response schema for bulk import endpoints"""
+
     success: bool
     total_rows: int
     created_count: int
@@ -1286,6 +1493,7 @@ class BulkImportResponse(SQLModel):
 
 class WebhookEventType(str, Enum):
     """Webhook event type enumeration"""
+
     book_created = "book.created"
     book_updated = "book.updated"
     book_deleted = "book.deleted"
@@ -1296,6 +1504,7 @@ class WebhookEventType(str, Enum):
 
 class WebhookEventStatus(str, Enum):
     """Webhook event processing status"""
+
     pending = "pending"
     processing = "processing"
     success = "success"
@@ -1305,6 +1514,7 @@ class WebhookEventStatus(str, Enum):
 
 class WebhookBookData(SQLModel):
     """Book data from webhook payload"""
+
     id: int
     book_name: str
     book_title: str
@@ -1318,6 +1528,7 @@ class WebhookBookData(SQLModel):
 
 class WebhookPublisherData(SQLModel):
     """Publisher data from webhook payload"""
+
     id: int
     name: str
     contact_email: str | None = None
@@ -1332,6 +1543,7 @@ class WebhookPayload(SQLModel):
     - book.* events: data contains WebhookBookData fields
     - publisher.* events: data contains WebhookPublisherData fields
     """
+
     event: WebhookEventType
     timestamp: datetime
     data: dict  # Raw dict to handle both book and publisher payloads
@@ -1351,13 +1563,20 @@ class WebhookPayload(SQLModel):
 
 class WebhookEventLog(SQLModel, table=True):
     """Webhook event log database model for auditing and processing"""
+
     __tablename__ = "webhook_event_logs"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     event_type: WebhookEventType = Field(index=True)
-    book_id: int | None = Field(default=None, index=True)  # dream_storage_id from book payload
-    publisher_id: int | None = Field(default=None, index=True)  # dcs_id from publisher payload
-    payload_json: dict = Field(sa_column=Column(JSON))  # Full webhook payload for debugging
+    book_id: int | None = Field(
+        default=None, index=True
+    )  # dream_storage_id from book payload
+    publisher_id: int | None = Field(
+        default=None, index=True
+    )  # dcs_id from publisher payload
+    payload_json: dict = Field(
+        sa_column=Column(JSON)
+    )  # Full webhook payload for debugging
     status: WebhookEventStatus = Field(default=WebhookEventStatus.pending, index=True)
     retry_count: int = Field(default=0)
     error_message: str | None = Field(default=None)
@@ -1367,6 +1586,7 @@ class WebhookEventLog(SQLModel, table=True):
 
 class WebhookEventLogPublic(SQLModel):
     """Properties to return via API"""
+
     id: uuid.UUID
     event_type: WebhookEventType
     book_id: int | None
@@ -1383,13 +1603,18 @@ class WebhookEventLogPublic(SQLModel):
 
 class DismissedInsight(SQLModel, table=True):
     """Stores insights dismissed by teachers to filter from future views"""
+
     __tablename__ = "dismissed_insights"
     __table_args__ = (
-        UniqueConstraint("teacher_id", "insight_key", name="uq_dismissed_insight_teacher_key"),
+        UniqueConstraint(
+            "teacher_id", "insight_key", name="uq_dismissed_insight_teacher_key"
+        ),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID = Field(
+        foreign_key="teachers.id", index=True, ondelete="CASCADE"
+    )
     insight_key: str = Field(max_length=255)  # e.g., "low_perf_assignment_{uuid}"
     dismissed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -1430,12 +1655,17 @@ class ReportJob(SQLModel, table=True):
     __tablename__ = "report_jobs"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID = Field(
+        foreign_key="teachers.id", index=True, ondelete="CASCADE"
+    )
     status: ReportJobStatusEnum = Field(
         default=ReportJobStatusEnum.pending,
         sa_column=Column(
             SAEnum(
-                "pending", "processing", "completed", "failed",
+                "pending",
+                "processing",
+                "completed",
+                "failed",
                 name="reportjobstatusenum",
                 create_constraint=False,
                 native_enum=True,
@@ -1446,7 +1676,9 @@ class ReportJob(SQLModel, table=True):
     report_type: ReportTypeEnum = Field(
         sa_column=Column(
             SAEnum(
-                "student", "class", "assignment",
+                "student",
+                "class",
+                "assignment",
                 name="reporttypeenum",
                 create_constraint=False,
                 native_enum=True,
@@ -1473,7 +1705,9 @@ class SavedReportConfig(SQLModel, table=True):
     __tablename__ = "saved_report_configs"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID = Field(
+        foreign_key="teachers.id", index=True, ondelete="CASCADE"
+    )
     name: str = Field(max_length=255)
     config_json: dict = Field(default={}, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -1489,6 +1723,7 @@ class SavedReportConfig(SQLModel, table=True):
 
 class MaterialType(str, Enum):
     """Types of teacher materials"""
+
     document = "document"
     image = "image"
     audio = "audio"
@@ -1515,7 +1750,9 @@ class DirectMessage(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     sender_id: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
-    recipient_id: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
+    recipient_id: uuid.UUID = Field(
+        foreign_key="user.id", index=True, ondelete="CASCADE"
+    )
     subject: str | None = Field(default=None, max_length=500)
     body: str = Field(min_length=1)
     parent_message_id: uuid.UUID | None = Field(
@@ -1576,19 +1813,14 @@ class Feedback(SQLModel, table=True):
 
     # Relationships
     assignment_student: "AssignmentStudent" = Relationship(
-        back_populates="feedback",
-        sa_relationship_kwargs={"passive_deletes": True}
+        back_populates="feedback", sa_relationship_kwargs={"passive_deletes": True}
     )
-    teacher: "Teacher" = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True}
-    )
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 # =============================================================================
 # Announcement Models (Story 26.1)
 # =============================================================================
-
-
 
 
 # =============================================================================
@@ -1602,11 +1834,15 @@ class TeacherMaterial(SQLModel, table=True):
     __tablename__ = "teacher_materials"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID = Field(
+        foreign_key="teachers.id", index=True, ondelete="CASCADE"
+    )
 
     # Material info
     name: str = Field(max_length=255)  # Display name
-    type: MaterialType = Field(sa_column=Column(SAEnum(MaterialType, name="materialtype"), nullable=False))
+    type: MaterialType = Field(
+        sa_column=Column(SAEnum(MaterialType, name="materialtype"), nullable=False)
+    )
 
     # Storage info (null for URLs and text notes)
     storage_path: str | None = Field(default=None, max_length=500)
@@ -1638,7 +1874,9 @@ class TeacherStorageQuota(SQLModel, table=True):
 
     __tablename__ = "teacher_storage_quotas"
 
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", primary_key=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID = Field(
+        foreign_key="teachers.id", primary_key=True, ondelete="CASCADE"
+    )
     used_bytes: int = Field(default=0)
     quota_bytes: int = Field(default=524288000)  # 500MB default
 
@@ -1655,23 +1893,25 @@ class TeacherGeneratedContent(SQLModel, table=True):
 
     __tablename__ = "teacher_generated_content"
     __table_args__ = (
-        Index('idx_generated_content_teacher', 'teacher_id'),
-        Index('idx_generated_content_material', 'material_id'),
+        Index("idx_generated_content_teacher", "teacher_id"),
+        Index("idx_generated_content_material", "material_id"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID = Field(
+        foreign_key="teachers.id", index=True, ondelete="CASCADE"
+    )
 
     # Source reference (one of these should be set)
     material_id: uuid.UUID | None = Field(
-        default=None,
-        foreign_key="teacher_materials.id",
-        ondelete="SET NULL"
+        default=None, foreign_key="teacher_materials.id", ondelete="SET NULL"
     )
     book_id: int | None = Field(default=None)  # DCS book ID, null if material-based
 
     # Content details
-    activity_type: str = Field(max_length=50)  # vocab_quiz, ai_quiz, reading, matching, etc.
+    activity_type: str = Field(
+        max_length=50
+    )  # vocab_quiz, ai_quiz, reading, matching, etc.
     title: str = Field(max_length=255)  # Generated activity title
     content: dict = Field(default_factory=dict, sa_column=Column(JSON))  # Activity data
 
@@ -1680,7 +1920,9 @@ class TeacherGeneratedContent(SQLModel, table=True):
     format_id: uuid.UUID | None = Field(default=None, foreign_key="activity_formats.id")
 
     # DCS sync
-    dcs_content_id: str | None = Field(default=None)  # DCS-assigned content ID after sync
+    dcs_content_id: str | None = Field(
+        default=None
+    )  # DCS-assigned content ID after sync
 
     # Usage tracking
     is_used: bool = Field(default=False)  # True if used in assignment
@@ -1692,7 +1934,9 @@ class TeacherGeneratedContent(SQLModel, table=True):
 
     # Relationships
     teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
-    material: "TeacherMaterial" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+    material: "TeacherMaterial" = Relationship(
+        sa_relationship_kwargs={"passive_deletes": True}
+    )
 
 
 # ============================================================================
@@ -1702,10 +1946,9 @@ class TeacherGeneratedContent(SQLModel, table=True):
 
 class SkillCategory(SQLModel, table=True):
     """Language skill category for AI assignment classification."""
+
     __tablename__ = "skill_categories"
-    __table_args__ = (
-        Index("ix_skill_categories_is_active", "is_active"),
-    )
+    __table_args__ = (Index("ix_skill_categories_is_active", "is_active"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(unique=True, max_length=100)
@@ -1729,6 +1972,7 @@ class SkillCategory(SQLModel, table=True):
 
 class ActivityFormat(SQLModel, table=True):
     """Activity format type for AI-generated assignments."""
+
     __tablename__ = "activity_formats"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -1746,14 +1990,19 @@ class ActivityFormat(SQLModel, table=True):
 
 class SkillFormatCombination(SQLModel, table=True):
     """Valid skill-format pairs with availability and prompt mapping."""
+
     __tablename__ = "skill_format_combinations"
     __table_args__ = (
         UniqueConstraint("skill_id", "format_id", name="uq_skill_format"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    skill_id: uuid.UUID = Field(foreign_key="skill_categories.id", index=True, ondelete="CASCADE")
-    format_id: uuid.UUID = Field(foreign_key="activity_formats.id", index=True, ondelete="CASCADE")
+    skill_id: uuid.UUID = Field(
+        foreign_key="skill_categories.id", index=True, ondelete="CASCADE"
+    )
+    format_id: uuid.UUID = Field(
+        foreign_key="activity_formats.id", index=True, ondelete="CASCADE"
+    )
     is_available: bool = Field(default=True)
     display_order: int = Field(default=0)
     generation_prompt_key: str | None = Field(default=None, max_length=100)
@@ -1781,7 +2030,8 @@ class StudentSkillScore(SQLModel, table=True):
         Index("ix_student_skill_scores_student_skill", "student_id", "skill_id"),
         Index("ix_student_skill_scores_student_recorded", "student_id", "recorded_at"),
         UniqueConstraint(
-            "assignment_student_id", "skill_id",
+            "assignment_student_id",
+            "skill_id",
             name="uq_student_skill_score_assignment_skill",
         ),
     )
@@ -1816,7 +2066,9 @@ class StudentSkillScore(SQLModel, table=True):
         sa_relationship_kwargs={"foreign_keys": "[StudentSkillScore.assignment_id]"}
     )
     assignment_student: "AssignmentStudent" = Relationship(
-        sa_relationship_kwargs={"foreign_keys": "[StudentSkillScore.assignment_student_id]"}
+        sa_relationship_kwargs={
+            "foreign_keys": "[StudentSkillScore.assignment_student_id]"
+        }
     )
 
 
@@ -1825,18 +2077,22 @@ class AIUsageLog(SQLModel, table=True):
 
     __tablename__ = "ai_usage_logs"
     __table_args__ = (
-        Index('idx_ai_usage_teacher', 'teacher_id'),
-        Index('idx_ai_usage_timestamp', 'timestamp'),
-        Index('idx_ai_usage_provider', 'provider'),
-        Index('idx_ai_usage_activity_type', 'activity_type'),
+        Index("idx_ai_usage_teacher", "teacher_id"),
+        Index("idx_ai_usage_timestamp", "timestamp"),
+        Index("idx_ai_usage_provider", "provider"),
+        Index("idx_ai_usage_activity_type", "activity_type"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    teacher_id: uuid.UUID = Field(foreign_key="teachers.id", index=True, ondelete="CASCADE")
+    teacher_id: uuid.UUID = Field(
+        foreign_key="teachers.id", index=True, ondelete="CASCADE"
+    )
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
     operation_type: str = Field(max_length=50)  # "llm_generation", "tts_generation"
     activity_type: str = Field(max_length=100)  # "vocabulary_quiz", "ai_quiz", etc.
-    provider: str = Field(max_length=50)  # "deepseek", "gemini", "edge_tts", "azure_tts"
+    provider: str = Field(
+        max_length=50
+    )  # "deepseek", "gemini", "edge_tts", "azure_tts"
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
     audio_characters: int = Field(default=0, ge=0)

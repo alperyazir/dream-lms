@@ -5,6 +5,7 @@ Revises: k0515739l3m3
 Create Date: 2026-03-04
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -20,7 +21,9 @@ def upgrade() -> None:
     # Add system message columns to direct_messages
     op.add_column(
         "direct_messages",
-        sa.Column("is_system", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column(
+            "is_system", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
     )
     op.add_column(
         "direct_messages",

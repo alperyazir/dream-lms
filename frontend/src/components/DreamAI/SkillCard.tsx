@@ -12,9 +12,9 @@ import {
   Pencil,
   Shuffle,
   Type,
-} from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 /** Map icon string from API to Lucide component */
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -25,10 +25,13 @@ const ICON_MAP: Record<string, LucideIcon> = {
   type: Type,
   braces: Braces,
   shuffle: Shuffle,
-}
+};
 
 /** Skill color → Tailwind classes */
-const COLOR_MAP: Record<string, { bg: string; border: string; ring: string; gradient: string }> = {
+const COLOR_MAP: Record<
+  string,
+  { bg: string; border: string; ring: string; gradient: string }
+> = {
   blue: {
     bg: "bg-blue-500/10",
     border: "border-blue-500",
@@ -71,21 +74,21 @@ const COLOR_MAP: Record<string, { bg: string; border: string; ring: string; grad
     ring: "ring-slate-500/20",
     gradient: "from-slate-500 to-gray-500",
   },
-}
+};
 
-const DEFAULT_COLORS = COLOR_MAP.purple
+const DEFAULT_COLORS = COLOR_MAP.purple;
 
 export interface SkillCardProps {
-  name: string
-  slug: string
-  icon: string
-  color: string
-  description: string
-  formatCount: number
-  isSelected: boolean
-  isDisabled: boolean
-  disabledLabel?: string
-  onClick: () => void
+  name: string;
+  slug: string;
+  icon: string;
+  color: string;
+  description: string;
+  formatCount: number;
+  isSelected: boolean;
+  isDisabled: boolean;
+  disabledLabel?: string;
+  onClick: () => void;
 }
 
 export function SkillCard({
@@ -99,8 +102,8 @@ export function SkillCard({
   disabledLabel,
   onClick,
 }: SkillCardProps) {
-  const IconComponent = ICON_MAP[icon] || Type
-  const colors = COLOR_MAP[color] || DEFAULT_COLORS
+  const IconComponent = ICON_MAP[icon] || Type;
+  const colors = COLOR_MAP[color] || DEFAULT_COLORS;
 
   return (
     <button
@@ -136,9 +139,7 @@ export function SkillCard({
         className={cn(
           "p-2.5 rounded-lg bg-gradient-to-br mb-2 transition-all duration-200 shadow-md",
           colors.gradient,
-          isSelected
-            ? "shadow-lg"
-            : "group-hover:shadow-lg",
+          isSelected ? "shadow-lg" : "group-hover:shadow-lg",
         )}
       >
         <IconComponent className="h-6 w-6 text-white" />
@@ -159,5 +160,5 @@ export function SkillCard({
         </Badge>
       )}
     </button>
-  )
+  );
 }

@@ -11,12 +11,12 @@ import {
   FileText,
   Loader2,
   Users,
-} from "lucide-react"
-import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -24,16 +24,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { useAssignmentAnalytics } from "@/hooks/useAssignmentAnalytics"
+} from "@/components/ui/table";
+import { useAssignmentAnalytics } from "@/hooks/useAssignmentAnalytics";
 import type {
   ActivityAnalyticsItem,
   StudentActivityScore,
-} from "@/types/assignment"
-import { exportMultiActivityAnalytics } from "@/utils/exportAnalytics"
+} from "@/types/assignment";
+import { exportMultiActivityAnalytics } from "@/utils/exportAnalytics";
 
 interface MultiActivityAnalyticsTableProps {
-  assignmentId: string
+  assignmentId: string;
 }
 
 /**
@@ -49,22 +49,22 @@ function formatActivityType(type: string): string {
     multiple_choice: "Multiple Choice",
     coloring: "Coloring",
     drawing: "Drawing",
-  }
+  };
   return (
     typeMap[type] ||
     type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  )
+  );
 }
 
 /**
  * Format score for display (percentage or N/A)
  */
 function formatScore(score: number | null, maxScore?: number): string {
-  if (score === null) return "N/A"
+  if (score === null) return "N/A";
   if (maxScore && maxScore > 0) {
-    return `${Math.round((score / maxScore) * 100)}%`
+    return `${Math.round((score / maxScore) * 100)}%`;
   }
-  return `${Math.round(score)}%`
+  return `${Math.round(score)}%`;
 }
 
 /**
@@ -75,11 +75,11 @@ function getStatusBadgeVariant(
 ): "default" | "secondary" | "outline" {
   switch (status) {
     case "completed":
-      return "default"
+      return "default";
     case "in_progress":
-      return "secondary"
+      return "secondary";
     default:
-      return "outline"
+      return "outline";
   }
 }
 
@@ -90,8 +90,8 @@ function StudentScoresRow({
   students,
   isLoading,
 }: {
-  students: StudentActivityScore[] | null
-  isLoading: boolean
+  students: StudentActivityScore[] | null;
+  isLoading: boolean;
 }) {
   if (isLoading) {
     return (
@@ -103,7 +103,7 @@ function StudentScoresRow({
           </div>
         </TableCell>
       </TableRow>
-    )
+    );
   }
 
   if (!students || students.length === 0) {
@@ -116,7 +116,7 @@ function StudentScoresRow({
           No student submissions yet
         </TableCell>
       </TableRow>
-    )
+    );
   }
 
   return (
@@ -163,7 +163,7 @@ function StudentScoresRow({
         </TableRow>
       ))}
     </>
-  )
+  );
 }
 
 /**
@@ -176,13 +176,13 @@ function ActivityRow({
   expandedStudents,
   isLoadingStudents,
 }: {
-  activity: ActivityAnalyticsItem
-  isExpanded: boolean
-  onToggleExpand: () => void
-  expandedStudents: StudentActivityScore[] | null
-  isLoadingStudents: boolean
+  activity: ActivityAnalyticsItem;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  expandedStudents: StudentActivityScore[] | null;
+  isLoadingStudents: boolean;
 }) {
-  const completionPercent = Math.round(activity.completion_rate * 100)
+  const completionPercent = Math.round(activity.completion_rate * 100);
 
   return (
     <>
@@ -235,7 +235,7 @@ function ActivityRow({
         />
       )}
     </>
-  )
+  );
 }
 
 /**
@@ -249,7 +249,7 @@ function TableSkeleton() {
       <Skeleton className="h-12 w-full" />
       <Skeleton className="h-12 w-full" />
     </div>
-  )
+  );
 }
 
 /**
@@ -260,14 +260,14 @@ export function MultiActivityAnalyticsTable({
 }: MultiActivityAnalyticsTableProps) {
   const [expandedActivityId, setExpandedActivityId] = useState<string | null>(
     null,
-  )
+  );
 
   // Fetch base analytics
   const {
     data: analytics,
     isLoading,
     error,
-  } = useAssignmentAnalytics(assignmentId)
+  } = useAssignmentAnalytics(assignmentId);
 
   // Fetch expanded student data when an activity is expanded
   const { data: expandedData, isLoading: isLoadingExpanded } =
@@ -275,14 +275,14 @@ export function MultiActivityAnalyticsTable({
       assignmentId,
       expandedActivityId || undefined,
       Boolean(expandedActivityId),
-    )
+    );
 
   const handleToggleExpand = (activityId: string) => {
-    setExpandedActivityId((prev) => (prev === activityId ? null : activityId))
-  }
+    setExpandedActivityId((prev) => (prev === activityId ? null : activityId));
+  };
 
   if (isLoading) {
-    return <TableSkeleton />
+    return <TableSkeleton />;
   }
 
   if (error) {
@@ -290,7 +290,7 @@ export function MultiActivityAnalyticsTable({
       <div className="p-4 text-center text-destructive">
         Failed to load analytics. Please try again.
       </div>
-    )
+    );
   }
 
   if (!analytics || analytics.activities.length === 0) {
@@ -299,7 +299,7 @@ export function MultiActivityAnalyticsTable({
         <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
         <p>No activities found for this assignment.</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -360,5 +360,5 @@ export function MultiActivityAnalyticsTable({
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

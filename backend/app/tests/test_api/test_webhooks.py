@@ -27,7 +27,9 @@ def mock_dcs_cache():
     """Mock DCS cache for testing cache invalidation."""
     cache_mock = MagicMock()
     cache_mock.invalidate = AsyncMock(return_value=True)
-    cache_mock.invalidate_pattern = AsyncMock(return_value=5)  # Mock number of invalidated entries
+    cache_mock.invalidate_pattern = AsyncMock(
+        return_value=5
+    )  # Mock number of invalidated entries
 
     with patch("app.api.routes.webhooks.get_dcs_cache", return_value=cache_mock):
         yield cache_mock
@@ -57,7 +59,9 @@ def valid_webhook_payload() -> dict:
 @pytest.fixture
 def valid_webhook_signature(valid_webhook_payload: dict, webhook_secret: str) -> str:
     """Generate valid HMAC signature for test payload."""
-    payload_bytes = json.dumps(valid_webhook_payload, separators=(",", ":")).encode("utf-8")
+    payload_bytes = json.dumps(valid_webhook_payload, separators=(",", ":")).encode(
+        "utf-8"
+    )
     signature = hmac.new(
         webhook_secret.encode("utf-8"), payload_bytes, hashlib.sha256
     ).hexdigest()
@@ -76,10 +80,14 @@ def test_webhook_signature_validation_success(
 ):
     """Test that webhooks with valid signatures are accepted."""
     # Mock the webhook secret setting
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     # Generate valid signature
-    payload_bytes = json.dumps(valid_webhook_payload, separators=(",", ":")).encode("utf-8")
+    payload_bytes = json.dumps(valid_webhook_payload, separators=(",", ":")).encode(
+        "utf-8"
+    )
     signature = hmac.new(
         webhook_secret.encode("utf-8"), payload_bytes, hashlib.sha256
     ).hexdigest()
@@ -132,7 +140,9 @@ async def test_webhook_event_created(
     mock_dcs_cache,
 ):
     """Test that book.created events are logged correctly and invalidate cache."""
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     payload = {
         "event": "book.created",
@@ -160,7 +170,9 @@ async def test_webhook_event_created(
     event_id = uuid.UUID(response.json()["event_id"])
 
     # Verify event was logged in database
-    result = await async_session.execute(select(WebhookEventLog).where(WebhookEventLog.id == event_id))
+    result = await async_session.execute(
+        select(WebhookEventLog).where(WebhookEventLog.id == event_id)
+    )
     event_log = result.scalar_one_or_none()
     assert event_log is not None
     assert event_log.event_type == WebhookEventType.book_created
@@ -178,7 +190,9 @@ async def test_webhook_event_updated(
     mock_dcs_cache,
 ):
     """Test that book.updated events are logged correctly and invalidate cache."""
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     payload = {
         "event": "book.updated",
@@ -206,7 +220,9 @@ async def test_webhook_event_updated(
     event_id = uuid.UUID(response.json()["event_id"])
 
     # Verify event was logged in database
-    result = await async_session.execute(select(WebhookEventLog).where(WebhookEventLog.id == event_id))
+    result = await async_session.execute(
+        select(WebhookEventLog).where(WebhookEventLog.id == event_id)
+    )
     event_log = result.scalar_one_or_none()
     assert event_log is not None
     assert event_log.event_type == WebhookEventType.book_updated
@@ -222,7 +238,9 @@ async def test_webhook_event_deleted(
     mock_dcs_cache,
 ):
     """Test that book.deleted events are logged correctly and invalidate cache."""
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     payload = {
         "event": "book.deleted",
@@ -250,7 +268,9 @@ async def test_webhook_event_deleted(
     event_id = uuid.UUID(response.json()["event_id"])
 
     # Verify event was logged in database
-    result = await async_session.execute(select(WebhookEventLog).where(WebhookEventLog.id == event_id))
+    result = await async_session.execute(
+        select(WebhookEventLog).where(WebhookEventLog.id == event_id)
+    )
     event_log = result.scalar_one_or_none()
     assert event_log is not None
     assert event_log.event_type == WebhookEventType.book_deleted
@@ -270,9 +290,13 @@ async def test_webhook_event_logged(
     mock_dcs_cache,
 ):
     """Test that webhook events are properly logged to database."""
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
-    payload_bytes = json.dumps(valid_webhook_payload, separators=(",", ":")).encode("utf-8")
+    payload_bytes = json.dumps(valid_webhook_payload, separators=(",", ":")).encode(
+        "utf-8"
+    )
     signature = hmac.new(
         webhook_secret.encode("utf-8"), payload_bytes, hashlib.sha256
     ).hexdigest()
@@ -287,7 +311,9 @@ async def test_webhook_event_logged(
     event_id = uuid.UUID(response.json()["event_id"])
 
     # Verify event log was created
-    result = await async_session.execute(select(WebhookEventLog).where(WebhookEventLog.id == event_id))
+    result = await async_session.execute(
+        select(WebhookEventLog).where(WebhookEventLog.id == event_id)
+    )
     event_log = result.scalar_one_or_none()
     assert event_log is not None
     assert event_log.event_type == WebhookEventType.book_updated
@@ -310,7 +336,9 @@ async def test_webhook_book_created_cache_invalidation(
     monkeypatch,
 ):
     """Test that book.created webhooks trigger correct cache invalidations."""
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     cache_mock = MagicMock()
     cache_mock.invalidate = AsyncMock(return_value=True)
@@ -343,10 +371,12 @@ async def test_webhook_book_created_cache_invalidation(
 
         # Wait for background processing
         import asyncio
+
         await asyncio.sleep(0.5)
 
         # Verify correct cache invalidations for book.created
         from app.services.dcs_cache import CacheKeys
+
         cache_mock.invalidate.assert_any_call(CacheKeys.BOOK_LIST)
         cache_mock.invalidate_pattern.assert_any_call("dcs:books:publisher:")
 
@@ -359,7 +389,9 @@ async def test_webhook_book_updated_cache_invalidation(
     monkeypatch,
 ):
     """Test that book.updated webhooks trigger correct cache invalidations."""
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     cache_mock = MagicMock()
     cache_mock.invalidate = AsyncMock(return_value=True)
@@ -392,10 +424,12 @@ async def test_webhook_book_updated_cache_invalidation(
 
         # Wait for background processing
         import asyncio
+
         await asyncio.sleep(0.5)
 
         # Verify correct cache invalidations for book.updated
         from app.services.dcs_cache import CacheKeys
+
         book_id = str(payload["data"]["id"])
         cache_mock.invalidate.assert_any_call(CacheKeys.book_by_id(book_id))
         cache_mock.invalidate.assert_any_call(CacheKeys.book_config(book_id))
@@ -410,7 +444,9 @@ async def test_webhook_book_deleted_cache_invalidation(
     monkeypatch,
 ):
     """Test that book.deleted webhooks trigger correct cache invalidations."""
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     cache_mock = MagicMock()
     cache_mock.invalidate = AsyncMock(return_value=True)
@@ -443,10 +479,12 @@ async def test_webhook_book_deleted_cache_invalidation(
 
         # Wait for background processing
         import asyncio
+
         await asyncio.sleep(0.5)
 
         # Verify correct cache invalidations for book.deleted
         from app.services.dcs_cache import CacheKeys
+
         book_id = str(payload["data"]["id"])
         cache_mock.invalidate_pattern.assert_any_call(f"dcs:books:id:{book_id}")
         cache_mock.invalidate.assert_any_call(CacheKeys.BOOK_LIST)
@@ -461,7 +499,9 @@ def test_webhook_invalid_payload_format(
     monkeypatch,
 ):
     """Test that invalid payload formats are rejected."""
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     invalid_payload = {
         "invalid": "payload",
@@ -502,7 +542,9 @@ async def test_webhook_end_to_end_book_created(
     4. Cache invalidation is triggered
     5. Event status updated to success
     """
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     # Mock DCS cache
     cache_mock = MagicMock()
@@ -539,6 +581,7 @@ async def test_webhook_end_to_end_book_created(
 
         # Wait a moment for background task to complete
         import asyncio
+
         await asyncio.sleep(0.5)
 
         # Verify event log was created and processed
@@ -550,10 +593,14 @@ async def test_webhook_end_to_end_book_created(
         assert event_log.event_type == WebhookEventType.book_created
         assert event_log.book_id == 456
         # Event should be processed (either success or still pending in fast test environment)
-        assert event_log.status in [WebhookEventStatus.pending, WebhookEventStatus.success]
+        assert event_log.status in [
+            WebhookEventStatus.pending,
+            WebhookEventStatus.success,
+        ]
 
         # Verify cache invalidation was called for book.created
         from app.services.dcs_cache import CacheKeys
+
         cache_mock.invalidate.assert_any_call(CacheKeys.BOOK_LIST)
         cache_mock.invalidate_pattern.assert_any_call("dcs:books:publisher:")
 
@@ -574,7 +621,9 @@ async def test_webhook_retry_on_failure(
     4. Retry count is incremented
     5. Eventually succeeds on retry
     """
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     # Mock cache invalidation to fail twice, then succeed
     call_count = 0
@@ -585,7 +634,9 @@ async def test_webhook_retry_on_failure(
 
         if call_count <= 2:
             # Fail first two attempts
-            raise Exception(f"Cache invalidation temporary failure (attempt {call_count})")
+            raise Exception(
+                f"Cache invalidation temporary failure (attempt {call_count})"
+            )
 
         # Succeed on third attempt
         return True
@@ -623,6 +674,7 @@ async def test_webhook_retry_on_failure(
         # Wait for background task with retries to complete
         # With exponential backoff: 1s + 2s + 4s = 7s max, but we'll wait 8s to be safe
         import asyncio
+
         await asyncio.sleep(8)
 
         # Verify event log shows retry attempts
@@ -639,7 +691,9 @@ async def test_webhook_retry_on_failure(
         # - Attempt 1: book_by_id (fail, count=1) → retry
         # - Attempt 2: book_by_id (fail, count=2) → retry
         # - Attempt 3: book_by_id, book_config, BOOK_LIST (success, count=3,4,5)
-        assert call_count == 5  # Called 5 times total (2 failed attempts + 3 successful invalidations)
+        assert (
+            call_count == 5
+        )  # Called 5 times total (2 failed attempts + 3 successful invalidations)
 
 
 @pytest.mark.asyncio
@@ -658,7 +712,9 @@ async def test_webhook_max_retries_exhausted(
     4. Error message is logged
     5. Processed timestamp is set
     """
-    monkeypatch.setattr(settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret)
+    monkeypatch.setattr(
+        settings, "DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET", webhook_secret
+    )
 
     # Mock cache invalidation to always fail
     async def mock_invalidate_always_fails(*args, **kwargs):
@@ -697,6 +753,7 @@ async def test_webhook_max_retries_exhausted(
         # Wait for all retry attempts to exhaust
         # With exponential backoff: 1s + 2s + 4s = 7s max, wait 8s to be safe
         import asyncio
+
         await asyncio.sleep(8)
 
         # Verify event log shows permanent failure

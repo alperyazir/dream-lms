@@ -8,7 +8,7 @@ and error rates across teachers, activity types, and providers.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Integer, case, func
+from sqlalchemy import case, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -156,7 +156,9 @@ class UsageAnalyticsService:
             func.sum(tts_case).label("tts_count"),
             func.coalesce(func.sum(AIUsageLog.input_tokens), 0).label("total_input"),
             func.coalesce(func.sum(AIUsageLog.output_tokens), 0).label("total_output"),
-            func.coalesce(func.sum(AIUsageLog.audio_characters), 0).label("total_audio"),
+            func.coalesce(func.sum(AIUsageLog.audio_characters), 0).label(
+                "total_audio"
+            ),
             func.coalesce(func.avg(AIUsageLog.duration_ms), 0).label("avg_duration"),
         )
 
@@ -222,7 +224,9 @@ class UsageAnalyticsService:
                 AIUsageLog.teacher_id,
                 User.full_name.label("teacher_name"),
                 func.count(AIUsageLog.id).label("total_generations"),
-                func.coalesce(func.sum(AIUsageLog.estimated_cost), 0).label("estimated_cost"),
+                func.coalesce(func.sum(AIUsageLog.estimated_cost), 0).label(
+                    "estimated_cost"
+                ),
                 func.max(AIUsageLog.timestamp).label("last_activity_date"),
             )
             .join(Teacher, Teacher.id == AIUsageLog.teacher_id)

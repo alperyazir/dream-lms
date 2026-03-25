@@ -88,7 +88,9 @@ def school_fixture(session: Session, benchmark_publisher: Publisher) -> School:
 
 
 @pytest.fixture(name="benchmark_teacher")
-def teacher_fixture(session: Session, benchmark_school: School) -> tuple[Teacher, User, str]:
+def teacher_fixture(
+    session: Session, benchmark_school: School
+) -> tuple[Teacher, User, str]:
     """Create teacher with token."""
     teacher_user = User(
         email="benchmark.teacher@test.com",
@@ -156,7 +158,9 @@ def activity_fixture(session: Session, benchmark_book: Book) -> Activity:
 
 
 @pytest.fixture(name="benchmark_class")
-def class_fixture(session: Session, benchmark_teacher: tuple, benchmark_school: School) -> Class:
+def class_fixture(
+    session: Session, benchmark_teacher: tuple, benchmark_school: School
+) -> Class:
     """Create the teacher's own class."""
     teacher, _, _ = benchmark_teacher
     test_class = Class(
@@ -173,7 +177,9 @@ def class_fixture(session: Session, benchmark_teacher: tuple, benchmark_school: 
 
 
 @pytest.fixture(name="benchmark_students")
-def students_fixture(session: Session, benchmark_class: Class, benchmark_school: School) -> list[Student]:
+def students_fixture(
+    session: Session, benchmark_class: Class, benchmark_school: School
+) -> list[Student]:
     """Create 5 students enrolled in the class."""
     students = []
     for i in range(5):
@@ -332,7 +338,10 @@ def test_get_class_benchmarks_school_benchmark_threshold(
     if data["school_benchmark"] is not None:
         # If < 5 classes in school, is_available should be False
         # (In this test setup, we only have 1 class so benchmark won't be available)
-        assert data["school_benchmark"]["is_available"] is False or data["school_benchmark"]["sample_size"] < 5
+        assert (
+            data["school_benchmark"]["is_available"] is False
+            or data["school_benchmark"]["sample_size"] < 5
+        )
 
 
 def test_get_class_benchmarks_unauthorized(

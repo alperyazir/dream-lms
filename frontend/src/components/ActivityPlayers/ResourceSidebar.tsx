@@ -21,31 +21,31 @@ import {
   Subtitles,
   Video,
   X,
-} from "lucide-react"
-import { useEffect, useState } from "react"
-import { OpenAPI } from "@/client"
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { OpenAPI } from "@/client";
 import {
   getMaterialTypeLabel,
   MaterialTypeIcon,
-} from "@/components/materials/MaterialTypeIcon"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
+} from "@/components/materials/MaterialTypeIcon";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import type {
   AdditionalResourcesResponse,
   TeacherMaterialResourceResponse,
   VideoResource,
-} from "@/types/assignment"
-import type { MaterialType } from "@/types/material"
-import { AudioPlayer } from "./AudioPlayer"
-import { VideoPlayer } from "./VideoPlayer"
+} from "@/types/assignment";
+import type { MaterialType } from "@/types/material";
+import { AudioPlayer } from "./AudioPlayer";
+import { VideoPlayer } from "./VideoPlayer";
 
 /**
  * Get auth token from localStorage
  */
 function getAuthToken(): string | null {
-  return localStorage.getItem("access_token")
+  return localStorage.getItem("access_token");
 }
 
 /**
@@ -57,45 +57,45 @@ async function fetchMaterialBlobUrl(
   materialId: string,
   directDownloadUrl?: string | null,
 ): Promise<string> {
-  const token = getAuthToken()
+  const token = getAuthToken();
   // Use direct download URL if available (preview mode uses teacher materials API directly)
   const url =
     directDownloadUrl ??
-    `${OpenAPI.BASE}/api/v1/assignments/${assignmentId}/materials/${materialId}/download`
+    `${OpenAPI.BASE}/api/v1/assignments/${assignmentId}/materials/${materialId}/download`;
 
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  })
+  });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch material: ${response.status}`)
+    throw new Error(`Failed to fetch material: ${response.status}`);
   }
 
-  const blob = await response.blob()
-  return URL.createObjectURL(blob)
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 }
 
 export interface ResourceSidebarProps {
   /** Additional resources attached to the assignment */
-  resources: AdditionalResourcesResponse | null
+  resources: AdditionalResourcesResponse | null;
   /** Book ID for constructing video URLs */
-  bookId: string
+  bookId: string;
   /** Assignment ID for material download URLs */
-  assignmentId: string
+  assignmentId: string;
   /** Function to get video stream URL */
-  getVideoUrl: (bookId: string, videoPath: string) => string
+  getVideoUrl: (bookId: string, videoPath: string) => string;
   /** Function to get subtitle URL */
-  getSubtitleUrl: (bookId: string, videoPath: string) => string
+  getSubtitleUrl: (bookId: string, videoPath: string) => string;
   /** Whether the sidebar is open */
-  isOpen: boolean
+  isOpen: boolean;
   /** Callback to close the sidebar */
-  onClose: () => void
+  onClose: () => void;
   /** Currently selected video for playback */
-  selectedVideo: VideoResource | null
+  selectedVideo: VideoResource | null;
   /** Callback when video is selected */
-  onSelectVideo: (video: VideoResource | null) => void
+  onSelectVideo: (video: VideoResource | null) => void;
 }
 
 /**
@@ -109,11 +109,11 @@ function getMaterialStreamUrl(
 ): string {
   // Use direct download URL if available (preview mode uses teacher materials API directly)
   if (directDownloadUrl) {
-    return directDownloadUrl
+    return directDownloadUrl;
   }
-  const token = getAuthToken()
-  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
-  return `${OpenAPI.BASE}/api/v1/assignments/${assignmentId}/materials/${materialId}/download${tokenParam}`
+  const token = getAuthToken();
+  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
+  return `${OpenAPI.BASE}/api/v1/assignments/${assignmentId}/materials/${materialId}/download${tokenParam}`;
 }
 
 export function ResourceSidebar({
@@ -129,113 +129,113 @@ export function ResourceSidebar({
 }: ResourceSidebarProps) {
   // State for viewing teacher materials in fullscreen modal
   const [selectedMaterial, setSelectedMaterial] =
-    useState<TeacherMaterialResourceResponse | null>(null)
+    useState<TeacherMaterialResourceResponse | null>(null);
   // State for blob URL loading
-  const [blobUrl, setBlobUrl] = useState<string | null>(null)
-  const [isLoadingBlob, setIsLoadingBlob] = useState(false)
-  const [blobError, setBlobError] = useState<string | null>(null)
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isLoadingBlob, setIsLoadingBlob] = useState(false);
+  const [blobError, setBlobError] = useState<string | null>(null);
 
   // Fetch blob URL when material is selected (only for non-streaming types)
   useEffect(() => {
     // Track the current blob URL for cleanup
-    let currentBlobUrl: string | null = null
+    let currentBlobUrl: string | null = null;
 
     if (!selectedMaterial) {
       // Cleanup previous blob URL when material is deselected
       setBlobUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev)
-        return null
-      })
-      setBlobError(null)
-      return
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setBlobError(null);
+      return;
     }
 
     // Video/audio use direct streaming URLs - no blob needed
     // Only fetch blob for documents and images
     const needsBlob = ["document", "image"].includes(
       selectedMaterial.material_type,
-    )
+    );
     if (!needsBlob) {
-      return
+      return;
     }
 
     const loadBlob = async () => {
-      setIsLoadingBlob(true)
-      setBlobError(null)
+      setIsLoadingBlob(true);
+      setBlobError(null);
       // Clear previous blob URL before loading new one
       setBlobUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev)
-        return null
-      })
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
 
       try {
         const url = await fetchMaterialBlobUrl(
           assignmentId,
           selectedMaterial.material_id,
           selectedMaterial.download_url,
-        )
-        currentBlobUrl = url
-        setBlobUrl(url)
+        );
+        currentBlobUrl = url;
+        setBlobUrl(url);
       } catch (err) {
-        console.error("Failed to load material:", err)
-        setBlobError("Failed to load file. Please try again.")
+        console.error("Failed to load material:", err);
+        setBlobError("Failed to load file. Please try again.");
       } finally {
-        setIsLoadingBlob(false)
+        setIsLoadingBlob(false);
       }
-    }
+    };
 
-    loadBlob()
+    loadBlob();
 
     // Cleanup on unmount or when material changes
     return () => {
       if (currentBlobUrl) {
-        URL.revokeObjectURL(currentBlobUrl)
+        URL.revokeObjectURL(currentBlobUrl);
       }
-    }
+    };
   }, [
     selectedMaterial?.material_id,
     assignmentId,
     selectedMaterial?.download_url,
     selectedMaterial,
-  ])
+  ]);
 
   // Check if there are any resources
-  const hasVideos = resources && resources.videos.length > 0
+  const hasVideos = resources && resources.videos.length > 0;
   const hasMaterials =
-    resources && (resources.teacher_materials?.length ?? 0) > 0
-  const hasResources = hasVideos || hasMaterials
+    resources && (resources.teacher_materials?.length ?? 0) > 0;
+  const hasResources = hasVideos || hasMaterials;
   const totalCount =
     (resources?.videos.length ?? 0) +
-    (resources?.teacher_materials?.length ?? 0)
+    (resources?.teacher_materials?.length ?? 0);
 
   if (!hasResources || !isOpen) {
-    return null
+    return null;
   }
 
   const handlePlayVideo = (video: VideoResource) => {
-    onSelectVideo(video)
-  }
+    onSelectVideo(video);
+  };
 
   const handleCloseVideo = () => {
-    onSelectVideo(null)
-  }
+    onSelectVideo(null);
+  };
 
   /**
    * Handle material action based on type
    */
   const handleMaterialAction = (material: TeacherMaterialResourceResponse) => {
-    if (!material.is_available) return
+    if (!material.is_available) return;
 
-    const materialType = material.material_type
+    const materialType = material.material_type;
 
     if (materialType === "url" && material.url) {
       // Open URL in new tab
-      window.open(material.url, "_blank", "noopener,noreferrer")
+      window.open(material.url, "_blank", "noopener,noreferrer");
     } else {
       // Open all other types in fullscreen modal
-      setSelectedMaterial(material)
+      setSelectedMaterial(material);
     }
-  }
+  };
 
   /**
    * Get action button text based on material type
@@ -243,21 +243,21 @@ export function ResourceSidebar({
   const getActionText = (material: TeacherMaterialResourceResponse): string => {
     switch (material.material_type) {
       case "url":
-        return "Open Link"
+        return "Open Link";
       case "text_note":
-        return "View Note"
+        return "View Note";
       case "video":
-        return "Watch Video"
+        return "Watch Video";
       case "audio":
-        return "Listen"
+        return "Listen";
       case "image":
-        return "View Image"
+        return "View Image";
       case "document":
-        return "View Document"
+        return "View Document";
       default:
-        return "View"
+        return "View";
     }
-  }
+  };
 
   /**
    * Get action icon based on material type
@@ -265,32 +265,32 @@ export function ResourceSidebar({
   const ActionIcon = ({
     material,
   }: {
-    material: TeacherMaterialResourceResponse
+    material: TeacherMaterialResourceResponse;
   }) => {
     switch (material.material_type) {
       case "url":
-        return <ExternalLink className="h-4 w-4 mr-2" />
+        return <ExternalLink className="h-4 w-4 mr-2" />;
       case "text_note":
-        return <FileText className="h-4 w-4 mr-2" />
+        return <FileText className="h-4 w-4 mr-2" />;
       case "video":
-        return <Play className="h-4 w-4 mr-2" />
+        return <Play className="h-4 w-4 mr-2" />;
       case "audio":
-        return <Headphones className="h-4 w-4 mr-2" />
+        return <Headphones className="h-4 w-4 mr-2" />;
       case "image":
-        return <ImageIcon className="h-4 w-4 mr-2" />
+        return <ImageIcon className="h-4 w-4 mr-2" />;
       case "document":
-        return <FileText className="h-4 w-4 mr-2" />
+        return <FileText className="h-4 w-4 mr-2" />;
       default:
-        return <Play className="h-4 w-4 mr-2" />
+        return <Play className="h-4 w-4 mr-2" />;
     }
-  }
+  };
 
   /**
    * Close material viewer modal
    */
   const handleCloseMaterialViewer = () => {
-    setSelectedMaterial(null)
-  }
+    setSelectedMaterial(null);
+  };
 
   /**
    * Render content based on material type
@@ -302,10 +302,10 @@ export function ResourceSidebar({
       assignmentId,
       material.material_id,
       material.download_url,
-    )
+    );
 
     // For documents/images, we need blob URLs (show loading state)
-    const needsBlob = ["document", "image"].includes(material.material_type)
+    const needsBlob = ["document", "image"].includes(material.material_type);
 
     if (needsBlob) {
       if (isLoadingBlob) {
@@ -314,7 +314,7 @@ export function ResourceSidebar({
             <Loader2 className="h-12 w-12 animate-spin text-teal-400" />
             <p className="text-white/80">Loading {material.material_type}...</p>
           </div>
-        )
+        );
       }
 
       if (blobError) {
@@ -326,8 +326,8 @@ export function ResourceSidebar({
                 variant="outline"
                 onClick={() => {
                   // Retry loading
-                  setIsLoadingBlob(true)
-                  setBlobError(null)
+                  setIsLoadingBlob(true);
+                  setBlobError(null);
                   fetchMaterialBlobUrl(
                     assignmentId,
                     material.material_id,
@@ -337,7 +337,7 @@ export function ResourceSidebar({
                     .catch(() =>
                       setBlobError("Failed to load file. Please try again."),
                     )
-                    .finally(() => setIsLoadingBlob(false))
+                    .finally(() => setIsLoadingBlob(false));
                 }}
               >
                 Retry
@@ -346,7 +346,7 @@ export function ResourceSidebar({
                 variant="outline"
                 onClick={() => {
                   // Download as fallback
-                  window.open(streamUrl, "_blank")
+                  window.open(streamUrl, "_blank");
                 }}
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -354,7 +354,7 @@ export function ResourceSidebar({
               </Button>
             </div>
           </div>
-        )
+        );
       }
 
       if (!blobUrl) {
@@ -365,7 +365,7 @@ export function ResourceSidebar({
               Preparing {material.material_type}...
             </p>
           </div>
-        )
+        );
       }
     }
 
@@ -380,7 +380,7 @@ export function ResourceSidebar({
               className="max-h-[70vh] w-auto [&_video]:object-contain [&_video]:max-h-[70vh]"
             />
           </div>
-        )
+        );
 
       case "audio":
         // Use direct streaming URL - supports HTTP Range requests
@@ -393,7 +393,7 @@ export function ResourceSidebar({
             </div>
             <AudioPlayer src={streamUrl} isExpanded={true} />
           </div>
-        )
+        );
 
       case "image":
         return (
@@ -404,7 +404,7 @@ export function ResourceSidebar({
               className="max-w-full max-h-[80vh] object-contain rounded-lg"
             />
           </div>
-        )
+        );
 
       case "document":
         return (
@@ -415,7 +415,7 @@ export function ResourceSidebar({
               title={material.name}
             />
           </div>
-        )
+        );
 
       case "text_note":
         return (
@@ -426,7 +426,7 @@ export function ResourceSidebar({
               </pre>
             </div>
           </div>
-        )
+        );
 
       default:
         return (
@@ -440,17 +440,17 @@ export function ResourceSidebar({
                   assignmentId,
                   material.material_id,
                   material.download_url,
-                )
-                window.open(downloadUrl, "_blank")
+                );
+                window.open(downloadUrl, "_blank");
               }}
             >
               <Download className="h-4 w-4 mr-2" />
               Download File
             </Button>
           </div>
-        )
+        );
     }
-  }
+  };
 
   return (
     <>
@@ -695,16 +695,16 @@ export function ResourceSidebar({
         </div>
       )}
     </>
-  )
+  );
 }
 
 /**
  * Resources Toggle Button - to be used in the header
  */
 export interface ResourcesButtonProps {
-  resourceCount: number
-  isOpen: boolean
-  onClick: () => void
+  resourceCount: number;
+  isOpen: boolean;
+  onClick: () => void;
 }
 
 export function ResourcesButton({
@@ -712,7 +712,7 @@ export function ResourcesButton({
   isOpen,
   onClick,
 }: ResourcesButtonProps) {
-  if (resourceCount === 0) return null
+  if (resourceCount === 0) return null;
 
   return (
     <Button
@@ -727,7 +727,7 @@ export function ResourcesButton({
         {resourceCount}
       </span>
     </Button>
-  )
+  );
 }
 
-export default ResourceSidebar
+export default ResourceSidebar;

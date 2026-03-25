@@ -5,25 +5,25 @@
  * Clicking a module toggles all activities in that module.
  */
 
-import { Check, ChevronRight, Layers } from "lucide-react"
-import { useCallback } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import type { ModuleWithActivities } from "@/types/book"
+import { Check, ChevronRight, Layers } from "lucide-react";
+import { useCallback } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { ModuleWithActivities } from "@/types/book";
 
 interface ModuleSelectionListProps {
-  modules: ModuleWithActivities[]
-  selectedActivityIds: Set<string>
-  onModuleToggle: (module: ModuleWithActivities) => void
+  modules: ModuleWithActivities[];
+  selectedActivityIds: Set<string>;
+  onModuleToggle: (module: ModuleWithActivities) => void;
 }
 
 interface ModuleCardProps {
-  module: ModuleWithActivities
-  selectedCount: number
-  isFullySelected: boolean
-  isPartiallySelected: boolean
-  onToggle: () => void
+  module: ModuleWithActivities;
+  selectedCount: number;
+  isFullySelected: boolean;
+  isPartiallySelected: boolean;
+  onToggle: () => void;
 }
 
 function ModuleCard({
@@ -33,7 +33,7 @@ function ModuleCard({
   isPartiallySelected,
   onToggle,
 }: ModuleCardProps) {
-  const selectionPercentage = (selectedCount / module.activity_count) * 100
+  const selectionPercentage = (selectedCount / module.activity_count) * 100;
 
   return (
     <button
@@ -113,7 +113,7 @@ function ModuleCard({
         </div>
       )}
     </button>
-  )
+  );
 }
 
 export function ModuleSelectionList({
@@ -125,31 +125,31 @@ export function ModuleSelectionList({
   const getSelectedCount = useCallback(
     (module: ModuleWithActivities): number => {
       return module.activity_ids.filter((id) => selectedActivityIds.has(id))
-        .length
+        .length;
     },
     [selectedActivityIds],
-  )
+  );
 
   // Check if a module is fully selected
   const isModuleFullySelected = useCallback(
     (module: ModuleWithActivities): boolean => {
-      return module.activity_ids.every((id) => selectedActivityIds.has(id))
+      return module.activity_ids.every((id) => selectedActivityIds.has(id));
     },
     [selectedActivityIds],
-  )
+  );
 
   // Check if a module is partially selected
   const isModulePartiallySelected = useCallback(
     (module: ModuleWithActivities): boolean => {
-      if (isModuleFullySelected(module)) return false
-      return module.activity_ids.some((id) => selectedActivityIds.has(id))
+      if (isModuleFullySelected(module)) return false;
+      return module.activity_ids.some((id) => selectedActivityIds.has(id));
     },
     [selectedActivityIds, isModuleFullySelected],
-  )
+  );
 
   // Calculate totals
-  const totalActivities = modules.reduce((sum, m) => sum + m.activity_count, 0)
-  const totalSelected = Array.from(selectedActivityIds).length
+  const totalActivities = modules.reduce((sum, m) => sum + m.activity_count, 0);
+  const totalSelected = Array.from(selectedActivityIds).length;
 
   return (
     <div className="flex flex-col h-full">
@@ -167,9 +167,9 @@ export function ModuleSelectionList({
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-2">
           {modules.map((module) => {
-            const selectedCount = getSelectedCount(module)
-            const isFullySelected = isModuleFullySelected(module)
-            const isPartiallySelected = isModulePartiallySelected(module)
+            const selectedCount = getSelectedCount(module);
+            const isFullySelected = isModuleFullySelected(module);
+            const isPartiallySelected = isModulePartiallySelected(module);
 
             return (
               <ModuleCard
@@ -180,10 +180,10 @@ export function ModuleSelectionList({
                 isPartiallySelected={isPartiallySelected}
                 onToggle={() => onModuleToggle(module)}
               />
-            )
+            );
           })}
         </div>
       </ScrollArea>
     </div>
-  )
+  );
 }

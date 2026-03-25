@@ -12,28 +12,28 @@ import {
   RefreshCw,
   Volume2,
   XCircle,
-} from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { useSoundContext } from "@/hooks/useSoundEffects"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useSoundContext } from "@/hooks/useSoundEffects";
+import { cn } from "@/lib/utils";
 import type {
   SentenceBuilderResult,
   SentenceResult,
-} from "@/types/sentence-builder"
-import { DIFFICULTY_LABELS } from "@/types/sentence-builder"
+} from "@/types/sentence-builder";
+import { DIFFICULTY_LABELS } from "@/types/sentence-builder";
 
 interface SentenceBuilderResultsProps {
   /** The sentence builder result data */
-  result: SentenceBuilderResult
+  result: SentenceBuilderResult;
   /** Callback to retry the activity */
-  onRetry?: () => void
+  onRetry?: () => void;
   /** Callback to go back to generator */
-  onBack?: () => void
+  onBack?: () => void;
   /** Hide summary card when embedded in result page (to avoid duplication) */
-  hideSummary?: boolean
+  hideSummary?: boolean;
 }
 
 export function SentenceBuilderResults({
@@ -42,63 +42,63 @@ export function SentenceBuilderResults({
   onBack,
   hideSummary = false,
 }: SentenceBuilderResultsProps) {
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const { play: playSound } = useSoundContext()
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { play: playSound } = useSoundContext();
 
   const correctCount = result.sentence_results.filter(
     (r) => r.is_correct,
-  ).length
-  const totalCount = result.total
-  const percentage = result.percentage
+  ).length;
+  const totalCount = result.total;
+  const percentage = result.percentage;
 
   // Play completion sound on mount
   useEffect(() => {
     if (percentage >= 60) {
-      playSound("complete")
+      playSound("complete");
     }
-  }, [percentage, playSound])
+  }, [percentage, playSound]);
 
   // Determine score color
   const getScoreColor = (pct: number) => {
-    if (pct >= 80) return "text-green-600 dark:text-green-400"
-    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400"
-    return "text-red-600 dark:text-red-400"
-  }
+    if (pct >= 80) return "text-green-600 dark:text-green-400";
+    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
+  };
 
   // Determine progress color
   const getProgressClass = (pct: number) => {
-    if (pct >= 80) return "[&>div]:bg-green-500"
-    if (pct >= 60) return "[&>div]:bg-yellow-500"
-    return "[&>div]:bg-red-500"
-  }
+    if (pct >= 80) return "[&>div]:bg-green-500";
+    if (pct >= 60) return "[&>div]:bg-yellow-500";
+    return "[&>div]:bg-red-500";
+  };
 
   // Play audio for a sentence
   const handlePlayAudio = useCallback((audioUrl: string) => {
     if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current = null
+      audioRef.current.pause();
+      audioRef.current = null;
     }
 
-    const audio = new Audio(audioUrl)
-    audioRef.current = audio
-    setPlayingAudio(audioUrl)
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
+    setPlayingAudio(audioUrl);
 
     audio.onended = () => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    }
+      setPlayingAudio(null);
+      audioRef.current = null;
+    };
 
     audio.onerror = () => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    }
+      setPlayingAudio(null);
+      audioRef.current = null;
+    };
 
     audio.play().catch(() => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    })
-  }, [])
+      setPlayingAudio(null);
+      audioRef.current = null;
+    });
+  }, []);
 
   return (
     <div
@@ -196,14 +196,14 @@ export function SentenceBuilderResults({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 interface SentenceResultCardProps {
-  result: SentenceResult
-  index: number
-  onPlayAudio: (url: string) => void
-  playingAudio: string | null
+  result: SentenceResult;
+  index: number;
+  onPlayAudio: (url: string) => void;
+  playingAudio: string | null;
 }
 
 function SentenceResultCard({
@@ -212,7 +212,7 @@ function SentenceResultCard({
   onPlayAudio,
   playingAudio,
 }: SentenceResultCardProps) {
-  const hasAudio = result.audio_url !== null
+  const hasAudio = result.audio_url !== null;
 
   return (
     <Card
@@ -298,7 +298,7 @@ function SentenceResultCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-export default SentenceBuilderResults
+export default SentenceBuilderResults;

@@ -38,9 +38,9 @@ class Settings(BaseSettings):
     SERVER_HOST: str = "http://localhost:8000"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = []
+    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = (
+        []
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -58,12 +58,12 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = ""
 
     # Connection pool settings (tune per deployment)
-    DB_POOL_SIZE: int = 30              # Base connections per engine
-    DB_MAX_OVERFLOW: int = 20           # Extra connections under burst
-    DB_POOL_TIMEOUT: int = 10           # Seconds to wait for a connection
-    DB_POOL_RECYCLE: int = 300          # Recycle connections after N seconds
-    DB_STATEMENT_TIMEOUT: int = 30000   # Kill queries after N ms
-    DB_IDLE_TX_TIMEOUT: int = 30000     # Kill idle-in-transaction after N ms
+    DB_POOL_SIZE: int = 30  # Base connections per engine
+    DB_MAX_OVERFLOW: int = 20  # Extra connections under burst
+    DB_POOL_TIMEOUT: int = 10  # Seconds to wait for a connection
+    DB_POOL_RECYCLE: int = 300  # Recycle connections after N seconds
+    DB_STATEMENT_TIMEOUT: int = 30000  # Kill queries after N ms
+    DB_IDLE_TX_TIMEOUT: int = 30000  # Kill idle-in-transaction after N ms
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -105,7 +105,9 @@ class Settings(BaseSettings):
 
     # Dream Central Storage API Integration
     DREAM_CENTRAL_STORAGE_URL: str = "http://localhost:8081"
-    DREAM_CENTRAL_STORAGE_API_KEY: str = ""  # API key auth (preferred over email/password)
+    DREAM_CENTRAL_STORAGE_API_KEY: str = (
+        ""  # API key auth (preferred over email/password)
+    )
     DREAM_CENTRAL_STORAGE_EMAIL: str = "admin@admin.com"  # Fallback: JWT auth
     DREAM_CENTRAL_STORAGE_PASSWORD: str = "admin"  # Fallback: JWT auth
     DREAM_CENTRAL_STORAGE_TOKEN_EXPIRY: int = 1800  # 30 minutes in seconds

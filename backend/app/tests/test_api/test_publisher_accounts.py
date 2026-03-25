@@ -2,6 +2,7 @@
 API tests for publisher account CRUD endpoints.
 Story 25.2: Admin Publisher Account CRUD
 """
+
 import uuid
 from unittest.mock import AsyncMock, patch
 
@@ -9,7 +10,6 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.models import User, UserRole
 from app.schemas.publisher import PublisherPublic
 
 
@@ -69,7 +69,10 @@ class TestCreatePublisherAccount:
         assert result["user"]["role"] == "publisher"
         assert result["user"]["dcs_publisher_id"] == 12345
         # Password should be returned since emails are disabled in test
-        assert result["temporary_password"] is not None or result["password_emailed"] is True
+        assert (
+            result["temporary_password"] is not None
+            or result["password_emailed"] is True
+        )
 
     def test_create_publisher_account_invalid_dcs_publisher(
         self, client: TestClient, admin_token: str, mock_publisher_service_not_found
@@ -90,7 +93,11 @@ class TestCreatePublisherAccount:
         assert "DCS Publisher ID 99999 not found" in response.json()["detail"]
 
     def test_create_publisher_account_duplicate_email(
-        self, client: TestClient, admin_token: str, mock_publisher_service, session: Session
+        self,
+        client: TestClient,
+        admin_token: str,
+        mock_publisher_service,
+        session: Session,
     ):
         """Test creating a publisher account with duplicate email fails."""
         # First create an account
@@ -123,7 +130,11 @@ class TestCreatePublisherAccount:
         assert "email already exists" in response2.json()["detail"].lower()
 
     def test_create_publisher_account_duplicate_username(
-        self, client: TestClient, admin_token: str, mock_publisher_service, session: Session
+        self,
+        client: TestClient,
+        admin_token: str,
+        mock_publisher_service,
+        session: Session,
     ):
         """Test creating a publisher account with duplicate username fails."""
         # First create an account
@@ -432,7 +443,9 @@ class TestUpdatePublisherAccount:
         with patch("app.api.routes.admin.get_publisher_service") as mock:
             service = AsyncMock()
             service.get_publisher = AsyncMock(
-                return_value=PublisherPublic(id=12345, name="Test", contact_email=None, logo_url=None)
+                return_value=PublisherPublic(
+                    id=12345, name="Test", contact_email=None, logo_url=None
+                )
             )
             mock.return_value = service
 

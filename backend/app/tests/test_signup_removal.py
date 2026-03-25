@@ -16,9 +16,7 @@ def test_signup_endpoint_returns_404(client: TestClient) -> None:
     }
 
     # Act
-    response = client.post(
-        f"{settings.API_V1_STR}/signup", json=signup_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/signup", json=signup_data)
 
     # Assert
     assert response.status_code == 404
@@ -33,9 +31,7 @@ def test_existing_login_still_works(client: TestClient, admin_user: User) -> Non
     }
 
     # Act
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token", data=login_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
     # Assert
     assert response.status_code == 200

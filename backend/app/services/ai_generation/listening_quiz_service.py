@@ -94,9 +94,7 @@ class ListeningQuizService:
                 self._dcs_client, request.book_id, request.module_ids
             )
         except ValueError as e:
-            raise DCSAIDataNotFoundError(
-                message=str(e), book_id=request.book_id
-            ) from e
+            raise DCSAIDataNotFoundError(message=str(e), book_id=request.book_id) from e
 
         language = request.language or ctx.language
 
@@ -211,5 +209,3 @@ class ListeningQuizService:
         if cefr_upper in ("A2", "B1"):
             return "medium"
         return "hard"
-
-

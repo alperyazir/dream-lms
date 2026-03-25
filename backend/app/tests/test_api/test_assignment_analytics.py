@@ -72,7 +72,9 @@ def school_fixture(session: Session, asgn_analytics_publisher: Publisher) -> Sch
 
 
 @pytest.fixture(name="asgn_analytics_teacher")
-def teacher_fixture(session: Session, asgn_analytics_school: School) -> tuple[Teacher, User, str]:
+def teacher_fixture(
+    session: Session, asgn_analytics_school: School
+) -> tuple[Teacher, User, str]:
     """Create teacher with token."""
     teacher_user = User(
         email="asgn.analytics.teacher@test.com",
@@ -101,7 +103,9 @@ def teacher_fixture(session: Session, asgn_analytics_school: School) -> tuple[Te
 
 
 @pytest.fixture(name="asgn_analytics_other_teacher")
-def other_teacher_fixture(session: Session, asgn_analytics_school: School) -> tuple[Teacher, User, str]:
+def other_teacher_fixture(
+    session: Session, asgn_analytics_school: School
+) -> tuple[Teacher, User, str]:
     """Create another teacher for authorization tests."""
     teacher_user = User(
         email="other.asgn.teacher@test.com",
@@ -299,7 +303,9 @@ def assignment_with_submissions_fixture(
             answers_json=answers,
             completed_at=completed_at,
             time_spent_minutes=time_spent,
-            started_at=(completed_at - timedelta(minutes=time_spent)) if completed_at else None,
+            started_at=(
+                (completed_at - timedelta(minutes=time_spent)) if completed_at else None
+            ),
         )
         session.add(asgn_student)
         assignment_students.append(asgn_student)
@@ -376,7 +382,9 @@ def empty_assignment_fixture(
 
 def test_get_assignment_detailed_results_success(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test successful retrieval of detailed assignment results."""
@@ -408,7 +416,9 @@ def test_get_assignment_detailed_results_success(
 
 def test_get_assignment_completion_overview(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test completion overview calculation."""
@@ -436,7 +446,9 @@ def test_get_assignment_completion_overview(
 
 def test_get_assignment_score_statistics(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test score statistics calculation."""
@@ -464,7 +476,9 @@ def test_get_assignment_score_statistics(
 
 def test_get_assignment_student_results(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test student results list."""
@@ -500,7 +514,9 @@ def test_get_assignment_student_results(
 
 def test_get_assignment_question_analysis_dragdrop(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test question-level analysis for dragdroppicture activity."""
@@ -546,7 +562,9 @@ def test_get_assignment_question_analysis_dragdrop(
 
 def test_get_assignment_most_missed_questions(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test identification of most missed questions."""
@@ -566,12 +584,17 @@ def test_get_assignment_most_missed_questions(
     # Most missed should be sorted by lowest correct percentage
     if len(most_missed) > 1:
         for i in range(1, len(most_missed)):
-            assert most_missed[i - 1]["correct_percentage"] <= most_missed[i]["correct_percentage"]
+            assert (
+                most_missed[i - 1]["correct_percentage"]
+                <= most_missed[i]["correct_percentage"]
+            )
 
 
 def test_get_assignment_authorization_own_assignment_only(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_other_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test that teacher can only access their own assignments."""
@@ -632,7 +655,9 @@ def test_get_assignment_nonexistent(
 
 def test_get_student_answers_success(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test retrieval of individual student's answers."""
@@ -665,7 +690,9 @@ def test_get_student_answers_success(
 
 def test_get_student_answers_authorization(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_other_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test that teacher can only view answers for their own assignments."""
@@ -684,7 +711,9 @@ def test_get_student_answers_authorization(
 
 def test_get_student_answers_nonexistent_student(
     client: TestClient,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_teacher: tuple[Teacher, User, str],
 ) -> None:
     """Test getting answers for non-existent student submission."""
@@ -703,7 +732,9 @@ def test_get_student_answers_nonexistent_student(
 def test_get_assignment_requires_teacher_role(
     client: TestClient,
     session: Session,
-    assignment_with_varied_submissions: tuple[Assignment, Activity, list[AssignmentStudent]],
+    assignment_with_varied_submissions: tuple[
+        Assignment, Activity, list[AssignmentStudent]
+    ],
     asgn_analytics_class: tuple[Class, list[tuple[Student, User]]],
 ) -> None:
     """Test that non-teachers cannot access assignment analytics."""

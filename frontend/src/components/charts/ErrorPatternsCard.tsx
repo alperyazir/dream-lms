@@ -1,19 +1,19 @@
-import { AlertCircle } from "lucide-react"
-import React from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AlertCircle } from "lucide-react";
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface ErrorPattern {
-  activity_type: string
-  error_description: string
-  frequency: number
-  student_ids: string[]
+  activity_type: string;
+  error_description: string;
+  frequency: number;
+  student_ids: string[];
 }
 
 export interface ErrorPatternsCardProps {
-  patterns: ErrorPattern[]
-  onViewDetails?: (studentId: string) => void
+  patterns: ErrorPattern[];
+  onViewDetails?: (studentId: string) => void;
 }
 
 /**
@@ -36,12 +36,12 @@ export const ErrorPatternsCard = React.memo(
         markwithx: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
         puzzleFindWords:
           "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      }
+      };
       return (
         colorMap[activityType] ||
         "bg-gray-100 text-gray-800 dark:bg-neutral-800 dark:text-gray-200"
-      )
-    }
+      );
+    };
 
     // Activity type display names
     const getActivityTypeName = (activityType: string): string => {
@@ -52,12 +52,12 @@ export const ErrorPatternsCard = React.memo(
         circle: "Circle",
         markwithx: "Mark with X",
         puzzleFindWords: "Word Search",
-      }
-      return nameMap[activityType] || activityType
-    }
+      };
+      return nameMap[activityType] || activityType;
+    };
 
     // Take top 5 patterns
-    const topPatterns = patterns.slice(0, 5)
+    const topPatterns = patterns.slice(0, 5);
 
     return (
       <Card className="shadow-lg">
@@ -114,8 +114,8 @@ export const ErrorPatternsCard = React.memo(
           )}
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-ErrorPatternsCard.displayName = "ErrorPatternsCard"
+ErrorPatternsCard.displayName = "ErrorPatternsCard";

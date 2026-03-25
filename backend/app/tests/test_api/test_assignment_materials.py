@@ -68,7 +68,9 @@ def publisher_fixture(session: Session) -> Publisher:
 
 
 @pytest.fixture(name="teacher_with_record")
-def teacher_with_record_fixture(session: Session, school: School) -> tuple[User, Teacher]:
+def teacher_with_record_fixture(
+    session: Session, school: School
+) -> tuple[User, Teacher]:
     """Create a teacher user with Teacher record."""
     user = User(
         id=uuid.uuid4(),
@@ -96,7 +98,9 @@ def teacher_with_record_fixture(session: Session, school: School) -> tuple[User,
 
 
 @pytest.fixture(name="student_with_record")
-def student_with_record_fixture(session: Session, school: School) -> tuple[User, Student]:
+def student_with_record_fixture(
+    session: Session, school: School
+) -> tuple[User, Student]:
     """Create a student user with Student record."""
     user = User(
         id=uuid.uuid4(),
@@ -329,6 +333,7 @@ class TestCreateAssignmentWithMaterials:
 
         # Get teacher token
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(teacher_user.id))
 
         future_date = datetime.now(UTC) + timedelta(days=7)
@@ -376,6 +381,7 @@ class TestCreateAssignmentWithMaterials:
         _, student = student_with_record
 
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(teacher_user.id))
 
         future_date = datetime.now(UTC) + timedelta(days=7)
@@ -436,12 +442,11 @@ class TestDownloadAssignmentMaterial:
         student_user, _ = student_with_record
 
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(student_user.id))
 
         # Mock the DCS client to avoid external calls
-        with patch(
-            "app.api.routes.assignments.get_dream_storage_client"
-        ) as mock_dcs:
+        with patch("app.api.routes.assignments.get_dream_storage_client") as mock_dcs:
             mock_client = AsyncMock()
             mock_client.get_teacher_material_size = AsyncMock(return_value=1024)
             mock_client.stream_teacher_material = AsyncMock(
@@ -471,6 +476,7 @@ class TestDownloadAssignmentMaterial:
         student_user, _ = student_with_record
 
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(student_user.id))
 
         response = client.get(
@@ -537,6 +543,7 @@ class TestDownloadAssignmentMaterial:
         session.commit()
 
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(other_user.id))
 
         response = client.get(
@@ -559,11 +566,10 @@ class TestDownloadAssignmentMaterial:
         teacher_user, _ = teacher_with_record
 
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(teacher_user.id))
 
-        with patch(
-            "app.api.routes.assignments.get_dream_storage_client"
-        ) as mock_dcs:
+        with patch("app.api.routes.assignments.get_dream_storage_client") as mock_dcs:
             mock_client = AsyncMock()
             mock_client.get_teacher_material_size = AsyncMock(return_value=1024)
             mock_client.stream_teacher_material = AsyncMock(
@@ -591,11 +597,10 @@ class TestDownloadAssignmentMaterial:
         student_user, _ = student_with_record
 
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(student_user.id))
 
-        with patch(
-            "app.api.routes.assignments.get_dream_storage_client"
-        ) as mock_dcs:
+        with patch("app.api.routes.assignments.get_dream_storage_client") as mock_dcs:
             mock_client = AsyncMock()
             mock_client.get_teacher_material_size = AsyncMock(return_value=1024)
             mock_client.stream_teacher_material = AsyncMock(
@@ -687,6 +692,7 @@ class TestMaterialEnrichment:
         # Student starts assignment - should see material as unavailable
         student_user, _ = student_with_record
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(student_user.id))
 
         response = client.get(
@@ -720,6 +726,7 @@ class TestUpdateAssignmentResources:
         teacher_user, _ = teacher_with_record
 
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(teacher_user.id))
 
         update_data = {
@@ -762,6 +769,7 @@ class TestUpdateAssignmentResources:
         teacher_user, _ = teacher_with_record
 
         from app.core.security import create_access_token
+
         token = create_access_token(subject=str(teacher_user.id))
 
         update_data = {

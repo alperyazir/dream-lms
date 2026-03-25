@@ -9,7 +9,6 @@ Story 27.10: Reading Comprehension Generation
 
 from typing import Any
 
-
 # System prompt for reading comprehension generation (passage + questions)
 READING_SYSTEM_PROMPT = """You are an expert educational content creator specializing in creating engaging reading passages and comprehension questions for language learners.
 
@@ -191,7 +190,7 @@ READING_JSON_SCHEMA: dict[str, Any] = {
                     "passage_reference",
                 ],
             },
-        }
+        },
     },
     "required": ["passage", "questions"],
 }
@@ -252,10 +251,12 @@ def build_reading_prompt(
     type_distribution = "\n".join(distribution_parts)
 
     # Format topics for display
-    topics_str = ", ".join(topics) if topics else "general topics from the module"
+    ", ".join(topics) if topics else "general topics from the module"
 
     # Format vocabulary for display
-    vocab_str = ", ".join(vocabulary[:30]) if vocabulary else "use topic-appropriate vocabulary"
+    vocab_str = (
+        ", ".join(vocabulary[:30]) if vocabulary else "use topic-appropriate vocabulary"
+    )
 
     # Format grammar points section
     if grammar_points:
@@ -289,10 +290,16 @@ def build_reading_prompt(
         variation_instruction = ""
 
     # Format summaries
-    if context_sample and context_sample.strip() and context_sample != "(Use topics and vocabulary as guidance)":
+    if (
+        context_sample
+        and context_sample.strip()
+        and context_sample != "(Use topics and vocabulary as guidance)"
+    ):
         summaries_str = context_sample
     else:
-        summaries_str = "(No module summaries available — use vocabulary and grammar as guidance)"
+        summaries_str = (
+            "(No module summaries available — use vocabulary and grammar as guidance)"
+        )
 
     return READING_USER_PROMPT_TEMPLATE.format(
         vocabulary=vocab_str,

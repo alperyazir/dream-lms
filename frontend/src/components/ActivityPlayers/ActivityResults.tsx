@@ -3,19 +3,19 @@
  * Story 2.5 - Phase 1, Task 1.4
  */
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 
 export interface ScoreResult {
-  score: number // 0-100 percentage
-  correct: number
-  total: number
-  breakdown?: Record<string, unknown>
+  score: number; // 0-100 percentage
+  correct: number;
+  total: number;
+  breakdown?: Record<string, unknown>;
 }
 
 interface ActivityResultsProps {
-  scoreResult: ScoreResult
-  onReviewAnswers: () => void
-  onExit: () => void
+  scoreResult: ScoreResult;
+  onReviewAnswers: () => void;
+  onExit: () => void;
 }
 
 export function ActivityResults({
@@ -23,26 +23,26 @@ export function ActivityResults({
   onReviewAnswers,
   onExit,
 }: ActivityResultsProps) {
-  const { score, correct, total } = scoreResult
+  const { score, correct, total } = scoreResult;
 
   // Determine score color and message
   const getScoreColor = () => {
-    if (score >= 90) return "text-green-600 dark:text-green-400"
-    if (score >= 70) return "text-teal-600 dark:text-teal-400"
-    if (score >= 50) return "text-orange-600 dark:text-orange-400"
-    return "text-red-600 dark:text-red-400"
-  }
+    if (score >= 90) return "text-green-600 dark:text-green-400";
+    if (score >= 70) return "text-teal-600 dark:text-teal-400";
+    if (score >= 50) return "text-orange-600 dark:text-orange-400";
+    return "text-red-600 dark:text-red-400";
+  };
 
   const getScoreMessage = () => {
-    if (score >= 90) return "Excellent Work!"
-    if (score >= 70) return "Great Job!"
-    if (score >= 50) return "Good Effort!"
-    return "Keep Practicing!"
-  }
+    if (score >= 90) return "Excellent Work!";
+    if (score >= 70) return "Great Job!";
+    if (score >= 50) return "Good Effort!";
+    return "Keep Practicing!";
+  };
 
   // Calculate circle progress for animation
-  const circumference = 2 * Math.PI * 90 // radius = 90
-  const strokeDashoffset = circumference - (score / 100) * circumference
+  const circumference = 2 * Math.PI * 90; // radius = 90
+  const strokeDashoffset = circumference - (score / 100) * circumference;
 
   return (
     <div className="flex min-h-[calc(100vh-200px)] items-center justify-center p-4">
@@ -170,5 +170,5 @@ export function ActivityResults({
         )}
       </div>
     </div>
-  )
+  );
 }

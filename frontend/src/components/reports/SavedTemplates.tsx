@@ -5,8 +5,8 @@
  * Lists and manages saved report configurations
  */
 
-import { FileText, Play, Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { FileText, Play, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,9 +17,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -28,25 +28,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import type {
   ReportGenerateRequest,
   SavedReportTemplate,
-} from "@/types/reports"
-import { REPORT_PERIOD_LABELS, REPORT_TYPE_LABELS } from "@/types/reports"
+} from "@/types/reports";
+import { REPORT_PERIOD_LABELS, REPORT_TYPE_LABELS } from "@/types/reports";
 
 interface SavedTemplatesProps {
-  templates: SavedReportTemplate[]
-  isLoading?: boolean
-  isSaving?: boolean
-  isDeleting?: boolean
-  onUseTemplate: (config: ReportGenerateRequest) => void
-  onSaveTemplate: (name: string, config: ReportGenerateRequest) => void
-  onDeleteTemplate: (templateId: string) => void
-  currentConfig?: ReportGenerateRequest | null
+  templates: SavedReportTemplate[];
+  isLoading?: boolean;
+  isSaving?: boolean;
+  isDeleting?: boolean;
+  onUseTemplate: (config: ReportGenerateRequest) => void;
+  onSaveTemplate: (name: string, config: ReportGenerateRequest) => void;
+  onDeleteTemplate: (templateId: string) => void;
+  currentConfig?: ReportGenerateRequest | null;
 }
 
 export function SavedTemplates({
@@ -59,22 +59,22 @@ export function SavedTemplates({
   onDeleteTemplate,
   currentConfig,
 }: SavedTemplatesProps) {
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
-  const [templateName, setTemplateName] = useState("")
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
 
   const handleSave = () => {
     if (templateName.trim() && currentConfig) {
-      onSaveTemplate(templateName.trim(), currentConfig)
-      setTemplateName("")
-      setSaveDialogOpen(false)
+      onSaveTemplate(templateName.trim(), currentConfig);
+      setTemplateName("");
+      setSaveDialogOpen(false);
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat("en-US", {
       dateStyle: "medium",
-    }).format(new Date(dateString))
-  }
+    }).format(new Date(dateString));
+  };
 
   if (isLoading) {
     return (
@@ -86,7 +86,7 @@ export function SavedTemplates({
           ))}
         </div>
       </Card>
-    )
+    );
   }
 
   return (
@@ -203,7 +203,7 @@ export function SavedTemplates({
         </div>
       )}
     </Card>
-  )
+  );
 }
 
-export default SavedTemplates
+export default SavedTemplates;

@@ -14,19 +14,19 @@ import {
   Type,
   Upload,
   X,
-} from "lucide-react"
-import type React from "react"
-import { useCallback, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
-import type { TeacherMaterialUploadResponse } from "@/types/teacher-material"
-import { MAX_PDF_SIZE, MAX_TEXT_INPUT_SIZE } from "@/types/teacher-material"
+} from "lucide-react";
+import type React from "react";
+import { useCallback, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import type { TeacherMaterialUploadResponse } from "@/types/teacher-material";
+import { MAX_PDF_SIZE, MAX_TEXT_INPUT_SIZE } from "@/types/teacher-material";
 
 // =============================================================================
 // Types
@@ -39,24 +39,24 @@ interface MaterialUploadProps {
     name: string,
     description?: string,
     onProgress?: (progress: number) => void,
-  ) => Promise<TeacherMaterialUploadResponse>
+  ) => Promise<TeacherMaterialUploadResponse>;
   /** Callback for text material creation */
   onCreateTextMaterial: (
     name: string,
     text: string,
     description?: string,
-  ) => Promise<TeacherMaterialUploadResponse>
+  ) => Promise<TeacherMaterialUploadResponse>;
   /** Whether component is disabled */
-  disabled?: boolean
+  disabled?: boolean;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 interface UploadState {
-  status: "idle" | "uploading" | "processing" | "success" | "error"
-  progress: number
-  error?: string
-  result?: TeacherMaterialUploadResponse
+  status: "idle" | "uploading" | "processing" | "success" | "error";
+  progress: number;
+  error?: string;
+  result?: TeacherMaterialUploadResponse;
 }
 
 // =============================================================================
@@ -70,27 +70,27 @@ export function MaterialUpload({
   className,
 }: MaterialUploadProps) {
   // Tab state
-  const [activeTab, setActiveTab] = useState<"pdf" | "text">("pdf")
+  const [activeTab, setActiveTab] = useState<"pdf" | "text">("pdf");
 
   // PDF upload state
-  const [isDragging, setIsDragging] = useState(false)
-  const [pdfName, setPdfName] = useState("")
-  const [pdfDescription, setPdfDescription] = useState("")
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState(false);
+  const [pdfName, setPdfName] = useState("");
+  const [pdfDescription, setPdfDescription] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pdfUploadState, setPdfUploadState] = useState<UploadState>({
     status: "idle",
     progress: 0,
-  })
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Text input state
-  const [textName, setTextName] = useState("")
-  const [textContent, setTextContent] = useState("")
-  const [textDescription, setTextDescription] = useState("")
+  const [textName, setTextName] = useState("");
+  const [textContent, setTextContent] = useState("");
+  const [textDescription, setTextDescription] = useState("");
   const [textUploadState, setTextUploadState] = useState<UploadState>({
     status: "idle",
     progress: 0,
-  })
+  });
 
   // =============================================================================
   // PDF Upload Handlers
@@ -98,83 +98,83 @@ export function MaterialUpload({
 
   const validatePdfFile = useCallback((file: File): string | null => {
     if (file.type !== "application/pdf" && file.type !== "application/x-pdf") {
-      return "Only PDF files are supported for text extraction"
+      return "Only PDF files are supported for text extraction";
     }
     if (file.size > MAX_PDF_SIZE) {
-      return `File size exceeds maximum of ${MAX_PDF_SIZE / (1024 * 1024)}MB`
+      return `File size exceeds maximum of ${MAX_PDF_SIZE / (1024 * 1024)}MB`;
     }
-    return null
-  }, [])
+    return null;
+  }, []);
 
   const handleFileSelect = useCallback(
     (file: File) => {
-      const error = validatePdfFile(file)
+      const error = validatePdfFile(file);
       if (error) {
-        setPdfUploadState({ status: "error", progress: 0, error })
-        return
+        setPdfUploadState({ status: "error", progress: 0, error });
+        return;
       }
-      setSelectedFile(file)
+      setSelectedFile(file);
       // Auto-fill name from filename if empty
       if (!pdfName) {
-        const nameWithoutExt = file.name.replace(/\.pdf$/i, "")
-        setPdfName(nameWithoutExt)
+        const nameWithoutExt = file.name.replace(/\.pdf$/i, "");
+        setPdfName(nameWithoutExt);
       }
-      setPdfUploadState({ status: "idle", progress: 0 })
+      setPdfUploadState({ status: "idle", progress: 0 });
     },
     [pdfName, validatePdfFile],
-  )
+  );
 
   const handleDragEnter = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      if (!disabled) setIsDragging(true)
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled) setIsDragging(true);
     },
     [disabled],
-  )
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsDragging(false)
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
 
-      if (disabled) return
+      if (disabled) return;
 
-      const files = e.dataTransfer.files
+      const files = e.dataTransfer.files;
       if (files.length > 0) {
-        handleFileSelect(files[0])
+        handleFileSelect(files[0]);
       }
     },
     [disabled, handleFileSelect],
-  )
+  );
 
   const handleFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
-        handleFileSelect(e.target.files[0])
+        handleFileSelect(e.target.files[0]);
       }
       // Reset input to allow re-selecting same file
-      e.target.value = ""
+      e.target.value = "";
     },
     [handleFileSelect],
-  )
+  );
 
   const handlePdfUpload = useCallback(async () => {
-    if (!selectedFile || !pdfName.trim()) return
+    if (!selectedFile || !pdfName.trim()) return;
 
-    setPdfUploadState({ status: "uploading", progress: 0 })
+    setPdfUploadState({ status: "uploading", progress: 0 });
 
     try {
       const result = await onUploadPdf(
@@ -186,34 +186,34 @@ export function MaterialUpload({
             ...prev,
             progress,
             status: progress < 100 ? "uploading" : "processing",
-          }))
+          }));
         },
-      )
+      );
 
-      setPdfUploadState({ status: "success", progress: 100, result })
+      setPdfUploadState({ status: "success", progress: 100, result });
       // Reset form
-      setSelectedFile(null)
-      setPdfName("")
-      setPdfDescription("")
+      setSelectedFile(null);
+      setPdfName("");
+      setPdfDescription("");
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Upload failed"
-      setPdfUploadState({ status: "error", progress: 0, error: errorMessage })
+      const errorMessage = err instanceof Error ? err.message : "Upload failed";
+      setPdfUploadState({ status: "error", progress: 0, error: errorMessage });
     }
-  }, [selectedFile, pdfName, pdfDescription, onUploadPdf])
+  }, [selectedFile, pdfName, pdfDescription, onUploadPdf]);
 
   const clearPdfState = useCallback(() => {
-    setSelectedFile(null)
-    setPdfName("")
-    setPdfDescription("")
-    setPdfUploadState({ status: "idle", progress: 0 })
-  }, [])
+    setSelectedFile(null);
+    setPdfName("");
+    setPdfDescription("");
+    setPdfUploadState({ status: "idle", progress: 0 });
+  }, []);
 
   // =============================================================================
   // Text Input Handlers
   // =============================================================================
 
   const handleTextSubmit = useCallback(async () => {
-    if (!textName.trim() || !textContent.trim()) return
+    if (!textName.trim() || !textContent.trim()) return;
 
     // Validate text size
     if (new Blob([textContent]).size > MAX_TEXT_INPUT_SIZE) {
@@ -221,45 +221,45 @@ export function MaterialUpload({
         status: "error",
         progress: 0,
         error: `Text exceeds maximum size of ${MAX_TEXT_INPUT_SIZE / 1024}KB`,
-      })
-      return
+      });
+      return;
     }
 
-    setTextUploadState({ status: "processing", progress: 50 })
+    setTextUploadState({ status: "processing", progress: 50 });
 
     try {
       const result = await onCreateTextMaterial(
         textName.trim(),
         textContent,
         textDescription.trim() || undefined,
-      )
+      );
 
-      setTextUploadState({ status: "success", progress: 100, result })
+      setTextUploadState({ status: "success", progress: 100, result });
       // Reset form
-      setTextName("")
-      setTextContent("")
-      setTextDescription("")
+      setTextName("");
+      setTextContent("");
+      setTextDescription("");
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to create material"
-      setTextUploadState({ status: "error", progress: 0, error: errorMessage })
+        err instanceof Error ? err.message : "Failed to create material";
+      setTextUploadState({ status: "error", progress: 0, error: errorMessage });
     }
-  }, [textName, textContent, textDescription, onCreateTextMaterial])
+  }, [textName, textContent, textDescription, onCreateTextMaterial]);
 
   const clearTextState = useCallback(() => {
-    setTextName("")
-    setTextContent("")
-    setTextDescription("")
-    setTextUploadState({ status: "idle", progress: 0 })
-  }, [])
+    setTextName("");
+    setTextContent("");
+    setTextDescription("");
+    setTextUploadState({ status: "idle", progress: 0 });
+  }, []);
 
   // =============================================================================
   // Render Helpers
   // =============================================================================
 
   const renderExtractionResult = (result: TeacherMaterialUploadResponse) => {
-    const extraction = result.extraction
-    if (!extraction) return null
+    const extraction = result.extraction;
+    if (!extraction) return null;
 
     return (
       <Card className="mt-4 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
@@ -300,8 +300,8 @@ export function MaterialUpload({
           </div>
         </CardContent>
       </Card>
-    )
-  }
+    );
+  };
 
   const renderError = (error: string, onDismiss: () => void) => (
     <Card className="mt-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
@@ -322,7 +322,7 @@ export function MaterialUpload({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 
   // =============================================================================
   // Main Render
@@ -380,8 +380,8 @@ export function MaterialUpload({
                       size="sm"
                       className="mt-2"
                       onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedFile(null)
+                        e.stopPropagation();
+                        setSelectedFile(null);
                       }}
                     >
                       Choose different file
@@ -609,7 +609,7 @@ export function MaterialUpload({
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
 
-MaterialUpload.displayName = "MaterialUpload"
+MaterialUpload.displayName = "MaterialUpload";

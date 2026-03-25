@@ -68,7 +68,9 @@ def school_fixture(session: Session, test_publisher: Publisher) -> School:
 
 
 @pytest.fixture(name="test_teacher")
-def teacher_fixture(session: Session, teacher_user: User, test_school: School) -> Teacher:
+def teacher_fixture(
+    session: Session, teacher_user: User, test_school: School
+) -> Teacher:
     """Create a test teacher."""
     teacher = Teacher(
         id=uuid.uuid4(),
@@ -82,7 +84,9 @@ def teacher_fixture(session: Session, teacher_user: User, test_school: School) -
 
 
 @pytest.fixture(name="test_student")
-def student_fixture(session: Session, student_user: User, test_school: School) -> Student:
+def student_fixture(
+    session: Session, student_user: User, test_school: School
+) -> Student:
     """Create a test student."""
     student = Student(
         id=uuid.uuid4(),
@@ -233,7 +237,10 @@ def test_save_progress_success(
 ):
     """Test successful progress save with 200 response and database update."""
     progress_data = {
-        "partial_answers_json": {"question_1": "answer_a", "selected_circles": [0, 2, 4]},
+        "partial_answers_json": {
+            "question_1": "answer_a",
+            "selected_circles": [0, 2, 4],
+        },
         "time_spent_minutes": 10,
     }
 
@@ -251,7 +258,10 @@ def test_save_progress_success(
 
     # Verify database was updated
     session.refresh(in_progress_assignment_student)
-    assert in_progress_assignment_student.progress_json == progress_data["partial_answers_json"]
+    assert (
+        in_progress_assignment_student.progress_json
+        == progress_data["partial_answers_json"]
+    )
     assert in_progress_assignment_student.time_spent_minutes == 10
     assert in_progress_assignment_student.last_saved_at is not None
 
@@ -411,7 +421,10 @@ def test_save_progress_json_stored_correctly(
 
     # Verify exact data structure preserved
     session.refresh(in_progress_assignment_student)
-    assert in_progress_assignment_student.progress_json == complex_progress["partial_answers_json"]
+    assert (
+        in_progress_assignment_student.progress_json
+        == complex_progress["partial_answers_json"]
+    )
 
 
 def test_save_progress_last_saved_at_updated(
@@ -440,6 +453,7 @@ def test_save_progress_last_saved_at_updated(
     progress_data["time_spent_minutes"] = 10
 
     import time
+
     time.sleep(0.1)  # Small delay to ensure different timestamp
 
     response2 = client.post(
@@ -541,7 +555,10 @@ def test_progress_json_cleared_after_submission(
     """
     # Step 1: Save progress first
     progress_data = {
-        "partial_answers_json": {"question_1": "partial_answer", "question_2": "partial_answer_2"},
+        "partial_answers_json": {
+            "question_1": "partial_answer",
+            "question_2": "partial_answer_2",
+        },
         "time_spent_minutes": 10,
     }
 
@@ -555,7 +572,10 @@ def test_progress_json_cleared_after_submission(
     # Verify progress was saved
     session.refresh(in_progress_assignment_student)
     assert in_progress_assignment_student.progress_json is not None
-    assert in_progress_assignment_student.progress_json == progress_data["partial_answers_json"]
+    assert (
+        in_progress_assignment_student.progress_json
+        == progress_data["partial_answers_json"]
+    )
 
     # Step 2: Submit the assignment
     submit_data = {

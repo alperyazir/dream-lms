@@ -6,12 +6,12 @@
  * for the unified AI content generator.
  */
 
-import { useCallback, useEffect, useState } from "react"
-import type { AIQuiz } from "@/types/ai-quiz"
-import type { ReadingComprehensionActivity } from "@/types/reading-comprehension"
-import type { SentenceBuilderActivity } from "@/types/sentence-builder"
-import type { VocabularyQuiz } from "@/types/vocabulary-quiz"
-import type { WordBuilderActivity } from "@/types/word-builder"
+import { useCallback, useEffect, useState } from "react";
+import type { AIQuiz } from "@/types/ai-quiz";
+import type { ReadingComprehensionActivity } from "@/types/reading-comprehension";
+import type { SentenceBuilderActivity } from "@/types/sentence-builder";
+import type { VocabularyQuiz } from "@/types/vocabulary-quiz";
+import type { WordBuilderActivity } from "@/types/word-builder";
 
 export type ActivityType =
   | "vocabulary_quiz"
@@ -28,35 +28,35 @@ export type ActivityType =
   | "listening_sentence_builder"
   | "listening_word_builder"
   | "vocabulary_matching"
-  | "speaking_open_response"
+  | "speaking_open_response";
 
 export type GeneratedActivity =
   | AIQuiz
   | VocabularyQuiz
   | ReadingComprehensionActivity
   | SentenceBuilderActivity
-  | WordBuilderActivity
+  | WordBuilderActivity;
 
 export interface GeneratorFormState {
   // Source (books only)
-  bookId: number | null
-  moduleIds: number[]
+  bookId: number | null;
+  moduleIds: number[];
 
   // Skill (Epic 30)
-  skillSlug: string | null
-  formatSlug: string | null
+  skillSlug: string | null;
+  formatSlug: string | null;
 
   // Activity
-  activityType: ActivityType | null
+  activityType: ActivityType | null;
 
   // Options (dynamic based on activity type)
-  options: Record<string, any>
+  options: Record<string, any>;
 }
 
 export interface GenerationState {
-  isLoading: boolean
-  error: string | null
-  result: GeneratedActivity | null
+  isLoading: boolean;
+  error: string | null;
+  result: GeneratedActivity | null;
 }
 
 const DEFAULT_FORM_STATE: GeneratorFormState = {
@@ -66,15 +66,15 @@ const DEFAULT_FORM_STATE: GeneratorFormState = {
   formatSlug: null,
   activityType: null,
   options: {},
-}
+};
 
 const DEFAULT_GENERATION_STATE: GenerationState = {
   isLoading: false,
   error: null,
   result: null,
-}
+};
 
-const STORAGE_KEY = "dreamai-generator-form-state"
+const STORAGE_KEY = "dreamai-generator-form-state";
 
 /**
  * Hook to manage AI content generator state
@@ -84,33 +84,33 @@ export function useGenerationState() {
   const [formState, setFormState] = useState<GeneratorFormState>(() => {
     // Try to restore from localStorage
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
+      const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved)
+        const parsed = JSON.parse(saved);
         // Validate parsed data has expected structure
         if (parsed && typeof parsed === "object" && "activityType" in parsed) {
-          return { ...DEFAULT_FORM_STATE, ...parsed }
+          return { ...DEFAULT_FORM_STATE, ...parsed };
         }
       }
     } catch (error) {
-      console.error("Failed to restore generator state:", error)
+      console.error("Failed to restore generator state:", error);
     }
-    return DEFAULT_FORM_STATE
-  })
+    return DEFAULT_FORM_STATE;
+  });
 
   // Generation state
   const [generationState, setGenerationState] = useState<GenerationState>(
     DEFAULT_GENERATION_STATE,
-  )
+  );
 
   // Persist form state to localStorage when it changes
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formState))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formState));
     } catch (error) {
-      console.error("Failed to save generator state:", error)
+      console.error("Failed to save generator state:", error);
     }
-  }, [formState])
+  }, [formState]);
 
   // Update book selection
   const setBookId = useCallback((bookId: number | null) => {
@@ -119,13 +119,13 @@ export function useGenerationState() {
       bookId,
       // Reset modules when book changes
       moduleIds: [],
-    }))
-  }, [])
+    }));
+  }, []);
 
   // Update module selection
   const setModuleIds = useCallback((moduleIds: number[]) => {
-    setFormState((prev) => ({ ...prev, moduleIds }))
-  }, [])
+    setFormState((prev) => ({ ...prev, moduleIds }));
+  }, []);
 
   // Update skill selection (Epic 30)
   const setSkillSlug = useCallback((skillSlug: string | null) => {
@@ -136,8 +136,8 @@ export function useGenerationState() {
       formatSlug: null,
       activityType: null,
       options: {},
-    }))
-  }, [])
+    }));
+  }, []);
 
   // Update format selection (Epic 30)
   const setFormatSlug = useCallback((formatSlug: string | null) => {
@@ -145,8 +145,8 @@ export function useGenerationState() {
       ...prev,
       formatSlug,
       options: {},
-    }))
-  }, [])
+    }));
+  }, []);
 
   // Update activity type
   const setActivityType = useCallback((activityType: ActivityType | null) => {
@@ -155,13 +155,13 @@ export function useGenerationState() {
       activityType,
       // Reset options when activity type changes
       options: {},
-    }))
-  }, [])
+    }));
+  }, []);
 
   // Update options
   const setOptions = useCallback((options: Record<string, any>) => {
-    setFormState((prev) => ({ ...prev, options }))
-  }, [])
+    setFormState((prev) => ({ ...prev, options }));
+  }, []);
 
   // Update a single option
   const setOption = useCallback((key: string, value: any) => {
@@ -171,8 +171,8 @@ export function useGenerationState() {
         ...prev.options,
         [key]: value,
       },
-    }))
-  }, [])
+    }));
+  }, []);
 
   // Start generation
   const startGeneration = useCallback(() => {
@@ -180,8 +180,8 @@ export function useGenerationState() {
       isLoading: true,
       error: null,
       result: null,
-    })
-  }, [])
+    });
+  }, []);
 
   // Set generation result
   const setGenerationResult = useCallback((result: GeneratedActivity) => {
@@ -189,8 +189,8 @@ export function useGenerationState() {
       isLoading: false,
       error: null,
       result,
-    })
-  }, [])
+    });
+  }, []);
 
   // Set generation error
   const setGenerationError = useCallback((error: string) => {
@@ -198,30 +198,30 @@ export function useGenerationState() {
       ...prev,
       isLoading: false,
       error,
-    }))
-  }, [])
+    }));
+  }, []);
 
   // Clear generation state
   const clearGeneration = useCallback(() => {
-    setGenerationState(DEFAULT_GENERATION_STATE)
-  }, [])
+    setGenerationState(DEFAULT_GENERATION_STATE);
+  }, []);
 
   // Reset form to defaults
   const resetForm = useCallback(() => {
-    setFormState(DEFAULT_FORM_STATE)
-    setGenerationState(DEFAULT_GENERATION_STATE)
-  }, [])
+    setFormState(DEFAULT_FORM_STATE);
+    setGenerationState(DEFAULT_GENERATION_STATE);
+  }, []);
 
   // Validate form is ready to generate
   const isFormValid = useCallback(() => {
-    const { bookId, moduleIds, activityType } = formState
+    const { bookId, moduleIds, activityType } = formState;
 
     // Must have activity type
-    if (!activityType) return false
+    if (!activityType) return false;
 
     // Must have book and at least one module
-    return bookId !== null && moduleIds.length > 0
-  }, [formState])
+    return bookId !== null && moduleIds.length > 0;
+  }, [formState]);
 
   return {
     // Form state
@@ -244,5 +244,5 @@ export function useGenerationState() {
     // Utilities
     isFormValid: isFormValid(),
     resetForm,
-  }
+  };
 }

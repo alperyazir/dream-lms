@@ -4,16 +4,19 @@
  * Task 8: Frontend Hook Tests
  */
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { renderHook, waitFor } from "@testing-library/react"
-import type { ReactNode } from "react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import * as assignmentsApi from "@/services/assignmentsApi"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as assignmentsApi from "@/services/assignmentsApi";
 import type {
   AssignmentDetailedResultsResponse,
   StudentAnswersResponse,
-} from "@/types/analytics"
-import { useAssignmentResults, useStudentAnswers } from "./useAssignmentResults"
+} from "@/types/analytics";
+import {
+  useAssignmentResults,
+  useStudentAnswers,
+} from "./useAssignmentResults";
 
 // Mock the API module
 vi.mock("@/services/assignmentsApi", () => ({
@@ -27,7 +30,7 @@ vi.mock("@/services/assignmentsApi", () => ({
     getAssignmentDetailedResults: vi.fn(),
     getStudentAnswers: vi.fn(),
   },
-}))
+}));
 
 // Mock detailed results response
 const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
@@ -119,7 +122,7 @@ const mockDetailedResultsResponse: AssignmentDetailedResultsResponse = {
     fill_in_blank: null,
     word_search: null,
   },
-}
+};
 
 // Mock student answers response
 const mockStudentAnswersResponse: StudentAnswersResponse = {
@@ -138,10 +141,10 @@ const mockStudentAnswersResponse: StudentAnswersResponse = {
   },
   activity_type: "dragdroppicture",
   config_json: null,
-}
+};
 
 describe("useAssignmentResults", () => {
-  let queryClient: QueryClient
+  let queryClient: QueryClient;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -149,20 +152,20 @@ describe("useAssignmentResults", () => {
         queries: { retry: false },
         mutations: { retry: false },
       },
-    })
-    vi.clearAllMocks()
-  })
+    });
+    vi.clearAllMocks();
+  });
 
   const createWrapper = () => {
     return ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    )
-  }
+    );
+  };
 
   it("returns correct properties", async () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockResolvedValue(
       mockDetailedResultsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -170,13 +173,13 @@ describe("useAssignmentResults", () => {
           assignmentId: "test-assignment-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
-    expect(result.current).toHaveProperty("results")
-    expect(result.current).toHaveProperty("isLoading")
-    expect(result.current).toHaveProperty("error")
-    expect(result.current).toHaveProperty("refetch")
-  })
+    expect(result.current).toHaveProperty("results");
+    expect(result.current).toHaveProperty("isLoading");
+    expect(result.current).toHaveProperty("error");
+    expect(result.current).toHaveProperty("refetch");
+  });
 
   it("starts with isLoading true and null results", () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockImplementation(
@@ -184,7 +187,7 @@ describe("useAssignmentResults", () => {
         new Promise((resolve) =>
           setTimeout(() => resolve(mockDetailedResultsResponse), 1000),
         ),
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -192,17 +195,17 @@ describe("useAssignmentResults", () => {
           assignmentId: "test-assignment-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
-    expect(result.current.isLoading).toBe(true)
-    expect(result.current.results).toBeNull()
-    expect(result.current.error).toBeNull()
-  })
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.results).toBeNull();
+    expect(result.current.error).toBeNull();
+  });
 
   it("calls getAssignmentDetailedResults with correct assignmentId", async () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockResolvedValue(
       mockDetailedResultsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -210,21 +213,21 @@ describe("useAssignmentResults", () => {
           assignmentId: "test-assignment-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
     expect(assignmentsApi.getAssignmentDetailedResults).toHaveBeenCalledWith(
       "test-assignment-123",
-    )
-  })
+    );
+  });
 
   it("returns results data on successful fetch", async () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockResolvedValue(
       mockDetailedResultsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -232,23 +235,23 @@ describe("useAssignmentResults", () => {
           assignmentId: "test-assignment-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.results).not.toBeNull()
-    })
+      expect(result.current.results).not.toBeNull();
+    });
 
-    expect(result.current.isLoading).toBe(false)
-    expect(result.current.results?.assignment_name).toBe("Math Quiz 1")
-    expect(result.current.results?.completion_overview.completed).toBe(18)
-    expect(result.current.results?.score_statistics?.avg_score).toBe(78.5)
-  })
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.results?.assignment_name).toBe("Math Quiz 1");
+    expect(result.current.results?.completion_overview.completed).toBe(18);
+    expect(result.current.results?.score_statistics?.avg_score).toBe(78.5);
+  });
 
   it("sets error state on failed fetch", async () => {
-    const mockError = new Error("Network error - failed to fetch results")
+    const mockError = new Error("Network error - failed to fetch results");
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockRejectedValue(
       mockError,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -256,20 +259,20 @@ describe("useAssignmentResults", () => {
           assignmentId: "test-assignment-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.error).toBeTruthy()
-    })
+      expect(result.current.error).toBeTruthy();
+    });
 
-    expect(result.current.isLoading).toBe(false)
-    expect(result.current.results).toBeNull()
-  })
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.results).toBeNull();
+  });
 
   it("does not fetch when assignmentId is empty", async () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockResolvedValue(
       mockDetailedResultsResponse,
-    )
+    );
 
     renderHook(
       () =>
@@ -277,18 +280,18 @@ describe("useAssignmentResults", () => {
           assignmentId: "",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     // Wait a bit to ensure no fetch happens
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-    expect(assignmentsApi.getAssignmentDetailedResults).not.toHaveBeenCalled()
-  })
+    expect(assignmentsApi.getAssignmentDetailedResults).not.toHaveBeenCalled();
+  });
 
   it("refetches data when assignmentId changes", async () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockResolvedValue(
       mockDetailedResultsResponse,
-    )
+    );
 
     const { result, rerender } = renderHook(
       ({ assignmentId }) =>
@@ -299,30 +302,30 @@ describe("useAssignmentResults", () => {
         wrapper: createWrapper(),
         initialProps: { assignmentId: "assignment-1" },
       },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
     expect(assignmentsApi.getAssignmentDetailedResults).toHaveBeenCalledWith(
       "assignment-1",
-    )
+    );
 
     // Change assignmentId
-    rerender({ assignmentId: "assignment-2" })
+    rerender({ assignmentId: "assignment-2" });
 
     await waitFor(() => {
       expect(assignmentsApi.getAssignmentDetailedResults).toHaveBeenCalledWith(
         "assignment-2",
-      )
-    })
-  })
+      );
+    });
+  });
 
   it("provides refetch function that works correctly", async () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockResolvedValue(
       mockDetailedResultsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -330,24 +333,28 @@ describe("useAssignmentResults", () => {
           assignmentId: "test-assignment-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
-    expect(assignmentsApi.getAssignmentDetailedResults).toHaveBeenCalledTimes(1)
+    expect(assignmentsApi.getAssignmentDetailedResults).toHaveBeenCalledTimes(
+      1,
+    );
 
     // Call refetch
-    await result.current.refetch()
+    await result.current.refetch();
 
-    expect(assignmentsApi.getAssignmentDetailedResults).toHaveBeenCalledTimes(2)
-  })
+    expect(assignmentsApi.getAssignmentDetailedResults).toHaveBeenCalledTimes(
+      2,
+    );
+  });
 
   it("returns correct completion overview data", async () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockResolvedValue(
       mockDetailedResultsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -355,23 +362,23 @@ describe("useAssignmentResults", () => {
           assignmentId: "test-assignment-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.results).not.toBeNull()
-    })
+      expect(result.current.results).not.toBeNull();
+    });
 
-    expect(result.current.results?.completion_overview.completed).toBe(18)
-    expect(result.current.results?.completion_overview.in_progress).toBe(3)
-    expect(result.current.results?.completion_overview.not_started).toBe(2)
-    expect(result.current.results?.completion_overview.past_due).toBe(1)
-    expect(result.current.results?.completion_overview.total).toBe(24)
-  })
+    expect(result.current.results?.completion_overview.completed).toBe(18);
+    expect(result.current.results?.completion_overview.in_progress).toBe(3);
+    expect(result.current.results?.completion_overview.not_started).toBe(2);
+    expect(result.current.results?.completion_overview.past_due).toBe(1);
+    expect(result.current.results?.completion_overview.total).toBe(24);
+  });
 
   it("returns correct student results list", async () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockResolvedValue(
       mockDetailedResultsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -379,25 +386,25 @@ describe("useAssignmentResults", () => {
           assignmentId: "test-assignment-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.results).not.toBeNull()
-    })
+      expect(result.current.results).not.toBeNull();
+    });
 
-    expect(result.current.results?.student_results).toHaveLength(3)
-    expect(result.current.results?.student_results[0].name).toBe("Alice Smith")
-    expect(result.current.results?.student_results[0].score).toBe(95)
+    expect(result.current.results?.student_results).toHaveLength(3);
+    expect(result.current.results?.student_results[0].name).toBe("Alice Smith");
+    expect(result.current.results?.student_results[0].score).toBe(95);
     expect(result.current.results?.student_results[2].status).toBe(
       "in_progress",
-    )
-    expect(result.current.results?.student_results[2].score).toBeNull()
-  })
+    );
+    expect(result.current.results?.student_results[2].score).toBeNull();
+  });
 
   it("returns correct question analysis data", async () => {
     vi.mocked(assignmentsApi.getAssignmentDetailedResults).mockResolvedValue(
       mockDetailedResultsResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -405,28 +412,30 @@ describe("useAssignmentResults", () => {
           assignmentId: "test-assignment-123",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.results).not.toBeNull()
-    })
+      expect(result.current.results).not.toBeNull();
+    });
 
-    expect(result.current.results?.question_analysis?.questions).toHaveLength(2)
+    expect(result.current.results?.question_analysis?.questions).toHaveLength(
+      2,
+    );
     expect(
       result.current.results?.question_analysis?.questions?.[0]
         .correct_percentage,
-    ).toBe(85.0)
+    ).toBe(85.0);
     expect(result.current.results?.question_analysis?.most_missed).toHaveLength(
       1,
-    )
+    );
     expect(
       result.current.results?.question_analysis?.most_missed?.[0].question_id,
-    ).toBe("zone2")
-  })
-})
+    ).toBe("zone2");
+  });
+});
 
 describe("useStudentAnswers", () => {
-  let queryClient: QueryClient
+  let queryClient: QueryClient;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -434,20 +443,20 @@ describe("useStudentAnswers", () => {
         queries: { retry: false },
         mutations: { retry: false },
       },
-    })
-    vi.clearAllMocks()
-  })
+    });
+    vi.clearAllMocks();
+  });
 
   const createWrapper = () => {
     return ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    )
-  }
+    );
+  };
 
   it("returns correct properties", async () => {
     vi.mocked(assignmentsApi.getStudentAnswers).mockResolvedValue(
       mockStudentAnswersResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -456,13 +465,13 @@ describe("useStudentAnswers", () => {
           studentId: "s1",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
-    expect(result.current).toHaveProperty("answers")
-    expect(result.current).toHaveProperty("isLoading")
-    expect(result.current).toHaveProperty("error")
-    expect(result.current).toHaveProperty("refetch")
-  })
+    expect(result.current).toHaveProperty("answers");
+    expect(result.current).toHaveProperty("isLoading");
+    expect(result.current).toHaveProperty("error");
+    expect(result.current).toHaveProperty("refetch");
+  });
 
   it("starts with isLoading true and null answers", () => {
     vi.mocked(assignmentsApi.getStudentAnswers).mockImplementation(
@@ -470,7 +479,7 @@ describe("useStudentAnswers", () => {
         new Promise((resolve) =>
           setTimeout(() => resolve(mockStudentAnswersResponse), 1000),
         ),
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -479,17 +488,17 @@ describe("useStudentAnswers", () => {
           studentId: "s1",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
-    expect(result.current.isLoading).toBe(true)
-    expect(result.current.answers).toBeNull()
-    expect(result.current.error).toBeNull()
-  })
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.answers).toBeNull();
+    expect(result.current.error).toBeNull();
+  });
 
   it("calls getStudentAnswers with correct parameters", async () => {
     vi.mocked(assignmentsApi.getStudentAnswers).mockResolvedValue(
       mockStudentAnswersResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -498,22 +507,22 @@ describe("useStudentAnswers", () => {
           studentId: "s1",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
     expect(assignmentsApi.getStudentAnswers).toHaveBeenCalledWith(
       "test-assignment-123",
       "s1",
-    )
-  })
+    );
+  });
 
   it("returns answers data on successful fetch", async () => {
     vi.mocked(assignmentsApi.getStudentAnswers).mockResolvedValue(
       mockStudentAnswersResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -522,21 +531,21 @@ describe("useStudentAnswers", () => {
           studentId: "s1",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.answers).not.toBeNull()
-    })
+      expect(result.current.answers).not.toBeNull();
+    });
 
-    expect(result.current.isLoading).toBe(false)
-    expect(result.current.answers?.name).toBe("Alice Smith")
-    expect(result.current.answers?.score).toBe(95)
-    expect(result.current.answers?.answers_json).toHaveProperty("zone1")
-  })
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.answers?.name).toBe("Alice Smith");
+    expect(result.current.answers?.score).toBe(95);
+    expect(result.current.answers?.answers_json).toHaveProperty("zone1");
+  });
 
   it("sets error state on failed fetch", async () => {
-    const mockError = new Error("Network error - failed to fetch answers")
-    vi.mocked(assignmentsApi.getStudentAnswers).mockRejectedValue(mockError)
+    const mockError = new Error("Network error - failed to fetch answers");
+    vi.mocked(assignmentsApi.getStudentAnswers).mockRejectedValue(mockError);
 
     const { result } = renderHook(
       () =>
@@ -545,20 +554,20 @@ describe("useStudentAnswers", () => {
           studentId: "s1",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.error).toBeTruthy()
-    })
+      expect(result.current.error).toBeTruthy();
+    });
 
-    expect(result.current.isLoading).toBe(false)
-    expect(result.current.answers).toBeNull()
-  })
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.answers).toBeNull();
+  });
 
   it("does not fetch when assignmentId is empty", async () => {
     vi.mocked(assignmentsApi.getStudentAnswers).mockResolvedValue(
       mockStudentAnswersResponse,
-    )
+    );
 
     renderHook(
       () =>
@@ -567,18 +576,18 @@ describe("useStudentAnswers", () => {
           studentId: "s1",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     // Wait a bit to ensure no fetch happens
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-    expect(assignmentsApi.getStudentAnswers).not.toHaveBeenCalled()
-  })
+    expect(assignmentsApi.getStudentAnswers).not.toHaveBeenCalled();
+  });
 
   it("does not fetch when studentId is empty", async () => {
     vi.mocked(assignmentsApi.getStudentAnswers).mockResolvedValue(
       mockStudentAnswersResponse,
-    )
+    );
 
     renderHook(
       () =>
@@ -587,18 +596,18 @@ describe("useStudentAnswers", () => {
           studentId: "",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     // Wait a bit to ensure no fetch happens
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-    expect(assignmentsApi.getStudentAnswers).not.toHaveBeenCalled()
-  })
+    expect(assignmentsApi.getStudentAnswers).not.toHaveBeenCalled();
+  });
 
   it("refetches data when studentId changes", async () => {
     vi.mocked(assignmentsApi.getStudentAnswers).mockResolvedValue(
       mockStudentAnswersResponse,
-    )
+    );
 
     const { result, rerender } = renderHook(
       ({ studentId }) =>
@@ -610,32 +619,32 @@ describe("useStudentAnswers", () => {
         wrapper: createWrapper(),
         initialProps: { studentId: "s1" },
       },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
     expect(assignmentsApi.getStudentAnswers).toHaveBeenCalledWith(
       "test-assignment-123",
       "s1",
-    )
+    );
 
     // Change studentId
-    rerender({ studentId: "s2" })
+    rerender({ studentId: "s2" });
 
     await waitFor(() => {
       expect(assignmentsApi.getStudentAnswers).toHaveBeenCalledWith(
         "test-assignment-123",
         "s2",
-      )
-    })
-  })
+      );
+    });
+  });
 
   it("provides refetch function that works correctly", async () => {
     vi.mocked(assignmentsApi.getStudentAnswers).mockResolvedValue(
       mockStudentAnswersResponse,
-    )
+    );
 
     const { result } = renderHook(
       () =>
@@ -644,17 +653,17 @@ describe("useStudentAnswers", () => {
           studentId: "s1",
         }),
       { wrapper: createWrapper() },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
-    expect(assignmentsApi.getStudentAnswers).toHaveBeenCalledTimes(1)
+    expect(assignmentsApi.getStudentAnswers).toHaveBeenCalledTimes(1);
 
     // Call refetch
-    await result.current.refetch()
+    await result.current.refetch();
 
-    expect(assignmentsApi.getStudentAnswers).toHaveBeenCalledTimes(2)
-  })
-})
+    expect(assignmentsApi.getStudentAnswers).toHaveBeenCalledTimes(2);
+  });
+});

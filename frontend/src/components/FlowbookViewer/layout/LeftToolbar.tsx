@@ -1,20 +1,27 @@
-import { BookOpen, FileText, Gamepad2, LogOut, Settings, Wrench } from "lucide-react"
-import { useState } from "react"
-import { cn } from "@/lib/utils"
-import { useFlowbookUIStore } from "../stores"
-import { ConfirmDialog } from "../ui/ConfirmDialog"
+import {
+  BookOpen,
+  FileText,
+  Gamepad2,
+  LogOut,
+  Settings,
+  Wrench,
+} from "lucide-react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { useFlowbookUIStore } from "../stores";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 interface LeftToolbarProps {
-  onClose?: () => void
+  onClose?: () => void;
 }
 
 interface ToolbarButtonProps {
-  icon: React.ReactNode
-  label: string
-  onClick?: () => void
-  isActive?: boolean
-  disabled?: boolean
-  variant?: "default" | "danger"
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  variant?: "default" | "danger";
 }
 
 function ToolbarButton({
@@ -52,25 +59,25 @@ function ToolbarButton({
     >
       {icon}
     </button>
-  )
+  );
 }
 
 export function LeftToolbar({ onClose }: LeftToolbarProps) {
-  const { viewMode, setViewMode } = useFlowbookUIStore()
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+  const { viewMode, setViewMode } = useFlowbookUIStore();
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   const handleViewModeToggle = () => {
-    setViewMode(viewMode === "single" ? "double" : "single")
-  }
+    setViewMode(viewMode === "single" ? "double" : "single");
+  };
 
   const handleCloseClick = () => {
-    setShowCloseConfirm(true)
-  }
+    setShowCloseConfirm(true);
+  };
 
   const handleCloseConfirm = () => {
-    setShowCloseConfirm(false)
-    onClose?.()
-  }
+    setShowCloseConfirm(false);
+    onClose?.();
+  };
 
   return (
     <>
@@ -142,5 +149,5 @@ export function LeftToolbar({ onClose }: LeftToolbarProps) {
         onCancel={() => setShowCloseConfirm(false)}
       />
     </>
-  )
+  );
 }

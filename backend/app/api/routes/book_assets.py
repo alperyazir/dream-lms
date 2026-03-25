@@ -6,7 +6,6 @@ Provides authenticated access to book assets (images, audio) from Dream Central 
 
 import logging
 import mimetypes
-import re
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
@@ -127,7 +126,10 @@ async def _check_book_access(
 
     if current_user.role == UserRole.publisher:
         # Publisher can access their own books' assets
-        if current_user.dcs_publisher_id and current_user.dcs_publisher_id == book.publisher_id:
+        if (
+            current_user.dcs_publisher_id
+            and current_user.dcs_publisher_id == book.publisher_id
+        ):
             return book
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

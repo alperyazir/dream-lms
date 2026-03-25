@@ -5,8 +5,8 @@
  * Functions to export assignment analytics data to Excel format.
  */
 
-import * as XLSX from "xlsx"
-import type { MultiActivityAnalyticsResponse } from "@/types/assignment"
+import * as XLSX from "xlsx";
+import type { MultiActivityAnalyticsResponse } from "@/types/assignment";
 
 /**
  * Export multi-activity analytics to Excel
@@ -18,7 +18,7 @@ export function exportMultiActivityAnalytics(
   analytics: MultiActivityAnalyticsResponse,
   assignmentName?: string,
 ): void {
-  const wb = XLSX.utils.book_new()
+  const wb = XLSX.utils.book_new();
 
   // Summary Sheet
   const summaryData = [
@@ -32,9 +32,9 @@ export function exportMultiActivityAnalytics(
       `${Math.round((analytics.submitted_count / analytics.total_students) * 100)}%`,
     ],
     ["Total Activities", analytics.activities.length],
-  ]
-  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData)
-  XLSX.utils.book_append_sheet(wb, summarySheet, "Summary")
+  ];
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
 
   // Activity Analytics Sheet
   const activityHeaders = [
@@ -45,7 +45,7 @@ export function exportMultiActivityAnalytics(
     "Total Assigned",
     "Completion Rate",
     "Class Average",
-  ]
+  ];
   const activityRows = analytics.activities.map((activity) => [
     activity.activity_title || `Activity on Page ${activity.page_number}`,
     formatActivityType(activity.activity_type),
@@ -56,11 +56,11 @@ export function exportMultiActivityAnalytics(
     activity.class_average_score !== null
       ? `${Math.round(activity.class_average_score)}%`
       : "N/A",
-  ])
+  ]);
   const activitySheet = XLSX.utils.aoa_to_sheet([
     activityHeaders,
     ...activityRows,
-  ])
+  ]);
   // Set column widths
   activitySheet["!cols"] = [
     { wch: 30 }, // Activity Title
@@ -70,8 +70,8 @@ export function exportMultiActivityAnalytics(
     { wch: 15 }, // Total Assigned
     { wch: 15 }, // Completion Rate
     { wch: 12 }, // Class Average
-  ]
-  XLSX.utils.book_append_sheet(wb, activitySheet, "Activity Analytics")
+  ];
+  XLSX.utils.book_append_sheet(wb, activitySheet, "Activity Analytics");
 
   // Per-Student Details Sheet (if expanded data is available)
   if (analytics.expanded_students && analytics.expanded_students.length > 0) {
@@ -83,7 +83,7 @@ export function exportMultiActivityAnalytics(
       "Percentage",
       "Time Spent",
       "Completed At",
-    ]
+    ];
     const studentRows = analytics.expanded_students.map((student) => [
       student.student_name,
       student.status.replace("_", " "),
@@ -96,11 +96,11 @@ export function exportMultiActivityAnalytics(
       student.completed_at
         ? new Date(student.completed_at).toLocaleString()
         : "N/A",
-    ])
+    ]);
     const studentSheet = XLSX.utils.aoa_to_sheet([
       studentHeaders,
       ...studentRows,
-    ])
+    ]);
     studentSheet["!cols"] = [
       { wch: 25 }, // Student Name
       { wch: 12 }, // Status
@@ -109,19 +109,19 @@ export function exportMultiActivityAnalytics(
       { wch: 12 }, // Percentage
       { wch: 12 }, // Time Spent
       { wch: 20 }, // Completed At
-    ]
-    XLSX.utils.book_append_sheet(wb, studentSheet, "Student Details")
+    ];
+    XLSX.utils.book_append_sheet(wb, studentSheet, "Student Details");
   }
 
   // Generate filename
   const safeName = (assignmentName || analytics.assignment_name)
     .replace(/[^a-z0-9]/gi, "_")
-    .substring(0, 50)
-  const dateStr = new Date().toISOString().split("T")[0]
-  const filename = `${safeName}_Analytics_${dateStr}.xlsx`
+    .substring(0, 50);
+  const dateStr = new Date().toISOString().split("T")[0];
+  const filename = `${safeName}_Analytics_${dateStr}.xlsx`;
 
   // Download
-  XLSX.writeFile(wb, filename)
+  XLSX.writeFile(wb, filename);
 }
 
 /**
@@ -137,21 +137,21 @@ function formatActivityType(type: string): string {
     multiple_choice: "Multiple Choice",
     coloring: "Coloring",
     drawing: "Drawing",
-  }
+  };
   return (
     typeMap[type] ||
     type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  )
+  );
 }
 
 /**
  * Format seconds to human-readable time
  */
 function formatTimeSpent(seconds: number): string {
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
   if (minutes === 0) {
-    return `${remainingSeconds}s`
+    return `${remainingSeconds}s`;
   }
-  return `${minutes}m ${remainingSeconds}s`
+  return `${minutes}m ${remainingSeconds}s`;
 }

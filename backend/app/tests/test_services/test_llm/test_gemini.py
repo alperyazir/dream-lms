@@ -225,9 +225,7 @@ class TestGeminiGenerate:
             response.json.return_value = mock_response
             mock_client.post.return_value = response
 
-            with patch(
-                "app.services.llm.providers.gemini.logger"
-            ) as mock_logger:
+            with patch("app.services.llm.providers.gemini.logger") as mock_logger:
                 await provider.generate(
                     "Describe image",
                     image_data=b"fake_image_data",
@@ -256,9 +254,7 @@ class TestGeminiGenerate:
             response.json.return_value = mock_response
             mock_client.post.return_value = response
 
-            with patch(
-                "app.services.llm.providers.gemini.logger"
-            ) as mock_logger:
+            with patch("app.services.llm.providers.gemini.logger") as mock_logger:
                 await provider.generate("Summarize PDF", pdf_data=b"fake_pdf_data")
 
                 mock_logger.warning.assert_called()
@@ -584,7 +580,11 @@ class TestGeminiRetryLogic:
                 response.text = "Rate limit"
                 response.headers = {"retry-after": "1"}
                 response.json.return_value = {
-                    "error": {"code": 429, "message": "Rate limit", "status": "RESOURCE_EXHAUSTED"}
+                    "error": {
+                        "code": 429,
+                        "message": "Rate limit",
+                        "status": "RESOURCE_EXHAUSTED",
+                    }
                 }
             else:
                 response.status_code = 200
@@ -637,7 +637,11 @@ class TestGeminiRetryLogic:
             response.is_success = False
             response.text = "Invalid API key"
             response.json.return_value = {
-                "error": {"code": 401, "message": "Invalid API key", "status": "UNAUTHENTICATED"}
+                "error": {
+                    "code": 401,
+                    "message": "Invalid API key",
+                    "status": "UNAUTHENTICATED",
+                }
             }
             mock_client.post.return_value = response
 
@@ -766,7 +770,10 @@ class TestGeminiRequestPayload:
             call_args = mock_client.post.call_args
             url = call_args.args[0]
 
-            assert url == "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            assert (
+                url
+                == "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            )
 
     @pytest.mark.asyncio
     async def test_request_endpoint_custom_model(self) -> None:
@@ -896,7 +903,11 @@ class TestGeminiResponseParsing:
                     "finishReason": "STOP",
                 }
             ],
-            "usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 5, "totalTokenCount": 15},
+            "usageMetadata": {
+                "promptTokenCount": 10,
+                "candidatesTokenCount": 5,
+                "totalTokenCount": 15,
+            },
         }
 
         with patch("httpx.AsyncClient") as mock_client_class:

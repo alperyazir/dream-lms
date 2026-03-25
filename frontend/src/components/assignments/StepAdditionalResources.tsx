@@ -5,7 +5,7 @@
  * Supports video with subtitle control and teacher materials.
  */
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query";
 import {
   Eye,
   FileBox,
@@ -14,49 +14,49 @@ import {
   Subtitles,
   Trash2,
   Video,
-} from "lucide-react"
-import { useState } from "react"
-import { VideoPreviewModal } from "@/components/ActivityPlayers/VideoPreviewModal"
+} from "lucide-react";
+import { useState } from "react";
+import { VideoPreviewModal } from "@/components/ActivityPlayers/VideoPreviewModal";
 import {
   getMaterialTypeLabel,
   MaterialTypeIcon,
-} from "@/components/materials/MaterialTypeIcon"
-import { TeacherMaterialPicker } from "@/components/materials/TeacherMaterialPicker"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from "@/components/materials/MaterialTypeIcon";
+import { TeacherMaterialPicker } from "@/components/materials/TeacherMaterialPicker";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { getBookVideos, type VideoInfo } from "@/services/booksApi"
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { getBookVideos, type VideoInfo } from "@/services/booksApi";
 import type {
   AdditionalResources,
   AssignmentFormData,
   TeacherMaterialResource,
   VideoResource,
-} from "@/types/assignment"
-import type { Material, MaterialType } from "@/types/material"
+} from "@/types/assignment";
+import type { Material, MaterialType } from "@/types/material";
 
 interface StepAdditionalResourcesProps {
-  formData: AssignmentFormData
-  onFormDataChange: (data: Partial<AssignmentFormData>) => void
-  bookId?: string | number
+  formData: AssignmentFormData;
+  onFormDataChange: (data: Partial<AssignmentFormData>) => void;
+  bookId?: string | number;
 }
 
 /**
  * Format file size for display
  */
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function StepAdditionalResources({
@@ -65,11 +65,11 @@ export function StepAdditionalResources({
   bookId,
 }: StepAdditionalResourcesProps) {
   // Video preview modal state
-  const [previewVideo, setPreviewVideo] = useState<VideoInfo | null>(null)
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [previewVideo, setPreviewVideo] = useState<VideoInfo | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Teacher material picker state
-  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   // Fetch available videos from book
   const {
@@ -83,15 +83,15 @@ export function StepAdditionalResources({
         ? getBookVideos(bookId)
         : Promise.resolve({ videos: [], total_count: 0, book_id: "" }),
     enabled: !!bookId,
-  })
+  });
 
-  const availableVideos = videosData?.videos ?? []
+  const availableVideos = videosData?.videos ?? [];
 
   // Get current resources or initialize empty
   const currentResources: AdditionalResources = formData.resources ?? {
     videos: [],
     teacher_materials: [],
-  }
+  };
 
   /**
    * Add a video resource
@@ -103,51 +103,51 @@ export function StepAdditionalResources({
       name: videoInfo.name,
       subtitles_enabled: videoInfo.has_subtitles, // Enable subtitles by default if available
       has_subtitles: videoInfo.has_subtitles,
-    }
+    };
 
     const updatedResources: AdditionalResources = {
       ...currentResources,
       videos: [...currentResources.videos, newVideoResource],
-    }
+    };
 
-    onFormDataChange({ resources: updatedResources })
-  }
+    onFormDataChange({ resources: updatedResources });
+  };
 
   /**
    * Remove a video resource by index
    */
   const handleRemoveVideo = (index: number) => {
-    const updatedVideos = [...currentResources.videos]
-    updatedVideos.splice(index, 1)
+    const updatedVideos = [...currentResources.videos];
+    updatedVideos.splice(index, 1);
 
     const updatedResources: AdditionalResources = {
       ...currentResources,
       videos: updatedVideos,
-    }
+    };
 
     const hasResources =
       updatedResources.videos.length > 0 ||
-      (updatedResources.teacher_materials?.length ?? 0) > 0
-    onFormDataChange({ resources: hasResources ? updatedResources : null })
-  }
+      (updatedResources.teacher_materials?.length ?? 0) > 0;
+    onFormDataChange({ resources: hasResources ? updatedResources : null });
+  };
 
   /**
    * Toggle subtitles for a video resource
    */
   const handleToggleSubtitles = (index: number, enabled: boolean) => {
-    const updatedVideos = [...currentResources.videos]
+    const updatedVideos = [...currentResources.videos];
     updatedVideos[index] = {
       ...updatedVideos[index],
       subtitles_enabled: enabled,
-    }
+    };
 
     const updatedResources: AdditionalResources = {
       ...currentResources,
       videos: updatedVideos,
-    }
+    };
 
-    onFormDataChange({ resources: updatedResources })
-  }
+    onFormDataChange({ resources: updatedResources });
+  };
 
   /**
    * Preview a video
@@ -158,18 +158,18 @@ export function StepAdditionalResources({
       name: videoResource.name,
       size_bytes: 0, // Not needed for preview
       has_subtitles: videoResource.has_subtitles,
-    }
-    setPreviewVideo(videoInfo)
-    setIsPreviewOpen(true)
-  }
+    };
+    setPreviewVideo(videoInfo);
+    setIsPreviewOpen(true);
+  };
 
   /**
    * Get videos not yet added
    */
   const getAvailableToAdd = (): VideoInfo[] => {
-    const addedPaths = new Set(currentResources.videos.map((v) => v.path))
-    return availableVideos.filter((v) => !addedPaths.has(v.path))
-  }
+    const addedPaths = new Set(currentResources.videos.map((v) => v.path));
+    return availableVideos.filter((v) => !addedPaths.has(v.path));
+  };
 
   /**
    * Add teacher materials from picker
@@ -188,17 +188,17 @@ export function StepAdditionalResources({
         file_size: mat.file_size,
         mime_type: mat.mime_type,
       }),
-    )
+    );
 
     // Filter out materials that are already added
     const existingIds = new Set(
       (currentResources.teacher_materials ?? []).map((m) => m.material_id),
-    )
+    );
     const uniqueNew = newMaterialResources.filter(
       (m) => !existingIds.has(m.material_id),
-    )
+    );
 
-    if (uniqueNew.length === 0) return
+    if (uniqueNew.length === 0) return;
 
     const updatedResources: AdditionalResources = {
       ...currentResources,
@@ -206,10 +206,10 @@ export function StepAdditionalResources({
         ...(currentResources.teacher_materials ?? []),
         ...uniqueNew,
       ],
-    }
+    };
 
-    onFormDataChange({ resources: updatedResources })
-  }
+    onFormDataChange({ resources: updatedResources });
+  };
 
   /**
    * Remove a teacher material by material_id
@@ -217,25 +217,25 @@ export function StepAdditionalResources({
   const handleRemoveMaterial = (materialId: string) => {
     const updatedMaterials = (currentResources.teacher_materials ?? []).filter(
       (m) => m.material_id !== materialId,
-    )
+    );
 
     const updatedResources: AdditionalResources = {
       ...currentResources,
       teacher_materials: updatedMaterials,
-    }
+    };
 
     const hasResources =
       updatedResources.videos.length > 0 ||
-      updatedResources.teacher_materials.length > 0
-    onFormDataChange({ resources: hasResources ? updatedResources : null })
-  }
+      updatedResources.teacher_materials.length > 0;
+    onFormDataChange({ resources: hasResources ? updatedResources : null });
+  };
 
-  const videosToAdd = getAvailableToAdd()
-  const hasVideos = currentResources.videos.length > 0
-  const hasMaterials = (currentResources.teacher_materials?.length ?? 0) > 0
+  const videosToAdd = getAvailableToAdd();
+  const hasVideos = currentResources.videos.length > 0;
+  const hasMaterials = (currentResources.teacher_materials?.length ?? 0) > 0;
   const selectedMaterialIds = (currentResources.teacher_materials ?? []).map(
     (m) => m.material_id,
-  )
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -528,7 +528,7 @@ export function StepAdditionalResources({
         onSelect={handleAddMaterials}
       />
     </div>
-  )
+  );
 }
 
-export default StepAdditionalResources
+export default StepAdditionalResources;

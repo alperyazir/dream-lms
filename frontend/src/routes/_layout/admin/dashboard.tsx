@@ -1,17 +1,17 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   Building2,
   GraduationCap,
   School,
   UserCheck,
   Users,
-} from "lucide-react"
-import { FiHome } from "react-icons/fi"
-import { AdminService } from "@/client"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { StatCard } from "@/components/dashboard/StatCard"
+} from "lucide-react";
+import { FiHome } from "react-icons/fi";
+import { AdminService } from "@/client";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { StatCard } from "@/components/dashboard/StatCard";
 
 export const Route = createFileRoute("/_layout/admin/dashboard")({
   component: () => (
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_layout/admin/dashboard")({
       <AdminDashboard />
     </ErrorBoundary>
   ),
-})
+});
 
 function AdminDashboard() {
   // Fetch real stats from API
@@ -30,17 +30,15 @@ function AdminDashboard() {
   } = useQuery({
     queryKey: ["adminStats"],
     queryFn: async () => {
-      console.log("Fetching dashboard stats...")
-      const result = await AdminService.getStats()
-      console.log("Stats received:", result)
-      return result
+      const result = await AdminService.getStats();
+      return result;
     },
     staleTime: 30000, // Cache for 30 seconds
     retry: 1, // Only retry once on failure
-  })
+  });
 
   if (error) {
-    console.error("Stats error:", error)
+    console.error("Stats error:", error);
   }
 
   return (
@@ -114,5 +112,5 @@ function AdminDashboard() {
         )}
       </div>
     </PageContainer>
-  )
+  );
 }

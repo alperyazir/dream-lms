@@ -11,8 +11,8 @@
  * Story 9.x: Time Planning mode - group activities by date
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { format } from "date-fns"
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   CalendarDays,
   FileText,
@@ -21,47 +21,47 @@ import {
   Plus,
   Trash2,
   X,
-} from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
-import { getBookStructure } from "@/services/booksApi"
-import type { DateActivityGroup } from "@/types/assignment"
-import type { ActivityMarker, Book, ModuleWithActivities } from "@/types/book"
-import { ACTIVITY_TYPE_CONFIG } from "@/types/book"
-import { ModuleSelectionList } from "./ModuleSelectionList"
-import { PageSelectionGrid } from "./PageSelectionGrid"
-import { PageViewer } from "./PageViewer"
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { getBookStructure } from "@/services/booksApi";
+import type { DateActivityGroup } from "@/types/assignment";
+import type { ActivityMarker, Book, ModuleWithActivities } from "@/types/book";
+import { ACTIVITY_TYPE_CONFIG } from "@/types/book";
+import { ModuleSelectionList } from "./ModuleSelectionList";
+import { PageSelectionGrid } from "./PageSelectionGrid";
+import { PageViewer } from "./PageViewer";
 
 interface ActivitySelectionTabsProps {
-  bookId: string | number
-  book: Book
-  selectedActivityIds: string[]
-  onActivityIdsChange: (activityIds: string[]) => void
+  bookId: string | number;
+  book: Book;
+  selectedActivityIds: string[];
+  onActivityIdsChange: (activityIds: string[]) => void;
   // Time Planning mode props
-  timePlanningEnabled?: boolean
-  onTimePlanningChange?: (enabled: boolean) => void
-  dateGroups?: DateActivityGroup[]
-  onDateGroupsChange?: (groups: DateActivityGroup[]) => void
+  timePlanningEnabled?: boolean;
+  onTimePlanningChange?: (enabled: boolean) => void;
+  dateGroups?: DateActivityGroup[];
+  onDateGroupsChange?: (groups: DateActivityGroup[]) => void;
 }
 
 // Store activity data for display in summary
 export interface SelectedActivityInfo {
-  id: string
-  title: string | null
-  activityType: string
-  source: "individual" | "page" | "module"
-  sourceLabel: string // e.g., "Page 5" or "Module 1"
+  id: string;
+  title: string | null;
+  activityType: string;
+  source: "individual" | "page" | "module";
+  sourceLabel: string; // e.g., "Page 5" or "Module 1"
 }
 
 export function ActivitySelectionTabs({
@@ -77,25 +77,25 @@ export function ActivitySelectionTabs({
   // Track selected activities as a Set for O(1) operations
   const [selectedActivities, setSelectedActivities] = useState<Set<string>>(
     new Set(selectedActivityIds),
-  )
+  );
 
   // Track activity metadata for summary display
   const [activityInfoMap, setActivityInfoMap] = useState<
     Map<string, SelectedActivityInfo>
-  >(new Map())
+  >(new Map());
 
   // Time Planning mode state
-  const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0)
-  const [isAddingDate, setIsAddingDate] = useState(false)
+  const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
+  const [isAddingDate, setIsAddingDate] = useState(false);
 
   // Sync internal Set state when prop changes (e.g., when editing existing assignment)
   useEffect(() => {
-    const currentIds = Array.from(selectedActivities).sort().join(",")
-    const propIds = [...selectedActivityIds].sort().join(",")
+    const currentIds = Array.from(selectedActivities).sort().join(",");
+    const propIds = [...selectedActivityIds].sort().join(",");
     if (currentIds !== propIds) {
-      setSelectedActivities(new Set(selectedActivityIds))
+      setSelectedActivities(new Set(selectedActivityIds));
     }
-  }, [selectedActivityIds, selectedActivities])
+  }, [selectedActivityIds, selectedActivities]);
 
   // Fetch book structure for page and module selection
   const { data: bookStructure, isLoading: isStructureLoading } = useQuery({
@@ -103,25 +103,25 @@ export function ActivitySelectionTabs({
     queryFn: () => getBookStructure(bookId),
     enabled: !!bookId,
     staleTime: 5 * 60 * 1000, // 5 minutes
-  })
+  });
 
   // Handle individual activity toggle from PageViewer
   const handleActivityToggle = useCallback(
     (activityId: string, activity: ActivityMarker) => {
       setSelectedActivities((prev) => {
-        const newSet = new Set(prev)
+        const newSet = new Set(prev);
         if (newSet.has(activityId)) {
-          newSet.delete(activityId)
+          newSet.delete(activityId);
         } else {
-          newSet.add(activityId)
+          newSet.add(activityId);
         }
-        onActivityIdsChange(Array.from(newSet))
-        return newSet
-      })
+        onActivityIdsChange(Array.from(newSet));
+        return newSet;
+      });
 
       // Store activity info
       setActivityInfoMap((prev) => {
-        const newMap = new Map(prev)
+        const newMap = new Map(prev);
         if (!newMap.has(activityId)) {
           newMap.set(activityId, {
             id: activityId,
@@ -129,34 +129,34 @@ export function ActivitySelectionTabs({
             activityType: activity.activity_type,
             source: "individual",
             sourceLabel: "Individual",
-          })
+          });
         }
-        return newMap
-      })
+        return newMap;
+      });
     },
     [onActivityIdsChange],
-  )
+  );
 
   // Handle page selection toggle
   const handlePageToggle = useCallback(
     (pageNumber: number, activityIds: string[], _moduleName: string) => {
       // Time Planning mode - add to current date group
       if (timePlanningEnabled && dateGroups.length > 0 && onDateGroupsChange) {
-        const currentGroup = dateGroups[selectedDateIndex]
-        if (!currentGroup) return
+        const currentGroup = dateGroups[selectedDateIndex];
+        if (!currentGroup) return;
 
         // Check if all activities from this page are already in current group
         const isFullySelected = activityIds.every((id) =>
           currentGroup.activityIds.includes(id),
-        )
+        );
 
         setSelectedActivities((prevActivities) => {
-          const newActivities = new Set(prevActivities)
+          const newActivities = new Set(prevActivities);
 
           if (isFullySelected) {
             // Remove activities from selection and from date group
             for (const id of activityIds) {
-              newActivities.delete(id)
+              newActivities.delete(id);
             }
             const newGroups = dateGroups.map((group, i) => {
               if (i === selectedDateIndex) {
@@ -165,19 +165,19 @@ export function ActivitySelectionTabs({
                   activityIds: group.activityIds.filter(
                     (id) => !activityIds.includes(id),
                   ),
-                }
+                };
               }
-              return group
-            })
-            onDateGroupsChange(newGroups)
+              return group;
+            });
+            onDateGroupsChange(newGroups);
           } else {
             // Add activities to selection and to current date group
             for (const id of activityIds) {
-              newActivities.add(id)
+              newActivities.add(id);
             }
             // Update activity info
             setActivityInfoMap((prev) => {
-              const newMap = new Map(prev)
+              const newMap = new Map(prev);
               for (const id of activityIds) {
                 if (!newMap.has(id)) {
                   newMap.set(id, {
@@ -186,20 +186,20 @@ export function ActivitySelectionTabs({
                     activityType: "unknown",
                     source: "page",
                     sourceLabel: `Page ${pageNumber}`,
-                  })
+                  });
                 }
               }
-              return newMap
-            })
+              return newMap;
+            });
             // Add to current date group (remove from others first)
             const newGroups = dateGroups.map((group, i) => {
               if (i === selectedDateIndex) {
-                const existingIds = new Set(group.activityIds)
-                const newIds = activityIds.filter((id) => !existingIds.has(id))
+                const existingIds = new Set(group.activityIds);
+                const newIds = activityIds.filter((id) => !existingIds.has(id));
                 return {
                   ...group,
                   activityIds: [...group.activityIds, ...newIds],
-                }
+                };
               }
               // Remove from other groups
               return {
@@ -207,38 +207,38 @@ export function ActivitySelectionTabs({
                 activityIds: group.activityIds.filter(
                   (id) => !activityIds.includes(id),
                 ),
-              }
-            })
-            onDateGroupsChange(newGroups)
+              };
+            });
+            onDateGroupsChange(newGroups);
           }
 
-          onActivityIdsChange(Array.from(newActivities))
-          return newActivities
-        })
-        return
+          onActivityIdsChange(Array.from(newActivities));
+          return newActivities;
+        });
+        return;
       }
 
       // Normal mode
       setSelectedActivities((prevActivities) => {
-        const newActivities = new Set(prevActivities)
+        const newActivities = new Set(prevActivities);
         // Check if page is fully selected (all activities selected)
         const isFullySelected = activityIds.every((id) =>
           prevActivities.has(id),
-        )
+        );
 
         if (isFullySelected) {
           // Deselect: remove activities from this page
           for (const id of activityIds) {
-            newActivities.delete(id)
+            newActivities.delete(id);
           }
         } else {
           // Select: add activities from this page
           for (const id of activityIds) {
-            newActivities.add(id)
+            newActivities.add(id);
           }
           // Update activity info for new selections
           setActivityInfoMap((prev) => {
-            const newMap = new Map(prev)
+            const newMap = new Map(prev);
             for (const id of activityIds) {
               if (!newMap.has(id)) {
                 newMap.set(id, {
@@ -247,16 +247,16 @@ export function ActivitySelectionTabs({
                   activityType: "unknown",
                   source: "page",
                   sourceLabel: `Page ${pageNumber}`,
-                })
+                });
               }
             }
-            return newMap
-          })
+            return newMap;
+          });
         }
 
-        onActivityIdsChange(Array.from(newActivities))
-        return newActivities
-      })
+        onActivityIdsChange(Array.from(newActivities));
+        return newActivities;
+      });
     },
     [
       onActivityIdsChange,
@@ -265,30 +265,30 @@ export function ActivitySelectionTabs({
       selectedDateIndex,
       onDateGroupsChange,
     ],
-  )
+  );
 
   // Handle module selection toggle
   const handleModuleToggle = useCallback(
     (module: ModuleWithActivities) => {
-      const activityIds = module.activity_ids
+      const activityIds = module.activity_ids;
 
       // Time Planning mode - add to current date group
       if (timePlanningEnabled && dateGroups.length > 0 && onDateGroupsChange) {
-        const currentGroup = dateGroups[selectedDateIndex]
-        if (!currentGroup) return
+        const currentGroup = dateGroups[selectedDateIndex];
+        if (!currentGroup) return;
 
         // Check if all activities from this module are already in current group
         const isFullySelected = activityIds.every((id) =>
           currentGroup.activityIds.includes(id),
-        )
+        );
 
         setSelectedActivities((prevActivities) => {
-          const newActivities = new Set(prevActivities)
+          const newActivities = new Set(prevActivities);
 
           if (isFullySelected) {
             // Remove activities from selection and from date group
             for (const id of activityIds) {
-              newActivities.delete(id)
+              newActivities.delete(id);
             }
             const newGroups = dateGroups.map((group, i) => {
               if (i === selectedDateIndex) {
@@ -297,19 +297,19 @@ export function ActivitySelectionTabs({
                   activityIds: group.activityIds.filter(
                     (id) => !activityIds.includes(id),
                   ),
-                }
+                };
               }
-              return group
-            })
-            onDateGroupsChange(newGroups)
+              return group;
+            });
+            onDateGroupsChange(newGroups);
           } else {
             // Add activities to selection and to current date group
             for (const id of activityIds) {
-              newActivities.add(id)
+              newActivities.add(id);
             }
             // Update activity info
             setActivityInfoMap((prev) => {
-              const newMap = new Map(prev)
+              const newMap = new Map(prev);
               for (const id of activityIds) {
                 if (!newMap.has(id)) {
                   newMap.set(id, {
@@ -318,20 +318,20 @@ export function ActivitySelectionTabs({
                     activityType: "unknown",
                     source: "module",
                     sourceLabel: module.name,
-                  })
+                  });
                 }
               }
-              return newMap
-            })
+              return newMap;
+            });
             // Add to current date group (remove from others first)
             const newGroups = dateGroups.map((group, i) => {
               if (i === selectedDateIndex) {
-                const existingIds = new Set(group.activityIds)
-                const newIds = activityIds.filter((id) => !existingIds.has(id))
+                const existingIds = new Set(group.activityIds);
+                const newIds = activityIds.filter((id) => !existingIds.has(id));
                 return {
                   ...group,
                   activityIds: [...group.activityIds, ...newIds],
-                }
+                };
               }
               // Remove from other groups
               return {
@@ -339,38 +339,38 @@ export function ActivitySelectionTabs({
                 activityIds: group.activityIds.filter(
                   (id) => !activityIds.includes(id),
                 ),
-              }
-            })
-            onDateGroupsChange(newGroups)
+              };
+            });
+            onDateGroupsChange(newGroups);
           }
 
-          onActivityIdsChange(Array.from(newActivities))
-          return newActivities
-        })
-        return
+          onActivityIdsChange(Array.from(newActivities));
+          return newActivities;
+        });
+        return;
       }
 
       // Normal mode
       setSelectedActivities((prevActivities) => {
-        const newActivities = new Set(prevActivities)
+        const newActivities = new Set(prevActivities);
         // Check if module is fully selected (all activities selected)
         const isFullySelected = module.activity_ids.every((id) =>
           prevActivities.has(id),
-        )
+        );
 
         if (isFullySelected) {
           // Deselect: remove activities from this module
           for (const id of module.activity_ids) {
-            newActivities.delete(id)
+            newActivities.delete(id);
           }
         } else {
           // Select: add activities from this module
           for (const id of module.activity_ids) {
-            newActivities.add(id)
+            newActivities.add(id);
           }
           // Update activity info for new selections
           setActivityInfoMap((prev) => {
-            const newMap = new Map(prev)
+            const newMap = new Map(prev);
             for (const id of module.activity_ids) {
               if (!newMap.has(id)) {
                 newMap.set(id, {
@@ -379,16 +379,16 @@ export function ActivitySelectionTabs({
                   activityType: "unknown",
                   source: "module",
                   sourceLabel: module.name,
-                })
+                });
               }
             }
-            return newMap
-          })
+            return newMap;
+          });
         }
 
-        onActivityIdsChange(Array.from(newActivities))
-        return newActivities
-      })
+        onActivityIdsChange(Array.from(newActivities));
+        return newActivities;
+      });
     },
     [
       onActivityIdsChange,
@@ -397,88 +397,88 @@ export function ActivitySelectionTabs({
       selectedDateIndex,
       onDateGroupsChange,
     ],
-  )
+  );
 
   // Handle remove individual activity from summary
   const handleRemoveActivity = useCallback(
     (activityId: string) => {
       setSelectedActivities((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(activityId)
-        onActivityIdsChange(Array.from(newSet))
-        return newSet
-      })
+        const newSet = new Set(prev);
+        newSet.delete(activityId);
+        onActivityIdsChange(Array.from(newSet));
+        return newSet;
+      });
     },
     [onActivityIdsChange],
-  )
+  );
 
   // Handle clear all
   const handleClearAll = useCallback(() => {
-    setSelectedActivities(new Set())
-    onActivityIdsChange([])
+    setSelectedActivities(new Set());
+    onActivityIdsChange([]);
     // Also clear date groups in time planning mode
     if (timePlanningEnabled && onDateGroupsChange) {
-      onDateGroupsChange([])
+      onDateGroupsChange([]);
     }
-  }, [onActivityIdsChange, timePlanningEnabled, onDateGroupsChange])
+  }, [onActivityIdsChange, timePlanningEnabled, onDateGroupsChange]);
 
   // Time Planning handlers
   const handleAddDate = useCallback(
     (date: Date) => {
-      if (!onDateGroupsChange) return
-      const newGroups = [...dateGroups, { date, activityIds: [] }]
-      onDateGroupsChange(newGroups)
-      setSelectedDateIndex(newGroups.length - 1)
-      setIsAddingDate(false)
+      if (!onDateGroupsChange) return;
+      const newGroups = [...dateGroups, { date, activityIds: [] }];
+      onDateGroupsChange(newGroups);
+      setSelectedDateIndex(newGroups.length - 1);
+      setIsAddingDate(false);
     },
     [dateGroups, onDateGroupsChange],
-  )
+  );
 
   const handleRemoveDate = useCallback(
     (index: number) => {
-      if (!onDateGroupsChange) return
-      const removedGroup = dateGroups[index]
+      if (!onDateGroupsChange) return;
+      const removedGroup = dateGroups[index];
       // Remove activities that were in this date group from selection
       if (removedGroup) {
         setSelectedActivities((prev) => {
-          const newSet = new Set(prev)
+          const newSet = new Set(prev);
           for (const id of removedGroup.activityIds) {
-            newSet.delete(id)
+            newSet.delete(id);
           }
-          onActivityIdsChange(Array.from(newSet))
-          return newSet
-        })
+          onActivityIdsChange(Array.from(newSet));
+          return newSet;
+        });
       }
-      const newGroups = dateGroups.filter((_, i) => i !== index)
-      onDateGroupsChange(newGroups)
+      const newGroups = dateGroups.filter((_, i) => i !== index);
+      onDateGroupsChange(newGroups);
       // Adjust selected index if needed
       if (selectedDateIndex >= newGroups.length) {
-        setSelectedDateIndex(Math.max(0, newGroups.length - 1))
+        setSelectedDateIndex(Math.max(0, newGroups.length - 1));
       }
     },
     [dateGroups, onDateGroupsChange, selectedDateIndex, onActivityIdsChange],
-  )
+  );
 
   // In time planning mode, add activities to current date group
   const handleActivityToggleWithPlanning = useCallback(
     (activityId: string, activity: ActivityMarker) => {
       if (!timePlanningEnabled || dateGroups.length === 0) {
         // Normal mode - just toggle
-        handleActivityToggle(activityId, activity)
-        return
+        handleActivityToggle(activityId, activity);
+        return;
       }
 
       // Time planning mode - add to current date group
-      const currentGroup = dateGroups[selectedDateIndex]
-      if (!currentGroup) return
+      const currentGroup = dateGroups[selectedDateIndex];
+      if (!currentGroup) return;
 
       setSelectedActivities((prev) => {
-        const newSet = new Set(prev)
-        const isSelected = newSet.has(activityId)
+        const newSet = new Set(prev);
+        const isSelected = newSet.has(activityId);
 
         if (isSelected) {
           // Remove from selection and from date group
-          newSet.delete(activityId)
+          newSet.delete(activityId);
           if (onDateGroupsChange) {
             const newGroups = dateGroups.map((group, i) => {
               if (i === selectedDateIndex) {
@@ -487,7 +487,7 @@ export function ActivitySelectionTabs({
                   activityIds: group.activityIds.filter(
                     (id) => id !== activityId,
                   ),
-                }
+                };
               }
               // Also remove from other groups if it exists there
               return {
@@ -495,13 +495,13 @@ export function ActivitySelectionTabs({
                 activityIds: group.activityIds.filter(
                   (id) => id !== activityId,
                 ),
-              }
-            })
-            onDateGroupsChange(newGroups)
+              };
+            });
+            onDateGroupsChange(newGroups);
           }
         } else {
           // Add to selection and to current date group
-          newSet.add(activityId)
+          newSet.add(activityId);
           if (onDateGroupsChange) {
             const newGroups = dateGroups.map((group, i) => {
               if (i === selectedDateIndex) {
@@ -510,7 +510,7 @@ export function ActivitySelectionTabs({
                   return {
                     ...group,
                     activityIds: [...group.activityIds, activityId],
-                  }
+                  };
                 }
               } else {
                 // Remove from other groups
@@ -519,21 +519,21 @@ export function ActivitySelectionTabs({
                   activityIds: group.activityIds.filter(
                     (id) => id !== activityId,
                   ),
-                }
+                };
               }
-              return group
-            })
-            onDateGroupsChange(newGroups)
+              return group;
+            });
+            onDateGroupsChange(newGroups);
           }
         }
 
-        onActivityIdsChange(Array.from(newSet))
-        return newSet
-      })
+        onActivityIdsChange(Array.from(newSet));
+        return newSet;
+      });
 
       // Store activity info
       setActivityInfoMap((prev) => {
-        const newMap = new Map(prev)
+        const newMap = new Map(prev);
         if (!newMap.has(activityId)) {
           newMap.set(activityId, {
             id: activityId,
@@ -541,10 +541,10 @@ export function ActivitySelectionTabs({
             activityType: activity.activity_type,
             source: "individual",
             sourceLabel: format(currentGroup.date, "MMM dd"),
-          })
+          });
         }
-        return newMap
-      })
+        return newMap;
+      });
     },
     [
       timePlanningEnabled,
@@ -554,11 +554,11 @@ export function ActivitySelectionTabs({
       onActivityIdsChange,
       onDateGroupsChange,
     ],
-  )
+  );
 
   // Group selected activities by source for summary display
   const groupedActivities = useMemo(() => {
-    const groups: Record<string, SelectedActivityInfo[]> = {}
+    const groups: Record<string, SelectedActivityInfo[]> = {};
 
     for (const id of selectedActivities) {
       const info = activityInfoMap.get(id) || {
@@ -567,19 +567,19 @@ export function ActivitySelectionTabs({
         activityType: "unknown",
         source: "individual" as const,
         sourceLabel: "Individual",
-      }
+      };
 
-      const groupKey = info.sourceLabel
+      const groupKey = info.sourceLabel;
       if (!groups[groupKey]) {
-        groups[groupKey] = []
+        groups[groupKey] = [];
       }
-      groups[groupKey].push(info)
+      groups[groupKey].push(info);
     }
 
-    return groups
-  }, [selectedActivities, activityInfoMap])
+    return groups;
+  }, [selectedActivities, activityInfoMap]);
 
-  const activityCount = selectedActivities.size
+  const activityCount = selectedActivities.size;
 
   return (
     <div className="flex flex-col h-full overflow-hidden w-full max-w-full">
@@ -754,8 +754,8 @@ export function ActivitySelectionTabs({
                       variant="ghost"
                       size="icon"
                       onClick={(e) => {
-                        e.stopPropagation()
-                        handleRemoveDate(index)
+                        e.stopPropagation();
+                        handleRemoveDate(index);
                       }}
                       className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                     >
@@ -781,7 +781,7 @@ export function ActivitySelectionTabs({
                       mode="single"
                       selected={undefined}
                       onSelect={(date) => {
-                        if (date) handleAddDate(date)
+                        if (date) handleAddDate(date);
                       }}
                       disabled={(date) => {
                         // Disable dates that are already added
@@ -789,7 +789,7 @@ export function ActivitySelectionTabs({
                           (g) =>
                             format(g.date, "yyyy-MM-dd") ===
                             format(date, "yyyy-MM-dd"),
-                        )
+                        );
                       }}
                       initialFocus
                     />
@@ -836,12 +836,12 @@ export function ActivitySelectionTabs({
                   <div className="space-y-0.5 pr-2">
                     {dateGroups[selectedDateIndex]?.activityIds.map(
                       (activityId) => {
-                        const info = activityInfoMap.get(activityId)
+                        const info = activityInfoMap.get(activityId);
                         const config = info?.activityType
                           ? ACTIVITY_TYPE_CONFIG[
                               info.activityType as keyof typeof ACTIVITY_TYPE_CONFIG
                             ]
-                          : null
+                          : null;
                         return (
                           <div
                             key={activityId}
@@ -869,7 +869,7 @@ export function ActivitySelectionTabs({
                               <X className="h-3 w-3" />
                             </Button>
                           </div>
-                        )
+                        );
                       },
                     )}
                   </div>
@@ -921,7 +921,7 @@ export function ActivitySelectionTabs({
                               const config =
                                 ACTIVITY_TYPE_CONFIG[
                                   activity.activityType as keyof typeof ACTIVITY_TYPE_CONFIG
-                                ]
+                                ];
                               return (
                                 <div
                                   key={activity.id}
@@ -953,7 +953,7 @@ export function ActivitySelectionTabs({
                                     <X className="h-3 w-3" />
                                   </Button>
                                 </div>
-                              )
+                              );
                             })}
                           </div>
                         </div>
@@ -967,5 +967,5 @@ export function ActivitySelectionTabs({
         </div>
       </div>
     </div>
-  )
+  );
 }

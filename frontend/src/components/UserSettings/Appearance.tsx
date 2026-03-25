@@ -1,9 +1,9 @@
-import { Monitor, Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
-import { cn } from "@/lib/utils"
+import { Monitor, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 const Appearance = () => {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useTheme();
 
   const themes = [
     {
@@ -24,7 +24,7 @@ const Appearance = () => {
       description: "Dark background with light text",
       icon: Moon,
     },
-  ]
+  ];
 
   return (
     <div className="space-y-6">
@@ -84,7 +84,7 @@ const Appearance = () => {
         ))}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Appearance
+export default Appearance;

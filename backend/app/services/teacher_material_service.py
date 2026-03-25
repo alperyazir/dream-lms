@@ -6,7 +6,6 @@ Provides operations for teacher material management with AI text processing.
 
 import logging
 import uuid
-from datetime import UTC, datetime
 
 from fastapi import HTTPException, UploadFile, status
 from sqlmodel import Session, select
@@ -18,10 +17,8 @@ from app.models import (
 )
 from app.schemas.teacher_material import (
     TeacherGeneratedContentCreate,
-    TeacherGeneratedContentResponse,
     TeacherMaterialResponse,
     TeacherMaterialUploadResponse,
-    TextExtractionResult,
     TextMaterialCreate,
 )
 from app.services.dream_storage_client import (
@@ -30,7 +27,6 @@ from app.services.dream_storage_client import (
 )
 from app.services.material_service import (
     check_quota,
-    get_or_create_quota,
     sanitize_filename_for_storage,
     update_quota_usage,
     validate_file_content,
@@ -39,7 +35,6 @@ from app.services.pdf_processing_service import (
     PDFProcessingService,
     get_pdf_processing_service,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -207,9 +202,7 @@ class TeacherMaterialService:
         Returns:
             List of TeacherMaterial records
         """
-        query = select(TeacherMaterial).where(
-            TeacherMaterial.teacher_id == teacher_id
-        )
+        query = select(TeacherMaterial).where(TeacherMaterial.teacher_id == teacher_id)
 
         if processable_only:
             query = query.where(TeacherMaterial.extracted_text.isnot(None))

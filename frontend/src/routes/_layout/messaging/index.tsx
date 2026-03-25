@@ -1,46 +1,46 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { ArrowLeft, Inbox, Loader2, Plus, Search, User } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { z } from "zod"
-import { ComposeMessageModal } from "@/components/messaging/ComposeMessageModal"
-import { ConversationList } from "@/components/messaging/ConversationList"
-import { MessageForm } from "@/components/messaging/MessageForm"
-import { MessageThread } from "@/components/messaging/MessageThread"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import useAuth from "@/hooks/useAuth"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { useMessagingPage, useSendMessage } from "@/hooks/useMessages"
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowLeft, Inbox, Loader2, Plus, Search, User } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
+import { ComposeMessageModal } from "@/components/messaging/ComposeMessageModal";
+import { ConversationList } from "@/components/messaging/ConversationList";
+import { MessageForm } from "@/components/messaging/MessageForm";
+import { MessageThread } from "@/components/messaging/MessageThread";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import useAuth from "@/hooks/useAuth";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useMessagingPage, useSendMessage } from "@/hooks/useMessages";
 
 // Search params schema for the messaging page
 const messagingSearchSchema = z.object({
   user: z.string().optional(),
-})
+});
 
 export const Route = createFileRoute("/_layout/messaging/")({
   component: MessagingInbox,
   validateSearch: messagingSearchSchema,
-})
+});
 
 function MessagingInbox() {
-  const { user } = useAuth()
-  const { user: userParam } = Route.useSearch()
-  const [searchTerm, setSearchTerm] = useState("")
+  const { user } = useAuth();
+  const { user: userParam } = Route.useSearch();
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(
     null,
-  )
-  const [isComposeOpen, setIsComposeOpen] = useState(false)
-  const debouncedSearch = useDebouncedValue(searchTerm, 300)
+  );
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
   // Set selected partner from URL param on mount
   useEffect(() => {
     if (userParam) {
-      setSelectedPartnerId(userParam)
+      setSelectedPartnerId(userParam);
     }
-  }, [userParam])
+  }, [userParam]);
 
   // Use the messaging page hook
   const {
@@ -51,53 +51,53 @@ function MessagingInbox() {
     participant,
     threadLoading,
     refetch,
-  } = useMessagingPage(selectedPartnerId)
+  } = useMessagingPage(selectedPartnerId);
 
-  const sendMessage = useSendMessage()
+  const sendMessage = useSendMessage();
 
   // Filter conversations based on search term
   const filteredConversations = useMemo(() => {
-    if (!debouncedSearch) return conversations
+    if (!debouncedSearch) return conversations;
 
-    const searchLower = debouncedSearch.toLowerCase()
+    const searchLower = debouncedSearch.toLowerCase();
     return conversations.filter(
       (conv) =>
         conv.participant_name.toLowerCase().includes(searchLower) ||
         conv.last_message_preview.toLowerCase().includes(searchLower),
-    )
-  }, [conversations, debouncedSearch])
+    );
+  }, [conversations, debouncedSearch]);
 
   // Handle conversation selection
   const handleConversationClick = (participantId: string) => {
-    setSelectedPartnerId(participantId)
-  }
+    setSelectedPartnerId(participantId);
+  };
 
   // Handle sending new message
   const handleSendMessage = async (messageBody: string) => {
-    if (!selectedPartnerId) return
+    if (!selectedPartnerId) return;
 
     try {
       await sendMessage.sendMessageAsync({
         recipient_id: selectedPartnerId,
         body: messageBody,
-      })
-      refetch()
+      });
+      refetch();
     } catch (error) {
-      console.error("Error sending message:", error)
+      console.error("Error sending message:", error);
     }
-  }
+  };
 
   // Handle compose new message
   const handleComposeNew = () => {
-    setIsComposeOpen(true)
-  }
+    setIsComposeOpen(true);
+  };
 
   // Handle compose success
   const handleComposeSuccess = (recipientId: string) => {
-    setIsComposeOpen(false)
-    setSelectedPartnerId(recipientId)
-    refetch()
-  }
+    setIsComposeOpen(false);
+    setSelectedPartnerId(recipientId);
+    refetch();
+  };
 
   // Get initials from name
   const getInitials = (name: string): string => {
@@ -106,8 +106,8 @@ function MessagingInbox() {
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -270,5 +270,5 @@ function MessagingInbox() {
         onSuccess={handleComposeSuccess}
       />
     </div>
-  )
+  );
 }

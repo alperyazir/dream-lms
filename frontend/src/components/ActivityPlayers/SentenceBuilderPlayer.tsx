@@ -6,57 +6,57 @@
  * to build sentences. Click-to-place interaction (not drag-drop).
  */
 
-import { ArrowRight, Check, ChevronLeft, Trash2 } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { useSoundContext } from "@/hooks/useSoundEffects"
-import { cn } from "@/lib/utils"
-import type { QuestionNavigationState } from "@/types/activity-player"
+import { ArrowRight, Check, ChevronLeft, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useSoundContext } from "@/hooks/useSoundEffects";
+import { cn } from "@/lib/utils";
+import type { QuestionNavigationState } from "@/types/activity-player";
 import type {
   SentenceBuilderActivityPublic,
   SentenceBuilderSubmission,
-} from "@/types/sentence-builder"
-import { getProgressText } from "@/types/sentence-builder"
+} from "@/types/sentence-builder";
+import { getProgressText } from "@/types/sentence-builder";
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array]
+  const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return shuffled
+  return shuffled;
 }
 
 interface SentenceBuilderPlayerProps {
   /** The activity to display */
-  activity: SentenceBuilderActivityPublic
+  activity: SentenceBuilderActivityPublic;
   /** Callback when activity is submitted */
-  onSubmit: (submission: SentenceBuilderSubmission) => void
+  onSubmit: (submission: SentenceBuilderSubmission) => void;
   /** Whether submission is in progress */
-  isSubmitting?: boolean
+  isSubmitting?: boolean;
   /** Callback when a single sentence is completed correctly (for audio) */
-  onSentenceCorrect?: (audioUrl: string | null) => void
+  onSentenceCorrect?: (audioUrl: string | null) => void;
   /** Hide the submit button (when embedded in ActivityPlayer which has its own submit) */
-  hideSubmitButton?: boolean
+  hideSubmitButton?: boolean;
   /** Callback when answers change (for parent to track progress) */
-  onAnswersChange?: (answers: Record<string, string[]>) => void
+  onAnswersChange?: (answers: Record<string, string[]>) => void;
   /** External control: current sentence index (when controlled by parent) */
-  currentSentenceIndex?: number
+  currentSentenceIndex?: number;
   /** External control: callback when current sentence changes (for hybrid control - player can advance) */
-  onSentenceIndexChange?: (index: number) => void
+  onSentenceIndexChange?: (index: number) => void;
   /** Callback to expose navigation state to parent */
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 interface SentenceState {
-  placedWords: string[]
-  availableWords: string[]
-  attempts: number
-  isCorrect: boolean | null
-  isChecking: boolean
+  placedWords: string[];
+  availableWords: string[];
+  attempts: number;
+  isCorrect: boolean | null;
+  isChecking: boolean;
 }
 
 export function SentenceBuilderPlayer({
@@ -71,93 +71,93 @@ export function SentenceBuilderPlayer({
   onNavigationStateChange,
 }: SentenceBuilderPlayerProps) {
   // Internal current sentence index (used when not externally controlled)
-  const [internalIndex, setInternalIndex] = useState(0)
+  const [internalIndex, setInternalIndex] = useState(0);
   // Use external index if provided, otherwise internal
-  const isExternallyControlled = currentSentenceIndex !== undefined
+  const isExternallyControlled = currentSentenceIndex !== undefined;
   const currentIndex = isExternallyControlled
     ? currentSentenceIndex
-    : internalIndex
+    : internalIndex;
 
   // Setter that works for both internal and external control (hybrid - player can advance)
   const setCurrentIndex = useCallback(
     (index: number) => {
       if (isExternallyControlled && onSentenceIndexChange) {
-        onSentenceIndexChange(index)
+        onSentenceIndexChange(index);
       } else {
-        setInternalIndex(index)
+        setInternalIndex(index);
       }
     },
     [isExternallyControlled, onSentenceIndexChange],
-  )
+  );
   const [sentenceStates, setSentenceStates] = useState<
     Record<string, SentenceState>
-  >({})
-  const [showSuccess, _setShowSuccess] = useState(false)
-  const [isShaking, setIsShaking] = useState(false)
-  const { play: playSound } = useSoundContext()
+  >({});
+  const [showSuccess, _setShowSuccess] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const { play: playSound } = useSoundContext();
 
-  const totalSentences = activity.sentences.length
+  const totalSentences = activity.sentences.length;
 
   // Store callbacks in refs to avoid infinite loops
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
-  const onNavigationStateChangeRef = useRef(onNavigationStateChange)
-  onNavigationStateChangeRef.current = onNavigationStateChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
+  const onNavigationStateChangeRef = useRef(onNavigationStateChange);
+  onNavigationStateChangeRef.current = onNavigationStateChange;
 
   // Notify parent when answers change
   useEffect(() => {
-    const callback = onAnswersChangeRef.current
+    const callback = onAnswersChangeRef.current;
     if (callback) {
-      const answers: Record<string, string[]> = {}
+      const answers: Record<string, string[]> = {};
       activity.sentences.forEach((sentence) => {
-        const state = sentenceStates[sentence.item_id]
+        const state = sentenceStates[sentence.item_id];
         if (state) {
-          answers[sentence.item_id] = state.placedWords
+          answers[sentence.item_id] = state.placedWords;
         }
-      })
-      callback(answers)
+      });
+      callback(answers);
     }
-  }, [sentenceStates, activity.sentences])
+  }, [sentenceStates, activity.sentences]);
 
   // Memoize navigation state components to prevent infinite loops
   const { answeredItemIds, answeredIndices } = useMemo(() => {
-    const indices: number[] = []
-    const itemIds: string[] = []
+    const indices: number[] = [];
+    const itemIds: string[] = [];
     activity.sentences.forEach((sentence, index) => {
-      const state = sentenceStates[sentence.item_id]
+      const state = sentenceStates[sentence.item_id];
       // Consider a sentence "answered" if all words have been placed
       if (state && state.placedWords.length === sentence.word_count) {
-        indices.push(index)
-        itemIds.push(sentence.item_id)
+        indices.push(index);
+        itemIds.push(sentence.item_id);
       }
-    })
-    return { answeredItemIds: itemIds, answeredIndices: indices }
-  }, [sentenceStates, activity.sentences])
+    });
+    return { answeredItemIds: itemIds, answeredIndices: indices };
+  }, [sentenceStates, activity.sentences]);
 
   // Track previous navigation state to avoid unnecessary updates
-  const prevNavStateRef = useRef<string>("")
+  const prevNavStateRef = useRef<string>("");
 
   // Notify parent of navigation state changes
   useEffect(() => {
-    const callback = onNavigationStateChangeRef.current
+    const callback = onNavigationStateChangeRef.current;
     if (callback) {
       // Only call if state actually changed
-      const stateKey = `${currentIndex}-${totalSentences}-${answeredItemIds.join(",")}`
+      const stateKey = `${currentIndex}-${totalSentences}-${answeredItemIds.join(",")}`;
       if (prevNavStateRef.current !== stateKey) {
-        prevNavStateRef.current = stateKey
+        prevNavStateRef.current = stateKey;
         callback({
           currentIndex,
           totalItems: totalSentences,
           answeredItemIds,
           answeredIndices,
-        })
+        });
       }
     }
-  }, [currentIndex, totalSentences, answeredItemIds, answeredIndices])
+  }, [currentIndex, totalSentences, answeredItemIds, answeredIndices]);
 
-  const currentSentence = activity.sentences[currentIndex]
-  const isCompleted = currentIndex >= totalSentences
-  const progress = (currentIndex / totalSentences) * 100
+  const currentSentence = activity.sentences[currentIndex];
+  const isCompleted = currentIndex >= totalSentences;
+  const progress = (currentIndex / totalSentences) * 100;
 
   // Initialize state for current sentence
   useEffect(() => {
@@ -171,26 +171,26 @@ export function SentenceBuilderPlayer({
           isCorrect: null,
           isChecking: false,
         },
-      }))
+      }));
     }
-  }, [currentSentence, sentenceStates])
+  }, [currentSentence, sentenceStates]);
 
   const currentState = currentSentence
     ? sentenceStates[currentSentence.item_id]
-    : null
+    : null;
 
   // Handle clicking a word in the word bank
   const handleWordBankClick = useCallback(
     (word: string, index: number) => {
-      if (!currentSentence || !currentState || currentState.isCorrect) return
-      playSound("drop")
+      if (!currentSentence || !currentState || currentState.isCorrect) return;
+      playSound("drop");
 
       setSentenceStates((prev) => {
-        const state = prev[currentSentence.item_id]
-        if (!state) return prev
+        const state = prev[currentSentence.item_id];
+        if (!state) return prev;
 
-        const newAvailable = [...state.availableWords]
-        newAvailable.splice(index, 1)
+        const newAvailable = [...state.availableWords];
+        newAvailable.splice(index, 1);
 
         return {
           ...prev,
@@ -200,24 +200,24 @@ export function SentenceBuilderPlayer({
             availableWords: newAvailable,
             isCorrect: null,
           },
-        }
-      })
+        };
+      });
     },
     [currentSentence, currentState, playSound],
-  )
+  );
 
   // Handle clicking a placed word to return it
   const handlePlacedWordClick = useCallback(
     (word: string, index: number) => {
-      if (!currentSentence || !currentState || currentState.isCorrect) return
-      playSound("drag")
+      if (!currentSentence || !currentState || currentState.isCorrect) return;
+      playSound("drag");
 
       setSentenceStates((prev) => {
-        const state = prev[currentSentence.item_id]
-        if (!state) return prev
+        const state = prev[currentSentence.item_id];
+        if (!state) return prev;
 
-        const newPlaced = [...state.placedWords]
-        newPlaced.splice(index, 1)
+        const newPlaced = [...state.placedWords];
+        newPlaced.splice(index, 1);
 
         return {
           ...prev,
@@ -227,15 +227,15 @@ export function SentenceBuilderPlayer({
             availableWords: [...state.availableWords, word],
             isCorrect: null,
           },
-        }
-      })
+        };
+      });
     },
     [currentSentence, currentState, playSound],
-  )
+  );
 
   // Clear all placed words
   const handleClearAll = useCallback(() => {
-    if (!currentSentence || !currentState || currentState.isCorrect) return
+    if (!currentSentence || !currentState || currentState.isCorrect) return;
 
     setSentenceStates((prev) => ({
       ...prev,
@@ -245,30 +245,30 @@ export function SentenceBuilderPlayer({
         availableWords: shuffleArray([...currentSentence.words]),
         isCorrect: null,
       },
-    }))
-  }, [currentSentence, currentState])
+    }));
+  }, [currentSentence, currentState]);
 
   // Move to previous sentence
   const handlePreviousSentence = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
+      setCurrentIndex(currentIndex - 1);
     }
-  }, [currentIndex, setCurrentIndex])
+  }, [currentIndex, setCurrentIndex]);
 
   // Move to next sentence
   const handleNextSentence = useCallback(() => {
     if (currentIndex < totalSentences - 1) {
-      setCurrentIndex(currentIndex + 1)
+      setCurrentIndex(currentIndex + 1);
     } else {
       // All sentences done - submit
-      const answers: Record<string, string[]> = {}
+      const answers: Record<string, string[]> = {};
       activity.sentences.forEach((sentence) => {
-        const state = sentenceStates[sentence.item_id]
+        const state = sentenceStates[sentence.item_id];
         if (state) {
-          answers[sentence.item_id] = state.placedWords
+          answers[sentence.item_id] = state.placedWords;
         }
-      })
-      onSubmit({ answers })
+      });
+      onSubmit({ answers });
     }
   }, [
     currentIndex,
@@ -277,11 +277,11 @@ export function SentenceBuilderPlayer({
     sentenceStates,
     onSubmit,
     setCurrentIndex,
-  ])
+  ]);
 
   // Move to next sentence (no immediate answer checking - deferred to submission)
   const handleCheckAnswer = useCallback(() => {
-    if (!currentSentence || !currentState) return
+    if (!currentSentence || !currentState) return;
 
     // Check if all words are placed
     if (currentState.placedWords.length === currentSentence.word_count) {
@@ -294,18 +294,18 @@ export function SentenceBuilderPlayer({
           attempts: prev[currentSentence.item_id].attempts + 1,
           isChecking: false,
         },
-      }))
-      handleNextSentence()
+      }));
+      handleNextSentence();
     } else {
       // Not all words placed - show shake animation
-      setIsShaking(true)
-      setTimeout(() => setIsShaking(false), 500)
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
     }
-  }, [currentSentence, currentState, handleNextSentence])
+  }, [currentSentence, currentState, handleNextSentence]);
 
   // Calculate if all words are placed for current sentence
   const allWordsPlaced =
-    currentState?.placedWords.length === currentSentence?.word_count
+    currentState?.placedWords.length === currentSentence?.word_count;
 
   // Keyboard navigation
   useEffect(() => {
@@ -315,28 +315,28 @@ export function SentenceBuilderPlayer({
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
       ) {
-        return
+        return;
       }
 
       if (e.key === "ArrowLeft") {
-        handlePreviousSentence()
+        handlePreviousSentence();
       } else if (e.key === "ArrowRight") {
         // Only advance if all words are placed for current sentence
         if (allWordsPlaced && currentIndex < totalSentences - 1) {
-          handleNextSentence()
+          handleNextSentence();
         }
       }
-    }
+    };
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     handlePreviousSentence,
     handleNextSentence,
     allWordsPlaced,
     currentIndex,
     totalSentences,
-  ])
+  ]);
 
   if (isCompleted) {
     return (
@@ -349,7 +349,7 @@ export function SentenceBuilderPlayer({
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -530,7 +530,7 @@ export function SentenceBuilderPlayer({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
-export default SentenceBuilderPlayer
+export default SentenceBuilderPlayer;

@@ -180,7 +180,9 @@ class DCSAIServiceClient:
                 original_error=e,
             ) from e
 
-    async def get_modules_metadata(self, book_id: int) -> ModulesMetadataResponse | None:
+    async def get_modules_metadata(
+        self, book_id: int
+    ) -> ModulesMetadataResponse | None:
         """
         Get metadata for all modules in a book including topics and vocabulary counts.
 
@@ -223,7 +225,9 @@ class DCSAIServiceClient:
             return None
 
         except DreamStorageAuthError as e:
-            logger.error(f"DCS auth error fetching AI modules metadata: book_id={book_id}")
+            logger.error(
+                f"DCS auth error fetching AI modules metadata: book_id={book_id}"
+            )
             raise DCSAIDataAuthError(
                 message=f"Authentication failed: {e}", book_id=book_id
             ) from e
@@ -378,9 +382,7 @@ class DCSAIServiceClient:
                 original_error=e,
             ) from e
 
-    async def check_audio_exists(
-        self, book_id: int, lang: str, word: str
-    ) -> bool:
+    async def check_audio_exists(self, book_id: int, lang: str, word: str) -> bool:
         """
         Check if audio exists for a vocabulary word in DCS.
 
@@ -401,7 +403,8 @@ class DCSAIServiceClient:
 
             # Try to fetch - DCS now streams directly
             response = await self._dcs._make_request(
-                "GET", f"/books/{book_id}/ai-data/audio/vocabulary/{lang}/{encoded_word}.mp3"
+                "GET",
+                f"/books/{book_id}/ai-data/audio/vocabulary/{lang}/{encoded_word}.mp3",
             )
             return response.status_code == 200
 

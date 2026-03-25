@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Loader2, Search, UserCheck, UserMinus } from "lucide-react"
-import { useState } from "react"
-import { AdminService, PublishersService } from "@/client"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Search, UserCheck, UserMinus } from "lucide-react";
+import { useState } from "react";
+import { AdminService, PublishersService } from "@/client";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -11,23 +11,23 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { toast } from "@/hooks/use-toast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
 import {
   createBulkBookAssignments,
   deleteBookAssignment,
   getBookAssignments,
-} from "@/services/bookAssignmentsApi"
-import type { Book } from "@/types/book"
+} from "@/services/bookAssignmentsApi";
+import type { Book } from "@/types/book";
 
 interface QuickAssignDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  book: Book
-  isAdmin?: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  book: Book;
+  isAdmin?: boolean;
 }
 
 export function QuickAssignDialog({
@@ -36,10 +36,12 @@ export function QuickAssignDialog({
   book,
   isAdmin = false,
 }: QuickAssignDialogProps) {
-  const [search, setSearch] = useState("")
-  const [selectedTeachers, setSelectedTeachers] = useState<string[]>([])
-  const [pendingUnassignments, setPendingUnassignments] = useState<string[]>([])
-  const queryClient = useQueryClient()
+  const [search, setSearch] = useState("");
+  const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
+  const [pendingUnassignments, setPendingUnassignments] = useState<string[]>(
+    [],
+  );
+  const queryClient = useQueryClient();
 
   // Fetch available teachers
   const {
@@ -53,10 +55,10 @@ export function QuickAssignDialog({
         ? AdminService.listTeachers({ limit: 1000 })
         : PublishersService.listMyTeachers(),
     enabled: open,
-  })
+  });
 
   // Both APIs return Array<TeacherPublic> directly, not { items: [] }
-  const teachers = teachersData || []
+  const teachers = teachersData || [];
 
   // Fetch current assignments for this book
   const { data: currentAssignments } = useQuery({
@@ -64,29 +66,29 @@ export function QuickAssignDialog({
     queryFn: () => getBookAssignments(book.id),
     enabled: open,
     retry: false,
-  })
+  });
 
   const assignedTeacherIds = new Set(
     currentAssignments?.map((a) => a.teacher_id) || [],
-  )
+  );
 
   // Combined assignment and unassignment mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const promises: Promise<any>[] = []
+      const promises: Promise<any>[] = [];
 
       // Process assignments
       if (selectedTeachers.length > 0) {
-        const teachersMap = new Map(teachers.map((t) => [t.id, t]))
-        const schoolGroups = new Map<string, string[]>()
+        const teachersMap = new Map(teachers.map((t) => [t.id, t]));
+        const schoolGroups = new Map<string, string[]>();
 
         selectedTeachers.forEach((teacherId) => {
-          const teacher = teachersMap.get(teacherId)
+          const teacher = teachersMap.get(teacherId);
           if (teacher?.school_id) {
-            const existing = schoolGroups.get(teacher.school_id) || []
-            schoolGroups.set(teacher.school_id, [...existing, teacherId])
+            const existing = schoolGroups.get(teacher.school_id) || [];
+            schoolGroups.set(teacher.school_id, [...existing, teacherId]);
           }
-        })
+        });
 
         const assignPromises = Array.from(schoolGroups.entries()).map(
           ([schoolId, ids]) =>
@@ -95,41 +97,41 @@ export function QuickAssignDialog({
               school_id: schoolId,
               teacher_ids: ids,
             }),
-        )
-        promises.push(...assignPromises)
+        );
+        promises.push(...assignPromises);
       }
 
       // Process unassignments
       if (pendingUnassignments.length > 0) {
         const unassignPromises = pendingUnassignments.map((assignmentId) =>
           deleteBookAssignment(assignmentId),
-        )
-        promises.push(...unassignPromises)
+        );
+        promises.push(...unassignPromises);
       }
 
-      await Promise.all(promises)
+      await Promise.all(promises);
     },
     onSuccess: () => {
-      const assignCount = selectedTeachers.length
-      const unassignCount = pendingUnassignments.length
-      const messages = []
+      const assignCount = selectedTeachers.length;
+      const unassignCount = pendingUnassignments.length;
+      const messages = [];
 
       if (assignCount > 0) {
-        messages.push(`Assigned to ${assignCount} teacher(s)`)
+        messages.push(`Assigned to ${assignCount} teacher(s)`);
       }
       if (unassignCount > 0) {
-        messages.push(`Unassigned from ${unassignCount} teacher(s)`)
+        messages.push(`Unassigned from ${unassignCount} teacher(s)`);
       }
 
       toast({
         title: "Success",
         description: messages.join(", "),
-      })
-      queryClient.invalidateQueries({ queryKey: ["book-assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["books"] })
-      setSelectedTeachers([])
-      setPendingUnassignments([])
-      onOpenChange(false)
+      });
+      queryClient.invalidateQueries({ queryKey: ["book-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["books"] });
+      setSelectedTeachers([]);
+      setPendingUnassignments([]);
+      onOpenChange(false);
     },
     onError: (error) => {
       toast({
@@ -139,66 +141,66 @@ export function QuickAssignDialog({
             ? error.message
             : "Failed to save changes. Please try again.",
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
   // Separate assigned and available teachers (excluding pending unassignments)
   const assignedTeachers =
     teachers?.filter((t) => {
-      const isAssigned = assignedTeacherIds.has(t.id)
+      const isAssigned = assignedTeacherIds.has(t.id);
       const isPendingUnassign = pendingUnassignments.some((assignmentId) => {
         const assignment = currentAssignments?.find(
           (a) => a.id === assignmentId,
-        )
-        return assignment?.teacher_id === t.id
-      })
-      return isAssigned && !isPendingUnassign
-    }) || []
+        );
+        return assignment?.teacher_id === t.id;
+      });
+      return isAssigned && !isPendingUnassign;
+    }) || [];
 
   const availableTeachers =
     teachers?.filter((t) => {
-      const isAssigned = assignedTeacherIds.has(t.id)
+      const isAssigned = assignedTeacherIds.has(t.id);
       const isPendingUnassign = pendingUnassignments.some((assignmentId) => {
         const assignment = currentAssignments?.find(
           (a) => a.id === assignmentId,
-        )
-        return assignment?.teacher_id === t.id
-      })
-      return !isAssigned || isPendingUnassign
-    }) || []
+        );
+        return assignment?.teacher_id === t.id;
+      });
+      return !isAssigned || isPendingUnassign;
+    }) || [];
 
   // Filter available teachers by search
   const filteredAvailableTeachers = availableTeachers.filter((t) => {
-    const searchLower = search.toLowerCase()
+    const searchLower = search.toLowerCase();
     const nameMatch = (t.user_full_name || "")
       .toLowerCase()
-      .includes(searchLower)
-    const emailMatch = (t.user_email || "").toLowerCase().includes(searchLower)
-    return nameMatch || emailMatch
-  })
+      .includes(searchLower);
+    const emailMatch = (t.user_email || "").toLowerCase().includes(searchLower);
+    return nameMatch || emailMatch;
+  });
 
   // Filter assigned teachers by search
   const filteredAssignedTeachers = assignedTeachers.filter((t) => {
-    const searchLower = search.toLowerCase()
+    const searchLower = search.toLowerCase();
     const nameMatch = (t.user_full_name || "")
       .toLowerCase()
-      .includes(searchLower)
-    const emailMatch = (t.user_email || "").toLowerCase().includes(searchLower)
-    return nameMatch || emailMatch
-  })
+      .includes(searchLower);
+    const emailMatch = (t.user_email || "").toLowerCase().includes(searchLower);
+    return nameMatch || emailMatch;
+  });
 
   const handleToggleTeacher = (teacherId: string) => {
     setSelectedTeachers((prev) =>
       prev.includes(teacherId)
         ? prev.filter((id) => id !== teacherId)
         : [...prev, teacherId],
-    )
-  }
+    );
+  };
 
   const handleUnassign = (assignmentId: string) => {
-    setPendingUnassignments((prev) => [...prev, assignmentId])
-  }
+    setPendingUnassignments((prev) => [...prev, assignmentId]);
+  };
 
   const handleSubmit = () => {
     if (selectedTeachers.length === 0 && pendingUnassignments.length === 0) {
@@ -206,14 +208,14 @@ export function QuickAssignDialog({
         title: "No changes",
         description: "Please select teachers to assign or unassign",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
-    saveMutation.mutate()
-  }
+    saveMutation.mutate();
+  };
 
   const hasChanges =
-    selectedTeachers.length > 0 || pendingUnassignments.length > 0
+    selectedTeachers.length > 0 || pendingUnassignments.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -268,7 +270,7 @@ export function QuickAssignDialog({
                     {filteredAssignedTeachers.map((teacher) => {
                       const assignment = currentAssignments?.find(
                         (a) => a.teacher_id === teacher.id,
-                      )
+                      );
                       return (
                         <div
                           key={teacher.id}
@@ -294,7 +296,7 @@ export function QuickAssignDialog({
                             <UserMinus className="h-4 w-4" />
                           </Button>
                         </div>
-                      )
+                      );
                     })}
                   </div>
                 </div>
@@ -314,7 +316,7 @@ export function QuickAssignDialog({
                   </h4>
                   <div className="space-y-2">
                     {filteredAvailableTeachers.map((teacher) => {
-                      const isSelected = selectedTeachers.includes(teacher.id)
+                      const isSelected = selectedTeachers.includes(teacher.id);
 
                       return (
                         <label
@@ -336,7 +338,7 @@ export function QuickAssignDialog({
                             </p>
                           </div>
                         </label>
-                      )
+                      );
                     })}
                   </div>
                 </div>
@@ -376,5 +378,5 @@ export function QuickAssignDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

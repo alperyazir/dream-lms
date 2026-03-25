@@ -2,14 +2,12 @@
 Tests for Usage Analytics Service - Story 27.22
 """
 
-import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models import AIUsageLog, Teacher, User
+from app.models import Teacher
 from app.services.usage_analytics_service import (
     get_error_rate,
     get_usage_by_provider,

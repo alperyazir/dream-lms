@@ -14,9 +14,7 @@ def test_login_with_email_succeeds(client: TestClient, admin_user: User) -> None
     }
 
     # Act
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token", data=login_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
     # Assert
     assert response.status_code == 200
@@ -34,9 +32,7 @@ def test_login_with_username_succeeds(client: TestClient, admin_user: User) -> N
     }
 
     # Act
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token", data=login_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
     # Assert
     assert response.status_code == 200
@@ -54,9 +50,7 @@ def test_login_with_invalid_username_fails(client: TestClient) -> None:
     }
 
     # Act
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token", data=login_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
     # Assert
     assert response.status_code == 400
@@ -72,9 +66,7 @@ def test_login_with_invalid_email_fails(client: TestClient) -> None:
     }
 
     # Act
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token", data=login_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
     # Assert
     assert response.status_code == 400
@@ -92,9 +84,7 @@ def test_login_with_correct_username_wrong_password_fails(
     }
 
     # Act
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token", data=login_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
     # Assert
     assert response.status_code == 400
@@ -112,9 +102,7 @@ def test_login_with_correct_email_wrong_password_fails(
     }
 
     # Act
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token", data=login_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
     # Assert
     assert response.status_code == 400
@@ -130,9 +118,7 @@ def test_jwt_token_payload_unchanged(client: TestClient, admin_user: User) -> No
     }
 
     # Act
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token", data=login_data
-    )
+    response = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
     # Assert
     assert response.status_code == 200

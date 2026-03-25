@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { type ApiError, UsersService } from "@/client"
-import { Button } from "@/components/ui/button"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { type ApiError, UsersService } from "@/client";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -11,39 +11,39 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import useAuth from "@/hooks/useAuth"
-import useCustomToast from "@/hooks/useCustomToast"
-import { handleError } from "@/utils"
+} from "@/components/ui/dialog";
+import useAuth from "@/hooks/useAuth";
+import useCustomToast from "@/hooks/useCustomToast";
+import { handleError } from "@/utils";
 
 const DeleteConfirmation = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
+  const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { showSuccessToast } = useCustomToast();
   const {
     handleSubmit,
     formState: { isSubmitting },
-  } = useForm()
-  const { logout } = useAuth()
+  } = useForm();
+  const { logout } = useAuth();
 
   const mutation = useMutation({
     mutationFn: () => UsersService.deleteUserMe(),
     onSuccess: () => {
-      showSuccessToast("Your account has been successfully deleted")
-      setIsOpen(false)
-      logout()
+      showSuccessToast("Your account has been successfully deleted");
+      setIsOpen(false);
+      logout();
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     },
-  })
+  });
 
   const onSubmit = async () => {
-    mutation.mutate()
-  }
+    mutation.mutate();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -80,7 +80,7 @@ const DeleteConfirmation = () => {
         </form>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 
-export default DeleteConfirmation
+export default DeleteConfirmation;

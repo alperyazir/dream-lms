@@ -4,8 +4,6 @@ Tests for the Short Answer Grader.
 Story 27.10: Reading Comprehension Generation
 """
 
-import pytest
-
 from app.services.ai_generation.short_answer_grader import (
     DEFAULT_SIMILARITY_THRESHOLD,
     ShortAnswerGrader,
@@ -151,9 +149,7 @@ class TestGradeShortAnswerWithAlternatives:
 
     def test_empty_alternatives(self):
         """Should handle empty alternatives list."""
-        is_correct, score, matched = grade_short_answer_with_alternatives(
-            "answer", []
-        )
+        is_correct, score, matched = grade_short_answer_with_alternatives("answer", [])
         assert is_correct is False
         assert score == 0.0
         assert matched == ""

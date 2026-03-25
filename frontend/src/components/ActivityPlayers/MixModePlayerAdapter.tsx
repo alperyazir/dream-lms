@@ -6,68 +6,68 @@
  * Only reading/comprehension uses a two-panel layout (passage + question).
  */
 
-import { BookOpen, Loader2, Pause, Play } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Slider } from "@/components/ui/slider"
-import type { ActivityConfig } from "@/lib/mockData"
-import { cn } from "@/lib/utils"
-import type { QuestionNavigationState } from "@/types/activity-player"
+import { BookOpen, Loader2, Pause, Play } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
+import type { ActivityConfig } from "@/lib/mockData";
+import { cn } from "@/lib/utils";
+import type { QuestionNavigationState } from "@/types/activity-player";
 
 // Import existing adapters
-import { AIQuizPlayerAdapter } from "./AIQuizPlayerAdapter"
-import { GrammarFillBlankPlayerAdapter } from "./GrammarFillBlankPlayerAdapter"
-import { ListeningFillBlankPlayerAdapter } from "./ListeningFillBlankPlayerAdapter"
-import { ListeningSentenceBuilderPlayerAdapter } from "./ListeningSentenceBuilderPlayerAdapter"
-import { ListeningWordBuilderPlayerAdapter } from "./ListeningWordBuilderPlayerAdapter"
-import { SpeakingOpenResponsePlayerAdapter } from "./SpeakingOpenResponsePlayerAdapter"
-import { VocabularyMatchingPlayerAdapter } from "./VocabularyMatchingPlayerAdapter"
-import { WritingFillBlankPlayerAdapter } from "./WritingFillBlankPlayerAdapter"
-import { WritingFreeResponsePlayerAdapter } from "./WritingFreeResponsePlayerAdapter"
-import { WritingSentenceCorrectorPlayerAdapter } from "./WritingSentenceCorrectorPlayerAdapter"
-import { generatePassageAudio } from "@/services/passageAudioApi"
+import { AIQuizPlayerAdapter } from "./AIQuizPlayerAdapter";
+import { GrammarFillBlankPlayerAdapter } from "./GrammarFillBlankPlayerAdapter";
+import { ListeningFillBlankPlayerAdapter } from "./ListeningFillBlankPlayerAdapter";
+import { ListeningSentenceBuilderPlayerAdapter } from "./ListeningSentenceBuilderPlayerAdapter";
+import { ListeningWordBuilderPlayerAdapter } from "./ListeningWordBuilderPlayerAdapter";
+import { SpeakingOpenResponsePlayerAdapter } from "./SpeakingOpenResponsePlayerAdapter";
+import { VocabularyMatchingPlayerAdapter } from "./VocabularyMatchingPlayerAdapter";
+import { WritingFillBlankPlayerAdapter } from "./WritingFillBlankPlayerAdapter";
+import { WritingFreeResponsePlayerAdapter } from "./WritingFreeResponsePlayerAdapter";
+import { WritingSentenceCorrectorPlayerAdapter } from "./WritingSentenceCorrectorPlayerAdapter";
+import { generatePassageAudio } from "@/services/passageAudioApi";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
 interface MixModeQuestion {
-  question_id: string
-  skill_slug: string
-  format_slug: string
-  question_data: Record<string, any>
+  question_id: string;
+  skill_slug: string;
+  format_slug: string;
+  question_data: Record<string, any>;
 }
 
 interface MixModeContent {
-  activity_id: string
-  questions: MixModeQuestion[]
-  difficulty?: string
+  activity_id: string;
+  questions: MixModeQuestion[];
+  difficulty?: string;
 }
 
 interface MixModePlayerAdapterProps {
-  activity: ActivityConfig
-  onAnswersChange: (answers: Map<string, string>) => void
-  showResults: boolean
-  correctAnswers: Set<string>
-  initialAnswers?: Map<string, string>
-  showCorrectAnswers?: boolean
-  currentQuestionIndex?: number
-  onQuestionIndexChange?: (index: number) => void
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  activity: ActivityConfig;
+  onAnswersChange: (answers: Map<string, string>) => void;
+  showResults: boolean;
+  correctAnswers: Set<string>;
+  initialAnswers?: Map<string, string>;
+  showCorrectAnswers?: boolean;
+  currentQuestionIndex?: number;
+  onQuestionIndexChange?: (index: number) => void;
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 // ── Context Extraction ────────────────────────────────────────────────
 
 /** Extract the left-panel context text + label from question_data based on format */
 function getContextInfo(question: MixModeQuestion): {
-  text: string | null
-  label: string
-  audioUrl: string | null
-  audioData: { audio_base64?: string } | null
-  passageAudioUrl: string | null
-  wordTimestamps: any[] | null
+  text: string | null;
+  label: string;
+  audioUrl: string | null;
+  audioData: { audio_base64?: string } | null;
+  passageAudioUrl: string | null;
+  wordTimestamps: any[] | null;
 } {
-  const { format_slug, question_data: d, skill_slug } = question
+  const { format_slug, question_data: d, skill_slug } = question;
 
   switch (format_slug) {
     case "comprehension":
@@ -78,7 +78,7 @@ function getContextInfo(question: MixModeQuestion): {
         audioData: d.audio_data || null,
         passageAudioUrl: d.passage_audio_url || null,
         wordTimestamps: d.word_timestamps || null,
-      }
+      };
     case "mcq":
     case "multiple_choice":
       return {
@@ -88,16 +88,21 @@ function getContextInfo(question: MixModeQuestion): {
         audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
-      }
+      };
     case "fill_blank":
       return {
         text: d.context || null,
-        label: skill_slug === "listening" ? "Listening" : skill_slug === "grammar" ? "Grammar" : "Writing",
+        label:
+          skill_slug === "listening"
+            ? "Listening"
+            : skill_slug === "grammar"
+              ? "Grammar"
+              : "Writing",
         audioUrl: d.audio_url || null,
         audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
-      }
+      };
     case "word_builder":
       return {
         text: d.definition || null,
@@ -106,7 +111,7 @@ function getContextInfo(question: MixModeQuestion): {
         audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
-      }
+      };
     case "sentence_builder":
       return {
         text: d.context || null,
@@ -115,7 +120,7 @@ function getContextInfo(question: MixModeQuestion): {
         audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
-      }
+      };
     case "matching":
       return {
         text: d.context || null,
@@ -124,7 +129,7 @@ function getContextInfo(question: MixModeQuestion): {
         audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
-      }
+      };
     case "sentence_corrector":
       return {
         text: d.context || null,
@@ -133,7 +138,7 @@ function getContextInfo(question: MixModeQuestion): {
         audioData: d.audio_data || null,
         passageAudioUrl: null,
         wordTimestamps: null,
-      }
+      };
     case "free_response":
       return {
         text: d.context || d.instructions || null,
@@ -142,7 +147,7 @@ function getContextInfo(question: MixModeQuestion): {
         audioData: null,
         passageAudioUrl: null,
         wordTimestamps: null,
-      }
+      };
     case "open_response":
       return {
         text: d.context || d.instructions || null,
@@ -151,9 +156,16 @@ function getContextInfo(question: MixModeQuestion): {
         audioData: null,
         passageAudioUrl: null,
         wordTimestamps: null,
-      }
+      };
     default:
-      return { text: null, label: "Activity", audioUrl: null, audioData: null, passageAudioUrl: null, wordTimestamps: null }
+      return {
+        text: null,
+        label: "Activity",
+        audioUrl: null,
+        audioData: null,
+        passageAudioUrl: null,
+        wordTimestamps: null,
+      };
   }
 }
 
@@ -166,7 +178,7 @@ function getSkillBadge(question: MixModeQuestion): string {
     listening: "Listening",
     writing: "Writing",
     speaking: "Speaking",
-  }
+  };
   const formatLabels: Record<string, string> = {
     mcq: "Multiple Choice",
     multiple_choice: "Multiple Choice",
@@ -178,20 +190,19 @@ function getSkillBadge(question: MixModeQuestion): string {
     sentence_corrector: "Sentence Corrector",
     free_response: "Free Response",
     open_response: "Speaking",
-  }
-  const skill = skillLabels[question.skill_slug] || question.skill_slug
-  const format = formatLabels[question.format_slug] || question.format_slug
-  return `${skill} · ${format}`
+  };
+  const skill = skillLabels[question.skill_slug] || question.skill_slug;
+  const format = formatLabels[question.format_slug] || question.format_slug;
+  return `${skill} · ${format}`;
 }
-
 
 // ── Passage Audio Bar (reading comprehension) ────────────────────────
 
 function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "0:00"
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, "0")}`
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 function PassageAudioBar({
@@ -199,142 +210,145 @@ function PassageAudioBar({
   passageAudioUrl,
   onAudioStateChange,
 }: {
-  passage: string
-  passageAudioUrl?: string | null
-  onAudioStateChange?: (state: { currentTime: number; isPlaying: boolean }) => void
+  passage: string;
+  passageAudioUrl?: string | null;
+  onAudioStateChange?: (state: {
+    currentTime: number;
+    isPlaying: boolean;
+  }) => void;
 }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null)
-  const [audioProgress, setAudioProgress] = useState(0)
-  const [audioDuration, setAudioDuration] = useState(0)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
 
-  const onAudioStateChangeRef = useRef(onAudioStateChange)
-  onAudioStateChangeRef.current = onAudioStateChange
+  const onAudioStateChangeRef = useRef(onAudioStateChange);
+  onAudioStateChangeRef.current = onAudioStateChange;
 
   // Propagate audio state to parent for word highlighting
   useEffect(() => {
-    onAudioStateChangeRef.current?.({ currentTime: audioProgress, isPlaying })
-  }, [audioProgress, isPlaying])
+    onAudioStateChangeRef.current?.({ currentTime: audioProgress, isPlaying });
+  }, [audioProgress, isPlaying]);
 
   // Preload audio metadata when a pre-generated URL is available
   useEffect(() => {
-    if (!passageAudioUrl || audioDataUrl) return
-    const audio = new Audio(passageAudioUrl)
-    audioRef.current = audio
-    audio.onended = () => setIsPlaying(false)
-    audio.ontimeupdate = () => setAudioProgress(audio.currentTime)
+    if (!passageAudioUrl || audioDataUrl) return;
+    const audio = new Audio(passageAudioUrl);
+    audioRef.current = audio;
+    audio.onended = () => setIsPlaying(false);
+    audio.ontimeupdate = () => setAudioProgress(audio.currentTime);
     const setDur = () => {
       if (Number.isFinite(audio.duration) && audio.duration > 0) {
-        setAudioDuration(audio.duration)
+        setAudioDuration(audio.duration);
       }
-    }
+    };
     audio.onloadedmetadata = () => {
-      setDur()
-      setAudioDataUrl(passageAudioUrl)
-    }
-    audio.ondurationchange = setDur
+      setDur();
+      setAudioDataUrl(passageAudioUrl);
+    };
+    audio.ondurationchange = setDur;
     audio.onerror = () => {
       // Pre-generated URL failed — user can still click to fall back to on-demand
-      audioRef.current = null
-    }
+      audioRef.current = null;
+    };
     // Trigger metadata loading
-    audio.preload = "metadata"
-    audio.load()
+    audio.preload = "metadata";
+    audio.load();
 
     return () => {
       // Only clean up if we haven't started playing
       if (!audio.currentTime) {
-        audio.onended = null
-        audio.ontimeupdate = null
-        audio.onloadedmetadata = null
-        audio.ondurationchange = null
-        audio.onerror = null
+        audio.onended = null;
+        audio.ontimeupdate = null;
+        audio.onloadedmetadata = null;
+        audio.ondurationchange = null;
+        audio.onerror = null;
       }
-    }
-  }, [passageAudioUrl]) // eslint-disable-line react-hooks/exhaustive-deps
+    };
+  }, [passageAudioUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAndPlay = useCallback(async () => {
-    if (!passage) return
+    if (!passage) return;
     // If audio is already preloaded, just play
     if (audioRef.current && audioDataUrl) {
-      audioRef.current.play()
-      setIsPlaying(true)
-      return
+      audioRef.current.play();
+      setIsPlaying(true);
+      return;
     }
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      let src: string
+      let src: string;
       if (passageAudioUrl) {
         // Use pre-generated audio from DCS proxy
-        src = passageAudioUrl
+        src = passageAudioUrl;
       } else {
         // Fallback: on-demand TTS generation
-        const result = await generatePassageAudio({ text: passage })
-        src = `data:audio/mp3;base64,${result.audio_base64}`
+        const result = await generatePassageAudio({ text: passage });
+        src = `data:audio/mp3;base64,${result.audio_base64}`;
       }
-      setAudioDataUrl(src)
-      const audio = new Audio(src)
-      audioRef.current = audio
-      audio.onended = () => setIsPlaying(false)
-      audio.ontimeupdate = () => setAudioProgress(audio.currentTime)
+      setAudioDataUrl(src);
+      const audio = new Audio(src);
+      audioRef.current = audio;
+      audio.onended = () => setIsPlaying(false);
+      audio.ontimeupdate = () => setAudioProgress(audio.currentTime);
       audio.onloadedmetadata = () => {
         if (Number.isFinite(audio.duration) && audio.duration > 0) {
-          setAudioDuration(audio.duration)
+          setAudioDuration(audio.duration);
         }
-      }
+      };
       audio.ondurationchange = () => {
         if (Number.isFinite(audio.duration) && audio.duration > 0) {
-          setAudioDuration(audio.duration)
+          setAudioDuration(audio.duration);
         }
-      }
-      audio.play()
-      setIsPlaying(true)
+      };
+      audio.play();
+      setIsPlaying(true);
     } catch {
       // Silently fail — bar stays available for retry
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [passage, passageAudioUrl, audioDataUrl])
+  }, [passage, passageAudioUrl, audioDataUrl]);
 
   const toggleAudio = useCallback(() => {
-    const audio = audioRef.current
+    const audio = audioRef.current;
     if (!audio || !audioDataUrl) {
-      loadAndPlay()
-      return
+      loadAndPlay();
+      return;
     }
     if (isPlaying) {
-      audio.pause()
-      setIsPlaying(false)
+      audio.pause();
+      setIsPlaying(false);
     } else {
-      audio.play()
-      setIsPlaying(true)
+      audio.play();
+      setIsPlaying(true);
     }
-  }, [audioDataUrl, isPlaying, loadAndPlay])
+  }, [audioDataUrl, isPlaying, loadAndPlay]);
 
   const seekAudio = useCallback(
     (value: number[]) => {
-      const audio = audioRef.current
+      const audio = audioRef.current;
       if (audio && audioDataUrl) {
-        audio.currentTime = value[0]
-        setAudioProgress(value[0])
+        audio.currentTime = value[0];
+        setAudioProgress(value[0]);
       }
     },
     [audioDataUrl],
-  )
+  );
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current = null
+        audioRef.current.pause();
+        audioRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
-  if (!passage) return null
+  if (!passage) return null;
 
   // Before audio is loaded and no pre-generated URL, show a compact load button
   if (!audioDataUrl && !isLoading) {
@@ -349,10 +363,12 @@ function PassageAudioBar({
           >
             <Play className="ml-0.5 h-3.5 w-3.5" />
           </Button>
-          <span className="text-xs text-muted-foreground">Listen to passage</span>
+          <span className="text-xs text-muted-foreground">
+            Listen to passage
+          </span>
         </div>
       </div>
-    )
+    );
   }
 
   // Loading state
@@ -363,10 +379,12 @@ function PassageAudioBar({
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-600">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
           </div>
-          <span className="text-xs text-muted-foreground">Loading audio...</span>
+          <span className="text-xs text-muted-foreground">
+            Loading audio...
+          </span>
         </div>
       </div>
-    )
+    );
   }
 
   // Full audio bar with seek slider
@@ -400,15 +418,15 @@ function PassageAudioBar({
         </span>
       </div>
     </div>
-  )
+  );
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
 /** Build an on-demand TTS URL for a given text. Used as fallback when audio_url is missing. */
 function ttsUrl(text: string, lang = "en"): string | null {
-  if (!text) return null
-  return `/api/v1/ai/tts/audio?text=${encodeURIComponent(text)}&lang=${lang}`
+  if (!text) return null;
+  return `/api/v1/ai/tts/audio?text=${encodeURIComponent(text)}&lang=${lang}`;
 }
 
 // ── Synthetic Activity Builders ────────────────────────────────────────
@@ -417,8 +435,8 @@ function buildSyntheticActivity(
   question: MixModeQuestion,
   activityId: string,
 ): { activity: ActivityConfig; idKey: string } | null {
-  const { format_slug, question_data, question_id } = question
-  const data = question_data
+  const { format_slug, question_data, question_id } = question;
+  const data = question_data;
 
   switch (format_slug) {
     case "mcq":
@@ -439,7 +457,7 @@ function buildSyntheticActivity(
           },
         } as ActivityConfig,
         idKey: question_id,
-      }
+      };
     }
 
     case "comprehension": {
@@ -460,15 +478,17 @@ function buildSyntheticActivity(
           },
         } as ActivityConfig,
         idKey: question_id,
-      }
+      };
     }
 
     case "fill_blank": {
-      const skill = question.skill_slug
+      const skill = question.skill_slug;
 
       // Listening fill blank: audio + display_sentence with word bank
       if (skill === "listening") {
-        const audioUrl = data.audio_url || ttsUrl(data.full_sentence || data.display_sentence || "")
+        const audioUrl =
+          data.audio_url ||
+          ttsUrl(data.full_sentence || data.display_sentence || "");
         return {
           activity: {
             type: "listening_fill_blank",
@@ -477,7 +497,8 @@ function buildSyntheticActivity(
               items: [
                 {
                   item_id: question_id,
-                  display_sentence: data.display_sentence || data.sentence || "",
+                  display_sentence:
+                    data.display_sentence || data.sentence || "",
                   word_bank: data.word_bank || [],
                   audio_url: audioUrl,
                   audio_data: data.audio_data,
@@ -490,7 +511,7 @@ function buildSyntheticActivity(
             },
           } as ActivityConfig,
           idKey: question_id,
-        }
+        };
       }
 
       // Grammar fill blank: sentence with word bank + grammar hints
@@ -516,7 +537,7 @@ function buildSyntheticActivity(
             },
           } as ActivityConfig,
           idKey: question_id,
-        }
+        };
       }
 
       // Writing fill blank (default)
@@ -538,20 +559,18 @@ function buildSyntheticActivity(
           },
         } as ActivityConfig,
         idKey: question_id,
-      }
+      };
     }
 
     case "word_builder": {
       // Backend uses correct_word (full model), frontend uses word (public model)
-      const word = data.word || data.correct_word || ""
+      const word = data.word || data.correct_word || "";
       const letters =
         data.letters ||
         data.scrambled_letters ||
-        word.split("").sort(() => Math.random() - 0.5)
-      const isListeningWB = question.skill_slug === "listening"
-      const wbAudioUrl = isListeningWB
-        ? data.audio_url || ttsUrl(word)
-        : null
+        word.split("").sort(() => Math.random() - 0.5);
+      const isListeningWB = question.skill_slug === "listening";
+      const wbAudioUrl = isListeningWB ? data.audio_url || ttsUrl(word) : null;
       return {
         activity: {
           type: "listening_word_builder",
@@ -562,7 +581,8 @@ function buildSyntheticActivity(
                 item_id: question_id,
                 word: word,
                 letters: letters,
-                letter_count: data.letter_count || word.length || letters.length,
+                letter_count:
+                  data.letter_count || word.length || letters.length,
                 definition: data.definition || "",
                 audio_url: wbAudioUrl,
                 audio_data: isListeningWB ? data.audio_data : undefined,
@@ -574,15 +594,15 @@ function buildSyntheticActivity(
           },
         } as ActivityConfig,
         idKey: question_id,
-      }
+      };
     }
 
     case "sentence_builder": {
-      const words = data.words || data.scrambled_words || []
-      const isListening = question.skill_slug === "listening"
+      const words = data.words || data.scrambled_words || [];
+      const isListening = question.skill_slug === "listening";
       const sbAudioUrl = isListening
         ? data.audio_url || ttsUrl(data.correct_sentence || "")
-        : null
+        : null;
       return {
         activity: {
           type: "listening_sentence_builder",
@@ -604,7 +624,7 @@ function buildSyntheticActivity(
           },
         } as ActivityConfig,
         idKey: question_id,
-      }
+      };
     }
 
     case "matching": {
@@ -626,7 +646,7 @@ function buildSyntheticActivity(
           },
         } as ActivityConfig,
         idKey: question_id,
-      }
+      };
     }
 
     case "sentence_corrector": {
@@ -649,7 +669,7 @@ function buildSyntheticActivity(
           },
         } as ActivityConfig,
         idKey: question_id,
-      }
+      };
     }
 
     case "free_response": {
@@ -674,7 +694,7 @@ function buildSyntheticActivity(
           },
         } as ActivityConfig,
         idKey: question_id,
-      }
+      };
     }
 
     case "open_response": {
@@ -698,11 +718,11 @@ function buildSyntheticActivity(
           },
         } as ActivityConfig,
         idKey: question_id,
-      }
+      };
     }
 
     default:
-      return null
+      return null;
   }
 }
 
@@ -711,34 +731,34 @@ function getAdapterComponent(formatSlug: string, skillSlug: string) {
     case "mcq":
     case "multiple_choice":
     case "comprehension":
-      return AIQuizPlayerAdapter
+      return AIQuizPlayerAdapter;
     case "fill_blank":
-      if (skillSlug === "listening") return ListeningFillBlankPlayerAdapter
-      if (skillSlug === "grammar") return GrammarFillBlankPlayerAdapter
-      return WritingFillBlankPlayerAdapter
+      if (skillSlug === "listening") return ListeningFillBlankPlayerAdapter;
+      if (skillSlug === "grammar") return GrammarFillBlankPlayerAdapter;
+      return WritingFillBlankPlayerAdapter;
     case "word_builder":
-      return WordBuilderDelegateAdapter
+      return WordBuilderDelegateAdapter;
     case "sentence_builder":
-      return SentenceBuilderDelegateAdapter
+      return SentenceBuilderDelegateAdapter;
     case "matching":
-      return VocabularyMatchingPlayerAdapter
+      return VocabularyMatchingPlayerAdapter;
     case "sentence_corrector":
-      return WritingSentenceCorrectorPlayerAdapter
+      return WritingSentenceCorrectorPlayerAdapter;
     case "free_response":
-      return WritingFreeResponsePlayerAdapter
+      return WritingFreeResponsePlayerAdapter;
     case "open_response":
-      return SpeakingOpenResponsePlayerAdapter
+      return SpeakingOpenResponsePlayerAdapter;
     default:
-      return null
+      return null;
   }
 }
 
 function WordBuilderDelegateAdapter(props: any) {
-  return <ListeningWordBuilderPlayerAdapter {...props} />
+  return <ListeningWordBuilderPlayerAdapter {...props} />;
 }
 
 function SentenceBuilderDelegateAdapter(props: any) {
-  return <ListeningSentenceBuilderPlayerAdapter {...props} />
+  return <ListeningSentenceBuilderPlayerAdapter {...props} />;
 }
 
 // ── Passage Word Highlighting ─────────────────────────────────────────
@@ -749,43 +769,43 @@ function MixModePassageHighlight({
   currentTime,
   isPlaying,
 }: {
-  passage: string
-  timestamps: { word: string; start: number; end: number }[]
-  currentTime: number
-  isPlaying: boolean
+  passage: string;
+  timestamps: { word: string; start: number; end: number }[];
+  currentTime: number;
+  isPlaying: boolean;
 }) {
   const activeWordIndex = useMemo(() => {
-    if (!isPlaying || timestamps.length === 0) return -1
+    if (!isPlaying || timestamps.length === 0) return -1;
     for (let i = timestamps.length - 1; i >= 0; i--) {
       if (currentTime >= timestamps[i].start) {
-        return i
+        return i;
       }
     }
-    return -1
-  }, [currentTime, timestamps, isPlaying])
+    return -1;
+  }, [currentTime, timestamps, isPlaying]);
 
   const spans = useMemo(() => {
     if (timestamps.length === 0) {
-      return [{ text: passage, wordIndex: -1 }]
+      return [{ text: passage, wordIndex: -1 }];
     }
 
-    const result: { text: string; wordIndex: number }[] = []
-    const tokens = passage.split(/(\s+)/)
-    let tsIdx = 0
+    const result: { text: string; wordIndex: number }[] = [];
+    const tokens = passage.split(/(\s+)/);
+    let tsIdx = 0;
 
     for (const token of tokens) {
       if (/^\s+$/.test(token)) {
-        result.push({ text: token, wordIndex: -1 })
+        result.push({ text: token, wordIndex: -1 });
       } else if (tsIdx < timestamps.length) {
-        result.push({ text: token, wordIndex: tsIdx })
-        tsIdx++
+        result.push({ text: token, wordIndex: tsIdx });
+        tsIdx++;
       } else {
-        result.push({ text: token, wordIndex: -1 })
+        result.push({ text: token, wordIndex: -1 });
       }
     }
 
-    return result
-  }, [passage, timestamps])
+    return result;
+  }, [passage, timestamps]);
 
   return (
     <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
@@ -803,7 +823,7 @@ function MixModePassageHighlight({
         </span>
       ))}
     </p>
-  )
+  );
 }
 
 // ── Component ──────────────────────────────────────────────────────────
@@ -819,120 +839,134 @@ export function MixModePlayerAdapter({
   onQuestionIndexChange: _onQuestionIndexChange,
   onNavigationStateChange,
 }: MixModePlayerAdapterProps) {
-  const content = (activity as any).content as MixModeContent
-  const rawQuestions = content?.questions || []
+  const content = (activity as any).content as MixModeContent;
+  const rawQuestions = content?.questions || [];
 
   // Sort questions by skill group then format so they're navigated group-by-group
   const questions = useMemo(() => {
-    const skillOrder = ["vocabulary", "grammar", "reading", "listening", "writing", "speaking"]
+    const skillOrder = [
+      "vocabulary",
+      "grammar",
+      "reading",
+      "listening",
+      "writing",
+      "speaking",
+    ];
     return [...rawQuestions].sort((a, b) => {
-      const aSkill = skillOrder.indexOf(a.skill_slug)
-      const bSkill = skillOrder.indexOf(b.skill_slug)
-      const skillDiff = (aSkill === -1 ? 99 : aSkill) - (bSkill === -1 ? 99 : bSkill)
-      if (skillDiff !== 0) return skillDiff
-      return a.format_slug.localeCompare(b.format_slug)
-    })
-  }, [rawQuestions])
+      const aSkill = skillOrder.indexOf(a.skill_slug);
+      const bSkill = skillOrder.indexOf(b.skill_slug);
+      const skillDiff =
+        (aSkill === -1 ? 99 : aSkill) - (bSkill === -1 ? 99 : bSkill);
+      if (skillDiff !== 0) return skillDiff;
+      return a.format_slug.localeCompare(b.format_slug);
+    });
+  }, [rawQuestions]);
 
   const [answers, setAnswers] = useState<Map<string, string>>(
     () => initialAnswers || new Map(),
-  )
-  const qIndex = currentQuestionIndex ?? 0
-  const [internalIndex, setInternalIndex] = useState(qIndex)
-  const currentQ = questions[internalIndex]
+  );
+  const qIndex = currentQuestionIndex ?? 0;
+  const [internalIndex, setInternalIndex] = useState(qIndex);
+  const currentQ = questions[internalIndex];
 
   // Mobile: toggle passage visibility
-  const [showPassage, setShowPassage] = useState(true)
+  const [showPassage, setShowPassage] = useState(true);
 
   // Audio state for word highlighting in reading comprehension
-  const [passageAudioState, setPassageAudioState] = useState({ currentTime: 0, isPlaying: false })
+  const [passageAudioState, setPassageAudioState] = useState({
+    currentTime: 0,
+    isPlaying: false,
+  });
 
   // Sync external index
   useEffect(() => {
     if (currentQuestionIndex !== undefined) {
-      setInternalIndex(currentQuestionIndex)
+      setInternalIndex(currentQuestionIndex);
     }
-  }, [currentQuestionIndex])
+  }, [currentQuestionIndex]);
 
   // Report navigation state
   useEffect(() => {
-    if (!onNavigationStateChange || questions.length === 0) return
-    const answeredIds = Array.from(answers.keys())
+    if (!onNavigationStateChange || questions.length === 0) return;
+    const answeredIds = Array.from(answers.keys());
     const answeredIndices = questions
       .map((q, i) => (answers.has(q.question_id) ? i : -1))
-      .filter((i) => i >= 0)
+      .filter((i) => i >= 0);
     onNavigationStateChange({
       currentIndex: internalIndex,
       totalItems: questions.length,
       answeredItemIds: answeredIds,
       answeredIndices,
-    })
-  }, [internalIndex, answers, questions, onNavigationStateChange])
+    });
+  }, [internalIndex, answers, questions, onNavigationStateChange]);
 
   // Propagate answers up
-  const prevAnswersRef = useRef(answers)
+  const prevAnswersRef = useRef(answers);
   useEffect(() => {
     if (answers !== prevAnswersRef.current) {
-      prevAnswersRef.current = answers
-      onAnswersChange(answers)
+      prevAnswersRef.current = answers;
+      onAnswersChange(answers);
     }
-  }, [answers, onAnswersChange])
+  }, [answers, onAnswersChange]);
 
   const handleChildAnswersChange = useCallback(
     (childAnswers: Map<string, string>) => {
       setAnswers((prev) => {
-        const next = new Map(prev)
+        const next = new Map(prev);
         childAnswers.forEach((value, key) => {
-          next.set(key, value)
-        })
-        return next
-      })
+          next.set(key, value);
+        });
+        return next;
+      });
     },
     [],
-  )
+  );
 
   // Memoize synthetic activity — only recompute when question changes
-  const currentQuestionId = currentQ?.question_id
-  const currentFormatSlug = currentQ?.format_slug
+  const currentQuestionId = currentQ?.question_id;
+  const currentFormatSlug = currentQ?.format_slug;
 
   const synthetic = useMemo(() => {
-    if (!currentQ) return null
-    return buildSyntheticActivity(currentQ, content.activity_id)
+    if (!currentQ) return null;
+    return buildSyntheticActivity(currentQ, content.activity_id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentQuestionId, content.activity_id])
+  }, [currentQuestionId, content.activity_id]);
 
-  const currentSkillSlug = currentQ?.skill_slug
+  const currentSkillSlug = currentQ?.skill_slug;
 
   const AdapterComponent = useMemo(
-    () => (currentFormatSlug && currentSkillSlug ? getAdapterComponent(currentFormatSlug, currentSkillSlug) : null),
+    () =>
+      currentFormatSlug && currentSkillSlug
+        ? getAdapterComponent(currentFormatSlug, currentSkillSlug)
+        : null,
     [currentFormatSlug, currentSkillSlug],
-  )
+  );
 
   // Memoize per-question initialAnswers — only recompute when question changes
   const childInitialAnswers = useMemo(() => {
-    const m = new Map<string, string>()
-    if (!currentQuestionId) return m
-    const existing = answers.get(currentQuestionId)
-    if (existing !== undefined) m.set(currentQuestionId, existing)
-    return m
+    const m = new Map<string, string>();
+    if (!currentQuestionId) return m;
+    const existing = answers.get(currentQuestionId);
+    if (existing !== undefined) m.set(currentQuestionId, existing);
+    return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentQuestionId])
+  }, [currentQuestionId]);
 
   // Memoize per-question correctAnswers
   const childCorrectAnswers = useMemo(() => {
-    const s = new Set<string>()
+    const s = new Set<string>();
     if (currentQuestionId && correctAnswers.has(currentQuestionId)) {
-      s.add(currentQuestionId)
+      s.add(currentQuestionId);
     }
-    return s
-  }, [currentQuestionId, correctAnswers])
+    return s;
+  }, [currentQuestionId, correctAnswers]);
 
   if (!currentQ) {
     return (
       <div className="flex items-center justify-center p-8 text-muted-foreground">
         No questions available.
       </div>
-    )
+    );
   }
 
   if (!synthetic || !AdapterComponent) {
@@ -940,14 +974,14 @@ export function MixModePlayerAdapter({
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
         Unsupported format: {currentQ.format_slug}
       </div>
-    )
+    );
   }
 
   // Only reading/comprehension uses the two-panel layout (passage + question).
   // All other formats render full-width, identical to their standalone player.
-  const isComprehension = currentQ.format_slug === "comprehension"
-  const contextInfo = isComprehension ? getContextInfo(currentQ) : null
-  const hasPassage = isComprehension && !!contextInfo?.text
+  const isComprehension = currentQ.format_slug === "comprehension";
+  const contextInfo = isComprehension ? getContextInfo(currentQ) : null;
+  const hasPassage = isComprehension && !!contextInfo?.text;
 
   // Two-panel layout for reading comprehension
   if (hasPassage) {
@@ -969,7 +1003,8 @@ export function MixModePlayerAdapter({
                   </Badge>
                 </div>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  {contextInfo?.wordTimestamps && contextInfo.wordTimestamps.length > 0 ? (
+                  {contextInfo?.wordTimestamps &&
+                  contextInfo.wordTimestamps.length > 0 ? (
                     <MixModePassageHighlight
                       passage={contextInfo.text!}
                       timestamps={contextInfo.wordTimestamps}
@@ -1017,7 +1052,7 @@ export function MixModePlayerAdapter({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Full-width layout for all other question types — render exactly like standalone
@@ -1044,5 +1079,5 @@ export function MixModePlayerAdapter({
         />
       </div>
     </div>
-  )
+  );
 }

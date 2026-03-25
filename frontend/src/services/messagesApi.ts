@@ -5,8 +5,8 @@
  * This service provides functions to interact with the Messages API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   ConversationListResponse,
   ConversationQueryParams,
@@ -16,7 +16,7 @@ import type {
   MessageThreadResponse,
   RecipientListResponse,
   UnreadMessagesCountResponse,
-} from "../types/message"
+} from "../types/message";
 
 /**
  * Create axios instance with OpenAPI config
@@ -25,16 +25,16 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
   // Set baseURL dynamically to ensure it uses the value set in main.tsx
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     // Handle both sync and async token functions
     const tokenValue =
@@ -50,13 +50,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Get conversations for the current user with optional pagination
@@ -67,14 +67,14 @@ apiClient.interceptors.request.use(async (config) => {
 export async function getConversations(
   params: ConversationQueryParams = {},
 ): Promise<ConversationListResponse> {
-  const url = `/api/v1/messages/conversations`
+  const url = `/api/v1/messages/conversations`;
   const response = await apiClient.get<ConversationListResponse>(url, {
     params: {
       limit: params.limit ?? 20,
       offset: params.offset ?? 0,
     },
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -86,9 +86,9 @@ export async function getConversations(
 export async function getThread(
   partnerId: string,
 ): Promise<MessageThreadResponse> {
-  const url = `/api/v1/messages/thread/${partnerId}`
-  const response = await apiClient.get<MessageThreadResponse>(url)
-  return response.data
+  const url = `/api/v1/messages/thread/${partnerId}`;
+  const response = await apiClient.get<MessageThreadResponse>(url);
+  return response.data;
 }
 
 /**
@@ -98,9 +98,9 @@ export async function getThread(
  * @returns Promise with the created message
  */
 export async function sendMessage(data: MessageCreate): Promise<Message> {
-  const url = `/api/v1/messages`
-  const response = await apiClient.post<Message>(url, data)
-  return response.data
+  const url = `/api/v1/messages`;
+  const response = await apiClient.post<Message>(url, data);
+  return response.data;
 }
 
 /**
@@ -112,21 +112,21 @@ export async function sendMessage(data: MessageCreate): Promise<Message> {
 export async function markAsRead(
   messageId: string,
 ): Promise<MessageReadResponse> {
-  const url = `/api/v1/messages/${messageId}/read`
-  const response = await apiClient.patch<MessageReadResponse>(url)
-  return response.data
+  const url = `/api/v1/messages/${messageId}/read`;
+  const response = await apiClient.patch<MessageReadResponse>(url);
+  return response.data;
 }
 
 /**
  * Broadcast a message to all students in a class
  */
 export async function broadcastToClass(data: {
-  class_id: string
-  body: string
+  class_id: string;
+  body: string;
 }): Promise<{ sent_count: number; class_name: string }> {
-  const url = `/api/v1/messages/broadcast`
-  const response = await apiClient.post(url, data)
-  return response.data
+  const url = `/api/v1/messages/broadcast`;
+  const response = await apiClient.post(url, data);
+  return response.data;
 }
 
 /**
@@ -135,9 +135,9 @@ export async function broadcastToClass(data: {
  * @returns Promise with recipient list
  */
 export async function getRecipients(): Promise<RecipientListResponse> {
-  const url = `/api/v1/messages/recipients`
-  const response = await apiClient.get<RecipientListResponse>(url)
-  return response.data
+  const url = `/api/v1/messages/recipients`;
+  const response = await apiClient.get<RecipientListResponse>(url);
+  return response.data;
 }
 
 /**
@@ -146,9 +146,9 @@ export async function getRecipients(): Promise<RecipientListResponse> {
  * @returns Promise with unread count
  */
 export async function getUnreadCount(): Promise<UnreadMessagesCountResponse> {
-  const url = `/api/v1/messages/unread-count`
-  const response = await apiClient.get<UnreadMessagesCountResponse>(url)
-  return response.data
+  const url = `/api/v1/messages/unread-count`;
+  const response = await apiClient.get<UnreadMessagesCountResponse>(url);
+  return response.data;
 }
 
 /**
@@ -162,6 +162,6 @@ export const messagesApi = {
   markAsRead,
   getRecipients,
   getUnreadCount,
-}
+};
 
-export default messagesApi
+export default messagesApi;

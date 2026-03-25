@@ -6,13 +6,13 @@ from datetime import datetime
 from reportlab.lib import colors
 
 logger = logging.getLogger(__name__)
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from reportlab.graphics.shapes import Drawing, String
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.graphics.charts.barcharts import VerticalBarChart
-from reportlab.graphics.shapes import Drawing, String
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
@@ -26,15 +26,30 @@ from reportlab.platypus import (
 # Try multiple font paths for different operating systems
 FONT_PATHS = [
     # macOS Arial (supports Turkish characters)
-    ("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
+    (
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+    ),
     # macOS DejaVu (if installed)
-    ("/System/Library/Fonts/Supplemental/DejaVuSans.ttf", "/System/Library/Fonts/Supplemental/DejaVuSans-Bold.ttf"),
+    (
+        "/System/Library/Fonts/Supplemental/DejaVuSans.ttf",
+        "/System/Library/Fonts/Supplemental/DejaVuSans-Bold.ttf",
+    ),
     # Linux common paths
-    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    (
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    ),
     # Ubuntu/Debian
-    ("/usr/share/fonts/dejavu/DejaVuSans.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"),
+    (
+        "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+    ),
     # Linux Arial
-    ("/usr/share/fonts/truetype/msttcorefonts/Arial.ttf", "/usr/share/fonts/truetype/msttcorefonts/Arial_Bold.ttf"),
+    (
+        "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf",
+        "/usr/share/fonts/truetype/msttcorefonts/Arial_Bold.ttf",
+    ),
 ]
 
 UNICODE_FONT = "Helvetica"  # Default fallback
@@ -45,6 +60,7 @@ logger.info("DEBUG PDF FONTS: Starting font registration")
 for regular_path, bold_path in FONT_PATHS:
     try:
         from pathlib import Path
+
         logger.info(f"DEBUG PDF FONTS: Trying {regular_path}")
         if Path(regular_path).exists() and Path(bold_path).exists():
             logger.info(f"DEBUG PDF FONTS: Found fonts at {regular_path}")
@@ -52,7 +68,9 @@ for regular_path, bold_path in FONT_PATHS:
             pdfmetrics.registerFont(TTFont(f"{FONT_NAME_REGISTERED}-Bold", bold_path))
             UNICODE_FONT = FONT_NAME_REGISTERED
             UNICODE_FONT_BOLD = f"{FONT_NAME_REGISTERED}-Bold"
-            logger.info(f"DEBUG PDF FONTS: Successfully registered font from {regular_path}")
+            logger.info(
+                f"DEBUG PDF FONTS: Successfully registered font from {regular_path}"
+            )
             break
         else:
             logger.info(f"DEBUG PDF FONTS: Not found at {regular_path}")
@@ -165,7 +183,9 @@ def generate_pdf_report(
     elif report_type == "class":
         story.extend(_create_class_sections(data, heading_style, body_style, styles))
     else:  # assignment
-        story.extend(_create_assignment_sections(data, heading_style, body_style, styles))
+        story.extend(
+            _create_assignment_sections(data, heading_style, body_style, styles)
+        )
 
     # Add narrative summary
     story.extend(_create_narrative_section(data, heading_style, body_style))
@@ -246,9 +266,7 @@ def _create_cover_page(
     elements.append(Spacer(1, 2 * inch))
 
     # Footer info on cover
-    elements.append(
-        Paragraph("Dream LMS Analytics Report", body_style)
-    )
+    elements.append(Paragraph("Dream LMS Analytics Report", body_style))
 
     return elements
 
@@ -320,10 +338,14 @@ def _create_trend_section(data: dict, heading_style, body_style) -> list:
             trend_text = f"Performance <b>decreased by {abs(change):.1f}%</b> compared to the previous period."
             trend_color = colors.HexColor("#c53030")
         elif direction == "stable":
-            trend_text = "Performance <b>remained stable</b> compared to the previous period."
+            trend_text = (
+                "Performance <b>remained stable</b> compared to the previous period."
+            )
             trend_color = colors.HexColor("#2b6cb0")
         else:
-            trend_text = "This is the <b>first reporting period</b> with available data."
+            trend_text = (
+                "This is the <b>first reporting period</b> with available data."
+            )
             trend_color = colors.HexColor("#718096")
 
         trend_style = ParagraphStyle(
@@ -370,7 +392,9 @@ def _create_trend_section(data: dict, heading_style, body_style) -> list:
     return elements
 
 
-def _create_skill_chart(skill_breakdown: list[dict], width: float = 460, height: float = 220) -> Drawing:
+def _create_skill_chart(
+    skill_breakdown: list[dict], width: float = 460, height: float = 220
+) -> Drawing:
     """Create a bar chart for skill performance."""
     drawing = Drawing(width, height)
 
@@ -406,7 +430,14 @@ def _create_skill_chart(skill_breakdown: list[dict], width: float = 460, height:
     chart.barLabels.nudge = 6
 
     # Title
-    title = String(width / 2, height - 12, "Skill Performance", textAnchor="middle", fontSize=11, fontName=UNICODE_FONT_BOLD)
+    title = String(
+        width / 2,
+        height - 12,
+        "Skill Performance",
+        textAnchor="middle",
+        fontSize=11,
+        fontName=UNICODE_FONT_BOLD,
+    )
     drawing.add(title)
     drawing.add(chart)
 
@@ -429,11 +460,13 @@ def _create_student_sections(data: dict, heading_style, body_style, styles) -> l
         elements.append(Paragraph("Skill Details", heading_style))
         table_data = [["Skill", "Average Score", "Assignments"]]
         for item in skill_breakdown:
-            table_data.append([
-                item.get("skill_name", "Unknown"),
-                f"{item.get('avg_score', 0):.1f}%",
-                str(item.get("count", 0)),
-            ])
+            table_data.append(
+                [
+                    item.get("skill_name", "Unknown"),
+                    f"{item.get('avg_score', 0):.1f}%",
+                    str(item.get("count", 0)),
+                ]
+            )
 
         table = _create_data_table(table_data, [3 * inch, 1.5 * inch, 1.5 * inch])
         elements.append(table)
@@ -446,12 +479,18 @@ def _create_student_sections(data: dict, heading_style, body_style, styles) -> l
 
         table_data = [["Assignment", "Score", "Time Spent", "Completed"]]
         for item in assignments[:15]:  # Limit to 15 items
-            table_data.append([
-                item.get("name", "Unknown")[:40],
-                f"{item.get('score', 0)}%",
-                f"{item.get('time_spent', 0)} min",
-                item.get("completed_at", "")[:10] if item.get("completed_at") else "N/A",
-            ])
+            table_data.append(
+                [
+                    item.get("name", "Unknown")[:40],
+                    f"{item.get('score', 0)}%",
+                    f"{item.get('time_spent', 0)} min",
+                    (
+                        item.get("completed_at", "")[:10]
+                        if item.get("completed_at")
+                        else "N/A"
+                    ),
+                ]
+            )
 
         table = _create_data_table(
             table_data, [3 * inch, 1 * inch, 1 * inch, 1.5 * inch]
@@ -472,10 +511,12 @@ def _create_class_sections(data: dict, heading_style, body_style, styles) -> lis
 
         table_data = [["Score Range", "Number of Students"]]
         for bucket in score_distribution:
-            table_data.append([
-                bucket.get("range_label", "Unknown"),
-                str(bucket.get("count", 0)),
-            ])
+            table_data.append(
+                [
+                    bucket.get("range_label", "Unknown"),
+                    str(bucket.get("count", 0)),
+                ]
+            )
 
         table = _create_data_table(table_data, [3 * inch, 2 * inch])
         elements.append(table)
@@ -488,11 +529,13 @@ def _create_class_sections(data: dict, heading_style, body_style, styles) -> lis
 
         table_data = [["Rank", "Student", "Average Score"]]
         for student in top_students:
-            table_data.append([
-                str(student.get("rank", "")),
-                student.get("name", "Unknown"),
-                f"{student.get('avg_score', 0):.1f}%",
-            ])
+            table_data.append(
+                [
+                    str(student.get("rank", "")),
+                    student.get("name", "Unknown"),
+                    f"{student.get('avg_score', 0):.1f}%",
+                ]
+            )
 
         table = _create_data_table(table_data, [1 * inch, 3 * inch, 1.5 * inch])
         elements.append(table)
@@ -505,11 +548,13 @@ def _create_class_sections(data: dict, heading_style, body_style, styles) -> lis
 
         table_data = [["Student", "Average Score", "Alert"]]
         for student in struggling_students:
-            table_data.append([
-                student.get("name", "Unknown"),
-                f"{student.get('avg_score', 0):.1f}%",
-                student.get("alert_reason", ""),
-            ])
+            table_data.append(
+                [
+                    student.get("name", "Unknown"),
+                    f"{student.get('avg_score', 0):.1f}%",
+                    student.get("alert_reason", ""),
+                ]
+            )
 
         table = _create_data_table(table_data, [2 * inch, 1.5 * inch, 2.5 * inch])
         elements.append(table)
@@ -527,11 +572,13 @@ def _create_class_sections(data: dict, heading_style, body_style, styles) -> lis
         elements.append(Paragraph("Skill Details", heading_style))
         table_data = [["Skill", "Average Score", "Assignments"]]
         for item in skill_breakdown:
-            table_data.append([
-                item.get("skill_name", "Unknown"),
-                f"{item.get('avg_score', 0):.1f}%",
-                str(item.get("count", 0)),
-            ])
+            table_data.append(
+                [
+                    item.get("skill_name", "Unknown"),
+                    f"{item.get('avg_score', 0):.1f}%",
+                    str(item.get("count", 0)),
+                ]
+            )
 
         table = _create_data_table(table_data, [3 * inch, 1.5 * inch, 1.5 * inch])
         elements.append(table)
@@ -550,12 +597,14 @@ def _create_assignment_sections(data: dict, heading_style, body_style, styles) -
 
         table_data = [["Assignment", "Avg Score", "Completion", "Avg Time"]]
         for item in assignments[:20]:  # Limit to 20
-            table_data.append([
-                item.get("name", "Unknown")[:35],
-                f"{item.get('avg_score', 0):.1f}%",
-                f"{item.get('completion_rate', 0) * 100:.0f}%",
-                f"{item.get('time_spent', 0):.0f} min",
-            ])
+            table_data.append(
+                [
+                    item.get("name", "Unknown")[:35],
+                    f"{item.get('avg_score', 0):.1f}%",
+                    f"{item.get('completion_rate', 0) * 100:.0f}%",
+                    f"{item.get('time_spent', 0):.0f} min",
+                ]
+            )
 
         table = _create_data_table(
             table_data, [2.5 * inch, 1.25 * inch, 1.25 * inch, 1.25 * inch]
@@ -570,10 +619,12 @@ def _create_assignment_sections(data: dict, heading_style, body_style, styles) -
 
         table_data = [["Assignment", "Average Score"]]
         for item in most_successful:
-            table_data.append([
-                item.get("name", "Unknown"),
-                f"{item.get('avg_score', 0):.1f}%",
-            ])
+            table_data.append(
+                [
+                    item.get("name", "Unknown"),
+                    f"{item.get('avg_score', 0):.1f}%",
+                ]
+            )
 
         table = _create_data_table(table_data, [4 * inch, 2 * inch])
         elements.append(table)
@@ -586,10 +637,12 @@ def _create_assignment_sections(data: dict, heading_style, body_style, styles) -
 
         table_data = [["Assignment", "Average Score"]]
         for item in least_successful:
-            table_data.append([
-                item.get("name", "Unknown"),
-                f"{item.get('avg_score', 0):.1f}%",
-            ])
+            table_data.append(
+                [
+                    item.get("name", "Unknown"),
+                    f"{item.get('avg_score', 0):.1f}%",
+                ]
+            )
 
         table = _create_data_table(table_data, [4 * inch, 2 * inch])
         elements.append(table)
@@ -602,11 +655,13 @@ def _create_assignment_sections(data: dict, heading_style, body_style, styles) -
 
         table_data = [["Activity Type", "Average Score", "Count"]]
         for item in activity_comparison:
-            table_data.append([
-                item.get("label", item.get("activity_type", "Unknown")),
-                f"{item.get('avg_score', 0):.1f}%",
-                str(item.get("count", 0)),
-            ])
+            table_data.append(
+                [
+                    item.get("label", item.get("activity_type", "Unknown")),
+                    f"{item.get('avg_score', 0):.1f}%",
+                    str(item.get("count", 0)),
+                ]
+            )
 
         table = _create_data_table(table_data, [3 * inch, 1.5 * inch, 1.5 * inch])
         elements.append(table)
@@ -655,7 +710,12 @@ def _create_data_table(data: list, col_widths: list) -> Table:
                 ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
                 ("TOPPADDING", (0, 0), (-1, 0), 10),
                 ("BACKGROUND", (0, 1), (-1, -1), colors.white),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f7fafc")]),
+                (
+                    "ROWBACKGROUNDS",
+                    (0, 1),
+                    (-1, -1),
+                    [colors.white, colors.HexColor("#f7fafc")],
+                ),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e0")),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("PADDING", (0, 0), (-1, -1), 6),

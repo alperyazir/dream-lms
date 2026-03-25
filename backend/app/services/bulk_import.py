@@ -1,4 +1,5 @@
 """Bulk import validation service for Excel file imports."""
+
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -13,6 +14,7 @@ from app.models import User, UserRole
 @dataclass
 class ValidationResult:
     """Result of validating a single row from bulk import."""
+
     is_valid: bool
     errors: list[str]
     row_number: int
@@ -21,6 +23,7 @@ class ValidationResult:
 @dataclass
 class BulkValidationResult:
     """Result of validating all rows from bulk import."""
+
     valid_count: int
     error_count: int
     errors: list[ValidationResult]
@@ -66,7 +69,7 @@ def validate_user_row(
     role: UserRole,
     existing_emails: set[str],
     seen_emails: set[str],
-    session: Session
+    session: Session,
 ) -> ValidationResult:
     """
     Validate a single row from bulk import file.
@@ -85,9 +88,9 @@ def validate_user_row(
     errors: list[str] = []
 
     # Check required fields
-    first_name = row.get('First Name', '').strip() if row.get('First Name') else ''
-    last_name = row.get('Last Name', '').strip() if row.get('Last Name') else ''
-    email = row.get('Email', '').strip() if row.get('Email') else ''
+    first_name = row.get("First Name", "").strip() if row.get("First Name") else ""
+    last_name = row.get("Last Name", "").strip() if row.get("Last Name") else ""
+    email = row.get("Email", "").strip() if row.get("Email") else ""
 
     if not first_name:
         errors.append("Missing required field: First Name")
@@ -115,13 +118,15 @@ def validate_user_row(
     # Role-specific validation
     if role == UserRole.student:
         # Grade level is optional for students
-        parent_email = row.get('Parent Email', '').strip() if row.get('Parent Email') else None
+        parent_email = (
+            row.get("Parent Email", "").strip() if row.get("Parent Email") else None
+        )
         if parent_email and not validate_email_format(parent_email):
             errors.append(f"Invalid parent email format: {parent_email}")
 
     elif role == UserRole.teacher:
         # School ID is required for teachers
-        school_id_str = row.get('School ID', '').strip() if row.get('School ID') else ''
+        school_id_str = row.get("School ID", "").strip() if row.get("School ID") else ""
         if not school_id_str:
             errors.append("Missing required field: School ID")
         else:
@@ -129,31 +134,33 @@ def validate_user_row(
             try:
                 uuid.UUID(school_id_str)
             except (ValueError, AttributeError):
-                errors.append(f"Invalid School ID format (must be UUID): {school_id_str}")
+                errors.append(
+                    f"Invalid School ID format (must be UUID): {school_id_str}"
+                )
 
     elif role == UserRole.publisher:
         # Company name is required for publishers
-        company_name = row.get('Company Name', '').strip() if row.get('Company Name') else ''
+        company_name = (
+            row.get("Company Name", "").strip() if row.get("Company Name") else ""
+        )
         if not company_name:
             errors.append("Missing required field: Company Name")
 
-        contact_email = row.get('Contact Email', '').strip() if row.get('Contact Email') else ''
+        contact_email = (
+            row.get("Contact Email", "").strip() if row.get("Contact Email") else ""
+        )
         if not contact_email:
             errors.append("Missing required field: Contact Email")
         elif not validate_email_format(contact_email):
             errors.append(f"Invalid contact email format: {contact_email}")
 
     return ValidationResult(
-        is_valid=len(errors) == 0,
-        errors=errors,
-        row_number=row_number
+        is_valid=len(errors) == 0, errors=errors, row_number=row_number
     )
 
 
 def validate_bulk_import(
-    rows: list[dict[str, Any]],
-    role: UserRole,
-    session: Session
+    rows: list[dict[str, Any]], role: UserRole, session: Session
 ) -> BulkValidationResult:
     """
     Validate all rows from bulk import file.
@@ -167,7 +174,7 @@ def validate_bulk_import(
         BulkValidationResult with validation summary and detailed errors
     """
     # Get all emails from file for batch database check
-    emails = [row.get('Email', '').strip().lower() for row in rows if row.get('Email')]
+    emails = [row.get("Email", "").strip().lower() for row in rows if row.get("Email")]
     existing_emails = check_existing_users(emails, session)
 
     # Track emails seen in this file for duplicate detection
@@ -178,14 +185,14 @@ def validate_bulk_import(
     valid_count = 0
 
     for row in rows:
-        row_number = row.get('_row_number', 0)
+        row_number = row.get("_row_number", 0)
         result = validate_user_row(
             row=row,
             row_number=row_number,
             role=role,
             existing_emails=existing_emails,
             seen_emails=seen_emails,
-            session=session
+            session=session,
         )
 
         if result.is_valid:
@@ -196,5 +203,5 @@ def validate_bulk_import(
     return BulkValidationResult(
         valid_count=valid_count,
         error_count=len(validation_errors),
-        errors=validation_errors
+        errors=validation_errors,
     )

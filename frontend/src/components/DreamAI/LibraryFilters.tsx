@@ -6,51 +6,51 @@
  * activity type, book, and date range.
  */
 
-import { X } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { ACTIVITY_TYPE_CONFIG } from "@/lib/activityTypeConfig"
-import { getBooks } from "@/services/booksApi"
-import type { Book } from "@/types/book"
-import type { LibraryFilters as Filters } from "@/types/content-library"
+} from "@/components/ui/select";
+import { ACTIVITY_TYPE_CONFIG } from "@/lib/activityTypeConfig";
+import { getBooks } from "@/services/booksApi";
+import type { Book } from "@/types/book";
+import type { LibraryFilters as Filters } from "@/types/content-library";
 
 interface LibraryFiltersProps {
-  filters: Filters
-  onFiltersChange: (filters: Filters) => void
+  filters: Filters;
+  onFiltersChange: (filters: Filters) => void;
 }
 
 export function LibraryFilters({
   filters,
   onFiltersChange,
 }: LibraryFiltersProps) {
-  const [books, setBooks] = useState<Book[]>([])
-  const [isLoadingBooks, setIsLoadingBooks] = useState(false)
+  const [books, setBooks] = useState<Book[]>([]);
+  const [isLoadingBooks, setIsLoadingBooks] = useState(false);
 
   // Load books on mount
   useEffect(() => {
     const loadBooks = async () => {
       try {
-        setIsLoadingBooks(true)
-        const response = await getBooks()
-        setBooks(response.items || [])
+        setIsLoadingBooks(true);
+        const response = await getBooks();
+        setBooks(response.items || []);
       } catch (err) {
-        console.error("Failed to load books:", err)
+        console.error("Failed to load books:", err);
       } finally {
-        setIsLoadingBooks(false)
+        setIsLoadingBooks(false);
       }
-    }
+    };
 
-    loadBooks()
-  }, [])
+    loadBooks();
+  }, []);
 
   const handleFilterChange = (key: keyof Filters, value: any) => {
     onFiltersChange({
@@ -58,17 +58,17 @@ export function LibraryFilters({
       [key]: value || undefined,
       // Reset page when filters change
       page: 1,
-    })
-  }
+    });
+  };
 
   const handleClearFilters = () => {
     onFiltersChange({
       page: 1,
       page_size: filters.page_size || 20,
-    })
-  }
+    });
+  };
 
-  const hasActiveFilters = filters.type || filters.book_id || filters.date_from
+  const hasActiveFilters = filters.type || filters.book_id || filters.date_from;
 
   // Get AI activity types from config
   const activityTypes = Object.entries(ACTIVITY_TYPE_CONFIG)
@@ -84,7 +84,7 @@ export function LibraryFilters({
     .map(([key, config]) => ({
       value: key,
       label: config.label,
-    }))
+    }));
 
   return (
     <div className="space-y-4 rounded-lg border bg-card p-4">
@@ -177,5 +177,5 @@ export function LibraryFilters({
         </div>
       </div>
     </div>
-  )
+  );
 }

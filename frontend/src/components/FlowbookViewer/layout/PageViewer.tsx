@@ -1,170 +1,171 @@
-import { Loader2 } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
-import { cn } from "@/lib/utils"
-import { getPageImageUrl } from "@/services/booksApi"
+import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import { getPageImageUrl } from "@/services/booksApi";
 import type {
   ActivityReference,
   AudioReference,
   FillAnswerArea,
   Page,
   VideoReference,
-} from "@/types/flowbook"
-import { AnnotationCanvas } from "../annotation"
-import { useZoomGestures } from "../hooks"
-import { ActivityIcon, AudioIcon, FillAnswerOverlay, VideoIcon } from "../media"
+} from "@/types/flowbook";
+import { AnnotationCanvas } from "../annotation";
+import { useZoomGestures } from "../hooks";
+import {
+  ActivityIcon,
+  AudioIcon,
+  FillAnswerOverlay,
+  VideoIcon,
+} from "../media";
 import {
   useAnnotationStore,
   useFlowbookBookStore,
   useFlowbookUIStore,
-} from "../stores"
-import { getSpreadPages } from "../utils"
+} from "../stores";
+import { getSpreadPages } from "../utils";
 
 // Default page dimensions for positioning (will be overridden by actual image dimensions)
-const DEFAULT_PAGE_WIDTH = 800
-const DEFAULT_PAGE_HEIGHT = 1100
+const DEFAULT_PAGE_WIDTH = 800;
+const DEFAULT_PAGE_HEIGHT = 1100;
 
 // Helper to collect all media from page and its sections
 function collectAllMedia(page: Page) {
   // Start with page-level media
-  const allAudio: AudioReference[] = [...(page.audio || [])]
-  const allVideo: VideoReference[] = [...(page.video || [])]
-  const allActivities: ActivityReference[] = [...(page.activities || [])]
-  const allFillAnswers: FillAnswerArea[] = [...(page.fillAnswers || [])]
+  const allAudio: AudioReference[] = [...(page.audio || [])];
+  const allVideo: VideoReference[] = [...(page.video || [])];
+  const allActivities: ActivityReference[] = [...(page.activities || [])];
+  const allFillAnswers: FillAnswerArea[] = [...(page.fillAnswers || [])];
 
   // Add media from all sections
   if (page.sections) {
     for (const section of page.sections) {
-      if (section.audio) allAudio.push(...section.audio)
-      if (section.video) allVideo.push(...section.video)
-      if (section.activities) allActivities.push(...section.activities)
-      if (section.fillAnswers) allFillAnswers.push(...section.fillAnswers)
+      if (section.audio) allAudio.push(...section.audio);
+      if (section.video) allVideo.push(...section.video);
+      if (section.activities) allActivities.push(...section.activities);
+      if (section.fillAnswers) allFillAnswers.push(...section.fillAnswers);
     }
   }
 
-  return { allAudio, allVideo, allActivities, allFillAnswers }
+  return { allAudio, allVideo, allActivities, allFillAnswers };
 }
 
 interface PageImageProps {
-  page: Page
-  pageIndex: number
-  viewMode: "single" | "double"
+  page: Page;
+  pageIndex: number;
+  viewMode: "single" | "double";
 }
 
 function PageImage({ page, pageIndex, viewMode }: PageImageProps) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState<{
-    width: number
-    height: number
+    width: number;
+    height: number;
   }>({
     width: DEFAULT_PAGE_WIDTH,
     height: DEFAULT_PAGE_HEIGHT,
-  })
+  });
   const [displayDimensions, setDisplayDimensions] = useState<{
-    width: number
-    height: number
-  }>({ width: 0, height: 0 })
-  const imageContainerRef = useRef<HTMLDivElement>(null)
+    width: number;
+    height: number;
+  }>({ width: 0, height: 0 });
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
-  const { showAnnotations, activeTool } = useAnnotationStore()
+  const { showAnnotations, activeTool } = useAnnotationStore();
 
   // Collect all media from page and sections
-  const { allAudio, allVideo, allActivities, allFillAnswers } = collectAllMedia(page)
-
-  // Debug: log audio markers for each page
-  if (allAudio.length > 0) {
-    console.log(`Page ${pageIndex + 1}: Found ${allAudio.length} audio markers`, allAudio.map(a => ({ id: a.id, src: a.src, x: a.x, y: a.y })))
-  }
+  const { allAudio, allVideo, allActivities, allFillAnswers } =
+    collectAllMedia(page);
 
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
     const loadImage = async () => {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
       try {
         // Fetch image through authenticated API and get blob URL
-        const url = await getPageImageUrl(page.image)
+        const url = await getPageImageUrl(page.image);
 
-        if (!isMounted) return
+        if (!isMounted) return;
 
         if (!url) {
-          setError("Failed to load image")
-          setIsLoading(false)
-          return
+          setError("Failed to load image");
+          setIsLoading(false);
+          return;
         }
 
-        blobUrl = url
+        blobUrl = url;
 
         // Preload the image to get dimensions
-        const img = new Image()
+        const img = new Image();
         img.onload = () => {
           if (isMounted) {
             setImageDimensions({
               width: img.naturalWidth,
               height: img.naturalHeight,
-            })
-            setImageUrl(url)
-            setIsLoading(false)
+            });
+            setImageUrl(url);
+            setIsLoading(false);
           }
-        }
+        };
         img.onerror = () => {
           if (isMounted) {
-            setError("Failed to load image")
-            setIsLoading(false)
+            setError("Failed to load image");
+            setIsLoading(false);
           }
-        }
-        img.src = url
+        };
+        img.src = url;
       } catch {
         if (isMounted) {
-          setError("Failed to load image")
-          setIsLoading(false)
+          setError("Failed to load image");
+          setIsLoading(false);
         }
       }
-    }
+    };
 
-    loadImage()
+    loadImage();
 
     return () => {
-      isMounted = false
+      isMounted = false;
       // Revoke blob URL on cleanup to free memory
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [page.image])
+    };
+  }, [page.image]);
 
   // Track display dimensions for annotation canvas
   useEffect(() => {
-    if (!imageContainerRef.current || !imageUrl) return
+    if (!imageContainerRef.current || !imageUrl) return;
 
     const updateDisplayDimensions = () => {
-      const img = imageContainerRef.current?.querySelector("img")
+      const img = imageContainerRef.current?.querySelector("img");
       if (img) {
         setDisplayDimensions({
           width: img.clientWidth,
           height: img.clientHeight,
-        })
+        });
       }
-    }
+    };
 
     // Initial update
-    updateDisplayDimensions()
+    updateDisplayDimensions();
 
     // Update on resize
-    const observer = new ResizeObserver(updateDisplayDimensions)
+    const observer = new ResizeObserver(updateDisplayDimensions);
     if (imageContainerRef.current) {
-      observer.observe(imageContainerRef.current)
+      observer.observe(imageContainerRef.current);
     }
 
-    return () => observer.disconnect()
-  }, [imageUrl])
+    return () => observer.disconnect();
+  }, [imageUrl]);
 
   // Determine if annotation canvas should be interactive
-  const isAnnotationInteractive = showAnnotations && activeTool !== null
+  const isAnnotationInteractive = showAnnotations && activeTool !== null;
 
   if (isLoading) {
     return (
@@ -179,7 +180,7 @@ function PageImage({ page, pageIndex, viewMode }: PageImageProps) {
           <span className="text-sm">Loading page {pageIndex + 1}...</span>
         </div>
       </div>
-    )
+    );
   }
 
   if (error || !imageUrl) {
@@ -195,7 +196,7 @@ function PageImage({ page, pageIndex, viewMode }: PageImageProps) {
           <span className="text-sm">{error || "Image not available"}</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -268,23 +269,23 @@ function PageImage({ page, pageIndex, viewMode }: PageImageProps) {
         />
       )}
     </div>
-  )
+  );
 }
 
 export function PageViewer() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const { config, currentPageIndex } = useFlowbookBookStore()
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { config, currentPageIndex } = useFlowbookBookStore();
   const { viewMode, zoomLevel, panX, panY, isPanning, resetPan } =
-    useFlowbookUIStore()
-  const { activeTool } = useAnnotationStore()
+    useFlowbookUIStore();
+  const { activeTool } = useAnnotationStore();
 
   // Enable zoom gestures (wheel, pinch, double-click) and panning
-  useZoomGestures(containerRef)
+  useZoomGestures(containerRef);
 
   // Reset pan when page changes
   useEffect(() => {
-    resetPan()
-  }, [currentPageIndex, resetPan])
+    resetPan();
+  }, [currentPageIndex, resetPan]);
 
   if (!config) {
     return (
@@ -294,7 +295,7 @@ export function PageViewer() {
           <span>Loading book...</span>
         </div>
       </div>
-    )
+    );
   }
 
   if (config.pages.length === 0) {
@@ -302,14 +303,14 @@ export function PageViewer() {
       <div className="flex h-full w-full items-center justify-center">
         <span className="text-slate-400">No pages available</span>
       </div>
-    )
+    );
   }
 
   const spreadPages = getSpreadPages(
     currentPageIndex,
     config.pages.length,
     viewMode,
-  )
+  );
 
   return (
     <div
@@ -337,7 +338,7 @@ export function PageViewer() {
           </div>
         ) : (
           spreadPages.map((pageIdx) => {
-            const page = config.pages[pageIdx]
+            const page = config.pages[pageIdx];
             if (!page) {
               return (
                 <div
@@ -348,7 +349,7 @@ export function PageViewer() {
                     Page {pageIdx + 1} not found
                   </span>
                 </div>
-              )
+              );
             }
 
             return (
@@ -358,10 +359,10 @@ export function PageViewer() {
                 pageIndex={pageIdx}
                 viewMode={viewMode}
               />
-            )
+            );
           })
         )}
       </div>
     </div>
-  )
+  );
 }

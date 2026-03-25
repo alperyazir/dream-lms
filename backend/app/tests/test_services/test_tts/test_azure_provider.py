@@ -628,9 +628,7 @@ class TestGenerateAudio:
         provider = AzureTTSProvider(settings=azure_settings_no_key)
 
         with pytest.raises(TTSAuthenticationError):
-            await provider.generate_audio(
-                "Test", AudioGenerationOptions(language="en")
-            )
+            await provider.generate_audio("Test", AudioGenerationOptions(language="en"))
 
 
 class TestGenerateAudioBatch:

@@ -117,9 +117,7 @@ async def generate_report(
 
     # Schedule background processing
     # Using a simple approach - in production would use Celery/RQ
-    background_tasks.add_task(
-        _process_report_background_sync, job.id
-    )
+    background_tasks.add_task(_process_report_background_sync, job.id)
 
     logger.info(
         f"Report generation initiated: job_id={job.id}, "
@@ -284,7 +282,9 @@ async def download_report(
     # Get metadata for filename generation
     from app.models import Class, ReportTypeEnum, Student
 
-    logger.info(f"DEBUG DOWNLOAD: job_id={job_id}, report_type={report_type}, config={config}")
+    logger.info(
+        f"DEBUG DOWNLOAD: job_id={job_id}, report_type={report_type}, config={config}"
+    )
 
     student_name = None
     class_name = None
@@ -304,7 +304,9 @@ async def download_report(
                 student_name = user.full_name or user.email
                 logger.info(f"DEBUG DOWNLOAD: Found student name: {student_name}")
             else:
-                logger.warning(f"DEBUG DOWNLOAD: Student not found for target_id={config.get('target_id')}")
+                logger.warning(
+                    f"DEBUG DOWNLOAD: Student not found for target_id={config.get('target_id')}"
+                )
         except Exception as e:
             logger.error(f"DEBUG DOWNLOAD: Error fetching student name: {e}")
             pass  # Use fallback filename if lookup fails
@@ -351,17 +353,17 @@ async def download_report(
         media_type = "application/pdf"
         filename = filename_base
 
-    logger.info(f"Report downloaded: job_id={job.id}, format={file_format}, filename={filename}")
-    logger.info(f"DEBUG CONTENT-DISPOSITION: attachment; filename=\"{filename}\"")
+    logger.info(
+        f"Report downloaded: job_id={job.id}, format={file_format}, filename={filename}"
+    )
+    logger.info(f'DEBUG CONTENT-DISPOSITION: attachment; filename="{filename}"')
 
     # Manually set Content-Disposition header to ensure filename is sent correctly
     # Don't use filename parameter as it might override our custom header
     return FileResponse(
         path=str(file_path),
         media_type=media_type,
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

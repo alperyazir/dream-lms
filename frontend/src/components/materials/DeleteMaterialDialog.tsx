@@ -5,7 +5,7 @@
  * Confirmation dialog for deleting materials.
  */
 
-import { AlertTriangle, Loader2 } from "lucide-react"
+import { AlertTriangle, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,16 +15,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import type { Material } from "@/types/material"
-import { MaterialTypeIcon } from "./MaterialTypeIcon"
+} from "@/components/ui/alert-dialog";
+import type { Material } from "@/types/material";
+import { MaterialTypeIcon } from "./MaterialTypeIcon";
 
 interface DeleteMaterialDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  material: Material | null
-  onConfirm: () => Promise<void>
-  isDeleting?: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  material: Material | null;
+  onConfirm: () => Promise<void>;
+  isDeleting?: boolean;
 }
 
 /**
@@ -37,12 +37,12 @@ export function DeleteMaterialDialog({
   onConfirm,
   isDeleting = false,
 }: DeleteMaterialDialogProps) {
-  if (!material) return null
+  if (!material) return null;
 
   const handleConfirm = async () => {
-    await onConfirm()
-    onOpenChange(false)
-  }
+    await onConfirm();
+    onOpenChange(false);
+  };
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -88,7 +88,7 @@ export function DeleteMaterialDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }
 
-DeleteMaterialDialog.displayName = "DeleteMaterialDialog"
+DeleteMaterialDialog.displayName = "DeleteMaterialDialog";

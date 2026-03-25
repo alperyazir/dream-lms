@@ -3,12 +3,19 @@ import uuid
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from sqlmodel import SQLModel, func, select
 from starlette.requests import Request
 
 from app import crud
-from app.core.rate_limit import RateLimits, limiter
 from app.api.deps import (
     AdminOrSupervisor,
     AsyncSessionDep,
@@ -16,9 +23,13 @@ from app.api.deps import (
     can_delete_user,
     require_role,
 )
-from app.services.skill_attribution_service import backfill_all_skill_scores, recalculate_for_assignment
 from app.core.config import settings
-from app.core.security import decrypt_viewable_password, encrypt_viewable_password, get_password_hash
+from app.core.rate_limit import RateLimits, limiter
+from app.core.security import (
+    decrypt_viewable_password,
+    encrypt_viewable_password,
+    get_password_hash,
+)
 from app.models import (
     Assignment,
     AssignmentStudent,
@@ -59,7 +70,12 @@ from app.schemas.benchmarks import (
     BenchmarkSettingsResponse,
     BenchmarkSettingsUpdate,
 )
-from app.schemas.pagination import PublisherAccountPaginatedResponse, SchoolListResponse, StudentListResponse, TeacherListResponse
+from app.schemas.pagination import (
+    PublisherAccountPaginatedResponse,
+    SchoolListResponse,
+    StudentListResponse,
+    TeacherListResponse,
+)
 from app.schemas.publisher import (
     PublisherAccountCreate,
     PublisherAccountCreationResponse,
@@ -72,6 +88,10 @@ from app.services.benchmark_service import get_admin_benchmark_overview
 from app.services.bulk_import import validate_bulk_import
 from app.services.dcs_cache import get_dcs_cache
 from app.services.publisher_service_v2 import get_publisher_service
+from app.services.skill_attribution_service import (
+    backfill_all_skill_scores,
+    recalculate_for_assignment,
+)
 from app.services.webhook_registration import webhook_registration_service
 from app.utils import (
     generate_new_account_email,
@@ -97,16 +117,14 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 )
 @limiter.limit(RateLimits.ADMIN)
 def create_publisher(
-    request: Request,
-    *,
-    current_user: User = AdminOrSupervisor
+    request: Request, *, current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     Publisher creation disabled - publishers are managed in Dream Central Storage.
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="Publisher creation is disabled. Publishers are managed in Dream Central Storage."
+        detail="Publisher creation is disabled. Publishers are managed in Dream Central Storage.",
     )
 
 
@@ -123,7 +141,7 @@ async def create_school(
     *,
     session: SessionDep,
     school_in: SchoolCreate,
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> Any:
     """
     Create a new school.
@@ -141,7 +159,7 @@ async def create_school(
     if not publisher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Publisher {school_in.dcs_publisher_id} not found in Dream Central Storage"
+            detail=f"Publisher {school_in.dcs_publisher_id} not found in Dream Central Storage",
         )
 
     # Create school
@@ -161,9 +179,7 @@ async def create_school(
 )
 @limiter.limit(RateLimits.ADMIN)
 async def list_publishers(
-    request: Request,
-    *,
-    current_user: User = AdminOrSupervisor
+    request: Request, *, current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     List all publishers from Dream Central Storage.
@@ -183,22 +199,20 @@ async def list_publishers(
 )
 @limiter.limit(RateLimits.ADMIN)
 def update_publisher(
-    request: Request,
-    *,
-    publisher_id: int,
-    current_user: User = AdminOrSupervisor
+    request: Request, *, publisher_id: int, current_user: User = AdminOrSupervisor
 ) -> Any:
     """
     Publisher updates disabled - publishers are managed in Dream Central Storage.
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="Publisher updates are disabled. Publishers are managed in Dream Central Storage."
+        detail="Publisher updates are disabled. Publishers are managed in Dream Central Storage.",
     )
 
 
 class LogoUploadResponse(SQLModel):
     """Response for logo upload"""
+
     logo_url: str
     message: str = "Logo uploaded successfully"
 
@@ -206,7 +220,9 @@ class LogoUploadResponse(SQLModel):
 # Create static logos directory if it doesn't exist
 import os
 
-LOGOS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "logos")
+LOGOS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "logos"
+)
 os.makedirs(LOGOS_DIR, exist_ok=True)
 
 ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/jpg"}
@@ -226,7 +242,7 @@ async def upload_publisher_logo(
     session: SessionDep,
     publisher_id: uuid.UUID,
     file: UploadFile = File(...),
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> LogoUploadResponse:
     """
     Upload a logo for a publisher (deprecated).
@@ -235,52 +251,7 @@ async def upload_publisher_logo(
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="Publisher logo uploads are disabled. Publishers are managed in Dream Central Storage."
-    )
-
-    # Validate content type [AC: 17]
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file type. Allowed types: PNG, JPEG. Got: {file.content_type}"
-        )
-
-    # Read file content
-    content = await file.read()
-
-    # Validate file size [AC: 17]
-    if len(content) > MAX_LOGO_SIZE:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File too large. Maximum size is 2MB. Got: {len(content) / (1024 * 1024):.2f}MB"
-        )
-
-    # Generate unique filename
-    file_extension = ".png" if file.content_type == "image/png" else ".jpg"
-    filename = f"{publisher_id}{file_extension}"
-    filepath = os.path.join(LOGOS_DIR, filename)
-
-    # Save file
-    with open(filepath, "wb") as f:
-        f.write(content)
-
-    # Update publisher with logo URL
-    logo_url = f"/static/logos/{filename}"
-    publisher.logo_url = logo_url
-    from datetime import UTC, datetime
-    publisher.updated_at = datetime.now(UTC)
-
-    session.add(publisher)
-    session.commit()
-    session.refresh(publisher)
-
-    logger.info(
-        f"Logo uploaded for publisher {publisher.name} (ID: {publisher.id}) by admin {current_user.email}"
-    )
-
-    return LogoUploadResponse(
-        logo_url=logo_url,
-        message="Logo uploaded successfully"
+        detail="Publisher logo uploads are disabled. Publishers are managed in Dream Central Storage.",
     )
 
 
@@ -296,27 +267,13 @@ def delete_publisher_logo(
     *,
     session: SessionDep,
     publisher_id: uuid.UUID,
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> None:
     """Delete a publisher's logo (deprecated)."""
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="Publisher logo management is disabled. Publishers are managed in Dream Central Storage."
+        detail="Publisher logo management is disabled. Publishers are managed in Dream Central Storage.",
     )
-
-    if publisher.logo_url:
-        # Try to delete the file
-        filename = publisher.logo_url.split("/")[-1]
-        filepath = os.path.join(LOGOS_DIR, filename)
-        if os.path.exists(filepath):
-            os.remove(filepath)
-
-    publisher.logo_url = None
-    from datetime import UTC, datetime
-    publisher.updated_at = datetime.now(UTC)
-
-    session.add(publisher)
-    session.commit()
 
 
 @router.delete(
@@ -327,17 +284,14 @@ def delete_publisher_logo(
 )
 @limiter.limit(RateLimits.ADMIN)
 def delete_publisher(
-    request: Request,
-    *,
-    publisher_id: int,
-    current_user: User = AdminOrSupervisor
+    request: Request, *, publisher_id: int, current_user: User = AdminOrSupervisor
 ) -> None:
     """
     Publisher deletion disabled - publishers are managed in Dream Central Storage.
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="Publisher deletion is disabled. Publishers are managed in Dream Central Storage."
+        detail="Publisher deletion is disabled. Publishers are managed in Dream Central Storage.",
     )
 
 
@@ -355,7 +309,7 @@ def list_schools(
     current_user: User = AdminOrSupervisor,
     publisher_id: uuid.UUID | None = None,
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
 ) -> Any:
     """
     List all schools with optional filtering.
@@ -400,7 +354,9 @@ def list_schools_paginated(
         )
     count_query = select(func.count()).select_from(base_query.subquery())
     total = session.exec(count_query).one()
-    paginated_query = base_query.order_by(School.created_at.desc()).offset(skip).limit(limit)
+    paginated_query = (
+        base_query.order_by(School.created_at.desc()).offset(skip).limit(limit)
+    )
     schools = session.exec(paginated_query).all()
     return SchoolListResponse(
         items=[SchoolPublic.model_validate(s) for s in schools],
@@ -424,7 +380,7 @@ async def update_school(
     session: SessionDep,
     school_id: uuid.UUID,
     school_in: SchoolUpdate,
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> Any:
     """
     Update a school by ID.
@@ -441,21 +397,22 @@ async def update_school(
     school = session.get(School, school_id)
     if not school:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="School not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="School not found"
         )
 
     # Update school fields
     update_data = school_in.model_dump(exclude_unset=True)
 
     # If dcs_publisher_id is being updated, validate it exists in DCS
-    if 'dcs_publisher_id' in update_data:
+    if "dcs_publisher_id" in update_data:
         publisher_service = get_publisher_service()
-        publisher = await publisher_service.get_publisher(update_data['dcs_publisher_id'])
+        publisher = await publisher_service.get_publisher(
+            update_data["dcs_publisher_id"]
+        )
         if not publisher:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Publisher {update_data['dcs_publisher_id']} not found in Dream Central Storage"
+                detail=f"Publisher {update_data['dcs_publisher_id']} not found in Dream Central Storage",
             )
 
     for field, value in update_data.items():
@@ -463,6 +420,7 @@ async def update_school(
 
     # Update timestamp
     from datetime import UTC, datetime
+
     school.updated_at = datetime.now(UTC)
 
     session.add(school)
@@ -484,7 +442,7 @@ def delete_school(
     *,
     session: SessionDep,
     school_id: uuid.UUID,
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> None:
     """
     Delete a school by ID.
@@ -501,8 +459,7 @@ def delete_school(
     school = session.get(School, school_id)
     if not school:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="School not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="School not found"
         )
 
     logger.info(
@@ -529,7 +486,9 @@ def create_teacher(
     session: SessionDep,
     background_tasks: BackgroundTasks,
     teacher_in: TeacherCreateAPI,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher
+    ),
 ) -> Any:
     """
     Create a new teacher with user account.
@@ -549,30 +508,31 @@ def create_teacher(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
+            detail="User with this email already exists",
         )
 
     # Check if username already exists
-    existing_username = crud.get_user_by_username(session=session, username=teacher_in.username)
+    existing_username = crud.get_user_by_username(
+        session=session, username=teacher_in.username
+    )
     if existing_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username already exists"
+            detail="User with this username already exists",
         )
 
     # Validate school exists
     school = session.get(School, teacher_in.school_id)
     if not school:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="School not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="School not found"
         )
 
     # Publisher role is deprecated
     if current_user.role == UserRole.publisher:
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
-            detail="Publisher role is deprecated. Publishers are managed in Dream Central Storage."
+            detail="Publisher role is deprecated. Publishers are managed in Dream Central Storage.",
         )
 
     # Generate secure temporary password
@@ -582,7 +542,7 @@ def create_teacher(
     teacher_create = TeacherCreate(
         user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
         school_id=teacher_in.school_id,
-        subject_specialization=teacher_in.subject_specialization
+        subject_specialization=teacher_in.subject_specialization,
     )
 
     # Create user and teacher atomically
@@ -592,7 +552,7 @@ def create_teacher(
         username=teacher_in.username,
         password=temp_password,
         full_name=teacher_in.full_name,
-        teacher_create=teacher_create
+        teacher_create=teacher_create,
     )
 
     # Handle password delivery based on email availability
@@ -606,7 +566,7 @@ def create_teacher(
             email_to=user.email,
             username=user.username,
             password=temp_password,
-            full_name=teacher_in.full_name
+            full_name=teacher_in.full_name,
         )
         background_tasks.add_task(
             send_email,
@@ -631,7 +591,7 @@ def create_teacher(
         user_full_name=user.full_name or "",
         school_id=teacher.school_id,
         created_at=teacher.created_at,
-        updated_at=teacher.updated_at
+        updated_at=teacher.updated_at,
     )
 
     return UserCreationResponse(
@@ -639,7 +599,7 @@ def create_teacher(
         role_record=teacher_data,
         temporary_password=temp_password_for_response,
         password_emailed=password_emailed,
-        message=message
+        message=message,
     )
 
 
@@ -657,7 +617,7 @@ def list_teachers(
     current_user: User = AdminOrSupervisor,
     school_id: uuid.UUID | None = None,
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
 ) -> Any:
     """
     List all teachers with optional filtering.
@@ -687,7 +647,7 @@ def list_teachers(
             user_full_name=(user.full_name or "") if user else "",
             school_id=t.school_id,
             created_at=t.created_at,
-            updated_at=t.updated_at
+            updated_at=t.updated_at,
         )
         result.append(teacher_data)
     return result
@@ -712,24 +672,23 @@ def list_teachers_paginated(
     """
     List all teachers with server-side pagination and search.
     """
-    base_query = (
-        select(Teacher, User)
-        .join(User, Teacher.user_id == User.id)
-    )
+    base_query = select(Teacher, User).join(User, Teacher.user_id == User.id)
 
     if search:
         search_filter = f"%{search.lower()}%"
         base_query = base_query.where(
-            (func.lower(User.full_name).contains(search_filter)) |
-            (func.lower(User.username).contains(search_filter)) |
-            (func.lower(User.email).contains(search_filter)) |
-            (func.lower(Teacher.subject_specialization).contains(search_filter))
+            (func.lower(User.full_name).contains(search_filter))
+            | (func.lower(User.username).contains(search_filter))
+            | (func.lower(User.email).contains(search_filter))
+            | (func.lower(Teacher.subject_specialization).contains(search_filter))
         )
 
     count_query = select(func.count()).select_from(base_query.subquery())
     total = session.exec(count_query).one()
 
-    paginated_query = base_query.order_by(Teacher.created_at.desc()).offset(skip).limit(limit)
+    paginated_query = (
+        base_query.order_by(Teacher.created_at.desc()).offset(skip).limit(limit)
+    )
     rows = session.exec(paginated_query).all()
 
     result = []
@@ -743,7 +702,7 @@ def list_teachers_paginated(
             user_full_name=(user.full_name or "") if user else "",
             school_id=t.school_id,
             created_at=t.created_at,
-            updated_at=t.updated_at
+            updated_at=t.updated_at,
         )
         result.append(teacher_data)
 
@@ -769,7 +728,7 @@ def update_teacher(
     session: SessionDep,
     teacher_id: uuid.UUID,
     teacher_in: TeacherUpdate,
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> Any:
     """
     Update a teacher by ID.
@@ -786,16 +745,14 @@ def update_teacher(
     teacher = session.get(Teacher, teacher_id)
     if not teacher:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher not found"
         )
 
     # Get the associated user
     user = session.get(User, teacher.user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Associated user not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Associated user not found"
         )
 
     # Update data
@@ -806,44 +763,45 @@ def update_teacher(
     teacher_fields = {}
 
     for field, value in update_data.items():
-        if field in ['user_email', 'user_full_name', 'user_username']:
+        if field in ["user_email", "user_full_name", "user_username"]:
             # Map to user model field names
-            if field == 'user_email':
-                user_fields['email'] = value
-            elif field == 'user_full_name':
-                user_fields['full_name'] = value
-            elif field == 'user_username':
-                user_fields['username'] = value
+            if field == "user_email":
+                user_fields["email"] = value
+            elif field == "user_full_name":
+                user_fields["full_name"] = value
+            elif field == "user_username":
+                user_fields["username"] = value
         else:
             teacher_fields[field] = value
 
     # Check if new email already exists for another user
-    if 'email' in user_fields and user_fields['email'] != user.email:
-        existing_user = crud.get_user_by_email(session=session, email=user_fields['email'])
+    if "email" in user_fields and user_fields["email"] != user.email:
+        existing_user = crud.get_user_by_email(
+            session=session, email=user_fields["email"]
+        )
         if existing_user and existing_user.id != user.id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists"
+                detail="User with this email already exists",
             )
 
     # Check if new username already exists for another user [Story 9.2 AC: 14]
-    if 'username' in user_fields and user_fields['username'] != user.username:
+    if "username" in user_fields and user_fields["username"] != user.username:
         existing_user = session.exec(
-            select(User).where(User.username == user_fields['username'])
+            select(User).where(User.username == user_fields["username"])
         ).first()
         if existing_user and existing_user.id != user.id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already exists"
+                detail="Username already exists",
             )
 
     # If school_id is being updated, validate it exists
-    if 'school_id' in teacher_fields:
-        school = session.get(School, teacher_fields['school_id'])
+    if "school_id" in teacher_fields:
+        school = session.get(School, teacher_fields["school_id"])
         if not school:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="School not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="School not found"
             )
 
     # Update user fields
@@ -856,6 +814,7 @@ def update_teacher(
 
     # Update timestamp
     from datetime import UTC, datetime
+
     teacher.updated_at = datetime.now(UTC)
 
     session.add(user)
@@ -874,7 +833,7 @@ def update_teacher(
         user_full_name=user.full_name or "",
         school_id=teacher.school_id,
         created_at=teacher.created_at,
-        updated_at=teacher.updated_at
+        updated_at=teacher.updated_at,
     )
 
 
@@ -890,7 +849,9 @@ def delete_teacher(
     *,
     session: SessionDep,
     teacher_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher
+    ),
 ) -> None:
     """
     Delete a teacher by ID.
@@ -908,16 +869,14 @@ def delete_teacher(
     teacher = session.get(Teacher, teacher_id)
     if not teacher:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher not found"
         )
 
     # Get the associated user
     user = session.get(User, teacher.user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Associated user not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Associated user not found"
         )
 
     # Check self-deletion
@@ -928,7 +887,7 @@ def delete_teacher(
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot delete your own account"
+            detail="You cannot delete your own account",
         )
 
     # Publisher-specific validation
@@ -936,14 +895,14 @@ def delete_teacher(
         if current_user.dcs_publisher_id is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Publisher account not linked to DCS publisher"
+                detail="Publisher account not linked to DCS publisher",
             )
 
         # Verify the teacher's school belongs to this publisher
         if not teacher.school_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot delete teacher without school assignment"
+                detail="Cannot delete teacher without school assignment",
             )
 
         school = session.get(School, teacher.school_id)
@@ -954,7 +913,7 @@ def delete_teacher(
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot delete teachers from schools not managed by your publisher"
+                detail="Cannot delete teachers from schools not managed by your publisher",
             )
 
     # Check hierarchical permission (for admin/supervisor)
@@ -966,7 +925,7 @@ def delete_teacher(
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Supervisors cannot delete {user.role.value} users"
+                detail=f"Supervisors cannot delete {user.role.value} users",
             )
 
     logger.info(
@@ -993,7 +952,9 @@ def create_student(
     session: SessionDep,
     background_tasks: BackgroundTasks,
     student_in: StudentCreateAPI,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
+    ),
 ) -> Any:
     """
     Create a new student with user account.
@@ -1015,15 +976,17 @@ def create_student(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
+            detail="User with this email already exists",
         )
 
     # Check if username already exists
-    existing_username = crud.get_user_by_username(session=session, username=student_in.username)
+    existing_username = crud.get_user_by_username(
+        session=session, username=student_in.username
+    )
     if existing_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username already exists"
+            detail="User with this username already exists",
         )
 
     # Use provided password or auto-generate (Story 28.1)
@@ -1033,7 +996,7 @@ def create_student(
     student_create = StudentCreate(
         user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
         grade_level=student_in.grade_level,
-        parent_email=student_in.parent_email
+        parent_email=student_in.parent_email,
     )
 
     # Create user and student atomically
@@ -1043,7 +1006,7 @@ def create_student(
         username=student_in.username,
         password=password,
         full_name=student_in.full_name,
-        student_create=student_create
+        student_create=student_create,
     )
 
     # Handle password delivery based on email availability
@@ -1057,7 +1020,7 @@ def create_student(
             email_to=user.email,
             username=user.username,
             password=password,
-            full_name=student_in.full_name
+            full_name=student_in.full_name,
         )
         background_tasks.add_task(
             send_email,
@@ -1071,7 +1034,9 @@ def create_student(
         # No email or emails disabled - return password for manual communication
         # Teachers can always view password later via GET /admin/students/{id}/password
         password_for_response = password
-        message = "Share this password with the student. You can view/change it anytime."
+        message = (
+            "Share this password with the student. You can view/change it anytime."
+        )
 
     # Build student response with user information
     student_data = StudentPublic(
@@ -1083,7 +1048,7 @@ def create_student(
         user_username=user.username,
         user_full_name=user.full_name or "",
         created_at=student.created_at,
-        updated_at=student.updated_at
+        updated_at=student.updated_at,
     )
 
     return UserCreationResponse(
@@ -1091,11 +1056,12 @@ def create_student(
         role_record=student_data,
         temporary_password=password_for_response,
         password_emailed=password_emailed,
-        message=message
+        message=message,
     )
 
 
 # --- Student Password Management Endpoints (Story 28.1) ---
+
 
 @router.get(
     "/students/{student_id}/password",
@@ -1109,7 +1075,9 @@ def get_student_password(
     *,
     session: SessionDep,
     student_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.teacher
+    ),
 ) -> StudentPasswordResponse:
     """
     Get the stored password for a student.
@@ -1124,16 +1092,14 @@ def get_student_password(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
         )
 
     # Get associated user
     user = session.get(User, student.user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student user not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student user not found"
         )
 
     # Check access permissions for teachers
@@ -1143,27 +1109,27 @@ def get_student_password(
         ).first()
         if not teacher:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Teacher record not found"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Teacher record not found"
             )
 
         # Check if teacher created this student or student is in their class
         if student.created_by_teacher_id != teacher.id:
             # Check if student is in one of teacher's classes
-            from app.models import ClassStudent, Class
+            from app.models import Class, ClassStudent
+
             teacher_class_ids = session.exec(
                 select(Class.id).where(Class.teacher_id == teacher.id)
             ).all()
             student_in_class = session.exec(
                 select(ClassStudent).where(
                     ClassStudent.student_id == student_id,
-                    ClassStudent.class_id.in_(teacher_class_ids)  # type: ignore
+                    ClassStudent.class_id.in_(teacher_class_ids),  # type: ignore
                 )
             ).first()
             if not student_in_class:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You do not have access to this student's credentials"
+                    detail="You do not have access to this student's credentials",
                 )
 
     # Decrypt password if available
@@ -1182,7 +1148,7 @@ def get_student_password(
         username=user.username,
         full_name=user.full_name or "",
         password=password,
-        message=message
+        message=message,
     )
 
 
@@ -1199,7 +1165,9 @@ def set_student_password(
     session: SessionDep,
     student_id: uuid.UUID,
     body: SetStudentPasswordRequest,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.teacher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.teacher
+    ),
 ) -> StudentPasswordResponse:
     """
     Set a new password for a student.
@@ -1214,16 +1182,14 @@ def set_student_password(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
         )
 
     # Get associated user
     user = session.get(User, student.user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student user not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student user not found"
         )
 
     # Check access permissions for teachers
@@ -1233,27 +1199,27 @@ def set_student_password(
         ).first()
         if not teacher:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Teacher record not found"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Teacher record not found"
             )
 
         # Check if teacher created this student or student is in their class
         if student.created_by_teacher_id != teacher.id:
             # Check if student is in one of teacher's classes
-            from app.models import ClassStudent, Class
+            from app.models import Class, ClassStudent
+
             teacher_class_ids = session.exec(
                 select(Class.id).where(Class.teacher_id == teacher.id)
             ).all()
             student_in_class = session.exec(
                 select(ClassStudent).where(
                     ClassStudent.student_id == student_id,
-                    ClassStudent.class_id.in_(teacher_class_ids)  # type: ignore
+                    ClassStudent.class_id.in_(teacher_class_ids),  # type: ignore
                 )
             ).first()
             if not student_in_class:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You do not have access to modify this student's credentials"
+                    detail="You do not have access to modify this student's credentials",
                 )
 
     # Update password
@@ -1276,7 +1242,7 @@ def set_student_password(
         username=user.username,
         full_name=user.full_name or "",
         password=body.password,
-        message="Password updated successfully"
+        message="Password updated successfully",
     )
 
 
@@ -1306,19 +1272,16 @@ def list_students(
     Returns paginated list of students with total count.
     """
     # Build base query with user join for search
-    base_query = (
-        select(Student, User)
-        .join(User, Student.user_id == User.id)
-    )
+    base_query = select(Student, User).join(User, Student.user_id == User.id)
 
     if search:
         search_filter = f"%{search.lower()}%"
         base_query = base_query.where(
-            (func.lower(User.full_name).contains(search_filter)) |
-            (func.lower(User.username).contains(search_filter)) |
-            (func.lower(User.email).contains(search_filter)) |
-            (func.lower(Student.grade_level).contains(search_filter)) |
-            (func.lower(Student.parent_email).contains(search_filter))
+            (func.lower(User.full_name).contains(search_filter))
+            | (func.lower(User.username).contains(search_filter))
+            | (func.lower(User.email).contains(search_filter))
+            | (func.lower(Student.grade_level).contains(search_filter))
+            | (func.lower(Student.parent_email).contains(search_filter))
         )
 
     # Get total count
@@ -1326,7 +1289,9 @@ def list_students(
     total = session.exec(count_query).one()
 
     # Get paginated results
-    paginated_query = base_query.order_by(Student.created_at.desc()).offset(skip).limit(limit)
+    paginated_query = (
+        base_query.order_by(Student.created_at.desc()).offset(skip).limit(limit)
+    )
     rows = session.exec(paginated_query).all()
 
     # Build response with user information
@@ -1351,7 +1316,7 @@ def list_students(
             created_by_teacher_id=s.created_by_teacher_id,
             created_by_teacher_name=teacher_name,
             created_at=s.created_at,
-            updated_at=s.updated_at
+            updated_at=s.updated_at,
         )
         result.append(student_data)
 
@@ -1377,7 +1342,7 @@ def update_student(
     session: SessionDep,
     student_id: uuid.UUID,
     student_in: StudentUpdate,
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> Any:
     """
     Update a student by ID.
@@ -1394,16 +1359,14 @@ def update_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
         )
 
     # Get the associated user
     user = session.get(User, student.user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Associated user not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Associated user not found"
         )
 
     # Update data
@@ -1414,35 +1377,37 @@ def update_student(
     student_fields = {}
 
     for field, value in update_data.items():
-        if field in ['user_email', 'user_full_name', 'user_username']:
+        if field in ["user_email", "user_full_name", "user_username"]:
             # Map to user model field names
-            if field == 'user_email':
-                user_fields['email'] = value
-            elif field == 'user_full_name':
-                user_fields['full_name'] = value
-            elif field == 'user_username':
-                user_fields['username'] = value
+            if field == "user_email":
+                user_fields["email"] = value
+            elif field == "user_full_name":
+                user_fields["full_name"] = value
+            elif field == "user_username":
+                user_fields["username"] = value
         else:
             student_fields[field] = value
 
     # Check if new email already exists for another user
-    if 'email' in user_fields and user_fields['email'] != user.email:
-        existing_user = crud.get_user_by_email(session=session, email=user_fields['email'])
+    if "email" in user_fields and user_fields["email"] != user.email:
+        existing_user = crud.get_user_by_email(
+            session=session, email=user_fields["email"]
+        )
         if existing_user and existing_user.id != user.id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists"
+                detail="User with this email already exists",
             )
 
     # Check if new username already exists for another user [Story 9.2 AC: 14]
-    if 'username' in user_fields and user_fields['username'] != user.username:
+    if "username" in user_fields and user_fields["username"] != user.username:
         existing_user = session.exec(
-            select(User).where(User.username == user_fields['username'])
+            select(User).where(User.username == user_fields["username"])
         ).first()
         if existing_user and existing_user.id != user.id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already exists"
+                detail="Username already exists",
             )
 
     # Update user fields
@@ -1455,6 +1420,7 @@ def update_student(
 
     # Update timestamp
     from datetime import UTC, datetime
+
     student.updated_at = datetime.now(UTC)
 
     session.add(user)
@@ -1473,7 +1439,7 @@ def update_student(
         user_username=user.username,
         user_full_name=user.full_name or "",
         created_at=student.created_at,
-        updated_at=student.updated_at
+        updated_at=student.updated_at,
     )
 
 
@@ -1489,7 +1455,7 @@ def delete_student(
     *,
     session: SessionDep,
     student_id: uuid.UUID,
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> None:
     """
     Delete a student by ID.
@@ -1506,16 +1472,14 @@ def delete_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
         )
 
     # Get the associated user
     user = session.get(User, student.user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Associated user not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Associated user not found"
         )
 
     # Check self-deletion
@@ -1526,7 +1490,7 @@ def delete_student(
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot delete your own account"
+            detail="You cannot delete your own account",
         )
 
     # Check hierarchical permission
@@ -1537,7 +1501,7 @@ def delete_student(
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Supervisors cannot delete {user.role.value} users"
+            detail=f"Supervisors cannot delete {user.role.value} users",
         )
 
     logger.info(
@@ -1552,11 +1516,13 @@ def delete_student(
 
 class BulkDeleteRequest(SQLModel):
     """Request body for bulk delete operations."""
+
     ids: list[uuid.UUID]
 
 
 class BulkDeleteResponse(SQLModel):
     """Response for bulk delete operations."""
+
     deleted_count: int
     failed_count: int
     errors: list[str] = []
@@ -1574,7 +1540,7 @@ def bulk_delete_students(
     *,
     session: SessionDep,
     bulk_request: BulkDeleteRequest,
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> BulkDeleteResponse:
     """
     Delete multiple students by their IDs.
@@ -1614,7 +1580,9 @@ def bulk_delete_students(
             # Check hierarchical permission
             if not can_delete_user(current_user, user):
                 failed_count += 1
-                errors.append(f"Cannot delete {user.role.value} user (student {student_id})")
+                errors.append(
+                    f"Cannot delete {user.role.value} user (student {student_id})"
+                )
                 continue
 
             session.delete(user)
@@ -1631,9 +1599,7 @@ def bulk_delete_students(
     session.commit()
 
     return BulkDeleteResponse(
-        deleted_count=deleted_count,
-        failed_count=failed_count,
-        errors=errors
+        deleted_count=deleted_count, failed_count=failed_count, errors=errors
     )
 
 
@@ -1650,7 +1616,7 @@ async def bulk_import_publishers(
     *,
     session: SessionDep,
     file: UploadFile = File(...),
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> Any:
     """
     Bulk import publishers from Excel file.
@@ -1660,43 +1626,46 @@ async def bulk_import_publishers(
     Returns BulkImportResponse with created count and credentials list.
     """
     # Validate file extension
-    if not file.filename or not file.filename.lower().endswith(('.xlsx', '.xls')):
+    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only Excel files (.xlsx, .xls) are supported"
+            detail="Only Excel files (.xlsx, .xls) are supported",
         )
 
     # Validate file size (max 5MB)
     if not await validate_file_size(file, max_size_mb=5):
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File size exceeds 5MB limit"
+            detail="File size exceeds 5MB limit",
         )
 
     # Parse Excel file
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     if not rows:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Excel file contains no data rows"
+            detail="Excel file contains no data rows",
         )
 
     # Extract and validate headers
     headers = list(rows[0].keys())
-    headers = [h for h in headers if not h.startswith('_')]
+    headers = [h for h in headers if not h.startswith("_")]
 
-    required_headers = ["First Name", "Last Name", "Email", "Company Name", "Contact Email"]
+    required_headers = [
+        "First Name",
+        "Last Name",
+        "Email",
+        "Company Name",
+        "Contact Email",
+    ]
     if not validate_excel_headers(headers, required_headers):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Missing required columns. Expected: {', '.join(required_headers)}"
+            detail=f"Missing required columns. Expected: {', '.join(required_headers)}",
         )
 
     # Validate all rows
@@ -1706,9 +1675,7 @@ async def bulk_import_publishers(
     if validation_result.error_count > 0:
         error_details = [
             BulkImportErrorDetail(
-                row_number=err.row_number,
-                field=None,
-                message="; ".join(err.errors)
+                row_number=err.row_number, field=None, message="; ".join(err.errors)
             )
             for err in validation_result.errors
         ]
@@ -1719,7 +1686,7 @@ async def bulk_import_publishers(
             created_count=0,
             error_count=validation_result.error_count,
             errors=error_details,
-            credentials=None
+            credentials=None,
         )
 
     # All validations passed - create publishers in transaction
@@ -1727,12 +1694,12 @@ async def bulk_import_publishers(
 
     try:
         for row in rows:
-            email = row.get('Email', '').strip()
-            first_name = row.get('First Name', '').strip()
-            last_name = row.get('Last Name', '').strip()
+            email = row.get("Email", "").strip()
+            first_name = row.get("First Name", "").strip()
+            last_name = row.get("Last Name", "").strip()
             full_name = f"{first_name} {last_name}"
-            company_name = row.get('Company Name', '').strip()
-            contact_email = row.get('Contact Email', '').strip()
+            company_name = row.get("Company Name", "").strip()
+            contact_email = row.get("Contact Email", "").strip()
 
             # Generate temporary password
             temp_password = generate_temp_password()
@@ -1741,10 +1708,10 @@ async def bulk_import_publishers(
             username = generate_username(full_name, session)
 
             # Create Publisher record data
-            publisher_create = PublisherCreate(
-                user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
-                name=company_name,
-                contact_email=contact_email
+            from app.models import Publisher
+
+            publisher_create = Publisher(
+                user_id=uuid.uuid4(), name=company_name, contact_email=contact_email
             )
 
             # Create user and publisher atomically
@@ -1754,24 +1721,24 @@ async def bulk_import_publishers(
                 username=username,
                 password=temp_password,
                 full_name=full_name,
-                publisher_create=publisher_create
+                publisher_create=publisher_create,
             )
 
-            created_credentials.append({
-                "email": email,
-                "temp_password": temp_password,
-                "full_name": full_name
-            })
+            created_credentials.append(
+                {"email": email, "temp_password": temp_password, "full_name": full_name}
+            )
 
         session.commit()
-        logger.info(f"Bulk import: Successfully created {len(created_credentials)} publishers")
+        logger.info(
+            f"Bulk import: Successfully created {len(created_credentials)} publishers"
+        )
 
     except Exception as e:
         session.rollback()
         logger.error(f"Bulk import failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bulk import failed: {str(e)}"
+            detail=f"Bulk import failed: {str(e)}",
         )
 
     return BulkImportResponse(
@@ -1780,7 +1747,7 @@ async def bulk_import_publishers(
         created_count=len(created_credentials),
         error_count=0,
         errors=[],
-        credentials=created_credentials
+        credentials=created_credentials,
     )
 
 
@@ -1797,7 +1764,7 @@ async def bulk_import_teachers(
     *,
     session: SessionDep,
     file: UploadFile = File(...),
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> Any:
     """
     Bulk import teachers from Excel file.
@@ -1807,43 +1774,46 @@ async def bulk_import_teachers(
     Returns BulkImportResponse with created count and credentials list.
     """
     # Validate file extension
-    if not file.filename or not file.filename.lower().endswith(('.xlsx', '.xls')):
+    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only Excel files (.xlsx, .xls) are supported"
+            detail="Only Excel files (.xlsx, .xls) are supported",
         )
 
     # Validate file size (max 5MB)
     if not await validate_file_size(file, max_size_mb=5):
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File size exceeds 5MB limit"
+            detail="File size exceeds 5MB limit",
         )
 
     # Parse Excel file
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     if not rows:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Excel file contains no data rows"
+            detail="Excel file contains no data rows",
         )
 
     # Extract and validate headers
     headers = list(rows[0].keys())
-    headers = [h for h in headers if not h.startswith('_')]
+    headers = [h for h in headers if not h.startswith("_")]
 
-    required_headers = ["First Name", "Last Name", "Email", "School ID", "Subject Specialization"]
+    required_headers = [
+        "First Name",
+        "Last Name",
+        "Email",
+        "School ID",
+        "Subject Specialization",
+    ]
     if not validate_excel_headers(headers, required_headers):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Missing required columns. Expected: {', '.join(required_headers)}"
+            detail=f"Missing required columns. Expected: {', '.join(required_headers)}",
         )
 
     # Validate all rows
@@ -1853,9 +1823,7 @@ async def bulk_import_teachers(
     if validation_result.error_count > 0:
         error_details = [
             BulkImportErrorDetail(
-                row_number=err.row_number,
-                field=None,
-                message="; ".join(err.errors)
+                row_number=err.row_number, field=None, message="; ".join(err.errors)
             )
             for err in validation_result.errors
         ]
@@ -1866,7 +1834,7 @@ async def bulk_import_teachers(
             created_count=0,
             error_count=validation_result.error_count,
             errors=error_details,
-            credentials=None
+            credentials=None,
         )
 
     # All validations passed - create teachers in transaction
@@ -1874,12 +1842,16 @@ async def bulk_import_teachers(
 
     try:
         for row in rows:
-            email = row.get('Email', '').strip()
-            first_name = row.get('First Name', '').strip()
-            last_name = row.get('Last Name', '').strip()
+            email = row.get("Email", "").strip()
+            first_name = row.get("First Name", "").strip()
+            last_name = row.get("Last Name", "").strip()
             full_name = f"{first_name} {last_name}"
-            school_id_str = row.get('School ID', '').strip()
-            subject_specialization = row.get('Subject Specialization', '').strip() if row.get('Subject Specialization') else None
+            school_id_str = row.get("School ID", "").strip()
+            subject_specialization = (
+                row.get("Subject Specialization", "").strip()
+                if row.get("Subject Specialization")
+                else None
+            )
 
             # Convert school_id to UUID
             try:
@@ -1887,7 +1859,7 @@ async def bulk_import_teachers(
             except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid School ID format: {school_id_str}"
+                    detail=f"Invalid School ID format: {school_id_str}",
                 )
 
             # Verify school exists
@@ -1895,7 +1867,7 @@ async def bulk_import_teachers(
             if not school:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"School not found: {school_id}"
+                    detail=f"School not found: {school_id}",
                 )
 
             # Generate temporary password
@@ -1908,7 +1880,7 @@ async def bulk_import_teachers(
             teacher_create = TeacherCreate(
                 user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
                 school_id=school_id,
-                subject_specialization=subject_specialization
+                subject_specialization=subject_specialization,
             )
 
             # Create user and teacher atomically
@@ -1918,24 +1890,24 @@ async def bulk_import_teachers(
                 username=username,
                 password=temp_password,
                 full_name=full_name,
-                teacher_create=teacher_create
+                teacher_create=teacher_create,
             )
 
-            created_credentials.append({
-                "email": email,
-                "temp_password": temp_password,
-                "full_name": full_name
-            })
+            created_credentials.append(
+                {"email": email, "temp_password": temp_password, "full_name": full_name}
+            )
 
         session.commit()
-        logger.info(f"Bulk import: Successfully created {len(created_credentials)} teachers")
+        logger.info(
+            f"Bulk import: Successfully created {len(created_credentials)} teachers"
+        )
 
     except Exception as e:
         session.rollback()
         logger.error(f"Bulk import failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bulk import failed: {str(e)}"
+            detail=f"Bulk import failed: {str(e)}",
         )
 
     return BulkImportResponse(
@@ -1944,7 +1916,7 @@ async def bulk_import_teachers(
         created_count=len(created_credentials),
         error_count=0,
         errors=[],
-        credentials=created_credentials
+        credentials=created_credentials,
     )
 
 
@@ -1961,7 +1933,7 @@ async def bulk_import_students(
     *,
     session: SessionDep,
     file: UploadFile = File(...),
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> Any:
     """
     Bulk import students from Excel file.
@@ -1971,43 +1943,46 @@ async def bulk_import_students(
     Returns BulkImportResponse with created count and credentials list.
     """
     # Validate file extension
-    if not file.filename or not file.filename.lower().endswith(('.xlsx', '.xls')):
+    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only Excel files (.xlsx, .xls) are supported"
+            detail="Only Excel files (.xlsx, .xls) are supported",
         )
 
     # Validate file size (max 5MB)
     if not await validate_file_size(file, max_size_mb=5):
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File size exceeds 5MB limit"
+            detail="File size exceeds 5MB limit",
         )
 
     # Parse Excel file
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     if not rows:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Excel file contains no data rows"
+            detail="Excel file contains no data rows",
         )
 
     # Extract and validate headers
     headers = list(rows[0].keys())
-    headers = [h for h in headers if not h.startswith('_')]
+    headers = [h for h in headers if not h.startswith("_")]
 
-    required_headers = ["First Name", "Last Name", "Email", "Grade Level", "Parent Email"]
+    required_headers = [
+        "First Name",
+        "Last Name",
+        "Email",
+        "Grade Level",
+        "Parent Email",
+    ]
     if not validate_excel_headers(headers, required_headers):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Missing required columns. Expected: {', '.join(required_headers)}"
+            detail=f"Missing required columns. Expected: {', '.join(required_headers)}",
         )
 
     # Validate all rows
@@ -2017,9 +1992,7 @@ async def bulk_import_students(
     if validation_result.error_count > 0:
         error_details = [
             BulkImportErrorDetail(
-                row_number=err.row_number,
-                field=None,
-                message="; ".join(err.errors)
+                row_number=err.row_number, field=None, message="; ".join(err.errors)
             )
             for err in validation_result.errors
         ]
@@ -2030,7 +2003,7 @@ async def bulk_import_students(
             created_count=0,
             error_count=validation_result.error_count,
             errors=error_details,
-            credentials=None
+            credentials=None,
         )
 
     # All validations passed - create students in transaction
@@ -2038,12 +2011,16 @@ async def bulk_import_students(
 
     try:
         for row in rows:
-            email = row.get('Email', '').strip()
-            first_name = row.get('First Name', '').strip()
-            last_name = row.get('Last Name', '').strip()
+            email = row.get("Email", "").strip()
+            first_name = row.get("First Name", "").strip()
+            last_name = row.get("Last Name", "").strip()
             full_name = f"{first_name} {last_name}"
-            grade_level = row.get('Grade Level', '').strip() if row.get('Grade Level') else None
-            parent_email = row.get('Parent Email', '').strip() if row.get('Parent Email') else None
+            grade_level = (
+                row.get("Grade Level", "").strip() if row.get("Grade Level") else None
+            )
+            parent_email = (
+                row.get("Parent Email", "").strip() if row.get("Parent Email") else None
+            )
 
             # Generate temporary password
             temp_password = generate_temp_password()
@@ -2055,7 +2032,7 @@ async def bulk_import_students(
             student_create = StudentCreate(
                 user_id=uuid.uuid4(),  # Placeholder, will be replaced in crud
                 grade_level=grade_level,
-                parent_email=parent_email
+                parent_email=parent_email,
             )
 
             # Create user and student atomically
@@ -2065,24 +2042,24 @@ async def bulk_import_students(
                 username=username,
                 password=temp_password,
                 full_name=full_name,
-                student_create=student_create
+                student_create=student_create,
             )
 
-            created_credentials.append({
-                "email": email,
-                "temp_password": temp_password,
-                "full_name": full_name
-            })
+            created_credentials.append(
+                {"email": email, "temp_password": temp_password, "full_name": full_name}
+            )
 
         session.commit()
-        logger.info(f"Bulk import: Successfully created {len(created_credentials)} students")
+        logger.info(
+            f"Bulk import: Successfully created {len(created_credentials)} students"
+        )
 
     except Exception as e:
         session.rollback()
         logger.error(f"Bulk import failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bulk import failed: {str(e)}"
+            detail=f"Bulk import failed: {str(e)}",
         )
 
     return BulkImportResponse(
@@ -2091,7 +2068,7 @@ async def bulk_import_students(
         created_count=len(created_credentials),
         error_count=0,
         errors=[],
-        credentials=created_credentials
+        credentials=created_credentials,
     )
 
 
@@ -2103,9 +2080,7 @@ async def bulk_import_students(
 @router.get("/stats", response_model=DashboardStats)
 @limiter.limit(RateLimits.ADMIN)
 async def get_stats(
-    request: Request,
-    session: SessionDep,
-    current_user: User = AdminOrSupervisor
+    request: Request, session: SessionDep, current_user: User = AdminOrSupervisor
 ) -> DashboardStats:
     """
     Get dashboard statistics for admin.
@@ -2155,7 +2130,7 @@ def admin_update_user(
     session: SessionDep,
     user_id: uuid.UUID,
     user_in: UserUpdate,
-    current_user: User = AdminOrSupervisor
+    current_user: User = AdminOrSupervisor,
 ) -> UserPublic:
     """
     Update a user's information.
@@ -2173,8 +2148,7 @@ def admin_update_user(
     db_user = session.get(User, user_id)
     if not db_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     # Validate email uniqueness if changing
@@ -2183,7 +2157,7 @@ def admin_update_user(
         if existing_user and existing_user.id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="User with this email already exists"
+                detail="User with this email already exists",
             )
 
     # Validate username uniqueness if changing
@@ -2194,7 +2168,7 @@ def admin_update_user(
         if existing_user and existing_user.id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="User with this username already exists"
+                detail="User with this username already exists",
             )
 
     # Update user fields
@@ -2213,9 +2187,7 @@ def admin_update_user(
 
 
 async def _is_user_under_publisher(
-    session: AsyncSessionDep,
-    publisher_user: User,
-    target_user: User
+    session: AsyncSessionDep, publisher_user: User, target_user: User
 ) -> bool:
     """
     Check if target user is a teacher or student under the publisher's schools.
@@ -2253,7 +2225,9 @@ async def reset_user_password(
     session: AsyncSessionDep,
     background_tasks: BackgroundTasks,
     user_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher)
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher
+    ),
 ) -> PasswordResetResponse:
     """
     Reset a user's password.
@@ -2280,15 +2254,14 @@ async def reset_user_password(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     # Cannot reset admin or supervisor password via this endpoint (must use different mechanism)
     if user.role == UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot reset admin password via this endpoint"
+            detail="Cannot reset admin password via this endpoint",
         )
 
     # Permission check based on current user's role
@@ -2299,7 +2272,7 @@ async def reset_user_password(
         if user.role == UserRole.supervisor:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Supervisors cannot reset other supervisor passwords"
+                detail="Supervisors cannot reset other supervisor passwords",
             )
         # Supervisor can reset publisher, teacher, student passwords
     elif current_user.role == UserRole.publisher:
@@ -2307,12 +2280,12 @@ async def reset_user_password(
         if not await _is_user_under_publisher(session, current_user, user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to reset this user's password"
+                detail="Not authorized to reset this user's password",
             )
     else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admin, supervisor, or publisher can reset passwords"
+            detail="Only admin, supervisor, or publisher can reset passwords",
         )
 
     # Generate new secure password
@@ -2340,9 +2313,7 @@ async def reset_user_password(
     if user.email and settings.emails_enabled:
         # Send password via email in background - avoid blocking DB connection
         email_data = generate_password_reset_by_admin_email(
-            email_to=user.email,
-            username=user.username,
-            password=new_password
+            email_to=user.email, username=user.username, password=new_password
         )
         background_tasks.add_task(
             send_email,
@@ -2364,7 +2335,7 @@ async def reset_user_password(
         success=True,
         message=message,
         password_emailed=password_emailed,
-        temporary_password=temp_password_for_response
+        temporary_password=temp_password_for_response,
     )
 
 
@@ -2523,14 +2494,14 @@ async def register_webhooks_manually(
     "/benchmarks/overview",
     response_model=AdminBenchmarkOverview,
     summary="Get system-wide benchmark overview",
-    description="Returns aggregated benchmark statistics across all schools (admin/supervisor)."
+    description="Returns aggregated benchmark statistics across all schools (admin/supervisor).",
 )
 @limiter.limit(RateLimits.ADMIN)
 async def get_benchmark_overview_endpoint(
     request: Request,
     *,
     session: AsyncSessionDep,
-    _: User = require_role(UserRole.admin, UserRole.supervisor)
+    _: User = require_role(UserRole.admin, UserRole.supervisor),
 ) -> AdminBenchmarkOverview:
     """
     Get system-wide benchmark overview for admin dashboard.
@@ -2552,7 +2523,7 @@ async def get_benchmark_overview_endpoint(
     "/schools/{school_id}/settings",
     response_model=BenchmarkSettingsResponse,
     summary="Update school benchmark settings",
-    description="Toggle benchmarking for a specific school (admin/supervisor)."
+    description="Toggle benchmarking for a specific school (admin/supervisor).",
 )
 @limiter.limit(RateLimits.ADMIN)
 def update_school_benchmark_settings(
@@ -2561,7 +2532,7 @@ def update_school_benchmark_settings(
     session: SessionDep,
     school_id: uuid.UUID,
     settings_in: BenchmarkSettingsUpdate,
-    _: User = require_role(UserRole.admin, UserRole.supervisor)
+    _: User = require_role(UserRole.admin, UserRole.supervisor),
 ) -> BenchmarkSettingsResponse:
     """
     Update benchmark settings for a school.
@@ -2578,8 +2549,7 @@ def update_school_benchmark_settings(
     school = session.get(School, school_id)
     if not school:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="School not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="School not found"
         )
 
     school.benchmarking_enabled = settings_in.benchmarking_enabled
@@ -2601,7 +2571,7 @@ def update_school_benchmark_settings(
     "/publishers/{publisher_id}/settings",
     response_model=BenchmarkSettingsResponse,
     summary="Update publisher benchmark settings",
-    description="Toggle benchmarking for a specific publisher (admin/supervisor)."
+    description="Toggle benchmarking for a specific publisher (admin/supervisor).",
 )
 @limiter.limit(RateLimits.ADMIN)
 def update_publisher_benchmark_settings(
@@ -2610,7 +2580,7 @@ def update_publisher_benchmark_settings(
     session: SessionDep,
     publisher_id: uuid.UUID,
     settings_in: BenchmarkSettingsUpdate,
-    _: User = require_role(UserRole.admin, UserRole.supervisor)
+    _: User = require_role(UserRole.admin, UserRole.supervisor),
 ) -> BenchmarkSettingsResponse:
     """
     Update benchmark settings for a publisher (deprecated).
@@ -2619,7 +2589,7 @@ def update_publisher_benchmark_settings(
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="Publisher benchmark settings are now managed in Dream Central Storage."
+        detail="Publisher benchmark settings are now managed in Dream Central Storage.",
     )
 
 
@@ -2657,24 +2627,26 @@ async def create_publisher_account(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
+            detail="User with this email already exists",
         )
 
     # Generate username from full_name if not provided
     from app.utils import generate_username_from_name
+
     username = account_in.username
     if not username:
         username = generate_username_from_name(
-            full_name=account_in.full_name,
-            session=session
+            full_name=account_in.full_name, session=session
         )
     else:
         # Check if provided username already exists
-        existing_username = crud.get_user_by_username(session=session, username=username)
+        existing_username = crud.get_user_by_username(
+            session=session, username=username
+        )
         if existing_username:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this username already exists"
+                detail="User with this username already exists",
             )
 
     # Validate DCS publisher exists
@@ -2683,7 +2655,7 @@ async def create_publisher_account(
     if not publisher:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"DCS Publisher ID {account_in.dcs_publisher_id} not found"
+            detail=f"DCS Publisher ID {account_in.dcs_publisher_id} not found",
         )
 
     # Generate secure temporary password
@@ -2691,6 +2663,7 @@ async def create_publisher_account(
 
     # Create user with publisher role
     from app.models import UserCreate
+
     user_create = UserCreate(
         email=account_in.email,
         username=username,
@@ -2712,7 +2685,7 @@ async def create_publisher_account(
             email_to=user.email,
             username=user.username,
             password=temp_password,
-            full_name=account_in.full_name
+            full_name=account_in.full_name,
         )
         background_tasks.add_task(
             send_email,
@@ -2731,7 +2704,7 @@ async def create_publisher_account(
         user=UserPublic.model_validate(user),
         temporary_password=temp_password_for_response,
         password_emailed=password_emailed,
-        message=message
+        message=message,
     )
 
 
@@ -2757,16 +2730,15 @@ async def list_publisher_accounts(
     """
     # Query users with publisher role
     statement = (
-        select(User)
-        .where(User.role == UserRole.publisher)
-        .offset(skip)
-        .limit(limit)
+        select(User).where(User.role == UserRole.publisher).offset(skip).limit(limit)
     )
     result = session.exec(statement)
     users = result.all()
 
     # Count total
-    count_statement = select(func.count()).select_from(User).where(User.role == UserRole.publisher)
+    count_statement = (
+        select(func.count()).select_from(User).where(User.role == UserRole.publisher)
+    )
     total = session.exec(count_statement).one()
 
     # Enrich with DCS publisher names
@@ -2779,16 +2751,18 @@ async def list_publisher_accounts(
             if publisher:
                 dcs_publisher_name = publisher.name
 
-        accounts.append(PublisherAccountPublic(
-            id=user.id,
-            username=user.username,
-            email=user.email,
-            full_name=user.full_name,
-            dcs_publisher_id=user.dcs_publisher_id,
-            dcs_publisher_name=dcs_publisher_name,
-            is_active=user.is_active,
-            created_at=None,  # User model may not have created_at
-        ))
+        accounts.append(
+            PublisherAccountPublic(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                full_name=user.full_name,
+                dcs_publisher_id=user.dcs_publisher_id,
+                dcs_publisher_name=dcs_publisher_name,
+                is_active=user.is_active,
+                created_at=None,  # User model may not have created_at
+            )
+        )
 
     return PublisherAccountListResponse(data=accounts, count=total)
 
@@ -2830,16 +2804,18 @@ async def list_publisher_accounts_paginated(
             publisher = await publisher_service.get_publisher(user.dcs_publisher_id)
             if publisher:
                 dcs_publisher_name = publisher.name
-        accounts.append(PublisherAccountPublic(
-            id=user.id,
-            username=user.username,
-            email=user.email,
-            full_name=user.full_name,
-            dcs_publisher_id=user.dcs_publisher_id,
-            dcs_publisher_name=dcs_publisher_name,
-            is_active=user.is_active,
-            created_at=None,
-        ))
+        accounts.append(
+            PublisherAccountPublic(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                full_name=user.full_name,
+                dcs_publisher_id=user.dcs_publisher_id,
+                dcs_publisher_name=dcs_publisher_name,
+                is_active=user.is_active,
+                created_at=None,
+            )
+        )
 
     return PublisherAccountPaginatedResponse(
         items=accounts,
@@ -2870,14 +2846,13 @@ async def get_publisher_account(
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher account not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Publisher account not found"
         )
 
     if user.role != UserRole.publisher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User is not a publisher account"
+            detail="User is not a publisher account",
         )
 
     # Enrich with DCS publisher name
@@ -2923,14 +2898,13 @@ async def update_publisher_account(
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher account not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Publisher account not found"
         )
 
     if user.role != UserRole.publisher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User is not a publisher account"
+            detail="User is not a publisher account",
         )
 
     # If updating dcs_publisher_id, validate it exists
@@ -2940,16 +2914,17 @@ async def update_publisher_account(
         if not publisher:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"DCS Publisher ID {account_in.dcs_publisher_id} not found"
+                detail=f"DCS Publisher ID {account_in.dcs_publisher_id} not found",
             )
 
     # Check username uniqueness if changing
     if account_in.username and account_in.username != user.username:
-        existing = crud.get_user_by_username(session=session, username=account_in.username)
+        existing = crud.get_user_by_username(
+            session=session, username=account_in.username
+        )
         if existing:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already taken"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
             )
 
     # Check email uniqueness if changing
@@ -2958,7 +2933,7 @@ async def update_publisher_account(
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+                detail="Email already registered",
             )
 
     # Update user
@@ -3008,21 +2983,20 @@ def delete_publisher_account(
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher account not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Publisher account not found"
         )
 
     if user.role != UserRole.publisher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User is not a publisher account"
+            detail="User is not a publisher account",
         )
 
     # Prevent deleting yourself
     if user.id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete your own account"
+            detail="Cannot delete your own account",
         )
 
     session.delete(user)
@@ -3053,14 +3027,13 @@ def change_publisher_password(
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher account not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Publisher account not found"
         )
 
     if user.role != UserRole.publisher:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User is not a publisher account"
+            detail="User is not a publisher account",
         )
 
     user.hashed_password = get_password_hash(body.password)
@@ -3108,20 +3081,14 @@ def list_all_assignments(
     # Story 20.1: Fix N+1 query problem by using subqueries for counts
     # Create subquery for recipient count
     recipient_count_subq = (
-        select(
-            AssignmentStudent.assignment_id,
-            func.count().label("recipient_count")
-        )
+        select(AssignmentStudent.assignment_id, func.count().label("recipient_count"))
         .group_by(AssignmentStudent.assignment_id)
         .subquery()
     )
 
     # Create subquery for completed count
     completed_count_subq = (
-        select(
-            AssignmentStudent.assignment_id,
-            func.count().label("completed_count")
-        )
+        select(AssignmentStudent.assignment_id, func.count().label("completed_count"))
         .where(AssignmentStudent.status == "completed")
         .group_by(AssignmentStudent.assignment_id)
         .subquery()
@@ -3133,13 +3100,21 @@ def list_all_assignments(
             Assignment,
             User.full_name.label("teacher_name"),
             User.email.label("teacher_email"),
-            func.coalesce(recipient_count_subq.c.recipient_count, 0).label("recipient_count"),
-            func.coalesce(completed_count_subq.c.completed_count, 0).label("completed_count"),
+            func.coalesce(recipient_count_subq.c.recipient_count, 0).label(
+                "recipient_count"
+            ),
+            func.coalesce(completed_count_subq.c.completed_count, 0).label(
+                "completed_count"
+            ),
         )
         .join(Teacher, Teacher.id == Assignment.teacher_id)
         .join(User, User.id == Teacher.user_id)
-        .outerjoin(recipient_count_subq, recipient_count_subq.c.assignment_id == Assignment.id)
-        .outerjoin(completed_count_subq, completed_count_subq.c.assignment_id == Assignment.id)
+        .outerjoin(
+            recipient_count_subq, recipient_count_subq.c.assignment_id == Assignment.id
+        )
+        .outerjoin(
+            completed_count_subq, completed_count_subq.c.assignment_id == Assignment.id
+        )
     )
 
     # Apply filters
@@ -3161,7 +3136,13 @@ def list_all_assignments(
 
     # Build response items with enriched data (Story 20.1: counts now from query)
     items = []
-    for assignment, teacher_name, teacher_email, recipient_count, completed_count in results:
+    for (
+        assignment,
+        teacher_name,
+        teacher_email,
+        recipient_count,
+        completed_count,
+    ) in results:
         items.append(
             AssignmentWithTeacher(
                 id=assignment.id,
@@ -3229,11 +3210,13 @@ def delete_assignment(
 
 class SkillScoreRecalculateRequest(SQLModel):
     """Request to recalculate skill scores for an assignment."""
+
     assignment_id: uuid.UUID
 
 
 class SkillScoreRecalculateResponse(SQLModel):
     """Response from skill score recalculation."""
+
     success: bool
     assignment_id: uuid.UUID
     records_created: int
@@ -3288,6 +3271,7 @@ async def recalculate_skill_scores(
 
 class SkillScoreBackfillResponse(SQLModel):
     """Response from skill score backfill."""
+
     success: bool
     assignments_processed: int
     records_created: int
@@ -3312,7 +3296,9 @@ async def backfill_skill_scores(
     assignments that have no StudentSkillScore records yet.
     """
     try:
-        records_created, assignments_processed = await backfill_all_skill_scores(session)
+        records_created, assignments_processed = await backfill_all_skill_scores(
+            session
+        )
         await session.commit()
 
         logger.info(

@@ -14,7 +14,9 @@ class TestSanitizeFilename:
         """Test that special characters are removed."""
         assert sanitize_filename("Test!@#$%") == "Test"
         # Hyphens are kept as they are filesystem-safe
-        assert sanitize_filename("Report: Chapter 5 - Final") == "Report_Chapter_5_-_Final"
+        assert (
+            sanitize_filename("Report: Chapter 5 - Final") == "Report_Chapter_5_-_Final"
+        )
 
     def test_multiple_spaces_collapsed(self):
         """Test that multiple spaces become single underscores."""

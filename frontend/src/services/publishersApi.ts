@@ -10,14 +10,14 @@ import {
   type PublisherProfile,
   type PublisherStats,
   PublishersService,
-} from "@/client"
+} from "@/client";
 
 /**
  * Get the current publisher's profile from DCS
  * @returns Promise<PublisherProfile>
  */
 export async function getMyProfile(): Promise<PublisherProfile> {
-  return PublishersService.getMyProfile()
+  return PublishersService.getMyProfile();
 }
 
 /**
@@ -25,8 +25,8 @@ export async function getMyProfile(): Promise<PublisherProfile> {
  * @returns Promise<PublisherStats>
  */
 export async function getMyStats(): Promise<PublisherStats> {
-  return PublishersService.getMyStats()
+  return PublishersService.getMyStats();
 }
 
 // Re-export types for convenience
-export type { PublisherProfile, PublisherStats }
+export type { PublisherProfile, PublisherStats };

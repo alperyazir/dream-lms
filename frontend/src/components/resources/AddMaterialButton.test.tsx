@@ -3,10 +3,10 @@
  * Story 21.3: Upload Materials in Resources Context
  */
 
-import { fireEvent, render, screen } from "@testing-library/react"
-import { vi } from "vitest"
-import type { Material } from "@/types/material"
-import { AddMaterialButton } from "./AddMaterialButton"
+import { fireEvent, render, screen } from "@testing-library/react";
+import { vi } from "vitest";
+import type { Material } from "@/types/material";
+import { AddMaterialButton } from "./AddMaterialButton";
 
 // Mock the UploadMaterialDialog component
 vi.mock("@/components/materials/UploadMaterialDialog", () => ({
@@ -26,80 +26,80 @@ vi.mock("@/components/materials/UploadMaterialDialog", () => ({
       )}
     </div>
   ),
-}))
+}));
 
 describe("AddMaterialButton", () => {
   it("renders the button", () => {
-    render(<AddMaterialButton />)
+    render(<AddMaterialButton />);
 
     expect(
       screen.getByRole("button", { name: /add material/i }),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it("opens upload dialog on click", () => {
-    render(<AddMaterialButton />)
+    render(<AddMaterialButton />);
 
-    const button = screen.getByRole("button", { name: /add material/i })
-    fireEvent.click(button)
+    const button = screen.getByRole("button", { name: /add material/i });
+    fireEvent.click(button);
 
-    const dialog = screen.getByTestId("upload-dialog")
-    expect(dialog).toHaveAttribute("data-open", "true")
-  })
+    const dialog = screen.getByTestId("upload-dialog");
+    expect(dialog).toHaveAttribute("data-open", "true");
+  });
 
   it("passes context to upload dialog", () => {
     render(
       <AddMaterialButton bookId="book-123" assignmentId="assignment-456" />,
-    )
+    );
 
-    const button = screen.getByRole("button", { name: /add material/i })
-    fireEvent.click(button)
+    const button = screen.getByRole("button", { name: /add material/i });
+    fireEvent.click(button);
 
-    expect(screen.getByTestId("book-id")).toHaveTextContent("book-123")
+    expect(screen.getByTestId("book-id")).toHaveTextContent("book-123");
     expect(screen.getByTestId("assignment-id")).toHaveTextContent(
       "assignment-456",
-    )
-  })
+    );
+  });
 
   it("calls onUploadComplete when material is uploaded", () => {
-    const onUploadComplete = vi.fn()
-    render(<AddMaterialButton onUploadComplete={onUploadComplete} />)
+    const onUploadComplete = vi.fn();
+    render(<AddMaterialButton onUploadComplete={onUploadComplete} />);
 
-    const button = screen.getByRole("button", { name: /add material/i })
-    fireEvent.click(button)
+    const button = screen.getByRole("button", { name: /add material/i });
+    fireEvent.click(button);
 
     const completeButton = screen.getByRole("button", {
       name: /complete upload/i,
-    })
-    fireEvent.click(completeButton)
+    });
+    fireEvent.click(completeButton);
 
     expect(onUploadComplete).toHaveBeenCalledWith(
       expect.objectContaining({
         id: "123",
         name: "Test Material",
       }),
-    )
-  })
+    );
+  });
 
   it("closes dialog after upload completes", () => {
-    render(<AddMaterialButton />)
+    render(<AddMaterialButton />);
 
-    const button = screen.getByRole("button", { name: /add material/i })
-    fireEvent.click(button)
+    const button = screen.getByRole("button", { name: /add material/i });
+    fireEvent.click(button);
 
     expect(screen.getByTestId("upload-dialog")).toHaveAttribute(
       "data-open",
       "true",
-    )
+    );
 
     const completeButton = screen.getByRole("button", {
       name: /complete upload/i,
-    })
-    fireEvent.click(completeButton)
+    });
+    fireEvent.click(completeButton);
 
     expect(screen.getByTestId("upload-dialog")).toHaveAttribute(
       "data-open",
       "false",
-    )
-  })
-})
+    );
+  });
+});

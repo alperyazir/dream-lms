@@ -131,7 +131,9 @@ class TestMultiActivityAnalytics:
                 module_name="Analytics Module",
                 page_number=i + 5,
                 section_index=0,
-                activity_type=ActivityType.circle if i == 0 else ActivityType.matchTheWords,
+                activity_type=(
+                    ActivityType.circle if i == 0 else ActivityType.matchTheWords
+                ),
                 title=f"Analytics Activity {i + 1}",
                 config_json={"questions": [{"id": 1, "text": f"Question {i + 1}"}]},
                 order_index=i,
@@ -212,9 +214,13 @@ class TestMultiActivityAnalytics:
 
             # Create assignment student
             status = (
-                AssignmentStatus.completed if i == 0
-                else AssignmentStatus.in_progress if i == 1
-                else AssignmentStatus.not_started
+                AssignmentStatus.completed
+                if i == 0
+                else (
+                    AssignmentStatus.in_progress
+                    if i == 1
+                    else AssignmentStatus.not_started
+                )
             )
             astu = AssignmentStudent(
                 id=uuid.uuid4(),
@@ -259,8 +265,16 @@ class TestMultiActivityAnalytics:
                     status=ap_status,
                     score=ap_score,
                     max_score=100.0,
-                    started_at=datetime.now(UTC) - timedelta(minutes=10) if ap_status != AssignmentStudentActivityStatus.not_started else None,
-                    completed_at=datetime.now(UTC) if ap_status == AssignmentStudentActivityStatus.completed else None,
+                    started_at=(
+                        datetime.now(UTC) - timedelta(minutes=10)
+                        if ap_status != AssignmentStudentActivityStatus.not_started
+                        else None
+                    ),
+                    completed_at=(
+                        datetime.now(UTC)
+                        if ap_status == AssignmentStudentActivityStatus.completed
+                        else None
+                    ),
                 )
                 session.add(asa)
         session.commit()
@@ -377,7 +391,9 @@ class TestMultiActivityAnalytics:
         assert len(data["expanded_students"]) == 3
 
         # Verify student data
-        completed_students = [s for s in data["expanded_students"] if s["status"] == "completed"]
+        completed_students = [
+            s for s in data["expanded_students"] if s["status"] == "completed"
+        ]
         assert len(completed_students) == 2
 
     def test_analytics_authorization_teacher_only(
@@ -687,7 +703,9 @@ class TestStudentAssignmentResult:
         session.add(pub_user)
         session.commit()
 
-        publisher = Publisher(id=uuid.uuid4(), user_id=pub_user.id, name="Other Publisher")
+        publisher = Publisher(
+            id=uuid.uuid4(), user_id=pub_user.id, name="Other Publisher"
+        )
         session.add(publisher)
         session.commit()
 
@@ -752,11 +770,15 @@ class TestStudentAssignmentResult:
         session.add(pub_user)
         session.commit()
 
-        publisher = Publisher(id=uuid.uuid4(), user_id=pub_user.id, name="Partial Publisher")
+        publisher = Publisher(
+            id=uuid.uuid4(), user_id=pub_user.id, name="Partial Publisher"
+        )
         session.add(publisher)
         session.commit()
 
-        school = School(id=uuid.uuid4(), publisher_id=publisher.id, name="Partial School")
+        school = School(
+            id=uuid.uuid4(), publisher_id=publisher.id, name="Partial School"
+        )
         session.add(school)
         session.commit()
 

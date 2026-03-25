@@ -1,12 +1,12 @@
-import { FileText } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface BookCardProps {
-  title: string
-  coverUrl: string
-  activityCount: number
-  grade: string
+  title: string;
+  coverUrl: string;
+  activityCount: number;
+  grade: string;
 }
 
 export function BookCard({
@@ -39,5 +39,5 @@ export function BookCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

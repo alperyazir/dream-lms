@@ -1,6 +1,7 @@
 """
 Tests for tour completion tracking (Story 12.1)
 """
+
 import uuid
 
 from fastapi.testclient import TestClient
@@ -62,7 +63,10 @@ class TestLoginIncludesHasCompletedTour:
         # Act - Login
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": "completedtour@example.com", "password": "testpassword123"},
+            data={
+                "username": "completedtour@example.com",
+                "password": "testpassword123",
+            },
         )
 
         # Assert
@@ -103,7 +107,10 @@ class TestCompleteTourEndpoint:
         # Get token
         login_response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": "incompletetour@example.com", "password": "testpassword123"},
+            data={
+                "username": "incompletetour@example.com",
+                "password": "testpassword123",
+            },
         )
         token = login_response.json()["access_token"]
 
@@ -140,7 +147,10 @@ class TestCompleteTourEndpoint:
         # Get token
         login_response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": "idempotentuser@example.com", "password": "testpassword123"},
+            data={
+                "username": "idempotentuser@example.com",
+                "password": "testpassword123",
+            },
         )
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}

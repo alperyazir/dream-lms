@@ -1,6 +1,7 @@
 """
 Tests for publisher API endpoints
 """
+
 import re
 import uuid
 
@@ -21,7 +22,7 @@ def test_publisher_list_own_schools(
         id=uuid.uuid4(),
         user_id=publisher_user.id,
         name="My Publisher",
-        contact_email="contact@mypublisher.com"
+        contact_email="contact@mypublisher.com",
     )
     session.add(publisher)
     session.flush()
@@ -31,13 +32,13 @@ def test_publisher_list_own_schools(
         id=uuid.uuid4(),
         name="My School 1",
         publisher_id=publisher.id,
-        address="Address 1"
+        address="Address 1",
     )
     school2 = School(
         id=uuid.uuid4(),
         name="My School 2",
         publisher_id=publisher.id,
-        address="Address 2"
+        address="Address 2",
     )
     session.add_all([school1, school2])
 
@@ -48,7 +49,7 @@ def test_publisher_list_own_schools(
         username="otherpublisher",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
-        full_name="Other Publisher"
+        full_name="Other Publisher",
     )
     session.add(other_user)
     session.flush()
@@ -57,7 +58,7 @@ def test_publisher_list_own_schools(
         id=uuid.uuid4(),
         user_id=other_user.id,
         name="Other Publisher",
-        contact_email="other@publisher.com"
+        contact_email="other@publisher.com",
     )
     session.add(other_publisher)
     session.flush()
@@ -66,7 +67,7 @@ def test_publisher_list_own_schools(
         id=uuid.uuid4(),
         name="Other School",
         publisher_id=other_publisher.id,
-        address="Other Address"
+        address="Other Address",
     )
     session.add(other_school)
     session.commit()
@@ -74,7 +75,7 @@ def test_publisher_list_own_schools(
     # Request schools as authenticated publisher
     response = client.get(
         f"{settings.API_V1_STR}/publishers/me/schools",
-        headers={"Authorization": f"Bearer {publisher_token}"}
+        headers={"Authorization": f"Bearer {publisher_token}"},
     )
 
     assert response.status_code == 200
@@ -97,7 +98,7 @@ def test_publisher_create_teacher_in_own_school(
         id=uuid.uuid4(),
         user_id=publisher_user.id,
         name="My Publisher",
-        contact_email="contact@mypublisher.com"
+        contact_email="contact@mypublisher.com",
     )
     session.add(publisher)
     session.flush()
@@ -107,7 +108,7 @@ def test_publisher_create_teacher_in_own_school(
         id=uuid.uuid4(),
         name="My School",
         publisher_id=publisher.id,
-        address="School Address"
+        address="School Address",
     )
     session.add(school)
     session.commit()
@@ -117,13 +118,13 @@ def test_publisher_create_teacher_in_own_school(
         "user_email": "newteacher@example.com",
         "full_name": "New Teacher",
         "school_id": str(school.id),
-        "subject_specialization": "Mathematics"
+        "subject_specialization": "Mathematics",
     }
 
     response = client.post(
         f"{settings.API_V1_STR}/publishers/me/teachers",
         headers={"Authorization": f"Bearer {publisher_token}"},
-        json=teacher_data
+        json=teacher_data,
     )
 
     assert response.status_code == 201
@@ -148,10 +149,15 @@ def test_publisher_create_teacher_in_own_school(
 
     # Verify teacher record
     assert data["role_record"]["school_id"] == teacher_data["school_id"]
-    assert data["role_record"]["subject_specialization"] == teacher_data["subject_specialization"]
+    assert (
+        data["role_record"]["subject_specialization"]
+        == teacher_data["subject_specialization"]
+    )
 
     # Verify in database
-    user = session.exec(select(User).where(User.email == teacher_data["user_email"])).first()
+    user = session.exec(
+        select(User).where(User.email == teacher_data["user_email"])
+    ).first()
     assert user is not None
     assert user.role.value == "teacher"
 
@@ -169,7 +175,7 @@ def test_publisher_cannot_create_teacher_in_other_school(
         id=uuid.uuid4(),
         user_id=publisher_user.id,
         name="My Publisher",
-        contact_email="contact@mypublisher.com"
+        contact_email="contact@mypublisher.com",
     )
     session.add(publisher)
     session.flush()
@@ -180,7 +186,7 @@ def test_publisher_cannot_create_teacher_in_other_school(
         email="other@publisher.com",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
-        full_name="Other Publisher"
+        full_name="Other Publisher",
     )
     session.add(other_user)
     session.flush()
@@ -189,7 +195,7 @@ def test_publisher_cannot_create_teacher_in_other_school(
         id=uuid.uuid4(),
         user_id=other_user.id,
         name="Other Publisher",
-        contact_email="other@publisher.com"
+        contact_email="other@publisher.com",
     )
     session.add(other_publisher)
     session.flush()
@@ -198,7 +204,7 @@ def test_publisher_cannot_create_teacher_in_other_school(
         id=uuid.uuid4(),
         name="Other School",
         publisher_id=other_publisher.id,
-        address="Other Address"
+        address="Other Address",
     )
     session.add(other_school)
     session.commit()
@@ -209,17 +215,20 @@ def test_publisher_cannot_create_teacher_in_other_school(
         "user_email": "teacher@example.com",
         "full_name": "Teacher",
         "school_id": str(other_school.id),
-        "subject_specialization": "Science"
+        "subject_specialization": "Science",
     }
 
     response = client.post(
         f"{settings.API_V1_STR}/publishers/me/teachers",
         headers={"Authorization": f"Bearer {publisher_token}"},
-        json=teacher_data
+        json=teacher_data,
     )
 
     assert response.status_code == 403
-    assert "Cannot create teacher in another publisher's school" in response.json()["detail"]
+    assert (
+        "Cannot create teacher in another publisher's school"
+        in response.json()["detail"]
+    )
 
 
 def test_publisher_receives_temporary_password(
@@ -231,16 +240,13 @@ def test_publisher_receives_temporary_password(
         id=uuid.uuid4(),
         user_id=publisher_user.id,
         name="My Publisher",
-        contact_email="contact@mypublisher.com"
+        contact_email="contact@mypublisher.com",
     )
     session.add(publisher)
     session.flush()
 
     school = School(
-        id=uuid.uuid4(),
-        name="My School",
-        publisher_id=publisher.id,
-        address="Address"
+        id=uuid.uuid4(), name="My School", publisher_id=publisher.id, address="Address"
     )
     session.add(school)
     session.commit()
@@ -250,13 +256,13 @@ def test_publisher_receives_temporary_password(
         "user_email": "teacher@example.com",
         "full_name": "Teacher",
         "school_id": str(school.id),
-        "subject_specialization": "History"
+        "subject_specialization": "History",
     }
 
     response = client.post(
         f"{settings.API_V1_STR}/publishers/me/teachers",
         headers={"Authorization": f"Bearer {publisher_token}"},
-        json=teacher_data
+        json=teacher_data,
     )
 
     assert response.status_code == 201
@@ -272,4 +278,4 @@ def test_publisher_receives_temporary_password(
     temp_password = data["temporary_password"]
     assert temp_password is not None
     assert len(temp_password) == 12
-    assert re.match(r'^[A-Za-z0-9!@#$%^&*]+$', temp_password)
+    assert re.match(r"^[A-Za-z0-9!@#$%^&*]+$", temp_password)

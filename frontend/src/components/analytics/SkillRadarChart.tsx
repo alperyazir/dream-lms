@@ -9,7 +9,7 @@
  * - high (10+): solid line + trend indicator
  */
 
-import React from "react"
+import React from "react";
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -17,8 +17,8 @@ import {
   RadarChart,
   ResponsiveContainer,
   Tooltip,
-} from "recharts"
-import type { SkillProfileItem } from "@/types/skill"
+} from "recharts";
+import type { SkillProfileItem } from "@/types/skill";
 
 const SKILL_COLORS: Record<string, string> = {
   blue: "#3b82f6",
@@ -27,24 +27,24 @@ const SKILL_COLORS: Record<string, string> = {
   orange: "#f97316",
   teal: "#14b8a6",
   rose: "#f43f5e",
-}
+};
 
 interface SkillRadarChartProps {
-  skills: SkillProfileItem[]
-  size?: "sm" | "md" | "lg"
+  skills: SkillProfileItem[];
+  size?: "sm" | "md" | "lg";
 }
 
 const SIZE_MAP = {
   sm: 200,
   md: 300,
   lg: 400,
-}
+};
 
 export const SkillRadarChart = React.memo(function SkillRadarChart({
   skills,
   size = "md",
 }: SkillRadarChartProps) {
-  const height = SIZE_MAP[size]
+  const height = SIZE_MAP[size];
 
   const chartData = skills.map((s) => ({
     skill: s.skill_name,
@@ -55,10 +55,10 @@ export const SkillRadarChart = React.memo(function SkillRadarChart({
     confidence: s.confidence,
     trend: s.trend,
     color: SKILL_COLORS[s.skill_color] || SKILL_COLORS.blue,
-  }))
+  }));
 
   // All insufficient - show empty state
-  const allInsufficient = chartData.every((d) => d.isInsufficient)
+  const allInsufficient = chartData.every((d) => d.isInsufficient);
 
   return (
     <div className="relative">
@@ -81,8 +81,8 @@ export const SkillRadarChart = React.memo(function SkillRadarChart({
           />
           <Tooltip
             content={({ payload }) => {
-              if (!payload || payload.length === 0) return null
-              const data = payload[0].payload
+              if (!payload || payload.length === 0) return null;
+              const data = payload[0].payload;
               return (
                 <div className="rounded-md border bg-white px-3 py-2 text-sm shadow-md dark:bg-gray-800">
                   <p className="font-medium">{data.skill}</p>
@@ -120,7 +120,7 @@ export const SkillRadarChart = React.memo(function SkillRadarChart({
                     </>
                   )}
                 </div>
-              )
+              );
             }}
           />
         </RadarChart>
@@ -151,5 +151,5 @@ export const SkillRadarChart = React.memo(function SkillRadarChart({
         </tbody>
       </table>
     </div>
-  )
-})
+  );
+});

@@ -5,8 +5,8 @@
  * Displays score trend over time with encouraging highlights
  */
 
-import { TrendingUp } from "lucide-react"
-import React from "react"
+import { TrendingUp } from "lucide-react";
+import React from "react";
 import {
   CartesianGrid,
   Line,
@@ -16,13 +16,13 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { ScoreTrendPoint } from "@/types/analytics"
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ScoreTrendPoint } from "@/types/analytics";
 
 export interface ProgressScoreChartProps {
-  data: ScoreTrendPoint[]
-  avgScore?: number
+  data: ScoreTrendPoint[];
+  avgScore?: number;
 }
 
 export const ProgressScoreChart = React.memo(
@@ -42,31 +42,31 @@ export const ProgressScoreChart = React.memo(
             </p>
           </CardContent>
         </Card>
-      )
+      );
     }
 
     // Calculate average if not provided
     const average =
       avgScore ??
-      data.reduce((sum, point) => sum + point.score, 0) / data.length
+      data.reduce((sum, point) => sum + point.score, 0) / data.length;
 
     // Find best score for highlighting
-    const bestScore = Math.max(...data.map((d) => d.score))
+    const bestScore = Math.max(...data.map((d) => d.score));
 
     // Format date for display
     const formatDate = (dateStr: string) => {
-      const date = new Date(dateStr)
+      const date = new Date(dateStr);
       return date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
-      })
-    }
+      });
+    };
 
     const chartData = data.map((point, index) => ({
       ...point,
       index,
       displayDate: formatDate(point.date),
-    }))
+    }));
 
     return (
       <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
@@ -114,15 +114,19 @@ export const ProgressScoreChart = React.memo(
                     padding: "8px",
                   }}
                   content={({ active, payload }) => {
-                    if (!active || !payload?.[0]) return null
-                    const point = payload[0].payload
+                    if (!active || !payload?.[0]) return null;
+                    const point = payload[0].payload;
                     return (
                       <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-sm text-sm">
                         <p className="font-medium">{point.assignment_name}</p>
-                        <p className="text-muted-foreground">{point.displayDate}</p>
-                        <p className="text-teal-600 font-semibold">Score: {point.score}%</p>
+                        <p className="text-muted-foreground">
+                          {point.displayDate}
+                        </p>
+                        <p className="text-teal-600 font-semibold">
+                          Score: {point.score}%
+                        </p>
                       </div>
-                    )
+                    );
                   }}
                 />
                 <ReferenceLine
@@ -137,8 +141,8 @@ export const ProgressScoreChart = React.memo(
                   stroke="#14B8A6"
                   strokeWidth={3}
                   dot={(props: any) => {
-                    const { cx, cy, payload } = props
-                    const isBest = payload.score === bestScore
+                    const { cx, cy, payload } = props;
+                    const isBest = payload.score === bestScore;
                     return (
                       <circle
                         cx={cx}
@@ -148,7 +152,7 @@ export const ProgressScoreChart = React.memo(
                         stroke="#fff"
                         strokeWidth={2}
                       />
-                    )
+                    );
                   }}
                   activeDot={{ r: 7, fill: "#14B8A6" }}
                 />
@@ -178,8 +182,8 @@ export const ProgressScoreChart = React.memo(
           </div>
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-ProgressScoreChart.displayName = "ProgressScoreChart"
+ProgressScoreChart.displayName = "ProgressScoreChart";

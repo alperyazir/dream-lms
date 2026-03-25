@@ -11,14 +11,14 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, exists, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import (
     Assignment,
-    AssignmentStudent,
     AssignmentStatus,
+    AssignmentStudent,
     SkillCategory,
     StudentSkillScore,
 )
@@ -170,8 +170,7 @@ async def recalculate_for_assignment(
 
     # Get all completed submissions
     result = await session.execute(
-        select(AssignmentStudent)
-        .where(
+        select(AssignmentStudent).where(
             AssignmentStudent.assignment_id == assignment_id,
             AssignmentStudent.status == AssignmentStatus.completed,
         )

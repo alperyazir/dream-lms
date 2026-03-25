@@ -6,25 +6,25 @@
  * Converts ActivityPlayer's interface to match VocabularyQuizPlayer's expected props.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import type { ActivityConfig, VocabularyQuizActivity } from "@/lib/mockData"
-import type { QuestionNavigationState } from "@/types/activity-player"
-import type { VocabularyQuizPublic } from "@/types/vocabulary-quiz"
-import { VocabularyQuizPlayer } from "./VocabularyQuizPlayer"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ActivityConfig, VocabularyQuizActivity } from "@/lib/mockData";
+import type { QuestionNavigationState } from "@/types/activity-player";
+import type { VocabularyQuizPublic } from "@/types/vocabulary-quiz";
+import { VocabularyQuizPlayer } from "./VocabularyQuizPlayer";
 
 interface VocabularyQuizPlayerAdapterProps {
-  activity: ActivityConfig
-  onAnswersChange: (answers: Map<string, string>) => void
-  showResults: boolean
-  correctAnswers: Set<string>
-  initialAnswers?: Map<string, string>
-  showCorrectAnswers?: boolean
+  activity: ActivityConfig;
+  onAnswersChange: (answers: Map<string, string>) => void;
+  showResults: boolean;
+  correctAnswers: Set<string>;
+  initialAnswers?: Map<string, string>;
+  showCorrectAnswers?: boolean;
   /** External control: current question index */
-  currentQuestionIndex?: number
+  currentQuestionIndex?: number;
   /** External control: callback when question index changes */
-  onQuestionIndexChange?: (index: number) => void
+  onQuestionIndexChange?: (index: number) => void;
   /** Callback to expose navigation state to parent */
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 /**
@@ -42,56 +42,56 @@ export function VocabularyQuizPlayerAdapter({
 }: VocabularyQuizPlayerAdapterProps) {
   // Type assertion to access content property
   const quiz = (activity as VocabularyQuizActivity)
-    .content as VocabularyQuizPublic
+    .content as VocabularyQuizPublic;
 
   // Convert initialAnswers from Map to Record
   // Memoized to prevent infinite loops from creating new object on every render
   const initialAnswersRecord = useMemo(() => {
-    return initialAnswers ? Object.fromEntries(initialAnswers) : {}
-  }, [initialAnswers])
+    return initialAnswers ? Object.fromEntries(initialAnswers) : {};
+  }, [initialAnswers]);
 
   // Track answers locally
   const [answers, setAnswers] =
-    useState<Record<string, string>>(initialAnswersRecord)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+    useState<Record<string, string>>(initialAnswersRecord);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Store callback in ref to prevent infinite loops
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
 
   // Update parent when answers change (for auto-save)
   useEffect(() => {
-    const callback = onAnswersChangeRef.current
-    const answersMap = new Map(Object.entries(answers))
-    callback(answersMap)
-  }, [answers])
+    const callback = onAnswersChangeRef.current;
+    const answersMap = new Map(Object.entries(answers));
+    callback(answersMap);
+  }, [answers]);
 
   // Handle quiz submission
   const handleSubmit = (submittedAnswers: Record<string, string>) => {
-    setAnswers(submittedAnswers)
-    setIsSubmitting(true)
+    setAnswers(submittedAnswers);
+    setIsSubmitting(true);
 
     // Convert to Map and notify parent
-    const answersMap = new Map(Object.entries(submittedAnswers))
-    onAnswersChange(answersMap)
+    const answersMap = new Map(Object.entries(submittedAnswers));
+    onAnswersChange(answersMap);
 
     // The parent ActivityPlayer will handle scoring and submission
-    setIsSubmitting(false)
-  }
+    setIsSubmitting(false);
+  };
 
   // Show results view
   if (showResults) {
     // Calculate score
-    const totalQuestions = quiz.questions.length
-    let correctCount = 0
+    const totalQuestions = quiz.questions.length;
+    let correctCount = 0;
 
     quiz.questions.forEach((question) => {
       if (correctAnswers.has(question.question_id)) {
-        correctCount++
+        correctCount++;
       }
-    })
+    });
 
-    const score = Math.round((correctCount / totalQuestions) * 100)
+    const score = Math.round((correctCount / totalQuestions) * 100);
 
     // Simple results display for integration with ActivityPlayer
     // Full VocabularyQuizResults component requires complete result object from backend
@@ -103,17 +103,17 @@ export function VocabularyQuizPlayerAdapter({
           {correctCount} out of {totalQuestions} correct
         </p>
       </div>
-    )
+    );
   }
 
   // Handle answers change from VocabularyQuizPlayer
   // Memoized to prevent infinite loops
   const handleAnswersChange = useCallback(
     (newAnswers: Record<string, string>) => {
-      setAnswers(newAnswers)
+      setAnswers(newAnswers);
     },
     [],
-  )
+  );
 
   // Show quiz player
   return (
@@ -128,5 +128,5 @@ export function VocabularyQuizPlayerAdapter({
       onQuestionIndexChange={onQuestionIndexChange}
       onNavigationStateChange={onNavigationStateChange}
     />
-  )
+  );
 }

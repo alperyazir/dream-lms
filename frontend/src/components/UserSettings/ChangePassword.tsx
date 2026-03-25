@@ -1,19 +1,19 @@
-import { useMutation } from "@tanstack/react-query"
-import { KeyRound, Save } from "lucide-react"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import { type ApiError, type UpdatePassword, UsersService } from "@/client"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import useCustomToast from "@/hooks/useCustomToast"
-import { confirmPasswordRules, handleError, passwordRules } from "@/utils"
-import { PasswordInput } from "../ui/password-input"
+import { useMutation } from "@tanstack/react-query";
+import { KeyRound, Save } from "lucide-react";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import { type ApiError, type UpdatePassword, UsersService } from "@/client";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import useCustomToast from "@/hooks/useCustomToast";
+import { confirmPasswordRules, handleError, passwordRules } from "@/utils";
+import { PasswordInput } from "../ui/password-input";
 
 interface UpdatePasswordForm extends UpdatePassword {
-  confirm_password: string
+  confirm_password: string;
 }
 
 const ChangePassword = () => {
-  const { showSuccessToast } = useCustomToast()
+  const { showSuccessToast } = useCustomToast();
   const {
     register,
     handleSubmit,
@@ -23,23 +23,23 @@ const ChangePassword = () => {
   } = useForm<UpdatePasswordForm>({
     mode: "onBlur",
     criteriaMode: "all",
-  })
+  });
 
   const mutation = useMutation({
     mutationFn: (data: UpdatePassword) =>
       UsersService.updatePasswordMe({ requestBody: data }),
     onSuccess: () => {
-      showSuccessToast("Password updated successfully.")
-      reset()
+      showSuccessToast("Password updated successfully.");
+      reset();
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
-  })
+  });
 
   const onSubmit: SubmitHandler<UpdatePasswordForm> = async (data) => {
-    mutation.mutate(data)
-  }
+    mutation.mutate(data);
+  };
 
   return (
     <div className="space-y-6">
@@ -109,7 +109,7 @@ const ChangePassword = () => {
         </Button>
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default ChangePassword
+export default ChangePassword;

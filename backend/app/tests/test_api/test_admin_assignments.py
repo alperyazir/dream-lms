@@ -1,4 +1,5 @@
 """Tests for admin assignment management endpoints (Story 20.1)."""
+
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -10,11 +11,9 @@ from app.core.security import create_access_token
 from app.models import (
     Assignment,
     AssignmentStudent,
-    School,
     Student,
     Teacher,
     User,
-    UserRole,
 )
 
 

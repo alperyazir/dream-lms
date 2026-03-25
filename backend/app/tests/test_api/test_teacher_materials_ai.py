@@ -10,7 +10,7 @@ Tests cover:
 """
 
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -46,9 +46,7 @@ async def teacher_user_fixture(async_session: AsyncSession) -> User:
 
 
 @pytest_asyncio.fixture(name="teacher")
-async def teacher_fixture(
-    async_session: AsyncSession, teacher_user: User
-) -> Teacher:
+async def teacher_fixture(async_session: AsyncSession, teacher_user: User) -> Teacher:
     """Create a test teacher."""
     # Create a school first
     school = School(
@@ -220,7 +218,6 @@ class TestProcessableMaterialsListing:
 
         # Query only processable
         from sqlmodel import select
-        from sqlmodel.ext.asyncio.session import AsyncSession as SQLModelAsync
 
         query = select(TeacherMaterial).where(
             TeacherMaterial.teacher_id == teacher.id,

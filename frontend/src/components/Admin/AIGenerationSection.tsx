@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query"
-import { Sparkles } from "lucide-react"
+import { useQuery } from "@tanstack/react-query";
+import { Sparkles } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -12,29 +12,39 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
-import { OpenAPI } from "@/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { StatCard } from "@/components/dashboard/StatCard"
+} from "recharts";
+import { OpenAPI } from "@/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/dashboard/StatCard";
 
 interface AIGenerationProps {
-  period: string
+  period: string;
 }
 
 const COLORS = [
-  "#14b8a6", "#06b6d4", "#0ea5e9", "#6366f1",
-  "#8b5cf6", "#a855f7", "#ec4899", "#f43f5e",
-  "#f97316", "#eab308",
-]
+  "#14b8a6",
+  "#06b6d4",
+  "#0ea5e9",
+  "#6366f1",
+  "#8b5cf6",
+  "#a855f7",
+  "#ec4899",
+  "#f43f5e",
+  "#f97316",
+  "#eab308",
+];
 
 async function fetchAIUsage(period: string) {
-  const token = typeof OpenAPI.TOKEN === "function" ? await OpenAPI.TOKEN({} as any) : OpenAPI.TOKEN
+  const token =
+    typeof OpenAPI.TOKEN === "function"
+      ? await OpenAPI.TOKEN({} as any)
+      : OpenAPI.TOKEN;
   const res = await fetch(
     `${OpenAPI.BASE}/api/v1/admin/analytics/ai-usage?period=${period}`,
     { headers: { Authorization: `Bearer ${token}` } },
-  )
-  if (!res.ok) throw new Error("Failed to fetch AI usage")
-  return res.json()
+  );
+  if (!res.ok) throw new Error("Failed to fetch AI usage");
+  return res.json();
 }
 
 export function AIGenerationSection({ period }: AIGenerationProps) {
@@ -43,14 +53,14 @@ export function AIGenerationSection({ period }: AIGenerationProps) {
     queryFn: () => fetchAIUsage(period),
     staleTime: 60000,
     refetchInterval: 60000,
-  })
+  });
 
   if (error) {
     return (
       <div className="text-center py-8 text-red-500">
         Error loading AI generation stats.
       </div>
-    )
+    );
   }
 
   if (isLoading || !data) {
@@ -58,7 +68,7 @@ export function AIGenerationSection({ period }: AIGenerationProps) {
       <div className="text-center py-8 text-muted-foreground">
         Loading AI generation stats...
       </div>
-    )
+    );
   }
 
   return (
@@ -137,5 +147,5 @@ export function AIGenerationSection({ period }: AIGenerationProps) {
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router"
-import { Award, BookOpen, ExternalLink, TrendingUp, Users } from "lucide-react"
-import { useMemo } from "react"
+import { Link } from "@tanstack/react-router";
+import { Award, BookOpen, ExternalLink, TrendingUp, Users } from "lucide-react";
+import { useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -10,30 +10,24 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "recharts";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
-import { useClassAnalytics } from "@/hooks/useClassAnalytics"
+} from "@/components/ui/sheet";
+import { useClassAnalytics } from "@/hooks/useClassAnalytics";
 
-const BUCKET_COLORS = [
-  "#EF4444",
-  "#F97316",
-  "#EAB308",
-  "#22C55E",
-  "#14B8A6",
-]
+const BUCKET_COLORS = ["#EF4444", "#F97316", "#EAB308", "#22C55E", "#14B8A6"];
 
 interface ClassAnalyticsPanelProps {
-  classId: string | null
-  className?: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  classId: string | null;
+  className?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function ClassAnalyticsPanel({
@@ -45,24 +39,24 @@ export function ClassAnalyticsPanel({
   const { analytics, isLoading } = useClassAnalytics({
     classId: classId ?? "",
     period: "monthly",
-  })
+  });
 
   const scoreDistributionData = useMemo(() => {
-    if (!analytics) return []
+    if (!analytics) return [];
     return analytics.score_distribution.map((bucket, idx) => ({
       name: bucket.range_label,
       count: bucket.count,
       fill: BUCKET_COLORS[idx],
-    }))
-  }, [analytics])
+    }));
+  }, [analytics]);
 
   const activityTypeData = useMemo(() => {
-    if (!analytics) return []
+    if (!analytics) return [];
     return analytics.activity_type_performance.map((item) => ({
       name: item.activity_type,
       avgScore: item.avg_score,
-    }))
-  }, [analytics])
+    }));
+  }, [analytics]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -73,8 +67,8 @@ export function ClassAnalyticsPanel({
         <SheetHeader>
           <SheetTitle>
             {analytics
-              ? classDisplayName ?? "Classroom"
-              : classDisplayName ?? "Classroom"}
+              ? (classDisplayName ?? "Classroom")
+              : (classDisplayName ?? "Classroom")}
           </SheetTitle>
         </SheetHeader>
 
@@ -222,5 +216,5 @@ export function ClassAnalyticsPanel({
         )}
       </SheetContent>
     </Sheet>
-  )
+  );
 }

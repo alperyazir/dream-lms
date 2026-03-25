@@ -35,12 +35,10 @@ GRAMMAR_FB_DIFFICULTY_GUIDELINES = {
 - Simple sentences with basic tenses (present simple, past simple).
 - Clear context that makes the grammar rule obvious.
 - Distractors use common beginner mistakes.""",
-
     "medium": """## Medium (A2-B1):
 - Intermediate grammar (present perfect, comparatives, modals).
 - Context requires applying grammar rules more carefully.
 - Distractors are more plausible.""",
-
     "hard": """## Hard (B1-B2):
 - Advanced grammar (conditionals, passive voice, reported speech).
 - Complex sentences requiring nuanced understanding.
@@ -106,7 +104,12 @@ GRAMMAR_FB_JSON_SCHEMA: dict[str, Any] = {
                         "type": "string",
                     },
                 },
-                "required": ["sentence", "correct_answer", "grammar_topic", "difficulty"],
+                "required": [
+                    "sentence",
+                    "correct_answer",
+                    "grammar_topic",
+                    "difficulty",
+                ],
             },
         },
     },
@@ -135,7 +138,9 @@ def build_grammar_fill_blank_prompt(
     grammar_topics_str = ", ".join(GRAMMAR_TOPICS)
 
     if mode == "word_bank":
-        mode_instruction = "Provide exactly 4 options in word_bank (1 correct + 3 distractors)."
+        mode_instruction = (
+            "Provide exactly 4 options in word_bank (1 correct + 3 distractors)."
+        )
     else:
         mode_instruction = "Do NOT provide word_bank. Student types the answer freely."
 

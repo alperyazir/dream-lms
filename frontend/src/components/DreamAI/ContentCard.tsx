@@ -5,21 +5,21 @@
  * Shows activity type, name, source, item count, dates, and usage stats.
  */
 
-import { BookOpen, FileText, Pencil } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { BookOpen, FileText, Pencil } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getActivityTypeColorClasses,
   getActivityTypeConfig,
-} from "@/lib/activityTypeConfig"
-import type { ContentItem } from "@/types/content-library"
+} from "@/lib/activityTypeConfig";
+import type { ContentItem } from "@/types/content-library";
 
 interface ContentCardProps {
-  content: ContentItem
-  onPreview: (content: ContentItem) => void
-  onEdit: (content: ContentItem) => void
-  onUse: (content: ContentItem) => void
+  content: ContentItem;
+  onPreview: (content: ContentItem) => void;
+  onEdit: (content: ContentItem) => void;
+  onUse: (content: ContentItem) => void;
 }
 
 export function ContentCard({
@@ -28,19 +28,19 @@ export function ContentCard({
   onEdit,
   onUse,
 }: ContentCardProps) {
-  const config = getActivityTypeConfig(content.activity_type)
-  const colorClasses = getActivityTypeColorClasses(config.color)
-  const IconComponent = config.icon
+  const config = getActivityTypeConfig(content.activity_type);
+  const colorClasses = getActivityTypeColorClasses(config.color);
+  const IconComponent = config.icon;
 
   // Format date for display
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })
-  }
+    });
+  };
 
   // Get source display
   const getSourceDisplay = () => {
@@ -50,15 +50,15 @@ export function ContentCard({
           <BookOpen className="h-4 w-4" />
           <span>{content.book_title}</span>
         </div>
-      )
+      );
     }
     return (
       <div className="flex items-center gap-1 text-sm text-muted-foreground">
         <FileText className="h-4 w-4" />
         <span>{content.material_name || "My Material"}</span>
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <Card className="flex h-full flex-col transition-shadow hover:shadow-lg">
@@ -134,5 +134,5 @@ export function ContentCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

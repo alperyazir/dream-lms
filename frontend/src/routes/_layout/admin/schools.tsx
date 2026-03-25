@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
@@ -10,20 +10,20 @@ import {
   Search,
   Trash2,
   X,
-} from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AdminService,
   type SchoolCreate,
   type SchoolPublic,
   type SchoolUpdate,
-} from "@/client"
-import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/client";
+import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -31,16 +31,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -48,8 +48,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/table";
+import useCustomToast from "@/hooks/useCustomToast";
 
 export const Route = createFileRoute("/_layout/admin/schools")({
   component: () => (
@@ -57,52 +57,52 @@ export const Route = createFileRoute("/_layout/admin/schools")({
       <AdminSchools />
     </ErrorBoundary>
   ),
-})
+});
 
 function AdminSchools() {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const PAGE_SIZE = 20
-  const [searchQuery, setSearchQuery] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const PAGE_SIZE = 20;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<SchoolPublic | null>(
     null,
-  )
+  );
   const [schoolToDelete, setSchoolToDelete] = useState<{
-    id: string
-    name: string
-  } | null>(null)
+    id: string;
+    name: string;
+  } | null>(null);
   const [newSchool, setNewSchool] = useState<SchoolCreate>({
     name: "",
     address: "",
     contact_info: "",
     dcs_publisher_id: 0,
-  })
+  });
   const [editSchool, setEditSchool] = useState<SchoolUpdate>({
     name: "",
     address: "",
     contact_info: "",
     dcs_publisher_id: 0,
-  })
+  });
 
   // Debounce search for server-side filtering
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery)
-      setCurrentPage(1)
-      setSelectedIds(new Set())
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+      setSelectedIds(new Set());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch schools from API (server-side pagination)
-  const skip = (currentPage - 1) * PAGE_SIZE
+  const skip = (currentPage - 1) * PAGE_SIZE;
   const {
     data: schoolsResponse,
     isLoading,
@@ -115,63 +115,63 @@ function AdminSchools() {
         limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
       }),
-  })
-  const schools = schoolsResponse?.items ?? []
-  const totalSchools = schoolsResponse?.total ?? 0
-  const totalPages = Math.ceil(totalSchools / PAGE_SIZE)
+  });
+  const schools = schoolsResponse?.items ?? [];
+  const totalSchools = schoolsResponse?.total ?? 0;
+  const totalPages = Math.ceil(totalSchools / PAGE_SIZE);
 
   // Fetch publishers for dropdown
   const { data: allPublishers = [] } = useQuery({
     queryKey: ["publishers"],
     queryFn: () => AdminService.listPublishers(),
-  })
+  });
 
   // Deduplicate publishers by name (keep first occurrence)
   const publishers = useMemo(() => {
-    const seen = new Set<string>()
+    const seen = new Set<string>();
     return allPublishers.filter((publisher) => {
       if (seen.has(publisher.name)) {
-        return false
+        return false;
       }
-      seen.add(publisher.name)
-      return true
-    })
-  }, [allPublishers])
+      seen.add(publisher.name);
+      return true;
+    });
+  }, [allPublishers]);
 
   // Helper function to extract error message from API error
   const getErrorMessage = (error: any): string => {
     if (typeof error.body?.detail === "string") {
-      return error.body.detail
+      return error.body.detail;
     }
     if (Array.isArray(error.body?.detail)) {
       // Validation errors - extract messages
-      return error.body.detail.map((err: any) => err.msg).join(", ")
+      return error.body.detail.map((err: any) => err.msg).join(", ");
     }
     if (error.message) {
-      return error.message
+      return error.message;
     }
-    return "An unexpected error occurred. Please try again."
-  }
+    return "An unexpected error occurred. Please try again.";
+  };
 
   // Create school mutation
   const createSchoolMutation = useMutation({
     mutationFn: (data: SchoolCreate) =>
       AdminService.createSchool({ requestBody: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schools"] })
-      setIsAddDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      setIsAddDialogOpen(false);
       setNewSchool({
         name: "",
         address: "",
         contact_info: "",
         dcs_publisher_id: 0,
-      })
-      showSuccessToast("School created successfully!")
+      });
+      showSuccessToast("School created successfully!");
     },
     onError: (error: any) => {
-      showErrorToast(getErrorMessage(error))
+      showErrorToast(getErrorMessage(error));
     },
-  })
+  });
 
   // Update school mutation
   const updateSchoolMutation = useMutation({
@@ -179,124 +179,124 @@ function AdminSchools() {
       schoolId,
       data,
     }: {
-      schoolId: string
-      data: SchoolUpdate
+      schoolId: string;
+      data: SchoolUpdate;
     }) => AdminService.updateSchool({ schoolId, requestBody: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schools"] })
-      setIsEditDialogOpen(false)
-      setSelectedSchool(null)
-      showSuccessToast("School updated successfully!")
+      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      setIsEditDialogOpen(false);
+      setSelectedSchool(null);
+      showSuccessToast("School updated successfully!");
     },
     onError: (error: any) => {
-      showErrorToast(getErrorMessage(error))
+      showErrorToast(getErrorMessage(error));
     },
-  })
+  });
 
   // Delete school mutation
   const deleteSchoolMutation = useMutation({
     mutationFn: (schoolId: string) => AdminService.deleteSchool({ schoolId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schools"] })
-      showSuccessToast("School deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      showSuccessToast("School deleted successfully!");
     },
     onError: (error: any) => {
-      showErrorToast(getErrorMessage(error))
+      showErrorToast(getErrorMessage(error));
     },
-  })
+  });
 
   const handleAddSchool = () => {
     if (!newSchool.name || !newSchool.dcs_publisher_id) {
-      showErrorToast("Please fill in all required fields")
-      return
+      showErrorToast("Please fill in all required fields");
+      return;
     }
-    createSchoolMutation.mutate(newSchool)
-  }
+    createSchoolMutation.mutate(newSchool);
+  };
 
   const handleEditSchool = (school: SchoolPublic) => {
-    setSelectedSchool(school)
+    setSelectedSchool(school);
     setEditSchool({
       name: school.name,
       address: school.address || "",
       contact_info: school.contact_info || "",
       dcs_publisher_id: school.dcs_publisher_id,
-    })
-    setIsEditDialogOpen(true)
-  }
+    });
+    setIsEditDialogOpen(true);
+  };
 
   const handleUpdateSchool = () => {
-    if (!selectedSchool) return
+    if (!selectedSchool) return;
     if (!editSchool.name || !editSchool.dcs_publisher_id) {
-      showErrorToast("Please fill in all required fields")
-      return
+      showErrorToast("Please fill in all required fields");
+      return;
     }
     updateSchoolMutation.mutate({
       schoolId: selectedSchool.id,
       data: editSchool,
-    })
-  }
+    });
+  };
 
   const handleDeleteSchool = (schoolId: string, schoolName: string) => {
-    setSchoolToDelete({ id: schoolId, name: schoolName })
-    setIsDeleteDialogOpen(true)
-  }
+    setSchoolToDelete({ id: schoolId, name: schoolName });
+    setIsDeleteDialogOpen(true);
+  };
 
   const confirmDeleteSchool = () => {
     if (schoolToDelete) {
-      deleteSchoolMutation.mutate(schoolToDelete.id)
-      setSchoolToDelete(null)
+      deleteSchoolMutation.mutate(schoolToDelete.id);
+      setSchoolToDelete(null);
     }
-  }
+  };
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: (ids: string[]) =>
       Promise.all(ids.map((id) => AdminService.deleteSchool({ schoolId: id }))),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schools"] })
-      setSelectedIds(new Set())
-      setIsBulkDeleteDialogOpen(false)
-      showSuccessToast(`Successfully deleted ${selectedIds.size} school(s)`)
+      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      setSelectedIds(new Set());
+      setIsBulkDeleteDialogOpen(false);
+      showSuccessToast(`Successfully deleted ${selectedIds.size} school(s)`);
     },
     onError: () => {
-      showErrorToast("Failed to delete some schools. Please try again.")
+      showErrorToast("Failed to delete some schools. Please try again.");
     },
-  })
+  });
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(schools.map((s) => s.id)))
+      setSelectedIds(new Set(schools.map((s) => s.id)));
     } else {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     }
-  }
+  };
 
   const handleSelect = (id: string, checked: boolean) => {
-    const newSelected = new Set(selectedIds)
+    const newSelected = new Set(selectedIds);
     if (checked) {
-      newSelected.add(id)
+      newSelected.add(id);
     } else {
-      newSelected.delete(id)
+      newSelected.delete(id);
     }
-    setSelectedIds(newSelected)
-  }
+    setSelectedIds(newSelected);
+  };
 
   const handleBulkDelete = () => {
     if (selectedIds.size > 0) {
-      setIsBulkDeleteDialogOpen(true)
+      setIsBulkDeleteDialogOpen(true);
     }
-  }
+  };
 
   const confirmBulkDelete = () => {
-    bulkDeleteMutation.mutate(Array.from(selectedIds))
-  }
+    bulkDeleteMutation.mutate(Array.from(selectedIds));
+  };
 
   // Get publisher name by DCS publisher id
   const getPublisherName = (dcsPublisherId: number) => {
-    const publisher = publishers.find((p) => p.id === dcsPublisherId)
-    return publisher?.name || "Unknown"
-  }
+    const publisher = publishers.find((p) => p.id === dcsPublisherId);
+    return publisher?.name || "Unknown";
+  };
 
   if (error) {
     return (
@@ -305,7 +305,7 @@ function AdminSchools() {
           Error loading schools. Please try again later.
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -486,8 +486,7 @@ function AdminSchools() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {skip + 1} to{" "}
-            {Math.min(skip + PAGE_SIZE, totalSchools)} of{" "}
+            Showing {skip + 1} to {Math.min(skip + PAGE_SIZE, totalSchools)} of{" "}
             {totalSchools}
           </div>
           <div className="flex items-center gap-2">
@@ -495,8 +494,8 @@ function AdminSchools() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p - 1)
-                setSelectedIds(new Set())
+                setCurrentPage((p) => p - 1);
+                setSelectedIds(new Set());
               }}
               disabled={currentPage === 1}
             >
@@ -510,8 +509,8 @@ function AdminSchools() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p + 1)
-                setSelectedIds(new Set())
+                setCurrentPage((p) => p + 1);
+                setSelectedIds(new Set());
               }}
               disabled={currentPage === totalPages}
             >
@@ -759,5 +758,5 @@ function AdminSchools() {
         isLoading={bulkDeleteMutation.isPending}
       />
     </div>
-  )
+  );
 }

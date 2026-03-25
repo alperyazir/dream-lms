@@ -5,12 +5,12 @@
  * Displays color-coded CEFR proficiency level badges.
  */
 
-import { Badge } from "@/components/ui/badge"
-import type { CEFRLevel } from "@/types/vocabulary-explorer"
+import { Badge } from "@/components/ui/badge";
+import type { CEFRLevel } from "@/types/vocabulary-explorer";
 
 export interface CEFRBadgeProps {
-  level: CEFRLevel
-  size?: "sm" | "default" | "lg"
+  level: CEFRLevel;
+  size?: "sm" | "default" | "lg";
 }
 
 /**
@@ -19,8 +19,8 @@ export interface CEFRBadgeProps {
 const CEFR_CONFIG: Record<
   CEFRLevel,
   {
-    label: string
-    className: string
+    label: string;
+    className: string;
   }
 > = {
   A1: {
@@ -51,7 +51,7 @@ const CEFR_CONFIG: Record<
     label: "C2",
     className: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
   },
-}
+};
 
 /**
  * CEFR Level Badge
@@ -60,7 +60,7 @@ const CEFR_CONFIG: Record<
  * Colors range from green (A1 - beginner) to dark red (C2 - proficient).
  */
 export function CEFRBadge({ level, size = "default" }: CEFRBadgeProps) {
-  const config = CEFR_CONFIG[level]
+  const config = CEFR_CONFIG[level];
 
   return (
     <Badge
@@ -75,5 +75,5 @@ export function CEFRBadge({ level, size = "default" }: CEFRBadgeProps) {
     >
       {config.label}
     </Badge>
-  )
+  );
 }

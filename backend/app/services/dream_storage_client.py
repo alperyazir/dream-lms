@@ -96,10 +96,7 @@ class BookRead(BaseModel):
         """Get activity_details with only valid integer values."""
         if not self.activity_details:
             return {}
-        return {
-            k: v for k, v in self.activity_details.items()
-            if isinstance(v, int)
-        }
+        return {k: v for k, v in self.activity_details.items() if isinstance(v, int)}
 
 
 class PublisherRead(BaseModel):
@@ -148,7 +145,8 @@ class DreamCentralStorageClient:
         """Initialize the Dream Central Storage client."""
         # Configure connection limits
         limits = httpx.Limits(
-            max_connections=10, max_keepalive_connections=5  # Max concurrent connections  # Reuse connections
+            max_connections=10,
+            max_keepalive_connections=5,  # Max concurrent connections  # Reuse connections
         )
 
         # Configure timeouts
@@ -226,7 +224,9 @@ class DreamCentralStorageClient:
             self._token = token_response.access_token
             # Refresh 5 minutes before expiry (5 * 60 = 300 seconds)
             expiry_seconds = settings.DREAM_CENTRAL_STORAGE_TOKEN_EXPIRY - 300
-            self._token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expiry_seconds)
+            self._token_expires_at = datetime.now(timezone.utc) + timedelta(
+                seconds=expiry_seconds
+            )
 
             logger.info("Authentication successful, token cached")
             return token_response
@@ -235,7 +235,9 @@ class DreamCentralStorageClient:
             if e.response.status_code == 401:
                 logger.error("Authentication failed: invalid credentials")
                 raise DreamStorageAuthError("Invalid credentials") from e
-            raise DreamStorageServerError(f"Server error during authentication: {e}") from e
+            raise DreamStorageServerError(
+                f"Server error during authentication: {e}"
+            ) from e
         except Exception as e:
             logger.error(f"Authentication error: {e}")
             raise DreamStorageAuthError(f"Authentication failed: {e}") from e
@@ -367,34 +369,50 @@ class DreamCentralStorageClient:
 
         while attempt <= max_retries:
             try:
-                logger.debug(f"API request: {method} {url} (attempt {attempt + 1}/{max_retries + 1})")
+                logger.debug(
+                    f"API request: {method} {url} (attempt {attempt + 1}/{max_retries + 1})"
+                )
 
                 start_time = datetime.now(timezone.utc)
-                response = await self._client.request(method, url, headers=headers, **kwargs)
-                elapsed_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                response = await self._client.request(
+                    method, url, headers=headers, **kwargs
+                )
+                elapsed_ms = (
+                    datetime.now(timezone.utc) - start_time
+                ).total_seconds() * 1000
 
-                logger.debug(f"API response: {response.status_code} in {elapsed_ms:.0f}ms")
+                logger.debug(
+                    f"API response: {response.status_code} in {elapsed_ms:.0f}ms"
+                )
 
                 # Handle specific status codes
                 if response.status_code == 401:
                     if self._use_api_key and not url.startswith("/storage/"):
-                        raise DreamStorageAuthError("API key authentication failed (401). Check DREAM_CENTRAL_STORAGE_API_KEY.")
+                        raise DreamStorageAuthError(
+                            "API key authentication failed (401). Check DREAM_CENTRAL_STORAGE_API_KEY."
+                        )
                     # Unauthorized - refresh JWT token and retry once
                     if attempt == 0:
                         logger.warning("Received 401, refreshing token...")
                         self._token = None
                         self._token_expires_at = None
                         token_response = await self.authenticate()
-                        headers["Authorization"] = f"Bearer {token_response.access_token}"
+                        headers["Authorization"] = (
+                            f"Bearer {token_response.access_token}"
+                        )
                         attempt += 1
                         continue
                     else:
-                        raise DreamStorageAuthError("Authentication failed after token refresh")
+                        raise DreamStorageAuthError(
+                            "Authentication failed after token refresh"
+                        )
 
                 elif response.status_code == 403:
                     # Forbidden - don't retry
                     logger.error(f"Forbidden: {response.text}")
-                    raise DreamStorageForbiddenError(f"Insufficient permissions: {response.text}")
+                    raise DreamStorageForbiddenError(
+                        f"Insufficient permissions: {response.text}"
+                    )
 
                 elif response.status_code == 404:
                     # Not found - don't retry
@@ -420,7 +438,9 @@ class DreamCentralStorageClient:
                         attempt += 1
                         continue
                     else:
-                        logger.error(f"Server error after {max_retries} retries: {response.text}")
+                        logger.error(
+                            f"Server error after {max_retries} retries: {response.text}"
+                        )
                         raise DreamStorageServerError(
                             f"Server error {response.status_code}: {response.text}"
                         )
@@ -433,7 +453,9 @@ class DreamCentralStorageClient:
                 # Network timeout - retry with exponential backoff
                 if attempt < max_retries:
                     delay = 1 * (2**attempt)
-                    logger.warning(f"Request timeout, retry {attempt + 1}/{max_retries} after {delay}s")
+                    logger.warning(
+                        f"Request timeout, retry {attempt + 1}/{max_retries} after {delay}s"
+                    )
                     await asyncio.sleep(delay)
                     attempt += 1
                     continue
@@ -445,7 +467,9 @@ class DreamCentralStorageClient:
                 # Network error - retry with exponential backoff
                 if attempt < max_retries:
                     delay = 1 * (2**attempt)
-                    logger.warning(f"Network error, retry {attempt + 1}/{max_retries} after {delay}s")
+                    logger.warning(
+                        f"Network error, retry {attempt + 1}/{max_retries} after {delay}s"
+                    )
                     await asyncio.sleep(delay)
                     attempt += 1
                     continue
@@ -471,7 +495,9 @@ class DreamCentralStorageClient:
             ValueError: If path contains path traversal attempts
         """
         if ".." in asset_path:
-            raise ValueError("Invalid asset path: path traversal not allowed (contains '..')")
+            raise ValueError(
+                "Invalid asset path: path traversal not allowed (contains '..')"
+            )
         if asset_path.startswith("/"):
             raise ValueError("Invalid asset path: absolute paths not allowed")
 
@@ -596,7 +622,9 @@ class DreamCentralStorageClient:
         except DreamStorageNotFoundError:
             return None
         except Exception as e:
-            logger.warning(f"Failed to get presigned URL for {publisher}/{book_name}/{path}: {e}")
+            logger.warning(
+                f"Failed to get presigned URL for {publisher}/{book_name}/{path}: {e}"
+            )
             return None
 
     async def get_bulk_ai_summary(self, book_ids: list[int]) -> list[dict[str, Any]]:
@@ -685,7 +713,7 @@ class DreamCentralStorageClient:
                 # Strip the book prefix to get relative path
                 # e.g., "Universal ELT/SwitchtoCLIL/video/1.mp4" -> "video/1.mp4"
                 if node_path.startswith(book_prefix):
-                    relative_path = node_path[len(book_prefix):]
+                    relative_path = node_path[len(book_prefix) :]
                 else:
                     relative_path = node_path
                 results.append(relative_path)
@@ -715,10 +743,14 @@ class DreamCentralStorageClient:
         """
         self._validate_asset_path(asset_path)
         base_url = settings.DREAM_CENTRAL_STORAGE_URL
-        url = f"{base_url}/storage/books/{publisher}/{book_name}/object?path={asset_path}"
+        url = (
+            f"{base_url}/storage/books/{publisher}/{book_name}/object?path={asset_path}"
+        )
         return url
 
-    async def download_asset(self, publisher: str, book_name: str, asset_path: str) -> bytes:
+    async def download_asset(
+        self, publisher: str, book_name: str, asset_path: str
+    ) -> bytes:
         """
         Download a book asset file.
 
@@ -791,7 +823,9 @@ class DreamCentralStorageClient:
                     total_size = int(content_range.split("/")[1])
                     return total_size
                 except (IndexError, ValueError) as e:
-                    raise DreamStorageError(f"Invalid Content-Range header: {content_range}") from e
+                    raise DreamStorageError(
+                        f"Invalid Content-Range header: {content_range}"
+                    ) from e
 
             # Fallback to Content-Length if no Content-Range
             content_length = response.headers.get("Content-Length")
@@ -845,7 +879,9 @@ class DreamCentralStorageClient:
         timeout = httpx.Timeout(connect=5.0, read=120.0, write=10.0, pool=5.0)
 
         async with httpx.AsyncClient(timeout=timeout) as client:
-            async with client.stream("GET", url, params=params, headers=headers) as response:
+            async with client.stream(
+                "GET", url, params=params, headers=headers
+            ) as response:
                 if response.status_code == 404:
                     raise DreamStorageNotFoundError(f"Asset not found: {asset_path}")
 
@@ -853,15 +889,14 @@ class DreamCentralStorageClient:
                     raise DreamStorageError("Range not satisfiable")
 
                 if response.status_code not in (200, 206):
-                    raise DreamStorageError(f"Unexpected status: {response.status_code}")
+                    raise DreamStorageError(
+                        f"Unexpected status: {response.status_code}"
+                    )
 
                 async for chunk in response.aiter_bytes(chunk_size):
                     yield chunk
 
-
-    async def list_videos(
-        self, publisher: str, book_name: str
-    ) -> list[dict[str, Any]]:
+    async def list_videos(self, publisher: str, book_name: str) -> list[dict[str, Any]]:
         """
         List available video files in a book's DCS storage.
 
@@ -900,7 +935,9 @@ class DreamCentralStorageClient:
 
                 # Get file size
                 try:
-                    size_bytes = await self.get_asset_size(publisher, book_name, file_path)
+                    size_bytes = await self.get_asset_size(
+                        publisher, book_name, file_path
+                    )
                 except Exception as e:
                     logger.warning(f"Could not get size for {file_path}: {e}")
                     size_bytes = 0
@@ -958,9 +995,7 @@ class DreamCentralStorageClient:
         url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/upload"
 
         # Prepare multipart form data
-        files = {
-            "file": (filename, file_content, content_type)
-        }
+        files = {"file": (filename, file_content, content_type)}
 
         # Use longer timeout for uploads
         timeout = httpx.Timeout(connect=5.0, read=120.0, write=120.0, pool=5.0)
@@ -973,7 +1008,9 @@ class DreamCentralStorageClient:
             )
 
             if response.status_code == 404:
-                raise DreamStorageNotFoundError(f"Teacher storage not found: {teacher_id}")
+                raise DreamStorageNotFoundError(
+                    f"Teacher storage not found: {teacher_id}"
+                )
 
             if response.status_code == 413:
                 raise DreamStorageError("File too large for storage")
@@ -994,7 +1031,9 @@ class DreamCentralStorageClient:
             storage_path = result.get("path")
             if not storage_path:
                 # Fallback for older API versions
-                storage_path = f"{teacher_id}/materials/{result.get('filename', 'unknown')}"
+                storage_path = (
+                    f"{teacher_id}/materials/{result.get('filename', 'unknown')}"
+                )
 
             logger.info(f"Uploaded teacher material: {storage_path}")
             return storage_path
@@ -1107,13 +1146,17 @@ class DreamCentralStorageClient:
         async with httpx.AsyncClient(timeout=timeout) as client:
             async with client.stream("GET", url, headers=headers) as stream_response:
                 if stream_response.status_code == 404:
-                    raise DreamStorageNotFoundError(f"Material not found: {storage_path}")
+                    raise DreamStorageNotFoundError(
+                        f"Material not found: {storage_path}"
+                    )
 
                 if stream_response.status_code == 416:
                     raise DreamStorageError("Range not satisfiable")
 
                 if stream_response.status_code not in (200, 206):
-                    raise DreamStorageError(f"Unexpected status: {stream_response.status_code}")
+                    raise DreamStorageError(
+                        f"Unexpected status: {stream_response.status_code}"
+                    )
 
                 async for chunk in stream_response.aiter_bytes(chunk_size):
                     yield chunk
@@ -1241,7 +1284,9 @@ class DreamCentralStorageClient:
             return {
                 "path": storage_path,
                 "size": size,
-                "content_type": response.headers.get("content-type", "application/octet-stream"),
+                "content_type": response.headers.get(
+                    "content-type", "application/octet-stream"
+                ),
                 "expires_in_seconds": expires_minutes * 60,
             }
 
@@ -1398,7 +1443,9 @@ class DreamCentralStorageClient:
         """
         valid_platforms = {"mac", "win", "win7-8", "linux"}
         if platform not in valid_platforms:
-            raise ValueError(f"Invalid platform: {platform}. Must be one of: {valid_platforms}")
+            raise ValueError(
+                f"Invalid platform: {platform}. Must be one of: {valid_platforms}"
+            )
 
         try:
             response = await self._make_request(

@@ -6,8 +6,8 @@
  * select the correct word matching each English definition.
  */
 
-import { ChevronLeft, ChevronRight, Volume2 } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { ChevronLeft, ChevronRight, Volume2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,33 +17,33 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/utils"
-import type { QuestionNavigationState } from "@/types/activity-player"
-import type { VocabularyQuizPublic } from "@/types/vocabulary-quiz"
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import type { QuestionNavigationState } from "@/types/activity-player";
+import type { VocabularyQuizPublic } from "@/types/vocabulary-quiz";
 
 interface VocabularyQuizPlayerProps {
   /** The quiz to display */
-  quiz: VocabularyQuizPublic
+  quiz: VocabularyQuizPublic;
   /** Callback when quiz is submitted */
-  onSubmit: (answers: Record<string, string>) => void
+  onSubmit: (answers: Record<string, string>) => void;
   /** Whether submission is in progress */
-  isSubmitting?: boolean
+  isSubmitting?: boolean;
   /** Initial answers (for resuming) */
-  initialAnswers?: Record<string, string>
+  initialAnswers?: Record<string, string>;
   /** Hide the submit button (when embedded in ActivityPlayer which has its own submit) */
-  hideSubmitButton?: boolean
+  hideSubmitButton?: boolean;
   /** Callback when answers change (for parent to track progress) */
-  onAnswersChange?: (answers: Record<string, string>) => void
+  onAnswersChange?: (answers: Record<string, string>) => void;
   /** External control: current question index (when controlled by parent) */
-  currentQuestionIndex?: number
+  currentQuestionIndex?: number;
   /** External control: callback when current question should change */
-  onQuestionIndexChange?: (index: number) => void
+  onQuestionIndexChange?: (index: number) => void;
   /** Callback to expose navigation state to parent */
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 export function VocabularyQuizPlayer({
@@ -58,83 +58,84 @@ export function VocabularyQuizPlayer({
   onNavigationStateChange,
 }: VocabularyQuizPlayerProps) {
   // Internal current question index (used when not externally controlled)
-  const [internalIndex, setInternalIndex] = useState(0)
+  const [internalIndex, setInternalIndex] = useState(0);
   // Use external index if provided, otherwise internal
-  const isExternallyControlled = currentQuestionIndex !== undefined
+  const isExternallyControlled = currentQuestionIndex !== undefined;
   const currentIndex = isExternallyControlled
     ? currentQuestionIndex
-    : internalIndex
+    : internalIndex;
 
   // Setter that works for both internal and external control
   const setCurrentIndex = useCallback(
     (index: number) => {
       if (isExternallyControlled && onQuestionIndexChange) {
-        onQuestionIndexChange(index)
+        onQuestionIndexChange(index);
       } else {
-        setInternalIndex(index)
+        setInternalIndex(index);
       }
     },
     [isExternallyControlled, onQuestionIndexChange],
-  )
+  );
 
   // Selected answers map: questionId -> selected option
-  const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers)
+  const [answers, setAnswers] =
+    useState<Record<string, string>>(initialAnswers);
   // Confirm dialog visibility
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   // Audio playing state
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const totalQuestions = quiz.questions.length
-  const currentQuestion = quiz.questions[currentIndex]
+  const totalQuestions = quiz.questions.length;
+  const currentQuestion = quiz.questions[currentIndex];
 
   // Store callbacks in refs to avoid infinite loops
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
-  const onNavigationStateChangeRef = useRef(onNavigationStateChange)
-  onNavigationStateChangeRef.current = onNavigationStateChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
+  const onNavigationStateChangeRef = useRef(onNavigationStateChange);
+  onNavigationStateChangeRef.current = onNavigationStateChange;
 
   // Notify parent when answers change
   useEffect(() => {
-    const callback = onAnswersChangeRef.current
+    const callback = onAnswersChangeRef.current;
     if (callback) {
-      callback(answers)
+      callback(answers);
     }
-  }, [answers])
+  }, [answers]);
 
   // Track previous navigation state to avoid unnecessary updates
-  const prevNavStateRef = useRef<string>("")
+  const prevNavStateRef = useRef<string>("");
 
   // Notify parent of navigation state changes
   useEffect(() => {
-    const callback = onNavigationStateChangeRef.current
+    const callback = onNavigationStateChangeRef.current;
     if (callback) {
       // Calculate answered indices based on question order
-      const answeredIndices: number[] = []
-      const answeredItemIds: string[] = []
+      const answeredIndices: number[] = [];
+      const answeredItemIds: string[] = [];
       quiz.questions.forEach((q, index) => {
         if (answers[q.question_id] !== undefined) {
-          answeredIndices.push(index)
-          answeredItemIds.push(q.question_id)
+          answeredIndices.push(index);
+          answeredItemIds.push(q.question_id);
         }
-      })
+      });
 
       // Only call if state actually changed
-      const stateKey = `${currentIndex}-${totalQuestions}-${answeredItemIds.join(",")}`
+      const stateKey = `${currentIndex}-${totalQuestions}-${answeredItemIds.join(",")}`;
       if (prevNavStateRef.current !== stateKey) {
-        prevNavStateRef.current = stateKey
+        prevNavStateRef.current = stateKey;
         callback({
           currentIndex,
           totalItems: totalQuestions,
           answeredItemIds,
           answeredIndices,
-        })
+        });
       }
     }
-  }, [currentIndex, totalQuestions, answers, quiz.questions])
-  const answeredCount = Object.keys(answers).length
-  const allAnswered = answeredCount === totalQuestions
-  const progressPercent = (answeredCount / totalQuestions) * 100
+  }, [currentIndex, totalQuestions, answers, quiz.questions]);
+  const answeredCount = Object.keys(answers).length;
+  const allAnswered = answeredCount === totalQuestions;
+  const progressPercent = (answeredCount / totalQuestions) * 100;
 
   // Handle option selection
   const handleSelectOption = useCallback(
@@ -142,102 +143,105 @@ export function VocabularyQuizPlayer({
       setAnswers((prev) => ({
         ...prev,
         [questionId]: option,
-      }))
+      }));
     },
     [],
-  )
+  );
 
   // Navigate to previous question
   const handlePrevious = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
+      setCurrentIndex(currentIndex - 1);
     }
-  }, [currentIndex, setCurrentIndex])
+  }, [currentIndex, setCurrentIndex]);
 
   // Navigate to next question
   const handleNext = useCallback(() => {
     if (currentIndex < totalQuestions - 1) {
-      setCurrentIndex(currentIndex + 1)
+      setCurrentIndex(currentIndex + 1);
     }
-  }, [currentIndex, totalQuestions, setCurrentIndex])
+  }, [currentIndex, totalQuestions, setCurrentIndex]);
 
   // Play audio for a word
-  const handlePlayAudio = useCallback((audioUrl: string | null, audioData?: { audio_base64?: string }) => {
-    const src = audioData?.audio_base64
-      ? `data:audio/mpeg;base64,${audioData.audio_base64}`
-      : audioUrl
-    if (!src) return
+  const handlePlayAudio = useCallback(
+    (audioUrl: string | null, audioData?: { audio_base64?: string }) => {
+      const src = audioData?.audio_base64
+        ? `data:audio/mpeg;base64,${audioData.audio_base64}`
+        : audioUrl;
+      if (!src) return;
 
-    // Stop current audio if playing
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current = null
-    }
+      // Stop current audio if playing
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
 
-    const audio = new Audio(src)
-    audioRef.current = audio
-    setPlayingAudio(audioUrl)
+      const audio = new Audio(src);
+      audioRef.current = audio;
+      setPlayingAudio(audioUrl);
 
-    audio.onended = () => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    }
+      audio.onended = () => {
+        setPlayingAudio(null);
+        audioRef.current = null;
+      };
 
-    audio.onerror = () => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    }
+      audio.onerror = () => {
+        setPlayingAudio(null);
+        audioRef.current = null;
+      };
 
-    audio.play().catch(() => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    })
-  }, [])
+      audio.play().catch(() => {
+        setPlayingAudio(null);
+        audioRef.current = null;
+      });
+    },
+    [],
+  );
 
   // Handle submit button click
   const handleSubmitClick = useCallback(() => {
     if (allAnswered) {
-      setShowConfirmDialog(true)
+      setShowConfirmDialog(true);
     }
-  }, [allAnswered])
+  }, [allAnswered]);
 
   // Confirm and submit
   const handleConfirmSubmit = useCallback(() => {
-    setShowConfirmDialog(false)
-    onSubmit(answers)
-  }, [answers, onSubmit])
+    setShowConfirmDialog(false);
+    onSubmit(answers);
+  }, [answers, onSubmit]);
 
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current = null
+        audioRef.current.pause();
+        audioRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
-        handlePrevious()
+        handlePrevious();
       } else if (e.key === "ArrowRight") {
-        handleNext()
+        handleNext();
       } else if (e.key >= "1" && e.key <= "4") {
-        const optionIndex = parseInt(e.key, 10) - 1
+        const optionIndex = parseInt(e.key, 10) - 1;
         if (currentQuestion.options[optionIndex]) {
           handleSelectOption(
             currentQuestion.question_id,
             currentQuestion.options[optionIndex],
-          )
+          );
         }
       }
-    }
+    };
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handlePrevious, handleNext, handleSelectOption, currentQuestion])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handlePrevious, handleNext, handleSelectOption, currentQuestion]);
 
   return (
     <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
@@ -260,12 +264,18 @@ export function VocabularyQuizPlayer({
       <Card className="w-full shadow-lg">
         <CardContent className="p-6">
           {/* Audio button - only show when a valid audio URL is available */}
-          {(currentQuestion.audio_url || currentQuestion.audio_data?.audio_base64) && (
+          {(currentQuestion.audio_url ||
+            currentQuestion.audio_data?.audio_base64) && (
             <div className="mb-4 flex items-center justify-end">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handlePlayAudio(currentQuestion.audio_url, currentQuestion.audio_data)}
+                onClick={() =>
+                  handlePlayAudio(
+                    currentQuestion.audio_url,
+                    currentQuestion.audio_data,
+                  )
+                }
                 disabled={playingAudio === currentQuestion.audio_url}
                 className="h-8 w-8"
                 aria-label="Listen to pronunciation"
@@ -291,7 +301,8 @@ export function VocabularyQuizPlayer({
           {/* Options grid */}
           <div className="grid grid-cols-2 gap-3">
             {currentQuestion.options.map((option, index) => {
-              const isSelected = answers[currentQuestion.question_id] === option
+              const isSelected =
+                answers[currentQuestion.question_id] === option;
               return (
                 <Button
                   key={option}
@@ -310,7 +321,7 @@ export function VocabularyQuizPlayer({
                   <span className="mr-2 text-sm opacity-70">{index + 1}.</span>
                   {option}
                 </Button>
-              )
+              );
             })}
           </div>
         </CardContent>
@@ -348,10 +359,7 @@ export function VocabularyQuizPlayer({
           </div>
 
           {currentIndex < totalQuestions - 1 ? (
-            <Button
-              variant="outline"
-              onClick={handleNext}
-            >
+            <Button variant="outline" onClick={handleNext}>
               Next
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
@@ -405,7 +413,7 @@ export function VocabularyQuizPlayer({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
 
-export default VocabularyQuizPlayer
+export default VocabularyQuizPlayer;

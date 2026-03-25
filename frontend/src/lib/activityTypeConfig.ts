@@ -6,7 +6,7 @@
  * Used for displaying activity cards and assignment lists.
  */
 
-import type { LucideIcon } from "lucide-react"
+import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   CheckSquare,
@@ -23,13 +23,13 @@ import {
   Search,
   Type,
   X,
-} from "lucide-react"
+} from "lucide-react";
 
 export interface ActivityTypeConfig {
-  icon: LucideIcon
-  label: string
-  color: string
-  isAI?: boolean // Flag for AI-generated content
+  icon: LucideIcon;
+  label: string;
+  color: string;
+  isAI?: boolean; // Flag for AI-generated content
 }
 
 /**
@@ -187,14 +187,14 @@ export const ACTIVITY_TYPE_CONFIG: Record<string, ActivityTypeConfig> = {
     color: "ai-purple",
     isAI: true,
   },
-}
+};
 
 // Default config for unknown activity types
 const DEFAULT_CONFIG: ActivityTypeConfig = {
   icon: HelpCircle,
   label: "Unknown Activity",
   color: "gray",
-}
+};
 
 /**
  * Get activity type configuration by type string
@@ -203,7 +203,7 @@ const DEFAULT_CONFIG: ActivityTypeConfig = {
 export function getActivityTypeConfig(
   activityType: string,
 ): ActivityTypeConfig {
-  return ACTIVITY_TYPE_CONFIG[activityType] || DEFAULT_CONFIG
+  return ACTIVITY_TYPE_CONFIG[activityType] || DEFAULT_CONFIG;
 }
 
 /**
@@ -211,20 +211,20 @@ export function getActivityTypeConfig(
  * Used for consistent styling across the app
  */
 export function getActivityTypeColorClasses(color: string): {
-  bg: string
-  text: string
-  border: string
-  isAI?: boolean
-  gradient?: string
+  bg: string;
+  text: string;
+  border: string;
+  isAI?: boolean;
+  gradient?: string;
 } {
   const colorMap: Record<
     string,
     {
-      bg: string
-      text: string
-      border: string
-      isAI?: boolean
-      gradient?: string
+      bg: string;
+      text: string;
+      border: string;
+      isAI?: boolean;
+      gradient?: string;
     }
   > = {
     blue: {
@@ -320,7 +320,7 @@ export function getActivityTypeColorClasses(color: string): {
       isAI: true,
       gradient: "from-teal-500 to-cyan-600",
     },
-  }
+  };
 
   return (
     colorMap[color] || {
@@ -328,5 +328,5 @@ export function getActivityTypeColorClasses(color: string): {
       text: "text-gray-700 dark:text-gray-300",
       border: "border-gray-300 dark:border-gray-700",
     }
-  )
+  );
 }

@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link as RouterLink, useLocation } from "@tanstack/react-router"
-import { AnimatePresence, motion } from "framer-motion"
-import type { LucideIcon } from "lucide-react"
-import { GraduationCap, Sparkles } from "lucide-react"
-import { useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link as RouterLink, useLocation } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
+import { GraduationCap, Sparkles } from "lucide-react";
+import { useState } from "react";
 import {
   FiActivity,
   FiBarChart2,
@@ -18,46 +18,46 @@ import {
   FiShield,
   FiTrendingUp,
   FiUsers,
-} from "react-icons/fi"
-import type { IconType } from "react-icons/lib"
+} from "react-icons/fi";
+import type { IconType } from "react-icons/lib";
 
-import type { UserPublic, UserRole } from "@/client"
-import { PublisherLogo } from "@/components/ui/publisher-logo"
+import type { UserPublic, UserRole } from "@/client";
+import { PublisherLogo } from "@/components/ui/publisher-logo";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { getStudentAssignments } from "@/services/assignmentsApi"
-import { getMyProfile } from "@/services/publishersApi"
+} from "@/components/ui/tooltip";
+import { getStudentAssignments } from "@/services/assignmentsApi";
+import { getMyProfile } from "@/services/publishersApi";
 
 interface SidebarItemsProps {
-  onClose?: () => void
-  isCollapsed?: boolean
+  onClose?: () => void;
+  isCollapsed?: boolean;
 }
 
-type IconComponent = IconType | LucideIcon
+type IconComponent = IconType | LucideIcon;
 
 interface SubItem {
-  icon: IconComponent
-  title: string
-  path: string
+  icon: IconComponent;
+  title: string;
+  path: string;
 }
 
 interface Item {
-  icon: IconComponent
-  title: string
-  path: string
-  comingSoon?: boolean
-  children?: SubItem[]
+  icon: IconComponent;
+  title: string;
+  path: string;
+  comingSoon?: boolean;
+  children?: SubItem[];
 }
 
 interface AdminStats {
-  total_publishers?: number
-  active_schools?: number
-  total_teachers?: number
-  total_students?: number
+  total_publishers?: number;
+  active_schools?: number;
+  total_teachers?: number;
+  total_students?: number;
 }
 
 // Role-specific menu items
@@ -111,48 +111,48 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiClipboard, title: "Assignments", path: "/student/assignments" },
     { icon: FiTrendingUp, title: "My Progress", path: "/student/progress" },
   ],
-}
+};
 
 const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
-  const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
-  const location = useLocation()
+  const queryClient = useQueryClient();
+  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"]);
+  const location = useLocation();
 
   // Track which collapsible menus are expanded
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
     location.pathname.startsWith("/dreamai") ? { DreamAI: true } : {},
-  )
+  );
 
-  const userRole = (currentUser?.role || "student") as UserRole
-  const menuItems = roleMenuItems[userRole] || roleMenuItems.student
+  const userRole = (currentUser?.role || "student") as UserRole;
+  const menuItems = roleMenuItems[userRole] || roleMenuItems.student;
 
   // Toggle menu expansion
   const toggleMenu = (title: string) => {
     setExpandedMenus((prev) => ({
       ...prev,
       [title]: !prev[title],
-    }))
-  }
+    }));
+  };
 
   // Check if a path matches the current location (exact or sub-route)
   const isPathActive = (path: string): boolean =>
-    location.pathname === path || location.pathname.startsWith(path + "/")
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   // Check if any child path is active
   const isChildActive = (children: SubItem[] | undefined): boolean => {
-    if (!children) return false
-    return children.some((child) => isPathActive(child.path))
-  }
+    if (!children) return false;
+    return children.some((child) => isPathActive(child.path));
+  };
 
   // Fetch real stats for admin users
-  const adminStats = undefined as AdminStats | undefined
+  const adminStats = undefined as AdminStats | undefined;
 
   // Fetch student assignments for notification badge
   const { data: studentAssignments = [] } = useQuery({
     queryKey: ["studentAssignments"],
     queryFn: () => getStudentAssignments(),
     enabled: userRole === "student",
-  })
+  });
 
   // Fetch publisher profile for logo display
   const { data: publisherProfile } = useQuery({
@@ -160,49 +160,49 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     queryFn: () => getMyProfile(),
     enabled: userRole === "publisher",
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   // Count incomplete student assignments
   const incompleteAssignmentsCount = Array.isArray(studentAssignments)
     ? studentAssignments.filter(
         (assignment) => assignment.status !== "completed",
       ).length
-    : 0
+    : 0;
 
   // Get count for each path
   const getItemCount = (path: string): number | null => {
     switch (path) {
       case "/admin/publishers":
-        return adminStats?.total_publishers ?? null
+        return adminStats?.total_publishers ?? null;
       case "/admin/schools":
-        return adminStats?.active_schools ?? null
+        return adminStats?.active_schools ?? null;
       case "/admin/teachers":
-        return adminStats?.total_teachers ?? null
+        return adminStats?.total_teachers ?? null;
       case "/admin/books":
-        return null
+        return null;
       case "/admin/students":
-        return adminStats?.total_students ?? null
+        return adminStats?.total_students ?? null;
       case "/admin/assignments":
-        return null
+        return null;
       case "/publisher/library":
-        return null
+        return null;
       case "/publisher/schools":
-        return null
+        return null;
       case "/publisher/teachers":
-        return null
+        return null;
       case "/student/assignments":
         return incompleteAssignmentsCount > 0
           ? incompleteAssignmentsCount
-          : null
+          : null;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   // Render a sub-menu item
   const renderSubMenuItem = (subItem: SubItem, index: number) => {
-    const { icon: IconComponent, title, path } = subItem
-    const isActive = isPathActive(path)
+    const { icon: IconComponent, title, path } = subItem;
+    const isActive = isPathActive(path);
 
     return (
       <motion.div
@@ -224,8 +224,8 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
           </div>
         </RouterLink>
       </motion.div>
-    )
-  }
+    );
+  };
 
   // Wrapper component for tooltip on collapsed state
   const MenuItemWrapper = ({
@@ -233,9 +233,9 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     isCollapsed,
     children,
   }: {
-    title: string
-    isCollapsed: boolean
-    children: React.ReactNode
+    title: string;
+    isCollapsed: boolean;
+    children: React.ReactNode;
   }) => {
     if (isCollapsed) {
       return (
@@ -247,17 +247,17 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      )
+      );
     }
-    return <>{children}</>
-  }
+    return <>{children}</>;
+  };
 
   const renderMenuItem = (item: Item, _index: number) => {
-    const { icon: IconComponent, title, path, comingSoon, children } = item
-    const isActive = isPathActive(path)
-    const hasActiveChild = isChildActive(children)
-    const isExpanded = expandedMenus[title] || hasActiveChild
-    const itemCount = getItemCount(path)
+    const { icon: IconComponent, title, path, comingSoon, children } = item;
+    const isActive = isPathActive(path);
+    const hasActiveChild = isChildActive(children);
+    const isExpanded = expandedMenus[title] || hasActiveChild;
+    const itemCount = getItemCount(path);
 
     // Render collapsible menu with children
     if (children && children.length > 0) {
@@ -300,7 +300,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
             )}
           </AnimatePresence>
         </motion.button>
-      )
+      );
 
       return (
         <div key={title} className="mb-1">
@@ -324,7 +324,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
             )}
           </AnimatePresence>
         </div>
-      )
+      );
     }
 
     // Render regular menu item (no children)
@@ -377,7 +377,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
           <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive" />
         )}
       </motion.div>
-    )
+    );
 
     if (comingSoon) {
       return (
@@ -389,7 +389,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
             {content}
           </MenuItemWrapper>
         </div>
-      )
+      );
     }
 
     return (
@@ -400,19 +400,19 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
           </RouterLink>
         </MenuItemWrapper>
       </div>
-    )
-  }
+    );
+  };
 
   const bottomItems: Item[] = [
     { icon: FiSettings, title: "Settings", path: "/settings" },
-  ]
+  ];
 
   if (currentUser?.is_superuser) {
     bottomItems.push({
       icon: FiUsers,
       title: "User Management",
       path: "/admin/users",
-    })
+    });
   }
 
   return (
@@ -442,7 +442,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
         {bottomItems.map((item, index) => renderMenuItem(item, index))}
       </div>
     </>
-  )
-}
+  );
+};
 
-export default SidebarItems
+export default SidebarItems;

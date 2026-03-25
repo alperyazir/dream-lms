@@ -4,12 +4,22 @@ Clean Database - Remove all data except admin user
 This script deletes all records from all tables except the admin user.
 """
 from sqlmodel import Session, select
+
+from app.core.config import settings
 from app.core.db import engine
 from app.models import (
-    User, Publisher, School, Teacher, Student,
-    Class, ClassStudent, Book, Assignment, AssignmentStudent
+    Assignment,
+    AssignmentStudent,
+    Book,
+    Class,
+    ClassStudent,
+    Publisher,
+    School,
+    Student,
+    Teacher,
+    User,
 )
-from app.core.config import settings
+
 
 def clean_database():
     """Remove all data except admin user."""
@@ -60,21 +70,20 @@ def clean_database():
         session.commit()
 
         # Verify admin still exists
-        admin = session.exec(
-            select(User).where(User.email == admin_email)
-        ).first()
+        admin = session.exec(select(User).where(User.email == admin_email)).first()
 
         if admin:
-            print(f"\n✅  Database cleaned successfully!")
+            print("\n✅  Database cleaned successfully!")
             print(f"📧  Admin user preserved: {admin.email}")
             print(f"👤  Username: {admin.username}")
-            print(f"🔑  Password: Check FIRST_SUPERUSER_PASSWORD in .env")
+            print("🔑  Password: Check FIRST_SUPERUSER_PASSWORD in .env")
         else:
             print("\n⚠️  Warning: Admin user not found!")
 
         # Count remaining records
         user_count = len(session.exec(select(User)).all())
         print(f"\n📊  Total users remaining: {user_count}")
+
 
 if __name__ == "__main__":
     clean_database()

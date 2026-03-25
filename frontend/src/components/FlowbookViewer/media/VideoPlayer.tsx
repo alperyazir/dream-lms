@@ -7,24 +7,24 @@ import {
   Play,
   Volume2,
   VolumeX,
-} from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
-const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, "0")}`
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 interface VideoPlayerProps {
-  src: string
-  poster?: string
-  subtitleSrc?: string
-  onEnded?: () => void
-  autoHideControls?: boolean
+  src: string;
+  poster?: string;
+  subtitleSrc?: string;
+  onEnded?: () => void;
+  autoHideControls?: boolean;
 }
 
 export function VideoPlayer({
@@ -34,22 +34,22 @@ export function VideoPlayer({
   onEnded,
   autoHideControls = true,
 }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [showControls, setShowControls] = useState(true)
-  const [volume, setVolume] = useState(1)
-  const [isMuted, setIsMuted] = useState(false)
-  const [playbackRate, setPlaybackRate] = useState(1)
-  const [isPiPSupported, setIsPiPSupported] = useState(false)
-  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [showControls, setShowControls] = useState(true);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [isPiPSupported, setIsPiPSupported] = useState(false);
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
-  )
+  );
 
   // Check PiP support
   useEffect(() => {
@@ -57,216 +57,216 @@ export function VideoPlayer({
       "pictureInPictureEnabled" in document &&
         (document as Document & { pictureInPictureEnabled?: boolean })
           .pictureInPictureEnabled === true,
-    )
-  }, [])
+    );
+  }, []);
 
   // Video event listeners
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
     const handleLoadedMetadata = () => {
-      setDuration(video.duration)
-      setIsLoading(false)
-    }
+      setDuration(video.duration);
+      setIsLoading(false);
+    };
 
     const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime)
-    }
+      setCurrentTime(video.currentTime);
+    };
 
     const handleEnded = () => {
-      setIsPlaying(false)
-      onEnded?.()
-    }
+      setIsPlaying(false);
+      onEnded?.();
+    };
 
     const handleError = () => {
-      setError("Failed to load video")
-      setIsLoading(false)
-    }
+      setError("Failed to load video");
+      setIsLoading(false);
+    };
 
-    const handleWaiting = () => setIsLoading(true)
-    const handleCanPlay = () => setIsLoading(false)
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
+    const handleWaiting = () => setIsLoading(true);
+    const handleCanPlay = () => setIsLoading(false);
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
 
-    video.addEventListener("loadedmetadata", handleLoadedMetadata)
-    video.addEventListener("timeupdate", handleTimeUpdate)
-    video.addEventListener("ended", handleEnded)
-    video.addEventListener("error", handleError)
-    video.addEventListener("waiting", handleWaiting)
-    video.addEventListener("canplay", handleCanPlay)
-    video.addEventListener("play", handlePlay)
-    video.addEventListener("pause", handlePause)
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("ended", handleEnded);
+    video.addEventListener("error", handleError);
+    video.addEventListener("waiting", handleWaiting);
+    video.addEventListener("canplay", handleCanPlay);
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
 
     return () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata)
-      video.removeEventListener("timeupdate", handleTimeUpdate)
-      video.removeEventListener("ended", handleEnded)
-      video.removeEventListener("error", handleError)
-      video.removeEventListener("waiting", handleWaiting)
-      video.removeEventListener("canplay", handleCanPlay)
-      video.removeEventListener("play", handlePlay)
-      video.removeEventListener("pause", handlePause)
-    }
-  }, [onEnded])
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("error", handleError);
+      video.removeEventListener("waiting", handleWaiting);
+      video.removeEventListener("canplay", handleCanPlay);
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+    };
+  }, [onEnded]);
 
   // Auto-hide controls when playing
   useEffect(() => {
-    if (!autoHideControls) return
+    if (!autoHideControls) return;
 
     if (showControls && isPlaying) {
       hideTimeoutRef.current = setTimeout(() => {
-        setShowControls(false)
-      }, 3000)
+        setShowControls(false);
+      }, 3000);
     }
 
     return () => {
       if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current)
+        clearTimeout(hideTimeoutRef.current);
       }
-    }
-  }, [showControls, isPlaying, autoHideControls])
+    };
+  }, [showControls, isPlaying, autoHideControls]);
 
   const togglePlay = useCallback(() => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
     if (video.paused) {
-      video.play()
+      video.play();
     } else {
-      video.pause()
+      video.pause();
     }
-  }, [])
+  }, []);
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
-    const rect = e.currentTarget.getBoundingClientRect()
+    const rect = e.currentTarget.getBoundingClientRect();
     const percent = Math.max(
       0,
       Math.min(1, (e.clientX - rect.left) / rect.width),
-    )
-    video.currentTime = percent * duration
-  }
+    );
+    video.currentTime = percent * duration;
+  };
 
   const toggleFullscreen = useCallback(() => {
-    const container = containerRef.current
-    if (!container) return
+    const container = containerRef.current;
+    if (!container) return;
 
     if (document.fullscreenElement) {
-      document.exitFullscreen()
+      document.exitFullscreen();
     } else {
-      container.requestFullscreen()
+      container.requestFullscreen();
     }
-  }, [])
+  }, []);
 
   const toggleMute = useCallback(() => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
-    video.muted = !isMuted
-    setIsMuted(!isMuted)
-  }, [isMuted])
+    video.muted = !isMuted;
+    setIsMuted(!isMuted);
+  }, [isMuted]);
 
   const handleVolumeChange = useCallback(
     (newVolume: number) => {
-      const video = videoRef.current
-      if (!video) return
+      const video = videoRef.current;
+      if (!video) return;
 
-      const clampedVolume = Math.max(0, Math.min(1, newVolume))
-      video.volume = clampedVolume
-      setVolume(clampedVolume)
+      const clampedVolume = Math.max(0, Math.min(1, newVolume));
+      video.volume = clampedVolume;
+      setVolume(clampedVolume);
       if (clampedVolume > 0 && isMuted) {
-        video.muted = false
-        setIsMuted(false)
+        video.muted = false;
+        setIsMuted(false);
       }
     },
     [isMuted],
-  )
+  );
 
   const handleSpeedChange = useCallback((speed: number) => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
-    video.playbackRate = speed
-    setPlaybackRate(speed)
-  }, [])
+    video.playbackRate = speed;
+    setPlaybackRate(speed);
+  }, []);
 
   const togglePiP = useCallback(async () => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    if (!video) return;
 
     try {
       if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture()
+        await document.exitPictureInPicture();
       } else {
-        await video.requestPictureInPicture()
+        await video.requestPictureInPicture();
       }
     } catch {
       // PiP not available
     }
-  }, [])
+  }, []);
 
   const toggleSubtitles = useCallback(() => {
-    const video = videoRef.current
-    if (!video || !video.textTracks.length) return
+    const video = videoRef.current;
+    if (!video || !video.textTracks.length) return;
 
-    const track = video.textTracks[0]
+    const track = video.textTracks[0];
     if (track) {
-      const newMode = subtitlesEnabled ? "hidden" : "showing"
-      track.mode = newMode
-      setSubtitlesEnabled(!subtitlesEnabled)
+      const newMode = subtitlesEnabled ? "hidden" : "showing";
+      track.mode = newMode;
+      setSubtitlesEnabled(!subtitlesEnabled);
     }
-  }, [subtitlesEnabled])
+  }, [subtitlesEnabled]);
 
   const handleMouseMove = () => {
-    setShowControls(true)
-  }
+    setShowControls(true);
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
+    const container = containerRef.current;
+    if (!container) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const video = videoRef.current
-      if (!video) return
+      const video = videoRef.current;
+      if (!video) return;
 
       switch (e.key) {
         case " ":
-          e.preventDefault()
-          togglePlay()
-          break
+          e.preventDefault();
+          togglePlay();
+          break;
         case "f":
-          e.preventDefault()
-          toggleFullscreen()
-          break
+          e.preventDefault();
+          toggleFullscreen();
+          break;
         case "m":
-          e.preventDefault()
-          toggleMute()
-          break
+          e.preventDefault();
+          toggleMute();
+          break;
         case "ArrowLeft":
-          e.preventDefault()
-          video.currentTime = Math.max(0, video.currentTime - 5)
-          break
+          e.preventDefault();
+          video.currentTime = Math.max(0, video.currentTime - 5);
+          break;
         case "ArrowRight":
-          e.preventDefault()
-          video.currentTime = Math.min(duration, video.currentTime + 5)
-          break
+          e.preventDefault();
+          video.currentTime = Math.min(duration, video.currentTime + 5);
+          break;
         case "ArrowUp":
-          e.preventDefault()
-          handleVolumeChange(Math.min(1, volume + 0.1))
-          break
+          e.preventDefault();
+          handleVolumeChange(Math.min(1, volume + 0.1));
+          break;
         case "ArrowDown":
-          e.preventDefault()
-          handleVolumeChange(Math.max(0, volume - 0.1))
-          break
+          e.preventDefault();
+          handleVolumeChange(Math.max(0, volume - 0.1));
+          break;
       }
-    }
+    };
 
-    container.addEventListener("keydown", handleKeyDown)
-    return () => container.removeEventListener("keydown", handleKeyDown)
+    container.addEventListener("keydown", handleKeyDown);
+    return () => container.removeEventListener("keydown", handleKeyDown);
   }, [
     duration,
     volume,
@@ -274,16 +274,16 @@ export function VideoPlayer({
     toggleFullscreen,
     toggleMute,
     handleVolumeChange,
-  ])
+  ]);
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   if (error) {
     return (
       <div className="flex h-full items-center justify-center bg-slate-900 text-white">
         <p>{error}</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -454,5 +454,5 @@ export function VideoPlayer({
         </div>
       </div>
     </div>
-  )
+  );
 }

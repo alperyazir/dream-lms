@@ -5,32 +5,32 @@
  * Displays class average, school average, and publisher average side by side
  */
 
-import { BarChart3, Building2, Info, School, Users } from "lucide-react"
-import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { BarChart3, Building2, Info, School, Users } from "lucide-react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import type { BenchmarkData, ClassMetrics } from "@/types/benchmarks"
+} from "@/components/ui/tooltip";
+import type { BenchmarkData, ClassMetrics } from "@/types/benchmarks";
 
 export interface BenchmarkCardProps {
-  classMetrics: ClassMetrics
-  schoolBenchmark: BenchmarkData | null
-  publisherBenchmark: BenchmarkData | null
+  classMetrics: ClassMetrics;
+  schoolBenchmark: BenchmarkData | null;
+  publisherBenchmark: BenchmarkData | null;
 }
 
 interface BenchmarkItemProps {
-  label: string
-  value: number
-  icon: React.ElementType
-  iconColor: string
-  bgColor: string
-  sampleSize?: number
-  isAvailable?: boolean
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  iconColor: string;
+  bgColor: string;
+  sampleSize?: number;
+  isAvailable?: boolean;
 }
 
 const BenchmarkItem = ({
@@ -72,7 +72,7 @@ const BenchmarkItem = ({
       </p>
     )}
   </div>
-)
+);
 
 export const BenchmarkCard = React.memo(
   ({
@@ -135,8 +135,8 @@ export const BenchmarkCard = React.memo(
           </div>
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-BenchmarkCard.displayName = "BenchmarkCard"
+BenchmarkCard.displayName = "BenchmarkCard";

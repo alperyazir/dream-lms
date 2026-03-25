@@ -1,10 +1,10 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { Controller, type SubmitHandler, useForm } from "react-hook-form"
-import { FaExchangeAlt } from "react-icons/fa"
-import { type UserPublic, UsersService, type UserUpdate } from "@/client"
-import type { ApiError } from "@/client/core/ApiError"
-import { Button } from "@/components/ui/button"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
+import { FaExchangeAlt } from "react-icons/fa";
+import { type UserPublic, UsersService, type UserUpdate } from "@/client";
+import type { ApiError } from "@/client/core/ApiError";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -13,25 +13,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import useCustomToast from "@/hooks/useCustomToast"
-import { emailPattern, handleError } from "@/utils"
-import { Checkbox } from "../ui/checkbox"
-import { Field } from "../ui/field"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import useCustomToast from "@/hooks/useCustomToast";
+import { emailPattern, handleError } from "@/utils";
+import { Checkbox } from "../ui/checkbox";
+import { Field } from "../ui/field";
 
 interface EditUserProps {
-  user: UserPublic
+  user: UserPublic;
 }
 
 interface UserUpdateForm extends UserUpdate {
-  confirm_password?: string
+  confirm_password?: string;
 }
 
 const EditUser = ({ user }: EditUserProps) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
+  const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { showSuccessToast } = useCustomToast();
   const {
     control,
     register,
@@ -43,30 +43,30 @@ const EditUser = ({ user }: EditUserProps) => {
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: user,
-  })
+  });
 
   const mutation = useMutation({
     mutationFn: (data: UserUpdateForm) =>
       UsersService.updateUser({ userId: user.id, requestBody: data }),
     onSuccess: () => {
-      showSuccessToast("User updated successfully.")
-      reset()
-      setIsOpen(false)
+      showSuccessToast("User updated successfully.");
+      reset();
+      setIsOpen(false);
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
-  })
+  });
 
   const onSubmit: SubmitHandler<UserUpdateForm> = async (data) => {
     if (data.password === "") {
-      data.password = undefined
+      data.password = undefined;
     }
-    mutation.mutate(data)
-  }
+    mutation.mutate(data);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -181,7 +181,7 @@ const EditUser = ({ user }: EditUserProps) => {
         </form>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 
-export default EditUser
+export default EditUser;

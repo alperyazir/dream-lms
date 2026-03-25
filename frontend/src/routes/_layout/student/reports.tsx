@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { BarChart } from "lucide-react"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { Card, CardContent } from "@/components/ui/card"
+import { createFileRoute } from "@tanstack/react-router";
+import { BarChart } from "lucide-react";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_layout/student/reports")({
   component: () => (
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_layout/student/reports")({
       <StudentReportsPage />
     </ErrorBoundary>
   ),
-})
+});
 
 function StudentReportsPage() {
   return (
@@ -37,5 +37,5 @@ function StudentReportsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

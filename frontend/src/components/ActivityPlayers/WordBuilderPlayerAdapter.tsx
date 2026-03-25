@@ -5,28 +5,28 @@
  * Bridges the interface between ActivityPlayer and WordBuilderPlayer.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import type { ActivityConfig, WordBuilderActivity } from "@/lib/mockData"
-import type { QuestionNavigationState } from "@/types/activity-player"
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ActivityConfig, WordBuilderActivity } from "@/lib/mockData";
+import type { QuestionNavigationState } from "@/types/activity-player";
 import type {
   WordBuilderActivityPublic,
   WordBuilderSubmission,
-} from "@/types/word-builder"
-import { WordBuilderPlayer } from "./WordBuilderPlayer"
+} from "@/types/word-builder";
+import { WordBuilderPlayer } from "./WordBuilderPlayer";
 
 interface WordBuilderPlayerAdapterProps {
-  activity: ActivityConfig
-  onAnswersChange: (answers: Map<string, string>) => void
-  showResults: boolean
-  correctAnswers: Set<string>
-  initialAnswers?: Map<string, string>
-  showCorrectAnswers?: boolean
+  activity: ActivityConfig;
+  onAnswersChange: (answers: Map<string, string>) => void;
+  showResults: boolean;
+  correctAnswers: Set<string>;
+  initialAnswers?: Map<string, string>;
+  showCorrectAnswers?: boolean;
   /** External control: current word index */
-  currentWordIndex?: number
+  currentWordIndex?: number;
   /** External control: callback when word index changes */
-  onWordIndexChange?: (index: number) => void
+  onWordIndexChange?: (index: number) => void;
   /** Callback to expose navigation state to parent */
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 export function WordBuilderPlayerAdapter({
@@ -41,47 +41,47 @@ export function WordBuilderPlayerAdapter({
 }: WordBuilderPlayerAdapterProps) {
   // Type assertion to access content property
   const wordBuilder = (activity as WordBuilderActivity)
-    .content as WordBuilderActivityPublic
+    .content as WordBuilderActivityPublic;
 
   const initialAnswersRecord = initialAnswers
     ? Object.fromEntries(initialAnswers)
-    : {}
+    : {};
 
   const [answers, setAnswers] =
-    useState<Record<string, string>>(initialAnswersRecord)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+    useState<Record<string, string>>(initialAnswersRecord);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Store callback in ref to prevent infinite loops
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
 
   useEffect(() => {
-    const callback = onAnswersChangeRef.current
-    const answersMap = new Map(Object.entries(answers))
-    callback(answersMap)
-  }, [answers])
+    const callback = onAnswersChangeRef.current;
+    const answersMap = new Map(Object.entries(answers));
+    callback(answersMap);
+  }, [answers]);
 
   const handleSubmit = (submission: WordBuilderSubmission) => {
-    setAnswers(submission.answers)
-    setIsSubmitting(true)
+    setAnswers(submission.answers);
+    setIsSubmitting(true);
 
-    const answersMap = new Map(Object.entries(submission.answers))
-    onAnswersChange(answersMap)
+    const answersMap = new Map(Object.entries(submission.answers));
+    onAnswersChange(answersMap);
 
-    setIsSubmitting(false)
-  }
+    setIsSubmitting(false);
+  };
 
   if (showResults) {
-    const totalWords = wordBuilder.words.length
-    let correctCount = 0
+    const totalWords = wordBuilder.words.length;
+    let correctCount = 0;
 
     wordBuilder.words.forEach((word) => {
       if (correctAnswers.has(word.item_id)) {
-        correctCount++
+        correctCount++;
       }
-    })
+    });
 
-    const score = Math.round((correctCount / totalWords) * 100)
+    const score = Math.round((correctCount / totalWords) * 100);
 
     // Simple results display for integration with ActivityPlayer
     // Full WordBuilderResults component requires complete result object from backend
@@ -93,17 +93,17 @@ export function WordBuilderPlayerAdapter({
           {correctCount} out of {totalWords} correct
         </p>
       </div>
-    )
+    );
   }
 
   // Handle answers change from WordBuilderPlayer
   // Memoized to prevent infinite loops
   const handleAnswersChange = useCallback(
     (newAnswers: Record<string, string>) => {
-      setAnswers(newAnswers)
+      setAnswers(newAnswers);
     },
     [],
-  )
+  );
 
   return (
     <WordBuilderPlayer
@@ -116,5 +116,5 @@ export function WordBuilderPlayerAdapter({
       onWordIndexChange={onWordIndexChange}
       onNavigationStateChange={onNavigationStateChange}
     />
-  )
+  );
 }

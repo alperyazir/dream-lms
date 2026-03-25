@@ -11,16 +11,16 @@ import {
   FileText,
   Play,
   UserCircle,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import type { ReportTemplateInfo } from "@/types/reports"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import type { ReportTemplateInfo } from "@/types/reports";
 
 interface ReportTemplateCardProps {
-  template: ReportTemplateInfo
-  onSelect: (template: ReportTemplateInfo) => void
-  onQuickGenerate?: (template: ReportTemplateInfo) => void
-  disabled?: boolean
+  template: ReportTemplateInfo;
+  onSelect: (template: ReportTemplateInfo) => void;
+  onQuickGenerate?: (template: ReportTemplateInfo) => void;
+  disabled?: boolean;
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -28,7 +28,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "user-circle": UserCircle,
   "clipboard-list": ClipboardList,
   "file-text": FileText,
-}
+};
 
 export function ReportTemplateCard({
   template,
@@ -36,7 +36,7 @@ export function ReportTemplateCard({
   onQuickGenerate,
   disabled = false,
 }: ReportTemplateCardProps) {
-  const IconComponent = iconMap[template.icon] || FileText
+  const IconComponent = iconMap[template.icon] || FileText;
 
   return (
     <Card
@@ -70,8 +70,8 @@ export function ReportTemplateCard({
             size="sm"
             className="opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => {
-              e.stopPropagation()
-              onQuickGenerate(template)
+              e.stopPropagation();
+              onQuickGenerate(template);
             }}
             disabled={disabled}
           >
@@ -81,14 +81,14 @@ export function ReportTemplateCard({
         )}
       </div>
     </Card>
-  )
+  );
 }
 
 interface ReportTemplateGridProps {
-  templates: ReportTemplateInfo[]
-  onSelect: (template: ReportTemplateInfo) => void
-  onQuickGenerate?: (template: ReportTemplateInfo) => void
-  disabled?: boolean
+  templates: ReportTemplateInfo[];
+  onSelect: (template: ReportTemplateInfo) => void;
+  onQuickGenerate?: (template: ReportTemplateInfo) => void;
+  disabled?: boolean;
 }
 
 export function ReportTemplateGrid({
@@ -112,7 +112,7 @@ export function ReportTemplateGrid({
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-export default ReportTemplateCard
+export default ReportTemplateCard;

@@ -1,4 +1,5 @@
 """Integration tests for bulk import API endpoints."""
+
 import io
 from datetime import timedelta
 from typing import Any
@@ -39,9 +40,7 @@ def create_auth_headers(user: User) -> dict[str, str]:
 
 
 def test_teacher_bulk_import_students_success(
-    client: TestClient,
-    session: Session,
-    teacher_user_with_record: User
+    client: TestClient, session: Session, teacher_user_with_record: User
 ) -> None:
     """Test teacher can successfully bulk import students."""
     # Create valid student data
@@ -51,15 +50,15 @@ def test_teacher_bulk_import_students_success(
             "Last Name": "Doe",
             "Email": "john.doe@test.com",
             "Grade Level": "5",
-            "Parent Email": "parent.doe@test.com"
+            "Parent Email": "parent.doe@test.com",
         },
         {
             "First Name": "Jane",
             "Last Name": "Smith",
             "Email": "jane.smith@test.com",
             "Grade Level": "6",
-            "Parent Email": "parent.smith@test.com"
-        }
+            "Parent Email": "parent.smith@test.com",
+        },
     ]
 
     excel_content = create_excel_file(student_data)
@@ -68,8 +67,14 @@ def test_teacher_bulk_import_students_success(
 
     response = client.post(
         "/api/v1/teachers/me/students/bulk-import",
-        files={"file": ("students.xlsx", excel_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-        headers=headers
+        files={
+            "file": (
+                "students.xlsx",
+                excel_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        headers=headers,
     )
 
     assert response.status_code == 201
@@ -88,9 +93,7 @@ def test_teacher_bulk_import_students_success(
 
 
 def test_teacher_bulk_import_validation_errors(
-    client: TestClient,
-    session: Session,
-    teacher_user_with_record: User
+    client: TestClient, session: Session, teacher_user_with_record: User
 ) -> None:
     """Test bulk import returns detailed validation errors."""
     # Create data with invalid emails and missing fields
@@ -100,15 +103,15 @@ def test_teacher_bulk_import_validation_errors(
             "Last Name": "Doe",
             "Email": "invalid-email",  # Invalid format
             "Grade Level": "5",
-            "Parent Email": "parent@test.com"
+            "Parent Email": "parent@test.com",
         },
         {
             "First Name": "Jane",
             # Missing Last Name
             "Email": "jane@test.com",
             "Grade Level": "6",
-            "Parent Email": "parent2@test.com"
-        }
+            "Parent Email": "parent2@test.com",
+        },
     ]
 
     excel_content = create_excel_file(student_data)
@@ -116,11 +119,19 @@ def test_teacher_bulk_import_validation_errors(
 
     response = client.post(
         "/api/v1/teachers/me/students/bulk-import",
-        files={"file": ("students.xlsx", excel_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-        headers=headers
+        files={
+            "file": (
+                "students.xlsx",
+                excel_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        headers=headers,
     )
 
-    assert response.status_code == 201  # Endpoint returns 201 even with validation errors
+    assert (
+        response.status_code == 201
+    )  # Endpoint returns 201 even with validation errors
     data = response.json()
     assert data["success"] is False
     assert data["error_count"] == 2
@@ -133,8 +144,7 @@ def test_teacher_bulk_import_validation_errors(
 
 
 def test_teacher_bulk_import_file_too_large(
-    client: TestClient,
-    teacher_user_with_record: User
+    client: TestClient, teacher_user_with_record: User
 ) -> None:
     """Test bulk import rejects files exceeding 5MB."""
     # Create file > 5MB
@@ -144,8 +154,14 @@ def test_teacher_bulk_import_file_too_large(
 
     response = client.post(
         "/api/v1/teachers/me/students/bulk-import",
-        files={"file": ("large.xlsx", large_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-        headers=headers
+        files={
+            "file": (
+                "large.xlsx",
+                large_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        headers=headers,
     )
 
     assert response.status_code == 413
@@ -153,8 +169,7 @@ def test_teacher_bulk_import_file_too_large(
 
 
 def test_teacher_bulk_import_wrong_file_type(
-    client: TestClient,
-    teacher_user_with_record: User
+    client: TestClient, teacher_user_with_record: User
 ) -> None:
     """Test bulk import rejects non-Excel files."""
     content = b"This is not an Excel file"
@@ -164,7 +179,7 @@ def test_teacher_bulk_import_wrong_file_type(
     response = client.post(
         "/api/v1/teachers/me/students/bulk-import",
         files={"file": ("file.txt", content, "text/plain")},
-        headers=headers
+        headers=headers,
     )
 
     assert response.status_code == 400
@@ -172,9 +187,7 @@ def test_teacher_bulk_import_wrong_file_type(
 
 
 def test_teacher_bulk_import_duplicate_emails(
-    client: TestClient,
-    session: Session,
-    teacher_user_with_record: User
+    client: TestClient, session: Session, teacher_user_with_record: User
 ) -> None:
     """Test bulk import detects duplicate emails within file."""
     student_data = [
@@ -183,15 +196,15 @@ def test_teacher_bulk_import_duplicate_emails(
             "Last Name": "Doe",
             "Email": "duplicate@test.com",
             "Grade Level": "5",
-            "Parent Email": "parent@test.com"
+            "Parent Email": "parent@test.com",
         },
         {
             "First Name": "Jane",
             "Last Name": "Smith",
             "Email": "duplicate@test.com",  # Duplicate
             "Grade Level": "6",
-            "Parent Email": "parent2@test.com"
-        }
+            "Parent Email": "parent2@test.com",
+        },
     ]
 
     excel_content = create_excel_file(student_data)
@@ -199,8 +212,14 @@ def test_teacher_bulk_import_duplicate_emails(
 
     response = client.post(
         "/api/v1/teachers/me/students/bulk-import",
-        files={"file": ("students.xlsx", excel_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-        headers=headers
+        files={
+            "file": (
+                "students.xlsx",
+                excel_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        headers=headers,
     )
 
     data = response.json()
@@ -208,11 +227,11 @@ def test_teacher_bulk_import_duplicate_emails(
     assert any("Duplicate email" in str(err) for err in data["errors"])
 
 
-@pytest.mark.skip(reason="DEPRECATED: Publisher bulk import - publishers managed in DCS")
+@pytest.mark.skip(
+    reason="DEPRECATED: Publisher bulk import - publishers managed in DCS"
+)
 def test_admin_bulk_import_publishers_success(
-    client: TestClient,
-    session: Session,
-    admin_user: User
+    client: TestClient, session: Session, admin_user: User
 ) -> None:
     """Test admin can successfully bulk import publishers - DEPRECATED"""
     pass
@@ -220,9 +239,7 @@ def test_admin_bulk_import_publishers_success(
 
 @pytest.mark.skip(reason="DEPRECATED: Uses publisher_user_with_record fixture")
 def test_admin_bulk_import_teachers_success(
-    client: TestClient,
-    session: Session,
-    admin_user: User
+    client: TestClient, session: Session, admin_user: User
 ) -> None:
     """Test admin can successfully bulk import teachers - DEPRECATED"""
     pass
@@ -233,15 +250,15 @@ def test_admin_bulk_import_teachers_success(
             "Last Name": "One",
             "Email": "teacher1@school.com",
             "School ID": str(school.id),
-            "Subject Specialization": "Math"
+            "Subject Specialization": "Math",
         },
         {
             "First Name": "Teacher",
             "Last Name": "Two",
             "Email": "teacher2@school.com",
             "School ID": str(school.id),
-            "Subject Specialization": "Science"
-        }
+            "Subject Specialization": "Science",
+        },
     ]
 
     excel_content = create_excel_file(teacher_data)
@@ -249,8 +266,14 @@ def test_admin_bulk_import_teachers_success(
 
     response = client.post(
         "/api/v1/admin/bulk-import/teachers",
-        files={"file": ("teachers.xlsx", excel_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-        headers=headers
+        files={
+            "file": (
+                "teachers.xlsx",
+                excel_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        headers=headers,
     )
 
     assert response.status_code == 201
@@ -264,9 +287,7 @@ def test_admin_bulk_import_teachers_success(
 
 
 def test_admin_bulk_import_students_success(
-    client: TestClient,
-    session: Session,
-    admin_user: User
+    client: TestClient, session: Session, admin_user: User
 ) -> None:
     """Test admin can successfully bulk import students."""
     student_data = [
@@ -275,15 +296,15 @@ def test_admin_bulk_import_students_success(
             "Last Name": "One",
             "Email": "student1@test.com",
             "Grade Level": "7",
-            "Parent Email": "parent1@test.com"
+            "Parent Email": "parent1@test.com",
         },
         {
             "First Name": "Student",
             "Last Name": "Two",
             "Email": "student2@test.com",
             "Grade Level": "8",
-            "Parent Email": "parent2@test.com"
-        }
+            "Parent Email": "parent2@test.com",
+        },
     ]
 
     excel_content = create_excel_file(student_data)
@@ -291,8 +312,14 @@ def test_admin_bulk_import_students_success(
 
     response = client.post(
         "/api/v1/admin/bulk-import/students",
-        files={"file": ("students.xlsx", excel_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-        headers=headers
+        files={
+            "file": (
+                "students.xlsx",
+                excel_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        headers=headers,
     )
 
     assert response.status_code == 201
@@ -301,10 +328,7 @@ def test_admin_bulk_import_students_success(
     assert data["created_count"] == 2
 
 
-def test_student_cannot_bulk_import(
-    client: TestClient,
-    student_user: User
-) -> None:
+def test_student_cannot_bulk_import(client: TestClient, student_user: User) -> None:
     """Test student role cannot access bulk import endpoints."""
     student_data = [
         {
@@ -312,7 +336,7 @@ def test_student_cannot_bulk_import(
             "Last Name": "Student",
             "Email": "test@test.com",
             "Grade Level": "5",
-            "Parent Email": "parent@test.com"
+            "Parent Email": "parent@test.com",
         }
     ]
 
@@ -322,16 +346,21 @@ def test_student_cannot_bulk_import(
     # Try teacher endpoint
     response = client.post(
         "/api/v1/teachers/me/students/bulk-import",
-        files={"file": ("students.xlsx", excel_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-        headers=headers
+        files={
+            "file": (
+                "students.xlsx",
+                excel_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        headers=headers,
     )
 
     assert response.status_code == 403
 
 
 def test_teacher_cannot_access_admin_bulk_import(
-    client: TestClient,
-    teacher_user_with_record: User
+    client: TestClient, teacher_user_with_record: User
 ) -> None:
     """Test teacher cannot access admin bulk import endpoints."""
     publisher_data = [
@@ -340,7 +369,7 @@ def test_teacher_cannot_access_admin_bulk_import(
             "Last Name": "Publisher",
             "Email": "test@publisher.com",
             "Company Name": "Test Co",
-            "Contact Email": "contact@test.com"
+            "Contact Email": "contact@test.com",
         }
     ]
 
@@ -349,8 +378,14 @@ def test_teacher_cannot_access_admin_bulk_import(
 
     response = client.post(
         "/api/v1/admin/bulk-import/publishers",
-        files={"file": ("publishers.xlsx", excel_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-        headers=headers
+        files={
+            "file": (
+                "publishers.xlsx",
+                excel_content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        headers=headers,
     )
 
     assert response.status_code == 403

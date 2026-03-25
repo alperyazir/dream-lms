@@ -5,8 +5,8 @@
  * Simplified assignment flow for AI-generated activities.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
   BookOpen,
@@ -14,12 +14,12 @@ import {
   Clock,
   Loader2,
   Users,
-} from "lucide-react"
-import { useEffect, useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -27,26 +27,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import {
   getActivityTypeColorClasses,
   getActivityTypeConfig,
-} from "@/lib/activityTypeConfig"
-import { assignAIContent } from "@/services/contentLibraryApi"
-import { getMyClasses } from "@/services/teachersApi"
-import type { ContentItem } from "@/types/content-library"
-import type { Class } from "@/types/teacher"
+} from "@/lib/activityTypeConfig";
+import { assignAIContent } from "@/services/contentLibraryApi";
+import { getMyClasses } from "@/services/teachersApi";
+import type { ContentItem } from "@/types/content-library";
+import type { Class } from "@/types/teacher";
 
 interface AIContentAssignmentDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  content: ContentItem | null
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  content: ContentItem | null;
 }
 
 export function AIContentAssignmentDialog({
@@ -54,44 +54,44 @@ export function AIContentAssignmentDialog({
   onOpenChange,
   content,
 }: AIContentAssignmentDialogProps) {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { toast } = useToast()
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Form state
-  const [name, setName] = useState("")
-  const [instructions, setInstructions] = useState("")
-  const [dueDate, setDueDate] = useState("")
-  const [timeLimit, setTimeLimit] = useState("")
-  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([])
+  const [name, setName] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [timeLimit, setTimeLimit] = useState("");
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
 
   // Fetch teacher's classes
   const { data: classes, isLoading: classesLoading } = useQuery<Class[]>({
     queryKey: ["my-classes"],
     queryFn: getMyClasses,
     enabled: open,
-  })
+  });
 
   // Reset form when content changes
   useEffect(() => {
     if (content && open) {
-      setName(content.title)
-      setInstructions("")
-      setDueDate("")
-      setTimeLimit("")
-      setSelectedClassIds([])
+      setName(content.title);
+      setInstructions("");
+      setDueDate("");
+      setTimeLimit("");
+      setSelectedClassIds([]);
     }
-  }, [content, open])
+  }, [content, open]);
 
   // Assignment mutation
   const assignMutation = useMutation({
     mutationFn: (data: {
-      contentId: string
-      name: string
-      instructions: string | null
-      dueDate: string | null
-      timeLimitMinutes: number | null
-      classIds: string[]
+      contentId: string;
+      name: string;
+      instructions: string | null;
+      dueDate: string | null;
+      timeLimitMinutes: number | null;
+      classIds: string[];
     }) =>
       assignAIContent(data.contentId, {
         name: data.name,
@@ -101,19 +101,19 @@ export function AIContentAssignmentDialog({
         class_ids: data.classIds,
       }),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["contentLibrary"] })
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["contentLibrary"] });
       toast({
         title: "Assignment created",
         description: `"${name}" has been assigned successfully.`,
-      })
-      onOpenChange(false)
+      });
+      onOpenChange(false);
       // Navigate to the assignment
       if (data.assignment_id) {
         navigate({
           to: "/teacher/assignments/$assignmentId",
           params: { assignmentId: data.assignment_id },
-        })
+        });
       }
     },
     onError: (err: any) => {
@@ -123,33 +123,33 @@ export function AIContentAssignmentDialog({
         description:
           err.response?.data?.detail ||
           "Failed to create assignment. Please try again.",
-      })
+      });
     },
-  })
+  });
 
-  if (!content) return null
+  if (!content) return null;
 
-  const config = getActivityTypeConfig(content.activity_type)
-  const colorClasses = getActivityTypeColorClasses(config.color)
-  const IconComponent = config.icon
+  const config = getActivityTypeConfig(content.activity_type);
+  const colorClasses = getActivityTypeColorClasses(config.color);
+  const IconComponent = config.icon;
 
   const handleClassToggle = (classId: string) => {
     setSelectedClassIds((prev) =>
       prev.includes(classId)
         ? prev.filter((id) => id !== classId)
         : [...prev, classId],
-    )
-  }
+    );
+  };
 
   const handleSelectAll = () => {
     if (classes) {
       if (selectedClassIds.length === classes.length) {
-        setSelectedClassIds([])
+        setSelectedClassIds([]);
       } else {
-        setSelectedClassIds(classes.map((c) => c.id))
+        setSelectedClassIds(classes.map((c) => c.id));
       }
     }
-  }
+  };
 
   const handleSubmit = () => {
     if (!name.trim()) {
@@ -157,8 +157,8 @@ export function AIContentAssignmentDialog({
         variant: "destructive",
         title: "Name required",
         description: "Please enter an assignment name.",
-      })
-      return
+      });
+      return;
     }
 
     if (selectedClassIds.length === 0) {
@@ -166,8 +166,8 @@ export function AIContentAssignmentDialog({
         variant: "destructive",
         title: "Recipients required",
         description: "Please select at least one class.",
-      })
-      return
+      });
+      return;
     }
 
     assignMutation.mutate({
@@ -177,13 +177,13 @@ export function AIContentAssignmentDialog({
       dueDate: dueDate || null,
       timeLimitMinutes: timeLimit ? parseInt(timeLimit, 10) : null,
       classIds: selectedClassIds,
-    })
-  }
+    });
+  };
 
   const totalStudents =
     classes
       ?.filter((c) => selectedClassIds.includes(c.id))
-      .reduce((sum, c) => sum + (c.student_count || 0), 0) || 0
+      .reduce((sum, c) => sum + (c.student_count || 0), 0) || 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -371,5 +371,5 @@ export function AIContentAssignmentDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

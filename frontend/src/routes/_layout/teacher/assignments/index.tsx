@@ -1,20 +1,26 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { BookOpen, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { FiClipboard } from "react-icons/fi"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { FiClipboard } from "react-icons/fi";
 import {
   AssignmentFilters,
   type AssignmentFiltersState,
-} from "@/components/assignments/AssignmentFilters"
-import { AssignmentTableView } from "@/components/assignments/AssignmentTableView"
-import { AssignmentWizardSheet } from "@/components/assignments/AssignmentWizardSheet"
-import { DeleteAssignmentDialog } from "@/components/assignments/DeleteAssignmentDialog"
-import { TeacherAssignmentCard } from "@/components/assignments/TeacherAssignmentCard"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/components/assignments/AssignmentFilters";
+import { AssignmentTableView } from "@/components/assignments/AssignmentTableView";
+import { AssignmentWizardSheet } from "@/components/assignments/AssignmentWizardSheet";
+import { DeleteAssignmentDialog } from "@/components/assignments/DeleteAssignmentDialog";
+import { TeacherAssignmentCard } from "@/components/assignments/TeacherAssignmentCard";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -22,45 +28,47 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
-import { useViewPreference } from "@/hooks/useViewPreference"
-import useCustomToast from "@/hooks/useCustomToast"
-import { deleteAssignment, getAssignments } from "@/services/assignmentsApi"
-import { getMyClasses } from "@/services/teachersApi"
-import type { AssignmentListItem } from "@/types/assignment"
-import type { Class } from "@/types/teacher"
+} from "@/components/ui/dialog";
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle";
+import { useViewPreference } from "@/hooks/useViewPreference";
+import useCustomToast from "@/hooks/useCustomToast";
+import { deleteAssignment, getAssignments } from "@/services/assignmentsApi";
+import { getMyClasses } from "@/services/teachersApi";
+import type { AssignmentListItem } from "@/types/assignment";
+import type { Class } from "@/types/teacher";
 
 export const Route = createFileRoute("/_layout/teacher/assignments/")({
   component: TeacherAssignmentsPage,
-})
+});
 
 function TeacherAssignmentsPage() {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
   const [viewMode, setViewMode] = useViewPreference(
     "teacher-assignments",
     "grid",
-  )
+  );
   const [deletingAssignment, setDeletingAssignment] =
-    useState<AssignmentListItem | null>(null)
-  const [filters, setFilters] = useState<AssignmentFiltersState>({})
-  const [sortBy, setSortBy] = useState<"due_date">("due_date")
-  const [isWizardOpen, setIsWizardOpen] = useState(false)
-  const [wizardMode, setWizardMode] = useState<"create" | "edit">("create")
-  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
-  const PAGE_SIZE = 20
-  const [currentPage, setCurrentPage] = useState(1)
-  const skip = (currentPage - 1) * PAGE_SIZE
+    useState<AssignmentListItem | null>(null);
+  const [filters, setFilters] = useState<AssignmentFiltersState>({});
+  const [sortBy, setSortBy] = useState<"due_date">("due_date");
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardMode, setWizardMode] = useState<"create" | "edit">("create");
+  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(
+    null,
+  );
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const PAGE_SIZE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+  const skip = (currentPage - 1) * PAGE_SIZE;
 
   // Reset to page 1 when filters change
   useEffect(() => {
-    setCurrentPage(1)
-    setSelectedIds(new Set())
-  }, [filters])
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+  }, [filters]);
 
   const {
     data: assignmentsResponse,
@@ -69,100 +77,100 @@ function TeacherAssignmentsPage() {
   } = useQuery({
     queryKey: ["assignments", skip, PAGE_SIZE],
     queryFn: () => getAssignments({ limit: PAGE_SIZE, offset: skip }),
-  })
+  });
 
   // Client-side filtering on the current page (search/status)
   const assignments = useMemo(() => {
-    const items = assignmentsResponse?.items ?? []
-    let filtered = items
+    const items = assignmentsResponse?.items ?? [];
+    let filtered = items;
 
     if (filters.search) {
       filtered = filtered.filter((a) =>
         a.name.toLowerCase().includes(filters.search!.toLowerCase()),
-      )
+      );
     }
 
     if (filters.status && filters.status !== "all") {
-      filtered = filtered.filter((a) => a.status === filters.status)
+      filtered = filtered.filter((a) => a.status === filters.status);
     }
 
-    return filtered
-  }, [assignmentsResponse, filters])
+    return filtered;
+  }, [assignmentsResponse, filters]);
 
-  const totalAssignments = assignmentsResponse?.total ?? 0
-  const totalPages = Math.ceil(totalAssignments / PAGE_SIZE)
-  const paginatedAssignments = assignments
+  const totalAssignments = assignmentsResponse?.total ?? 0;
+  const totalPages = Math.ceil(totalAssignments / PAGE_SIZE);
+  const paginatedAssignments = assignments;
 
   const { data: classes } = useQuery<Class[]>({
     queryKey: ["my-classes"],
     queryFn: getMyClasses,
-  })
+  });
 
   const handleCreateAssignment = () => {
-    setWizardMode("create")
-    setEditingAssignmentId(null)
-    setIsWizardOpen(true)
-  }
+    setWizardMode("create");
+    setEditingAssignmentId(null);
+    setIsWizardOpen(true);
+  };
 
   const handleEdit = (assignment: AssignmentListItem) => {
-    setWizardMode("edit")
-    setEditingAssignmentId(assignment.id)
-    setIsWizardOpen(true)
-  }
+    setWizardMode("edit");
+    setEditingAssignmentId(assignment.id);
+    setIsWizardOpen(true);
+  };
 
   const handleView = (assignment: AssignmentListItem) => {
     navigate({
       to: "/teacher/assignments/$assignmentId",
       params: { assignmentId: assignment.id },
-    })
-  }
+    });
+  };
 
   const handleDelete = (assignment: AssignmentListItem) => {
-    setDeletingAssignment(assignment)
-  }
+    setDeletingAssignment(assignment);
+  };
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map((id) => deleteAssignment(id)))
+      await Promise.all(ids.map((id) => deleteAssignment(id)));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
-      setSelectedIds(new Set())
-      setIsBulkDeleteDialogOpen(false)
-      showSuccessToast("Selected assignments deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      setSelectedIds(new Set());
+      setIsBulkDeleteDialogOpen(false);
+      showSuccessToast("Selected assignments deleted successfully!");
     },
     onError: () => {
-      showErrorToast("Failed to delete some assignments. Please try again.")
+      showErrorToast("Failed to delete some assignments. Please try again.");
     },
-  })
+  });
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(paginatedAssignments.map((a) => a.id)))
+      setSelectedIds(new Set(paginatedAssignments.map((a) => a.id)));
     } else {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     }
-  }
+  };
 
   const handleSelect = (id: string, checked: boolean) => {
-    const newSelected = new Set(selectedIds)
+    const newSelected = new Set(selectedIds);
     if (checked) {
-      newSelected.add(id)
+      newSelected.add(id);
     } else {
-      newSelected.delete(id)
+      newSelected.delete(id);
     }
-    setSelectedIds(newSelected)
-  }
+    setSelectedIds(newSelected);
+  };
 
   const handleBulkDelete = () => {
     if (selectedIds.size > 0) {
-      setIsBulkDeleteDialogOpen(true)
+      setIsBulkDeleteDialogOpen(true);
     }
-  }
+  };
 
   const confirmBulkDelete = () => {
-    bulkDeleteMutation.mutate(Array.from(selectedIds))
-  }
+    bulkDeleteMutation.mutate(Array.from(selectedIds));
+  };
 
   if (isLoading) {
     return (
@@ -174,7 +182,7 @@ function TeacherAssignmentsPage() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -187,7 +195,7 @@ function TeacherAssignmentsPage() {
           <p className="text-sm">{(error as Error).message}</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -223,11 +231,7 @@ function TeacherAssignmentsPage() {
           <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
             {selectedIds.size} assignment(s) selected
           </span>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={handleBulkDelete}
-          >
+          <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
             <Trash2 className="w-3 h-3 mr-1" />
             Delete Selected
           </Button>
@@ -342,24 +346,27 @@ function TeacherAssignmentsPage() {
       <AssignmentWizardSheet
         open={isWizardOpen}
         onOpenChange={(open) => {
-          setIsWizardOpen(open)
+          setIsWizardOpen(open);
           if (!open) {
-            setEditingAssignmentId(null)
-            setWizardMode("create")
+            setEditingAssignmentId(null);
+            setWizardMode("create");
           }
         }}
         mode={wizardMode}
         assignmentId={editingAssignmentId ?? undefined}
       />
       {/* Bulk Delete Confirmation Dialog */}
-      <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+      <Dialog
+        open={isBulkDeleteDialogOpen}
+        onOpenChange={setIsBulkDeleteDialogOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Selected Assignments</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete {selectedIds.size} selected
-              assignment(s)? This will also remove all student submissions.
-              This action cannot be undone.
+              assignment(s)? This will also remove all student submissions. This
+              action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -383,5 +390,5 @@ function TeacherAssignmentsPage() {
         </DialogContent>
       </Dialog>
     </PageContainer>
-  )
+  );
 }

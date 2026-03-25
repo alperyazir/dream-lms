@@ -5,8 +5,8 @@
  * This service provides functions to interact with the Reading Comprehension API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   ReadingComprehensionActivity,
   ReadingComprehensionActivityPublic,
@@ -14,7 +14,7 @@ import type {
   ReadingComprehensionRequest,
   ReadingComprehensionResult,
   ReadingComprehensionSubmission,
-} from "../types/reading-comprehension"
+} from "../types/reading-comprehension";
 
 /**
  * Create axios instance with OpenAPI config
@@ -23,15 +23,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -46,13 +46,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Generate a new reading comprehension activity from a book module
@@ -63,12 +63,12 @@ apiClient.interceptors.request.use(async (config) => {
 export async function generateReadingActivity(
   request: ReadingComprehensionRequest,
 ): Promise<ReadingComprehensionActivity> {
-  const url = "/api/v1/ai/reading/generate"
+  const url = "/api/v1/ai/reading/generate";
   const response = await apiClient.post<ReadingComprehensionActivity>(
     url,
     request,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -80,9 +80,9 @@ export async function generateReadingActivity(
 export async function getReadingActivity(
   activityId: string,
 ): Promise<ReadingComprehensionActivityPublic> {
-  const url = `/api/v1/ai/reading/${activityId}`
-  const response = await apiClient.get<ReadingComprehensionActivityPublic>(url)
-  return response.data
+  const url = `/api/v1/ai/reading/${activityId}`;
+  const response = await apiClient.get<ReadingComprehensionActivityPublic>(url);
+  return response.data;
 }
 
 /**
@@ -96,13 +96,13 @@ export async function submitReadingActivity(
   activityId: string,
   answers: ReadingComprehensionAnswer[],
 ): Promise<ReadingComprehensionResult> {
-  const url = `/api/v1/ai/reading/${activityId}/submit`
-  const submission: ReadingComprehensionSubmission = { answers }
+  const url = `/api/v1/ai/reading/${activityId}/submit`;
+  const submission: ReadingComprehensionSubmission = { answers };
   const response = await apiClient.post<ReadingComprehensionResult>(
     url,
     submission,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -114,15 +114,15 @@ export async function submitReadingActivity(
 export async function getReadingResult(
   activityId: string,
 ): Promise<ReadingComprehensionResult | null> {
-  const url = `/api/v1/ai/reading/${activityId}/result`
+  const url = `/api/v1/ai/reading/${activityId}/result`;
   try {
-    const response = await apiClient.get<ReadingComprehensionResult>(url)
-    return response.data
+    const response = await apiClient.get<ReadingComprehensionResult>(url);
+    return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null
+      return null;
     }
-    throw error
+    throw error;
   }
 }
 
@@ -134,6 +134,6 @@ export const readingComprehensionApi = {
   getReadingActivity,
   submitReadingActivity,
   getReadingResult,
-}
+};
 
-export default readingComprehensionApi
+export default readingComprehensionApi;

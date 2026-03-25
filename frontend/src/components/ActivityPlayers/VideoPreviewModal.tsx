@@ -6,8 +6,8 @@
  * Allows teachers to watch the video and confirm their selection.
  */
 
-import { Subtitles, Video } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Subtitles, Video } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,52 +15,52 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import type { VideoInfo } from "@/services/booksApi"
-import { VideoPlayer } from "./VideoPlayer"
+} from "@/components/ui/dialog";
+import type { VideoInfo } from "@/services/booksApi";
+import { VideoPlayer } from "./VideoPlayer";
 
 /**
  * Get auth token from localStorage
  */
 function getAuthToken(): string | null {
-  return localStorage.getItem("access_token")
+  return localStorage.getItem("access_token");
 }
 
 /**
  * Get the API base URL from environment
  */
 function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL || ""
+  return import.meta.env.VITE_API_URL || "";
 }
 
 export interface VideoPreviewModalProps {
   /** Whether the modal is open */
-  open: boolean
+  open: boolean;
   /** Called when the modal should close */
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (open: boolean) => void;
   /** The video to preview */
-  video: VideoInfo | null
+  video: VideoInfo | null;
   /** Book ID for constructing video URL */
-  bookId: string | number
+  bookId: string | number;
   /** Video source URL (pre-constructed) */
-  videoSrc?: string
+  videoSrc?: string;
   /** Subtitle source URL (pre-constructed) */
-  subtitleSrc?: string
+  subtitleSrc?: string;
   /** Called when user clicks "Attach This Video" */
-  onAttach?: (video: VideoInfo) => void
+  onAttach?: (video: VideoInfo) => void;
   /** Label for the attach button */
-  attachButtonLabel?: string
+  attachButtonLabel?: string;
   /** Whether to show the attach button */
-  showAttachButton?: boolean
+  showAttachButton?: boolean;
 }
 
 /**
  * Format file size for display
  */
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function VideoPreviewModal({
@@ -76,30 +76,30 @@ export function VideoPreviewModal({
 }: VideoPreviewModalProps) {
   const handleAttach = () => {
     if (video && onAttach) {
-      onAttach(video)
-      onOpenChange(false)
+      onAttach(video);
+      onOpenChange(false);
     }
-  }
+  };
 
   const handleCancel = () => {
-    onOpenChange(false)
-  }
+    onOpenChange(false);
+  };
 
   if (!video) {
-    return null
+    return null;
   }
 
   // Construct URLs if not provided (include auth token for HTML5 video element)
-  const token = getAuthToken()
-  const baseUrl = getApiBaseUrl()
-  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
+  const token = getAuthToken();
+  const baseUrl = getApiBaseUrl();
+  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
   const src =
     videoSrc ||
-    `${baseUrl}/api/v1/books/${bookId}/media/${video.path}${tokenParam}`
+    `${baseUrl}/api/v1/books/${bookId}/media/${video.path}${tokenParam}`;
   const subtitles =
     video.has_subtitles && !subtitleSrc
       ? `${baseUrl}/api/v1/books/${bookId}/media/${video.path.replace(/\.[^.]+$/, ".srt")}${tokenParam}`
-      : subtitleSrc
+      : subtitleSrc;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -143,7 +143,7 @@ export function VideoPreviewModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-export default VideoPreviewModal
+export default VideoPreviewModal;

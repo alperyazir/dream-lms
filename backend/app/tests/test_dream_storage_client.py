@@ -94,7 +94,10 @@ def mock_config_response():
                                 "sections": [
                                     {
                                         "type": "fill",
-                                        "activity": {"type": "matchTheWords", "headerText": "Match the words"},
+                                        "activity": {
+                                            "type": "matchTheWords",
+                                            "headerText": "Match the words",
+                                        },
                                     }
                                 ],
                             }
@@ -359,7 +362,9 @@ async def test_token_refresh_on_401(client, mock_token_response, mock_books_resp
 
 
 @pytest.mark.asyncio
-async def test_rate_limiting_respects_retry_after(client, mock_token_response, mock_books_response):
+async def test_rate_limiting_respects_retry_after(
+    client, mock_token_response, mock_books_response
+):
     """Test that 429 rate limiting respects Retry-After header."""
     with patch.object(client._client, "post") as mock_post, patch.object(
         client._client, "request"
@@ -395,7 +400,9 @@ async def test_rate_limiting_respects_retry_after(client, mock_token_response, m
 
 
 @pytest.mark.asyncio
-async def test_cache_hit_returns_cached_data(client, mock_token_response, mock_books_response):
+async def test_cache_hit_returns_cached_data(
+    client, mock_token_response, mock_books_response
+):
     """Test that cached data is returned on cache hit."""
     with patch.object(client._client, "post") as mock_post, patch.object(
         client._client, "request"
@@ -426,7 +433,9 @@ async def test_cache_hit_returns_cached_data(client, mock_token_response, mock_b
 
 
 @pytest.mark.asyncio
-async def test_cache_miss_fetches_from_api(client, mock_token_response, mock_config_response):
+async def test_cache_miss_fetches_from_api(
+    client, mock_token_response, mock_config_response
+):
     """Test that cache miss triggers API call."""
     with patch.object(client._client, "post") as mock_post, patch.object(
         client._client, "request"
@@ -452,7 +461,9 @@ async def test_cache_miss_fetches_from_api(client, mock_token_response, mock_con
 
 
 @pytest.mark.asyncio
-async def test_cache_expiration_triggers_refresh(client, mock_token_response, mock_books_response):
+async def test_cache_expiration_triggers_refresh(
+    client, mock_token_response, mock_books_response
+):
     """Test that expired cache triggers API refresh."""
     with patch.object(client._client, "post") as mock_post, patch.object(
         client._client, "request"
@@ -477,7 +488,9 @@ async def test_cache_expiration_triggers_refresh(client, mock_token_response, mo
 
         # Manually expire cache
         for key in client._cache:
-            client._cache[key]["expires_at"] = datetime.now(timezone.utc) - timedelta(seconds=1)
+            client._cache[key]["expires_at"] = datetime.now(timezone.utc) - timedelta(
+                seconds=1
+            )
 
         # Second call should refresh
         await client.get_books()
@@ -485,7 +498,9 @@ async def test_cache_expiration_triggers_refresh(client, mock_token_response, mo
 
 
 @pytest.mark.asyncio
-async def test_cache_invalidation_clears_cache(client, mock_token_response, mock_books_response):
+async def test_cache_invalidation_clears_cache(
+    client, mock_token_response, mock_books_response
+):
     """Test that manual cache invalidation clears all cached data."""
     with patch.object(client._client, "post") as mock_post, patch.object(
         client._client, "request"
@@ -550,7 +565,9 @@ async def test_get_books_returns_list(client, mock_token_response, mock_books_re
 
 
 @pytest.mark.asyncio
-async def test_get_book_by_id_returns_book(client, mock_token_response, mock_book_response):
+async def test_get_book_by_id_returns_book(
+    client, mock_token_response, mock_book_response
+):
     """Test get_book_by_id() returns single BookRead model."""
     with patch.object(client._client, "post") as mock_post, patch.object(
         client._client, "request"
@@ -576,7 +593,9 @@ async def test_get_book_by_id_returns_book(client, mock_token_response, mock_boo
 
 
 @pytest.mark.asyncio
-async def test_get_book_config_returns_dict(client, mock_token_response, mock_config_response):
+async def test_get_book_config_returns_dict(
+    client, mock_token_response, mock_config_response
+):
     """Test get_book_config() returns config dictionary."""
     with patch.object(client._client, "post") as mock_post, patch.object(
         client._client, "request"
@@ -647,7 +666,9 @@ async def test_download_asset_returns_bytes(client, mock_token_response):
         asset_response.raise_for_status = Mock()
         mock_request.return_value = asset_response
 
-        data = await client.download_asset("Universal ELT", "BRAINS", "images/cover.png")
+        data = await client.download_asset(
+            "Universal ELT", "BRAINS", "images/cover.png"
+        )
         assert isinstance(data, bytes)
         assert data == b"fake image data"
 

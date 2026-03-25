@@ -6,7 +6,7 @@
  * Warns user about consequences (students will lose access).
  */
 
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   AlertDialog,
@@ -17,15 +17,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { useToast } from "@/hooks/use-toast"
-import { deleteAssignment } from "@/services/assignmentsApi"
-import type { AssignmentListItem } from "@/types/assignment"
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { deleteAssignment } from "@/services/assignmentsApi";
+import type { AssignmentListItem } from "@/types/assignment";
 
 interface DeleteAssignmentDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  assignment: AssignmentListItem | null
+  isOpen: boolean;
+  onClose: () => void;
+  assignment: AssignmentListItem | null;
 }
 
 export function DeleteAssignmentDialog({
@@ -33,18 +33,18 @@ export function DeleteAssignmentDialog({
   onClose,
   assignment,
 }: DeleteAssignmentDialogProps) {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
     mutationFn: (assignmentId: string) => deleteAssignment(assignmentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
       toast({
         title: "Success",
         description: "Assignment deleted successfully",
-      })
-      onClose()
+      });
+      onClose();
     },
     onError: (error: any) => {
       toast({
@@ -52,17 +52,17 @@ export function DeleteAssignmentDialog({
         description:
           error?.response?.data?.detail || "Failed to delete assignment",
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
   const handleDelete = () => {
     if (assignment) {
-      deleteMutation.mutate(assignment.id)
+      deleteMutation.mutate(assignment.id);
     }
-  }
+  };
 
-  if (!assignment) return null
+  if (!assignment) return null;
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -101,5 +101,5 @@ export function DeleteAssignmentDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

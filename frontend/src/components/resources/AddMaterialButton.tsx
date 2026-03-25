@@ -6,16 +6,16 @@
  * directly from the Resources section.
  */
 
-import { Plus } from "lucide-react"
-import { useState } from "react"
-import { UploadMaterialDialog } from "@/components/materials/UploadMaterialDialog"
-import { Button } from "@/components/ui/button"
-import type { Material } from "@/types/material"
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import { UploadMaterialDialog } from "@/components/materials/UploadMaterialDialog";
+import { Button } from "@/components/ui/button";
+import type { Material } from "@/types/material";
 
 export interface AddMaterialButtonProps {
-  bookId?: string | number
-  assignmentId?: string
-  onUploadComplete?: (material: Material) => void
+  bookId?: string | number;
+  assignmentId?: string;
+  onUploadComplete?: (material: Material) => void;
 }
 
 export function AddMaterialButton({
@@ -23,12 +23,12 @@ export function AddMaterialButton({
   assignmentId,
   onUploadComplete,
 }: AddMaterialButtonProps) {
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleUploadComplete = (material: Material) => {
-    setDialogOpen(false)
-    onUploadComplete?.(material)
-  }
+    setDialogOpen(false);
+    onUploadComplete?.(material);
+  };
 
   return (
     <>
@@ -47,7 +47,7 @@ export function AddMaterialButton({
         }}
       />
     </>
-  )
+  );
 }
 
-AddMaterialButton.displayName = "AddMaterialButton"
+AddMaterialButton.displayName = "AddMaterialButton";

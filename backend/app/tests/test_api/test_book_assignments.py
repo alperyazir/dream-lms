@@ -30,18 +30,12 @@ class TestBookAssignmentSchemas:
     def test_create_schema_requires_target(self):
         """Test that at least one of school_id or teacher_id is required"""
         with pytest.raises(ValueError):
-            BookAssignmentCreate(
-                book_id=uuid.uuid4(),
-                school_id=None,
-                teacher_id=None
-            )
+            BookAssignmentCreate(book_id=uuid.uuid4(), school_id=None, teacher_id=None)
 
     def test_create_schema_with_school_only(self):
         """Test creating with school_id only"""
         schema = BookAssignmentCreate(
-            book_id=uuid.uuid4(),
-            school_id=uuid.uuid4(),
-            teacher_id=None
+            book_id=uuid.uuid4(), school_id=uuid.uuid4(), teacher_id=None
         )
         assert schema.school_id is not None
         assert schema.teacher_id is None
@@ -49,9 +43,7 @@ class TestBookAssignmentSchemas:
     def test_create_schema_with_teacher_only(self):
         """Test creating with teacher_id only"""
         schema = BookAssignmentCreate(
-            book_id=uuid.uuid4(),
-            school_id=None,
-            teacher_id=uuid.uuid4()
+            book_id=uuid.uuid4(), school_id=None, teacher_id=uuid.uuid4()
         )
         assert schema.school_id is None
         assert schema.teacher_id is not None
@@ -63,7 +55,7 @@ class TestBookAssignmentSchemas:
             book_id=uuid.uuid4(),
             school_id=uuid.uuid4(),
             teacher_ids=teacher_ids,
-            assign_to_all_teachers=False
+            assign_to_all_teachers=False,
         )
         assert len(schema.teacher_ids) == 2
         assert schema.assign_to_all_teachers is False
@@ -74,12 +66,12 @@ class TestBookAssignmentModel:
 
     def test_model_fields_exist(self):
         """Test model has all required fields"""
-        assert hasattr(BookAssignment, 'id')
-        assert hasattr(BookAssignment, 'book_id')
-        assert hasattr(BookAssignment, 'school_id')
-        assert hasattr(BookAssignment, 'teacher_id')
-        assert hasattr(BookAssignment, 'assigned_by')
-        assert hasattr(BookAssignment, 'assigned_at')
+        assert hasattr(BookAssignment, "id")
+        assert hasattr(BookAssignment, "book_id")
+        assert hasattr(BookAssignment, "school_id")
+        assert hasattr(BookAssignment, "teacher_id")
+        assert hasattr(BookAssignment, "assigned_by")
+        assert hasattr(BookAssignment, "assigned_at")
 
     def test_model_tablename(self):
         """Test model uses correct table name"""
@@ -92,20 +84,20 @@ class TestBookAssignmentResponseSchemas:
     def test_book_assignment_public_fields(self):
         """Test BookAssignmentPublic has expected fields"""
         fields = BookAssignmentPublic.model_fields
-        assert 'id' in fields
-        assert 'book_id' in fields
-        assert 'school_id' in fields
-        assert 'teacher_id' in fields
-        assert 'assigned_by' in fields
-        assert 'assigned_at' in fields
+        assert "id" in fields
+        assert "book_id" in fields
+        assert "school_id" in fields
+        assert "teacher_id" in fields
+        assert "assigned_by" in fields
+        assert "assigned_at" in fields
 
     def test_book_assignment_list_response_fields(self):
         """Test BookAssignmentListResponse has pagination fields"""
         fields = BookAssignmentListResponse.model_fields
-        assert 'items' in fields
-        assert 'total' in fields
-        assert 'skip' in fields
-        assert 'limit' in fields
+        assert "items" in fields
+        assert "total" in fields
+        assert "skip" in fields
+        assert "limit" in fields
 
 
 # --- API Integration Tests (QA Fix) ---
@@ -122,7 +114,7 @@ def publisher_with_book_and_school_fixture(session: Session):
         hashed_password=get_password_hash("publisherpass"),
         role=UserRole.publisher,
         is_active=True,
-        full_name="API Test Publisher"
+        full_name="API Test Publisher",
     )
     session.add(pub_user)
     session.commit()
@@ -130,20 +122,14 @@ def publisher_with_book_and_school_fixture(session: Session):
 
     # Create publisher record
     publisher = Publisher(
-        id=uuid.uuid4(),
-        user_id=pub_user.id,
-        name="API Test Publisher Co"
+        id=uuid.uuid4(), user_id=pub_user.id, name="API Test Publisher Co"
     )
     session.add(publisher)
     session.commit()
     session.refresh(publisher)
 
     # Create school
-    school = School(
-        id=uuid.uuid4(),
-        name="API Test School",
-        publisher_id=publisher.id
-    )
+    school = School(id=uuid.uuid4(), name="API Test School", publisher_id=publisher.id)
     session.add(school)
     session.commit()
     session.refresh(school)
@@ -157,7 +143,7 @@ def publisher_with_book_and_school_fixture(session: Session):
         publisher_name="API Test Publisher Co",
         publisher_id=publisher.id,
         created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC)
+        updated_at=datetime.now(UTC),
     )
     session.add(book)
     session.commit()
@@ -171,17 +157,13 @@ def publisher_with_book_and_school_fixture(session: Session):
         hashed_password=get_password_hash("teacherpass"),
         role=UserRole.teacher,
         is_active=True,
-        full_name="API Test Teacher"
+        full_name="API Test Teacher",
     )
     session.add(teacher_user)
     session.commit()
     session.refresh(teacher_user)
 
-    teacher = Teacher(
-        id=uuid.uuid4(),
-        user_id=teacher_user.id,
-        school_id=school.id
-    )
+    teacher = Teacher(id=uuid.uuid4(), user_id=teacher_user.id, school_id=school.id)
     session.add(teacher)
     session.commit()
     session.refresh(teacher)
@@ -192,16 +174,21 @@ def publisher_with_book_and_school_fixture(session: Session):
         "school": school,
         "book": book,
         "teacher_user": teacher_user,
-        "teacher": teacher
+        "teacher": teacher,
     }
 
 
 @pytest.fixture(name="publisher_api_token")
-def publisher_api_token_fixture(client: TestClient, publisher_with_book_and_school) -> str:
+def publisher_api_token_fixture(
+    client: TestClient, publisher_with_book_and_school
+) -> str:
     """Get access token for the API test publisher."""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": "api_test_publisher@example.com", "password": "publisherpass"}
+        data={
+            "username": "api_test_publisher@example.com",
+            "password": "publisherpass",
+        },
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -211,7 +198,10 @@ class TestBookAssignmentAPIEndpoints:
     """Integration tests for Book Assignment API endpoints."""
 
     def test_create_bulk_assignment_school_level(
-        self, client: TestClient, publisher_api_token: str, publisher_with_book_and_school
+        self,
+        client: TestClient,
+        publisher_api_token: str,
+        publisher_with_book_and_school,
     ):
         """Test creating a school-level bulk assignment via API."""
         book = publisher_with_book_and_school["book"]
@@ -222,9 +212,9 @@ class TestBookAssignmentAPIEndpoints:
             json={
                 "book_id": str(book.id),
                 "school_id": str(school.id),
-                "assign_to_all_teachers": True
+                "assign_to_all_teachers": True,
             },
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
 
         assert response.status_code == 201
@@ -234,7 +224,10 @@ class TestBookAssignmentAPIEndpoints:
         assert data[0]["school_id"] == str(school.id)
 
     def test_create_bulk_assignment_specific_teachers(
-        self, client: TestClient, publisher_api_token: str, publisher_with_book_and_school
+        self,
+        client: TestClient,
+        publisher_api_token: str,
+        publisher_with_book_and_school,
     ):
         """Test creating assignments for specific teachers via API."""
         book = publisher_with_book_and_school["book"]
@@ -247,9 +240,9 @@ class TestBookAssignmentAPIEndpoints:
                 "book_id": str(book.id),
                 "school_id": str(school.id),
                 "teacher_ids": [str(teacher.id)],
-                "assign_to_all_teachers": False
+                "assign_to_all_teachers": False,
             },
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
 
         assert response.status_code == 201
@@ -258,7 +251,10 @@ class TestBookAssignmentAPIEndpoints:
         assert data[0]["teacher_id"] == str(teacher.id)
 
     def test_list_book_assignments(
-        self, client: TestClient, publisher_api_token: str, publisher_with_book_and_school
+        self,
+        client: TestClient,
+        publisher_api_token: str,
+        publisher_with_book_and_school,
     ):
         """Test listing book assignments via API."""
         book = publisher_with_book_and_school["book"]
@@ -270,15 +266,15 @@ class TestBookAssignmentAPIEndpoints:
             json={
                 "book_id": str(book.id),
                 "school_id": str(school.id),
-                "assign_to_all_teachers": True
+                "assign_to_all_teachers": True,
             },
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
 
         # Then list assignments
         response = client.get(
             f"{settings.API_V1_STR}/book-assignments",
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
 
         assert response.status_code == 200
@@ -288,7 +284,10 @@ class TestBookAssignmentAPIEndpoints:
         assert data["total"] >= 1
 
     def test_list_assignments_filter_by_book(
-        self, client: TestClient, publisher_api_token: str, publisher_with_book_and_school
+        self,
+        client: TestClient,
+        publisher_api_token: str,
+        publisher_with_book_and_school,
     ):
         """Test filtering assignments by book_id."""
         book = publisher_with_book_and_school["book"]
@@ -300,15 +299,15 @@ class TestBookAssignmentAPIEndpoints:
             json={
                 "book_id": str(book.id),
                 "school_id": str(school.id),
-                "assign_to_all_teachers": True
+                "assign_to_all_teachers": True,
             },
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
 
         # List with filter
         response = client.get(
             f"{settings.API_V1_STR}/book-assignments?book_id={book.id}",
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
 
         assert response.status_code == 200
@@ -317,7 +316,10 @@ class TestBookAssignmentAPIEndpoints:
             assert item["book_id"] == str(book.id)
 
     def test_get_book_assignments_for_book(
-        self, client: TestClient, publisher_api_token: str, publisher_with_book_and_school
+        self,
+        client: TestClient,
+        publisher_api_token: str,
+        publisher_with_book_and_school,
     ):
         """Test getting assignments for a specific book."""
         book = publisher_with_book_and_school["book"]
@@ -329,15 +331,15 @@ class TestBookAssignmentAPIEndpoints:
             json={
                 "book_id": str(book.id),
                 "school_id": str(school.id),
-                "assign_to_all_teachers": True
+                "assign_to_all_teachers": True,
             },
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
 
         # Get assignments for this book
         response = client.get(
             f"{settings.API_V1_STR}/book-assignments/book/{book.id}",
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
 
         assert response.status_code == 200
@@ -345,7 +347,10 @@ class TestBookAssignmentAPIEndpoints:
         assert len(data) >= 1
 
     def test_delete_book_assignment(
-        self, client: TestClient, publisher_api_token: str, publisher_with_book_and_school
+        self,
+        client: TestClient,
+        publisher_api_token: str,
+        publisher_with_book_and_school,
     ):
         """Test deleting a book assignment."""
         book = publisher_with_book_and_school["book"]
@@ -357,27 +362,25 @@ class TestBookAssignmentAPIEndpoints:
             json={
                 "book_id": str(book.id),
                 "school_id": str(school.id),
-                "assign_to_all_teachers": True
+                "assign_to_all_teachers": True,
             },
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
         assignment_id = create_response.json()[0]["id"]
 
         # Delete it
         response = client.delete(
             f"{settings.API_V1_STR}/book-assignments/{assignment_id}",
-            headers={"Authorization": f"Bearer {publisher_api_token}"}
+            headers={"Authorization": f"Bearer {publisher_api_token}"},
         )
 
         assert response.status_code == 204
 
-    def test_unauthorized_access_denied(
-        self, client: TestClient, student_token: str
-    ):
+    def test_unauthorized_access_denied(self, client: TestClient, student_token: str):
         """Test that non-publishers cannot access book assignment endpoints."""
         response = client.get(
             f"{settings.API_V1_STR}/book-assignments",
-            headers={"Authorization": f"Bearer {student_token}"}
+            headers={"Authorization": f"Bearer {student_token}"},
         )
 
         assert response.status_code == 403

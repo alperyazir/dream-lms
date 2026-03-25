@@ -10,14 +10,12 @@ import uuid
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from fastapi.responses import Response
-from starlette.requests import Request
-
-from app.core.rate_limit import RateLimits, limiter
 from sqlalchemy import func
 from sqlmodel import select
+from starlette.requests import Request
 
 from app.api.deps import SessionDep, require_role
-from app.services.dream_storage_client import get_dream_storage_client
+from app.core.rate_limit import RateLimits, limiter
 from app.crud import create_teacher
 from app.models import (
     School,
@@ -41,6 +39,7 @@ from app.schemas.publisher import (
     TeacherWithCounts,
 )
 from app.services.book_service_v2 import get_book_service
+from app.services.dream_storage_client import get_dream_storage_client
 from app.services.publisher_service_v2 import get_publisher_service
 from app.utils import generate_new_account_email, generate_temp_password, send_email
 
@@ -72,8 +71,7 @@ async def get_publisher_logo(request: Request, publisher_id: int) -> Response:
 
         if result is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Publisher logo not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Publisher logo not found"
             )
 
         content, content_type = result
@@ -82,15 +80,14 @@ async def get_publisher_logo(request: Request, publisher_id: int) -> Response:
             media_type=content_type,
             headers={
                 "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
-            }
+            },
         )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error fetching logo for publisher {publisher_id}: {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher logo not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Publisher logo not found"
         )
 
 
@@ -110,7 +107,7 @@ def get_current_publisher_id(current_user: User) -> int:
     if current_user.dcs_publisher_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Publisher account not linked to a DCS publisher"
+            detail="Publisher account not linked to a DCS publisher",
         )
     return current_user.dcs_publisher_id
 
@@ -118,8 +115,7 @@ def get_current_publisher_id(current_user: User) -> int:
 @router.get("/me/profile", response_model=PublisherProfile)
 @limiter.limit(RateLimits.READ)
 async def get_my_profile(
-    request: Request,
-    current_user: User = require_role(UserRole.publisher)
+    request: Request, current_user: User = require_role(UserRole.publisher)
 ) -> PublisherProfile:
     """
     Get current publisher's profile from DCS.
@@ -133,8 +129,7 @@ async def get_my_profile(
 
     if not publisher:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Publisher not found in DCS"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Publisher not found in DCS"
         )
 
     return PublisherProfile(
@@ -153,7 +148,7 @@ async def get_my_profile(
 async def get_my_stats(
     request: Request,
     session: SessionDep,
-    current_user: User = require_role(UserRole.publisher)
+    current_user: User = require_role(UserRole.publisher),
 ) -> PublisherStats:
     """
     Get organization statistics.
@@ -164,8 +159,7 @@ async def get_my_stats(
 
     # Count schools
     schools_count = session.exec(
-        select(func.count(School.id))
-        .where(School.dcs_publisher_id == publisher_id)
+        select(func.count(School.id)).where(School.dcs_publisher_id == publisher_id)
     ).one()
 
     # Count teachers in publisher's schools
@@ -177,6 +171,7 @@ async def get_my_stats(
 
     # Count distinct students enrolled in classes at publisher's schools
     from app.models import Class, ClassStudent
+
     students_count = session.exec(
         select(func.count(func.distinct(ClassStudent.student_id)))
         .join(Class, ClassStudent.class_id == Class.id)
@@ -201,7 +196,7 @@ async def get_my_stats(
 def list_my_schools(
     request: Request,
     session: SessionDep,
-    current_user: User = require_role(UserRole.publisher)
+    current_user: User = require_role(UserRole.publisher),
 ) -> list[SchoolWithCounts]:
     """List schools belonging to publisher with aggregated counts."""
     from app.models import BookAssignment, Class, ClassStudent, Teacher
@@ -218,8 +213,7 @@ def list_my_schools(
     for school in schools:
         # Count teachers in this school
         teacher_count = session.exec(
-            select(func.count(Teacher.id))
-            .where(Teacher.school_id == school.id)
+            select(func.count(Teacher.id)).where(Teacher.school_id == school.id)
         ).one()
 
         # Count students enrolled in classes belonging to this school
@@ -234,35 +228,39 @@ def list_my_schools(
             select(func.count(func.distinct(BookAssignment.dcs_book_id)))
             .join(Teacher, BookAssignment.teacher_id == Teacher.id, isouter=True)
             .where(
-                (BookAssignment.school_id == school.id) |
-                (Teacher.school_id == school.id)
+                (BookAssignment.school_id == school.id)
+                | (Teacher.school_id == school.id)
             )
         ).one()
 
-        result.append(SchoolWithCounts(
-            id=school.id,
-            name=school.name,
-            address=school.address,
-            contact_info=school.contact_info,
-            benchmarking_enabled=school.benchmarking_enabled,
-            dcs_publisher_id=school.dcs_publisher_id,
-            created_at=school.created_at,
-            updated_at=school.updated_at,
-            teacher_count=teacher_count,
-            student_count=student_count,
-            book_count=book_count,
-        ))
+        result.append(
+            SchoolWithCounts(
+                id=school.id,
+                name=school.name,
+                address=school.address,
+                contact_info=school.contact_info,
+                benchmarking_enabled=school.benchmarking_enabled,
+                dcs_publisher_id=school.dcs_publisher_id,
+                created_at=school.created_at,
+                updated_at=school.updated_at,
+                teacher_count=teacher_count,
+                student_count=student_count,
+                book_count=book_count,
+            )
+        )
 
     return result
 
 
-@router.post("/me/schools", response_model=SchoolPublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/me/schools", response_model=SchoolPublic, status_code=status.HTTP_201_CREATED
+)
 @limiter.limit(RateLimits.WRITE)
 def create_my_school(
     request: Request,
     session: SessionDep,
     school_in: SchoolCreateByPublisher,
-    current_user: User = require_role(UserRole.publisher)
+    current_user: User = require_role(UserRole.publisher),
 ) -> SchoolPublic:
     """Create school with auto-set publisher ID."""
     publisher_id = get_current_publisher_id(current_user)
@@ -286,7 +284,7 @@ def delete_my_school(
     request: Request,
     session: SessionDep,
     school_id: uuid.UUID,
-    current_user: User = require_role(UserRole.publisher)
+    current_user: User = require_role(UserRole.publisher),
 ) -> None:
     """Delete a school belonging to the current publisher."""
     publisher_id = get_current_publisher_id(current_user)
@@ -294,14 +292,13 @@ def delete_my_school(
     school = session.get(School, school_id)
     if not school:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="School not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="School not found"
         )
 
     if school.dcs_publisher_id != publisher_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only delete schools belonging to your organization"
+            detail="You can only delete schools belonging to your organization",
         )
 
     logger.info(
@@ -317,11 +314,12 @@ def delete_my_school(
 def list_my_teachers(
     request: Request,
     session: SessionDep,
-    current_user: User = require_role(UserRole.publisher)
+    current_user: User = require_role(UserRole.publisher),
 ) -> list[TeacherWithCounts]:
     """List teachers in publisher's schools with aggregated counts."""
-    from app.models import BookAssignment, Class
     from sqlalchemy.orm import selectinload
+
+    from app.models import BookAssignment, Class
 
     publisher_id = get_current_publisher_id(current_user)
 
@@ -340,45 +338,52 @@ def list_my_teachers(
 
         # Count distinct books assigned to this teacher (directly or via school)
         books_assigned = session.exec(
-            select(func.count(func.distinct(BookAssignment.dcs_book_id)))
-            .where(
-                (BookAssignment.teacher_id == teacher.id) |
-                ((BookAssignment.school_id == teacher.school_id) & (BookAssignment.teacher_id.is_(None)))
+            select(func.count(func.distinct(BookAssignment.dcs_book_id))).where(
+                (BookAssignment.teacher_id == teacher.id)
+                | (
+                    (BookAssignment.school_id == teacher.school_id)
+                    & (BookAssignment.teacher_id.is_(None))
+                )
             )
         ).one()
 
         # Count classes owned by this teacher
         classroom_count = session.exec(
-            select(func.count(Class.id))
-            .where(Class.teacher_id == teacher.id)
+            select(func.count(Class.id)).where(Class.teacher_id == teacher.id)
         ).one()
 
-        result.append(TeacherWithCounts(
-            id=teacher.id,
-            user_id=user.id,
-            school_id=teacher.school_id,
-            school_name=school.name if school else None,
-            subject_specialization=teacher.subject_specialization,
-            user_full_name=user.full_name or "",
-            user_email=user.email or "",
-            user_username=user.username,
-            created_at=teacher.created_at,
-            updated_at=teacher.updated_at,
-            books_assigned=books_assigned,
-            classroom_count=classroom_count,
-        ))
+        result.append(
+            TeacherWithCounts(
+                id=teacher.id,
+                user_id=user.id,
+                school_id=teacher.school_id,
+                school_name=school.name if school else None,
+                subject_specialization=teacher.subject_specialization,
+                user_full_name=user.full_name or "",
+                user_email=user.email or "",
+                user_username=user.username,
+                created_at=teacher.created_at,
+                updated_at=teacher.updated_at,
+                books_assigned=books_assigned,
+                classroom_count=classroom_count,
+            )
+        )
 
     return result
 
 
-@router.post("/me/teachers", response_model=UserCreationResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/me/teachers",
+    response_model=UserCreationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 @limiter.limit(RateLimits.WRITE)
 def create_my_teacher(
     request: Request,
     session: SessionDep,
     teacher_in: TeacherCreateAPI,
     background_tasks: BackgroundTasks,
-    current_user: User = require_role(UserRole.publisher)
+    current_user: User = require_role(UserRole.publisher),
 ) -> UserCreationResponse:
     """Create teacher in publisher's school."""
     publisher_id = get_current_publisher_id(current_user)
@@ -387,13 +392,12 @@ def create_my_teacher(
     school = session.get(School, teacher_in.school_id)
     if not school:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="School not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="School not found"
         )
     if school.dcs_publisher_id != publisher_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="School does not belong to your organization"
+            detail="School does not belong to your organization",
         )
 
     # Generate random password
@@ -450,8 +454,10 @@ def create_my_teacher(
         ),
         temporary_password=password if not password_emailed else None,
         password_emailed=password_emailed,
-        message="Teacher created successfully" + (
-            ". Password sent via email." if password_emailed
+        message="Teacher created successfully"
+        + (
+            ". Password sent via email."
+            if password_emailed
             else ". Please share the temporary password with the teacher."
         ),
     )
@@ -469,6 +475,7 @@ def list_my_students(
 ) -> PublisherStudentListResponse:
     """List students enrolled in classes at publisher's schools."""
     from sqlalchemy import or_
+
     from app.models import Class, ClassStudent, Student
 
     publisher_id = get_current_publisher_id(current_user)
@@ -517,28 +524,33 @@ def list_my_students(
         ).one()
 
         # Get school name from the first class enrollment
-        school_name = session.exec(
-            select(School.name)
-            .join(Class, Class.school_id == School.id)
-            .join(ClassStudent, ClassStudent.class_id == Class.id)
-            .where(
-                ClassStudent.student_id == student.id,
-                School.dcs_publisher_id == publisher_id,
-            )
-            .limit(1)
-        ).first() or "Unknown"
+        school_name = (
+            session.exec(
+                select(School.name)
+                .join(Class, Class.school_id == School.id)
+                .join(ClassStudent, ClassStudent.class_id == Class.id)
+                .where(
+                    ClassStudent.student_id == student.id,
+                    School.dcs_publisher_id == publisher_id,
+                )
+                .limit(1)
+            ).first()
+            or "Unknown"
+        )
 
-        items.append(PublisherStudentItem(
-            id=student.id,
-            user_id=user.id,
-            user_full_name=user.full_name or "",
-            user_email=user.email,
-            user_username=user.username,
-            grade_level=student.grade_level,
-            school_name=school_name,
-            classroom_count=classroom_count,
-            created_at=student.created_at,
-        ))
+        items.append(
+            PublisherStudentItem(
+                id=student.id,
+                user_id=user.id,
+                user_full_name=user.full_name or "",
+                user_email=user.email,
+                user_username=user.username,
+                grade_level=student.grade_level,
+                school_name=school_name,
+                classroom_count=classroom_count,
+                created_at=student.created_at,
+            )
+        )
 
     return PublisherStudentListResponse(
         items=items,
@@ -552,8 +564,7 @@ def list_my_students(
 @router.get("/me/books", response_model=list[BookPublic])
 @limiter.limit(RateLimits.READ)
 async def list_my_books(
-    request: Request,
-    current_user: User = require_role(UserRole.publisher)
+    request: Request, current_user: User = require_role(UserRole.publisher)
 ) -> list[BookPublic]:
     """List books from DCS for publisher."""
     publisher_id = get_current_publisher_id(current_user)

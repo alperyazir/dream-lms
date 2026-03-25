@@ -5,7 +5,7 @@
  * Stepped form for configuring and generating reports.
  */
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Calendar,
   CheckCircle2,
@@ -15,34 +15,34 @@ import {
   User,
   Users,
   X,
-} from "lucide-react"
-import { useMemo, useState } from "react"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import type {
   ReportGenerateRequest,
   ReportTemplateType,
   ReportType,
-} from "@/types/reports"
-import { REPORT_PERIOD_LABELS } from "@/types/reports"
+} from "@/types/reports";
+import { REPORT_PERIOD_LABELS } from "@/types/reports";
 
 const reportFormSchema = z
   .object({
@@ -65,36 +65,36 @@ const reportFormSchema = z
   .refine(
     (data) => {
       if (data.period === "custom") {
-        return data.start_date && data.end_date
+        return data.start_date && data.end_date;
       }
-      return true
+      return true;
     },
     {
       message: "Start and end dates are required for custom period",
       path: ["start_date"],
     },
-  )
+  );
 
-type ReportFormData = z.infer<typeof reportFormSchema>
+type ReportFormData = z.infer<typeof reportFormSchema>;
 
 interface NamedOption {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface ReportBuilderProps {
-  classes: NamedOption[]
-  students: NamedOption[]
-  onGenerate: (config: ReportGenerateRequest) => void
-  isGenerating?: boolean
-  selectedTemplate?: ReportTemplateType | null
+  classes: NamedOption[];
+  students: NamedOption[];
+  onGenerate: (config: ReportGenerateRequest) => void;
+  isGenerating?: boolean;
+  selectedTemplate?: ReportTemplateType | null;
 }
 
 const reportTypes: {
-  value: "student" | "class"
-  label: string
-  description: string
-  icon: React.ComponentType<{ className?: string }>
+  value: "student" | "class";
+  label: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
 }[] = [
   {
     value: "student",
@@ -108,7 +108,7 @@ const reportTypes: {
     description: "Classroom overview",
     icon: Users,
   },
-]
+];
 
 export function ReportBuilder({
   classes,
@@ -117,18 +117,19 @@ export function ReportBuilder({
   isGenerating = false,
   selectedTemplate = null,
 }: ReportBuilderProps) {
-  const [reportType, setReportType] = useState<ReportType>("student")
-  const [searchQuery, setSearchQuery] = useState("")
+  const [reportType, setReportType] = useState<ReportType>("student");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filteredOptions = useMemo(() => {
-    const source = reportType === "student" ? students : classes
-    const sorted = [...source].sort((a, b) => a.name.localeCompare(b.name))
-    if (!searchQuery.trim()) return sorted
-    const q = searchQuery.toLowerCase()
-    return sorted.filter((item) => item.name.toLowerCase().includes(q))
-  }, [reportType, students, classes, searchQuery])
+    const source = reportType === "student" ? students : classes;
+    const sorted = [...source].sort((a, b) => a.name.localeCompare(b.name));
+    if (!searchQuery.trim()) return sorted;
+    const q = searchQuery.toLowerCase();
+    return sorted.filter((item) => item.name.toLowerCase().includes(q));
+  }, [reportType, students, classes, searchQuery]);
 
-  const totalCount = reportType === "student" ? students.length : classes.length
+  const totalCount =
+    reportType === "student" ? students.length : classes.length;
 
   const form = useForm<ReportFormData>({
     resolver: zodResolver(reportFormSchema),
@@ -139,13 +140,13 @@ export function ReportBuilder({
       target_id: "",
       template_type: selectedTemplate,
     },
-  })
+  });
 
-  const currentPeriod = form.watch("period")
-  const currentTargetId = form.watch("target_id")
+  const currentPeriod = form.watch("period");
+  const currentTargetId = form.watch("target_id");
 
-  const isStep2Complete = !!currentTargetId
-  const isStep3Complete = !!currentPeriod
+  const isStep2Complete = !!currentTargetId;
+  const isStep3Complete = !!currentPeriod;
 
   const handleSubmit = (data: ReportFormData) => {
     const config: ReportGenerateRequest = {
@@ -156,22 +157,22 @@ export function ReportBuilder({
       start_date: data.period === "custom" ? data.start_date : null,
       end_date: data.period === "custom" ? data.end_date : null,
       template_type: data.template_type,
-    }
-    onGenerate(config)
-  }
+    };
+    onGenerate(config);
+  };
 
   const handleReportTypeChange = (value: "student" | "class") => {
-    setReportType(value)
-    form.setValue("report_type", value)
-    form.setValue("target_id", "")
-    setSearchQuery("")
-  }
+    setReportType(value);
+    form.setValue("report_type", value);
+    form.setValue("target_id", "");
+    setSearchQuery("");
+  };
 
   const targetLabel =
-    reportType === "student" ? "Select Student" : "Select Class"
+    reportType === "student" ? "Select Student" : "Select Class";
 
   const searchPlaceholder =
-    reportType === "student" ? "Search students..." : "Search classes..."
+    reportType === "student" ? "Search students..." : "Search classes...";
 
   return (
     <Form {...form}>
@@ -192,7 +193,7 @@ export function ReportBuilder({
               <FormItem>
                 <div className="grid grid-cols-2 gap-3">
                   {reportTypes.map((type) => {
-                    const isActive = field.value === type.value
+                    const isActive = field.value === type.value;
                     return (
                       <button
                         key={type.value}
@@ -232,7 +233,7 @@ export function ReportBuilder({
                           </p>
                         </div>
                       </button>
-                    )
+                    );
                   })}
                 </div>
                 <FormMessage />
@@ -276,8 +277,8 @@ export function ReportBuilder({
                           placeholder={searchPlaceholder}
                           value={searchQuery}
                           onChange={(e) => {
-                            e.stopPropagation()
-                            setSearchQuery(e.target.value)
+                            e.stopPropagation();
+                            setSearchQuery(e.target.value);
                           }}
                           onKeyDown={(e) => e.stopPropagation()}
                           className="pl-8 pr-8 h-8 text-sm"
@@ -286,8 +287,8 @@ export function ReportBuilder({
                           <button
                             type="button"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              setSearchQuery("")
+                              e.stopPropagation();
+                              setSearchQuery("");
                             }}
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                           >
@@ -422,7 +423,7 @@ export function ReportBuilder({
         </Button>
       </form>
     </Form>
-  )
+  );
 }
 
-export default ReportBuilder
+export default ReportBuilder;

@@ -5,21 +5,21 @@
  * Wraps MultiActivityPlayer with previewMode=true.
  */
 
-import { useCallback, useState } from "react"
+import { useCallback, useState } from "react";
 import type {
   ActivityProgressInfo,
   AssignmentPreviewResponse,
-} from "@/types/assignment"
+} from "@/types/assignment";
 import {
   MultiActivityPlayer,
   type PreviewResults,
-} from "../ActivityPlayers/MultiActivityPlayer"
-import { TestModeResultsSummary } from "./TestModeResultsSummary"
+} from "../ActivityPlayers/MultiActivityPlayer";
+import { TestModeResultsSummary } from "./TestModeResultsSummary";
 
 interface TestModePlayerProps {
-  assignment: AssignmentPreviewResponse
-  onExit: () => void
-  onRetry?: () => void
+  assignment: AssignmentPreviewResponse;
+  onExit: () => void;
+  onRetry?: () => void;
 }
 
 /**
@@ -37,7 +37,7 @@ function createEmptyProgress(
     response_data: null,
     started_at: null,
     completed_at: null,
-  }))
+  }));
 }
 
 export function TestModePlayer({
@@ -45,29 +45,29 @@ export function TestModePlayer({
   onExit,
   onRetry,
 }: TestModePlayerProps) {
-  const [showResults, setShowResults] = useState(false)
+  const [showResults, setShowResults] = useState(false);
   const [previewResults, setPreviewResults] = useState<PreviewResults | null>(
     null,
-  )
+  );
 
   const handlePreviewComplete = useCallback((results: PreviewResults) => {
-    setPreviewResults(results)
-    setShowResults(true)
-  }, [])
+    setPreviewResults(results);
+    setShowResults(true);
+  }, []);
 
   const handleCloseResults = useCallback(() => {
-    setShowResults(false)
-    onExit()
-  }, [onExit])
+    setShowResults(false);
+    onExit();
+  }, [onExit]);
 
   const handleRetry = useCallback(() => {
-    setShowResults(false)
-    setPreviewResults(null)
-    onRetry?.()
-  }, [onRetry])
+    setShowResults(false);
+    setPreviewResults(null);
+    onRetry?.();
+  }, [onRetry]);
 
   // Create empty progress for all activities
-  const activityProgress = createEmptyProgress(assignment.activities)
+  const activityProgress = createEmptyProgress(assignment.activities);
 
   return (
     <>
@@ -95,5 +95,5 @@ export function TestModePlayer({
         onRetry={onRetry ? handleRetry : undefined}
       />
     </>
-  )
+  );
 }

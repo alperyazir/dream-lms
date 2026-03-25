@@ -6,26 +6,26 @@
  * Supports context (bookId, assignmentId) for tracking where materials are uploaded from.
  */
 
-import { Upload } from "lucide-react"
+import { Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import useCustomToast from "@/hooks/useCustomToast"
-import { useMaterialsPage } from "@/hooks/useMaterials"
-import type { Material } from "@/types/material"
-import { MaterialUploadZone } from "./MaterialUploadZone"
+} from "@/components/ui/dialog";
+import useCustomToast from "@/hooks/useCustomToast";
+import { useMaterialsPage } from "@/hooks/useMaterials";
+import type { Material } from "@/types/material";
+import { MaterialUploadZone } from "./MaterialUploadZone";
 
 export interface UploadMaterialDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onUploadComplete?: (material: Material) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUploadComplete?: (material: Material) => void;
   context?: {
-    bookId?: string
-    assignmentId?: string
-  }
+    bookId?: string;
+    assignmentId?: string;
+  };
 }
 
 export function UploadMaterialDialog({
@@ -34,27 +34,27 @@ export function UploadMaterialDialog({
   onUploadComplete,
   context: _context,
 }: UploadMaterialDialogProps) {
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const { uploadFile, quota, isUploading } = useMaterialsPage()
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const { uploadFile, quota, isUploading } = useMaterialsPage();
 
   const handleUpload = async (
     file: File,
     onProgress: (progress: number) => void,
   ) => {
     try {
-      const response = await uploadFile({ file, onProgress })
-      showSuccessToast(`${file.name} uploaded successfully`)
+      const response = await uploadFile({ file, onProgress });
+      showSuccessToast(`${file.name} uploaded successfully`);
 
       // Call completion handler if provided
       if (onUploadComplete && response) {
-        onUploadComplete(response.material)
+        onUploadComplete(response.material);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Upload failed"
-      showErrorToast(message)
-      throw err
+      const message = err instanceof Error ? err.message : "Upload failed";
+      showErrorToast(message);
+      throw err;
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,7 +72,7 @@ export function UploadMaterialDialog({
         />
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-UploadMaterialDialog.displayName = "UploadMaterialDialog"
+UploadMaterialDialog.displayName = "UploadMaterialDialog";

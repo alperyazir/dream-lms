@@ -12,22 +12,22 @@ import {
   RefreshCw,
   Volume2,
   XCircle,
-} from "lucide-react"
-import { useCallback, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import type { WordBuilderResult, WordResult } from "@/types/word-builder"
+} from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { WordBuilderResult, WordResult } from "@/types/word-builder";
 
 interface WordBuilderResultsProps {
   /** The word builder result data */
-  result: WordBuilderResult
+  result: WordBuilderResult;
   /** Callback to retry the activity */
-  onRetry?: () => void
+  onRetry?: () => void;
   /** Callback to go back to generator */
-  onBack?: () => void
+  onBack?: () => void;
   /** Hide summary info (for embedding in dialogs) */
-  hideSummary?: boolean
+  hideSummary?: boolean;
 }
 
 export function WordBuilderResults({
@@ -36,42 +36,42 @@ export function WordBuilderResults({
   onBack,
   hideSummary = false,
 }: WordBuilderResultsProps) {
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Play audio for a word
   const handlePlayAudio = useCallback((audioUrl: string) => {
     if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current = null
+      audioRef.current.pause();
+      audioRef.current = null;
     }
 
-    const audio = new Audio(audioUrl)
-    audioRef.current = audio
-    setPlayingAudio(audioUrl)
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
+    setPlayingAudio(audioUrl);
 
     audio.onended = () => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    }
+      setPlayingAudio(null);
+      audioRef.current = null;
+    };
 
     audio.onerror = () => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    }
+      setPlayingAudio(null);
+      audioRef.current = null;
+    };
 
     audio.play().catch(() => {
-      setPlayingAudio(null)
-      audioRef.current = null
-    })
-  }, [])
+      setPlayingAudio(null);
+      audioRef.current = null;
+    });
+  }, []);
 
   // Score color helper
   const getScoreColor = (pct: number) => {
-    if (pct >= 80) return "text-green-600 dark:text-green-400"
-    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400"
-    return "text-red-600 dark:text-red-400"
-  }
+    if (pct >= 80) return "text-green-600 dark:text-green-400";
+    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
+  };
 
   return (
     <div
@@ -116,14 +116,14 @@ export function WordBuilderResults({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 interface WordResultCardProps {
-  result: WordResult
-  index: number
-  onPlayAudio: (url: string) => void
-  playingAudio: string | null
+  result: WordResult;
+  index: number;
+  onPlayAudio: (url: string) => void;
+  playingAudio: string | null;
 }
 
 function WordResultCard({
@@ -132,7 +132,7 @@ function WordResultCard({
   onPlayAudio,
   playingAudio,
 }: WordResultCardProps) {
-  const hasAudio = result.audio_url !== null
+  const hasAudio = result.audio_url !== null;
 
   return (
     <Card
@@ -237,7 +237,7 @@ function WordResultCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-export default WordBuilderResults
+export default WordBuilderResults;

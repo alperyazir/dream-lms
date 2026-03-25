@@ -1,15 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { AlertTriangle, Building2 } from "lucide-react"
-import { useState } from "react"
-import { FiTrendingUp } from "react-icons/fi"
-import { PublishersService, type SchoolCreateByPublisher } from "@/client"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { SchoolCard } from "@/components/schools/SchoolCard"
-import { SchoolDetailsDialog } from "@/components/schools/SchoolDetailsDialog"
-import { SchoolListView } from "@/components/schools/SchoolListView"
-import { Button } from "@/components/ui/button"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { AlertTriangle, Building2 } from "lucide-react";
+import { useState } from "react";
+import { FiTrendingUp } from "react-icons/fi";
+import { PublishersService, type SchoolCreateByPublisher } from "@/client";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { SchoolCard } from "@/components/schools/SchoolCard";
+import { SchoolDetailsDialog } from "@/components/schools/SchoolDetailsDialog";
+import { SchoolListView } from "@/components/schools/SchoolListView";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -17,12 +17,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
-import useCustomToast from "@/hooks/useCustomToast"
-import { useViewPreference } from "@/hooks/useViewPreference"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle";
+import useCustomToast from "@/hooks/useCustomToast";
+import { useViewPreference } from "@/hooks/useViewPreference";
 
 export const Route = createFileRoute("/_layout/publisher/schools")({
   component: () => (
@@ -30,24 +30,24 @@ export const Route = createFileRoute("/_layout/publisher/schools")({
       <PublisherSchoolsPage />
     </ErrorBoundary>
   ),
-})
+});
 
 function PublisherSchoolsPage() {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [viewMode, setViewMode] = useViewPreference("publisherSchools", "grid")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const [viewMode, setViewMode] = useViewPreference("publisherSchools", "grid");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newSchool, setNewSchool] = useState<SchoolCreateByPublisher>({
     name: "",
     address: "",
     contact_info: "",
-  })
-  const [selectedSchool, setSelectedSchool] = useState<any>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  });
+  const [selectedSchool, setSelectedSchool] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState<{
-    id: string
-    name: string
-  } | null>(null)
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Fetch schools from API
   const {
@@ -57,85 +57,87 @@ function PublisherSchoolsPage() {
   } = useQuery({
     queryKey: ["publisherSchools"],
     queryFn: () => PublishersService.listMySchools(),
-  })
+  });
 
   // Create school mutation
   const createSchoolMutation = useMutation({
     mutationFn: async (data: SchoolCreateByPublisher) => {
       return await PublishersService.createMySchool({
         requestBody: data,
-      })
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publisherSchools"] })
-      queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
-      setIsAddDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["publisherSchools"] });
+      queryClient.invalidateQueries({ queryKey: ["publisherStats"] });
+      setIsAddDialogOpen(false);
       setNewSchool({
         name: "",
         address: "",
         contact_info: "",
-      })
-      showSuccessToast("School created successfully!")
+      });
+      showSuccessToast("School created successfully!");
     },
     onError: (error: any) => {
-      let errorMessage = "Failed to create school. Please try again."
+      let errorMessage = "Failed to create school. Please try again.";
 
       if (error.body?.detail) {
         if (typeof error.body.detail === "string") {
-          errorMessage = error.body.detail
+          errorMessage = error.body.detail;
         } else if (Array.isArray(error.body.detail)) {
           // Handle validation errors
-          errorMessage = error.body.detail.map((err: any) => err.msg).join(", ")
+          errorMessage = error.body.detail
+            .map((err: any) => err.msg)
+            .join(", ");
         }
       }
 
-      showErrorToast(errorMessage)
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   // Delete school mutation
   const deleteSchoolMutation = useMutation({
     mutationFn: async (schoolId: string) => {
-      await PublishersService.deleteMySchool({ schoolId })
+      await PublishersService.deleteMySchool({ schoolId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publisherSchools"] })
-      queryClient.invalidateQueries({ queryKey: ["publisherStats"] })
-      setDeleteDialogOpen(false)
-      setSchoolToDelete(null)
-      showSuccessToast("School deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["publisherSchools"] });
+      queryClient.invalidateQueries({ queryKey: ["publisherStats"] });
+      setDeleteDialogOpen(false);
+      setSchoolToDelete(null);
+      showSuccessToast("School deleted successfully!");
     },
     onError: (error: any) => {
-      let errorMessage = "Failed to delete school. Please try again."
+      let errorMessage = "Failed to delete school. Please try again.";
       if (error.body?.detail) {
         errorMessage =
           typeof error.body.detail === "string"
             ? error.body.detail
-            : "Failed to delete school"
+            : "Failed to delete school";
       }
-      showErrorToast(errorMessage)
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   const handleDeleteClick = (school: { id: string; name: string }) => {
-    setSchoolToDelete(school)
-    setDeleteDialogOpen(true)
-  }
+    setSchoolToDelete(school);
+    setDeleteDialogOpen(true);
+  };
 
   const handleConfirmDelete = () => {
     if (schoolToDelete) {
-      deleteSchoolMutation.mutate(schoolToDelete.id)
+      deleteSchoolMutation.mutate(schoolToDelete.id);
     }
-  }
+  };
 
   const handleAddSchool = () => {
     if (!newSchool.name) {
-      showErrorToast("Please enter a school name")
-      return
+      showErrorToast("Please enter a school name");
+      return;
     }
 
-    createSchoolMutation.mutate(newSchool)
-  }
+    createSchoolMutation.mutate(newSchool);
+  };
 
   return (
     <PageContainer>
@@ -242,7 +244,6 @@ function PublisherSchoolsPage() {
                 }
               />
             </div>
-
           </div>
           <DialogFooter>
             <Button
@@ -305,5 +306,5 @@ function PublisherSchoolsPage() {
         />
       )}
     </PageContainer>
-  )
+  );
 }

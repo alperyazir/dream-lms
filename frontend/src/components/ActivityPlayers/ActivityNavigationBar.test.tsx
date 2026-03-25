@@ -5,10 +5,10 @@
  * Tests for the activity navigation bar component.
  */
 
-import { fireEvent, render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
-import type { ActivityState, ActivityWithConfig } from "@/types/assignment"
-import { ActivityNavigationBar } from "./ActivityNavigationBar"
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { ActivityState, ActivityWithConfig } from "@/types/assignment";
+import { ActivityNavigationBar } from "./ActivityNavigationBar";
 
 // Mock activities
 const mockActivities: ActivityWithConfig[] = [
@@ -33,13 +33,13 @@ const mockActivities: ActivityWithConfig[] = [
     config_json: {},
     order_index: 2,
   },
-]
+];
 
 // Helper to create activity states
 function createActivityStates(
   statuses: ("not_started" | "in_progress" | "completed")[],
 ): Map<string, ActivityState> {
-  const states = new Map<string, ActivityState>()
+  const states = new Map<string, ActivityState>();
   mockActivities.forEach((activity, index) => {
     states.set(activity.id, {
       activityId: activity.id,
@@ -48,9 +48,9 @@ function createActivityStates(
       responseData: null,
       score: statuses[index] === "completed" ? 85 : null,
       timeSpentSeconds: 0,
-    })
-  })
-  return states
+    });
+  });
+  return states;
 }
 
 describe("ActivityNavigationBar", () => {
@@ -59,8 +59,8 @@ describe("ActivityNavigationBar", () => {
       "not_started",
       "not_started",
       "not_started",
-    ])
-    const onNavigate = vi.fn()
+    ]);
+    const onNavigate = vi.fn();
 
     render(
       <ActivityNavigationBar
@@ -69,21 +69,21 @@ describe("ActivityNavigationBar", () => {
         activityStates={states}
         onNavigate={onNavigate}
       />,
-    )
+    );
 
     // Check all activities are rendered
-    expect(screen.getByText("Drag and Drop")).toBeInTheDocument()
-    expect(screen.getByText("Match Words")).toBeInTheDocument()
-    expect(screen.getByText("Circle Activity")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Drag and Drop")).toBeInTheDocument();
+    expect(screen.getByText("Match Words")).toBeInTheDocument();
+    expect(screen.getByText("Circle Activity")).toBeInTheDocument();
+  });
 
   it("highlights current activity", () => {
     const states = createActivityStates([
       "in_progress",
       "not_started",
       "not_started",
-    ])
-    const onNavigate = vi.fn()
+    ]);
+    const onNavigate = vi.fn();
 
     render(
       <ActivityNavigationBar
@@ -92,20 +92,20 @@ describe("ActivityNavigationBar", () => {
         activityStates={states}
         onNavigate={onNavigate}
       />,
-    )
+    );
 
     // Current activity should have aria-current
-    const currentButton = screen.getByRole("button", { name: /Activity 1/i })
-    expect(currentButton).toHaveAttribute("aria-current", "step")
-  })
+    const currentButton = screen.getByRole("button", { name: /Activity 1/i });
+    expect(currentButton).toHaveAttribute("aria-current", "step");
+  });
 
   it("calls onNavigate when clicking an activity", () => {
     const states = createActivityStates([
       "not_started",
       "not_started",
       "not_started",
-    ])
-    const onNavigate = vi.fn()
+    ]);
+    const onNavigate = vi.fn();
 
     render(
       <ActivityNavigationBar
@@ -114,21 +114,21 @@ describe("ActivityNavigationBar", () => {
         activityStates={states}
         onNavigate={onNavigate}
       />,
-    )
+    );
 
     // Click second activity
-    fireEvent.click(screen.getByText("Match Words"))
+    fireEvent.click(screen.getByText("Match Words"));
 
-    expect(onNavigate).toHaveBeenCalledWith(1)
-  })
+    expect(onNavigate).toHaveBeenCalledWith(1);
+  });
 
   it("shows correct status for completed activities", () => {
     const states = createActivityStates([
       "completed",
       "in_progress",
       "not_started",
-    ])
-    const onNavigate = vi.fn()
+    ]);
+    const onNavigate = vi.fn();
 
     render(
       <ActivityNavigationBar
@@ -137,22 +137,22 @@ describe("ActivityNavigationBar", () => {
         activityStates={states}
         onNavigate={onNavigate}
       />,
-    )
+    );
 
     // First activity should show completed (checkmark icon)
     const firstButton = screen.getByRole("button", {
       name: /Activity 1.*completed/i,
-    })
-    expect(firstButton).toBeInTheDocument()
-  })
+    });
+    expect(firstButton).toBeInTheDocument();
+  });
 
   it("disables navigation when disabled prop is true", () => {
     const states = createActivityStates([
       "not_started",
       "not_started",
       "not_started",
-    ])
-    const onNavigate = vi.fn()
+    ]);
+    const onNavigate = vi.fn();
 
     render(
       <ActivityNavigationBar
@@ -162,26 +162,26 @@ describe("ActivityNavigationBar", () => {
         onNavigate={onNavigate}
         disabled
       />,
-    )
+    );
 
     // All buttons should be disabled
-    const buttons = screen.getAllByRole("button")
+    const buttons = screen.getAllByRole("button");
     for (const button of buttons) {
-      expect(button).toBeDisabled()
+      expect(button).toBeDisabled();
     }
 
     // Clicking should not call onNavigate
-    fireEvent.click(screen.getByText("Match Words"))
-    expect(onNavigate).not.toHaveBeenCalled()
-  })
+    fireEvent.click(screen.getByText("Match Words"));
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
 
   it("shows progress bar based on completed activities", () => {
     const states = createActivityStates([
       "completed",
       "completed",
       "not_started",
-    ])
-    const onNavigate = vi.fn()
+    ]);
+    const onNavigate = vi.fn();
 
     const { container } = render(
       <ActivityNavigationBar
@@ -190,13 +190,13 @@ describe("ActivityNavigationBar", () => {
         activityStates={states}
         onNavigate={onNavigate}
       />,
-    )
+    );
 
     // Progress bar should show 66.67% (2 of 3 completed)
-    const progressBar = container.querySelector('[class*="bg-teal-500"]')
-    expect(progressBar).toBeInTheDocument()
-    expect(progressBar).toHaveStyle({ width: "66.66666666666666%" })
-  })
+    const progressBar = container.querySelector('[class*="bg-teal-500"]');
+    expect(progressBar).toBeInTheDocument();
+    expect(progressBar).toHaveStyle({ width: "66.66666666666666%" });
+  });
 
   it("handles activities without titles", () => {
     const activitiesNoTitles: ActivityWithConfig[] = [
@@ -214,7 +214,7 @@ describe("ActivityNavigationBar", () => {
         config_json: {},
         order_index: 1,
       },
-    ]
+    ];
 
     const states = new Map<string, ActivityState>([
       [
@@ -239,7 +239,7 @@ describe("ActivityNavigationBar", () => {
           timeSpentSeconds: 0,
         },
       ],
-    ])
+    ]);
 
     render(
       <ActivityNavigationBar
@@ -248,10 +248,10 @@ describe("ActivityNavigationBar", () => {
         activityStates={states}
         onNavigate={vi.fn()}
       />,
-    )
+    );
 
     // Should show "Activity 1" and "Activity 2" fallbacks
-    expect(screen.getByText("Activity 1")).toBeInTheDocument()
-    expect(screen.getByText("Activity 2")).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("Activity 1")).toBeInTheDocument();
+    expect(screen.getByText("Activity 2")).toBeInTheDocument();
+  });
+});

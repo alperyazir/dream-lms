@@ -6,21 +6,21 @@
  * Clicking selected emoji deselects it.
  */
 
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
-import { AVAILABLE_EMOJI_REACTIONS } from "@/types/feedback"
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { AVAILABLE_EMOJI_REACTIONS } from "@/types/feedback";
 
 interface EmojiPickerProps {
-  selectedEmoji: string | null
-  onEmojiChange: (emoji: string | null) => void
-  disabled?: boolean
+  selectedEmoji: string | null;
+  onEmojiChange: (emoji: string | null) => void;
+  disabled?: boolean;
 }
 
 export function EmojiPicker({
@@ -29,14 +29,14 @@ export function EmojiPicker({
   disabled = false,
 }: EmojiPickerProps) {
   const handleEmojiClick = (slug: string) => {
-    if (disabled) return
+    if (disabled) return;
     // Toggle selection - click again to deselect
     if (selectedEmoji === slug) {
-      onEmojiChange(null)
+      onEmojiChange(null);
     } else {
-      onEmojiChange(slug)
+      onEmojiChange(slug);
     }
-  }
+  };
 
   return (
     <div className="space-y-3">
@@ -75,5 +75,5 @@ export function EmojiPicker({
         </p>
       )}
     </div>
-  )
+  );
 }

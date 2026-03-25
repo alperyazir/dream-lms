@@ -1,7 +1,5 @@
 """Tests for TTS Manager with fallback."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
 
 from app.services.tts.base import (
@@ -386,7 +384,9 @@ class TestFallback:
 
         edge = MockTTSProvider(
             name="edge",
-            fail_with=TTSRateLimitError("Rate limited", provider="edge", retry_after_seconds=60),
+            fail_with=TTSRateLimitError(
+                "Rate limited", provider="edge", retry_after_seconds=60
+            ),
         )
         azure = MockTTSProvider(name="azure")
 

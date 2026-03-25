@@ -8,7 +8,7 @@
  * - Educational sound types: correct, incorrect, click, drag, drop, bookOpen, activityStart
  */
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type SoundType =
   | "correct"
@@ -18,10 +18,10 @@ export type SoundType =
   | "drop"
   | "bookOpen"
   | "activityStart"
-  | "complete"
+  | "complete";
 
-const SOUND_ENABLED_KEY = "dream-lms-sounds-enabled"
-const SOUND_VOLUME_KEY = "dream-lms-sounds-volume"
+const SOUND_ENABLED_KEY = "dream-lms-sounds-enabled";
+const SOUND_VOLUME_KEY = "dream-lms-sounds-volume";
 
 /**
  * Sound configurations for each type
@@ -29,7 +29,12 @@ const SOUND_VOLUME_KEY = "dream-lms-sounds-volume"
  */
 const soundConfigs: Record<
   SoundType,
-  { frequencies: number[]; durations: number[]; type: OscillatorType; gain: number }
+  {
+    frequencies: number[];
+    durations: number[];
+    type: OscillatorType;
+    gain: number;
+  }
 > = {
   // Ascending two-tone for correct answers (cheerful)
   correct: {
@@ -87,7 +92,7 @@ const soundConfigs: Record<
     type: "sine",
     gain: 0.3,
   },
-}
+};
 
 /**
  * Play a sound using Web Audio API
@@ -95,34 +100,37 @@ const soundConfigs: Record<
 function playSound(
   audioContext: AudioContext,
   config: (typeof soundConfigs)[SoundType],
-  volume: number
+  volume: number,
 ) {
-  let startTime = audioContext.currentTime
+  let startTime = audioContext.currentTime;
 
   config.frequencies.forEach((freq, index) => {
-    const oscillator = audioContext.createOscillator()
-    const gainNode = audioContext.createGain()
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
 
-    oscillator.connect(gainNode)
-    gainNode.connect(audioContext.destination)
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
 
-    oscillator.type = config.type
-    oscillator.frequency.setValueAtTime(freq, startTime)
+    oscillator.type = config.type;
+    oscillator.frequency.setValueAtTime(freq, startTime);
 
-    const duration = config.durations[index]
-    const effectiveGain = config.gain * volume
+    const duration = config.durations[index];
+    const effectiveGain = config.gain * volume;
 
     // Envelope for smooth sound
-    gainNode.gain.setValueAtTime(0, startTime)
-    gainNode.gain.linearRampToValueAtTime(effectiveGain, startTime + 0.01)
-    gainNode.gain.linearRampToValueAtTime(effectiveGain * 0.7, startTime + duration * 0.7)
-    gainNode.gain.linearRampToValueAtTime(0, startTime + duration)
+    gainNode.gain.setValueAtTime(0, startTime);
+    gainNode.gain.linearRampToValueAtTime(effectiveGain, startTime + 0.01);
+    gainNode.gain.linearRampToValueAtTime(
+      effectiveGain * 0.7,
+      startTime + duration * 0.7,
+    );
+    gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
 
-    oscillator.start(startTime)
-    oscillator.stop(startTime + duration)
+    oscillator.start(startTime);
+    oscillator.stop(startTime + duration);
 
-    startTime += duration * 0.8 // Slight overlap for smoother transitions
-  })
+    startTime += duration * 0.8; // Slight overlap for smoother transitions
+  });
 }
 
 /**
@@ -130,66 +138,67 @@ function playSound(
  */
 export function useSoundEffects() {
   const [isEnabled, setIsEnabled] = useState(() => {
-    const stored = localStorage.getItem(SOUND_ENABLED_KEY)
-    return stored === null ? true : stored === "true"
-  })
+    const stored = localStorage.getItem(SOUND_ENABLED_KEY);
+    return stored === null ? true : stored === "true";
+  });
 
   const [volume, setVolume] = useState(() => {
-    const stored = localStorage.getItem(SOUND_VOLUME_KEY)
-    return stored === null ? 0.7 : parseFloat(stored)
-  })
+    const stored = localStorage.getItem(SOUND_VOLUME_KEY);
+    return stored === null ? 0.7 : parseFloat(stored);
+  });
 
-  const audioContextRef = useRef<AudioContext | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   // Initialize AudioContext on first interaction (browser requirement)
   const initAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext)();
     }
     // Resume if suspended (happens after tab becomes inactive)
     if (audioContextRef.current.state === "suspended") {
-      audioContextRef.current.resume()
+      audioContextRef.current.resume();
     }
-    return audioContextRef.current
-  }, [])
+    return audioContextRef.current;
+  }, []);
 
   // Persist settings
   useEffect(() => {
-    localStorage.setItem(SOUND_ENABLED_KEY, String(isEnabled))
-  }, [isEnabled])
+    localStorage.setItem(SOUND_ENABLED_KEY, String(isEnabled));
+  }, [isEnabled]);
 
   useEffect(() => {
-    localStorage.setItem(SOUND_VOLUME_KEY, String(volume))
-  }, [volume])
+    localStorage.setItem(SOUND_VOLUME_KEY, String(volume));
+  }, [volume]);
 
   // Play a sound effect
   const play = useCallback(
     (type: SoundType) => {
-      if (!isEnabled) return
+      if (!isEnabled) return;
 
       try {
-        const ctx = initAudioContext()
-        const config = soundConfigs[type]
+        const ctx = initAudioContext();
+        const config = soundConfigs[type];
         if (config) {
-          playSound(ctx, config, volume)
+          playSound(ctx, config, volume);
         }
       } catch (error) {
-        console.warn("Failed to play sound:", error)
+        // intentionally empty
       }
     },
-    [isEnabled, volume, initAudioContext]
-  )
+    [isEnabled, volume, initAudioContext],
+  );
 
   // Toggle sounds on/off
   const toggleEnabled = useCallback(() => {
-    setIsEnabled((prev) => !prev)
-  }, [])
+    setIsEnabled((prev) => !prev);
+  }, []);
 
   // Update volume (0 to 1)
   const updateVolume = useCallback((newVolume: number) => {
-    setVolume(Math.max(0, Math.min(1, newVolume)))
-  }, [])
+    setVolume(Math.max(0, Math.min(1, newVolume)));
+  }, []);
 
   return {
     isEnabled,
@@ -198,27 +207,27 @@ export function useSoundEffects() {
     toggleEnabled,
     setEnabled: setIsEnabled,
     setVolume: updateVolume,
-  }
+  };
 }
 
 /**
  * Global sound context for sharing across components
  */
-import { createContext, useContext } from "react"
+import { createContext, useContext } from "react";
 
 interface SoundContextValue {
-  isEnabled: boolean
-  volume: number
-  play: (type: SoundType) => void
-  toggleEnabled: () => void
-  setEnabled: (enabled: boolean) => void
-  setVolume: (volume: number) => void
+  isEnabled: boolean;
+  volume: number;
+  play: (type: SoundType) => void;
+  toggleEnabled: () => void;
+  setEnabled: (enabled: boolean) => void;
+  setVolume: (volume: number) => void;
 }
 
-export const SoundContext = createContext<SoundContextValue | null>(null)
+export const SoundContext = createContext<SoundContextValue | null>(null);
 
 export function useSoundContext() {
-  const context = useContext(SoundContext)
+  const context = useContext(SoundContext);
   if (!context) {
     // Return a no-op fallback if not wrapped in provider
     return {
@@ -228,7 +237,7 @@ export function useSoundContext() {
       toggleEnabled: () => {},
       setEnabled: () => {},
       setVolume: () => {},
-    }
+    };
   }
-  return context
+  return context;
 }

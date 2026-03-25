@@ -1,8 +1,8 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router"
+import { createRootRoute, Outlet } from "@tanstack/react-router";
 
-import NotFound from "@/components/Common/NotFound"
-import { SoundProvider } from "@/components/providers/SoundProvider"
-import { Toaster } from "@/components/ui/toaster"
+import NotFound from "@/components/Common/NotFound";
+import { SoundProvider } from "@/components/providers/SoundProvider";
+import { Toaster } from "@/components/ui/toaster";
 
 export const Route = createRootRoute({
   component: () => (
@@ -12,4 +12,4 @@ export const Route = createRootRoute({
     </SoundProvider>
   ),
   notFoundComponent: () => <NotFound />,
-})
+});

@@ -1,16 +1,16 @@
-import { useMutation } from "@tanstack/react-query"
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import { type SubmitHandler, useForm } from "react-hook-form"
+import { useMutation } from "@tanstack/react-query";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { type SubmitHandler, useForm } from "react-hook-form";
 
-import { type ApiError, LoginService, type NewPassword } from "@/client"
-import { Button } from "@/components/ui/button"
-import { PasswordInput } from "@/components/ui/password-input"
-import { isLoggedIn } from "@/hooks/useAuth"
-import useCustomToast from "@/hooks/useCustomToast"
-import { confirmPasswordRules, handleError, passwordRules } from "@/utils"
+import { type ApiError, LoginService, type NewPassword } from "@/client";
+import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
+import { isLoggedIn } from "@/hooks/useAuth";
+import useCustomToast from "@/hooks/useCustomToast";
+import { confirmPasswordRules, handleError, passwordRules } from "@/utils";
 
 interface NewPasswordForm extends NewPassword {
-  confirm_password: string
+  confirm_password: string;
 }
 
 export const Route = createFileRoute("/reset-password")({
@@ -19,10 +19,10 @@ export const Route = createFileRoute("/reset-password")({
     if (isLoggedIn()) {
       throw redirect({
         to: "/",
-      })
+      });
     }
   },
-})
+});
 
 function ResetPassword() {
   const { register, handleSubmit, getValues, reset } = useForm<NewPasswordForm>(
@@ -33,33 +33,33 @@ function ResetPassword() {
         new_password: "",
       },
     },
-  )
-  const { showSuccessToast } = useCustomToast()
-  const navigate = useNavigate()
+  );
+  const { showSuccessToast } = useCustomToast();
+  const navigate = useNavigate();
 
   const resetPassword = async (data: NewPassword) => {
-    const token = new URLSearchParams(window.location.search).get("token")
-    if (!token) return
+    const token = new URLSearchParams(window.location.search).get("token");
+    if (!token) return;
     await LoginService.resetPassword({
       requestBody: { new_password: data.new_password, token: token },
-    })
-  }
+    });
+  };
 
   const mutation = useMutation({
     mutationFn: resetPassword,
     onSuccess: () => {
-      showSuccessToast("Password updated successfully.")
-      reset()
-      navigate({ to: "/login" })
+      showSuccessToast("Password updated successfully.");
+      reset();
+      navigate({ to: "/login" });
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
-  })
+  });
 
   const onSubmit: SubmitHandler<NewPasswordForm> = async (data) => {
-    mutation.mutate(data)
-  }
+    mutation.mutate(data);
+  };
 
   return (
     <form
@@ -84,5 +84,5 @@ function ResetPassword() {
         Reset Password
       </Button>
     </form>
-  )
+  );
 }

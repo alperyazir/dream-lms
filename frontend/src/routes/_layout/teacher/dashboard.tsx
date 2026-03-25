@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BookOpen,
   ClipboardCheck,
@@ -7,15 +7,15 @@ import {
   Eye,
   TrendingUp,
   Users,
-} from "lucide-react"
-import { FiHome } from "react-icons/fi"
-import { AssignmentsService, TeachersService } from "@/client"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { StatCard } from "@/components/dashboard/StatCard"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "lucide-react";
+import { FiHome } from "react-icons/fi";
+import { AssignmentsService, TeachersService } from "@/client";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -23,8 +23,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { usePendingReviews } from "@/hooks/useTeacherGrading"
+} from "@/components/ui/table";
+import { usePendingReviews } from "@/hooks/useTeacherGrading";
 
 export const Route = createFileRoute("/_layout/teacher/dashboard")({
   component: () => (
@@ -32,34 +32,36 @@ export const Route = createFileRoute("/_layout/teacher/dashboard")({
       <TeacherDashboard />
     </ErrorBoundary>
   ),
-})
+});
 
 const ACTIVITY_TYPE_LABELS: Record<string, string> = {
   writing_free_response: "Free Writing",
   speaking_open_response: "Speaking",
-}
+};
 
 function TeacherDashboard() {
   // Fetch classes
   const { data: classes = [] } = useQuery({
     queryKey: ["teacherClasses"],
     queryFn: () => TeachersService.listMyClasses(),
-  })
+  });
 
   // Fetch student count (limit=1, we only need the total)
   const { data: studentsResponse } = useQuery({
     queryKey: ["teacherStudentsCount"],
-    queryFn: () => TeachersService.listMyStudentsPaginated({ limit: 1, offset: 0 }),
-  })
+    queryFn: () =>
+      TeachersService.listMyStudentsPaginated({ limit: 1, offset: 0 }),
+  });
 
   // Fetch assignment count (limit=1, we only need the total)
   const { data: assignmentsResponse } = useQuery({
     queryKey: ["teacherAssignmentsCount"],
-    queryFn: () => AssignmentsService.listAssignmentsPaginated({ limit: 1, offset: 0 }),
-  })
+    queryFn: () =>
+      AssignmentsService.listAssignmentsPaginated({ limit: 1, offset: 0 }),
+  });
 
   // Fetch pending reviews
-  const { pendingReviews, isLoading: pendingLoading } = usePendingReviews()
+  const { pendingReviews, isLoading: pendingLoading } = usePendingReviews();
 
   return (
     <PageContainer>
@@ -100,7 +102,7 @@ function TeacherDashboard() {
         isLoading={pendingLoading}
       />
     </PageContainer>
-  )
+  );
 }
 
 function PendingReviewsCard({
@@ -109,17 +111,17 @@ function PendingReviewsCard({
   isLoading,
 }: {
   items: Array<{
-    assignment_id: string
-    assignment_name: string
-    activity_type: string
-    student_id: string
-    student_name: string
-    completed_at: string | null
-  }>
-  total: number
-  isLoading: boolean
+    assignment_id: string;
+    assignment_name: string;
+    activity_type: string;
+    student_id: string;
+    student_name: string;
+    completed_at: string | null;
+  }>;
+  total: number;
+  isLoading: boolean;
 }) {
-  const displayItems = items.slice(0, 10)
+  const displayItems = items.slice(0, 10);
 
   return (
     <Card className="mt-6">
@@ -188,7 +190,11 @@ function PendingReviewsCard({
                         <Link
                           to="/teacher/assignments/$assignmentId"
                           params={{ assignmentId: item.assignment_id }}
-                          search={{ gradeStudentId: item.student_id, tab: undefined, openGrade: undefined }}
+                          search={{
+                            gradeStudentId: item.student_id,
+                            tab: undefined,
+                            openGrade: undefined,
+                          }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Grade
@@ -208,5 +214,5 @@ function PendingReviewsCard({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

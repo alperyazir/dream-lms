@@ -1,4 +1,4 @@
-import React from "react"
+import React from "react";
 import {
   Bar,
   BarChart,
@@ -8,13 +8,13 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
+} from "recharts";
 
 export interface ActivityBreakdownChartProps {
   data: Array<{
-    name: string
-    count: number
-  }>
+    name: string;
+    count: number;
+  }>;
 }
 
 /**
@@ -47,8 +47,8 @@ export const ActivityBreakdownChart = React.memo(
                   circle: "Circle",
                   markwithx: "Mark with X",
                   puzzleFindWords: "Word Search",
-                }
-                return nameMap[value] || value
+                };
+                return nameMap[value] || value;
               }}
             />
             <YAxis
@@ -98,8 +98,8 @@ export const ActivityBreakdownChart = React.memo(
           </tbody>
         </table>
       </div>
-    )
+    );
   },
-)
+);
 
-ActivityBreakdownChart.displayName = "ActivityBreakdownChart"
+ActivityBreakdownChart.displayName = "ActivityBreakdownChart";

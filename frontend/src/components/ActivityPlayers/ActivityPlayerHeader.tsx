@@ -5,14 +5,14 @@
  * Displays assignment info, timer, and progress indicator
  */
 
-import type { ActivityStartResponse } from "../../types/assignment"
-import { Badge } from "../ui/badge"
-import { Separator } from "../ui/separator"
-import { ActivityTimer } from "./ActivityTimer"
+import type { ActivityStartResponse } from "../../types/assignment";
+import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
+import { ActivityTimer } from "./ActivityTimer";
 
 interface ActivityPlayerHeaderProps {
-  activity: ActivityStartResponse
-  onTimeExpired: () => void
+  activity: ActivityStartResponse;
+  onTimeExpired: () => void;
 }
 
 export function ActivityPlayerHeader({
@@ -30,9 +30,9 @@ export function ActivityPlayerHeader({
       puzzleFindWords: "Word Search",
       fillSentencesWithDots: "Fill Sentences",
       fillpicture: "Fill Picture",
-    }
-    return typeMap[type] || type
-  }
+    };
+    return typeMap[type] || type;
+  };
 
   return (
     <div className="border-b bg-background p-4">
@@ -69,5 +69,5 @@ export function ActivityPlayerHeader({
         </div>
       </div>
     </div>
-  )
+  );
 }

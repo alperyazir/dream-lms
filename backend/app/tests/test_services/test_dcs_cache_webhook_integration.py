@@ -50,13 +50,17 @@ class TestWebhookCacheInvalidationPatterns:
         book_id = str(uuid.uuid4())
 
         # Setup: populate cache with book data
-        await fresh_cache.set(CacheKeys.book_by_id(book_id), {"id": book_id, "title": "Old Title"})
+        await fresh_cache.set(
+            CacheKeys.book_by_id(book_id), {"id": book_id, "title": "Old Title"}
+        )
         await fresh_cache.set(CacheKeys.book_config(book_id), {"config": "data"})
         await fresh_cache.set(CacheKeys.BOOK_LIST, ["books"])
 
         # Other book should not be affected
         other_book_id = str(uuid.uuid4())
-        await fresh_cache.set(CacheKeys.book_by_id(other_book_id), {"id": other_book_id})
+        await fresh_cache.set(
+            CacheKeys.book_by_id(other_book_id), {"id": other_book_id}
+        )
 
         # Simulate the invalidation pattern from webhook handler
         await fresh_cache.invalidate(CacheKeys.book_by_id(book_id))
@@ -112,13 +116,17 @@ class TestWebhookCacheInvalidationPatterns:
         publisher_id = str(uuid.uuid4())
 
         # Setup: populate cache
-        await fresh_cache.set(CacheKeys.publisher_by_id(publisher_id), {"id": publisher_id})
+        await fresh_cache.set(
+            CacheKeys.publisher_by_id(publisher_id), {"id": publisher_id}
+        )
         await fresh_cache.set(CacheKeys.publisher_logo(publisher_id), "logo_url")
         await fresh_cache.set(CacheKeys.PUBLISHER_LIST, ["publishers"])
 
         # Other publisher should not be affected
         other_pub_id = str(uuid.uuid4())
-        await fresh_cache.set(CacheKeys.publisher_by_id(other_pub_id), {"id": other_pub_id})
+        await fresh_cache.set(
+            CacheKeys.publisher_by_id(other_pub_id), {"id": other_pub_id}
+        )
 
         # Simulate the invalidation pattern from webhook handler
         await fresh_cache.invalidate(CacheKeys.publisher_by_id(publisher_id))
@@ -131,7 +139,9 @@ class TestWebhookCacheInvalidationPatterns:
         assert await fresh_cache.get(CacheKeys.PUBLISHER_LIST) is None
 
         # Other publisher should still be cached
-        assert await fresh_cache.get(CacheKeys.publisher_by_id(other_pub_id)) is not None
+        assert (
+            await fresh_cache.get(CacheKeys.publisher_by_id(other_pub_id)) is not None
+        )
 
     @pytest.mark.asyncio
     async def test_publisher_deleted_invalidation_pattern(
@@ -141,10 +151,14 @@ class TestWebhookCacheInvalidationPatterns:
         publisher_id = str(uuid.uuid4())
 
         # Setup: populate cache with publisher and their books
-        await fresh_cache.set(CacheKeys.publisher_by_id(publisher_id), {"id": publisher_id})
+        await fresh_cache.set(
+            CacheKeys.publisher_by_id(publisher_id), {"id": publisher_id}
+        )
         await fresh_cache.set(CacheKeys.publisher_logo(publisher_id), "logo_url")
         await fresh_cache.set(CacheKeys.PUBLISHER_LIST, ["publishers"])
-        await fresh_cache.set(CacheKeys.books_by_publisher(publisher_id), ["book1", "book2"])
+        await fresh_cache.set(
+            CacheKeys.books_by_publisher(publisher_id), ["book1", "book2"]
+        )
 
         # Simulate the invalidation pattern from webhook handler
         await fresh_cache.invalidate_pattern(f"dcs:publishers:id:{publisher_id}")
@@ -184,7 +198,9 @@ class TestCacheStatsEndpoint:
         assert stats["hit_rate"] == pytest.approx(2 / 3)
 
     @pytest.mark.asyncio
-    async def test_clear_resets_entries_but_not_stats(self, fresh_cache: DCSCache) -> None:
+    async def test_clear_resets_entries_but_not_stats(
+        self, fresh_cache: DCSCache
+    ) -> None:
         """Test that clear removes entries but preserves stats."""
         await fresh_cache.set("key1", "value1")
         await fresh_cache.get("key1")  # hit

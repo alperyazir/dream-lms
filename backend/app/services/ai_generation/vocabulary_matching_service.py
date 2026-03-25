@@ -18,7 +18,10 @@ from app.schemas.vocabulary_matching import (
     VocabularyMatchingRequest,
 )
 from app.services.dcs_ai.client import DCSAIServiceClient
-from app.services.dcs_ai.exceptions import DCSAIDataNotFoundError, DCSAIDataNotReadyError
+from app.services.dcs_ai.exceptions import (
+    DCSAIDataNotFoundError,
+    DCSAIDataNotReadyError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +29,9 @@ logger = logging.getLogger(__name__)
 class InsufficientVocabularyError(Exception):
     """Not enough vocabulary words to build the matching activity."""
 
-    def __init__(self, message: str, available: int, required: int, book_id: int) -> None:
+    def __init__(
+        self, message: str, available: int, required: int, book_id: int
+    ) -> None:
         self.message = message
         self.available = available
         self.required = required
@@ -66,9 +71,7 @@ class VocabularyMatchingService:
             )
 
         # Fetch vocabulary (reuses the same DCS vocabulary endpoint)
-        vocabulary = await self._fetch_vocabulary(
-            request.book_id, request.module_ids
-        )
+        vocabulary = await self._fetch_vocabulary(request.book_id, request.module_ids)
 
         # Filter out words with empty definitions
         vocabulary = [w for w in vocabulary if w.definition and w.definition.strip()]
@@ -108,9 +111,7 @@ class VocabularyMatchingService:
                 )
             )
 
-        module_ids = request.module_ids or list(
-            set(w.module_id for w in vocabulary)
-        )
+        module_ids = request.module_ids or list({w.module_id for w in vocabulary})
 
         activity = VocabularyMatchingActivity(
             activity_id=str(uuid4()),

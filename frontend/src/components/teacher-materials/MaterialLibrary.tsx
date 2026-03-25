@@ -16,8 +16,8 @@ import {
   Loader2,
   MoreVertical,
   Trash2,
-} from "lucide-react"
-import { useState } from "react"
+} from "lucide-react";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,26 +27,26 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { cn } from "@/lib/utils"
-import type { TeacherMaterial } from "@/types/teacher-material"
-import { formatWordCount, getLanguageLabel } from "@/types/teacher-material"
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import type { TeacherMaterial } from "@/types/teacher-material";
+import { formatWordCount, getLanguageLabel } from "@/types/teacher-material";
 
 // =============================================================================
 // Types
@@ -54,21 +54,21 @@ import { formatWordCount, getLanguageLabel } from "@/types/teacher-material"
 
 interface MaterialLibraryProps {
   /** List of materials to display */
-  materials: TeacherMaterial[]
+  materials: TeacherMaterial[];
   /** Whether data is loading */
-  isLoading?: boolean
+  isLoading?: boolean;
   /** Error message */
-  error?: string | null
+  error?: string | null;
   /** Callback when a material is selected */
-  onSelect?: (material: TeacherMaterial) => void
+  onSelect?: (material: TeacherMaterial) => void;
   /** Callback to delete a material */
-  onDelete?: (materialId: string) => Promise<void>
+  onDelete?: (materialId: string) => Promise<void>;
   /** ID of currently selected material */
-  selectedMaterialId?: string | null
+  selectedMaterialId?: string | null;
   /** Whether component is in selection mode (for generators) */
-  selectionMode?: boolean
+  selectionMode?: boolean;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 // =============================================================================
@@ -86,45 +86,45 @@ export function MaterialLibrary({
   className,
 }: MaterialLibraryProps) {
   // State
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [materialToDelete, setMaterialToDelete] =
-    useState<TeacherMaterial | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
+    useState<TeacherMaterial | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewMaterial, setPreviewMaterial] =
-    useState<TeacherMaterial | null>(null)
+    useState<TeacherMaterial | null>(null);
 
   // Handlers
   const handleDeleteClick = (material: TeacherMaterial) => {
-    setMaterialToDelete(material)
-    setDeleteDialogOpen(true)
-  }
+    setMaterialToDelete(material);
+    setDeleteDialogOpen(true);
+  };
 
   const handleDeleteConfirm = async () => {
-    if (!materialToDelete || !onDelete) return
+    if (!materialToDelete || !onDelete) return;
 
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      await onDelete(materialToDelete.id)
-      setDeleteDialogOpen(false)
-      setMaterialToDelete(null)
+      await onDelete(materialToDelete.id);
+      setDeleteDialogOpen(false);
+      setMaterialToDelete(null);
     } catch (err) {
-      console.error("Failed to delete material:", err)
+      console.error("Failed to delete material:", err);
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
   const handlePreview = (material: TeacherMaterial) => {
-    setPreviewMaterial(material)
-    setPreviewDialogOpen(true)
-  }
+    setPreviewMaterial(material);
+    setPreviewDialogOpen(true);
+  };
 
   const handleSelect = (material: TeacherMaterial) => {
     if (onSelect) {
-      onSelect(material)
+      onSelect(material);
     }
-  }
+  };
 
   // Format date
   const formatDate = (dateStr: string) => {
@@ -132,8 +132,8 @@ export function MaterialLibrary({
       year: "numeric",
       month: "short",
       day: "numeric",
-    })
-  }
+    });
+  };
 
   // =============================================================================
   // Render
@@ -145,7 +145,7 @@ export function MaterialLibrary({
       <div className={cn("flex items-center justify-center py-12", className)}>
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
-    )
+    );
   }
 
   // Error state
@@ -159,7 +159,7 @@ export function MaterialLibrary({
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   // Empty state
@@ -177,14 +177,14 @@ export function MaterialLibrary({
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
     <>
       <div className={cn("space-y-3", className)}>
         {materials.map((material) => {
-          const isSelected = selectedMaterialId === material.id
+          const isSelected = selectedMaterialId === material.id;
 
           return (
             <Card
@@ -255,8 +255,8 @@ export function MaterialLibrary({
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={(e) => {
-                            e.stopPropagation()
-                            handlePreview(material)
+                            e.stopPropagation();
+                            handlePreview(material);
                           }}
                         >
                           <Eye className="h-4 w-4 mr-2" />
@@ -265,8 +265,8 @@ export function MaterialLibrary({
                         {onDelete && (
                           <DropdownMenuItem
                             onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteClick(material)
+                              e.stopPropagation();
+                              handleDeleteClick(material);
                             }}
                             className="text-red-600 focus:text-red-600"
                           >
@@ -301,7 +301,7 @@ export function MaterialLibrary({
                 </div>
               </CardContent>
             </Card>
-          )
+          );
         })}
       </div>
 
@@ -374,7 +374,7 @@ export function MaterialLibrary({
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
 
-MaterialLibrary.displayName = "MaterialLibrary"
+MaterialLibrary.displayName = "MaterialLibrary";

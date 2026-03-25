@@ -1,6 +1,7 @@
 """
 Tests for first login password change functionality (Story 11.3)
 """
+
 import uuid
 
 import pytest
@@ -114,7 +115,9 @@ class TestChangeInitialPasswordEndpoint:
 
         # Verify password was updated in database
         session.refresh(user_must_change_password)
-        assert verify_password("NewSecure456!", user_must_change_password.hashed_password)
+        assert verify_password(
+            "NewSecure456!", user_must_change_password.hashed_password
+        )
 
         # Verify must_change_password is now False
         assert user_must_change_password.must_change_password is False

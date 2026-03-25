@@ -6,11 +6,11 @@
  * Comprehensive student-facing progress dashboard
  */
 
-import { createFileRoute } from "@tanstack/react-router"
-import { useState } from "react"
-import { FiTrendingUp } from "react-icons/fi"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { FiTrendingUp } from "react-icons/fi";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
 import {
   ActivityBreakdown,
   ProgressScoreChart,
@@ -18,17 +18,17 @@ import {
   RecentAssignments,
   RecentFeedbackSection,
   StudyTimeCard,
-} from "@/components/progress"
+} from "@/components/progress";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useStudentProgress } from "@/hooks/useStudentProgress"
-import type { StudentProgressPeriod } from "@/types/analytics"
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useStudentProgress } from "@/hooks/useStudentProgress";
+import type { StudentProgressPeriod } from "@/types/analytics";
 
 export const Route = createFileRoute("/_layout/student/progress")({
   component: () => (
@@ -36,11 +36,11 @@ export const Route = createFileRoute("/_layout/student/progress")({
       <StudentProgressPage />
     </ErrorBoundary>
   ),
-})
+});
 
 function StudentProgressPage() {
-  const [period, setPeriod] = useState<StudentProgressPeriod>("this_month")
-  const { progress, isLoading, error } = useStudentProgress({ period })
+  const [period, setPeriod] = useState<StudentProgressPeriod>("this_month");
+  const { progress, isLoading, error } = useStudentProgress({ period });
 
   if (error) {
     return (
@@ -51,7 +51,7 @@ function StudentProgressPage() {
           </p>
         </div>
       </PageContainer>
-    )
+    );
   }
 
   return (
@@ -117,7 +117,7 @@ function StudentProgressPage() {
         </div>
       )}
     </PageContainer>
-  )
+  );
 }
 
 function ProgressSkeleton() {
@@ -137,7 +137,6 @@ function ProgressSkeleton() {
         <Skeleton className="h-64 w-full rounded-lg lg:col-span-2" />
         <Skeleton className="h-64 w-full rounded-lg" />
       </div>
-
     </div>
-  )
+  );
 }

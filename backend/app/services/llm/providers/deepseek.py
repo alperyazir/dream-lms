@@ -325,9 +325,7 @@ class DeepSeekProvider(LLMProvider):
         status_code = response.status_code
         try:
             error_data = response.json()
-            error_message = error_data.get("error", {}).get(
-                "message", response.text
-            )
+            error_message = error_data.get("error", {}).get("message", response.text)
         except (json.JSONDecodeError, KeyError):
             error_message = response.text
 

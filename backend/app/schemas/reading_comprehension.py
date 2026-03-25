@@ -14,7 +14,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-
 # Valid question types - Only MCQ and True/False are supported
 QUESTION_TYPES = ["mcq", "true_false"]
 QuestionType = Literal["mcq", "true_false"]

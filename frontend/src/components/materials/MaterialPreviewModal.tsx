@@ -6,26 +6,29 @@
  * Uses blob URLs fetched through authenticated backend proxy.
  */
 
-import { ExternalLink, Loader2, ZoomIn, ZoomOut } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { AudioPlayer } from "@/components/ActivityPlayers/AudioPlayer"
-import { VideoPlayer } from "@/components/ActivityPlayers/VideoPlayer"
-import { Button } from "@/components/ui/button"
+import { ExternalLink, Loader2, ZoomIn, ZoomOut } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { AudioPlayer } from "@/components/ActivityPlayers/AudioPlayer";
+import { VideoPlayer } from "@/components/ActivityPlayers/VideoPlayer";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { cn } from "@/lib/utils"
-import { getDownloadBlobUrl, getMaterialBlobUrl } from "@/services/materialsApi"
-import type { Material } from "@/types/material"
-import { MaterialTypeIcon } from "./MaterialTypeIcon"
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import {
+  getDownloadBlobUrl,
+  getMaterialBlobUrl,
+} from "@/services/materialsApi";
+import type { Material } from "@/types/material";
+import { MaterialTypeIcon } from "./MaterialTypeIcon";
 
 interface MaterialPreviewModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  material: Material | null
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  material: Material | null;
 }
 
 /**
@@ -36,87 +39,87 @@ export function MaterialPreviewModal({
   onOpenChange,
   material,
 }: MaterialPreviewModalProps) {
-  const [imageZoom, setImageZoom] = useState(1)
-  const [blobUrl, setBlobUrl] = useState<string | null>(null)
-  const [isLoadingUrl, setIsLoadingUrl] = useState(false)
-  const [urlError, setUrlError] = useState<string | null>(null)
+  const [imageZoom, setImageZoom] = useState(1);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   // Fetch blob URL when modal opens for file types
   useEffect(() => {
     if (!open || !material) {
       // Revoke old blob URL to free memory
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-      setBlobUrl(null)
-      setUrlError(null)
-      return
+      setBlobUrl(null);
+      setUrlError(null);
+      return;
     }
 
     // Only fetch blob URL for file-based materials
     const needsBlobUrl = ["document", "image", "audio", "video"].includes(
       material.type,
-    )
+    );
 
     if (!needsBlobUrl) {
-      return
+      return;
     }
 
     const fetchBlobUrl = async () => {
-      setIsLoadingUrl(true)
-      setUrlError(null)
+      setIsLoadingUrl(true);
+      setUrlError(null);
       try {
         // Use stream endpoint for audio/video, download for documents/images
         const url = ["audio", "video"].includes(material.type)
           ? await getMaterialBlobUrl(material.id)
-          : await getDownloadBlobUrl(material.id)
-        setBlobUrl(url)
+          : await getDownloadBlobUrl(material.id);
+        setBlobUrl(url);
       } catch (err) {
-        console.error("Failed to load file:", err)
-        setUrlError("Failed to load file. Please try again.")
+        console.error("Failed to load file:", err);
+        setUrlError("Failed to load file. Please try again.");
       } finally {
-        setIsLoadingUrl(false)
+        setIsLoadingUrl(false);
       }
-    }
+    };
 
-    fetchBlobUrl()
+    fetchBlobUrl();
 
     // Cleanup: revoke blob URL when effect reruns or component unmounts
     return () => {
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [open, material?.id, material?.type, blobUrl, material]) // eslint-disable-line react-hooks/exhaustive-deps
+    };
+  }, [open, material?.id, material?.type, blobUrl, material]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset zoom when modal closes
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
       if (!newOpen) {
-        setImageZoom(1)
+        setImageZoom(1);
         if (blobUrl) {
-          URL.revokeObjectURL(blobUrl)
+          URL.revokeObjectURL(blobUrl);
         }
-        setBlobUrl(null)
-        setUrlError(null)
+        setBlobUrl(null);
+        setUrlError(null);
       }
-      onOpenChange(newOpen)
+      onOpenChange(newOpen);
     },
     [onOpenChange, blobUrl],
-  )
+  );
 
   // Handle zoom
-  const handleZoomIn = () => setImageZoom((z) => Math.min(z + 0.25, 3))
-  const handleZoomOut = () => setImageZoom((z) => Math.max(z - 0.25, 0.5))
+  const handleZoomIn = () => setImageZoom((z) => Math.min(z + 0.25, 3));
+  const handleZoomOut = () => setImageZoom((z) => Math.max(z - 0.25, 0.5));
 
   // Open URL in new tab
   const handleOpenUrl = () => {
     if (material?.url) {
-      window.open(material.url, "_blank", "noopener,noreferrer")
+      window.open(material.url, "_blank", "noopener,noreferrer");
     }
-  }
+  };
 
-  if (!material) return null
+  if (!material) return null;
 
   // Loading state for presigned URL
   const renderLoading = () => (
@@ -124,7 +127,7 @@ export function MaterialPreviewModal({
       <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
       <p className="text-muted-foreground">Loading preview...</p>
     </div>
-  )
+  );
 
   // Error state
   const renderError = () => (
@@ -135,59 +138,59 @@ export function MaterialPreviewModal({
         onClick={() => {
           // Retry fetching blob URL
           if (material) {
-            setIsLoadingUrl(true)
-            setUrlError(null)
+            setIsLoadingUrl(true);
+            setUrlError(null);
             const fetchFn = ["audio", "video"].includes(material.type)
               ? getMaterialBlobUrl
-              : getDownloadBlobUrl
+              : getDownloadBlobUrl;
             fetchFn(material.id)
               .then((url) => setBlobUrl(url))
               .catch(() =>
                 setUrlError("Failed to load file. Please try again."),
               )
-              .finally(() => setIsLoadingUrl(false))
+              .finally(() => setIsLoadingUrl(false));
           }
         }}
       >
         Retry
       </Button>
     </div>
-  )
+  );
 
   // Render content based on type
   const renderContent = () => {
     // For file-based types, check if we're loading or have error
     const isFileType = ["document", "image", "audio", "video"].includes(
       material.type,
-    )
+    );
 
     if (isFileType) {
-      if (isLoadingUrl) return renderLoading()
-      if (urlError) return renderError()
-      if (!blobUrl) return renderLoading()
+      if (isLoadingUrl) return renderLoading();
+      if (urlError) return renderError();
+      if (!blobUrl) return renderLoading();
     }
 
     switch (material.type) {
       case "document":
-        return renderDocumentPreview()
+        return renderDocumentPreview();
       case "image":
-        return renderImagePreview()
+        return renderImagePreview();
       case "audio":
-        return renderAudioPreview()
+        return renderAudioPreview();
       case "video":
-        return renderVideoPreview()
+        return renderVideoPreview();
       case "url":
-        return renderUrlPreview()
+        return renderUrlPreview();
       case "text_note":
-        return renderTextNotePreview()
+        return renderTextNotePreview();
       default:
         return (
           <div className="p-8 text-center text-muted-foreground">
             Preview not available for this file type
           </div>
-        )
+        );
     }
-  }
+  };
 
   // Document preview (PDF using iframe)
   const renderDocumentPreview = () => {
@@ -199,8 +202,8 @@ export function MaterialPreviewModal({
           title={material.name}
         />
       </div>
-    )
-  }
+    );
+  };
 
   // Image preview with zoom
   const renderImagePreview = () => {
@@ -238,8 +241,8 @@ export function MaterialPreviewModal({
           />
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   // Audio preview
   const renderAudioPreview = () => {
@@ -253,8 +256,8 @@ export function MaterialPreviewModal({
           <AudioPlayer src={blobUrl!} isExpanded />
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   // Video preview - constrained to fit dialog
   const renderVideoPreview = () => {
@@ -266,8 +269,8 @@ export function MaterialPreviewModal({
           className="max-h-[70vh] w-auto [&_video]:object-contain [&_video]:max-h-[70vh]"
         />
       </div>
-    )
-  }
+    );
+  };
 
   // URL preview (link to open)
   const renderUrlPreview = () => {
@@ -288,8 +291,8 @@ export function MaterialPreviewModal({
           Open Link in New Tab
         </Button>
       </div>
-    )
-  }
+    );
+  };
 
   // Text note preview
   const renderTextNotePreview = () => {
@@ -301,21 +304,21 @@ export function MaterialPreviewModal({
           </div>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   // Get dialog max width based on type
   const getMaxWidth = () => {
     switch (material.type) {
       case "document":
       case "video":
-        return "max-w-4xl"
+        return "max-w-4xl";
       case "image":
-        return "max-w-5xl"
+        return "max-w-5xl";
       default:
-        return "max-w-2xl"
+        return "max-w-2xl";
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -331,7 +334,7 @@ export function MaterialPreviewModal({
         <div className="overflow-auto">{renderContent()}</div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-MaterialPreviewModal.displayName = "MaterialPreviewModal"
+MaterialPreviewModal.displayName = "MaterialPreviewModal";

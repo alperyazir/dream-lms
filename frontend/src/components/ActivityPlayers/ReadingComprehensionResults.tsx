@@ -14,30 +14,30 @@ import {
   Quote,
   RefreshCw,
   XCircle,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import type {
   ReadingComprehensionQuestionResult,
   ReadingComprehensionResult,
-} from "@/types/reading-comprehension"
+} from "@/types/reading-comprehension";
 import {
   getDifficultyLabel,
   getQuestionTypeLabel,
-} from "@/types/reading-comprehension"
+} from "@/types/reading-comprehension";
 
 interface ReadingComprehensionResultsProps {
   /** The activity result data */
-  result: ReadingComprehensionResult
+  result: ReadingComprehensionResult;
   /** Callback to retry the activity */
-  onRetry?: () => void
+  onRetry?: () => void;
   /** Callback to go back to generator */
-  onBack?: () => void
+  onBack?: () => void;
   /** Hide summary card when embedded in result page (to avoid duplication) */
-  hideSummary?: boolean
+  hideSummary?: boolean;
 }
 
 export function ReadingComprehensionResults({
@@ -48,23 +48,23 @@ export function ReadingComprehensionResults({
 }: ReadingComprehensionResultsProps) {
   const correctCount = result.question_results.filter(
     (r) => r.is_correct,
-  ).length
-  const totalCount = result.total
-  const percentage = result.percentage
+  ).length;
+  const totalCount = result.total;
+  const percentage = result.percentage;
 
   // Determine score color
   const getScoreColor = (pct: number) => {
-    if (pct >= 80) return "text-green-600 dark:text-green-400"
-    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400"
-    return "text-red-600 dark:text-red-400"
-  }
+    if (pct >= 80) return "text-green-600 dark:text-green-400";
+    if (pct >= 60) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
+  };
 
   // Determine progress color
   const getProgressClass = (pct: number) => {
-    if (pct >= 80) return "[&>div]:bg-green-500"
-    if (pct >= 60) return "[&>div]:bg-yellow-500"
-    return "[&>div]:bg-red-500"
-  }
+    if (pct >= 80) return "[&>div]:bg-green-500";
+    if (pct >= 60) return "[&>div]:bg-yellow-500";
+    return "[&>div]:bg-red-500";
+  };
 
   return (
     <div
@@ -216,12 +216,12 @@ export function ReadingComprehensionResults({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 interface QuestionResultCardProps {
-  result: ReadingComprehensionQuestionResult
-  index: number
+  result: ReadingComprehensionQuestionResult;
+  index: number;
 }
 
 function QuestionResultCard({ result, index }: QuestionResultCardProps) {
@@ -299,20 +299,20 @@ function QuestionResultCard({ result, index }: QuestionResultCardProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function OptionsDisplay({
   result,
 }: {
-  result: ReadingComprehensionQuestionResult
+  result: ReadingComprehensionQuestionResult;
 }) {
   return (
     <div className="space-y-1.5">
       {result.options?.map((option, optionIndex) => {
-        const isCorrectOption = optionIndex === result.correct_index
-        const isStudentAnswer = optionIndex === result.student_answer_index
-        const showAsIncorrect = isStudentAnswer && !result.is_correct
+        const isCorrectOption = optionIndex === result.correct_index;
+        const isStudentAnswer = optionIndex === result.student_answer_index;
+        const showAsIncorrect = isStudentAnswer && !result.is_correct;
 
         return (
           <div
@@ -350,16 +350,16 @@ function OptionsDisplay({
               <XCircle className="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" />
             )}
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 function ShortAnswerDisplay({
   result,
 }: {
-  result: ReadingComprehensionQuestionResult
+  result: ReadingComprehensionQuestionResult;
 }) {
   return (
     <div className="space-y-2">
@@ -389,7 +389,7 @@ function ShortAnswerDisplay({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default ReadingComprehensionResults
+export default ReadingComprehensionResults;

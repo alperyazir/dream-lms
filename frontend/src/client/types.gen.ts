@@ -4,66 +4,66 @@
  * Student achievement/badge.
  */
 export type Achievement = {
-    id: string;
-    type: string;
-    title: string;
-    description: string;
-    earned_at: string;
-    icon: string;
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  earned_at: string;
+  icon: string;
 };
 
 /**
  * Analytics data for a single activity within a multi-activity assignment.
  */
 export type ActivityAnalyticsItem = {
-    activity_id: string;
-    activity_title: (string | null);
-    page_number: (number | null);
-    activity_type: string;
-    class_average_score: (number | null);
-    completion_rate: number;
-    completed_count: number;
-    total_assigned_count: number;
+  activity_id: string;
+  activity_title: string | null;
+  page_number: number | null;
+  activity_type: string;
+  class_average_score: number | null;
+  completion_rate: number;
+  completed_count: number;
+  total_assigned_count: number;
 };
 
 /**
  * Performance breakdown by activity type.
  */
 export type ActivityBreakdownItem = {
-    activity_type: string;
-    avg_score: number;
-    count: number;
+  activity_type: string;
+  avg_score: number;
+  count: number;
 };
 
 /**
  * Coordinates for an activity marker on a page.
  */
 export type ActivityCoords = {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 };
 
 /**
  * Minimal activity info for assignment response.
  */
 export type ActivityInfo = {
-    id: string;
-    title: (string | null);
-    activity_type: string;
-    order_index?: number;
+  id: string;
+  title: string | null;
+  activity_type: string;
+  order_index?: number;
 };
 
 /**
  * Activity marker with position and metadata for page viewer.
  */
 export type ActivityMarker = {
-    id: string;
-    title: (string | null);
-    activity_type: string;
-    section_index: number;
-    coords: (ActivityCoords | null);
+  id: string;
+  title: string | null;
+  activity_type: string;
+  section_index: number;
+  coords: ActivityCoords | null;
 };
 
 /**
@@ -72,127 +72,127 @@ export type ActivityMarker = {
  * Returns activity data in student-view format for teacher preview.
  */
 export type ActivityPreviewResponse = {
-    activity_id: string;
-    activity_title: (string | null);
-    activity_type: string;
-    config_json: {
-        [key: string]: unknown;
-    };
-    book_id: number;
-    book_name: string;
-    publisher_name: string;
-    is_preview?: boolean;
+  activity_id: string;
+  activity_title: string | null;
+  activity_type: string;
+  config_json: {
+    [key: string]: unknown;
+  };
+  book_id: number;
+  book_name: string;
+  publisher_name: string;
+  is_preview?: boolean;
 };
 
 /**
  * Per-activity progress info for multi-activity assignments.
  */
 export type ActivityProgressInfo = {
-    id: string;
-    activity_id: string;
-    status: string;
-    score: (number | null);
-    max_score: number;
-    response_data: ({
+  id: string;
+  activity_id: string;
+  status: string;
+  score: number | null;
+  max_score: number;
+  response_data: {
     [key: string]: unknown;
-} | null);
-    started_at: (string | null);
-    completed_at: (string | null);
+  } | null;
+  started_at: string | null;
+  completed_at: string | null;
 };
 
 /**
  * Request schema for saving per-activity progress.
  */
 export type ActivityProgressSaveRequest = {
-    response_data: {
-        [key: string]: unknown;
-    };
-    time_spent_seconds?: number;
-    status?: string;
-    score?: (number | null);
-    max_score?: number;
+  response_data: {
+    [key: string]: unknown;
+  };
+  time_spent_seconds?: number;
+  status?: string;
+  score?: number | null;
+  max_score?: number;
 };
 
 /**
  * Response schema for saving per-activity progress.
  */
 export type ActivityProgressSaveResponse = {
-    message: string;
-    activity_id: string;
-    status: string;
-    score: (number | null);
-    last_saved_at: string;
+  message: string;
+  activity_id: string;
+  status: string;
+  score: number | null;
+  last_saved_at: string;
 };
 
 /**
  * Activity response schema for API.
  */
 export type ActivityResponse = {
-    id: string;
-    book_id: number;
-    module_name?: (string | null);
-    page_number?: (number | null);
-    activity_type: string;
-    title?: (string | null);
-    config_json?: {
-        [key: string]: unknown;
-    };
-    order_index?: number;
+  id: string;
+  book_id: number;
+  module_name?: string | null;
+  page_number?: number | null;
+  activity_type: string;
+  title?: string | null;
+  config_json?: {
+    [key: string]: unknown;
+  };
+  order_index?: number;
 };
 
 /**
  * Per-activity score item for student result view.
  */
 export type ActivityScoreItem = {
-    activity_id: string;
-    activity_title: (string | null);
-    activity_type: string;
-    score: (number | null);
-    max_score: number;
-    status: string;
+  activity_id: string;
+  activity_title: string | null;
+  activity_type: string;
+  score: number | null;
+  max_score: number;
+  status: string;
 };
 
 /**
  * Response schema for starting an assignment - returns full activity configuration.
  */
 export type ActivityStartResponse = {
-    assignment_id: string;
-    assignment_name: string;
-    instructions: (string | null);
-    due_date: (string | null);
-    time_limit_minutes: (number | null);
-    book_id: number;
-    book_title: string;
-    book_name: string;
-    publisher_name: string;
-    book_cover_url: (string | null);
-    activity_id: string;
-    activity_title: string;
-    activity_type: string;
-    config_json: {
-        [key: string]: unknown;
-    };
-    current_status: string;
-    time_spent_minutes: number;
-    progress_json: ({
+  assignment_id: string;
+  assignment_name: string;
+  instructions: string | null;
+  due_date: string | null;
+  time_limit_minutes: number | null;
+  book_id: number;
+  book_title: string;
+  book_name: string;
+  publisher_name: string;
+  book_cover_url: string | null;
+  activity_id: string;
+  activity_title: string;
+  activity_type: string;
+  config_json: {
     [key: string]: unknown;
-} | null);
-    /**
-     * Check if there is saved progress to resume from.
-     */
-    readonly has_saved_progress: boolean;
+  };
+  current_status: string;
+  time_spent_minutes: number;
+  progress_json: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Check if there is saved progress to resume from.
+   */
+  readonly has_saved_progress: boolean;
 };
 
 /**
  * Activity-type specific analysis results.
  */
 export type ActivityTypeAnalysis = {
-    activity_type: string;
-    questions?: (Array<QuestionAnalysis> | null);
-    most_missed?: (Array<MostMissedQuestion> | null);
-    word_matching_errors?: (Array<WordMatchingError> | null);
-    fill_in_blank?: (Array<FillInBlankAnalysis> | null);
-    word_search?: (Array<WordSearchAnalysis> | null);
+  activity_type: string;
+  questions?: Array<QuestionAnalysis> | null;
+  most_missed?: Array<MostMissedQuestion> | null;
+  word_matching_errors?: Array<WordMatchingError> | null;
+  fill_in_blank?: Array<FillInBlankAnalysis> | null;
+  word_search?: Array<WordSearchAnalysis> | null;
 };
 
 /**
@@ -202,33 +202,33 @@ export type ActivityTypeAnalysis = {
  * Compares class performance against benchmark for each activity type.
  */
 export type ActivityTypeBenchmark = {
-    activity_type: string;
-    activity_label: string;
-    class_average: number;
-    benchmark_average: number;
-    /**
-     * Positive = class is above benchmark, negative = below
-     */
-    difference_percent: number;
+  activity_type: string;
+  activity_label: string;
+  class_average: number;
+  benchmark_average: number;
+  /**
+   * Positive = class is above benchmark, negative = below
+   */
+  difference_percent: number;
 };
 
 /**
  * Performance breakdown by activity type.
  */
 export type ActivityTypePerformanceItem = {
-    activity_type: string;
-    avg_score: number;
-    count: number;
+  activity_type: string;
+  avg_score: number;
+  count: number;
 };
 
 /**
  * Student's average score for an activity type.
  */
 export type ActivityTypeScore = {
-    activity_type: string;
-    avg_score: number;
-    total_completed: number;
-    label: string;
+  activity_type: string;
+  avg_score: number;
+  total_completed: number;
+  label: string;
 };
 
 /**
@@ -237,23 +237,23 @@ export type ActivityTypeScore = {
  * [Source: Story 5.7 AC: 12]
  */
 export type ActivityTypeStat = {
-    activity_type: string;
-    activity_label: string;
-    system_average: number;
-    total_completions: number;
+  activity_type: string;
+  activity_label: string;
+  system_average: number;
+  total_completions: number;
 };
 
 /**
  * Activity info with full config for multi-activity player.
  */
 export type ActivityWithConfig = {
-    id: string;
-    title: (string | null);
-    activity_type: string;
-    config_json: {
-        [key: string]: unknown;
-    };
-    order_index?: number;
+  id: string;
+  title: string | null;
+  activity_type: string;
+  config_json: {
+    [key: string]: unknown;
+  };
+  order_index?: number;
 };
 
 /**
@@ -262,16 +262,16 @@ export type ActivityWithConfig = {
  * Supports video resources and teacher-uploaded materials.
  */
 export type AdditionalResources = {
-    videos?: Array<VideoResource>;
-    teacher_materials?: Array<TeacherMaterialResource>;
+  videos?: Array<VideoResource>;
+  teacher_materials?: Array<TeacherMaterialResource>;
 };
 
 /**
  * Response schema with enriched material data and availability status.
  */
 export type AdditionalResourcesResponse = {
-    videos?: Array<VideoResource>;
-    teacher_materials?: Array<TeacherMaterialResourceResponse>;
+  videos?: Array<VideoResource>;
+  teacher_materials?: Array<TeacherMaterialResourceResponse>;
 };
 
 /**
@@ -280,15 +280,15 @@ export type AdditionalResourcesResponse = {
  * [Source: Story 5.7 AC: 12]
  */
 export type AdminBenchmarkOverview = {
-    total_schools: number;
-    schools_with_benchmarking: number;
-    schools_above_average: number;
-    schools_at_average: number;
-    schools_below_average: number;
-    system_average_score: number;
-    activity_type_stats: Array<ActivityTypeStat>;
-    school_summaries: Array<SchoolBenchmarkSummary>;
-    last_calculated: string;
+  total_schools: number;
+  schools_with_benchmarking: number;
+  schools_above_average: number;
+  schools_at_average: number;
+  schools_below_average: number;
+  system_average_score: number;
+  activity_type_stats: Array<ActivityTypeStat>;
+  school_summaries: Array<SchoolBenchmarkSummary>;
+  last_calculated: string;
 };
 
 /**
@@ -307,13 +307,13 @@ export type AdminBenchmarkOverview = {
  * created_at: When the quiz was generated.
  */
 export type AIQuiz = {
-    quiz_id: string;
-    book_id: number;
-    module_ids: Array<(number)>;
-    questions: Array<AIQuizQuestion>;
-    difficulty: string;
-    language: string;
-    created_at: string;
+  quiz_id: string;
+  book_id: number;
+  module_ids: Array<number>;
+  questions: Array<AIQuizQuestion>;
+  difficulty: string;
+  language: string;
+  created_at: string;
 };
 
 /**
@@ -329,42 +329,42 @@ export type AIQuiz = {
  * include_explanations: Whether to include explanations for correct answers.
  */
 export type AIQuizGenerationRequest = {
-    /**
-     * Source type: book or material.
-     */
-    source_type?: 'book' | 'material';
-    book_id: number;
-    /**
-     * At least one module ID required.
-     */
-    module_ids: Array<(number)>;
-    /**
-     * Difficulty level: auto, easy, medium, or hard.
-     */
-    difficulty?: 'auto' | 'easy' | 'medium' | 'hard';
-    /**
-     * Number of questions (1-50).
-     */
-    question_count?: number;
-    /**
-     * Language code. Auto-detected if not provided.
-     */
-    language?: (string | null);
-    /**
-     * Whether to include explanations for correct answers.
-     */
-    include_explanations?: boolean;
+  /**
+   * Source type: book or material.
+   */
+  source_type?: "book" | "material";
+  book_id: number;
+  /**
+   * At least one module ID required.
+   */
+  module_ids: Array<number>;
+  /**
+   * Difficulty level: auto, easy, medium, or hard.
+   */
+  difficulty?: "auto" | "easy" | "medium" | "hard";
+  /**
+   * Number of questions (1-50).
+   */
+  question_count?: number;
+  /**
+   * Language code. Auto-detected if not provided.
+   */
+  language?: string | null;
+  /**
+   * Whether to include explanations for correct answers.
+   */
+  include_explanations?: boolean;
 };
 
 /**
  * Source type: book or material.
  */
-export type source_type = 'book' | 'material';
+export type source_type = "book" | "material";
 
 /**
  * Difficulty level: auto, easy, medium, or hard.
  */
-export type difficulty = 'auto' | 'easy' | 'medium' | 'hard';
+export type difficulty = "auto" | "easy" | "medium" | "hard";
 
 /**
  * Public version of quiz without correct answers.
@@ -382,14 +382,14 @@ export type difficulty = 'auto' | 'easy' | 'medium' | 'hard';
  * question_count: Number of questions in the quiz.
  */
 export type AIQuizPublic = {
-    quiz_id: string;
-    book_id: number;
-    module_ids: Array<(number)>;
-    questions: Array<AIQuizQuestionPublic>;
-    difficulty: string;
-    language: string;
-    created_at: string;
-    question_count: number;
+  quiz_id: string;
+  book_id: number;
+  module_ids: Array<number>;
+  questions: Array<AIQuizQuestionPublic>;
+  difficulty: string;
+  language: string;
+  created_at: string;
+  question_count: number;
 };
 
 /**
@@ -410,20 +410,15 @@ export type AIQuizPublic = {
  * difficulty: Difficulty level of the question.
  */
 export type AIQuizQuestion = {
-    question_id: string;
-    question_text: string;
-    options: [
-        string,
-        string,
-        string,
-        string
-    ];
-    correct_answer: string;
-    correct_index: number;
-    explanation?: (string | null);
-    source_module_id: number;
-    source_page?: (number | null);
-    difficulty: string;
+  question_id: string;
+  question_text: string;
+  options: [string, string, string, string];
+  correct_answer: string;
+  correct_index: number;
+  explanation?: string | null;
+  source_module_id: number;
+  source_page?: number | null;
+  difficulty: string;
 };
 
 /**
@@ -440,16 +435,11 @@ export type AIQuizQuestion = {
  * difficulty: Difficulty level of the question.
  */
 export type AIQuizQuestionPublic = {
-    question_id: string;
-    question_text: string;
-    options: [
-        string,
-        string,
-        string,
-        string
-    ];
-    source_module_id: number;
-    difficulty: string;
+  question_id: string;
+  question_text: string;
+  options: [string, string, string, string];
+  source_module_id: number;
+  difficulty: string;
 };
 
 /**
@@ -468,16 +458,16 @@ export type AIQuizQuestionPublic = {
  * source_module_id: Module the question came from.
  */
 export type AIQuizQuestionResult = {
-    question_id: string;
-    question_text: string;
-    options: Array<(string)>;
-    correct_answer: string;
-    correct_index: number;
-    student_answer_index: (number | null);
-    student_answer: (string | null);
-    is_correct: boolean;
-    explanation?: (string | null);
-    source_module_id: number;
+  question_id: string;
+  question_text: string;
+  options: Array<string>;
+  correct_answer: string;
+  correct_index: number;
+  student_answer_index: number | null;
+  student_answer: string | null;
+  is_correct: boolean;
+  explanation?: string | null;
+  source_module_id: number;
 };
 
 /**
@@ -497,14 +487,14 @@ export type AIQuizQuestionResult = {
  * difficulty: Difficulty level of the quiz.
  */
 export type AIQuizResult = {
-    quiz_id: string;
-    student_id: string;
-    score: number;
-    total: number;
-    percentage: number;
-    question_results: Array<AIQuizQuestionResult>;
-    submitted_at: string;
-    difficulty: string;
+  quiz_id: string;
+  student_id: string;
+  score: number;
+  total: number;
+  percentage: number;
+  question_results: Array<AIQuizQuestionResult>;
+  submitted_at: string;
+  difficulty: string;
 };
 
 /**
@@ -516,162 +506,182 @@ export type AIQuizResult = {
  * answers: Dictionary mapping question_id to selected option index (0-3).
  */
 export type AIQuizSubmission = {
-    /**
-     * Map of question_id to selected answer index (0-3).
-     */
-    answers: {
-        [key: string]: (number);
-    };
+  /**
+   * Map of question_id to selected answer index (0-3).
+   */
+  answers: {
+    [key: string]: number;
+  };
 };
 
 /**
  * Aggregated summary metrics for a student.
  */
 export type AnalyticsSummary = {
-    avg_score: number;
-    total_completed: number;
-    completion_rate: number;
-    current_streak: number;
+  avg_score: number;
+  total_completed: number;
+  completion_rate: number;
+  current_streak: number;
 };
 
 /**
  * Schema for creating a new announcement.
  */
 export type AnnouncementCreate = {
-    title: string;
-    content: string;
-    recipient_student_ids?: Array<(string)>;
-    recipient_classroom_ids?: Array<(string)>;
+  title: string;
+  content: string;
+  recipient_student_ids?: Array<string>;
+  recipient_classroom_ids?: Array<string>;
 };
 
 /**
  * Schema for detailed announcement response with recipients.
  */
 export type AnnouncementDetail = {
-    id: string;
-    teacher_id: string;
-    title: string;
-    content: string;
-    recipient_count: number;
-    created_at: string;
-    updated_at: string;
-    recipient_ids: Array<(string)>;
+  id: string;
+  teacher_id: string;
+  title: string;
+  content: string;
+  recipient_count: number;
+  created_at: string;
+  updated_at: string;
+  recipient_ids: Array<string>;
 };
 
 /**
  * Schema for paginated announcement list response.
  */
 export type AnnouncementListResponse = {
-    announcements: Array<AnnouncementPublic>;
-    total: number;
-    limit: number;
-    offset: number;
+  announcements: Array<AnnouncementPublic>;
+  total: number;
+  limit: number;
+  offset: number;
 };
 
 /**
  * Schema for announcement API response.
  */
 export type AnnouncementPublic = {
-    id: string;
-    teacher_id: string;
-    title: string;
-    content: string;
-    recipient_count: number;
-    read_count?: (number | null);
-    created_at: string;
-    updated_at: string;
+  id: string;
+  teacher_id: string;
+  title: string;
+  content: string;
+  recipient_count: number;
+  read_count?: number | null;
+  created_at: string;
+  updated_at: string;
 };
 
 /**
  * Schema for mark-as-read response.
  */
 export type AnnouncementReadResponse = {
-    announcement_id: string;
-    is_read: boolean;
-    read_at: string;
+  announcement_id: string;
+  is_read: boolean;
+  read_at: string;
 };
 
 /**
  * Schema for updating an announcement.
  */
 export type AnnouncementUpdate = {
-    title?: (string | null);
-    content?: (string | null);
-    recipient_student_ids?: (Array<(string)> | null);
-    recipient_classroom_ids?: (Array<(string)> | null);
+  title?: string | null;
+  content?: string | null;
+  recipient_student_ids?: Array<string> | null;
+  recipient_classroom_ids?: Array<string> | null;
 };
 
 /**
  * Distribution of answers for a single option.
  */
 export type AnswerDistributionItem = {
-    option: string;
-    count: number;
-    percentage: number;
-    is_correct: boolean;
+  option: string;
+  count: number;
+  percentage: number;
+  is_correct: boolean;
 };
 
 /**
  * Module information for vocabulary filtering.
  */
 export type app__api__routes__vocabulary_explorer__ModuleInfo = {
-    id: string;
-    name: string;
-    vocabulary_count: number;
+  id: string;
+  name: string;
+  vocabulary_count: number;
 };
 
 /**
  * Notification type enumeration
  */
-export type app__models__NotificationType = 'assignment_created' | 'deadline_approaching' | 'feedback_received' | 'message_received' | 'student_completed' | 'past_due' | 'material_shared' | 'system_announcement' | 'password_reset' | 'announcement';
+export type app__models__NotificationType =
+  | "assignment_created"
+  | "deadline_approaching"
+  | "feedback_received"
+  | "message_received"
+  | "student_completed"
+  | "past_due"
+  | "material_shared"
+  | "system_announcement"
+  | "password_reset"
+  | "announcement";
 
 /**
  * Module metadata for navigation shortcuts.
  */
 export type app__schemas__book__ModuleInfo = {
-    name: string;
-    first_page_index: number;
-    page_count: number;
+  name: string;
+  first_page_index: number;
+  page_count: number;
 };
 
 /**
  * Enum for notification types.
  */
-export type app__schemas__notification__NotificationType = 'assignment_created' | 'deadline_approaching' | 'feedback_received' | 'message_received' | 'student_completed' | 'past_due' | 'material_shared' | 'system_announcement' | 'password_reset' | 'announcement';
+export type app__schemas__notification__NotificationType =
+  | "assignment_created"
+  | "deadline_approaching"
+  | "feedback_received"
+  | "message_received"
+  | "student_completed"
+  | "past_due"
+  | "material_shared"
+  | "system_announcement"
+  | "password_reset"
+  | "announcement";
 
 /**
  * Request to assign content to classes.
  */
 export type AssignContentRequest = {
-    /**
-     * Assignment name
-     */
-    name: string;
-    /**
-     * Assignment instructions
-     */
-    instructions?: (string | null);
-    /**
-     * Due date
-     */
-    due_date?: (string | null);
-    /**
-     * Time limit in minutes
-     */
-    time_limit_minutes?: (number | null);
-    /**
-     * Class IDs to assign to
-     */
-    class_ids: Array<(string)>;
+  /**
+   * Assignment name
+   */
+  name: string;
+  /**
+   * Assignment instructions
+   */
+  instructions?: string | null;
+  /**
+   * Due date
+   */
+  due_date?: string | null;
+  /**
+   * Time limit in minutes
+   */
+  time_limit_minutes?: number | null;
+  /**
+   * Class IDs to assign to
+   */
+  class_ids: Array<string>;
 };
 
 /**
  * Response for content assignment.
  */
 export type AssignContentResponse = {
-    message: string;
-    assignment_id: string;
-    student_count: number;
+  message: string;
+  assignment_id: string;
+  student_count: number;
 };
 
 /**
@@ -683,37 +693,37 @@ export type AssignContentResponse = {
  * Story 27.x: Also supports AI content assignments with source_type="ai_content" and content_id.
  */
 export type AssignmentCreate = {
-    source_type?: 'book' | 'ai_content';
-    book_id?: (number | null);
-    activity_id?: (string | null);
-    activity_ids?: (Array<(string)> | null);
-    content_id?: (string | null);
-    name: string;
-    instructions?: (string | null);
-    due_date?: (string | null);
-    time_limit_minutes?: (number | null);
-    student_ids?: (Array<(string)> | null);
-    class_ids?: (Array<(string)> | null);
-    scheduled_publish_date?: (string | null);
-    date_groups?: (Array<DateGroupCreate> | null);
-    video_path?: (string | null);
-    resources?: (AdditionalResources | null);
+  source_type?: "book" | "ai_content";
+  book_id?: number | null;
+  activity_id?: string | null;
+  activity_ids?: Array<string> | null;
+  content_id?: string | null;
+  name: string;
+  instructions?: string | null;
+  due_date?: string | null;
+  time_limit_minutes?: number | null;
+  student_ids?: Array<string> | null;
+  class_ids?: Array<string> | null;
+  scheduled_publish_date?: string | null;
+  date_groups?: Array<DateGroupCreate> | null;
+  video_path?: string | null;
+  resources?: AdditionalResources | null;
 };
 
-export type source_type2 = 'book' | 'ai_content';
+export type source_type2 = "book" | "ai_content";
 
 /**
  * Complete detailed results for an assignment.
  */
 export type AssignmentDetailedResultsResponse = {
-    assignment_id: string;
-    assignment_name: string;
-    activity_type: string;
-    due_date: (string | null);
-    completion_overview: CompletionOverview;
-    score_statistics: (ScoreStatistics | null);
-    student_results: Array<StudentResultItem>;
-    question_analysis: (ActivityTypeAnalysis | null);
+  assignment_id: string;
+  assignment_name: string;
+  activity_type: string;
+  due_date: string | null;
+  completion_overview: CompletionOverview;
+  score_statistics: ScoreStatistics | null;
+  student_results: Array<StudentResultItem>;
+  question_analysis: ActivityTypeAnalysis | null;
 };
 
 /**
@@ -723,73 +733,73 @@ export type AssignmentDetailedResultsResponse = {
  * Used when a teacher wants to edit an existing assignment.
  */
 export type AssignmentForEditResponse = {
-    assignment_id: string;
-    assignment_name: string;
-    instructions: (string | null);
-    due_date: (string | null);
-    time_limit_minutes: (number | null);
-    status: AssignmentPublishStatus;
-    book_id: number;
-    book_title: string;
-    book_name: string;
-    publisher_name: string;
-    book_cover_url: (string | null);
-    activities: Array<ActivityWithConfig>;
-    total_activities: number;
-    video_path?: (string | null);
-    resources?: (AdditionalResourcesResponse | null);
-    class_ids: Array<(string)>;
-    student_ids: Array<(string)>;
-    time_planning_enabled?: boolean;
-    scheduled_publish_date?: (string | null);
-    date_groups?: (Array<{
+  assignment_id: string;
+  assignment_name: string;
+  instructions: string | null;
+  due_date: string | null;
+  time_limit_minutes: number | null;
+  status: AssignmentPublishStatus;
+  book_id: number;
+  book_title: string;
+  book_name: string;
+  publisher_name: string;
+  book_cover_url: string | null;
+  activities: Array<ActivityWithConfig>;
+  total_activities: number;
+  video_path?: string | null;
+  resources?: AdditionalResourcesResponse | null;
+  class_ids: Array<string>;
+  student_ids: Array<string>;
+  time_planning_enabled?: boolean;
+  scheduled_publish_date?: string | null;
+  date_groups?: Array<{
     [key: string]: unknown;
-}> | null);
+  }> | null;
 };
 
 /**
  * Assignment list item with enriched data for display.
  */
 export type AssignmentListItem = {
-    id: string;
-    name: string;
-    instructions: (string | null);
-    due_date: (string | null);
-    time_limit_minutes: (number | null);
-    created_at: string;
-    book_id: number;
-    book_title: string;
-    activity_id: string;
-    activity_title: string;
-    activity_type: string;
-    total_students: number;
-    not_started: number;
-    in_progress: number;
-    completed: number;
-    teacher_name?: (string | null);
-    scheduled_publish_date?: (string | null);
-    status?: AssignmentPublishStatus;
+  id: string;
+  name: string;
+  instructions: string | null;
+  due_date: string | null;
+  time_limit_minutes: number | null;
+  created_at: string;
+  book_id: number;
+  book_title: string;
+  activity_id: string;
+  activity_title: string;
+  activity_type: string;
+  total_students: number;
+  not_started: number;
+  in_progress: number;
+  completed: number;
+  teacher_name?: string | null;
+  scheduled_publish_date?: string | null;
+  status?: AssignmentPublishStatus;
 };
 
 /**
  * Paginated response for assignment lists.
  */
 export type AssignmentListResponse = {
-    items: Array<AssignmentWithTeacher>;
-    total: number;
-    skip: number;
-    limit: number;
+  items: Array<AssignmentWithTeacher>;
+  total: number;
+  skip: number;
+  limit: number;
 };
 
 /**
  * Performance metrics for a single assignment.
  */
 export type AssignmentPerformanceItem = {
-    assignment_id: string;
-    name: string;
-    avg_score: number;
-    completion_rate: number;
-    avg_time_spent: number;
+  assignment_id: string;
+  name: string;
+  avg_score: number;
+  completion_rate: number;
+  avg_time_spent: number;
 };
 
 /**
@@ -799,49 +809,53 @@ export type AssignmentPerformanceItem = {
  * Used for teachers to preview/test assignments before or after publishing.
  */
 export type AssignmentPreviewResponse = {
-    assignment_id: string;
-    assignment_name: string;
-    instructions: (string | null);
-    due_date: (string | null);
-    time_limit_minutes: (number | null);
-    status: AssignmentPublishStatus;
-    book_id: number;
-    book_title: string;
-    book_name: string;
-    publisher_name: string;
-    book_cover_url: (string | null);
-    activities: Array<ActivityWithConfig>;
-    total_activities: number;
-    is_preview?: boolean;
-    video_path?: (string | null);
-    resources?: (AdditionalResourcesResponse | null);
+  assignment_id: string;
+  assignment_name: string;
+  instructions: string | null;
+  due_date: string | null;
+  time_limit_minutes: number | null;
+  status: AssignmentPublishStatus;
+  book_id: number;
+  book_title: string;
+  book_name: string;
+  publisher_name: string;
+  book_cover_url: string | null;
+  activities: Array<ActivityWithConfig>;
+  total_activities: number;
+  is_preview?: boolean;
+  video_path?: string | null;
+  resources?: AdditionalResourcesResponse | null;
 };
 
 /**
  * Assignment publishing status
  */
-export type AssignmentPublishStatus = 'draft' | 'scheduled' | 'published' | 'archived';
+export type AssignmentPublishStatus =
+  | "draft"
+  | "scheduled"
+  | "published"
+  | "archived";
 
 /**
  * Assignment response schema for API.
  */
 export type AssignmentResponse = {
-    id: string;
-    teacher_id: string;
-    book_id: number;
-    name: string;
-    instructions: (string | null);
-    due_date: (string | null);
-    time_limit_minutes: (number | null);
-    created_at: string;
-    updated_at: string;
-    student_count?: number;
-    activity_id?: (string | null);
-    activities?: Array<ActivityInfo>;
-    activity_count?: number;
-    scheduled_publish_date?: (string | null);
-    status?: AssignmentPublishStatus;
-    video_path?: (string | null);
+  id: string;
+  teacher_id: string;
+  book_id: number;
+  name: string;
+  instructions: string | null;
+  due_date: string | null;
+  time_limit_minutes: number | null;
+  created_at: string;
+  updated_at: string;
+  student_count?: number;
+  activity_id?: string | null;
+  activities?: Array<ActivityInfo>;
+  activity_count?: number;
+  scheduled_publish_date?: string | null;
+  status?: AssignmentPublishStatus;
+  video_path?: string | null;
 };
 
 /**
@@ -851,68 +865,68 @@ export type AssignmentResponse = {
  * with correct/incorrect marking.
  */
 export type AssignmentResultDetailResponse = {
-    assignment_id: string;
-    assignment_name: string;
-    activity_id: string;
-    activity_title: (string | null);
-    activity_type: string;
-    book_id: number;
-    book_name: string;
-    publisher_name: string;
-    config_json: {
-        [key: string]: unknown;
-    };
-    answers_json: {
-        [key: string]: unknown;
-    };
-    score: number;
-    total_points: number;
-    started_at: (string | null);
-    completed_at: string;
-    time_spent_minutes: number;
-    time_spent_seconds: number;
+  assignment_id: string;
+  assignment_name: string;
+  activity_id: string;
+  activity_title: string | null;
+  activity_type: string;
+  book_id: number;
+  book_name: string;
+  publisher_name: string;
+  config_json: {
+    [key: string]: unknown;
+  };
+  answers_json: {
+    [key: string]: unknown;
+  };
+  score: number;
+  total_points: number;
+  started_at: string | null;
+  completed_at: string;
+  time_spent_minutes: number;
+  time_spent_seconds: number;
 };
 
 /**
  * Request schema for saving assignment progress.
  */
 export type AssignmentSaveProgressRequest = {
-    partial_answers_json: {
-        [key: string]: unknown;
-    };
-    time_spent_minutes: number;
+  partial_answers_json: {
+    [key: string]: unknown;
+  };
+  time_spent_minutes: number;
 };
 
 /**
  * Response schema for saving assignment progress.
  */
 export type AssignmentSaveProgressResponse = {
-    message: string;
-    last_saved_at: string;
-    time_spent_minutes: number;
+  message: string;
+  last_saved_at: string;
+  time_spent_minutes: number;
 };
 
 /**
  * Response schema for assignment submission.
  */
 export type AssignmentSubmissionResponse = {
-    success: boolean;
-    message: string;
-    score: number;
-    completed_at: string;
-    assignment_id: string;
+  success: boolean;
+  message: string;
+  score: number;
+  completed_at: string;
+  assignment_id: string;
 };
 
 /**
  * Student submission payload for completing an assignment.
  */
 export type AssignmentSubmitRequest = {
-    answers_json: {
-        [key: string]: unknown;
-    };
-    score: number;
-    time_spent_minutes: number;
-    completed_at?: (string | null);
+  answers_json: {
+    [key: string]: unknown;
+  };
+  score: number;
+  time_spent_minutes: number;
+  completed_at?: string | null;
 };
 
 /**
@@ -922,76 +936,76 @@ export type AssignmentSubmitRequest = {
  * Story 10.3: Added video_path field to allow attaching/removing video.
  */
 export type AssignmentUpdate = {
-    name?: (string | null);
-    instructions?: (string | null);
-    due_date?: (string | null);
-    time_limit_minutes?: (number | null);
-    scheduled_publish_date?: (string | null);
-    status?: (AssignmentPublishStatus | null);
-    activity_ids?: (Array<(string)> | null);
-    video_path?: (string | null);
-    resources?: (AdditionalResources | null);
+  name?: string | null;
+  instructions?: string | null;
+  due_date?: string | null;
+  time_limit_minutes?: number | null;
+  scheduled_publish_date?: string | null;
+  status?: AssignmentPublishStatus | null;
+  activity_ids?: Array<string> | null;
+  video_path?: string | null;
+  resources?: AdditionalResources | null;
 };
 
 /**
  * Assignment response with teacher information for admin view.
  */
 export type AssignmentWithTeacher = {
-    id: string;
-    title: string;
-    teacher_id: string;
-    teacher_name: string;
-    teacher_email: string;
-    recipient_count?: number;
-    completed_count?: number;
-    due_date: (string | null);
-    status: AssignmentPublishStatus;
-    created_at: string;
+  id: string;
+  title: string;
+  teacher_id: string;
+  teacher_name: string;
+  teacher_email: string;
+  recipient_count?: number;
+  completed_count?: number;
+  due_date: string | null;
+  status: AssignmentPublishStatus;
+  created_at: string;
 };
 
 /**
  * Request for vocabulary audio URL.
  */
 export type AudioUrlRequest = {
-    /**
-     * Language code
-     */
-    language?: string;
-    /**
-     * Word to get audio for
-     */
-    word: string;
+  /**
+   * Language code
+   */
+  language?: string;
+  /**
+   * Word to get audio for
+   */
+  word: string;
 };
 
 /**
  * Audio URL response.
  */
 export type AudioUrlResponse = {
-    url: string;
-    expires_at: string;
+  url: string;
+  expires_at: string;
 };
 
 /**
  * Avatar type enumeration
  */
-export type AvatarType = 'custom' | 'predefined';
+export type AvatarType = "custom" | "predefined";
 
 /**
  * Response after updating avatar.
  */
 export type AvatarUpdateResponse = {
-    message: string;
-    avatar_url: (string | null);
-    avatar_type: (AvatarType | null);
+  message: string;
+  avatar_url: string | null;
+  avatar_type: AvatarType | null;
 };
 
 /**
  * Type definition for badge information.
  */
 export type BadgeInfo = {
-    slug: string;
-    label: string;
-    icon: string;
+  slug: string;
+  label: string;
+  icon: string;
 };
 
 /**
@@ -1000,29 +1014,29 @@ export type BadgeInfo = {
  * [Source: Story 5.7 AC: 2, 4, 5, 7]
  */
 export type BenchmarkData = {
-    level: 'school' | 'publisher';
-    /**
-     * Average score as percentage
-     */
-    average_score: number;
-    /**
-     * Completion rate as percentage
-     */
-    completion_rate: number;
-    /**
-     * Number of classes in benchmark
-     */
-    sample_size: number;
-    period: 'weekly' | 'monthly' | 'semester' | 'all';
-    /**
-     * False if < 5 classes threshold not met
-     */
-    is_available?: boolean;
+  level: "school" | "publisher";
+  /**
+   * Average score as percentage
+   */
+  average_score: number;
+  /**
+   * Completion rate as percentage
+   */
+  completion_rate: number;
+  /**
+   * Number of classes in benchmark
+   */
+  sample_size: number;
+  period: "weekly" | "monthly" | "semester" | "all";
+  /**
+   * False if < 5 classes threshold not met
+   */
+  is_available?: boolean;
 };
 
-export type level = 'school' | 'publisher';
+export type level = "school" | "publisher";
 
-export type period = 'weekly' | 'monthly' | 'semester' | 'all';
+export type period = "weekly" | "monthly" | "semester" | "all";
 
 /**
  * Encouraging or constructive message based on performance.
@@ -1030,14 +1044,24 @@ export type period = 'weekly' | 'monthly' | 'semester' | 'all';
  * [Source: Story 5.7 AC: 10, 11]
  */
 export type BenchmarkMessage = {
-    type: 'excelling' | 'above_average' | 'at_average' | 'below_average' | 'needs_focus';
-    title: string;
-    description: string;
-    icon: string;
-    focus_area?: (string | null);
+  type:
+    | "excelling"
+    | "above_average"
+    | "at_average"
+    | "below_average"
+    | "needs_focus";
+  title: string;
+  description: string;
+  icon: string;
+  focus_area?: string | null;
 };
 
-export type type = 'excelling' | 'above_average' | 'at_average' | 'below_average' | 'needs_focus';
+export type type =
+  | "excelling"
+  | "above_average"
+  | "at_average"
+  | "below_average"
+  | "needs_focus";
 
 /**
  * Response after updating benchmark settings.
@@ -1045,13 +1069,13 @@ export type type = 'excelling' | 'above_average' | 'at_average' | 'below_average
  * [Source: Story 5.7 AC: 9]
  */
 export type BenchmarkSettingsResponse = {
-    entity_type: 'school' | 'publisher';
-    entity_id: string;
-    benchmarking_enabled: boolean;
-    updated_at: string;
+  entity_type: "school" | "publisher";
+  entity_id: string;
+  benchmarking_enabled: boolean;
+  updated_at: string;
 };
 
-export type entity_type = 'school' | 'publisher';
+export type entity_type = "school" | "publisher";
 
 /**
  * Request to update benchmark settings.
@@ -1059,7 +1083,7 @@ export type entity_type = 'school' | 'publisher';
  * [Source: Story 5.7 AC: 9]
  */
 export type BenchmarkSettingsUpdate = {
-    benchmarking_enabled: boolean;
+  benchmarking_enabled: boolean;
 };
 
 /**
@@ -1068,142 +1092,142 @@ export type BenchmarkSettingsUpdate = {
  * [Source: Story 5.7 AC: 3]
  */
 export type BenchmarkTrendPoint = {
-    period: string;
-    period_label: string;
-    class_average: number;
-    school_benchmark?: (number | null);
-    publisher_benchmark?: (number | null);
+  period: string;
+  period_label: string;
+  class_average: number;
+  school_benchmark?: number | null;
+  publisher_benchmark?: number | null;
 };
 
 export type Body_admin_bulk_import_publishers = {
-    file: (Blob | File);
+  file: Blob | File;
 };
 
 export type Body_admin_bulk_import_students = {
-    file: (Blob | File);
+  file: Blob | File;
 };
 
 export type Body_admin_bulk_import_teachers = {
-    file: (Blob | File);
+  file: Blob | File;
 };
 
 export type Body_admin_upload_publisher_logo = {
-    file: (Blob | File);
+  file: Blob | File;
 };
 
 export type Body_login_login_access_token = {
-    grant_type?: (string | null);
-    username: string;
-    password: string;
-    scope?: string;
-    client_id?: (string | null);
-    client_secret?: (string | null);
+  grant_type?: string | null;
+  username: string;
+  password: string;
+  scope?: string;
+  client_id?: string | null;
+  client_secret?: string | null;
 };
 
 export type Body_students_execute_import = {
-    /**
-     * Excel file (.xlsx or .xls)
-     */
-    file: (Blob | File);
+  /**
+   * Excel file (.xlsx or .xls)
+   */
+  file: Blob | File;
 };
 
 export type Body_students_validate_import_file = {
-    /**
-     * Excel file (.xlsx or .xls)
-     */
-    file: (Blob | File);
+  /**
+   * Excel file (.xlsx or .xls)
+   */
+  file: Blob | File;
 };
 
 export type Body_teacher_materials_upload_material = {
-    file: (Blob | File);
+  file: Blob | File;
 };
 
 export type Body_teacher_materials_upload_pdf_for_ai = {
-    file: (Blob | File);
+  file: Blob | File;
 };
 
 export type Body_teachers_bulk_import_students = {
-    file: (Blob | File);
+  file: Blob | File;
 };
 
 /**
  * Properties to receive via API on BookAssignment creation
  */
 export type BookAssignmentCreate = {
-    book_id: number;
-    school_id?: (string | null);
-    teacher_id?: (string | null);
+  book_id: number;
+  school_id?: string | null;
+  teacher_id?: string | null;
 };
 
 /**
  * Paginated list of book assignments
  */
 export type BookAssignmentListResponse = {
-    items: Array<BookAssignmentResponse>;
-    total: number;
-    skip: number;
-    limit: number;
+  items: Array<BookAssignmentResponse>;
+  total: number;
+  skip: number;
+  limit: number;
 };
 
 /**
  * Properties to return via API
  */
 export type BookAssignmentPublic = {
-    id: string;
-    book_id: number;
-    school_id: (string | null);
-    teacher_id: (string | null);
-    assigned_by: string;
-    assigned_at: string;
+  id: string;
+  book_id: number;
+  school_id: string | null;
+  teacher_id: string | null;
+  assigned_by: string;
+  assigned_at: string;
 };
 
 /**
  * Full book assignment response with related entity info
  */
 export type BookAssignmentResponse = {
-    id: string;
-    book_id: number;
-    book_title: string;
-    book_cover_url?: (string | null);
-    school_id: (string | null);
-    school_name?: (string | null);
-    teacher_id: (string | null);
-    teacher_name?: (string | null);
-    teacher_email?: (string | null);
-    assigned_by: string;
-    assigned_by_name?: (string | null);
-    assigned_at: string;
+  id: string;
+  book_id: number;
+  book_title: string;
+  book_cover_url?: string | null;
+  school_id: string | null;
+  school_name?: string | null;
+  teacher_id: string | null;
+  teacher_name?: string | null;
+  teacher_email?: string | null;
+  assigned_by: string;
+  assigned_by_name?: string | null;
+  assigned_at: string;
 };
 
 /**
  * List of books response schema.
  */
 export type BookListResponse = {
-    items: Array<BookResponse>;
-    total: number;
-    skip?: number;
-    limit?: number;
+  items: Array<BookResponse>;
+  total: number;
+  skip?: number;
+  limit?: number;
 };
 
 /**
  * Enhanced book pages response with activity coordinates for page viewer.
  */
 export type BookPagesDetailResponse = {
-    book_id: number;
-    modules: Array<app__schemas__book__ModuleInfo>;
-    pages: Array<PageDetail>;
-    total_pages: number;
-    total_activities: number;
+  book_id: number;
+  modules: Array<app__schemas__book__ModuleInfo>;
+  pages: Array<PageDetail>;
+  total_pages: number;
+  total_activities: number;
 };
 
 /**
  * Response for book pages endpoint.
  */
 export type BookPagesResponse = {
-    book_id: number;
-    modules: Array<ModulePages>;
-    total_pages: number;
-    total_activities: number;
+  book_id: number;
+  modules: Array<ModulePages>;
+  total_pages: number;
+  total_activities: number;
 };
 
 /**
@@ -1213,15 +1237,15 @@ export type BookPagesResponse = {
  * The ID is the DCS book ID (integer).
  */
 export type BookPublic = {
-    id: number;
-    name: string;
-    title?: (string | null);
-    publisher_id: number;
-    publisher_name: string;
-    cover_url?: (string | null);
-    activity_count?: number;
-    created_at?: (string | null);
-    updated_at?: (string | null);
+  id: number;
+  name: string;
+  title?: string | null;
+  publisher_id: number;
+  publisher_name: string;
+  cover_url?: string | null;
+  activity_count?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 /**
@@ -1231,199 +1255,199 @@ export type BookPublic = {
  * but will be removed in a future version.
  */
 export type BookResponse = {
-    id: number;
-    title?: (string | null);
-    book_name?: (string | null);
-    publisher_name: string;
-    language?: (string | null);
-    category?: (string | null);
-    cover_image_url?: (string | null);
-    activity_count?: number;
-    dream_storage_id?: (string | null);
+  id: number;
+  title?: string | null;
+  book_name?: string | null;
+  publisher_name: string;
+  language?: string | null;
+  category?: string | null;
+  cover_image_url?: string | null;
+  activity_count?: number;
+  dream_storage_id?: string | null;
 };
 
 /**
  * Book structure response with modules and pages for activity selection tabs.
  */
 export type BookStructureResponse = {
-    book_id: number;
-    modules: Array<ModuleWithActivities>;
-    total_pages: number;
-    total_activities: number;
+  book_id: number;
+  modules: Array<ModuleWithActivities>;
+  total_pages: number;
+  total_activities: number;
 };
 
 /**
  * Book synchronization response schema.
  */
 export type BookSyncResponse = {
-    success: boolean;
-    books_synced: number;
-    books_created: number;
-    books_updated: number;
-    activities_created: number;
-    errors: Array<(string)>;
-    message?: string;
+  success: boolean;
+  books_synced: number;
+  books_created: number;
+  books_updated: number;
+  activities_created: number;
+  errors: Array<string>;
+  message?: string;
 };
 
 /**
  * Response for book videos endpoint.
  */
 export type BookVideosResponse = {
-    book_id: number;
-    videos: Array<VideoInfo>;
-    total_count: number;
+  book_id: number;
+  videos: Array<VideoInfo>;
+  total_count: number;
 };
 
 /**
  * Book with AI vocabulary data available.
  */
 export type BookWithVocabulary = {
-    id: number;
-    title: string;
-    publisher_name: string;
-    has_ai_data: boolean;
-    processing_status: (string | null);
-    vocabulary_count: number;
-    modules: Array<app__api__routes__vocabulary_explorer__ModuleInfo>;
+  id: number;
+  title: string;
+  publisher_name: string;
+  has_ai_data: boolean;
+  processing_status: string | null;
+  vocabulary_count: number;
+  modules: Array<app__api__routes__vocabulary_explorer__ModuleInfo>;
 };
 
 /**
  * Individual assignment created in bulk operation.
  */
 export type BulkAssignmentCreatedItem = {
-    id: string;
-    name: string;
-    scheduled_publish_date: (string | null);
-    due_date: (string | null);
-    status: AssignmentPublishStatus;
-    activity_count: number;
+  id: string;
+  name: string;
+  scheduled_publish_date: string | null;
+  due_date: string | null;
+  status: AssignmentPublishStatus;
+  activity_count: number;
 };
 
 /**
  * Response schema for bulk assignment creation (Time Planning mode).
  */
 export type BulkAssignmentCreateResponse = {
-    success: boolean;
-    message: string;
-    total_created: number;
-    assignments: Array<BulkAssignmentCreatedItem>;
+  success: boolean;
+  message: string;
+  total_created: number;
+  assignments: Array<BulkAssignmentCreatedItem>;
 };
 
 /**
  * Properties for bulk book assignment creation
  */
 export type BulkBookAssignmentCreate = {
-    book_id: number;
-    school_id: string;
-    teacher_ids?: (Array<(string)> | null);
-    assign_to_all_teachers?: boolean;
+  book_id: number;
+  school_id: string;
+  teacher_ids?: Array<string> | null;
+  assign_to_all_teachers?: boolean;
 };
 
 /**
  * Request body for bulk delete operations.
  */
 export type BulkDeleteRequest = {
-    ids: Array<(string)>;
+  ids: Array<string>;
 };
 
 /**
  * Response for bulk delete operations.
  */
 export type BulkDeleteResponse = {
-    deleted_count: number;
-    failed_count: number;
-    errors?: Array<(string)>;
+  deleted_count: number;
+  failed_count: number;
+  errors?: Array<string>;
 };
 
 /**
  * Details of a single bulk import validation error
  */
 export type BulkImportErrorDetail = {
-    row_number: number;
-    field?: (string | null);
-    message: string;
+  row_number: number;
+  field?: string | null;
+  message: string;
 };
 
 /**
  * Response schema for bulk import endpoints
  */
 export type BulkImportResponse = {
-    success: boolean;
-    total_rows: number;
-    created_count: number;
-    error_count: number;
-    errors: Array<BulkImportErrorDetail>;
-    credentials?: (Array<{
-    [key: string]: (string);
-}> | null);
+  success: boolean;
+  total_rows: number;
+  created_count: number;
+  error_count: number;
+  errors: Array<BulkImportErrorDetail>;
+  credentials?: Array<{
+    [key: string]: string;
+  }> | null;
 };
 
 /**
  * Assignment item for calendar view.
  */
 export type CalendarAssignmentItem = {
-    id: string;
-    name: string;
-    due_date: (string | null);
-    scheduled_publish_date: (string | null);
-    status: AssignmentPublishStatus;
-    activity_count: number;
-    class_names?: Array<(string)>;
-    book_id: number;
-    book_title: string;
+  id: string;
+  name: string;
+  due_date: string | null;
+  scheduled_publish_date: string | null;
+  status: AssignmentPublishStatus;
+  activity_count: number;
+  class_names?: Array<string>;
+  book_id: number;
+  book_title: string;
 };
 
 /**
  * Response schema for calendar assignments endpoint.
  */
 export type CalendarAssignmentsResponse = {
-    start_date: string;
-    end_date: string;
-    total_assignments: number;
-    assignments_by_date: {
-        [key: string]: Array<CalendarAssignmentItem>;
-    };
+  start_date: string;
+  end_date: string;
+  total_assignments: number;
+  assignments_by_date: {
+    [key: string]: Array<CalendarAssignmentItem>;
+  };
 };
 
 /**
  * Request body for changing initial/temporary password
  */
 export type ChangeInitialPasswordRequest = {
-    current_password: string;
-    new_password: string;
+  current_password: string;
+  new_password: string;
 };
 
 /**
  * Response for password change
  */
 export type ChangePasswordResponse = {
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 };
 
 /**
  * Complete class analytics data response.
  */
 export type ClassAnalyticsResponse = {
-    class_id: string;
-    class_name: string;
-    summary: ClassAnalyticsSummary;
-    score_distribution: Array<ScoreDistributionBucket>;
-    leaderboard: Array<StudentLeaderboardItem>;
-    struggling_students: Array<StrugglingStudentItem>;
-    assignment_performance: Array<AssignmentPerformanceItem>;
-    activity_type_performance: Array<ActivityTypePerformanceItem>;
-    trends: Array<TrendData>;
+  class_id: string;
+  class_name: string;
+  summary: ClassAnalyticsSummary;
+  score_distribution: Array<ScoreDistributionBucket>;
+  leaderboard: Array<StudentLeaderboardItem>;
+  struggling_students: Array<StrugglingStudentItem>;
+  assignment_performance: Array<AssignmentPerformanceItem>;
+  activity_type_performance: Array<ActivityTypePerformanceItem>;
+  trends: Array<TrendData>;
 };
 
 /**
  * Aggregated summary metrics for a class.
  */
 export type ClassAnalyticsSummary = {
-    avg_score: number;
-    completion_rate: number;
-    total_assignments: number;
-    active_students: number;
+  avg_score: number;
+  completion_rate: number;
+  total_assignments: number;
+  active_students: number;
 };
 
 /**
@@ -1432,52 +1456,52 @@ export type ClassAnalyticsSummary = {
  * [Source: Story 5.7 AC: 2, 3, 5, 7, 10, 11]
  */
 export type ClassBenchmarkResponse = {
-    class_metrics: ClassMetrics;
-    /**
-     * None if disabled or threshold not met
-     */
-    school_benchmark?: (BenchmarkData | null);
-    /**
-     * None if disabled or threshold not met
-     */
-    publisher_benchmark?: (BenchmarkData | null);
-    activity_benchmarks?: Array<ActivityTypeBenchmark>;
-    comparison_over_time?: Array<BenchmarkTrendPoint>;
-    message?: (BenchmarkMessage | null);
-    benchmarking_enabled?: boolean;
-    disabled_reason?: (string | null);
+  class_metrics: ClassMetrics;
+  /**
+   * None if disabled or threshold not met
+   */
+  school_benchmark?: BenchmarkData | null;
+  /**
+   * None if disabled or threshold not met
+   */
+  publisher_benchmark?: BenchmarkData | null;
+  activity_benchmarks?: Array<ActivityTypeBenchmark>;
+  comparison_over_time?: Array<BenchmarkTrendPoint>;
+  message?: BenchmarkMessage | null;
+  benchmarking_enabled?: boolean;
+  disabled_reason?: string | null;
 };
 
 /**
  * Properties to receive via API on Class creation by Teacher (teacher_id and school_id set automatically from teacher's record)
  */
 export type ClassCreateByTeacher = {
-    name: string;
-    grade_level?: (string | null);
-    subject?: (string | null);
-    academic_year?: (string | null);
-    is_active?: boolean;
+  name: string;
+  grade_level?: string | null;
+  subject?: string | null;
+  academic_year?: string | null;
+  is_active?: boolean;
 };
 
 /**
  * Class detail response with enrolled students
  */
 export type ClassDetailResponse = {
-    name: string;
-    grade_level?: (string | null);
-    subject?: (string | null);
-    academic_year?: (string | null);
-    is_active?: boolean;
-    id: string;
-    teacher_id: string;
-    school_id: string;
-    created_at: string;
-    updated_at: string;
-    /**
-     * Number of enrolled students
-     */
-    student_count?: number;
-    enrolled_students?: Array<StudentInClass>;
+  name: string;
+  grade_level?: string | null;
+  subject?: string | null;
+  academic_year?: string | null;
+  is_active?: boolean;
+  id: string;
+  teacher_id: string;
+  school_id: string;
+  created_at: string;
+  updated_at: string;
+  /**
+   * Number of enrolled students
+   */
+  student_count?: number;
+  enrolled_students?: Array<StudentInClass>;
 };
 
 /**
@@ -1486,227 +1510,227 @@ export type ClassDetailResponse = {
  * [Source: Story 5.7 AC: 2]
  */
 export type ClassMetrics = {
-    class_id: string;
-    class_name: string;
-    average_score: number;
-    completion_rate: number;
-    total_assignments: number;
-    active_students: number;
+  class_id: string;
+  class_name: string;
+  average_score: number;
+  completion_rate: number;
+  total_assignments: number;
+  active_students: number;
 };
 
 /**
  * Properties to return via API
  */
 export type ClassPublic = {
-    name: string;
-    grade_level?: (string | null);
-    subject?: (string | null);
-    academic_year?: (string | null);
-    is_active?: boolean;
-    id: string;
-    teacher_id: string;
-    school_id: string;
-    created_at: string;
-    updated_at: string;
+  name: string;
+  grade_level?: string | null;
+  subject?: string | null;
+  academic_year?: string | null;
+  is_active?: boolean;
+  id: string;
+  teacher_id: string;
+  school_id: string;
+  created_at: string;
+  updated_at: string;
 };
 
 /**
  * Class response with computed student count
  */
 export type ClassResponse = {
-    name: string;
-    grade_level?: (string | null);
-    subject?: (string | null);
-    academic_year?: (string | null);
-    is_active?: boolean;
-    id: string;
-    teacher_id: string;
-    school_id: string;
-    created_at: string;
-    updated_at: string;
-    /**
-     * Number of enrolled students
-     */
-    student_count?: number;
+  name: string;
+  grade_level?: string | null;
+  subject?: string | null;
+  academic_year?: string | null;
+  is_active?: boolean;
+  id: string;
+  teacher_id: string;
+  school_id: string;
+  created_at: string;
+  updated_at: string;
+  /**
+   * Number of enrolled students
+   */
+  student_count?: number;
 };
 
 /**
  * Schema for adding students to a class
  */
 export type ClassStudentAdd = {
-    /**
-     * List of student UUIDs to add to the class
-     */
-    student_ids: Array<(string)>;
+  /**
+   * List of student UUIDs to add to the class
+   */
+  student_ids: Array<string>;
 };
 
 /**
  * Students grouped by class ID.
  */
 export type ClassStudentsGroup = {
-    class_id: string;
-    students: Array<StudentPublic>;
+  class_id: string;
+  students: Array<StudentPublic>;
 };
 
 /**
  * Properties to receive via API on Class update
  */
 export type ClassUpdate = {
-    name?: (string | null);
-    grade_level?: (string | null);
-    subject?: (string | null);
-    academic_year?: (string | null);
-    is_active?: (boolean | null);
+  name?: string | null;
+  grade_level?: string | null;
+  subject?: string | null;
+  academic_year?: string | null;
+  is_active?: boolean | null;
 };
 
 /**
  * Completion status counts for an assignment.
  */
 export type CompletionOverview = {
-    completed: number;
-    in_progress: number;
-    not_started: number;
-    past_due: number;
-    total: number;
+  completed: number;
+  in_progress: number;
+  not_started: number;
+  past_due: number;
+  total: number;
 };
 
 /**
  * Content creator information.
  */
 export type ContentCreator = {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 };
 
 /**
  * Detailed content library item with full activity data.
  */
 export type ContentItemDetail = {
-    id: string;
-    /**
-     * Type of activity (ai_quiz, vocabulary_quiz, etc.)
-     */
-    activity_type: string;
-    /**
-     * Activity title
-     */
-    title: string;
-    /**
-     * 'book' or 'material'
-     */
-    source_type: string;
-    /**
-     * DCS book ID if book-based
-     */
-    book_id?: (number | null);
-    /**
-     * Book title if book-based
-     */
-    book_title?: (string | null);
-    /**
-     * Material ID if material-based
-     */
-    material_id?: (string | null);
-    /**
-     * Material name if material-based
-     */
-    material_name?: (string | null);
-    /**
-     * Number of questions/items in activity
-     */
-    item_count: number;
-    created_at: string;
-    updated_at?: (string | null);
-    /**
-     * Times used in assignments
-     */
-    used_in_assignments?: number;
-    /**
-     * True if book-based (shared), False if material-based (private)
-     */
-    is_shared: boolean;
-    created_by: ContentCreator;
-    /**
-     * Full activity data
-     */
-    content: {
-        [key: string]: unknown;
-    };
+  id: string;
+  /**
+   * Type of activity (ai_quiz, vocabulary_quiz, etc.)
+   */
+  activity_type: string;
+  /**
+   * Activity title
+   */
+  title: string;
+  /**
+   * 'book' or 'material'
+   */
+  source_type: string;
+  /**
+   * DCS book ID if book-based
+   */
+  book_id?: number | null;
+  /**
+   * Book title if book-based
+   */
+  book_title?: string | null;
+  /**
+   * Material ID if material-based
+   */
+  material_id?: string | null;
+  /**
+   * Material name if material-based
+   */
+  material_name?: string | null;
+  /**
+   * Number of questions/items in activity
+   */
+  item_count: number;
+  created_at: string;
+  updated_at?: string | null;
+  /**
+   * Times used in assignments
+   */
+  used_in_assignments?: number;
+  /**
+   * True if book-based (shared), False if material-based (private)
+   */
+  is_shared: boolean;
+  created_by: ContentCreator;
+  /**
+   * Full activity data
+   */
+  content: {
+    [key: string]: unknown;
+  };
 };
 
 /**
  * Public content library item.
  */
 export type ContentItemPublic = {
-    id: string;
-    /**
-     * Type of activity (ai_quiz, vocabulary_quiz, etc.)
-     */
-    activity_type: string;
-    /**
-     * Activity title
-     */
-    title: string;
-    /**
-     * 'book' or 'material'
-     */
-    source_type: string;
-    /**
-     * DCS book ID if book-based
-     */
-    book_id?: (number | null);
-    /**
-     * Book title if book-based
-     */
-    book_title?: (string | null);
-    /**
-     * Material ID if material-based
-     */
-    material_id?: (string | null);
-    /**
-     * Material name if material-based
-     */
-    material_name?: (string | null);
-    /**
-     * Number of questions/items in activity
-     */
-    item_count: number;
-    created_at: string;
-    updated_at?: (string | null);
-    /**
-     * Times used in assignments
-     */
-    used_in_assignments?: number;
-    /**
-     * True if book-based (shared), False if material-based (private)
-     */
-    is_shared: boolean;
-    created_by: ContentCreator;
+  id: string;
+  /**
+   * Type of activity (ai_quiz, vocabulary_quiz, etc.)
+   */
+  activity_type: string;
+  /**
+   * Activity title
+   */
+  title: string;
+  /**
+   * 'book' or 'material'
+   */
+  source_type: string;
+  /**
+   * DCS book ID if book-based
+   */
+  book_id?: number | null;
+  /**
+   * Book title if book-based
+   */
+  book_title?: string | null;
+  /**
+   * Material ID if material-based
+   */
+  material_id?: string | null;
+  /**
+   * Material name if material-based
+   */
+  material_name?: string | null;
+  /**
+   * Number of questions/items in activity
+   */
+  item_count: number;
+  created_at: string;
+  updated_at?: string | null;
+  /**
+   * Times used in assignments
+   */
+  used_in_assignments?: number;
+  /**
+   * True if book-based (shared), False if material-based (private)
+   */
+  is_shared: boolean;
+  created_by: ContentCreator;
 };
 
 /**
  * Schema for paginated conversation list response.
  */
 export type ConversationListResponse = {
-    conversations: Array<ConversationPublic>;
-    total: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
-    total_unread: number;
+  conversations: Array<ConversationPublic>;
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+  total_unread: number;
 };
 
 /**
  * Schema for a conversation (grouped messages with a participant).
  */
 export type ConversationPublic = {
-    participant_id: string;
-    participant_name: string;
-    participant_email: string;
-    participant_role: string;
-    last_message_preview: string;
-    last_message_timestamp: string;
-    unread_count: number;
+  participant_id: string;
+  participant_name: string;
+  participant_email: string;
+  participant_role: string;
+  last_message_preview: string;
+  last_message_timestamp: string;
+  unread_count: number;
 };
 
 /**
@@ -1719,31 +1743,31 @@ export type ConversationPublic = {
  * description: Optional description for the assignment.
  */
 export type CreateAssignmentRequest = {
-    quiz_id: string;
-    activity_type: string;
-    title: string;
-    description?: (string | null);
+  quiz_id: string;
+  activity_type: string;
+  title: string;
+  description?: string | null;
 };
 
 /**
  * Request body for credentials download.
  */
 export type CredentialsDownloadRequest = {
-    /**
-     * Credentials to include in download
-     */
-    credentials: Array<ImportCredential>;
+  /**
+   * Credentials to include in download
+   */
+  credentials: Array<ImportCredential>;
 };
 
 /**
  * Dashboard statistics for admin view
  */
 export type DashboardStats = {
-    total_users: number;
-    total_publishers: number;
-    total_teachers: number;
-    total_students: number;
-    active_schools: number;
+  total_users: number;
+  total_publishers: number;
+  total_teachers: number;
+  total_students: number;
+  active_schools: number;
 };
 
 /**
@@ -1752,390 +1776,396 @@ export type DashboardStats = {
  * Each date group creates a separate assignment with its own publish date.
  */
 export type DateGroupCreate = {
-    scheduled_publish_date: string;
-    due_date?: (string | null);
-    time_limit_minutes?: (number | null);
-    activity_ids: Array<(string)>;
+  scheduled_publish_date: string;
+  due_date?: string | null;
+  time_limit_minutes?: number | null;
+  activity_ids: Array<string>;
 };
 
 /**
  * Response model for deadline check tasks.
  */
 export type DeadlineCheckResponse = {
-    success: boolean;
-    deadline_reminders_sent: number;
-    deadline_students_notified: number;
-    deadline_assignments_processed: number;
-    past_due_notifications_sent: number;
-    past_due_students_notified: number;
-    past_due_assignments_processed: number;
-    message: string;
+  success: boolean;
+  deadline_reminders_sent: number;
+  deadline_students_notified: number;
+  deadline_assignments_processed: number;
+  past_due_notifications_sent: number;
+  past_due_students_notified: number;
+  past_due_assignments_processed: number;
+  message: string;
 };
 
 /**
  * Response for content deletion.
  */
 export type DeleteContentResponse = {
-    message: string;
-    content_id: string;
+  message: string;
+  content_id: string;
 };
 
 /**
  * Type definition for emoji reaction information.
  */
 export type EmojiInfo = {
-    slug: string;
-    emoji: string;
+  slug: string;
+  emoji: string;
 };
 
 /**
  * Schema for creating feedback on a student assignment.
  */
 export type FeedbackCreate = {
-    feedback_text: string;
-    is_draft?: boolean;
-    badges?: (Array<(string)> | null);
-    emoji_reaction?: (string | null);
+  feedback_text: string;
+  is_draft?: boolean;
+  badges?: Array<string> | null;
+  emoji_reaction?: string | null;
 };
 
 /**
  * Response schema for available feedback options (badges and emoji).
  */
 export type FeedbackOptionsResponse = {
-    badges: Array<BadgeInfo>;
-    emoji_reactions: Array<EmojiInfo>;
+  badges: Array<BadgeInfo>;
+  emoji_reactions: Array<EmojiInfo>;
 };
 
 /**
  * Schema for feedback API response with related entity names.
  */
 export type FeedbackPublic = {
-    id: string;
-    assignment_student_id: string;
-    teacher_id: string;
-    feedback_text: (string | null);
-    badges: Array<(string)>;
-    emoji_reactions: Array<(string)>;
-    is_draft: boolean;
-    created_at: string;
-    updated_at: string;
-    assignment_id: string;
-    assignment_name: string;
-    student_id: string;
-    student_name: string;
-    student_user_id: string;
-    teacher_name: string;
-    teacher_user_id: string;
-    score: (number | null);
+  id: string;
+  assignment_student_id: string;
+  teacher_id: string;
+  feedback_text: string | null;
+  badges: Array<string>;
+  emoji_reactions: Array<string>;
+  is_draft: boolean;
+  created_at: string;
+  updated_at: string;
+  assignment_id: string;
+  assignment_name: string;
+  student_id: string;
+  student_name: string;
+  student_user_id: string;
+  teacher_name: string;
+  teacher_user_id: string;
+  score: number | null;
 };
 
 /**
  * Schema for feedback as viewed by a student (hides draft status).
  */
 export type FeedbackStudentView = {
-    id: string;
-    feedback_text: (string | null);
-    badges: Array<(string)>;
-    emoji_reactions: Array<(string)>;
-    created_at: string;
-    updated_at: string;
-    teacher_name: string;
-    teacher_user_id: string;
-    assignment_name: string;
-    assignment_id: string;
+  id: string;
+  feedback_text: string | null;
+  badges: Array<string>;
+  emoji_reactions: Array<string>;
+  created_at: string;
+  updated_at: string;
+  teacher_name: string;
+  teacher_user_id: string;
+  assignment_name: string;
+  assignment_id: string;
 };
 
 /**
  * Schema for updating feedback.
  */
 export type FeedbackUpdate = {
-    feedback_text?: (string | null);
-    is_draft?: (boolean | null);
-    badges?: (Array<(string)> | null);
-    emoji_reaction?: (string | null);
+  feedback_text?: string | null;
+  is_draft?: boolean | null;
+  badges?: Array<string> | null;
+  emoji_reaction?: string | null;
 };
 
 /**
  * Analysis for a fill-in-blank item.
  */
 export type FillInBlankAnalysis = {
-    blank_id: string;
-    blank_context: string;
-    correct_answer: string;
-    correct_rate: number;
-    common_wrong_answers: Array<(string)>;
+  blank_id: string;
+  blank_context: string;
+  correct_answer: string;
+  correct_rate: number;
+  common_wrong_answers: Array<string>;
 };
 
 /**
  * Request schema for setting global mute.
  */
 export type GlobalMuteRequest = {
-    /**
-     * Number of hours to mute (max 24)
-     */
-    hours: number;
+  /**
+   * Number of hours to mute (max 24)
+   */
+  hours: number;
 };
 
 /**
  * Response schema for global mute status.
  */
 export type GlobalMuteResponse = {
-    muted_until: string;
-    /**
-     * Hours remaining until mute expires
-     */
-    remaining_hours: number;
+  muted_until: string;
+  /**
+   * Hours remaining until mute expires
+   */
+  remaining_hours: number;
 };
 
 /**
  * Response for mute status check.
  */
 export type GlobalMuteStatusResponse = {
-    is_muted: boolean;
-    mute?: (GlobalMuteResponse | null);
+  is_muted: boolean;
+  mute?: GlobalMuteResponse | null;
 };
 
 export type HTTPValidationError = {
-    detail?: Array<ValidationError>;
+  detail?: Array<ValidationError>;
 };
 
 /**
  * Credentials for a single imported student.
  */
 export type ImportCredential = {
-    /**
-     * Student's full name
-     */
-    full_name: string;
-    /**
-     * Generated username
-     */
-    username: string;
-    /**
-     * Generated password
-     */
-    password: string;
-    /**
-     * Student email if provided
-     */
-    email?: (string | null);
+  /**
+   * Student's full name
+   */
+  full_name: string;
+  /**
+   * Generated username
+   */
+  username: string;
+  /**
+   * Generated password
+   */
+  password: string;
+  /**
+   * Student email if provided
+   */
+  email?: string | null;
 };
 
 /**
  * Response from import execution endpoint.
  */
 export type ImportExecutionResponse = {
-    /**
-     * Number of students created
-     */
-    created_count: number;
-    /**
-     * Number of failed creations
-     */
-    failed_count: number;
-    /**
-     * Credentials for created students
-     */
-    credentials: Array<ImportCredential>;
-    /**
-     * Errors during creation
-     */
-    errors?: Array<(string)>;
+  /**
+   * Number of students created
+   */
+  created_count: number;
+  /**
+   * Number of failed creations
+   */
+  failed_count: number;
+  /**
+   * Credentials for created students
+   */
+  credentials: Array<ImportCredential>;
+  /**
+   * Errors during creation
+   */
+  errors?: Array<string>;
 };
 
 /**
  * Validation result for a single row.
  */
 export type ImportRowResult = {
-    /**
-     * Excel row number (1-indexed, row 1 is header)
-     */
-    row_number: number;
-    /**
-     * Full name from the row
-     */
-    full_name: string;
-    /**
-     * Generated or provided username
-     */
-    username: string;
-    /**
-     * Email if provided
-     */
-    email?: (string | null);
-    /**
-     * Grade level if provided
-     */
-    grade?: (string | null);
-    /**
-     * Class/section if provided
-     */
-    class_name?: (string | null);
-    /**
-     * Validation status
-     */
-    status: ImportRowStatus;
-    /**
-     * List of errors
-     */
-    errors?: Array<(string)>;
-    /**
-     * List of warnings
-     */
-    warnings?: Array<(string)>;
+  /**
+   * Excel row number (1-indexed, row 1 is header)
+   */
+  row_number: number;
+  /**
+   * Full name from the row
+   */
+  full_name: string;
+  /**
+   * Generated or provided username
+   */
+  username: string;
+  /**
+   * Email if provided
+   */
+  email?: string | null;
+  /**
+   * Grade level if provided
+   */
+  grade?: string | null;
+  /**
+   * Class/section if provided
+   */
+  class_name?: string | null;
+  /**
+   * Validation status
+   */
+  status: ImportRowStatus;
+  /**
+   * List of errors
+   */
+  errors?: Array<string>;
+  /**
+   * List of warnings
+   */
+  warnings?: Array<string>;
 };
 
 /**
  * Status of a single import row.
  */
-export type ImportRowStatus = 'valid' | 'warning' | 'error';
+export type ImportRowStatus = "valid" | "warning" | "error";
 
 /**
  * Response from import validation endpoint.
  */
 export type ImportValidationResponse = {
-    /**
-     * Number of valid rows
-     */
-    valid_count: number;
-    /**
-     * Number of rows with warnings
-     */
-    warning_count: number;
-    /**
-     * Number of rows with errors
-     */
-    error_count: number;
-    /**
-     * Total number of data rows
-     */
-    total_count: number;
-    /**
-     * Validation result for each row
-     */
-    rows: Array<ImportRowResult>;
+  /**
+   * Number of valid rows
+   */
+  valid_count: number;
+  /**
+   * Number of rows with warnings
+   */
+  warning_count: number;
+  /**
+   * Number of rows with errors
+   */
+  error_count: number;
+  /**
+   * Total number of data rows
+   */
+  total_count: number;
+  /**
+   * Validation result for each row
+   */
+  rows: Array<ImportRowResult>;
 };
 
 /**
  * Trend of student improvement.
  */
-export type ImprovementTrend = 'improving' | 'stable' | 'declining';
+export type ImprovementTrend = "improving" | "stable" | "declining";
 
 /**
  * Paginated library response.
  */
 export type LibraryResponse = {
-    items: Array<ContentItemPublic>;
-    total: number;
-    page: number;
-    page_size: number;
-    has_more: boolean;
+  items: Array<ContentItemPublic>;
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
 };
 
 /**
  * Response for logo upload
  */
 export type LogoUploadResponse = {
-    logo_url: string;
-    message?: string;
+  logo_url: string;
+  message?: string;
 };
 
 /**
  * Schema for mark all as read response.
  */
 export type MarkAllReadResponse = {
-    marked_count: number;
+  marked_count: number;
 };
 
 /**
  * List of materials with quota info.
  */
 export type MaterialListResponse = {
-    materials: Array<MaterialResponse>;
-    total_count: number;
-    quota: StorageQuotaResponse;
+  materials: Array<MaterialResponse>;
+  total_count: number;
+  quota: StorageQuotaResponse;
 };
 
 /**
  * Material response schema.
  */
 export type MaterialResponse = {
-    id: string;
-    name: string;
-    type: MaterialType;
-    file_size?: (number | null);
-    mime_type?: (string | null);
-    original_filename?: (string | null);
-    url?: (string | null);
-    text_content?: (string | null);
-    created_at: string;
-    updated_at: string;
-    download_url?: (string | null);
+  id: string;
+  name: string;
+  type: MaterialType;
+  file_size?: number | null;
+  mime_type?: string | null;
+  original_filename?: string | null;
+  url?: string | null;
+  text_content?: string | null;
+  created_at: string;
+  updated_at: string;
+  download_url?: string | null;
 };
 
 /**
  * Types of teacher materials
  */
-export type MaterialType = 'document' | 'image' | 'audio' | 'video' | 'url' | 'text_note';
+export type MaterialType =
+  | "document"
+  | "image"
+  | "audio"
+  | "video"
+  | "url"
+  | "text_note";
 
 /**
  * Update material metadata (name only).
  */
 export type MaterialUpdate = {
-    name: string;
+  name: string;
 };
 
 export type Message = {
-    message: string;
+  message: string;
 };
 
 /**
  * Schema for creating a new message.
  */
 export type MessageCreate = {
-    recipient_id: string;
-    subject?: (string | null);
-    body: string;
-    parent_message_id?: (string | null);
+  recipient_id: string;
+  subject?: string | null;
+  body: string;
+  parent_message_id?: string | null;
 };
 
 /**
  * Schema for message API response with sender/recipient names.
  */
 export type MessagePublic = {
-    id: string;
-    sender_id: string;
-    sender_name: string;
-    sender_email: string;
-    recipient_id: string;
-    recipient_name: string;
-    recipient_email: string;
-    subject: (string | null);
-    body: string;
-    parent_message_id: (string | null);
-    is_read: boolean;
-    sent_at: string;
+  id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_email: string;
+  recipient_id: string;
+  recipient_name: string;
+  recipient_email: string;
+  subject: string | null;
+  body: string;
+  parent_message_id: string | null;
+  is_read: boolean;
+  sent_at: string;
 };
 
 /**
  * Schema for message read status update response.
  */
 export type MessageReadResponse = {
-    id: string;
-    is_read: boolean;
+  id: string;
+  is_read: boolean;
 };
 
 /**
  * Schema for message thread response.
  */
 export type MessageThreadResponse = {
-    participant_id: string;
-    participant_name: string;
-    participant_email: string;
-    participant_role: string;
-    participant_organization_name?: (string | null);
-    messages: Array<MessagePublic>;
-    total_messages: number;
+  participant_id: string;
+  participant_name: string;
+  participant_email: string;
+  participant_role: string;
+  participant_organization_name?: string | null;
+  messages: Array<MessagePublic>;
+  total_messages: number;
 };
 
 /**
@@ -2147,17 +2177,17 @@ export type MessageThreadResponse = {
  * modules: List of module summaries.
  */
 export type ModuleListResponse = {
-    book_id: string;
-    total_modules: number;
-    modules?: Array<ModuleSummary>;
+  book_id: string;
+  total_modules: number;
+  modules?: Array<ModuleSummary>;
 };
 
 /**
  * A module with its pages containing activities.
  */
 export type ModulePages = {
-    name: string;
-    pages: Array<PageInfo>;
+  name: string;
+  pages: Array<PageInfo>;
 };
 
 /**
@@ -2173,127 +2203,127 @@ export type ModulePages = {
  * word_count: Total word count in the module text.
  */
 export type ModuleSummary = {
-    module_id: number;
-    title: string;
-    pages?: Array<(number)>;
-    word_count?: number;
+  module_id: number;
+  title: string;
+  pages?: Array<number>;
+  word_count?: number;
 };
 
 /**
  * Module information with pages and activity IDs for bulk selection.
  */
 export type ModuleWithActivities = {
-    name: string;
-    page_start: number;
-    page_end: number;
-    activity_count: number;
-    activity_ids: Array<(string)>;
-    pages: Array<PageWithActivities>;
+  name: string;
+  page_start: number;
+  page_end: number;
+  activity_count: number;
+  activity_ids: Array<string>;
+  pages: Array<PageWithActivities>;
 };
 
 /**
  * A question that was frequently missed.
  */
 export type MostMissedQuestion = {
-    question_id: string;
-    question_text: string;
-    correct_percentage: number;
-    common_wrong_answer: (string | null);
+  question_id: string;
+  question_text: string;
+  correct_percentage: number;
+  common_wrong_answer: string | null;
 };
 
 /**
  * Response schema for multi-activity assignment analytics (teacher view).
  */
 export type MultiActivityAnalyticsResponse = {
-    assignment_id: string;
-    assignment_name: string;
-    total_students: number;
-    submitted_count: number;
-    activities: Array<ActivityAnalyticsItem>;
-    expanded_students?: (Array<StudentActivityScore> | null);
+  assignment_id: string;
+  assignment_name: string;
+  total_students: number;
+  submitted_count: number;
+  activities: Array<ActivityAnalyticsItem>;
+  expanded_students?: Array<StudentActivityScore> | null;
 };
 
 /**
  * Response schema for starting a multi-activity assignment.
  */
 export type MultiActivityStartResponse = {
-    assignment_id: string;
-    assignment_name: string;
-    instructions: (string | null);
-    due_date: (string | null);
-    time_limit_minutes: (number | null);
-    book_id: number;
-    book_title: string;
-    book_name: string;
-    publisher_name: string;
-    book_cover_url: (string | null);
-    activities: Array<ActivityWithConfig>;
-    activity_progress: Array<ActivityProgressInfo>;
-    total_activities: number;
-    current_status: string;
-    time_spent_minutes: number;
-    started_at: (string | null);
-    video_path?: (string | null);
-    resources?: (AdditionalResourcesResponse | null);
-    /**
-     * Count of completed activities.
-     */
-    readonly completed_activities_count: number;
-    /**
-     * Check if all activities are completed.
-     */
-    readonly all_activities_completed: boolean;
+  assignment_id: string;
+  assignment_name: string;
+  instructions: string | null;
+  due_date: string | null;
+  time_limit_minutes: number | null;
+  book_id: number;
+  book_title: string;
+  book_name: string;
+  publisher_name: string;
+  book_cover_url: string | null;
+  activities: Array<ActivityWithConfig>;
+  activity_progress: Array<ActivityProgressInfo>;
+  total_activities: number;
+  current_status: string;
+  time_spent_minutes: number;
+  started_at: string | null;
+  video_path?: string | null;
+  resources?: AdditionalResourcesResponse | null;
+  /**
+   * Count of completed activities.
+   */
+  readonly completed_activities_count: number;
+  /**
+   * Check if all activities are completed.
+   */
+  readonly all_activities_completed: boolean;
 };
 
 /**
  * Request schema for submitting a multi-activity assignment.
  */
 export type MultiActivitySubmitRequest = {
-    force_submit?: boolean;
-    total_time_spent_minutes?: number;
-    total_time_spent_seconds?: (number | null);
-    activity_states?: (Array<SubmitActivityState> | null);
+  force_submit?: boolean;
+  total_time_spent_minutes?: number;
+  total_time_spent_seconds?: number | null;
+  activity_states?: Array<SubmitActivityState> | null;
 };
 
 /**
  * Response schema for multi-activity assignment submission.
  */
 export type MultiActivitySubmitResponse = {
-    success: boolean;
-    message: string;
-    assignment_id: string;
-    combined_score: number;
-    per_activity_scores: Array<PerActivityScore>;
-    completed_at: string;
-    total_activities: number;
-    completed_activities: number;
+  success: boolean;
+  message: string;
+  assignment_id: string;
+  combined_score: number;
+  per_activity_scores: Array<PerActivityScore>;
+  completed_at: string;
+  total_activities: number;
+  completed_activities: number;
 };
 
 export type NewPassword = {
-    token: string;
-    new_password: string;
+  token: string;
+  new_password: string;
 };
 
 /**
  * Schema for paginated notification list response.
  */
 export type NotificationListResponse = {
-    notifications: Array<NotificationResponse>;
-    total: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
+  notifications: Array<NotificationResponse>;
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 };
 
 /**
  * Response schema for a single notification preference.
  */
 export type NotificationPreferenceResponse = {
-    notification_type: app__models__NotificationType;
-    enabled: boolean;
-    email_enabled: boolean;
-    label: string;
-    description: string;
+  notification_type: app__models__NotificationType;
+  enabled: boolean;
+  email_enabled: boolean;
+  label: string;
+  description: string;
 };
 
 /**
@@ -2303,94 +2333,104 @@ export type NotificationPreferenceResponse = {
  * Example: {"assignment_created": true, "deadline_approaching": false}
  */
 export type NotificationPreferencesBulkUpdate = {
-    /**
-     * Map of notification type to enabled status
-     */
-    preferences: {
-        [key: string]: (boolean);
-    };
+  /**
+   * Map of notification type to enabled status
+   */
+  preferences: {
+    [key: string]: boolean;
+  };
 };
 
 /**
  * Response for bulk preference update.
  */
 export type NotificationPreferencesBulkUpdateResponse = {
-    updated: Array<(string)>;
-    preferences: Array<NotificationPreferenceResponse>;
+  updated: Array<string>;
+  preferences: Array<NotificationPreferenceResponse>;
 };
 
 /**
  * Response schema for all user notification preferences.
  */
 export type NotificationPreferencesListResponse = {
-    preferences: Array<NotificationPreferenceResponse>;
-    global_mute?: (GlobalMuteResponse | null);
+  preferences: Array<NotificationPreferenceResponse>;
+  global_mute?: GlobalMuteResponse | null;
 };
 
 /**
  * Schema for updating a single preference.
  */
 export type NotificationPreferenceUpdate = {
-    enabled: boolean;
+  enabled: boolean;
 };
 
 /**
  * Schema for notification API response.
  */
 export type NotificationResponse = {
-    id: string;
-    user_id: string;
-    type: app__schemas__notification__NotificationType;
-    title: string;
-    message: string;
-    link: (string | null);
-    is_read: boolean;
-    created_at: string;
+  id: string;
+  user_id: string;
+  type: app__schemas__notification__NotificationType;
+  title: string;
+  message: string;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
 };
 
 /**
  * Notification type enumeration
  */
-export type NotificationType_Input = 'assignment_created' | 'deadline_approaching' | 'feedback_received' | 'message_received' | 'student_completed' | 'past_due' | 'material_shared' | 'system_announcement' | 'password_reset' | 'announcement';
+export type NotificationType_Input =
+  | "assignment_created"
+  | "deadline_approaching"
+  | "feedback_received"
+  | "message_received"
+  | "student_completed"
+  | "past_due"
+  | "material_shared"
+  | "system_announcement"
+  | "password_reset"
+  | "announcement";
 
 /**
  * Activity response for page-based selection.
  */
 export type PageActivityResponse = {
-    id: string;
-    title: (string | null);
-    activity_type: string;
-    section_index: number;
-    order_index: number;
+  id: string;
+  title: string | null;
+  activity_type: string;
+  section_index: number;
+  order_index: number;
 };
 
 /**
  * Detailed page information including image and activity markers.
  */
 export type PageDetail = {
-    page_number: number;
-    image_url: string;
-    module_name: string;
-    activities: Array<ActivityMarker>;
+  page_number: number;
+  image_url: string;
+  module_name: string;
+  activities: Array<ActivityMarker>;
 };
 
 /**
  * Information about a single page in a book module.
  */
 export type PageInfo = {
-    page_number: number;
-    activity_count: number;
-    thumbnail_url: string;
+  page_number: number;
+  activity_count: number;
+  thumbnail_url: string;
 };
 
 /**
  * Page information with activity IDs for bulk selection.
  */
 export type PageWithActivities = {
-    page_number: number;
-    thumbnail_url: string;
-    activity_count: number;
-    activity_ids: Array<(string)>;
+  page_number: number;
+  thumbnail_url: string;
+  activity_count: number;
+  activity_ids: Array<string>;
 };
 
 /**
@@ -2399,61 +2439,61 @@ export type PageWithActivities = {
  * Never contains the actual password unless user has no email address.
  */
 export type PasswordResetResponse = {
-    success: boolean;
-    message: string;
-    password_emailed: boolean;
-    temporary_password?: (string | null);
+  success: boolean;
+  message: string;
+  password_emailed: boolean;
+  temporary_password?: string | null;
 };
 
 /**
  * Per-activity score info for submission response.
  */
 export type PerActivityScore = {
-    activity_id: string;
-    activity_title: (string | null);
-    score: (number | null);
-    max_score: number;
-    status: string;
+  activity_id: string;
+  activity_title: string | null;
+  score: number | null;
+  max_score: number;
+  status: string;
 };
 
 /**
  * Single data point in performance trend chart.
  */
 export type PerformanceTrendPoint = {
-    date: string;
-    score: number;
+  date: string;
+  score: number;
 };
 
 /**
  * Predefined avatar response model.
  */
 export type PredefinedAvatar = {
-    id: string;
-    name: string;
-    url: string;
+  id: string;
+  name: string;
+  url: string;
 };
 
 /**
  * Response containing all predefined avatars.
  */
 export type PredefinedAvatarsResponse = {
-    avatars: Array<PredefinedAvatar>;
+  avatars: Array<PredefinedAvatar>;
 };
 
 /**
  * Presigned URL for direct file access.
  */
 export type PresignedUrlResponse = {
-    url: string;
-    expires_in_seconds: number;
-    content_type?: (string | null);
+  url: string;
+  expires_in_seconds: number;
+  content_type?: string | null;
 };
 
 export type PrivateUserCreate = {
-    email: string;
-    password: string;
-    full_name: string;
-    is_verified?: boolean;
+  email: string;
+  password: string;
+  full_name: string;
+  is_verified?: boolean;
 };
 
 /**
@@ -2476,61 +2516,61 @@ export type PrivateUserCreate = {
  * stages: Optional processing stage information.
  */
 export type ProcessingMetadata = {
-    book_id: string;
-    /**
-     * Status: pending, processing, completed, partial, failed
-     */
-    processing_status: string;
-    total_pages?: number;
-    total_modules?: number;
-    total_vocabulary?: number;
-    total_audio_files?: number;
-    languages?: Array<(string)>;
-    primary_language?: string;
-    difficulty_range?: Array<(string)>;
-    stages?: ({
+  book_id: string;
+  /**
+   * Status: pending, processing, completed, partial, failed
+   */
+  processing_status: string;
+  total_pages?: number;
+  total_modules?: number;
+  total_vocabulary?: number;
+  total_audio_files?: number;
+  languages?: Array<string>;
+  primary_language?: string;
+  difficulty_range?: Array<string>;
+  stages?: {
     [key: string]: unknown;
-} | null);
+  } | null;
 };
 
 /**
  * Recent assignment for student progress view.
  */
 export type ProgressRecentAssignment = {
-    id: string;
-    name: string;
-    score: number;
-    completed_at: string;
-    has_feedback: boolean;
-    activity_type: string;
-    book_title: string;
+  id: string;
+  name: string;
+  score: number;
+  completed_at: string;
+  has_feedback: boolean;
+  activity_type: string;
+  book_title: string;
 };
 
 /**
  * Response model for publish scheduled assignments task.
  */
 export type PublishAssignmentsResponse = {
-    success: boolean;
-    assignments_published: number;
-    notifications_sent: number;
-    students_notified: number;
-    message: string;
+  success: boolean;
+  assignments_published: number;
+  notifications_sent: number;
+  students_notified: number;
+  message: string;
 };
 
 /**
  * Create a publisher user account linked to a DCS publisher.
  */
 export type PublisherAccountCreate = {
-    /**
-     * DCS Publisher ID to link
-     */
-    dcs_publisher_id: number;
-    /**
-     * Username (auto-generated from full_name if not provided)
-     */
-    username?: (string | null);
-    email: string;
-    full_name: string;
+  /**
+   * DCS Publisher ID to link
+   */
+  dcs_publisher_id: number;
+  /**
+   * Username (auto-generated from full_name if not provided)
+   */
+  username?: string | null;
+  email: string;
+  full_name: string;
 };
 
 /**
@@ -2539,87 +2579,87 @@ export type PublisherAccountCreate = {
  * Different from UserCreationResponse because publishers don't have a role_record.
  */
 export type PublisherAccountCreationResponse = {
-    user: UserPublic;
-    temporary_password?: (string | null);
-    password_emailed?: boolean;
-    message?: string;
+  user: UserPublic;
+  temporary_password?: string | null;
+  password_emailed?: boolean;
+  message?: string;
 };
 
 /**
  * Response for listing publisher accounts.
  */
 export type PublisherAccountListResponse = {
-    data: Array<PublisherAccountPublic>;
-    count: number;
+  data: Array<PublisherAccountPublic>;
+  count: number;
 };
 
 /**
  * Publisher account response with DCS enrichment.
  */
 export type PublisherAccountPublic = {
-    id: string;
-    username: string;
-    email: (string | null);
-    full_name: (string | null);
-    dcs_publisher_id: (number | null);
-    dcs_publisher_name?: (string | null);
-    is_active: boolean;
-    created_at?: (string | null);
+  id: string;
+  username: string;
+  email: string | null;
+  full_name: string | null;
+  dcs_publisher_id: number | null;
+  dcs_publisher_name?: string | null;
+  is_active: boolean;
+  created_at?: string | null;
 };
 
 /**
  * Update a publisher user account.
  */
 export type PublisherAccountUpdate = {
-    dcs_publisher_id?: (number | null);
-    username?: (string | null);
-    email?: (string | null);
-    full_name?: (string | null);
-    is_active?: (boolean | null);
+  dcs_publisher_id?: number | null;
+  username?: string | null;
+  email?: string | null;
+  full_name?: string | null;
+  is_active?: boolean | null;
 };
 
 /**
  * Publisher profile combining DCS and LMS data.
  */
 export type PublisherProfile = {
-    id: number;
-    name: string;
-    contact_email?: (string | null);
-    logo_url?: (string | null);
-    user_id: string;
-    user_email?: (string | null);
-    user_full_name?: (string | null);
+  id: number;
+  name: string;
+  contact_email?: string | null;
+  logo_url?: string | null;
+  user_id: string;
+  user_email?: string | null;
+  user_full_name?: string | null;
 };
 
 /**
  * Publisher data for API responses - sourced from DCS.
  */
 export type PublisherPublic = {
-    id: number;
-    name: string;
-    contact_email?: (string | null);
-    logo_url?: (string | null);
+  id: number;
+  name: string;
+  contact_email?: string | null;
+  logo_url?: string | null;
 };
 
 /**
  * Publisher organization statistics.
  */
 export type PublisherStats = {
-    schools_count: number;
-    teachers_count: number;
-    students_count: number;
-    books_count: number;
+  schools_count: number;
+  teachers_count: number;
+  students_count: number;
+  books_count: number;
 };
 
 /**
  * Analysis of a single question/item.
  */
 export type QuestionAnalysis = {
-    question_id: string;
-    question_text: string;
-    correct_percentage: number;
-    total_responses: number;
-    answer_distribution: Array<AnswerDistributionItem>;
+  question_id: string;
+  question_text: string;
+  correct_percentage: number;
+  total_responses: number;
+  answer_distribution: Array<AnswerDistributionItem>;
 };
 
 /**
@@ -2634,12 +2674,12 @@ export type QuestionAnalysis = {
  * audio_url: Audio URL for the word pronunciation.
  */
 export type QuestionResult = {
-    question_id: string;
-    definition: string;
-    correct_answer: string;
-    student_answer: (string | null);
-    is_correct: boolean;
-    audio_url?: (string | null);
+  question_id: string;
+  definition: string;
+  correct_answer: string;
+  student_answer: string | null;
+  is_correct: boolean;
+  audio_url?: string | null;
 };
 
 /**
@@ -2661,19 +2701,19 @@ export type QuestionResult = {
  * created_at: When the activity was generated.
  */
 export type ReadingComprehensionActivity = {
-    activity_id: string;
-    book_id: number;
-    module_id: number;
-    module_title: string;
-    /**
-     * AI-generated passage based on module topics/context.
-     */
-    passage: string;
-    passage_pages?: Array<(number)>;
-    questions: Array<ReadingComprehensionQuestion>;
-    difficulty: string;
-    language: string;
-    created_at: string;
+  activity_id: string;
+  book_id: number;
+  module_id: number;
+  module_title: string;
+  /**
+   * AI-generated passage based on module topics/context.
+   */
+  passage: string;
+  passage_pages?: Array<number>;
+  questions: Array<ReadingComprehensionQuestion>;
+  difficulty: string;
+  language: string;
+  created_at: string;
 };
 
 /**
@@ -2695,17 +2735,17 @@ export type ReadingComprehensionActivity = {
  * question_count: Number of questions.
  */
 export type ReadingComprehensionActivityPublic = {
-    activity_id: string;
-    book_id: number;
-    module_id: number;
-    module_title: string;
-    passage: string;
-    passage_pages?: Array<(number)>;
-    questions: Array<ReadingComprehensionQuestionPublic>;
-    difficulty: string;
-    language: string;
-    created_at: string;
-    question_count: number;
+  activity_id: string;
+  book_id: number;
+  module_id: number;
+  module_title: string;
+  passage: string;
+  passage_pages?: Array<number>;
+  questions: Array<ReadingComprehensionQuestionPublic>;
+  difficulty: string;
+  language: string;
+  created_at: string;
+  question_count: number;
 };
 
 /**
@@ -2720,15 +2760,15 @@ export type ReadingComprehensionActivityPublic = {
  * answer_text: Text answer (for short answer questions).
  */
 export type ReadingComprehensionAnswer = {
-    question_id: string;
-    /**
-     * Selected option index for MCQ/True-False.
-     */
-    answer_index?: (number | null);
-    /**
-     * Text answer for short answer questions.
-     */
-    answer_text?: (string | null);
+  question_id: string;
+  /**
+   * Selected option index for MCQ/True-False.
+   */
+  answer_index?: number | null;
+  /**
+   * Text answer for short answer questions.
+   */
+  answer_text?: string | null;
 };
 
 /**
@@ -2748,26 +2788,26 @@ export type ReadingComprehensionAnswer = {
  * passage_reference: Quote from passage that supports the answer.
  */
 export type ReadingComprehensionQuestion = {
-    question_id: string;
-    question_type: 'mcq' | 'true_false';
-    question_text: string;
-    /**
-     * Answer options for MCQ (4 options) or True/False (2 options).
-     */
-    options?: (Array<(string)> | null);
-    correct_answer: string;
-    /**
-     * Index of correct answer for MCQ/True-False.
-     */
-    correct_index?: (number | null);
-    explanation: string;
-    /**
-     * Quote from passage supporting the answer.
-     */
-    passage_reference: string;
+  question_id: string;
+  question_type: "mcq" | "true_false";
+  question_text: string;
+  /**
+   * Answer options for MCQ (4 options) or True/False (2 options).
+   */
+  options?: Array<string> | null;
+  correct_answer: string;
+  /**
+   * Index of correct answer for MCQ/True-False.
+   */
+  correct_index?: number | null;
+  explanation: string;
+  /**
+   * Quote from passage supporting the answer.
+   */
+  passage_reference: string;
 };
 
-export type question_type = 'mcq' | 'true_false';
+export type question_type = "mcq" | "true_false";
 
 /**
  * Public version of question without correct answer.
@@ -2781,10 +2821,10 @@ export type question_type = 'mcq' | 'true_false';
  * options: Answer options (for MCQ/True-False).
  */
 export type ReadingComprehensionQuestionPublic = {
-    question_id: string;
-    question_type: 'mcq' | 'true_false';
-    question_text: string;
-    options?: (Array<(string)> | null);
+  question_id: string;
+  question_type: "mcq" | "true_false";
+  question_text: string;
+  options?: Array<string> | null;
 };
 
 /**
@@ -2805,21 +2845,21 @@ export type ReadingComprehensionQuestionPublic = {
  * passage_reference: Quote from passage supporting the answer.
  */
 export type ReadingComprehensionQuestionResult = {
-    question_id: string;
-    question_type: 'mcq' | 'true_false';
-    question_text: string;
-    options?: (Array<(string)> | null);
-    correct_answer: string;
-    correct_index?: (number | null);
-    student_answer_index?: (number | null);
-    student_answer_text?: (string | null);
-    is_correct: boolean;
-    /**
-     * Similarity score for short answers (0-1).
-     */
-    similarity_score?: (number | null);
-    explanation: string;
-    passage_reference: string;
+  question_id: string;
+  question_type: "mcq" | "true_false";
+  question_text: string;
+  options?: Array<string> | null;
+  correct_answer: string;
+  correct_index?: number | null;
+  student_answer_index?: number | null;
+  student_answer_text?: string | null;
+  is_correct: boolean;
+  /**
+   * Similarity score for short answers (0-1).
+   */
+  similarity_score?: number | null;
+  explanation: string;
+  passage_reference: string;
 };
 
 /**
@@ -2837,27 +2877,27 @@ export type ReadingComprehensionQuestionResult = {
  * passage_length: Target word count for the AI-generated passage.
  */
 export type ReadingComprehensionRequest = {
-    book_id: number;
-    /**
-     * Module ID - used as context for passage generation.
-     */
-    module_id: number;
-    /**
-     * Number of questions (1-50).
-     */
-    question_count?: number;
-    /**
-     * Types of questions to generate (MCQ and True/False only).
-     */
-    question_types?: Array<('mcq' | 'true_false')>;
-    /**
-     * Difficulty level. 'auto' uses module's CEFR level.
-     */
-    difficulty?: 'auto' | 'easy' | 'medium' | 'hard';
-    /**
-     * Target word count for the AI-generated passage (100-500).
-     */
-    passage_length?: number;
+  book_id: number;
+  /**
+   * Module ID - used as context for passage generation.
+   */
+  module_id: number;
+  /**
+   * Number of questions (1-50).
+   */
+  question_count?: number;
+  /**
+   * Types of questions to generate (MCQ and True/False only).
+   */
+  question_types?: Array<"mcq" | "true_false">;
+  /**
+   * Difficulty level. 'auto' uses module's CEFR level.
+   */
+  difficulty?: "auto" | "easy" | "medium" | "hard";
+  /**
+   * Target word count for the AI-generated passage (100-500).
+   */
+  passage_length?: number;
 };
 
 /**
@@ -2879,24 +2919,24 @@ export type ReadingComprehensionRequest = {
  * module_title: Title of the source module.
  */
 export type ReadingComprehensionResult = {
-    activity_id: string;
-    student_id: string;
-    score: number;
-    total: number;
-    percentage: number;
-    question_results: Array<ReadingComprehensionQuestionResult>;
-    /**
-     * Score breakdown: {'mcq': {'correct': 2, 'total': 3}, ...}
-     */
-    score_by_type?: {
-        [key: string]: {
-            [key: string]: (number);
-        };
+  activity_id: string;
+  student_id: string;
+  score: number;
+  total: number;
+  percentage: number;
+  question_results: Array<ReadingComprehensionQuestionResult>;
+  /**
+   * Score breakdown: {'mcq': {'correct': 2, 'total': 3}, ...}
+   */
+  score_by_type?: {
+    [key: string]: {
+      [key: string]: number;
     };
-    submitted_at: string;
-    difficulty: string;
-    passage: string;
-    module_title: string;
+  };
+  submitted_at: string;
+  difficulty: string;
+  passage: string;
+  module_title: string;
 };
 
 /**
@@ -2906,40 +2946,40 @@ export type ReadingComprehensionResult = {
  * answers: List of answers for each question.
  */
 export type ReadingComprehensionSubmission = {
-    /**
-     * List of answers for each question.
-     */
-    answers: Array<ReadingComprehensionAnswer>;
+  /**
+   * List of answers for each question.
+   */
+  answers: Array<ReadingComprehensionAnswer>;
 };
 
 /**
  * Single recent assignment completion.
  */
 export type RecentActivityItem = {
-    assignment_id: string;
-    assignment_name: string;
-    score: number;
-    completed_at: string;
-    time_spent_minutes: number;
+  assignment_id: string;
+  assignment_name: string;
+  score: number;
+  completed_at: string;
+  time_spent_minutes: number;
 };
 
 /**
  * Schema for list of allowed recipients.
  */
 export type RecipientListResponse = {
-    recipients: Array<RecipientPublic>;
-    total: number;
+  recipients: Array<RecipientPublic>;
+  total: number;
 };
 
 /**
  * Schema for an allowed recipient.
  */
 export type RecipientPublic = {
-    user_id: string;
-    name: string;
-    email: string;
-    role: string;
-    organization_name?: (string | null);
+  user_id: string;
+  name: string;
+  email: string;
+  role: string;
+  organization_name?: string | null;
 };
 
 /**
@@ -2951,129 +2991,133 @@ export type RecipientPublic = {
  * context: Original generation context (difficulty, language, etc.).
  */
 export type RegenerateQuestionRequest = {
-    quiz_id: string;
-    /**
-     * Zero-based index of the question
-     */
-    question_index: number;
-    /**
-     * Original generation parameters (difficulty, language, etc.)
-     */
-    context?: {
-        [key: string]: unknown;
-    };
+  quiz_id: string;
+  /**
+   * Zero-based index of the question
+   */
+  question_index: number;
+  /**
+   * Original generation parameters (difficulty, language, etc.)
+   */
+  context?: {
+    [key: string]: unknown;
+  };
 };
 
 /**
  * Output format for generated reports.
  */
-export type ReportFormat = 'pdf' | 'excel';
+export type ReportFormat = "pdf" | "excel";
 
 /**
  * Request to generate a new report.
  */
 export type ReportGenerateRequest = {
-    report_type: ReportType;
-    period: ReportPeriod;
-    /**
-     * ISO date for custom period start (YYYY-MM-DD)
-     */
-    start_date?: (string | null);
-    /**
-     * ISO date for custom period end (YYYY-MM-DD)
-     */
-    end_date?: (string | null);
-    /**
-     * UUID of target (student, class, or None for assignment)
-     */
-    target_id: string;
-    format: ReportFormat;
-    /**
-     * Optional predefined template to use
-     */
-    template_type?: (ReportTemplateType | null);
+  report_type: ReportType;
+  period: ReportPeriod;
+  /**
+   * ISO date for custom period start (YYYY-MM-DD)
+   */
+  start_date?: string | null;
+  /**
+   * ISO date for custom period end (YYYY-MM-DD)
+   */
+  end_date?: string | null;
+  /**
+   * UUID of target (student, class, or None for assignment)
+   */
+  target_id: string;
+  format: ReportFormat;
+  /**
+   * Optional predefined template to use
+   */
+  template_type?: ReportTemplateType | null;
 };
 
 /**
  * A previously generated report in history.
  */
 export type ReportHistoryItem = {
-    id: string;
-    job_id: string;
-    report_type: ReportType;
-    template_type: (ReportTemplateType | null);
-    format: ReportFormat;
-    target_name: string;
-    created_at: string;
-    expires_at: string;
-    download_url?: (string | null);
-    is_expired?: boolean;
+  id: string;
+  job_id: string;
+  report_type: ReportType;
+  template_type: ReportTemplateType | null;
+  format: ReportFormat;
+  target_name: string;
+  created_at: string;
+  expires_at: string;
+  download_url?: string | null;
+  is_expired?: boolean;
 };
 
 /**
  * Response containing report history list.
  */
 export type ReportHistoryResponse = {
-    reports: Array<ReportHistoryItem>;
+  reports: Array<ReportHistoryItem>;
 };
 
 /**
  * Response after initiating report generation.
  */
 export type ReportJobResponse = {
-    job_id: string;
-    status: ReportJobStatus;
-    created_at: string;
-    estimated_completion?: (string | null);
+  job_id: string;
+  status: ReportJobStatus;
+  created_at: string;
+  estimated_completion?: string | null;
 };
 
 /**
  * Status of a report generation job.
  */
-export type ReportJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type ReportJobStatus = "pending" | "processing" | "completed" | "failed";
 
 /**
  * Time period for report data.
  */
-export type ReportPeriod = 'week' | 'month' | 'semester' | 'custom';
+export type ReportPeriod = "week" | "month" | "semester" | "custom";
 
 /**
  * Response for checking report job status.
  */
 export type ReportStatusResponse = {
-    job_id: string;
-    status: ReportJobStatus;
-    progress_percentage: number;
-    download_url?: (string | null);
-    error_message?: (string | null);
+  job_id: string;
+  status: ReportJobStatus;
+  progress_percentage: number;
+  download_url?: string | null;
+  error_message?: string | null;
 };
 
 /**
  * Predefined report template types.
  */
-export type ReportTemplateType = 'weekly_class_summary' | 'student_progress_report' | 'monthly_assignment_overview' | 'parent_teacher_conference';
+export type ReportTemplateType =
+  | "weekly_class_summary"
+  | "student_progress_report"
+  | "monthly_assignment_overview"
+  | "parent_teacher_conference";
 
 /**
  * Type of report to generate.
  */
-export type ReportType = 'student' | 'class' | 'assignment';
+export type ReportType = "student" | "class" | "assignment";
 
 /**
  * A saved report configuration template.
  */
 export type SavedReportTemplate = {
-    id: string;
-    name: string;
-    config: ReportGenerateRequest;
-    created_at: string;
+  id: string;
+  name: string;
+  config: ReportGenerateRequest;
+  created_at: string;
 };
 
 /**
  * Request to save a report configuration as a template.
  */
 export type SavedReportTemplateCreate = {
-    name: string;
-    config: ReportGenerateRequest;
+  name: string;
+  config: ReportGenerateRequest;
 };
 
 /**
@@ -3088,16 +3132,16 @@ export type SavedReportTemplateCreate = {
  * If not provided, falls back to looking up from in-memory storage.
  */
 export type SaveToLibraryRequest = {
-    quiz_id: string;
-    activity_type: string;
-    title: string;
-    description?: (string | null);
-    /**
-     * Full content data. If provided, used directly instead of storage lookup.
-     */
-    content?: ({
+  quiz_id: string;
+  activity_type: string;
+  title: string;
+  description?: string | null;
+  /**
+   * Full content data. If provided, used directly instead of storage lookup.
+   */
+  content?: {
     [key: string]: unknown;
-} | null);
+  } | null;
 };
 
 /**
@@ -3110,10 +3154,10 @@ export type SaveToLibraryRequest = {
  * created_at: When the content was saved.
  */
 export type SaveToLibraryResponse = {
-    content_id: string;
-    title: string;
-    activity_type: string;
-    created_at: string;
+  content_id: string;
+  title: string;
+  activity_type: string;
+  created_at: string;
 };
 
 /**
@@ -3122,120 +3166,120 @@ export type SaveToLibraryResponse = {
  * [Source: Story 5.7 AC: 12]
  */
 export type SchoolBenchmarkSummary = {
-    school_id: string;
-    school_name: string;
-    benchmarking_enabled: boolean;
-    class_count: number;
-    average_score?: (number | null);
-    performance_status?: ('above_average' | 'average' | 'below_average' | null);
+  school_id: string;
+  school_name: string;
+  benchmarking_enabled: boolean;
+  class_count: number;
+  average_score?: number | null;
+  performance_status?: "above_average" | "average" | "below_average" | null;
 };
 
 /**
  * Properties to receive via API on School creation
  */
 export type SchoolCreate = {
-    name: string;
-    address?: (string | null);
-    contact_info?: (string | null);
-    /**
-     * Enable performance benchmarking for this school
-     */
-    benchmarking_enabled?: boolean;
-    dcs_publisher_id: number;
+  name: string;
+  address?: string | null;
+  contact_info?: string | null;
+  /**
+   * Enable performance benchmarking for this school
+   */
+  benchmarking_enabled?: boolean;
+  dcs_publisher_id: number;
 };
 
 /**
  * Properties to receive via API on School creation by Publisher (publisher_id set automatically)
  */
 export type SchoolCreateByPublisher = {
-    name: string;
-    address?: (string | null);
-    contact_info?: (string | null);
-    /**
-     * Enable performance benchmarking for this school
-     */
-    benchmarking_enabled?: boolean;
+  name: string;
+  address?: string | null;
+  contact_info?: string | null;
+  /**
+   * Enable performance benchmarking for this school
+   */
+  benchmarking_enabled?: boolean;
 };
 
 /**
  * Properties to return via API
  */
 export type SchoolPublic = {
-    name: string;
-    address?: (string | null);
-    contact_info?: (string | null);
-    /**
-     * Enable performance benchmarking for this school
-     */
-    benchmarking_enabled?: boolean;
-    id: string;
-    dcs_publisher_id: number;
-    created_at: string;
-    updated_at: string;
+  name: string;
+  address?: string | null;
+  contact_info?: string | null;
+  /**
+   * Enable performance benchmarking for this school
+   */
+  benchmarking_enabled?: boolean;
+  id: string;
+  dcs_publisher_id: number;
+  created_at: string;
+  updated_at: string;
 };
 
 /**
  * Properties to receive via API on School update
  */
 export type SchoolUpdate = {
-    name?: (string | null);
-    address?: (string | null);
-    contact_info?: (string | null);
-    dcs_publisher_id?: (number | null);
-    benchmarking_enabled?: (boolean | null);
+  name?: string | null;
+  address?: string | null;
+  contact_info?: string | null;
+  dcs_publisher_id?: number | null;
+  benchmarking_enabled?: boolean | null;
 };
 
 /**
  * School response with aggregated counts for publisher views.
  */
 export type SchoolWithCounts = {
-    id: string;
-    name: string;
-    address?: (string | null);
-    contact_info?: (string | null);
-    benchmarking_enabled?: boolean;
-    dcs_publisher_id: number;
-    created_at: string;
-    updated_at: string;
-    teacher_count?: number;
-    student_count?: number;
-    book_count?: number;
+  id: string;
+  name: string;
+  address?: string | null;
+  contact_info?: string | null;
+  benchmarking_enabled?: boolean;
+  dcs_publisher_id: number;
+  created_at: string;
+  updated_at: string;
+  teacher_count?: number;
+  student_count?: number;
+  book_count?: number;
 };
 
 /**
  * Single bucket in score distribution histogram.
  */
 export type ScoreDistributionBucket = {
-    range_label: string;
-    min_score: number;
-    max_score: number;
-    count: number;
+  range_label: string;
+  min_score: number;
+  max_score: number;
+  count: number;
 };
 
 /**
  * Score statistics for an assignment.
  */
 export type ScoreStatistics = {
-    avg_score: number;
-    median_score: number;
-    highest_score: number;
-    lowest_score: number;
+  avg_score: number;
+  median_score: number;
+  highest_score: number;
+  lowest_score: number;
 };
 
 /**
  * Data point for score trend chart.
  */
 export type ScoreTrendPoint = {
-    date: string;
-    score: number;
-    assignment_name: string;
+  date: string;
+  score: number;
+  assignment_name: string;
 };
 
 /**
  * Request to select a predefined avatar.
  */
 export type SelectAvatarRequest = {
-    avatar_id: string;
+  avatar_id: string;
 };
 
 /**
@@ -3254,13 +3298,13 @@ export type SelectAvatarRequest = {
  * created_at: When the activity was generated.
  */
 export type SentenceBuilderActivity = {
-    activity_id: string;
-    book_id: number;
-    module_ids: Array<(number)>;
-    sentences: Array<SentenceBuilderItem>;
-    difficulty: string;
-    include_audio: boolean;
-    created_at: string;
+  activity_id: string;
+  book_id: number;
+  module_ids: Array<number>;
+  sentences: Array<SentenceBuilderItem>;
+  difficulty: string;
+  include_audio: boolean;
+  created_at: string;
 };
 
 /**
@@ -3280,14 +3324,14 @@ export type SentenceBuilderActivity = {
  * sentence_count: Total number of sentences.
  */
 export type SentenceBuilderActivityPublic = {
-    activity_id: string;
-    book_id: number;
-    module_ids: Array<(number)>;
-    sentences: Array<SentenceBuilderItemPublic>;
-    difficulty: string;
-    include_audio: boolean;
-    created_at: string;
-    sentence_count: number;
+  activity_id: string;
+  book_id: number;
+  module_ids: Array<number>;
+  sentences: Array<SentenceBuilderItemPublic>;
+  difficulty: string;
+  include_audio: boolean;
+  created_at: string;
+  sentence_count: number;
 };
 
 /**
@@ -3306,14 +3350,14 @@ export type SentenceBuilderActivityPublic = {
  * difficulty: Difficulty level of this sentence.
  */
 export type SentenceBuilderItem = {
-    item_id: string;
-    correct_sentence: string;
-    words: Array<(string)>;
-    word_count: number;
-    audio_url?: (string | null);
-    source_module_id: number;
-    source_page?: (number | null);
-    difficulty: string;
+  item_id: string;
+  correct_sentence: string;
+  words: Array<string>;
+  word_count: number;
+  audio_url?: string | null;
+  source_module_id: number;
+  source_page?: number | null;
+  difficulty: string;
 };
 
 /**
@@ -3326,10 +3370,10 @@ export type SentenceBuilderItem = {
  * difficulty: Difficulty level of this sentence.
  */
 export type SentenceBuilderItemPublic = {
-    item_id: string;
-    words: Array<(string)>;
-    word_count: number;
-    difficulty: string;
+  item_id: string;
+  words: Array<string>;
+  word_count: number;
+  difficulty: string;
 };
 
 /**
@@ -3343,29 +3387,29 @@ export type SentenceBuilderItemPublic = {
  * include_audio: Whether to include audio for correct sentences.
  */
 export type SentenceBuilderRequest = {
-    book_id: number;
-    /**
-     * Specific modules to use. If None, uses all modules.
-     */
-    module_ids?: (Array<(number)> | null);
-    /**
-     * Number of sentences (1-50).
-     */
-    sentence_count?: number;
-    /**
-     * Difficulty: easy (4-6 words), medium (7-10 words), hard (11+ words).
-     */
-    difficulty?: 'easy' | 'medium' | 'hard';
-    /**
-     * Whether to include TTS audio for correct sentences.
-     */
-    include_audio?: boolean;
+  book_id: number;
+  /**
+   * Specific modules to use. If None, uses all modules.
+   */
+  module_ids?: Array<number> | null;
+  /**
+   * Number of sentences (1-50).
+   */
+  sentence_count?: number;
+  /**
+   * Difficulty: easy (4-6 words), medium (7-10 words), hard (11+ words).
+   */
+  difficulty?: "easy" | "medium" | "hard";
+  /**
+   * Whether to include TTS audio for correct sentences.
+   */
+  include_audio?: boolean;
 };
 
 /**
  * Difficulty: easy (4-6 words), medium (7-10 words), hard (11+ words).
  */
-export type difficulty2 = 'easy' | 'medium' | 'hard';
+export type difficulty2 = "easy" | "medium" | "hard";
 
 /**
  * Complete results of a submitted sentence builder activity.
@@ -3384,14 +3428,14 @@ export type difficulty2 = 'easy' | 'medium' | 'hard';
  * difficulty: Difficulty level of the activity.
  */
 export type SentenceBuilderResult = {
-    activity_id: string;
-    student_id: string;
-    score: number;
-    total: number;
-    percentage: number;
-    sentence_results: Array<SentenceResult>;
-    submitted_at: string;
-    difficulty: string;
+  activity_id: string;
+  student_id: string;
+  score: number;
+  total: number;
+  percentage: number;
+  sentence_results: Array<SentenceResult>;
+  submitted_at: string;
+  difficulty: string;
 };
 
 /**
@@ -3403,12 +3447,12 @@ export type SentenceBuilderResult = {
  * answers: Dictionary mapping item_id to ordered list of words.
  */
 export type SentenceBuilderSubmission = {
-    /**
-     * Map of item_id to ordered list of words.
-     */
-    answers: {
-        [key: string]: Array<(string)>;
-    };
+  /**
+   * Map of item_id to ordered list of words.
+   */
+  answers: {
+    [key: string]: Array<string>;
+  };
 };
 
 /**
@@ -3422,443 +3466,443 @@ export type SentenceBuilderSubmission = {
  * audio_url: Audio URL for the correct sentence (if available).
  */
 export type SentenceResult = {
-    item_id: string;
-    submitted_words: Array<(string)>;
-    correct_sentence: string;
-    is_correct: boolean;
-    audio_url?: (string | null);
+  item_id: string;
+  submitted_words: Array<string>;
+  correct_sentence: string;
+  is_correct: boolean;
+  audio_url?: string | null;
 };
 
 /**
  * Request body for setting a student's password
  */
 export type SetStudentPasswordRequest = {
-    password: string;
+  password: string;
 };
 
 /**
  * Counts of assignments by status.
  */
 export type StatusSummary = {
-    not_started: number;
-    in_progress: number;
-    completed: number;
-    past_due: number;
+  not_started: number;
+  in_progress: number;
+  completed: number;
+  past_due: number;
 };
 
 /**
  * Storage quota information.
  */
 export type StorageQuotaResponse = {
-    used_bytes: number;
-    quota_bytes: number;
-    used_percentage: number;
-    is_warning: boolean;
-    is_full: boolean;
+  used_bytes: number;
+  quota_bytes: number;
+  used_percentage: number;
+  is_warning: boolean;
+  is_full: boolean;
 };
 
 /**
  * Student flagged as struggling.
  */
 export type StrugglingStudentItem = {
-    student_id: string;
-    name: string;
-    avg_score: number;
-    past_due_count: number;
-    alert_reason: string;
+  student_id: string;
+  name: string;
+  avg_score: number;
+  past_due_count: number;
+  alert_reason: string;
 };
 
 /**
  * Per-student score for a specific activity (used in expanded analytics view).
  */
 export type StudentActivityScore = {
-    student_id: string;
-    student_name: string;
-    status: string;
-    score: (number | null);
-    max_score: number;
-    time_spent_seconds: number;
-    completed_at: (string | null);
+  student_id: string;
+  student_name: string;
+  status: string;
+  score: number | null;
+  max_score: number;
+  time_spent_seconds: number;
+  completed_at: string | null;
 };
 
 /**
  * Complete student analytics data response.
  */
 export type StudentAnalyticsResponse = {
-    student: StudentInfo;
-    summary: AnalyticsSummary;
-    recent_activity: Array<RecentActivityItem>;
-    performance_trend: Array<PerformanceTrendPoint>;
-    activity_breakdown: Array<ActivityBreakdownItem>;
-    status_summary: StatusSummary;
-    time_analytics: TimeAnalytics;
+  student: StudentInfo;
+  summary: AnalyticsSummary;
+  recent_activity: Array<RecentActivityItem>;
+  performance_trend: Array<PerformanceTrendPoint>;
+  activity_breakdown: Array<ActivityBreakdownItem>;
+  status_summary: StatusSummary;
+  time_analytics: TimeAnalytics;
 };
 
 /**
  * Schema for student announcement list with pagination and read counts.
  */
 export type StudentAnnouncementListResponse = {
-    announcements: Array<StudentAnnouncementPublic>;
-    total: number;
-    unread_count: number;
-    limit: number;
-    offset: number;
+  announcements: Array<StudentAnnouncementPublic>;
+  total: number;
+  unread_count: number;
+  limit: number;
+  offset: number;
 };
 
 /**
  * Schema for student announcement view with read status.
  */
 export type StudentAnnouncementPublic = {
-    id: string;
-    teacher_id: string;
-    teacher_name: string;
-    title: string;
-    content: string;
-    created_at: string;
-    is_read: boolean;
-    read_at?: (string | null);
+  id: string;
+  teacher_id: string;
+  teacher_name: string;
+  title: string;
+  content: string;
+  created_at: string;
+  is_read: boolean;
+  read_at?: string | null;
 };
 
 /**
  * Individual student's full answers for an assignment.
  */
 export type StudentAnswersResponse = {
-    student_id: string;
-    name: string;
-    status: string;
-    score: (number | null);
-    time_spent_minutes: number;
-    time_spent_seconds: number;
-    started_at: (string | null);
-    completed_at: (string | null);
-    answers_json: ({
+  student_id: string;
+  name: string;
+  status: string;
+  score: number | null;
+  time_spent_minutes: number;
+  time_spent_seconds: number;
+  started_at: string | null;
+  completed_at: string | null;
+  answers_json: {
     [key: string]: unknown;
-} | null);
-    activity_type?: (string | null);
-    config_json?: ({
+  } | null;
+  activity_type?: string | null;
+  config_json?: {
     [key: string]: unknown;
-} | null);
+  } | null;
 };
 
 /**
  * Student-facing assignment response with enriched data.
  */
 export type StudentAssignmentResponse = {
-    assignment_id: string;
-    assignment_name: string;
-    instructions: (string | null);
-    due_date: (string | null);
-    time_limit_minutes: (number | null);
-    created_at: string;
-    book_id: number;
-    book_title: string;
-    book_cover_url: (string | null);
-    activity_id: string;
-    activity_title: string;
-    activity_type: string;
-    status: string;
-    score: (number | null);
-    started_at: (string | null);
-    completed_at: (string | null);
-    time_spent_minutes: number;
-    activity_count?: number;
-    /**
-     * Calculate if assignment is past due.
-     */
-    readonly is_past_due: boolean;
-    /**
-     * Calculate days until due date.
-     */
-    readonly days_until_due: (number | null);
+  assignment_id: string;
+  assignment_name: string;
+  instructions: string | null;
+  due_date: string | null;
+  time_limit_minutes: number | null;
+  created_at: string;
+  book_id: number;
+  book_title: string;
+  book_cover_url: string | null;
+  activity_id: string;
+  activity_title: string;
+  activity_type: string;
+  status: string;
+  score: number | null;
+  started_at: string | null;
+  completed_at: string | null;
+  time_spent_minutes: number;
+  activity_count?: number;
+  /**
+   * Calculate if assignment is past due.
+   */
+  readonly is_past_due: boolean;
+  /**
+   * Calculate days until due date.
+   */
+  readonly days_until_due: number | null;
 };
 
 /**
  * Response schema for student viewing their completed assignment results.
  */
 export type StudentAssignmentResultResponse = {
-    assignment_id: string;
-    assignment_name: string;
-    total_score: (number | null);
-    completed_at: (string | null);
-    activity_scores: Array<ActivityScoreItem>;
-    total_activities: number;
-    completed_activities: number;
+  assignment_id: string;
+  assignment_name: string;
+  total_score: number | null;
+  completed_at: string | null;
+  activity_scores: Array<ActivityScoreItem>;
+  total_activities: number;
+  completed_activities: number;
 };
 
 /**
  * Response schema for student badge counts (Story 6.5, AC: 9, 14).
  */
 export type StudentBadgeCountsResponse = {
-    badge_counts: {
-        [key: string]: (number);
-    };
-    total: number;
-    this_month: {
-        [key: string]: (number);
-    };
-    this_month_total: number;
+  badge_counts: {
+    [key: string]: number;
+  };
+  total: number;
+  this_month: {
+    [key: string]: number;
+  };
+  this_month_total: number;
 };
 
 /**
  * Assignment item for student calendar view.
  */
 export type StudentCalendarAssignmentItem = {
-    id: string;
-    name: string;
-    due_date: (string | null);
-    book_id: number;
-    book_title: string;
-    book_cover_url: (string | null);
-    activity_count: number;
-    status: string;
+  id: string;
+  name: string;
+  due_date: string | null;
+  book_id: number;
+  book_title: string;
+  book_cover_url: string | null;
+  activity_count: number;
+  status: string;
 };
 
 /**
  * Response schema for student calendar assignments endpoint.
  */
 export type StudentCalendarAssignmentsResponse = {
-    start_date: string;
-    end_date: string;
-    total_assignments: number;
-    assignments_by_date: {
-        [key: string]: Array<StudentCalendarAssignmentItem>;
-    };
+  start_date: string;
+  end_date: string;
+  total_assignments: number;
+  assignments_by_date: {
+    [key: string]: Array<StudentCalendarAssignmentItem>;
+  };
 };
 
 /**
  * Properties for API endpoint student creation (includes user creation)
  */
 export type StudentCreateAPI = {
-    username: string;
-    user_email?: (string | null);
-    full_name: string;
-    grade_level?: (string | null);
-    parent_email?: (string | null);
-    password?: (string | null);
+  username: string;
+  user_email?: string | null;
+  full_name: string;
+  grade_level?: string | null;
+  parent_email?: string | null;
+  password?: string | null;
 };
 
 /**
  * Student info for class detail response
  */
 export type StudentInClass = {
-    id: string;
-    email: string;
-    full_name: string;
-    grade?: (string | null);
+  id: string;
+  email: string;
+  full_name: string;
+  grade?: string | null;
 };
 
 /**
  * Basic student information for analytics display.
  */
 export type StudentInfo = {
-    id: string;
-    name: string;
-    photo_url?: (string | null);
+  id: string;
+  name: string;
+  photo_url?: string | null;
 };
 
 /**
  * Student entry in leaderboard.
  */
 export type StudentLeaderboardItem = {
-    student_id: string;
-    name: string;
-    avg_score: number;
-    rank: number;
+  student_id: string;
+  name: string;
+  avg_score: number;
+  rank: number;
 };
 
 /**
  * Response for viewing/setting student password
  */
 export type StudentPasswordResponse = {
-    student_id: string;
-    username: string;
-    full_name: string;
-    password?: (string | null);
-    message?: (string | null);
+  student_id: string;
+  username: string;
+  full_name: string;
+  password?: string | null;
+  message?: string | null;
 };
 
 /**
  * Complete student progress response.
  */
 export type StudentProgressResponse = {
-    stats: StudentProgressStats;
-    score_trend: Array<ScoreTrendPoint>;
-    activity_breakdown: Array<ActivityTypeScore>;
-    recent_assignments: Array<ProgressRecentAssignment>;
-    achievements: Array<Achievement>;
-    study_time: StudyTimeStats;
-    improvement_tips: Array<(string)>;
+  stats: StudentProgressStats;
+  score_trend: Array<ScoreTrendPoint>;
+  activity_breakdown: Array<ActivityTypeScore>;
+  recent_assignments: Array<ProgressRecentAssignment>;
+  achievements: Array<Achievement>;
+  study_time: StudyTimeStats;
+  improvement_tips: Array<string>;
 };
 
 /**
  * Overall student progress statistics.
  */
 export type StudentProgressStats = {
-    total_completed: number;
-    avg_score: number;
-    current_streak: number;
-    streak_start_date: (string | null);
-    improvement_trend: ImprovementTrend;
+  total_completed: number;
+  avg_score: number;
+  current_streak: number;
+  streak_start_date: string | null;
+  improvement_trend: ImprovementTrend;
 };
 
 /**
  * Properties to return via API
  */
 export type StudentPublic = {
-    grade_level?: (string | null);
-    parent_email?: (string | null);
-    id: string;
-    user_id: string;
-    user_email?: (string | null);
-    user_username: string;
-    user_full_name: string;
-    created_by_teacher_id?: (string | null);
-    created_by_teacher_name?: (string | null);
-    created_at: string;
-    updated_at: string;
+  grade_level?: string | null;
+  parent_email?: string | null;
+  id: string;
+  user_id: string;
+  user_email?: string | null;
+  user_username: string;
+  user_full_name: string;
+  created_by_teacher_id?: string | null;
+  created_by_teacher_name?: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 /**
  * Individual student's result for an assignment.
  */
 export type StudentResultItem = {
-    student_id: string;
-    name: string;
-    status: string;
-    score: (number | null);
-    time_spent_minutes: number;
-    time_spent_seconds: number;
-    started_at: (string | null);
-    completed_at: (string | null);
-    has_feedback?: boolean;
+  student_id: string;
+  name: string;
+  status: string;
+  score: number | null;
+  time_spent_minutes: number;
+  time_spent_seconds: number;
+  started_at: string | null;
+  completed_at: string | null;
+  has_feedback?: boolean;
 };
 
 /**
  * Request body for fetching students for multiple classes.
  */
 export type StudentsForClassesRequest = {
-    class_ids: Array<(string)>;
+  class_ids: Array<string>;
 };
 
 /**
  * Properties to receive via API on Student update
  */
 export type StudentUpdate = {
-    user_email?: (string | null);
-    user_username?: (string | null);
-    user_full_name?: (string | null);
-    grade_level?: (string | null);
-    parent_email?: (string | null);
+  user_email?: string | null;
+  user_username?: string | null;
+  user_full_name?: string | null;
+  grade_level?: string | null;
+  parent_email?: string | null;
 };
 
 /**
  * Study time statistics.
  */
 export type StudyTimeStats = {
-    this_week_minutes: number;
-    this_month_minutes: number;
-    avg_per_assignment: number;
+  this_week_minutes: number;
+  this_month_minutes: number;
+  avg_per_assignment: number;
 };
 
 /**
  * Activity state data sent during multi-activity submission.
  */
 export type SubmitActivityState = {
-    activity_index: number;
-    score?: (number | null);
-    answers_json?: ({
+  activity_index: number;
+  score?: number | null;
+  answers_json?: {
     [key: string]: unknown;
-} | null);
-    status?: string;
+  } | null;
+  status?: string;
 };
 
 /**
  * Properties for API endpoint supervisor creation
  */
 export type SupervisorCreateAPI = {
-    username: string;
-    user_email?: (string | null);
-    full_name: string;
+  username: string;
+  user_email?: string | null;
+  full_name: string;
 };
 
 /**
  * Response schema for supervisor creation
  */
 export type SupervisorCreateResponse = {
-    user: UserPublic;
-    temporary_password?: (string | null);
-    password_emailed?: boolean;
-    message?: string;
+  user: UserPublic;
+  temporary_password?: string | null;
+  password_emailed?: boolean;
+  message?: string;
 };
 
 /**
  * Public supervisor response schema
  */
 export type SupervisorPublic = {
-    id: string;
-    full_name: (string | null);
-    email: (string | null);
-    username: string;
-    is_active: boolean;
-    created_at: (string | null);
-    must_change_password: boolean;
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  username: string;
+  is_active: boolean;
+  created_at: string | null;
+  must_change_password: boolean;
 };
 
 /**
  * Properties for updating a supervisor
  */
 export type SupervisorUpdate = {
-    full_name?: (string | null);
-    email?: (string | null);
-    username?: (string | null);
-    is_active?: (boolean | null);
+  full_name?: string | null;
+  email?: string | null;
+  username?: string | null;
+  is_active?: boolean | null;
 };
 
 /**
  * Properties for API endpoint teacher creation (includes user creation)
  */
 export type TeacherCreateAPI = {
-    username: string;
-    user_email: string;
-    full_name: string;
-    school_id: string;
-    subject_specialization?: (string | null);
+  username: string;
+  user_email: string;
+  full_name: string;
+  school_id: string;
+  subject_specialization?: string | null;
 };
 
 /**
  * List of generated content.
  */
 export type TeacherGeneratedContentListResponse = {
-    items: Array<TeacherGeneratedContentResponse>;
-    total_count: number;
+  items: Array<TeacherGeneratedContentResponse>;
+  total_count: number;
 };
 
 /**
  * Response for teacher's generated AI content.
  */
 export type TeacherGeneratedContentResponse = {
-    id: string;
-    teacher_id: string;
-    material_id?: (string | null);
-    book_id?: (number | null);
-    activity_type: string;
-    title: string;
-    content: {
-        [key: string]: unknown;
-    };
-    is_used: boolean;
-    assignment_id?: (string | null);
-    created_at: string;
-    material_name?: (string | null);
-    book_name?: (string | null);
+  id: string;
+  teacher_id: string;
+  material_id?: string | null;
+  book_id?: number | null;
+  activity_type: string;
+  title: string;
+  content: {
+    [key: string]: unknown;
+  };
+  is_used: boolean;
+  assignment_id?: string | null;
+  created_at: string;
+  material_name?: string | null;
+  book_name?: string | null;
 };
 
 /**
  * List of teacher materials.
  */
 export type TeacherMaterialListResponse = {
-    materials: Array<TeacherMaterialResponse>;
-    total_count: number;
+  materials: Array<TeacherMaterialResponse>;
+  total_count: number;
 };
 
 /**
@@ -3868,10 +3912,10 @@ export type TeacherMaterialListResponse = {
  * Stores denormalized name/type for display even if material is deleted.
  */
 export type TeacherMaterialResource = {
-    type?: "teacher_material";
-    material_id: string;
-    name: string;
-    material_type: string;
+  type?: "teacher_material";
+  material_id: string;
+  name: string;
+  material_type: string;
 };
 
 /**
@@ -3880,232 +3924,232 @@ export type TeacherMaterialResource = {
  * Used when returning assignment resources to include current material state.
  */
 export type TeacherMaterialResourceResponse = {
-    type?: "teacher_material";
-    material_id: string;
-    name: string;
-    material_type: string;
-    is_available?: boolean;
-    file_size?: (number | null);
-    mime_type?: (string | null);
-    url?: (string | null);
-    text_content?: (string | null);
-    download_url?: (string | null);
+  type?: "teacher_material";
+  material_id: string;
+  name: string;
+  material_type: string;
+  is_available?: boolean;
+  file_size?: number | null;
+  mime_type?: string | null;
+  url?: string | null;
+  text_content?: string | null;
+  download_url?: string | null;
 };
 
 /**
  * Teacher material response with AI processing fields.
  */
 export type TeacherMaterialResponse = {
-    id: string;
-    teacher_id: string;
-    name: string;
-    description?: (string | null);
-    type: MaterialType;
-    source_type: 'pdf' | 'text' | 'other';
-    original_filename?: (string | null);
-    file_size?: (number | null);
-    mime_type?: (string | null);
-    extracted_text?: (string | null);
-    word_count?: (number | null);
-    language?: (string | null);
-    created_at: string;
-    updated_at: string;
-    download_url?: (string | null);
-    is_processable?: boolean;
+  id: string;
+  teacher_id: string;
+  name: string;
+  description?: string | null;
+  type: MaterialType;
+  source_type: "pdf" | "text" | "other";
+  original_filename?: string | null;
+  file_size?: number | null;
+  mime_type?: string | null;
+  extracted_text?: string | null;
+  word_count?: number | null;
+  language?: string | null;
+  created_at: string;
+  updated_at: string;
+  download_url?: string | null;
+  is_processable?: boolean;
 };
 
-export type source_type3 = 'pdf' | 'text' | 'other';
+export type source_type3 = "pdf" | "text" | "other";
 
 /**
  * Response after material upload with text extraction.
  */
 export type TeacherMaterialUploadResponse = {
-    material: TeacherMaterialResponse;
-    extraction?: (TextExtractionResult | null);
+  material: TeacherMaterialResponse;
+  extraction?: TextExtractionResult | null;
 };
 
 /**
  * Properties to return via API
  */
 export type TeacherPublic = {
-    subject_specialization?: (string | null);
-    id: string;
-    user_id: string;
-    user_email: string;
-    user_username: string;
-    user_full_name: string;
-    school_id: string;
-    created_at: string;
-    updated_at: string;
+  subject_specialization?: string | null;
+  id: string;
+  user_id: string;
+  user_email: string;
+  user_username: string;
+  user_full_name: string;
+  school_id: string;
+  created_at: string;
+  updated_at: string;
 };
 
 /**
  * Properties to receive via API on Teacher update
  */
 export type TeacherUpdate = {
-    school_id?: (string | null);
-    subject_specialization?: (string | null);
-    user_email?: (string | null);
-    user_username?: (string | null);
-    user_full_name?: (string | null);
+  school_id?: string | null;
+  subject_specialization?: string | null;
+  user_email?: string | null;
+  user_username?: string | null;
+  user_full_name?: string | null;
 };
 
 /**
  * Teacher response with aggregated counts and school name for publisher views.
  */
 export type TeacherWithCounts = {
-    id: string;
-    user_id: string;
-    user_email: string;
-    user_username: string;
-    user_full_name: string;
-    school_id: string;
-    school_name?: (string | null);
-    subject_specialization?: (string | null);
-    created_at: string;
-    updated_at: string;
-    books_assigned?: number;
-    classroom_count?: number;
+  id: string;
+  user_id: string;
+  user_email: string;
+  user_username: string;
+  user_full_name: string;
+  school_id: string;
+  school_name?: string | null;
+  subject_specialization?: string | null;
+  created_at: string;
+  updated_at: string;
+  books_assigned?: number;
+  classroom_count?: number;
 };
 
 /**
  * Result of text extraction from uploaded material.
  */
 export type TextExtractionResult = {
-    extracted_text: string;
-    word_count: number;
-    language?: (string | null);
-    source_type?: 'pdf' | 'text';
+  extracted_text: string;
+  word_count: number;
+  language?: string | null;
+  source_type?: "pdf" | "text";
 };
 
-export type source_type4 = 'pdf' | 'text';
+export type source_type4 = "pdf" | "text";
 
 /**
  * Create material from pasted text.
  */
 export type TextMaterialCreate = {
-    name: string;
-    description?: (string | null);
-    text: string;
+  name: string;
+  description?: string | null;
+  text: string;
 };
 
 /**
  * Create a text note.
  */
 export type TextNoteCreate = {
-    name: string;
-    content: string;
+  name: string;
+  content: string;
 };
 
 /**
  * Update a text note.
  */
 export type TextNoteUpdate = {
-    name?: (string | null);
-    content?: (string | null);
+  name?: string | null;
+  content?: string | null;
 };
 
 /**
  * Time-based performance metrics.
  */
 export type TimeAnalytics = {
-    avg_time_per_assignment: number;
-    total_time_this_week: number;
-    total_time_this_month: number;
+  avg_time_per_assignment: number;
+  total_time_this_week: number;
+  total_time_this_month: number;
 };
 
 export type Token = {
-    access_token: string;
-    token_type?: string;
-    must_change_password?: boolean;
-    has_completed_tour?: boolean;
+  access_token: string;
+  token_type?: string;
+  must_change_password?: boolean;
+  has_completed_tour?: boolean;
 };
 
 /**
  * Trend analysis for a metric.
  */
 export type TrendData = {
-    metric_name: string;
-    current_value: number;
-    previous_value: number;
-    change_percent: number;
-    trend: 'up' | 'down' | 'stable';
+  metric_name: string;
+  current_value: number;
+  previous_value: number;
+  change_percent: number;
+  trend: "up" | "down" | "stable";
 };
 
-export type trend = 'up' | 'down' | 'stable';
+export type trend = "up" | "down" | "stable";
 
 /**
  * Schema for unread notification count response.
  */
 export type UnreadCountResponse = {
-    count: number;
+  count: number;
 };
 
 /**
  * Schema for unread messages count response.
  */
 export type UnreadMessagesCountResponse = {
-    count: number;
+  count: number;
 };
 
 /**
  * Request to update content in the library.
  */
 export type UpdateContentRequest = {
-    /**
-     * New title for the content
-     */
-    title?: (string | null);
-    /**
-     * Updated content data
-     */
-    content?: ({
+  /**
+   * New title for the content
+   */
+  title?: string | null;
+  /**
+   * Updated content data
+   */
+  content?: {
     [key: string]: unknown;
-} | null);
+  } | null;
 };
 
 /**
  * Response for content update.
  */
 export type UpdateContentResponse = {
-    message: string;
-    content_id: string;
-    updated_at: string;
+  message: string;
+  content_id: string;
+  updated_at: string;
 };
 
 export type UpdatePassword = {
-    current_password: string;
-    new_password: string;
+  current_password: string;
+  new_password: string;
 };
 
 /**
  * Response after file upload.
  */
 export type UploadResponse = {
-    material: MaterialResponse;
-    quota: StorageQuotaResponse;
+  material: MaterialResponse;
+  quota: StorageQuotaResponse;
 };
 
 /**
  * Create a URL link.
  */
 export type UrlLinkCreate = {
-    name: string;
-    url: string;
+  name: string;
+  url: string;
 };
 
 export type UserCreate = {
-    email?: (string | null);
-    username: string;
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
-    role?: UserRole;
-    /**
-     * DCS Publisher ID - only set for publisher role users
-     */
-    dcs_publisher_id?: (number | null);
-    password: string;
+  email?: string | null;
+  username: string;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  full_name?: string | null;
+  role?: UserRole;
+  /**
+   * DCS Publisher ID - only set for publisher role users
+   */
+  dcs_publisher_id?: number | null;
+  password: string;
 };
 
 /**
@@ -4115,72 +4159,77 @@ export type UserCreate = {
  * When user has email, password_emailed=True and temporary_password is None.
  */
 export type UserCreationResponse = {
-    user: UserPublic;
-    role_record: (TeacherPublic | StudentPublic);
-    temporary_password?: (string | null);
-    password_emailed?: boolean;
-    message?: string;
+  user: UserPublic;
+  role_record: TeacherPublic | StudentPublic;
+  temporary_password?: string | null;
+  password_emailed?: boolean;
+  message?: string;
 };
 
 export type UserPublic = {
-    email?: (string | null);
-    username: string;
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
-    role?: UserRole;
-    /**
-     * DCS Publisher ID - only set for publisher role users
-     */
-    dcs_publisher_id?: (number | null);
-    id: string;
-    must_change_password?: boolean;
-    has_completed_tour?: boolean;
-    avatar_url?: (string | null);
-    avatar_type?: (AvatarType | null);
+  email?: string | null;
+  username: string;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  full_name?: string | null;
+  role?: UserRole;
+  /**
+   * DCS Publisher ID - only set for publisher role users
+   */
+  dcs_publisher_id?: number | null;
+  id: string;
+  must_change_password?: boolean;
+  has_completed_tour?: boolean;
+  avatar_url?: string | null;
+  avatar_type?: AvatarType | null;
 };
 
 /**
  * User role enumeration for RBAC
  */
-export type UserRole = 'admin' | 'supervisor' | 'publisher' | 'teacher' | 'student';
+export type UserRole =
+  | "admin"
+  | "supervisor"
+  | "publisher"
+  | "teacher"
+  | "student";
 
 export type UsersPublic = {
-    data: Array<UserPublic>;
-    count: number;
+  data: Array<UserPublic>;
+  count: number;
 };
 
 export type UserUpdate = {
-    email?: (string | null);
-    username?: (string | null);
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
-    role?: UserRole;
-    dcs_publisher_id?: (number | null);
-    password?: (string | null);
+  email?: string | null;
+  username?: string | null;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  full_name?: string | null;
+  role?: UserRole;
+  dcs_publisher_id?: number | null;
+  password?: string | null;
 };
 
 export type UserUpdateMe = {
-    full_name?: (string | null);
-    email?: (string | null);
-    username?: (string | null);
+  full_name?: string | null;
+  email?: string | null;
+  username?: string | null;
 };
 
 export type ValidationError = {
-    loc: Array<(string | number)>;
-    msg: string;
-    type: string;
+  loc: Array<string | number>;
+  msg: string;
+  type: string;
 };
 
 /**
  * Video file information from Dream Central Storage.
  */
 export type VideoInfo = {
-    path: string;
-    name: string;
-    size_bytes: number;
-    has_subtitles: boolean;
+  path: string;
+  name: string;
+  size_bytes: number;
+  has_subtitles: boolean;
 };
 
 /**
@@ -4189,22 +4238,22 @@ export type VideoInfo = {
  * Story 10.3+: Video with subtitle control for students.
  */
 export type VideoResource = {
-    type?: "video";
-    path: string;
-    name: string;
-    subtitles_enabled?: boolean;
-    has_subtitles?: boolean;
+  type?: "video";
+  path: string;
+  name: string;
+  subtitles_enabled?: boolean;
+  has_subtitles?: boolean;
 };
 
 /**
  * Paginated vocabulary list response.
  */
 export type VocabularyListResponse = {
-    items: Array<VocabularyWordResponse>;
-    total: number;
-    page: number;
-    page_size: number;
-    total_pages: number;
+  items: Array<VocabularyWordResponse>;
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 };
 
 /**
@@ -4223,22 +4272,22 @@ export type VocabularyListResponse = {
  * quiz_mode: Type of quiz (definition, synonym, antonym, or mixed).
  */
 export type VocabularyQuiz = {
-    quiz_id: string;
-    book_id: number;
-    module_ids: Array<(number)>;
-    questions: Array<VocabularyQuizQuestion>;
-    created_at: string;
-    quiz_length: number;
-    /**
-     * Type of quiz: mixed (variety), definition, synonym, or antonym.
-     */
-    quiz_mode?: 'definition' | 'synonym' | 'antonym' | 'mixed';
+  quiz_id: string;
+  book_id: number;
+  module_ids: Array<number>;
+  questions: Array<VocabularyQuizQuestion>;
+  created_at: string;
+  quiz_length: number;
+  /**
+   * Type of quiz: mixed (variety), definition, synonym, or antonym.
+   */
+  quiz_mode?: "definition" | "synonym" | "antonym" | "mixed";
 };
 
 /**
  * Type of quiz: mixed (variety), definition, synonym, or antonym.
  */
-export type quiz_mode = 'definition' | 'synonym' | 'antonym' | 'mixed';
+export type quiz_mode = "definition" | "synonym" | "antonym" | "mixed";
 
 /**
  * Request to generate a vocabulary quiz from book modules.
@@ -4252,27 +4301,27 @@ export type quiz_mode = 'definition' | 'synonym' | 'antonym' | 'mixed';
  * quiz_mode: Type of quiz (definition, synonym, antonym, or mixed).
  */
 export type VocabularyQuizGenerationRequest = {
-    book_id: number;
-    /**
-     * Specific modules to use. If None, uses all modules.
-     */
-    module_ids?: (Array<(number)> | null);
-    /**
-     * Number of questions in the quiz (1-50).
-     */
-    quiz_length?: number;
-    /**
-     * CEFR levels to filter: A1, A2, B1, B2, C1
-     */
-    cefr_levels?: (Array<(string)> | null);
-    /**
-     * Whether to include audio URLs for pronunciation.
-     */
-    include_audio?: boolean;
-    /**
-     * Type of quiz: mixed (variety of definitions, synonyms, antonyms), definition, synonym, or antonym.
-     */
-    quiz_mode?: 'definition' | 'synonym' | 'antonym' | 'mixed';
+  book_id: number;
+  /**
+   * Specific modules to use. If None, uses all modules.
+   */
+  module_ids?: Array<number> | null;
+  /**
+   * Number of questions in the quiz (1-50).
+   */
+  quiz_length?: number;
+  /**
+   * CEFR levels to filter: A1, A2, B1, B2, C1
+   */
+  cefr_levels?: Array<string> | null;
+  /**
+   * Whether to include audio URLs for pronunciation.
+   */
+  include_audio?: boolean;
+  /**
+   * Type of quiz: mixed (variety of definitions, synonyms, antonyms), definition, synonym, or antonym.
+   */
+  quiz_mode?: "definition" | "synonym" | "antonym" | "mixed";
 };
 
 /**
@@ -4290,16 +4339,16 @@ export type VocabularyQuizGenerationRequest = {
  * quiz_mode: Type of quiz (definition, synonym, antonym, or mixed).
  */
 export type VocabularyQuizPublic = {
-    quiz_id: string;
-    book_id: number;
-    module_ids: Array<(number)>;
-    questions: Array<VocabularyQuizQuestionPublic>;
-    created_at: string;
-    quiz_length: number;
-    /**
-     * Type of quiz: mixed (variety), definition, synonym, or antonym.
-     */
-    quiz_mode?: 'definition' | 'synonym' | 'antonym' | 'mixed';
+  quiz_id: string;
+  book_id: number;
+  module_ids: Array<number>;
+  questions: Array<VocabularyQuizQuestionPublic>;
+  created_at: string;
+  quiz_length: number;
+  /**
+   * Type of quiz: mixed (variety), definition, synonym, or antonym.
+   */
+  quiz_mode?: "definition" | "synonym" | "antonym" | "mixed";
 };
 
 /**
@@ -4319,28 +4368,23 @@ export type VocabularyQuizPublic = {
  * question_type: Type of question (definition, synonym, antonym).
  */
 export type VocabularyQuizQuestion = {
-    question_id: string;
-    definition: string;
-    correct_answer: string;
-    options: [
-        string,
-        string,
-        string,
-        string
-    ];
-    audio_url?: (string | null);
-    vocabulary_id: string;
-    cefr_level: string;
-    /**
-     * Type of question: definition, synonym, or antonym.
-     */
-    question_type?: 'definition' | 'synonym' | 'antonym';
+  question_id: string;
+  definition: string;
+  correct_answer: string;
+  options: [string, string, string, string];
+  audio_url?: string | null;
+  vocabulary_id: string;
+  cefr_level: string;
+  /**
+   * Type of question: definition, synonym, or antonym.
+   */
+  question_type?: "definition" | "synonym" | "antonym";
 };
 
 /**
  * Type of question: definition, synonym, or antonym.
  */
-export type question_type2 = 'definition' | 'synonym' | 'antonym';
+export type question_type2 = "definition" | "synonym" | "antonym";
 
 /**
  * Public version of quiz question without the correct answer.
@@ -4357,20 +4401,15 @@ export type question_type2 = 'definition' | 'synonym' | 'antonym';
  * question_type: Type of question (definition, synonym, antonym).
  */
 export type VocabularyQuizQuestionPublic = {
-    question_id: string;
-    definition: string;
-    options: [
-        string,
-        string,
-        string,
-        string
-    ];
-    audio_url?: (string | null);
-    cefr_level: string;
-    /**
-     * Type of question: definition, synonym, or antonym.
-     */
-    question_type?: 'definition' | 'synonym' | 'antonym';
+  question_id: string;
+  definition: string;
+  options: [string, string, string, string];
+  audio_url?: string | null;
+  cefr_level: string;
+  /**
+   * Type of question: definition, synonym, or antonym.
+   */
+  question_type?: "definition" | "synonym" | "antonym";
 };
 
 /**
@@ -4389,13 +4428,13 @@ export type VocabularyQuizQuestionPublic = {
  * submitted_at: When the quiz was submitted.
  */
 export type VocabularyQuizResult = {
-    quiz_id: string;
-    student_id: string;
-    score: number;
-    total: number;
-    percentage: number;
-    question_results: Array<QuestionResult>;
-    submitted_at: string;
+  quiz_id: string;
+  student_id: string;
+  score: number;
+  total: number;
+  percentage: number;
+  question_results: Array<QuestionResult>;
+  submitted_at: string;
 };
 
 /**
@@ -4407,34 +4446,40 @@ export type VocabularyQuizResult = {
  * answers: Dictionary mapping question_id to selected word.
  */
 export type VocabularyQuizSubmission = {
-    /**
-     * Map of question_id to selected answer word.
-     */
-    answers: {
-        [key: string]: (string);
-    };
+  /**
+   * Map of question_id to selected answer word.
+   */
+  answers: {
+    [key: string]: string;
+  };
 };
 
 /**
  * A single vocabulary word for display.
  */
 export type VocabularyWordResponse = {
-    id: string;
-    word: string;
-    translation: string;
-    definition: string;
-    example_sentence: (string | null);
-    cefr_level: string;
-    part_of_speech: (string | null);
-    module_name: string;
-    book_id: number;
-    has_audio?: boolean;
+  id: string;
+  word: string;
+  translation: string;
+  definition: string;
+  example_sentence: string | null;
+  cefr_level: string;
+  part_of_speech: string | null;
+  module_name: string;
+  book_id: number;
+  has_audio?: boolean;
 };
 
 /**
  * Webhook event type enumeration
  */
-export type WebhookEventType = 'book.created' | 'book.updated' | 'book.deleted' | 'publisher.created' | 'publisher.updated' | 'publisher.deleted';
+export type WebhookEventType =
+  | "book.created"
+  | "book.updated"
+  | "book.deleted"
+  | "publisher.created"
+  | "publisher.updated"
+  | "publisher.deleted";
 
 /**
  * Webhook payload schema from Dream Central Storage.
@@ -4445,11 +4490,11 @@ export type WebhookEventType = 'book.created' | 'book.updated' | 'book.deleted' 
  * - publisher.* events: data contains WebhookPublisherData fields
  */
 export type WebhookPayload = {
-    event: WebhookEventType;
-    timestamp: string;
-    data: {
-        [key: string]: unknown;
-    };
+  event: WebhookEventType;
+  timestamp: string;
+  data: {
+    [key: string]: unknown;
+  };
 };
 
 /**
@@ -4467,12 +4512,12 @@ export type WebhookPayload = {
  * created_at: When the activity was generated.
  */
 export type WordBuilderActivity = {
-    activity_id: string;
-    book_id: number;
-    module_ids: Array<(number)>;
-    words: Array<WordBuilderItem>;
-    hint_type: string;
-    created_at: string;
+  activity_id: string;
+  book_id: number;
+  module_ids: Array<number>;
+  words: Array<WordBuilderItem>;
+  hint_type: string;
+  created_at: string;
 };
 
 /**
@@ -4491,13 +4536,13 @@ export type WordBuilderActivity = {
  * word_count: Total number of words.
  */
 export type WordBuilderActivityPublic = {
-    activity_id: string;
-    book_id: number;
-    module_ids: Array<(number)>;
-    words: Array<WordBuilderItemPublic>;
-    hint_type: string;
-    created_at: string;
-    word_count: number;
+  activity_id: string;
+  book_id: number;
+  module_ids: Array<number>;
+  words: Array<WordBuilderItemPublic>;
+  hint_type: string;
+  created_at: string;
+  word_count: number;
 };
 
 /**
@@ -4515,13 +4560,13 @@ export type WordBuilderActivityPublic = {
  * cefr_level: CEFR level of the word.
  */
 export type WordBuilderItem = {
-    item_id: string;
-    correct_word: string;
-    letters: Array<(string)>;
-    definition: string;
-    audio_url?: (string | null);
-    vocabulary_id: string;
-    cefr_level: string;
+  item_id: string;
+  correct_word: string;
+  letters: Array<string>;
+  definition: string;
+  audio_url?: string | null;
+  vocabulary_id: string;
+  cefr_level: string;
 };
 
 /**
@@ -4535,11 +4580,11 @@ export type WordBuilderItem = {
  * letter_count: Number of letters in the word.
  */
 export type WordBuilderItemPublic = {
-    item_id: string;
-    letters: Array<(string)>;
-    definition: string;
-    audio_url?: (string | null);
-    letter_count: number;
+  item_id: string;
+  letters: Array<string>;
+  definition: string;
+  audio_url?: string | null;
+  letter_count: number;
 };
 
 /**
@@ -4553,29 +4598,29 @@ export type WordBuilderItemPublic = {
  * hint_type: Type of hint to show (definition, audio, or both).
  */
 export type WordBuilderRequest = {
-    book_id: number;
-    /**
-     * Specific modules to use. If None, uses all modules.
-     */
-    module_ids?: (Array<(number)> | null);
-    /**
-     * Number of words (1-50).
-     */
-    word_count?: number;
-    /**
-     * Optional CEFR levels to filter (e.g., ['A1', 'A2']).
-     */
-    cefr_levels?: (Array<(string)> | null);
-    /**
-     * Type of hint: definition text, audio pronunciation, or both.
-     */
-    hint_type?: 'definition' | 'audio' | 'both';
+  book_id: number;
+  /**
+   * Specific modules to use. If None, uses all modules.
+   */
+  module_ids?: Array<number> | null;
+  /**
+   * Number of words (1-50).
+   */
+  word_count?: number;
+  /**
+   * Optional CEFR levels to filter (e.g., ['A1', 'A2']).
+   */
+  cefr_levels?: Array<string> | null;
+  /**
+   * Type of hint: definition text, audio pronunciation, or both.
+   */
+  hint_type?: "definition" | "audio" | "both";
 };
 
 /**
  * Type of hint: definition text, audio pronunciation, or both.
  */
-export type hint_type = 'definition' | 'audio' | 'both';
+export type hint_type = "definition" | "audio" | "both";
 
 /**
  * Complete results of a submitted word builder activity.
@@ -4597,17 +4642,17 @@ export type hint_type = 'definition' | 'audio' | 'both';
  * submitted_at: When the activity was submitted.
  */
 export type WordBuilderResult = {
-    activity_id: string;
-    student_id: string;
-    score: number;
-    max_score: number;
-    percentage: number;
-    correct_count: number;
-    total: number;
-    word_results: Array<WordResult>;
-    perfect_words: number;
-    average_attempts: number;
-    submitted_at: string;
+  activity_id: string;
+  student_id: string;
+  score: number;
+  max_score: number;
+  percentage: number;
+  correct_count: number;
+  total: number;
+  word_results: Array<WordResult>;
+  perfect_words: number;
+  average_attempts: number;
+  submitted_at: string;
 };
 
 /**
@@ -4620,28 +4665,28 @@ export type WordBuilderResult = {
  * attempts: Dictionary mapping item_id to number of attempts.
  */
 export type WordBuilderSubmission = {
-    /**
-     * Map of item_id to spelled word string.
-     */
-    answers: {
-        [key: string]: (string);
-    };
-    /**
-     * Map of item_id to attempt count.
-     */
-    attempts?: {
-        [key: string]: (number);
-    };
+  /**
+   * Map of item_id to spelled word string.
+   */
+  answers: {
+    [key: string]: string;
+  };
+  /**
+   * Map of item_id to attempt count.
+   */
+  attempts?: {
+    [key: string]: number;
+  };
 };
 
 /**
  * Common incorrect word pair mappings.
  */
 export type WordMatchingError = {
-    word: string;
-    correct_match: string;
-    common_incorrect_match: string;
-    error_count: number;
+  word: string;
+  correct_match: string;
+  common_incorrect_match: string;
+  error_count: number;
 };
 
 /**
@@ -4658,1865 +4703,1910 @@ export type WordMatchingError = {
  * definition: Definition of the word (for review).
  */
 export type WordResult = {
-    item_id: string;
-    submitted_word: string;
-    correct_word: string;
-    is_correct: boolean;
-    attempts: number;
-    points: number;
-    audio_url?: (string | null);
-    definition: string;
+  item_id: string;
+  submitted_word: string;
+  correct_word: string;
+  is_correct: boolean;
+  attempts: number;
+  points: number;
+  audio_url?: string | null;
+  definition: string;
 };
 
 /**
  * Analysis for word search activity.
  */
 export type WordSearchAnalysis = {
-    word: string;
-    find_rate: number;
-    found_count: number;
-    total_attempts: number;
+  word: string;
+  find_rate: number;
+  found_count: number;
+  total_attempts: number;
 };
 
-export type AdminListPublishersResponse = (Array<PublisherPublic>);
+export type AdminListPublishersResponse = Array<PublisherPublic>;
 
 export type AdminCreateSchoolData = {
-    requestBody: SchoolCreate;
+  requestBody: SchoolCreate;
 };
 
-export type AdminCreateSchoolResponse = (SchoolPublic);
+export type AdminCreateSchoolResponse = SchoolPublic;
 
 export type AdminListSchoolsData = {
-    limit?: number;
-    publisherId?: (string | null);
-    skip?: number;
+  limit?: number;
+  publisherId?: string | null;
+  skip?: number;
 };
 
-export type AdminListSchoolsResponse = (Array<SchoolPublic>);
+export type AdminListSchoolsResponse = Array<SchoolPublic>;
 
 export type AdminListSchoolsPaginatedData = {
-    limit?: number;
-    skip?: number;
-    search?: string | null;
+  limit?: number;
+  skip?: number;
+  search?: string | null;
 };
 
 export type AdminListSchoolsPaginatedResponse = {
-    items: Array<SchoolPublic>;
-    total: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
+  items: Array<SchoolPublic>;
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 };
 
 export type AdminUpdatePublisherData = {
-    publisherId: number;
+  publisherId: number;
 };
 
 export type AdminDeletePublisherData = {
-    publisherId: number;
+  publisherId: number;
 };
 
 export type AdminUploadPublisherLogoData = {
-    formData: Body_admin_upload_publisher_logo;
-    publisherId: string;
+  formData: Body_admin_upload_publisher_logo;
+  publisherId: string;
 };
 
-export type AdminUploadPublisherLogoResponse = (LogoUploadResponse);
+export type AdminUploadPublisherLogoResponse = LogoUploadResponse;
 
 export type AdminDeletePublisherLogoData = {
-    publisherId: string;
+  publisherId: string;
 };
 
-export type AdminDeletePublisherLogoResponse = (void);
+export type AdminDeletePublisherLogoResponse = void;
 
 export type AdminUpdateSchoolData = {
-    requestBody: SchoolUpdate;
-    schoolId: string;
+  requestBody: SchoolUpdate;
+  schoolId: string;
 };
 
-export type AdminUpdateSchoolResponse = (SchoolPublic);
+export type AdminUpdateSchoolResponse = SchoolPublic;
 
 export type AdminDeleteSchoolData = {
-    schoolId: string;
+  schoolId: string;
 };
 
-export type AdminDeleteSchoolResponse = (void);
+export type AdminDeleteSchoolResponse = void;
 
 export type AdminCreateTeacherData = {
-    requestBody: TeacherCreateAPI;
+  requestBody: TeacherCreateAPI;
 };
 
-export type AdminCreateTeacherResponse = (UserCreationResponse);
+export type AdminCreateTeacherResponse = UserCreationResponse;
 
 export type AdminListTeachersData = {
-    limit?: number;
-    schoolId?: (string | null);
-    skip?: number;
+  limit?: number;
+  schoolId?: string | null;
+  skip?: number;
 };
 
-export type AdminListTeachersResponse = (Array<TeacherPublic>);
+export type AdminListTeachersResponse = Array<TeacherPublic>;
 
 export type AdminListTeachersPaginatedData = {
-    limit?: number;
-    skip?: number;
-    search?: string | null;
+  limit?: number;
+  skip?: number;
+  search?: string | null;
 };
 
 export type AdminListTeachersPaginatedResponse = {
-    items: Array<TeacherPublic>;
-    total: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
+  items: Array<TeacherPublic>;
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 };
 
 export type AdminUpdateTeacherData = {
-    requestBody: TeacherUpdate;
-    teacherId: string;
+  requestBody: TeacherUpdate;
+  teacherId: string;
 };
 
-export type AdminUpdateTeacherResponse = (TeacherPublic);
+export type AdminUpdateTeacherResponse = TeacherPublic;
 
 export type AdminDeleteTeacherData = {
-    teacherId: string;
+  teacherId: string;
 };
 
-export type AdminDeleteTeacherResponse = (void);
+export type AdminDeleteTeacherResponse = void;
 
 export type AdminCreateStudentData = {
-    requestBody: StudentCreateAPI;
+  requestBody: StudentCreateAPI;
 };
 
-export type AdminCreateStudentResponse = (UserCreationResponse);
+export type AdminCreateStudentResponse = UserCreationResponse;
 
 export type AdminListStudentsData = {
-    limit?: number;
-    skip?: number;
-    search?: string | null;
+  limit?: number;
+  skip?: number;
+  search?: string | null;
 };
 
 export type AdminListStudentsResponse = {
-    items: Array<StudentPublic>;
-    total: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
+  items: Array<StudentPublic>;
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 };
 
 export type AdminGetStudentPasswordData = {
-    studentId: string;
+  studentId: string;
 };
 
-export type AdminGetStudentPasswordResponse = (StudentPasswordResponse);
+export type AdminGetStudentPasswordResponse = StudentPasswordResponse;
 
 export type AdminSetStudentPasswordData = {
-    requestBody: SetStudentPasswordRequest;
-    studentId: string;
+  requestBody: SetStudentPasswordRequest;
+  studentId: string;
 };
 
-export type AdminSetStudentPasswordResponse = (StudentPasswordResponse);
+export type AdminSetStudentPasswordResponse = StudentPasswordResponse;
 
 export type AdminUpdateStudentData = {
-    requestBody: StudentUpdate;
-    studentId: string;
+  requestBody: StudentUpdate;
+  studentId: string;
 };
 
-export type AdminUpdateStudentResponse = (StudentPublic);
+export type AdminUpdateStudentResponse = StudentPublic;
 
 export type AdminDeleteStudentData = {
-    studentId: string;
+  studentId: string;
 };
 
-export type AdminDeleteStudentResponse = (void);
+export type AdminDeleteStudentResponse = void;
 
 export type AdminBulkDeleteStudentsData = {
-    requestBody: BulkDeleteRequest;
+  requestBody: BulkDeleteRequest;
 };
 
-export type AdminBulkDeleteStudentsResponse = (BulkDeleteResponse);
+export type AdminBulkDeleteStudentsResponse = BulkDeleteResponse;
 
 export type AdminBulkImportPublishersData = {
-    formData: Body_admin_bulk_import_publishers;
+  formData: Body_admin_bulk_import_publishers;
 };
 
-export type AdminBulkImportPublishersResponse = (BulkImportResponse);
+export type AdminBulkImportPublishersResponse = BulkImportResponse;
 
 export type AdminBulkImportTeachersData = {
-    formData: Body_admin_bulk_import_teachers;
+  formData: Body_admin_bulk_import_teachers;
 };
 
-export type AdminBulkImportTeachersResponse = (BulkImportResponse);
+export type AdminBulkImportTeachersResponse = BulkImportResponse;
 
 export type AdminBulkImportStudentsData = {
-    formData: Body_admin_bulk_import_students;
+  formData: Body_admin_bulk_import_students;
 };
 
-export type AdminBulkImportStudentsResponse = (BulkImportResponse);
+export type AdminBulkImportStudentsResponse = BulkImportResponse;
 
-export type AdminGetStatsResponse = (DashboardStats);
+export type AdminGetStatsResponse = DashboardStats;
 
 export type AdminAdminUpdateUserData = {
-    requestBody: UserUpdate;
-    userId: string;
+  requestBody: UserUpdate;
+  userId: string;
 };
 
-export type AdminAdminUpdateUserResponse = (UserPublic);
+export type AdminAdminUpdateUserResponse = UserPublic;
 
 export type AdminResetUserPasswordData = {
-    userId: string;
+  userId: string;
 };
 
-export type AdminResetUserPasswordResponse = (PasswordResetResponse);
+export type AdminResetUserPasswordResponse = PasswordResetResponse;
 
-export type AdminGetCacheStatsResponse = ({
-    [key: string]: unknown;
-});
+export type AdminGetCacheStatsResponse = {
+  [key: string]: unknown;
+};
 
-export type AdminClearCacheResponse = (void);
+export type AdminClearCacheResponse = void;
 
-export type AdminTestDreamStorageConnectionResponse = ({
-    [key: string]: unknown;
-});
+export type AdminTestDreamStorageConnectionResponse = {
+  [key: string]: unknown;
+};
 
 export type AdminRegisterWebhooksManuallyData = {
-    forceRecreate?: boolean;
+  forceRecreate?: boolean;
 };
 
-export type AdminRegisterWebhooksManuallyResponse = ({
-    [key: string]: unknown;
-});
+export type AdminRegisterWebhooksManuallyResponse = {
+  [key: string]: unknown;
+};
 
-export type AdminGetBenchmarkOverviewEndpointResponse = (AdminBenchmarkOverview);
+export type AdminGetBenchmarkOverviewEndpointResponse = AdminBenchmarkOverview;
 
 export type AdminUpdateSchoolBenchmarkSettingsData = {
-    requestBody: BenchmarkSettingsUpdate;
-    schoolId: string;
+  requestBody: BenchmarkSettingsUpdate;
+  schoolId: string;
 };
 
-export type AdminUpdateSchoolBenchmarkSettingsResponse = (BenchmarkSettingsResponse);
+export type AdminUpdateSchoolBenchmarkSettingsResponse =
+  BenchmarkSettingsResponse;
 
 export type AdminUpdatePublisherBenchmarkSettingsData = {
-    publisherId: string;
-    requestBody: BenchmarkSettingsUpdate;
+  publisherId: string;
+  requestBody: BenchmarkSettingsUpdate;
 };
 
-export type AdminUpdatePublisherBenchmarkSettingsResponse = (BenchmarkSettingsResponse);
+export type AdminUpdatePublisherBenchmarkSettingsResponse =
+  BenchmarkSettingsResponse;
 
 export type AdminCreatePublisherAccountData = {
-    requestBody: PublisherAccountCreate;
+  requestBody: PublisherAccountCreate;
 };
 
-export type AdminCreatePublisherAccountResponse = (PublisherAccountCreationResponse);
+export type AdminCreatePublisherAccountResponse =
+  PublisherAccountCreationResponse;
 
 export type AdminListPublisherAccountsData = {
-    limit?: number;
-    skip?: number;
+  limit?: number;
+  skip?: number;
 };
 
-export type AdminListPublisherAccountsResponse = (PublisherAccountListResponse);
+export type AdminListPublisherAccountsResponse = PublisherAccountListResponse;
 
 export type AdminListPublisherAccountsPaginatedData = {
-    limit?: number;
-    skip?: number;
-    search?: string | null;
+  limit?: number;
+  skip?: number;
+  search?: string | null;
 };
 
 export type AdminListPublisherAccountsPaginatedResponse = {
-    items: Array<PublisherAccountPublic>;
-    total: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
+  items: Array<PublisherAccountPublic>;
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 };
 
 export type AdminGetPublisherAccountData = {
-    userId: string;
+  userId: string;
 };
 
-export type AdminGetPublisherAccountResponse = (PublisherAccountPublic);
+export type AdminGetPublisherAccountResponse = PublisherAccountPublic;
 
 export type AdminUpdatePublisherAccountData = {
-    requestBody: PublisherAccountUpdate;
-    userId: string;
+  requestBody: PublisherAccountUpdate;
+  userId: string;
 };
 
-export type AdminUpdatePublisherAccountResponse = (PublisherAccountPublic);
+export type AdminUpdatePublisherAccountResponse = PublisherAccountPublic;
 
 export type AdminDeletePublisherAccountData = {
-    userId: string;
+  userId: string;
 };
 
-export type AdminDeletePublisherAccountResponse = (void);
+export type AdminDeletePublisherAccountResponse = void;
 
 export type ChangePublisherPasswordRequest = {
-    password: string;
+  password: string;
 };
 
 export type AdminChangePublisherPasswordData = {
-    userId: string;
-    requestBody: ChangePublisherPasswordRequest;
+  userId: string;
+  requestBody: ChangePublisherPasswordRequest;
 };
 
-export type AdminChangePublisherPasswordResponse = (ChangePasswordResponse);
+export type AdminChangePublisherPasswordResponse = ChangePasswordResponse;
 
 export type AdminListAllAssignmentsData = {
-    limit?: number;
-    search?: (string | null);
-    skip?: number;
-    status?: (string | null);
-    teacherId?: (string | null);
+  limit?: number;
+  search?: string | null;
+  skip?: number;
+  status?: string | null;
+  teacherId?: string | null;
 };
 
-export type AdminListAllAssignmentsResponse = (AssignmentListResponse);
+export type AdminListAllAssignmentsResponse = AssignmentListResponse;
 
 export type AdminDeleteAssignmentData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AdminDeleteAssignmentResponse = (void);
+export type AdminDeleteAssignmentResponse = void;
 
 export type AiGenerationGetBookAiStatusData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type AiGenerationGetBookAiStatusResponse = (ProcessingMetadata);
+export type AiGenerationGetBookAiStatusResponse = ProcessingMetadata;
 
 export type AiGenerationGetBookAiModulesData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type AiGenerationGetBookAiModulesResponse = (ModuleListResponse);
+export type AiGenerationGetBookAiModulesResponse = ModuleListResponse;
 
 export type AiGenerationGenerateTtsAudioData = {
-    /**
-     * Language code (en, tr, etc.)
-     */
-    lang?: string;
-    /**
-     * Text to convert to speech
-     */
-    text: string;
+  /**
+   * Language code (en, tr, etc.)
+   */
+  lang?: string;
+  /**
+   * Text to convert to speech
+   */
+  text: string;
 };
 
-export type AiGenerationGenerateTtsAudioResponse = (unknown);
+export type AiGenerationGenerateTtsAudioResponse = unknown;
 
 export type AiGenerationStreamVocabularyAudioData = {
-    bookId: number;
-    lang: string;
-    wordId: string;
+  bookId: number;
+  lang: string;
+  wordId: string;
 };
 
-export type AiGenerationStreamVocabularyAudioResponse = (unknown);
+export type AiGenerationStreamVocabularyAudioResponse = unknown;
 
 export type AiGenerationGenerateVocabularyQuizData = {
-    requestBody: VocabularyQuizGenerationRequest;
+  requestBody: VocabularyQuizGenerationRequest;
 };
 
-export type AiGenerationGenerateVocabularyQuizResponse = (VocabularyQuiz);
+export type AiGenerationGenerateVocabularyQuizResponse = VocabularyQuiz;
 
 export type AiGenerationGetVocabularyQuizData = {
-    quizId: string;
+  quizId: string;
 };
 
-export type AiGenerationGetVocabularyQuizResponse = (VocabularyQuizPublic);
+export type AiGenerationGetVocabularyQuizResponse = VocabularyQuizPublic;
 
 export type AiGenerationSubmitVocabularyQuizData = {
-    quizId: string;
-    requestBody: VocabularyQuizSubmission;
+  quizId: string;
+  requestBody: VocabularyQuizSubmission;
 };
 
-export type AiGenerationSubmitVocabularyQuizResponse = (VocabularyQuizResult);
+export type AiGenerationSubmitVocabularyQuizResponse = VocabularyQuizResult;
 
 export type AiGenerationGetVocabularyQuizResultData = {
-    quizId: string;
+  quizId: string;
 };
 
-export type AiGenerationGetVocabularyQuizResultResponse = (VocabularyQuizResult);
+export type AiGenerationGetVocabularyQuizResultResponse = VocabularyQuizResult;
 
 export type AiGenerationDebugQuizRequestData = {
-    requestBody: {
-        [key: string]: unknown;
-    };
+  requestBody: {
+    [key: string]: unknown;
+  };
 };
 
-export type AiGenerationDebugQuizRequestResponse = ({
-    [key: string]: unknown;
-});
+export type AiGenerationDebugQuizRequestResponse = {
+  [key: string]: unknown;
+};
 
 export type AiGenerationGenerateAiQuizData = {
-    requestBody: AIQuizGenerationRequest;
+  requestBody: AIQuizGenerationRequest;
 };
 
-export type AiGenerationGenerateAiQuizResponse = (AIQuiz);
+export type AiGenerationGenerateAiQuizResponse = AIQuiz;
 
 export type AiGenerationGetAiQuizData = {
-    quizId: string;
+  quizId: string;
 };
 
-export type AiGenerationGetAiQuizResponse = (AIQuizPublic);
+export type AiGenerationGetAiQuizResponse = AIQuizPublic;
 
 export type AiGenerationSubmitAiQuizData = {
-    quizId: string;
-    requestBody: AIQuizSubmission;
+  quizId: string;
+  requestBody: AIQuizSubmission;
 };
 
-export type AiGenerationSubmitAiQuizResponse = (AIQuizResult);
+export type AiGenerationSubmitAiQuizResponse = AIQuizResult;
 
 export type AiGenerationGetAiQuizResultData = {
-    quizId: string;
+  quizId: string;
 };
 
-export type AiGenerationGetAiQuizResultResponse = (AIQuizResult);
+export type AiGenerationGetAiQuizResultResponse = AIQuizResult;
 
 export type AiGenerationGenerateReadingActivityData = {
-    requestBody: ReadingComprehensionRequest;
+  requestBody: ReadingComprehensionRequest;
 };
 
-export type AiGenerationGenerateReadingActivityResponse = (ReadingComprehensionActivity);
+export type AiGenerationGenerateReadingActivityResponse =
+  ReadingComprehensionActivity;
 
 export type AiGenerationGetReadingActivityData = {
-    activityId: string;
+  activityId: string;
 };
 
-export type AiGenerationGetReadingActivityResponse = (ReadingComprehensionActivityPublic);
+export type AiGenerationGetReadingActivityResponse =
+  ReadingComprehensionActivityPublic;
 
 export type AiGenerationSubmitReadingActivityData = {
-    activityId: string;
-    requestBody: ReadingComprehensionSubmission;
+  activityId: string;
+  requestBody: ReadingComprehensionSubmission;
 };
 
-export type AiGenerationSubmitReadingActivityResponse = (ReadingComprehensionResult);
+export type AiGenerationSubmitReadingActivityResponse =
+  ReadingComprehensionResult;
 
 export type AiGenerationGetReadingResultData = {
-    activityId: string;
+  activityId: string;
 };
 
-export type AiGenerationGetReadingResultResponse = (ReadingComprehensionResult);
+export type AiGenerationGetReadingResultResponse = ReadingComprehensionResult;
 
 export type AiGenerationGenerateSentenceActivityData = {
-    requestBody: SentenceBuilderRequest;
+  requestBody: SentenceBuilderRequest;
 };
 
-export type AiGenerationGenerateSentenceActivityResponse = (SentenceBuilderActivity);
+export type AiGenerationGenerateSentenceActivityResponse =
+  SentenceBuilderActivity;
 
 export type AiGenerationGetSentenceActivityData = {
-    activityId: string;
+  activityId: string;
 };
 
-export type AiGenerationGetSentenceActivityResponse = (SentenceBuilderActivityPublic);
+export type AiGenerationGetSentenceActivityResponse =
+  SentenceBuilderActivityPublic;
 
 export type AiGenerationSubmitSentenceActivityData = {
-    activityId: string;
-    requestBody: SentenceBuilderSubmission;
+  activityId: string;
+  requestBody: SentenceBuilderSubmission;
 };
 
-export type AiGenerationSubmitSentenceActivityResponse = (SentenceBuilderResult);
+export type AiGenerationSubmitSentenceActivityResponse = SentenceBuilderResult;
 
 export type AiGenerationGetSentenceResultData = {
-    activityId: string;
+  activityId: string;
 };
 
-export type AiGenerationGetSentenceResultResponse = (SentenceBuilderResult);
+export type AiGenerationGetSentenceResultResponse = SentenceBuilderResult;
 
 export type AiGenerationGenerateWordBuilderActivityData = {
-    requestBody: WordBuilderRequest;
+  requestBody: WordBuilderRequest;
 };
 
-export type AiGenerationGenerateWordBuilderActivityResponse = (WordBuilderActivity);
+export type AiGenerationGenerateWordBuilderActivityResponse =
+  WordBuilderActivity;
 
 export type AiGenerationGetWordBuilderActivityData = {
-    activityId: string;
+  activityId: string;
 };
 
-export type AiGenerationGetWordBuilderActivityResponse = (WordBuilderActivityPublic);
+export type AiGenerationGetWordBuilderActivityResponse =
+  WordBuilderActivityPublic;
 
 export type AiGenerationSubmitWordBuilderActivityData = {
-    activityId: string;
-    requestBody: WordBuilderSubmission;
+  activityId: string;
+  requestBody: WordBuilderSubmission;
 };
 
-export type AiGenerationSubmitWordBuilderActivityResponse = (WordBuilderResult);
+export type AiGenerationSubmitWordBuilderActivityResponse = WordBuilderResult;
 
 export type AiGenerationGetWordBuilderResultData = {
-    activityId: string;
+  activityId: string;
 };
 
-export type AiGenerationGetWordBuilderResultResponse = (WordBuilderResult);
+export type AiGenerationGetWordBuilderResultResponse = WordBuilderResult;
 
 export type AiGenerationRegenerateQuizQuestionData = {
-    requestBody: RegenerateQuestionRequest;
+  requestBody: RegenerateQuestionRequest;
 };
 
-export type AiGenerationRegenerateQuizQuestionResponse = (AIQuizQuestion);
+export type AiGenerationRegenerateQuizQuestionResponse = AIQuizQuestion;
 
 export type AiGenerationSaveContentToLibraryData = {
-    requestBody: SaveToLibraryRequest;
+  requestBody: SaveToLibraryRequest;
 };
 
-export type AiGenerationSaveContentToLibraryResponse = (SaveToLibraryResponse);
+export type AiGenerationSaveContentToLibraryResponse = SaveToLibraryResponse;
 
 export type AiGenerationCreateAssignmentFromContentData = {
-    requestBody: CreateAssignmentRequest;
+  requestBody: CreateAssignmentRequest;
 };
 
-export type AiGenerationCreateAssignmentFromContentResponse = ({
-    [key: string]: unknown;
-});
+export type AiGenerationCreateAssignmentFromContentResponse = {
+  [key: string]: unknown;
+};
 
 export type AiGenerationListLibraryContentData = {
-    /**
-     * Filter by activity type
-     */
-    activityType?: (string | null);
-    /**
-     * Filter by book ID
-     */
-    bookId?: (number | null);
-    /**
-     * Filter by creation date (from)
-     */
-    dateFrom?: (string | null);
-    /**
-     * Filter by creation date (to)
-     */
-    dateTo?: (string | null);
-    /**
-     * Page number
-     */
-    page?: number;
-    /**
-     * Items per page
-     */
-    pageSize?: number;
-    /**
-     * Filter by source type (book/material)
-     */
-    sourceType?: (string | null);
+  /**
+   * Filter by activity type
+   */
+  activityType?: string | null;
+  /**
+   * Filter by book ID
+   */
+  bookId?: number | null;
+  /**
+   * Filter by creation date (from)
+   */
+  dateFrom?: string | null;
+  /**
+   * Filter by creation date (to)
+   */
+  dateTo?: string | null;
+  /**
+   * Page number
+   */
+  page?: number;
+  /**
+   * Items per page
+   */
+  pageSize?: number;
+  /**
+   * Filter by source type (book/material)
+   */
+  sourceType?: string | null;
 };
 
-export type AiGenerationListLibraryContentResponse = (LibraryResponse);
+export type AiGenerationListLibraryContentResponse = LibraryResponse;
 
 export type AiGenerationGetLibraryContentDetailData = {
-    contentId: string;
+  contentId: string;
 };
 
-export type AiGenerationGetLibraryContentDetailResponse = (ContentItemDetail);
+export type AiGenerationGetLibraryContentDetailResponse = ContentItemDetail;
 
 export type AiGenerationDeleteLibraryContentData = {
-    contentId: string;
+  contentId: string;
 };
 
-export type AiGenerationDeleteLibraryContentResponse = (DeleteContentResponse);
+export type AiGenerationDeleteLibraryContentResponse = DeleteContentResponse;
 
 export type AiGenerationUpdateLibraryContentData = {
-    contentId: string;
-    requestBody: UpdateContentRequest;
+  contentId: string;
+  requestBody: UpdateContentRequest;
 };
 
-export type AiGenerationUpdateLibraryContentResponse = (UpdateContentResponse);
+export type AiGenerationUpdateLibraryContentResponse = UpdateContentResponse;
 
 export type AiGenerationAssignLibraryContentData = {
-    contentId: string;
-    requestBody: AssignContentRequest;
+  contentId: string;
+  requestBody: AssignContentRequest;
 };
 
-export type AiGenerationAssignLibraryContentResponse = (AssignContentResponse);
+export type AiGenerationAssignLibraryContentResponse = AssignContentResponse;
 
-export type AiUsageGetMyUsageResponse = (unknown);
+export type AiUsageGetMyUsageResponse = unknown;
 
 export type AiUsageGetUsageSummaryData = {
-    /**
-     * Start date (ISO 8601)
-     */
-    fromDate?: (string | null);
-    /**
-     * End date (ISO 8601)
-     */
-    toDate?: (string | null);
+  /**
+   * Start date (ISO 8601)
+   */
+  fromDate?: string | null;
+  /**
+   * End date (ISO 8601)
+   */
+  toDate?: string | null;
 };
 
-export type AiUsageGetUsageSummaryResponse = (unknown);
+export type AiUsageGetUsageSummaryResponse = unknown;
 
 export type AiUsageGetUsageByTypeData = {
-    /**
-     * Start date (ISO 8601)
-     */
-    fromDate?: (string | null);
-    /**
-     * End date (ISO 8601)
-     */
-    toDate?: (string | null);
+  /**
+   * Start date (ISO 8601)
+   */
+  fromDate?: string | null;
+  /**
+   * End date (ISO 8601)
+   */
+  toDate?: string | null;
 };
 
-export type AiUsageGetUsageByTypeResponse = (unknown);
+export type AiUsageGetUsageByTypeResponse = unknown;
 
 export type AiUsageGetUsageByTeacherData = {
-    /**
-     * Start date (ISO 8601)
-     */
-    fromDate?: (string | null);
-    /**
-     * Max teachers to return
-     */
-    limit?: number;
-    /**
-     * End date (ISO 8601)
-     */
-    toDate?: (string | null);
+  /**
+   * Start date (ISO 8601)
+   */
+  fromDate?: string | null;
+  /**
+   * Max teachers to return
+   */
+  limit?: number;
+  /**
+   * End date (ISO 8601)
+   */
+  toDate?: string | null;
 };
 
-export type AiUsageGetUsageByTeacherResponse = (unknown);
+export type AiUsageGetUsageByTeacherResponse = unknown;
 
 export type AiUsageGetUsageByProviderData = {
-    /**
-     * Start date (ISO 8601)
-     */
-    fromDate?: (string | null);
-    /**
-     * End date (ISO 8601)
-     */
-    toDate?: (string | null);
+  /**
+   * Start date (ISO 8601)
+   */
+  fromDate?: string | null;
+  /**
+   * End date (ISO 8601)
+   */
+  toDate?: string | null;
 };
 
-export type AiUsageGetUsageByProviderResponse = (unknown);
+export type AiUsageGetUsageByProviderResponse = unknown;
 
 export type AiUsageGetErrorsData = {
-    /**
-     * Start date (ISO 8601)
-     */
-    fromDate?: (string | null);
-    /**
-     * Max errors to return
-     */
-    limit?: number;
-    /**
-     * End date (ISO 8601)
-     */
-    toDate?: (string | null);
+  /**
+   * Start date (ISO 8601)
+   */
+  fromDate?: string | null;
+  /**
+   * Max errors to return
+   */
+  limit?: number;
+  /**
+   * End date (ISO 8601)
+   */
+  toDate?: string | null;
 };
 
-export type AiUsageGetErrorsResponse = (unknown);
+export type AiUsageGetErrorsResponse = unknown;
 
 export type AiUsageExportUsageDataData = {
-    /**
-     * Start date (ISO 8601)
-     */
-    fromDate?: (string | null);
-    /**
-     * End date (ISO 8601)
-     */
-    toDate?: (string | null);
+  /**
+   * Start date (ISO 8601)
+   */
+  fromDate?: string | null;
+  /**
+   * End date (ISO 8601)
+   */
+  toDate?: string | null;
 };
 
-export type AiUsageExportUsageDataResponse = (unknown);
+export type AiUsageExportUsageDataResponse = unknown;
 
 export type AnnouncementsGetMyAnnouncementsData = {
-    /**
-     * Filter by read status
-     */
-    filter?: string;
-    /**
-     * Maximum records to return
-     */
-    limit?: number;
-    /**
-     * Number of records to skip
-     */
-    offset?: number;
+  /**
+   * Filter by read status
+   */
+  filter?: string;
+  /**
+   * Maximum records to return
+   */
+  limit?: number;
+  /**
+   * Number of records to skip
+   */
+  offset?: number;
 };
 
-export type AnnouncementsGetMyAnnouncementsResponse = (StudentAnnouncementListResponse);
+export type AnnouncementsGetMyAnnouncementsResponse =
+  StudentAnnouncementListResponse;
 
 export type AnnouncementsCreateAnnouncementData = {
-    requestBody: AnnouncementCreate;
+  requestBody: AnnouncementCreate;
 };
 
-export type AnnouncementsCreateAnnouncementResponse = (AnnouncementPublic);
+export type AnnouncementsCreateAnnouncementResponse = AnnouncementPublic;
 
 export type AnnouncementsGetTeacherAnnouncementsData = {
-    /**
-     * Maximum records to return
-     */
-    limit?: number;
-    /**
-     * Number of records to skip
-     */
-    skip?: number;
+  /**
+   * Maximum records to return
+   */
+  limit?: number;
+  /**
+   * Number of records to skip
+   */
+  skip?: number;
 };
 
-export type AnnouncementsGetTeacherAnnouncementsResponse = (AnnouncementListResponse);
+export type AnnouncementsGetTeacherAnnouncementsResponse =
+  AnnouncementListResponse;
 
 export type AnnouncementsGetAnnouncementDetailData = {
-    announcementId: string;
+  announcementId: string;
 };
 
-export type AnnouncementsGetAnnouncementDetailResponse = (AnnouncementDetail);
+export type AnnouncementsGetAnnouncementDetailResponse = AnnouncementDetail;
 
 export type AnnouncementsUpdateAnnouncementData = {
-    announcementId: string;
-    requestBody: AnnouncementUpdate;
+  announcementId: string;
+  requestBody: AnnouncementUpdate;
 };
 
-export type AnnouncementsUpdateAnnouncementResponse = (AnnouncementPublic);
+export type AnnouncementsUpdateAnnouncementResponse = AnnouncementPublic;
 
 export type AnnouncementsDeleteAnnouncementData = {
-    announcementId: string;
+  announcementId: string;
 };
 
-export type AnnouncementsDeleteAnnouncementResponse = (void);
+export type AnnouncementsDeleteAnnouncementResponse = void;
 
 export type AnnouncementsGetAnnouncementAsStudentData = {
-    announcementId: string;
+  announcementId: string;
 };
 
-export type AnnouncementsGetAnnouncementAsStudentResponse = (StudentAnnouncementPublic);
+export type AnnouncementsGetAnnouncementAsStudentResponse =
+  StudentAnnouncementPublic;
 
 export type AnnouncementsMarkAnnouncementAsReadData = {
-    announcementId: string;
+  announcementId: string;
 };
 
-export type AnnouncementsMarkAnnouncementAsReadResponse = (AnnouncementReadResponse);
+export type AnnouncementsMarkAnnouncementAsReadResponse =
+  AnnouncementReadResponse;
 
-export type AssignmentsListAssignmentsResponse = (Array<AssignmentListItem>);
+export type AssignmentsListAssignmentsResponse = Array<AssignmentListItem>;
 
 export type AssignmentsCreateAssignmentData = {
-    requestBody: AssignmentCreate;
+  requestBody: AssignmentCreate;
 };
 
-export type AssignmentsCreateAssignmentResponse = (AssignmentResponse);
+export type AssignmentsCreateAssignmentResponse = AssignmentResponse;
 
-export type AssignmentsListAllAssignmentsAdminResponse = (Array<AssignmentListItem>);
+export type AssignmentsListAllAssignmentsAdminResponse =
+  Array<AssignmentListItem>;
 
 export type AssignmentsGetCalendarAssignmentsData = {
-    /**
-     * Filter by book ID (DCS book ID)
-     */
-    bookId?: (number | null);
-    /**
-     * Filter by class ID
-     */
-    classId?: (string | null);
-    /**
-     * End date for range (inclusive)
-     */
-    endDate: string;
-    /**
-     * Start date for range (inclusive)
-     */
-    startDate: string;
-    /**
-     * Filter by status
-     */
-    status?: (AssignmentPublishStatus | null);
+  /**
+   * Filter by book ID (DCS book ID)
+   */
+  bookId?: number | null;
+  /**
+   * Filter by class ID
+   */
+  classId?: string | null;
+  /**
+   * End date for range (inclusive)
+   */
+  endDate: string;
+  /**
+   * Start date for range (inclusive)
+   */
+  startDate: string;
+  /**
+   * Filter by status
+   */
+  status?: AssignmentPublishStatus | null;
 };
 
-export type AssignmentsGetCalendarAssignmentsResponse = (CalendarAssignmentsResponse);
+export type AssignmentsGetCalendarAssignmentsResponse =
+  CalendarAssignmentsResponse;
 
 export type AssignmentsCreateBulkAssignmentsData = {
-    requestBody: AssignmentCreate;
+  requestBody: AssignmentCreate;
 };
 
-export type AssignmentsCreateBulkAssignmentsResponse = (BulkAssignmentCreateResponse);
+export type AssignmentsCreateBulkAssignmentsResponse =
+  BulkAssignmentCreateResponse;
 
 export type AssignmentsUpdateAssignmentData = {
-    assignmentId: string;
-    requestBody: AssignmentUpdate;
+  assignmentId: string;
+  requestBody: AssignmentUpdate;
 };
 
-export type AssignmentsUpdateAssignmentResponse = (AssignmentResponse);
+export type AssignmentsUpdateAssignmentResponse = AssignmentResponse;
 
 export type AssignmentsDeleteAssignmentData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AssignmentsDeleteAssignmentResponse = (void);
+export type AssignmentsDeleteAssignmentResponse = void;
 
 export type AssignmentsAttachMaterialToAssignmentData = {
-    assignmentId: string;
-    materialId: string;
+  assignmentId: string;
+  materialId: string;
 };
 
-export type AssignmentsAttachMaterialToAssignmentResponse = ({
-    [key: string]: (string);
-});
+export type AssignmentsAttachMaterialToAssignmentResponse = {
+  [key: string]: string;
+};
 
 export type AssignmentsStartAssignmentData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AssignmentsStartAssignmentResponse = (ActivityStartResponse);
+export type AssignmentsStartAssignmentResponse = ActivityStartResponse;
 
 export type AssignmentsStartMultiActivityAssignmentData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AssignmentsStartMultiActivityAssignmentResponse = (MultiActivityStartResponse);
+export type AssignmentsStartMultiActivityAssignmentResponse =
+  MultiActivityStartResponse;
 
 export type AssignmentsDownloadAssignmentMaterialData = {
-    assignmentId: string;
-    materialId: string;
-    range?: (string | null);
-    token?: (string | null);
+  assignmentId: string;
+  materialId: string;
+  range?: string | null;
+  token?: string | null;
 };
 
-export type AssignmentsDownloadAssignmentMaterialResponse = (unknown);
+export type AssignmentsDownloadAssignmentMaterialResponse = unknown;
 
 export type AssignmentsSaveActivityProgressData = {
-    activityId: string;
-    assignmentId: string;
-    requestBody: ActivityProgressSaveRequest;
+  activityId: string;
+  assignmentId: string;
+  requestBody: ActivityProgressSaveRequest;
 };
 
-export type AssignmentsSaveActivityProgressResponse = (ActivityProgressSaveResponse);
+export type AssignmentsSaveActivityProgressResponse =
+  ActivityProgressSaveResponse;
 
 export type AssignmentsSubmitMultiActivityAssignmentData = {
-    assignmentId: string;
-    requestBody: MultiActivitySubmitRequest;
+  assignmentId: string;
+  requestBody: MultiActivitySubmitRequest;
 };
 
-export type AssignmentsSubmitMultiActivityAssignmentResponse = (MultiActivitySubmitResponse);
+export type AssignmentsSubmitMultiActivityAssignmentResponse =
+  MultiActivitySubmitResponse;
 
 export type AssignmentsSaveProgressData = {
-    assignmentId: string;
-    requestBody: AssignmentSaveProgressRequest;
+  assignmentId: string;
+  requestBody: AssignmentSaveProgressRequest;
 };
 
-export type AssignmentsSaveProgressResponse = (AssignmentSaveProgressResponse);
+export type AssignmentsSaveProgressResponse = AssignmentSaveProgressResponse;
 
 export type AssignmentsSubmitAssignmentData = {
-    assignmentId: string;
-    requestBody: AssignmentSubmitRequest;
+  assignmentId: string;
+  requestBody: AssignmentSubmitRequest;
 };
 
-export type AssignmentsSubmitAssignmentResponse = (AssignmentSubmissionResponse);
+export type AssignmentsSubmitAssignmentResponse = AssignmentSubmissionResponse;
 
 export type AssignmentsGetAssignmentResultData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AssignmentsGetAssignmentResultResponse = (AssignmentResultDetailResponse);
+export type AssignmentsGetAssignmentResultResponse =
+  AssignmentResultDetailResponse;
 
 export type AssignmentsGetDetailedResultsData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AssignmentsGetDetailedResultsResponse = (AssignmentDetailedResultsResponse);
+export type AssignmentsGetDetailedResultsResponse =
+  AssignmentDetailedResultsResponse;
 
 export type AssignmentsGetStudentAnswersData = {
-    assignmentId: string;
-    studentId: string;
+  assignmentId: string;
+  studentId: string;
 };
 
-export type AssignmentsGetStudentAnswersResponse = (StudentAnswersResponse);
+export type AssignmentsGetStudentAnswersResponse = StudentAnswersResponse;
 
 export type AssignmentsGetMultiActivityAnalyticsData = {
-    assignmentId: string;
-    expandActivityId?: (string | null);
+  assignmentId: string;
+  expandActivityId?: string | null;
 };
 
-export type AssignmentsGetMultiActivityAnalyticsResponse = (MultiActivityAnalyticsResponse);
+export type AssignmentsGetMultiActivityAnalyticsResponse =
+  MultiActivityAnalyticsResponse;
 
 export type AssignmentsGetStudentAssignmentResultData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AssignmentsGetStudentAssignmentResultResponse = (StudentAssignmentResultResponse);
+export type AssignmentsGetStudentAssignmentResultResponse =
+  StudentAssignmentResultResponse;
 
 export type AssignmentsCreateOrUpdateFeedbackData = {
-    assignmentId: string;
-    requestBody: FeedbackCreate;
-    studentId: string;
+  assignmentId: string;
+  requestBody: FeedbackCreate;
+  studentId: string;
 };
 
-export type AssignmentsCreateOrUpdateFeedbackResponse = (FeedbackPublic);
+export type AssignmentsCreateOrUpdateFeedbackResponse = FeedbackPublic;
 
 export type AssignmentsGetFeedbackData = {
-    assignmentId: string;
-    studentId: string;
+  assignmentId: string;
+  studentId: string;
 };
 
-export type AssignmentsGetFeedbackResponse = ((FeedbackPublic | FeedbackStudentView | null));
+export type AssignmentsGetFeedbackResponse =
+  | FeedbackPublic
+  | FeedbackStudentView
+  | null;
 
 export type AssignmentsGetMyFeedbackData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AssignmentsGetMyFeedbackResponse = ((FeedbackStudentView | null));
+export type AssignmentsGetMyFeedbackResponse = FeedbackStudentView | null;
 
 export type AssignmentsUpdateFeedbackData = {
-    feedbackId: string;
-    requestBody: FeedbackUpdate;
+  feedbackId: string;
+  requestBody: FeedbackUpdate;
 };
 
-export type AssignmentsUpdateFeedbackResponse = (FeedbackPublic);
+export type AssignmentsUpdateFeedbackResponse = FeedbackPublic;
 
 export type AssignmentsPreviewAssignmentData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AssignmentsPreviewAssignmentResponse = (AssignmentPreviewResponse);
+export type AssignmentsPreviewAssignmentResponse = AssignmentPreviewResponse;
 
 export type AssignmentsGetAssignmentForEditData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type AssignmentsGetAssignmentForEditResponse = (AssignmentForEditResponse);
+export type AssignmentsGetAssignmentForEditResponse = AssignmentForEditResponse;
 
 export type AssignmentsPreviewActivityData = {
-    activityId: string;
+  activityId: string;
 };
 
-export type AssignmentsPreviewActivityResponse = (ActivityPreviewResponse);
+export type AssignmentsPreviewActivityResponse = ActivityPreviewResponse;
 
-export type AvatarsGetPredefinedAvatarsResponse = (PredefinedAvatarsResponse);
+export type AvatarsGetPredefinedAvatarsResponse = PredefinedAvatarsResponse;
 
-export type AvatarsRemoveAvatarResponse = (AvatarUpdateResponse);
+export type AvatarsRemoveAvatarResponse = AvatarUpdateResponse;
 
 export type AvatarsSelectPredefinedAvatarData = {
-    requestBody: SelectAvatarRequest;
+  requestBody: SelectAvatarRequest;
 };
 
-export type AvatarsSelectPredefinedAvatarResponse = (UserPublic);
+export type AvatarsSelectPredefinedAvatarResponse = UserPublic;
 
 export type BookAssetsServeBookAssetData = {
-    /**
-     * Relative path to asset (e.g., 'images/M1/p7m5.jpg', 'audio/6a.mp3')
-     */
-    assetPath: string;
-    /**
-     * Book ID
-     */
-    bookId: number;
+  /**
+   * Relative path to asset (e.g., 'images/M1/p7m5.jpg', 'audio/6a.mp3')
+   */
+  assetPath: string;
+  /**
+   * Book ID
+   */
+  bookId: number;
 };
 
-export type BookAssetsServeBookAssetResponse = (unknown);
+export type BookAssetsServeBookAssetResponse = unknown;
 
 export type BookAssetsServePageImageData = {
-    /**
-     * Book ID
-     */
-    bookId: number;
-    /**
-     * Page number
-     */
-    pageNumber: number;
+  /**
+   * Book ID
+   */
+  bookId: number;
+  /**
+   * Page number
+   */
+  pageNumber: number;
 };
 
-export type BookAssetsServePageImageResponse = (unknown);
+export type BookAssetsServePageImageResponse = unknown;
 
 export type BookAssignmentsCreateBookAssignmentData = {
-    requestBody: BookAssignmentCreate;
+  requestBody: BookAssignmentCreate;
 };
 
-export type BookAssignmentsCreateBookAssignmentResponse = (BookAssignmentPublic);
+export type BookAssignmentsCreateBookAssignmentResponse = BookAssignmentPublic;
 
 export type BookAssignmentsListBookAssignmentsData = {
-    bookId?: (string | null);
-    limit?: number;
-    schoolId?: (string | null);
-    skip?: number;
+  bookId?: string | null;
+  limit?: number;
+  schoolId?: string | null;
+  skip?: number;
 };
 
-export type BookAssignmentsListBookAssignmentsResponse = (BookAssignmentListResponse);
+export type BookAssignmentsListBookAssignmentsResponse =
+  BookAssignmentListResponse;
 
 export type BookAssignmentsCreateBulkBookAssignmentsData = {
-    requestBody: BulkBookAssignmentCreate;
+  requestBody: BulkBookAssignmentCreate;
 };
 
-export type BookAssignmentsCreateBulkBookAssignmentsResponse = (Array<BookAssignmentPublic>);
+export type BookAssignmentsCreateBulkBookAssignmentsResponse =
+  Array<BookAssignmentPublic>;
 
 export type BookAssignmentsDeleteBookAssignmentData = {
-    assignmentId: string;
+  assignmentId: string;
 };
 
-export type BookAssignmentsDeleteBookAssignmentResponse = (void);
+export type BookAssignmentsDeleteBookAssignmentResponse = void;
 
 export type BookAssignmentsGetBookAssignmentsData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type BookAssignmentsGetBookAssignmentsResponse = (Array<BookAssignmentResponse>);
+export type BookAssignmentsGetBookAssignmentsResponse =
+  Array<BookAssignmentResponse>;
 
 export type BookMediaStreamMediaData = {
-    /**
-     * Relative path to media (e.g., 'audio/08.mp3', 'videos/intro.mp4')
-     */
-    assetPath: string;
-    /**
-     * DCS Book ID
-     */
-    bookId: number;
-    range?: (string | null);
-    token?: (string | null);
+  /**
+   * Relative path to media (e.g., 'audio/08.mp3', 'videos/intro.mp4')
+   */
+  assetPath: string;
+  /**
+   * DCS Book ID
+   */
+  bookId: number;
+  range?: string | null;
+  token?: string | null;
 };
 
-export type BookMediaStreamMediaResponse = (unknown);
+export type BookMediaStreamMediaResponse = unknown;
 
 export type BooksGetBookCoverData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type BooksGetBookCoverResponse = (unknown);
+export type BooksGetBookCoverResponse = unknown;
 
 export type BooksListBooksData = {
-    activityType?: (string | null);
-    limit?: number;
-    search?: (string | null);
-    skip?: number;
+  activityType?: string | null;
+  limit?: number;
+  search?: string | null;
+  skip?: number;
 };
 
-export type BooksListBooksResponse = (BookListResponse);
+export type BooksListBooksResponse = BookListResponse;
 
 export type BooksGetBookActivitiesData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type BooksGetBookActivitiesResponse = (Array<ActivityResponse>);
+export type BooksGetBookActivitiesResponse = Array<ActivityResponse>;
 
 export type BooksGetBookPagesData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type BooksGetBookPagesResponse = (BookPagesResponse);
+export type BooksGetBookPagesResponse = BookPagesResponse;
 
 export type BooksGetPageActivitiesData = {
-    bookId: number;
-    moduleName?: (string | null);
-    pageNumber: number;
+  bookId: number;
+  moduleName?: string | null;
+  pageNumber: number;
 };
 
-export type BooksGetPageActivitiesResponse = (Array<PageActivityResponse>);
+export type BooksGetPageActivitiesResponse = Array<PageActivityResponse>;
 
 export type BooksGetBookPagesDetailData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type BooksGetBookPagesDetailResponse = (BookPagesDetailResponse);
+export type BooksGetBookPagesDetailResponse = BookPagesDetailResponse;
 
 export type BooksGetBookStructureData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type BooksGetBookStructureResponse = (BookStructureResponse);
+export type BooksGetBookStructureResponse = BookStructureResponse;
 
 export type BooksListBookVideosData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type BooksListBookVideosResponse = (BookVideosResponse);
+export type BooksListBookVideosResponse = BookVideosResponse;
 
 export type BooksImportBookActivitiesData = {
-    bookId: number;
+  bookId: number;
 };
 
-export type BooksImportBookActivitiesResponse = ({
-    [key: string]: unknown;
-});
+export type BooksImportBookActivitiesResponse = {
+  [key: string]: unknown;
+};
 
 export type ClassesCreateClassData = {
-    requestBody: ClassCreateByTeacher;
+  requestBody: ClassCreateByTeacher;
 };
 
-export type ClassesCreateClassResponse = (ClassResponse);
+export type ClassesCreateClassResponse = ClassResponse;
 
 export type ClassesListClassesData = {
-    limit?: number;
-    skip?: number;
+  limit?: number;
+  skip?: number;
 };
 
-export type ClassesListClassesResponse = (Array<ClassResponse>);
+export type ClassesListClassesResponse = Array<ClassResponse>;
 
 export type ClassesGetClassDetailData = {
-    classId: string;
+  classId: string;
 };
 
-export type ClassesGetClassDetailResponse = (ClassDetailResponse);
+export type ClassesGetClassDetailResponse = ClassDetailResponse;
 
 export type ClassesUpdateClassData = {
-    classId: string;
-    requestBody: ClassUpdate;
+  classId: string;
+  requestBody: ClassUpdate;
 };
 
-export type ClassesUpdateClassResponse = (ClassResponse);
+export type ClassesUpdateClassResponse = ClassResponse;
 
 export type ClassesArchiveClassData = {
-    classId: string;
+  classId: string;
 };
 
-export type ClassesArchiveClassResponse = (void);
+export type ClassesArchiveClassResponse = void;
 
 export type ClassesAddStudentsToClassData = {
-    classId: string;
-    requestBody: ClassStudentAdd;
+  classId: string;
+  requestBody: ClassStudentAdd;
 };
 
-export type ClassesAddStudentsToClassResponse = (unknown);
+export type ClassesAddStudentsToClassResponse = unknown;
 
 export type ClassesRemoveStudentFromClassData = {
-    classId: string;
-    studentId: string;
+  classId: string;
+  studentId: string;
 };
 
-export type ClassesRemoveStudentFromClassResponse = (void);
+export type ClassesRemoveStudentFromClassResponse = void;
 
 export type ClassesGetClassAnalyticsEndpointData = {
-    classId: string;
-    period?: 'weekly' | 'monthly' | 'semester' | 'ytd';
+  classId: string;
+  period?: "weekly" | "monthly" | "semester" | "ytd";
 };
 
-export type ClassesGetClassAnalyticsEndpointResponse = (ClassAnalyticsResponse);
+export type ClassesGetClassAnalyticsEndpointResponse = ClassAnalyticsResponse;
 
 export type ClassesGetClassBenchmarksEndpointData = {
-    classId: string;
-    period?: 'weekly' | 'monthly' | 'semester' | 'all';
+  classId: string;
+  period?: "weekly" | "monthly" | "semester" | "all";
 };
 
-export type ClassesGetClassBenchmarksEndpointResponse = (ClassBenchmarkResponse);
+export type ClassesGetClassBenchmarksEndpointResponse = ClassBenchmarkResponse;
 
-export type DevGetQuickLoginUsersResponse = ({
-    [key: string]: Array<{
-        [key: string]: (string | null);
-    }>;
-});
+export type DevGetQuickLoginUsersResponse = {
+  [key: string]: Array<{
+    [key: string]: string | null;
+  }>;
+};
 
-export type DevResetQuickLoginPasswordsResponse = ({
-    [key: string]: (string | number);
-});
+export type DevResetQuickLoginPasswordsResponse = {
+  [key: string]: string | number;
+};
 
 export type DevInstantLoginData = {
-    username: string;
+  username: string;
 };
 
-export type DevInstantLoginResponse = ({
-    [key: string]: (string);
-});
+export type DevInstantLoginResponse = {
+  [key: string]: string;
+};
 
-export type FeedbackGetFeedbackOptionsResponse = (FeedbackOptionsResponse);
+export type FeedbackGetFeedbackOptionsResponse = FeedbackOptionsResponse;
 
 export type LoginLoginAccessTokenData = {
-    formData: Body_login_login_access_token;
+  formData: Body_login_login_access_token;
 };
 
-export type LoginLoginAccessTokenResponse = (Token);
+export type LoginLoginAccessTokenResponse = Token;
 
-export type LoginTestTokenResponse = (UserPublic);
+export type LoginTestTokenResponse = UserPublic;
 
 export type LoginRecoverPasswordData = {
-    email: string;
+  email: string;
 };
 
-export type LoginRecoverPasswordResponse = (Message);
+export type LoginRecoverPasswordResponse = Message;
 
 export type LoginResetPasswordData = {
-    requestBody: NewPassword;
+  requestBody: NewPassword;
 };
 
-export type LoginResetPasswordResponse = (Message);
+export type LoginResetPasswordResponse = Message;
 
 export type LoginRecoverPasswordHtmlContentData = {
-    email: string;
+  email: string;
 };
 
-export type LoginRecoverPasswordHtmlContentResponse = (string);
+export type LoginRecoverPasswordHtmlContentResponse = string;
 
 export type MessagesSendMessageData = {
-    requestBody: MessageCreate;
+  requestBody: MessageCreate;
 };
 
-export type MessagesSendMessageResponse = (MessagePublic);
+export type MessagesSendMessageResponse = MessagePublic;
 
 export type MessagesGetConversationsData = {
-    /**
-     * Number of conversations to return
-     */
-    limit?: number;
-    /**
-     * Number of conversations to skip
-     */
-    offset?: number;
+  /**
+   * Number of conversations to return
+   */
+  limit?: number;
+  /**
+   * Number of conversations to skip
+   */
+  offset?: number;
 };
 
-export type MessagesGetConversationsResponse = (ConversationListResponse);
+export type MessagesGetConversationsResponse = ConversationListResponse;
 
 export type MessagesGetMessageThreadData = {
-    partnerId: string;
+  partnerId: string;
 };
 
-export type MessagesGetMessageThreadResponse = (MessageThreadResponse);
+export type MessagesGetMessageThreadResponse = MessageThreadResponse;
 
 export type MessagesMarkMessageAsReadData = {
-    messageId: string;
+  messageId: string;
 };
 
-export type MessagesMarkMessageAsReadResponse = (MessageReadResponse);
+export type MessagesMarkMessageAsReadResponse = MessageReadResponse;
 
-export type MessagesGetAllowedRecipientsResponse = (RecipientListResponse);
+export type MessagesGetAllowedRecipientsResponse = RecipientListResponse;
 
-export type MessagesGetUnreadMessagesCountResponse = (UnreadMessagesCountResponse);
+export type MessagesGetUnreadMessagesCountResponse =
+  UnreadMessagesCountResponse;
 
 export type NotificationsGetNotificationsData = {
-    /**
-     * Number of notifications to return
-     */
-    limit?: number;
-    /**
-     * Number of notifications to skip
-     */
-    offset?: number;
-    /**
-     * Filter by notification type
-     */
-    type?: (NotificationType_Input | null);
-    /**
-     * Filter to only unread notifications
-     */
-    unreadOnly?: boolean;
+  /**
+   * Number of notifications to return
+   */
+  limit?: number;
+  /**
+   * Number of notifications to skip
+   */
+  offset?: number;
+  /**
+   * Filter by notification type
+   */
+  type?: NotificationType_Input | null;
+  /**
+   * Filter to only unread notifications
+   */
+  unreadOnly?: boolean;
 };
 
-export type NotificationsGetNotificationsResponse = (NotificationListResponse);
+export type NotificationsGetNotificationsResponse = NotificationListResponse;
 
-export type NotificationsGetUnreadCountResponse = (UnreadCountResponse);
+export type NotificationsGetUnreadCountResponse = UnreadCountResponse;
 
 export type NotificationsMarkNotificationAsReadData = {
-    notificationId: string;
+  notificationId: string;
 };
 
-export type NotificationsMarkNotificationAsReadResponse = (NotificationResponse);
+export type NotificationsMarkNotificationAsReadResponse = NotificationResponse;
 
-export type NotificationsMarkAllNotificationsAsReadResponse = (MarkAllReadResponse);
+export type NotificationsMarkAllNotificationsAsReadResponse =
+  MarkAllReadResponse;
 
-export type NotificationsGetNotificationPreferencesResponse = (NotificationPreferencesListResponse);
+export type NotificationsGetNotificationPreferencesResponse =
+  NotificationPreferencesListResponse;
 
 export type NotificationsUpdateNotificationPreferencesData = {
-    requestBody: NotificationPreferencesBulkUpdate;
+  requestBody: NotificationPreferencesBulkUpdate;
 };
 
-export type NotificationsUpdateNotificationPreferencesResponse = (NotificationPreferencesBulkUpdateResponse);
+export type NotificationsUpdateNotificationPreferencesResponse =
+  NotificationPreferencesBulkUpdateResponse;
 
 export type NotificationsUpdateSinglePreferenceData = {
-    notificationType: NotificationType_Input;
-    requestBody: NotificationPreferenceUpdate;
+  notificationType: NotificationType_Input;
+  requestBody: NotificationPreferenceUpdate;
 };
 
-export type NotificationsUpdateSinglePreferenceResponse = (NotificationPreferenceResponse);
+export type NotificationsUpdateSinglePreferenceResponse =
+  NotificationPreferenceResponse;
 
-export type NotificationsGetMuteStatusResponse = (GlobalMuteStatusResponse);
+export type NotificationsGetMuteStatusResponse = GlobalMuteStatusResponse;
 
 export type NotificationsSetGlobalMuteData = {
-    requestBody: GlobalMuteRequest;
+  requestBody: GlobalMuteRequest;
 };
 
-export type NotificationsSetGlobalMuteResponse = (GlobalMuteResponse);
+export type NotificationsSetGlobalMuteResponse = GlobalMuteResponse;
 
-export type NotificationsCancelGlobalMuteResponse = (void);
+export type NotificationsCancelGlobalMuteResponse = void;
 
 export type PrivateCreateUserData = {
-    requestBody: PrivateUserCreate;
+  requestBody: PrivateUserCreate;
 };
 
-export type PrivateCreateUserResponse = (UserPublic);
+export type PrivateCreateUserResponse = UserPublic;
 
 export type PublishersGetPublisherLogoData = {
-    publisherId: number;
+  publisherId: number;
 };
 
-export type PublishersGetPublisherLogoResponse = (unknown);
+export type PublishersGetPublisherLogoResponse = unknown;
 
-export type PublishersGetMyProfileResponse = (PublisherProfile);
+export type PublishersGetMyProfileResponse = PublisherProfile;
 
-export type PublishersGetMyStatsResponse = (PublisherStats);
+export type PublishersGetMyStatsResponse = PublisherStats;
 
-export type PublishersListMySchoolsResponse = (Array<SchoolWithCounts>);
+export type PublishersListMySchoolsResponse = Array<SchoolWithCounts>;
 
 export type PublishersCreateMySchoolData = {
-    requestBody: SchoolCreateByPublisher;
+  requestBody: SchoolCreateByPublisher;
 };
 
-export type PublishersCreateMySchoolResponse = (SchoolPublic);
+export type PublishersCreateMySchoolResponse = SchoolPublic;
 
-export type PublishersListMyTeachersResponse = (Array<TeacherWithCounts>);
+export type PublishersListMyTeachersResponse = Array<TeacherWithCounts>;
 
 export type PublishersCreateMyTeacherData = {
-    requestBody: TeacherCreateAPI;
+  requestBody: TeacherCreateAPI;
 };
 
-export type PublishersCreateMyTeacherResponse = (UserCreationResponse);
+export type PublishersCreateMyTeacherResponse = UserCreationResponse;
 
-export type PublishersListMyBooksResponse = (Array<BookPublic>);
+export type PublishersListMyBooksResponse = Array<BookPublic>;
 
 export type PublisherStudentItem = {
-    id: string;
-    user_id: string;
-    user_full_name: string;
-    user_email: string | null;
-    user_username: string;
-    grade_level: string | null;
-    school_name: string;
-    classroom_count: number;
-    created_at: string;
+  id: string;
+  user_id: string;
+  user_full_name: string;
+  user_email: string | null;
+  user_username: string;
+  grade_level: string | null;
+  school_name: string;
+  classroom_count: number;
+  created_at: string;
 };
 
 export type PublisherStudentListResponse = {
-    items: Array<PublisherStudentItem>;
-    total: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
+  items: Array<PublisherStudentItem>;
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 };
 
 export type PublishersListMyStudentsData = {
-    skip?: number;
-    limit?: number;
-    search?: string | null;
+  skip?: number;
+  limit?: number;
+  search?: string | null;
 };
 
 export type PublishersListMyStudentsResponse = PublisherStudentListResponse;
 
 export type ReportsGenerateReportData = {
-    requestBody: ReportGenerateRequest;
+  requestBody: ReportGenerateRequest;
 };
 
-export type ReportsGenerateReportResponse = (ReportJobResponse);
+export type ReportsGenerateReportResponse = ReportJobResponse;
 
 export type ReportsCheckReportStatusData = {
-    jobId: string;
+  jobId: string;
 };
 
-export type ReportsCheckReportStatusResponse = (ReportStatusResponse);
+export type ReportsCheckReportStatusResponse = ReportStatusResponse;
 
 export type ReportsPreviewReportData = {
-    jobId: string;
+  jobId: string;
 };
 
-export type ReportsPreviewReportResponse = (unknown);
+export type ReportsPreviewReportResponse = unknown;
 
 export type ReportsDownloadReportData = {
-    jobId: string;
+  jobId: string;
 };
 
-export type ReportsDownloadReportResponse = (unknown);
+export type ReportsDownloadReportResponse = unknown;
 
-export type ReportsListReportHistoryResponse = (ReportHistoryResponse);
+export type ReportsListReportHistoryResponse = ReportHistoryResponse;
 
-export type ReportsListReportTemplatesResponse = (Array<SavedReportTemplate>);
+export type ReportsListReportTemplatesResponse = Array<SavedReportTemplate>;
 
 export type ReportsCreateReportTemplateData = {
-    requestBody: SavedReportTemplateCreate;
+  requestBody: SavedReportTemplateCreate;
 };
 
-export type ReportsCreateReportTemplateResponse = (SavedReportTemplate);
+export type ReportsCreateReportTemplateResponse = SavedReportTemplate;
 
 export type ReportsRemoveReportTemplateData = {
-    templateId: string;
+  templateId: string;
 };
 
-export type ReportsRemoveReportTemplateResponse = (void);
+export type ReportsRemoveReportTemplateResponse = void;
 
 export type ScheduledTasksRunDeadlineRemindersData = {
-    xSchedulerKey?: (string | null);
+  xSchedulerKey?: string | null;
 };
 
-export type ScheduledTasksRunDeadlineRemindersResponse = (DeadlineCheckResponse);
+export type ScheduledTasksRunDeadlineRemindersResponse = DeadlineCheckResponse;
 
 export type ScheduledTasksRunApproachingDeadlinesOnlyData = {
-    xSchedulerKey?: (string | null);
+  xSchedulerKey?: string | null;
 };
 
-export type ScheduledTasksRunApproachingDeadlinesOnlyResponse = (DeadlineCheckResponse);
+export type ScheduledTasksRunApproachingDeadlinesOnlyResponse =
+  DeadlineCheckResponse;
 
 export type ScheduledTasksRunPastDueOnlyData = {
-    xSchedulerKey?: (string | null);
+  xSchedulerKey?: string | null;
 };
 
-export type ScheduledTasksRunPastDueOnlyResponse = (DeadlineCheckResponse);
+export type ScheduledTasksRunPastDueOnlyResponse = DeadlineCheckResponse;
 
 export type ScheduledTasksRunPublishScheduledAssignmentsData = {
-    xSchedulerKey?: (string | null);
+  xSchedulerKey?: string | null;
 };
 
-export type ScheduledTasksRunPublishScheduledAssignmentsResponse = (PublishAssignmentsResponse);
+export type ScheduledTasksRunPublishScheduledAssignmentsResponse =
+  PublishAssignmentsResponse;
 
 export type StudentsGetStudentAssignmentsData = {
-    status?: (string | null);
+  status?: string | null;
 };
 
-export type StudentsGetStudentAssignmentsResponse = (Array<StudentAssignmentResponse>);
+export type StudentsGetStudentAssignmentsResponse =
+  Array<StudentAssignmentResponse>;
 
 export type StudentsGetStudentProgressData = {
-    /**
-     * Time period for progress data
-     */
-    period?: 'this_week' | 'this_month' | 'all_time';
+  /**
+   * Time period for progress data
+   */
+  period?: "this_week" | "this_month" | "all_time";
 };
 
-export type StudentsGetStudentProgressResponse = (StudentProgressResponse);
+export type StudentsGetStudentProgressResponse = StudentProgressResponse;
 
 export type StudentsGetStudentAnalyticsData = {
-    /**
-     * Time period for analytics
-     */
-    period?: '7d' | '30d' | '3m' | 'all';
-    studentId: string;
+  /**
+   * Time period for analytics
+   */
+  period?: "7d" | "30d" | "3m" | "all";
+  studentId: string;
 };
 
-export type StudentsGetStudentAnalyticsResponse = (StudentAnalyticsResponse);
+export type StudentsGetStudentAnalyticsResponse = StudentAnalyticsResponse;
 
-export type StudentsGetMyBadgesResponse = (StudentBadgeCountsResponse);
+export type StudentsGetMyBadgesResponse = StudentBadgeCountsResponse;
 
 export type StudentsGetStudentBadgesData = {
-    studentId: string;
+  studentId: string;
 };
 
-export type StudentsGetStudentBadgesResponse = (StudentBadgeCountsResponse);
+export type StudentsGetStudentBadgesResponse = StudentBadgeCountsResponse;
 
 export type StudentsGetStudentsData = {
-    /**
-     * Maximum number of students to return
-     */
-    limit?: number;
-    /**
-     * Number of students to skip
-     */
-    offset?: number;
+  /**
+   * Maximum number of students to return
+   */
+  limit?: number;
+  /**
+   * Number of students to skip
+   */
+  offset?: number;
 };
 
-export type StudentsGetStudentsResponse = (Array<StudentPublic>);
+export type StudentsGetStudentsResponse = Array<StudentPublic>;
 
-export type StudentsGetUnassignedStudentsResponse = (Array<StudentPublic>);
+export type StudentsGetUnassignedStudentsResponse = Array<StudentPublic>;
 
 export type StudentsGetStudentCalendarAssignmentsData = {
-    /**
-     * End date for range (inclusive)
-     */
-    endDate: string;
-    /**
-     * Start date for range (inclusive)
-     */
-    startDate: string;
+  /**
+   * End date for range (inclusive)
+   */
+  endDate: string;
+  /**
+   * Start date for range (inclusive)
+   */
+  startDate: string;
 };
 
-export type StudentsGetStudentCalendarAssignmentsResponse = (StudentCalendarAssignmentsResponse);
+export type StudentsGetStudentCalendarAssignmentsResponse =
+  StudentCalendarAssignmentsResponse;
 
-export type StudentsGetImportTemplateResponse = (unknown);
+export type StudentsGetImportTemplateResponse = unknown;
 
 export type StudentsValidateImportFileData = {
-    formData: Body_students_validate_import_file;
+  formData: Body_students_validate_import_file;
 };
 
-export type StudentsValidateImportFileResponse = (ImportValidationResponse);
+export type StudentsValidateImportFileResponse = ImportValidationResponse;
 
 export type StudentsExecuteImportData = {
-    /**
-     * Password to apply to all students (Story 28.1)
-     */
-    classPassword?: (string | null);
-    formData: Body_students_execute_import;
-    /**
-     * School ID (required for Admin)
-     */
-    schoolId?: (string | null);
-    /**
-     * Teacher ID (optional for Admin, to assign classrooms)
-     */
-    teacherId?: (string | null);
+  /**
+   * Password to apply to all students (Story 28.1)
+   */
+  classPassword?: string | null;
+  formData: Body_students_execute_import;
+  /**
+   * School ID (required for Admin)
+   */
+  schoolId?: string | null;
+  /**
+   * Teacher ID (optional for Admin, to assign classrooms)
+   */
+  teacherId?: string | null;
 };
 
-export type StudentsExecuteImportResponse = (ImportExecutionResponse);
+export type StudentsExecuteImportResponse = ImportExecutionResponse;
 
 export type StudentsDownloadCredentialsData = {
-    requestBody: CredentialsDownloadRequest;
+  requestBody: CredentialsDownloadRequest;
 };
 
-export type StudentsDownloadCredentialsResponse = (unknown);
+export type StudentsDownloadCredentialsResponse = unknown;
 
 export type SupervisorsListSupervisorsData = {
-    limit?: number;
-    search?: (string | null);
-    skip?: number;
+  limit?: number;
+  search?: string | null;
+  skip?: number;
 };
 
-export type SupervisorsListSupervisorsResponse = (Array<SupervisorPublic>);
+export type SupervisorsListSupervisorsResponse = Array<SupervisorPublic>;
 
 export type SupervisorsListSupervisorsPaginatedData = {
-    limit?: number;
-    skip?: number;
-    search?: string | null;
+  limit?: number;
+  skip?: number;
+  search?: string | null;
 };
 
 export type SupervisorsListSupervisorsPaginatedResponse = {
-    items: Array<SupervisorPublic>;
-    total: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
+  items: Array<SupervisorPublic>;
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 };
 
 export type SupervisorsCreateSupervisorData = {
-    requestBody: SupervisorCreateAPI;
+  requestBody: SupervisorCreateAPI;
 };
 
-export type SupervisorsCreateSupervisorResponse = (SupervisorCreateResponse);
+export type SupervisorsCreateSupervisorResponse = SupervisorCreateResponse;
 
 export type SupervisorsGetSupervisorData = {
-    supervisorId: string;
+  supervisorId: string;
 };
 
-export type SupervisorsGetSupervisorResponse = (SupervisorPublic);
+export type SupervisorsGetSupervisorResponse = SupervisorPublic;
 
 export type SupervisorsUpdateSupervisorData = {
-    requestBody: SupervisorUpdate;
-    supervisorId: string;
+  requestBody: SupervisorUpdate;
+  supervisorId: string;
 };
 
-export type SupervisorsUpdateSupervisorResponse = (SupervisorPublic);
+export type SupervisorsUpdateSupervisorResponse = SupervisorPublic;
 
 export type SupervisorsDeleteSupervisorData = {
-    supervisorId: string;
+  supervisorId: string;
 };
 
-export type SupervisorsDeleteSupervisorResponse = (void);
+export type SupervisorsDeleteSupervisorResponse = void;
 
 export type SupervisorsResetSupervisorPasswordData = {
-    supervisorId: string;
+  supervisorId: string;
 };
 
-export type SupervisorsResetSupervisorPasswordResponse = (PasswordResetResponse);
+export type SupervisorsResetSupervisorPasswordResponse = PasswordResetResponse;
 
 export type TeacherMaterialsUploadMaterialData = {
-    formData: Body_teacher_materials_upload_material;
+  formData: Body_teacher_materials_upload_material;
 };
 
-export type TeacherMaterialsUploadMaterialResponse = (UploadResponse);
+export type TeacherMaterialsUploadMaterialResponse = UploadResponse;
 
 export type TeacherMaterialsCreateTextNoteData = {
-    requestBody: TextNoteCreate;
+  requestBody: TextNoteCreate;
 };
 
-export type TeacherMaterialsCreateTextNoteResponse = (MaterialResponse);
+export type TeacherMaterialsCreateTextNoteResponse = MaterialResponse;
 
 export type TeacherMaterialsUpdateTextNoteData = {
-    materialId: string;
-    requestBody: TextNoteUpdate;
+  materialId: string;
+  requestBody: TextNoteUpdate;
 };
 
-export type TeacherMaterialsUpdateTextNoteResponse = (MaterialResponse);
+export type TeacherMaterialsUpdateTextNoteResponse = MaterialResponse;
 
 export type TeacherMaterialsCreateUrlLinkData = {
-    requestBody: UrlLinkCreate;
+  requestBody: UrlLinkCreate;
 };
 
-export type TeacherMaterialsCreateUrlLinkResponse = (MaterialResponse);
+export type TeacherMaterialsCreateUrlLinkResponse = MaterialResponse;
 
 export type TeacherMaterialsListMaterialsData = {
-    type?: (MaterialType | null);
+  type?: MaterialType | null;
 };
 
-export type TeacherMaterialsListMaterialsResponse = (MaterialListResponse);
+export type TeacherMaterialsListMaterialsResponse = MaterialListResponse;
 
-export type TeacherMaterialsGetQuotaResponse = (StorageQuotaResponse);
+export type TeacherMaterialsGetQuotaResponse = StorageQuotaResponse;
 
 export type TeacherMaterialsGetMaterialData = {
-    materialId: string;
+  materialId: string;
 };
 
-export type TeacherMaterialsGetMaterialResponse = (MaterialResponse);
+export type TeacherMaterialsGetMaterialResponse = MaterialResponse;
 
 export type TeacherMaterialsUpdateMaterialData = {
-    materialId: string;
-    requestBody: MaterialUpdate;
+  materialId: string;
+  requestBody: MaterialUpdate;
 };
 
-export type TeacherMaterialsUpdateMaterialResponse = (MaterialResponse);
+export type TeacherMaterialsUpdateMaterialResponse = MaterialResponse;
 
 export type TeacherMaterialsDeleteMaterialData = {
-    materialId: string;
+  materialId: string;
 };
 
-export type TeacherMaterialsDeleteMaterialResponse = (void);
+export type TeacherMaterialsDeleteMaterialResponse = void;
 
 export type TeacherMaterialsGetPresignedUrlData = {
-    expiresMinutes?: number;
-    materialId: string;
+  expiresMinutes?: number;
+  materialId: string;
 };
 
-export type TeacherMaterialsGetPresignedUrlResponse = (PresignedUrlResponse);
+export type TeacherMaterialsGetPresignedUrlResponse = PresignedUrlResponse;
 
 export type TeacherMaterialsDownloadMaterialData = {
-    materialId: string;
-    token?: (string | null);
+  materialId: string;
+  token?: string | null;
 };
 
-export type TeacherMaterialsDownloadMaterialResponse = (unknown);
+export type TeacherMaterialsDownloadMaterialResponse = unknown;
 
 export type TeacherMaterialsStreamMaterialData = {
-    materialId: string;
-    token?: (string | null);
+  materialId: string;
+  token?: string | null;
 };
 
-export type TeacherMaterialsStreamMaterialResponse = (unknown);
+export type TeacherMaterialsStreamMaterialResponse = unknown;
 
 export type TeacherMaterialsUploadPdfForAiData = {
-    description?: (string | null);
-    formData: Body_teacher_materials_upload_pdf_for_ai;
-    /**
-     * Display name
-     */
-    name: string;
+  description?: string | null;
+  formData: Body_teacher_materials_upload_pdf_for_ai;
+  /**
+   * Display name
+   */
+  name: string;
 };
 
-export type TeacherMaterialsUploadPdfForAiResponse = (TeacherMaterialUploadResponse);
+export type TeacherMaterialsUploadPdfForAiResponse =
+  TeacherMaterialUploadResponse;
 
 export type TeacherMaterialsCreateTextMaterialForAiData = {
-    requestBody: TextMaterialCreate;
+  requestBody: TextMaterialCreate;
 };
 
-export type TeacherMaterialsCreateTextMaterialForAiResponse = (TeacherMaterialUploadResponse);
+export type TeacherMaterialsCreateTextMaterialForAiResponse =
+  TeacherMaterialUploadResponse;
 
-export type TeacherMaterialsListProcessableMaterialsResponse = (TeacherMaterialListResponse);
+export type TeacherMaterialsListProcessableMaterialsResponse =
+  TeacherMaterialListResponse;
 
 export type TeacherMaterialsGetMaterialForAiData = {
-    materialId: string;
+  materialId: string;
 };
 
-export type TeacherMaterialsGetMaterialForAiResponse = (TeacherMaterialResponse);
+export type TeacherMaterialsGetMaterialForAiResponse = TeacherMaterialResponse;
 
 export type TeacherMaterialsListGeneratedContentData = {
-    /**
-     * Filter by activity type
-     */
-    activityType?: (string | null);
+  /**
+   * Filter by activity type
+   */
+  activityType?: string | null;
 };
 
-export type TeacherMaterialsListGeneratedContentResponse = (TeacherGeneratedContentListResponse);
+export type TeacherMaterialsListGeneratedContentResponse =
+  TeacherGeneratedContentListResponse;
 
 export type TeacherMaterialsGetGeneratedContentData = {
-    contentId: string;
+  contentId: string;
 };
 
-export type TeacherMaterialsGetGeneratedContentResponse = (TeacherGeneratedContentResponse);
+export type TeacherMaterialsGetGeneratedContentResponse =
+  TeacherGeneratedContentResponse;
 
 export type TeacherMaterialsDeleteGeneratedContentData = {
-    contentId: string;
+  contentId: string;
 };
 
-export type TeacherMaterialsDeleteGeneratedContentResponse = (void);
+export type TeacherMaterialsDeleteGeneratedContentResponse = void;
 
-export type TeachersListMyStudentsResponse = (Array<StudentPublic>);
+export type TeachersListMyStudentsResponse = Array<StudentPublic>;
 
 export type TeachersCreateStudentData = {
-    requestBody: StudentCreateAPI;
+  requestBody: StudentCreateAPI;
 };
 
-export type TeachersCreateStudentResponse = (UserCreationResponse);
+export type TeachersCreateStudentResponse = UserCreationResponse;
 
 export type TeachersBulkImportStudentsData = {
-    formData: Body_teachers_bulk_import_students;
+  formData: Body_teachers_bulk_import_students;
 };
 
-export type TeachersBulkImportStudentsResponse = (BulkImportResponse);
+export type TeachersBulkImportStudentsResponse = BulkImportResponse;
 
 export type TeachersUpdateStudentData = {
-    requestBody: StudentUpdate;
-    studentId: string;
+  requestBody: StudentUpdate;
+  studentId: string;
 };
 
-export type TeachersUpdateStudentResponse = (StudentPublic);
+export type TeachersUpdateStudentResponse = StudentPublic;
 
 export type TeachersDeleteStudentData = {
-    studentId: string;
+  studentId: string;
 };
 
-export type TeachersDeleteStudentResponse = (unknown);
+export type TeachersDeleteStudentResponse = unknown;
 
 export type TeachersBulkDeleteStudentsData = {
-    requestBody: BulkDeleteRequest;
+  requestBody: BulkDeleteRequest;
 };
 
-export type TeachersBulkDeleteStudentsResponse = (BulkDeleteResponse);
+export type TeachersBulkDeleteStudentsResponse = BulkDeleteResponse;
 
-export type TeachersListMyClassesResponse = (Array<ClassResponse>);
+export type TeachersListMyClassesResponse = Array<ClassResponse>;
 
 export type TeachersCreateClassData = {
-    requestBody: ClassCreateByTeacher;
+  requestBody: ClassCreateByTeacher;
 };
 
-export type TeachersCreateClassResponse = (ClassPublic);
+export type TeachersCreateClassResponse = ClassPublic;
 
 export type TeachersGetClassDetailsData = {
-    classId: string;
+  classId: string;
 };
 
-export type TeachersGetClassDetailsResponse = (ClassPublic);
+export type TeachersGetClassDetailsResponse = ClassPublic;
 
 export type TeachersUpdateClassData = {
-    classId: string;
-    requestBody: ClassUpdate;
+  classId: string;
+  requestBody: ClassUpdate;
 };
 
-export type TeachersUpdateClassResponse = (ClassPublic);
+export type TeachersUpdateClassResponse = ClassPublic;
 
 export type TeachersDeleteClassData = {
-    classId: string;
+  classId: string;
 };
 
-export type TeachersDeleteClassResponse = (void);
+export type TeachersDeleteClassResponse = void;
 
 export type TeachersAddStudentsToClassData = {
-    classId: string;
-    requestBody: Array<(string)>;
+  classId: string;
+  requestBody: Array<string>;
 };
 
-export type TeachersAddStudentsToClassResponse = (unknown);
+export type TeachersAddStudentsToClassResponse = unknown;
 
 export type TeachersGetClassStudentsData = {
-    classId: string;
+  classId: string;
 };
 
-export type TeachersGetClassStudentsResponse = (Array<StudentPublic>);
+export type TeachersGetClassStudentsResponse = Array<StudentPublic>;
 
 export type TeachersRemoveStudentFromClassData = {
-    classId: string;
-    studentId: string;
+  classId: string;
+  studentId: string;
 };
 
-export type TeachersRemoveStudentFromClassResponse = (unknown);
+export type TeachersRemoveStudentFromClassResponse = unknown;
 
 export type TeachersGetStudentsForClassesData = {
-    requestBody: StudentsForClassesRequest;
+  requestBody: StudentsForClassesRequest;
 };
 
-export type TeachersGetStudentsForClassesResponse = (Array<ClassStudentsGroup>);
+export type TeachersGetStudentsForClassesResponse = Array<ClassStudentsGroup>;
 
-export type TeachersGetMyInsightsResponse = (unknown);
+export type TeachersGetMyInsightsResponse = unknown;
 
 export type TeachersGetInsightDetailsData = {
-    insightId: string;
+  insightId: string;
 };
 
-export type TeachersGetInsightDetailsResponse = (unknown);
+export type TeachersGetInsightDetailsResponse = unknown;
 
 export type TeachersDismissInsightEndpointData = {
-    insightId: string;
+  insightId: string;
 };
 
-export type TeachersDismissInsightEndpointResponse = (unknown);
+export type TeachersDismissInsightEndpointResponse = unknown;
 
 export type UsersReadUsersData = {
-    limit?: number;
-    skip?: number;
+  limit?: number;
+  skip?: number;
 };
 
-export type UsersReadUsersResponse = (UsersPublic);
+export type UsersReadUsersResponse = UsersPublic;
 
 export type UsersCreateUserData = {
-    requestBody: UserCreate;
+  requestBody: UserCreate;
 };
 
-export type UsersCreateUserResponse = (UserPublic);
+export type UsersCreateUserResponse = UserPublic;
 
-export type UsersReadUserMeResponse = (UserPublic);
+export type UsersReadUserMeResponse = UserPublic;
 
-export type UsersDeleteUserMeResponse = (Message);
+export type UsersDeleteUserMeResponse = Message;
 
 export type UsersUpdateUserMeData = {
-    requestBody: UserUpdateMe;
+  requestBody: UserUpdateMe;
 };
 
-export type UsersUpdateUserMeResponse = (UserPublic);
+export type UsersUpdateUserMeResponse = UserPublic;
 
 export type UsersUpdatePasswordMeData = {
-    requestBody: UpdatePassword;
+  requestBody: UpdatePassword;
 };
 
-export type UsersUpdatePasswordMeResponse = (Message);
+export type UsersUpdatePasswordMeResponse = Message;
 
 export type UsersChangeInitialPasswordData = {
-    requestBody: ChangeInitialPasswordRequest;
+  requestBody: ChangeInitialPasswordRequest;
 };
 
-export type UsersChangeInitialPasswordResponse = (ChangePasswordResponse);
+export type UsersChangeInitialPasswordResponse = ChangePasswordResponse;
 
-export type UsersCompleteTourResponse = (Message);
+export type UsersCompleteTourResponse = Message;
 
 export type UsersReadUserByIdData = {
-    userId: string;
+  userId: string;
 };
 
-export type UsersReadUserByIdResponse = (UserPublic);
+export type UsersReadUserByIdResponse = UserPublic;
 
 export type UsersUpdateUserData = {
-    requestBody: UserUpdate;
-    userId: string;
+  requestBody: UserUpdate;
+  userId: string;
 };
 
-export type UsersUpdateUserResponse = (UserPublic);
+export type UsersUpdateUserResponse = UserPublic;
 
 export type UsersDeleteUserData = {
-    userId: string;
+  userId: string;
 };
 
-export type UsersDeleteUserResponse = (Message);
+export type UsersDeleteUserResponse = Message;
 
 export type UtilsTestEmailData = {
-    emailTo: string;
+  emailTo: string;
 };
 
-export type UtilsTestEmailResponse = (Message);
+export type UtilsTestEmailResponse = Message;
 
-export type UtilsHealthCheckResponse = ({
-    [key: string]: unknown;
-});
+export type UtilsHealthCheckResponse = {
+  [key: string]: unknown;
+};
 
-export type VocabularyExplorerGetBooksWithVocabularyResponse = (Array<BookWithVocabulary>);
+export type VocabularyExplorerGetBooksWithVocabularyResponse =
+  Array<BookWithVocabulary>;
 
 export type VocabularyExplorerGetVocabularyData = {
-    /**
-     * Book ID to get vocabulary from
-     */
-    bookId: number;
-    /**
-     * CEFR levels, comma-separated
-     */
-    levels?: (string | null);
-    /**
-     * Filter by module ID
-     */
-    moduleId?: (string | null);
-    /**
-     * Page number
-     */
-    page?: number;
-    /**
-     * Items per page
-     */
-    pageSize?: number;
-    /**
-     * Filter by part of speech
-     */
-    partOfSpeech?: (string | null);
-    /**
-     * Search in word/definition
-     */
-    search?: (string | null);
+  /**
+   * Book ID to get vocabulary from
+   */
+  bookId: number;
+  /**
+   * CEFR levels, comma-separated
+   */
+  levels?: string | null;
+  /**
+   * Filter by module ID
+   */
+  moduleId?: string | null;
+  /**
+   * Page number
+   */
+  page?: number;
+  /**
+   * Items per page
+   */
+  pageSize?: number;
+  /**
+   * Filter by part of speech
+   */
+  partOfSpeech?: string | null;
+  /**
+   * Search in word/definition
+   */
+  search?: string | null;
 };
 
-export type VocabularyExplorerGetVocabularyResponse = (VocabularyListResponse);
+export type VocabularyExplorerGetVocabularyResponse = VocabularyListResponse;
 
 export type VocabularyExplorerGetAudioUrlData = {
-    bookId: number;
-    requestBody: AudioUrlRequest;
+  bookId: number;
+  requestBody: AudioUrlRequest;
 };
 
-export type VocabularyExplorerGetAudioUrlResponse = (AudioUrlResponse);
+export type VocabularyExplorerGetAudioUrlResponse = AudioUrlResponse;
 
-export type WebhooksReceiveDreamStorageWebhookResponse = ({
-    [key: string]: unknown;
-});
+export type WebhooksReceiveDreamStorageWebhookResponse = {
+  [key: string]: unknown;
+};
 
 export type WebhooksTestDreamStorageWebhookData = {
-    requestBody: WebhookPayload;
+  requestBody: WebhookPayload;
 };
 
-export type WebhooksTestDreamStorageWebhookResponse = ({
-    [key: string]: unknown;
-});
+export type WebhooksTestDreamStorageWebhookResponse = {
+  [key: string]: unknown;
+};

@@ -13,7 +13,6 @@ from app.schemas.mix_mode import (
     SkillAllocation,
 )
 
-
 # ---------------------------------------------------------------------------
 # Schema Tests
 # ---------------------------------------------------------------------------
@@ -23,7 +22,9 @@ class TestMixModeSchemas:
     """Test mix mode schema validation."""
 
     def test_skill_allocation_defaults(self) -> None:
-        alloc = SkillAllocation(skill_slug="vocabulary", format_slug="multiple_choice", count=3)
+        alloc = SkillAllocation(
+            skill_slug="vocabulary", format_slug="multiple_choice", count=3
+        )
         assert alloc.skill_name == ""
         assert alloc.format_name == ""
 
@@ -42,11 +43,15 @@ class TestMixModeSchemas:
             activity_id="mix-1",
             book_id=1,
             module_ids=[10],
-            skill_distribution={"vocabulary": {"count": 3, "format": "multiple_choice"}},
+            skill_distribution={
+                "vocabulary": {"count": 3, "format": "multiple_choice"}
+            },
             questions=[
                 MixModeQuestion(
-                    question_id="q1", skill_slug="vocabulary",
-                    format_slug="multiple_choice", question_data={},
+                    question_id="q1",
+                    skill_slug="vocabulary",
+                    format_slug="multiple_choice",
+                    question_data={},
                 ),
             ],
             total_questions=1,
@@ -227,7 +232,10 @@ class TestMixModeService:
     def mock_dcs_client(self) -> MagicMock:
         client = MagicMock()
         module_mock = MagicMock()
-        module_mock.text = "Students learn about travel and holidays. They describe their favorite places. " * 20
+        module_mock.text = (
+            "Students learn about travel and holidays. They describe their favorite places. "
+            * 20
+        )
         module_mock.title = "Unit 5: Travel"
         module_mock.topics = ["Travel", "Holidays"]
         module_mock.language = "en"
@@ -238,17 +246,19 @@ class TestMixModeService:
     @pytest.fixture
     def mock_llm_manager(self) -> MagicMock:
         manager = MagicMock()
-        manager.generate_structured = AsyncMock(return_value={
-            "questions": [
-                {
-                    "question_text": f"Question {i}",
-                    "options": ["a", "b", "c", "d"],
-                    "correct_index": 0,
-                    "correct_answer": "a",
-                }
-                for i in range(5)
-            ],
-        })
+        manager.generate_structured = AsyncMock(
+            return_value={
+                "questions": [
+                    {
+                        "question_text": f"Question {i}",
+                        "options": ["a", "b", "c", "d"],
+                        "correct_index": 0,
+                        "correct_answer": "a",
+                    }
+                    for i in range(5)
+                ],
+            }
+        )
         return manager
 
     @pytest.mark.asyncio
@@ -274,7 +284,9 @@ class TestMixModeService:
 
         with patch.object(service, "_generate_skill_questions", side_effect=mock_gen):
             activity = await service.generate_activity(
-                book_id=1, module_ids=[10], total_count=10,
+                book_id=1,
+                module_ids=[10],
+                total_count=10,
             )
 
         assert isinstance(activity, MixModeActivity)
@@ -309,7 +321,9 @@ class TestMixModeService:
 
         with patch.object(service, "_generate_skill_questions", side_effect=mock_gen):
             activity = await service.generate_activity(
-                book_id=1, module_ids=[10], total_count=10,
+                book_id=1,
+                module_ids=[10],
+                total_count=10,
             )
 
         # Should still produce activity with remaining skills
@@ -319,7 +333,10 @@ class TestMixModeService:
     async def test_all_generators_fail_raises(
         self, mock_dcs_client: MagicMock, mock_llm_manager: MagicMock
     ) -> None:
-        from app.services.ai_generation.mix_mode_service import MixModeService, MixModeError
+        from app.services.ai_generation.mix_mode_service import (
+            MixModeError,
+            MixModeService,
+        )
 
         service = MixModeService(mock_dcs_client, mock_llm_manager)
 
@@ -329,14 +346,19 @@ class TestMixModeService:
         with patch.object(service, "_generate_skill_questions", side_effect=mock_gen):
             with pytest.raises(MixModeError, match="No questions could be generated"):
                 await service.generate_activity(
-                    book_id=1, module_ids=[10], total_count=10,
+                    book_id=1,
+                    module_ids=[10],
+                    total_count=10,
                 )
 
     @pytest.mark.asyncio
     async def test_empty_module_raises(
         self, mock_dcs_client: MagicMock, mock_llm_manager: MagicMock
     ) -> None:
-        from app.services.ai_generation.mix_mode_service import MixModeError, MixModeService
+        from app.services.ai_generation.mix_mode_service import (
+            MixModeError,
+            MixModeService,
+        )
 
         module_mock = MagicMock()
         module_mock.text = "   "
@@ -383,12 +405,16 @@ class TestMixModeStorage:
             },
             questions=[
                 MixModeQuestion(
-                    question_id="q1", skill_slug="vocabulary",
-                    format_slug="multiple_choice", question_data={"text": "Q1"},
+                    question_id="q1",
+                    skill_slug="vocabulary",
+                    format_slug="multiple_choice",
+                    question_data={"text": "Q1"},
                 ),
                 MixModeQuestion(
-                    question_id="q2", skill_slug="grammar",
-                    format_slug="fill_blank", question_data={"text": "Q2"},
+                    question_id="q2",
+                    skill_slug="grammar",
+                    format_slug="fill_blank",
+                    question_data={"text": "Q2"},
                 ),
             ],
             total_questions=2,

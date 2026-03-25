@@ -1,40 +1,40 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeft, Loader2, User } from "lucide-react"
-import { MessageForm } from "@/components/messaging/MessageForm"
-import { MessageThread } from "@/components/messaging/MessageThread"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import useAuth from "@/hooks/useAuth"
-import { useMessageThread, useSendMessage } from "@/hooks/useMessages"
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft, Loader2, User } from "lucide-react";
+import { MessageForm } from "@/components/messaging/MessageForm";
+import { MessageThread } from "@/components/messaging/MessageThread";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import useAuth from "@/hooks/useAuth";
+import { useMessageThread, useSendMessage } from "@/hooks/useMessages";
 
 export const Route = createFileRoute("/_layout/messaging/$conversationId")({
   component: ConversationView,
-})
+});
 
 function ConversationView() {
-  const { conversationId } = Route.useParams()
-  const { user } = useAuth()
+  const { conversationId } = Route.useParams();
+  const { user } = useAuth();
 
   // Use real API hooks
   const { messages, participant, isLoading, refetch } =
-    useMessageThread(conversationId)
+    useMessageThread(conversationId);
 
-  const sendMessage = useSendMessage()
+  const sendMessage = useSendMessage();
 
   // Handle sending new message
   const handleSendMessage = async (messageBody: string) => {
-    if (!conversationId) return
+    if (!conversationId) return;
 
     try {
       await sendMessage.sendMessageAsync({
         recipient_id: conversationId,
         body: messageBody,
-      })
-      refetch()
+      });
+      refetch();
     } catch (error) {
-      console.error("Error sending message:", error)
+      console.error("Error sending message:", error);
     }
-  }
+  };
 
   // Get initials from name
   const getInitials = (name: string): string => {
@@ -43,15 +43,15 @@ function ConversationView() {
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
       </div>
-    )
+    );
   }
 
   if (!participant) {
@@ -72,7 +72,7 @@ function ConversationView() {
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -139,5 +139,5 @@ function ConversationView() {
         </div>
       </div>
     </div>
-  )
+  );
 }

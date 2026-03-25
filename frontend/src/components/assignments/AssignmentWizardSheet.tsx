@@ -5,20 +5,16 @@
  * and a drag-handle bar. Close is only possible via the wizard's internal Cancel button.
  */
 
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-} from "@/components/ui/sheet"
-import { AssignmentWizardContent } from "./AssignmentWizardPage"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { AssignmentWizardContent } from "./AssignmentWizardPage";
 
 export interface AssignmentWizardSheetProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  mode: "create" | "edit"
-  prefilledPublishDate?: string | null
-  preSelectedContentId?: string | null
-  assignmentId?: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  mode: "create" | "edit";
+  prefilledPublishDate?: string | null;
+  preSelectedContentId?: string | null;
+  assignmentId?: string;
 }
 
 export function AssignmentWizardSheet({
@@ -60,5 +56,5 @@ export function AssignmentWizardSheet({
         </div>
       </SheetContent>
     </Sheet>
-  )
+  );
 }

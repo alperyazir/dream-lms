@@ -5,47 +5,47 @@
  * through the LMS proxy endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 
 /**
  * Processing metadata for a book
  */
 export interface ProcessingMetadata {
-  book_id: string
+  book_id: string;
   processing_status:
     | "pending"
     | "processing"
     | "completed"
     | "partial"
-    | "failed"
-  total_pages: number
-  total_modules: number
-  total_vocabulary: number
-  total_audio_files: number
-  languages: string[]
-  primary_language: string
-  difficulty_range: string[]
-  stages?: Record<string, unknown>
+    | "failed";
+  total_pages: number;
+  total_modules: number;
+  total_vocabulary: number;
+  total_audio_files: number;
+  languages: string[];
+  primary_language: string;
+  difficulty_range: string[];
+  stages?: Record<string, unknown>;
 }
 
 /**
  * Module summary from DCS AI data
  */
 export interface AIModuleSummary {
-  module_id: number
-  title: string
-  pages: number[]
-  word_count: number
+  module_id: number;
+  title: string;
+  pages: number[];
+  word_count: number;
 }
 
 /**
  * Response containing list of AI modules
  */
 export interface AIModuleListResponse {
-  book_id: string
-  total_modules: number
-  modules: AIModuleSummary[]
+  book_id: string;
+  total_modules: number;
+  modules: AIModuleSummary[];
 }
 
 /**
@@ -55,15 +55,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -78,14 +78,14 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
 
-  return config
-})
+  return config;
+});
 
 /**
  * Get AI processing status for a book
@@ -98,8 +98,8 @@ export async function getBookAIStatus(
 ): Promise<ProcessingMetadata> {
   const response = await apiClient.get<ProcessingMetadata>(
     `/api/v1/ai/books/${bookId}/status`,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -116,8 +116,8 @@ export async function getBookAIModules(
 ): Promise<AIModuleListResponse> {
   const response = await apiClient.get<AIModuleListResponse>(
     `/api/v1/ai/books/${bookId}/modules`,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -128,9 +128,9 @@ export async function getBookAIModules(
  */
 export async function isBookAIReady(bookId: number): Promise<boolean> {
   try {
-    const status = await getBookAIStatus(bookId)
-    return status.processing_status === "completed"
+    const status = await getBookAIStatus(bookId);
+    return status.processing_status === "completed";
   } catch {
-    return false
+    return false;
   }
 }

@@ -5,7 +5,7 @@
  * System-wide benchmark overview and settings management for admins
  */
 
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router";
 import {
   BarChart3,
   Building2,
@@ -16,8 +16,8 @@ import {
   TrendingUp,
   Users,
   XCircle,
-} from "lucide-react"
-import { useState } from "react"
+} from "lucide-react";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -27,11 +27,11 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
+} from "recharts";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -39,39 +39,39 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   useAdminBenchmarks,
   useUpdateSchoolBenchmarkSettings,
-} from "@/hooks/useBenchmarks"
+} from "@/hooks/useBenchmarks";
 
 export const Route = createFileRoute("/_layout/admin/benchmarks")({
   component: AdminBenchmarksPage,
-})
+});
 
 function AdminBenchmarksPage() {
-  const { overview, isLoading, error, refetch } = useAdminBenchmarks()
-  const updateSchoolSettings = useUpdateSchoolBenchmarkSettings()
-  const [updatingSchoolId, setUpdatingSchoolId] = useState<string | null>(null)
+  const { overview, isLoading, error, refetch } = useAdminBenchmarks();
+  const updateSchoolSettings = useUpdateSchoolBenchmarkSettings();
+  const [updatingSchoolId, setUpdatingSchoolId] = useState<string | null>(null);
 
   // Handle toggling school benchmark setting
   const handleToggleBenchmarking = async (
     schoolId: string,
     currentValue: boolean,
   ) => {
-    setUpdatingSchoolId(schoolId)
+    setUpdatingSchoolId(schoolId);
     try {
       await updateSchoolSettings.mutateAsync({
         schoolId,
         settings: { benchmarking_enabled: !currentValue },
-      })
-      refetch()
+      });
+      refetch();
     } catch (err) {
-      console.error("Failed to update school settings:", err)
+      console.error("Failed to update school settings:", err);
     } finally {
-      setUpdatingSchoolId(null)
+      setUpdatingSchoolId(null);
     }
-  }
+  };
 
   // Transform activity type stats for chart
   const activityChartData =
@@ -79,7 +79,7 @@ function AdminBenchmarksPage() {
       name: stat.activity_label,
       average: stat.system_average,
       completions: stat.total_completions,
-    })) ?? []
+    })) ?? [];
 
   // Performance status badge
   const getPerformanceBadge = (
@@ -92,29 +92,29 @@ function AdminBenchmarksPage() {
             <TrendingUp className="w-3 h-3 mr-1" />
             Above Average
           </Badge>
-        )
+        );
       case "below_average":
         return (
           <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
             <TrendingDown className="w-3 h-3 mr-1" />
             Below Average
           </Badge>
-        )
+        );
       case "average":
         return (
           <Badge variant="secondary">
             <BarChart3 className="w-3 h-3 mr-1" />
             Average
           </Badge>
-        )
+        );
       default:
         return (
           <Badge variant="outline" className="text-muted-foreground">
             No Data
           </Badge>
-        )
+        );
     }
-  }
+  };
 
   // Loading state
   if (isLoading) {
@@ -127,7 +127,7 @@ function AdminBenchmarksPage() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   // Error state
@@ -146,7 +146,7 @@ function AdminBenchmarksPage() {
           <Button onClick={() => refetch()}>Try Again</Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -353,5 +353,5 @@ function AdminBenchmarksPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

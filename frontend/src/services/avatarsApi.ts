@@ -5,15 +5,15 @@
  * This service provides functions to interact with the Avatars API endpoints.
  */
 
-import axios from "axios"
-import type { UserPublic } from "../client"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import type { UserPublic } from "../client";
+import { OpenAPI } from "../client";
 import type {
   AvatarUpdateResponse,
   PredefinedAvatarsResponse,
   SelectAvatarRequest,
   SetAvatarUrlRequest,
-} from "../types/avatar"
+} from "../types/avatar";
 
 // UserPublic is used for the selectPredefinedAvatar return type
 
@@ -24,16 +24,16 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor (async to handle async TOKEN function)
 apiClient.interceptors.request.use(async (config) => {
   // Set baseURL dynamically to ensure it uses the value set in main.tsx
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     // Handle both sync and async token functions
     const tokenValue =
@@ -49,13 +49,13 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
 /**
  * Get all predefined avatar options
@@ -63,9 +63,9 @@ apiClient.interceptors.request.use(async (config) => {
  * @returns Promise with list of predefined avatars
  */
 export async function getPredefinedAvatars(): Promise<PredefinedAvatarsResponse> {
-  const url = `/api/v1/avatars/predefined`
-  const response = await apiClient.get<PredefinedAvatarsResponse>(url)
-  return response.data
+  const url = `/api/v1/avatars/predefined`;
+  const response = await apiClient.get<PredefinedAvatarsResponse>(url);
+  return response.data;
 }
 
 /**
@@ -77,9 +77,9 @@ export async function getPredefinedAvatars(): Promise<PredefinedAvatarsResponse>
 export async function selectPredefinedAvatar(
   data: SelectAvatarRequest,
 ): Promise<UserPublic> {
-  const url = `/api/v1/avatars/me`
-  const response = await apiClient.patch<UserPublic>(url, data)
-  return response.data
+  const url = `/api/v1/avatars/me`;
+  const response = await apiClient.patch<UserPublic>(url, data);
+  return response.data;
 }
 
 /**
@@ -88,9 +88,9 @@ export async function selectPredefinedAvatar(
  * @returns Promise with the update response
  */
 export async function removeAvatar(): Promise<AvatarUpdateResponse> {
-  const url = `/api/v1/avatars/me`
-  const response = await apiClient.delete<AvatarUpdateResponse>(url)
-  return response.data
+  const url = `/api/v1/avatars/me`;
+  const response = await apiClient.delete<AvatarUpdateResponse>(url);
+  return response.data;
 }
 
 /**
@@ -102,9 +102,9 @@ export async function removeAvatar(): Promise<AvatarUpdateResponse> {
 export async function setAvatarUrl(
   data: SetAvatarUrlRequest,
 ): Promise<UserPublic> {
-  const url = `/api/v1/avatars/me`
-  const response = await apiClient.patch<UserPublic>(url, data)
-  return response.data
+  const url = `/api/v1/avatars/me`;
+  const response = await apiClient.patch<UserPublic>(url, data);
+  return response.data;
 }
 
 /**
@@ -115,6 +115,6 @@ export const avatarsApi = {
   selectPredefinedAvatar,
   removeAvatar,
   setAvatarUrl,
-}
+};
 
-export default avatarsApi
+export default avatarsApi;

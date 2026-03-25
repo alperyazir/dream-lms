@@ -1,12 +1,12 @@
-import { GraduationCap, MapPin, Users } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { GraduationCap, MapPin, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface SchoolCardProps {
-  name: string
-  location: string
-  teacherCount: number
-  studentCount: number
+  name: string;
+  location: string;
+  teacherCount: number;
+  studentCount: number;
 }
 
 export function SchoolCard({
@@ -43,5 +43,5 @@ export function SchoolCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

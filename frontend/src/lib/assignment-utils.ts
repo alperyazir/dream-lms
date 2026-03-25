@@ -7,7 +7,7 @@ import type {
   AssignmentForEditResponse,
   AssignmentFormData,
   AssignmentPreviewResponse,
-} from "@/types/assignment"
+} from "@/types/assignment";
 
 /**
  * Maps an existing assignment (from preview endpoint) to form data
@@ -45,7 +45,7 @@ export function mapAssignmentToFormData(
           teacher_materials: assignment.resources.teacher_materials || [],
         }
       : null,
-  }
+  };
 }
 
 /**
@@ -83,5 +83,5 @@ export function mapAssignmentForEditToFormData(
           teacher_materials: assignment.resources.teacher_materials || [],
         }
       : null,
-  }
+  };
 }

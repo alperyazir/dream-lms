@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Export OpenAPI spec to JSON file."""
 import json
+
 from app.main import app
 
 if __name__ == "__main__":

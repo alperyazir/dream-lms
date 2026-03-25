@@ -5,8 +5,8 @@
  * This service provides functions to interact with the Content Library API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   BookContentDetail,
   BookContentListResponse,
@@ -16,7 +16,7 @@ import type {
   LibraryResponse,
   UpdateContentRequest,
   UpdateContentResponse,
-} from "../types/content-library"
+} from "../types/content-library";
 
 /**
  * Create axios instance with OpenAPI config
@@ -25,15 +25,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -48,14 +48,14 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
 
-  return config
-})
+  return config;
+});
 
 /**
  * List content library items with optional filters
@@ -65,8 +65,8 @@ export async function listLibraryContent(
 ): Promise<LibraryResponse> {
   const response = await apiClient.get<LibraryResponse>("/api/v1/ai/library", {
     params: filters,
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -77,8 +77,8 @@ export async function getLibraryContentDetail(
 ): Promise<ContentItemDetail> {
   const response = await apiClient.get<ContentItemDetail>(
     `/api/v1/ai/library/${contentId}`,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -89,8 +89,8 @@ export async function deleteLibraryContent(
 ): Promise<DeleteContentResponse> {
   const response = await apiClient.delete<DeleteContentResponse>(
     `/api/v1/ai/library/${contentId}`,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -103,25 +103,25 @@ export async function updateLibraryContent(
   const response = await apiClient.patch<UpdateContentResponse>(
     `/api/v1/ai/library/${contentId}`,
     data,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
  * Assign AI content to classes
  */
 export interface AssignContentRequest {
-  name: string
-  instructions: string | null
-  due_date: string | null
-  time_limit_minutes: number | null
-  class_ids: string[]
+  name: string;
+  instructions: string | null;
+  due_date: string | null;
+  time_limit_minutes: number | null;
+  class_ids: string[];
 }
 
 export interface AssignContentResponse {
-  message: string
-  assignment_id: string
-  student_count: number
+  message: string;
+  assignment_id: string;
+  student_count: number;
 }
 
 export async function assignAIContent(
@@ -131,8 +131,8 @@ export async function assignAIContent(
   const response = await apiClient.post<AssignContentResponse>(
     `/api/v1/ai/library/${contentId}/assign`,
     data,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 // =============================================================================
@@ -140,9 +140,9 @@ export async function assignAIContent(
 // =============================================================================
 
 export interface BookContentFilters {
-  activity_type?: string
-  page?: number
-  page_size?: number
+  activity_type?: string;
+  page?: number;
+  page_size?: number;
 }
 
 export async function listBookContent(
@@ -152,8 +152,8 @@ export async function listBookContent(
   const response = await apiClient.get<BookContentListResponse>(
     `/api/v1/ai/books/${bookId}/content`,
     { params: filters },
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 export async function getBookContentDetail(
@@ -162,8 +162,8 @@ export async function getBookContentDetail(
 ): Promise<BookContentDetail> {
   const response = await apiClient.get<BookContentDetail>(
     `/api/v1/ai/books/${bookId}/content/${contentId}`,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 export async function deleteBookContent(
@@ -172,6 +172,6 @@ export async function deleteBookContent(
 ): Promise<DeleteContentResponse> {
   const response = await apiClient.delete<DeleteContentResponse>(
     `/api/v1/ai/books/${bookId}/content/${contentId}`,
-  )
-  return response.data
+  );
+  return response.data;
 }

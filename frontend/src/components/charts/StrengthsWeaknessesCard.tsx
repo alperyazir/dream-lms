@@ -1,12 +1,12 @@
-import { Lightbulb, TrendingDown, TrendingUp } from "lucide-react"
-import React from "react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Lightbulb, TrendingDown, TrendingUp } from "lucide-react";
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface StrengthsWeaknessesCardProps {
-  strengths: string[]
-  weaknesses: string[]
-  recommendations?: string[]
+  strengths: string[];
+  weaknesses: string[];
+  recommendations?: string[];
 }
 
 /**
@@ -28,9 +28,9 @@ export const StrengthsWeaknessesCard = React.memo(
         circle: "Circle Activities",
         markwithx: "Mark with X",
         puzzleFindWords: "Word Search Puzzles",
-      }
-      return nameMap[activityType] || activityType
-    }
+      };
+      return nameMap[activityType] || activityType;
+    };
 
     // Default recommendations if none provided
     const defaultRecommendations = [
@@ -41,9 +41,9 @@ export const StrengthsWeaknessesCard = React.memo(
         ? `Leverage strength in ${getActivityTypeName(strengths[0])} to build confidence`
         : "Keep up the consistent effort in all subject areas",
       "Consider peer tutoring opportunities to reinforce learning",
-    ]
+    ];
 
-    const displayRecommendations = recommendations || defaultRecommendations
+    const displayRecommendations = recommendations || defaultRecommendations;
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -144,8 +144,8 @@ export const StrengthsWeaknessesCard = React.memo(
           </CardContent>
         </Card>
       </div>
-    )
+    );
   },
-)
+);
 
-StrengthsWeaknessesCard.displayName = "StrengthsWeaknessesCard"
+StrengthsWeaknessesCard.displayName = "StrengthsWeaknessesCard";

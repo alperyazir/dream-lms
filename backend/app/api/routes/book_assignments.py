@@ -7,9 +7,8 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlmodel import select
 
 from app.api.deps import AsyncSessionDep, require_role
 from app.models import (
@@ -49,7 +48,7 @@ async def create_book_assignment(
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="Publisher role is deprecated. Publishers are now managed in Dream Central Storage."
+        detail="Publisher role is deprecated. Publishers are now managed in Dream Central Storage.",
     )
 
 
@@ -64,7 +63,9 @@ async def create_bulk_book_assignments(
     *,
     db: AsyncSessionDep,
     bulk_in: BulkBookAssignmentCreate,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher),
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher
+    ),
 ) -> list[BookAssignmentPublic]:
     """
     Create bulk book assignments for multiple teachers.
@@ -77,7 +78,7 @@ async def create_bulk_book_assignments(
         if current_user.dcs_publisher_id is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Publisher account not linked to DCS publisher"
+                detail="Publisher account not linked to DCS publisher",
             )
 
         # Verify the school belongs to this publisher
@@ -88,14 +89,13 @@ async def create_bulk_book_assignments(
 
         if not school:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="School not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="School not found"
             )
 
         if school.dcs_publisher_id != current_user.dcs_publisher_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot assign books to teachers in schools not managed by your publisher"
+                detail="Cannot assign books to teachers in schools not managed by your publisher",
             )
 
         # If specific teachers provided, verify they belong to publisher's schools
@@ -109,7 +109,7 @@ async def create_bulk_book_assignments(
                 if not teacher:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Teacher {teacher_id} not found"
+                        detail=f"Teacher {teacher_id} not found",
                     )
 
                 # Verify teacher's school belongs to this publisher
@@ -118,10 +118,13 @@ async def create_bulk_book_assignments(
                 )
                 teacher_school = teacher_school_result.scalar_one_or_none()
 
-                if not teacher_school or teacher_school.dcs_publisher_id != current_user.dcs_publisher_id:
+                if (
+                    not teacher_school
+                    or teacher_school.dcs_publisher_id != current_user.dcs_publisher_id
+                ):
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Cannot assign to teacher {teacher_id} - not in your publisher's schools"
+                        detail=f"Cannot assign to teacher {teacher_id} - not in your publisher's schools",
                     )
 
     assignments = await book_assignment_service.create_bulk_assignments(
@@ -130,7 +133,9 @@ async def create_bulk_book_assignments(
         school_id=bulk_in.school_id,
         assigned_by=current_user.id,
         teacher_ids=bulk_in.teacher_ids if bulk_in.teacher_ids else None,
-        assign_to_all=bulk_in.assign_to_all if hasattr(bulk_in, 'assign_to_all') else False,
+        assign_to_all=(
+            bulk_in.assign_to_all if hasattr(bulk_in, "assign_to_all") else False
+        ),
     )
 
     # Invalidate book list cache so teachers see updated assignments immediately
@@ -170,7 +175,7 @@ async def list_book_assignments(
     """
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
-        detail="Publisher role is deprecated. Publishers are now managed in Dream Central Storage."
+        detail="Publisher role is deprecated. Publishers are now managed in Dream Central Storage.",
     )
 
 
@@ -184,7 +189,9 @@ async def delete_book_assignment(
     *,
     db: AsyncSessionDep,
     assignment_id: uuid.UUID,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher),
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher
+    ),
 ) -> None:
     """
     Delete a book assignment.
@@ -209,7 +216,7 @@ async def delete_book_assignment(
         if current_user.dcs_publisher_id is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Publisher account not linked to DCS publisher"
+                detail="Publisher account not linked to DCS publisher",
             )
 
         # Verify the assignment's school belongs to this publisher
@@ -221,7 +228,7 @@ async def delete_book_assignment(
         if not school or school.dcs_publisher_id != current_user.dcs_publisher_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot delete assignments for teachers not in your publisher's schools"
+                detail="Cannot delete assignments for teachers not in your publisher's schools",
             )
 
     # Delete the assignment
@@ -244,7 +251,9 @@ async def get_book_assignments(
     *,
     db: AsyncSessionDep,
     book_id: int,
-    current_user: User = require_role(UserRole.admin, UserRole.supervisor, UserRole.publisher),
+    current_user: User = require_role(
+        UserRole.admin, UserRole.supervisor, UserRole.publisher
+    ),
 ) -> list[BookAssignmentResponse]:
     """
     Get all assignments for a specific book.
@@ -276,12 +285,14 @@ async def get_book_assignments(
         if current_user.dcs_publisher_id is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Publisher account not linked to DCS publisher"
+                detail="Publisher account not linked to DCS publisher",
             )
 
         # Get publisher's school IDs
         publisher_schools = await db.execute(
-            select(School.id).where(School.dcs_publisher_id == current_user.dcs_publisher_id)
+            select(School.id).where(
+                School.dcs_publisher_id == current_user.dcs_publisher_id
+            )
         )
         school_ids = set(publisher_schools.scalars().all())
 

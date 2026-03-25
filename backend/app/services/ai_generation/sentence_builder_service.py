@@ -24,7 +24,10 @@ from app.schemas.sentence_builder import (
 )
 from app.services.ai_generation.context_helpers import get_metadata_context
 from app.services.dcs_ai import DCSAIServiceClient
-from app.services.dcs_ai.exceptions import DCSAIDataNotFoundError, DCSAIDataNotReadyError
+from app.services.dcs_ai.exceptions import (
+    DCSAIDataNotFoundError,
+    DCSAIDataNotReadyError,
+)
 from app.services.llm import LLMManager
 from app.services.tts import TTSManager
 
@@ -149,7 +152,8 @@ class SentenceBuilderService:
             # Tier 1: Use metadata context (topics + vocab, no full text)
             try:
                 ctx = await get_metadata_context(
-                    self._dcs, request.book_id,
+                    self._dcs,
+                    request.book_id,
                     request.module_ids or [],
                 )
             except ValueError as e:
@@ -294,10 +298,7 @@ class SentenceBuilderService:
             )
 
         # Select random sentences
-        selected = random.sample(
-            all_sentences,
-            min(sentence_count, len(all_sentences))
-        )
+        selected = random.sample(all_sentences, min(sentence_count, len(all_sentences)))
 
         return selected
 
@@ -326,7 +327,9 @@ class SentenceBuilderService:
             module_list = await self._dcs.get_modules(book_id)
             if module_list:
                 for mod_info in module_list.modules:
-                    module = await self._dcs.get_module_detail(book_id, mod_info.module_id)
+                    module = await self._dcs.get_module_detail(
+                        book_id, mod_info.module_id
+                    )
                     if module and module.text:
                         modules.append(module)
 
@@ -350,25 +353,25 @@ class SentenceBuilderService:
             return []
 
         # Split on sentence boundaries
-        sentences = re.split(r'(?<=[.!])\s+', text)
+        sentences = re.split(r"(?<=[.!])\s+", text)
 
         # Instructional keywords that indicate exercise directions
         instruction_patterns = [
-            r'\b(write|circle|complete|fill|answer|match|listen|read|look at|tick|underline|choose|select)\b',
-            r'\b(exercise|activity|task|question|example|practice|test|quiz)\b',
-            r'\b(correct answer|the definitions|the blanks|the gaps|your partner|the pictures)\b',
-            r'\b(then,|now,|next,|first,|finally,)\s',
+            r"\b(write|circle|complete|fill|answer|match|listen|read|look at|tick|underline|choose|select)\b",
+            r"\b(exercise|activity|task|question|example|practice|test|quiz)\b",
+            r"\b(correct answer|the definitions|the blanks|the gaps|your partner|the pictures)\b",
+            r"\b(then,|now,|next,|first,|finally,)\s",
         ]
-        instruction_regex = re.compile('|'.join(instruction_patterns), re.IGNORECASE)
+        instruction_regex = re.compile("|".join(instruction_patterns), re.IGNORECASE)
 
         # Patterns that indicate template/fill-in sentences
         template_patterns = [
-            r'_{2,}',  # Multiple underscores (blanks)
-            r'\(\s*\)',  # Empty parentheses
-            r'\.\.\.',  # Ellipsis
-            r'\b(don\'t like|like love|love hate)\b',  # Multiple verb options
+            r"_{2,}",  # Multiple underscores (blanks)
+            r"\(\s*\)",  # Empty parentheses
+            r"\.\.\.",  # Ellipsis
+            r"\b(don\'t like|like love|love hate)\b",  # Multiple verb options
         ]
-        template_regex = re.compile('|'.join(template_patterns), re.IGNORECASE)
+        template_regex = re.compile("|".join(template_patterns), re.IGNORECASE)
 
         cleaned = []
         for s in sentences:
@@ -379,7 +382,7 @@ class SentenceBuilderService:
                 continue
 
             # Skip questions (we want declarative sentences)
-            if s.endswith('?'):
+            if s.endswith("?"):
                 continue
 
             # Skip if doesn't start with capital letter
@@ -387,7 +390,7 @@ class SentenceBuilderService:
                 continue
 
             # Skip if contains unusual characters or formatting
-            if re.search(r'[\[\]\{\}\|<>]', s):
+            if re.search(r"[\[\]\{\}\|<>]", s):
                 continue
 
             # Skip instructional text (exercise directions)
@@ -399,7 +402,7 @@ class SentenceBuilderService:
                 continue
 
             # Skip sentences with too many numbers (likely answers or lists)
-            number_count = len(re.findall(r'\d+', s))
+            number_count = len(re.findall(r"\d+", s))
             if number_count > 2:
                 continue
 
@@ -411,20 +414,21 @@ class SentenceBuilderService:
                     continue
 
             # Skip if it's a fragment (no verb indicators)
-            if not re.search(r'\b(is|are|was|were|has|have|had|do|does|did|will|would|can|could|may|might|shall|should)\b', s.lower()):
+            if not re.search(
+                r"\b(is|are|was|were|has|have|had|do|does|did|will|would|can|could|may|might|shall|should)\b",
+                s.lower(),
+            ):
                 # Also check for past tense verbs (words ending in -ed)
-                if not re.search(r'\b\w+ed\b', s.lower()):
+                if not re.search(r"\b\w+ed\b", s.lower()):
                     # Also check for present tense verbs (words ending in -s, -es)
-                    if not re.search(r'\b\w+(s|es)\b', s.lower()):
+                    if not re.search(r"\b\w+(s|es)\b", s.lower()):
                         continue
 
             cleaned.append(s)
 
         return cleaned
 
-    def _filter_by_difficulty(
-        self, sentences: list[str], difficulty: str
-    ) -> list[str]:
+    def _filter_by_difficulty(self, sentences: list[str], difficulty: str) -> list[str]:
         """
         Filter sentences by word count based on difficulty.
 
@@ -577,9 +581,7 @@ class SentenceBuilderService:
 
         return words
 
-    async def _generate_sentence_audio(
-        self, sentence: str, book_id: int
-    ) -> str | None:
+    async def _generate_sentence_audio(self, sentence: str, book_id: int) -> str | None:
         """
         Generate TTS audio for a sentence.
 
@@ -604,6 +606,7 @@ class SentenceBuilderService:
             # For now, return base64 data URL
             # In production, this would be uploaded to storage
             import base64
+
             audio_b64 = base64.b64encode(result.audio_data).decode("utf-8")
             return f"data:audio/{result.format};base64,{audio_b64}"
 

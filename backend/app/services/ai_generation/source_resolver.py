@@ -15,8 +15,6 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.models import TeacherMaterial
-from app.schemas.teacher_material import MaterialSourceSelection
-
 
 logger = logging.getLogger(__name__)
 

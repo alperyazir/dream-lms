@@ -3,23 +3,23 @@
  * Allows users to browse books and select an activity to assign
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { BookOpen, Search } from "lucide-react"
-import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { booksApi } from "@/services/booksApi"
-import type { Activity, Book } from "@/types/book"
-import { ACTIVITY_TYPE_CONFIG } from "@/types/book"
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen, Search } from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { booksApi } from "@/services/booksApi";
+import type { Activity, Book } from "@/types/book";
+import { ACTIVITY_TYPE_CONFIG } from "@/types/book";
 
 interface StepSelectBookActivityProps {
-  selectedBook: Book | null
-  selectedActivity: Activity | null
-  onSelectBook: (book: Book) => void
-  onSelectActivity: (activity: Activity) => void
+  selectedBook: Book | null;
+  selectedActivity: Activity | null;
+  onSelectBook: (book: Book) => void;
+  onSelectActivity: (activity: Activity) => void;
 }
 
 export function StepSelectBookActivity({
@@ -28,7 +28,7 @@ export function StepSelectBookActivity({
   onSelectBook,
   onSelectActivity,
 }: StepSelectBookActivityProps) {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch books
   const { data: booksData, isLoading: booksLoading } = useQuery({
@@ -39,7 +39,7 @@ export function StepSelectBookActivity({
         limit: 100,
       }),
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   // Fetch activities for selected book
   const { data: activities, isLoading: activitiesLoading } = useQuery({
@@ -47,9 +47,9 @@ export function StepSelectBookActivity({
     queryFn: () => booksApi.getBookActivities(String(selectedBook!.id)),
     enabled: !!selectedBook,
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
-  const books = booksData?.items ?? []
+  const books = booksData?.items ?? [];
 
   return (
     <div className="space-y-6">
@@ -164,8 +164,8 @@ export function StepSelectBookActivity({
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
                 {activities.map((activity, index) => {
                   const typeConfig =
-                    ACTIVITY_TYPE_CONFIG[activity.activity_type]
-                  const isSelected = selectedActivity?.id === activity.id
+                    ACTIVITY_TYPE_CONFIG[activity.activity_type];
+                  const isSelected = selectedActivity?.id === activity.id;
 
                   return (
                     <Card
@@ -203,7 +203,7 @@ export function StepSelectBookActivity({
                         </div>
                       </CardContent>
                     </Card>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -211,5 +211,5 @@ export function StepSelectBookActivity({
         )}
       </div>
     </div>
-  )
+  );
 }

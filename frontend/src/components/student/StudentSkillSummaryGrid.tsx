@@ -4,16 +4,16 @@
  * Fetches data from /me/skill-profile endpoint (Story 30.14).
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { Skeleton } from "@/components/ui/skeleton"
-import { getMySkillProfile } from "@/services/skillsApi"
-import { StudentSkillSummaryCard } from "./StudentSkillSummaryCard"
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getMySkillProfile } from "@/services/skillsApi";
+import { StudentSkillSummaryCard } from "./StudentSkillSummaryCard";
 
 export function StudentSkillSummaryGrid() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["my-skill-profile"],
     queryFn: getMySkillProfile,
-  })
+  });
 
   if (isLoading) {
     return (
@@ -25,16 +25,16 @@ export function StudentSkillSummaryGrid() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   if (error || !data) {
-    return null
+    return null;
   }
 
   // Only show if student has completed at least 1 AI assignment
   if (data.total_ai_assignments_completed === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -55,5 +55,5 @@ export function StudentSkillSummaryGrid() {
         ))}
       </div>
     </div>
-  )
+  );
 }

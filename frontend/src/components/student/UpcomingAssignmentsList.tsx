@@ -4,17 +4,17 @@
  * Displays next 3-5 upcoming assignments ordered by due date
  */
 
-import { Link } from "@tanstack/react-router"
-import { format, isPast, isToday, isTomorrow } from "date-fns"
-import { Calendar, ChevronRight, Clock } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { StudentAssignmentResponse } from "@/types/assignment"
+import { Link } from "@tanstack/react-router";
+import { format, isPast, isToday, isTomorrow } from "date-fns";
+import { Calendar, ChevronRight, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { StudentAssignmentResponse } from "@/types/assignment";
 
 export interface UpcomingAssignmentsListProps {
-  assignments: StudentAssignmentResponse[]
-  limit?: number
+  assignments: StudentAssignmentResponse[];
+  limit?: number;
 }
 
 export function UpcomingAssignmentsList({
@@ -26,14 +26,14 @@ export function UpcomingAssignmentsList({
     .filter((a) => a.status !== "completed")
     .sort((a, b) => {
       // Sort by due date (earliest first), assignments without due date go to end
-      if (!a.due_date && !b.due_date) return 0
-      if (!a.due_date) return 1 // a goes after b
-      if (!b.due_date) return -1 // a goes before b
-      const dateA = new Date(a.due_date).getTime()
-      const dateB = new Date(b.due_date).getTime()
-      return dateA - dateB
+      if (!a.due_date && !b.due_date) return 0;
+      if (!a.due_date) return 1; // a goes after b
+      if (!b.due_date) return -1; // a goes before b
+      const dateA = new Date(a.due_date).getTime();
+      const dateB = new Date(b.due_date).getTime();
+      return dateA - dateB;
     })
-    .slice(0, limit)
+    .slice(0, limit);
 
   return (
     <Card>
@@ -67,33 +67,33 @@ export function UpcomingAssignmentsList({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 interface AssignmentRowProps {
-  assignment: StudentAssignmentResponse
+  assignment: StudentAssignmentResponse;
 }
 
 function AssignmentRow({ assignment }: AssignmentRowProps) {
-  const dueDate = assignment.due_date ? new Date(assignment.due_date) : null
-  const isOverdue = dueDate ? isPast(dueDate) : false
-  const isDueToday = dueDate ? isToday(dueDate) : false
-  const isDueTomorrow = dueDate ? isTomorrow(dueDate) : false
+  const dueDate = assignment.due_date ? new Date(assignment.due_date) : null;
+  const isOverdue = dueDate ? isPast(dueDate) : false;
+  const isDueToday = dueDate ? isToday(dueDate) : false;
+  const isDueTomorrow = dueDate ? isTomorrow(dueDate) : false;
 
   const getDueDateLabel = () => {
-    if (!dueDate) return "No due date"
-    if (isOverdue) return "Overdue"
-    if (isDueToday) return "Due Today"
-    if (isDueTomorrow) return "Due Tomorrow"
-    return format(dueDate, "MMM d, h:mm a")
-  }
+    if (!dueDate) return "No due date";
+    if (isOverdue) return "Overdue";
+    if (isDueToday) return "Due Today";
+    if (isDueTomorrow) return "Due Tomorrow";
+    return format(dueDate, "MMM d, h:mm a");
+  };
 
   const getDueDateVariant = (): "destructive" | "default" | "secondary" => {
-    if (!dueDate) return "secondary"
-    if (isOverdue) return "destructive"
-    if (isDueToday) return "default" // Changed from "warning" to "default" as "warning" might not exist
-    return "secondary"
-  }
+    if (!dueDate) return "secondary";
+    if (isOverdue) return "destructive";
+    if (isDueToday) return "default"; // Changed from "warning" to "default" as "warning" might not exist
+    return "secondary";
+  };
 
   return (
     <Link
@@ -114,5 +114,5 @@ function AssignmentRow({ assignment }: AssignmentRowProps) {
         {getDueDateLabel()}
       </Badge>
     </Link>
-  )
+  );
 }

@@ -1,23 +1,30 @@
-import { Link } from "@tanstack/react-router"
-import { Calendar, ClipboardCheck, Eye, Pencil, Trash2, Users } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Link } from "@tanstack/react-router";
+import {
+  Calendar,
+  ClipboardCheck,
+  Eye,
+  Pencil,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import type { AssignmentListItem } from "@/types/assignment"
-import { AssignmentStatusBadge } from "./AssignmentStatusBadge"
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import type { AssignmentListItem } from "@/types/assignment";
+import { AssignmentStatusBadge } from "./AssignmentStatusBadge";
 
 interface TeacherAssignmentCardProps {
-  assignment: AssignmentListItem
-  onView: () => void
-  onEdit?: () => void
-  onDelete: () => void
+  assignment: AssignmentListItem;
+  onView: () => void;
+  onEdit?: () => void;
+  onDelete: () => void;
 }
 
 export function TeacherAssignmentCard({
@@ -29,17 +36,17 @@ export function TeacherAssignmentCard({
   const completionPercent =
     assignment.total_students > 0
       ? Math.round((assignment.completed / assignment.total_students) * 100)
-      : 0
+      : 0;
 
   const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "No due date"
-    const date = new Date(dateStr)
+    if (!dateStr) return "No due date";
+    const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })
-  }
+    });
+  };
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -83,7 +90,11 @@ export function TeacherAssignmentCard({
           <Link
             to="/teacher/assignments/$assignmentId"
             params={{ assignmentId: assignment.id }}
-            search={{ tab: "students", openGrade: true, gradeStudentId: undefined }}
+            search={{
+              tab: "students",
+              openGrade: true,
+              gradeStudentId: undefined,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <Badge
@@ -117,5 +128,5 @@ export function TeacherAssignmentCard({
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }

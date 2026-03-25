@@ -6,7 +6,6 @@ Epic 30 - Story 30.7: Writing Skill — Sentence Builder & Fill-Blank Formats
 
 from typing import Any
 
-
 # ============================================================
 # Writing Sentence Builder Prompts
 # ============================================================
@@ -32,12 +31,10 @@ WRITING_SB_DIFFICULTY_GUIDELINES = {
 - Short expressive sentences (4-6 words).
 - Simple opinions and descriptions.
 - Example: "I love sunny days." / "The flowers are beautiful." """,
-
     "medium": """## Medium (A2-B1):
 - Moderate expressive sentences (7-10 words).
 - Opinions with reasons, descriptions with detail.
 - Example: "I think reading books is very relaxing." """,
-
     "hard": """## Hard (B1-B2):
 - Complex expressive sentences (11+ words).
 - Narratives with subordinate clauses, nuanced opinions.
@@ -117,12 +114,10 @@ WRITING_FB_DIFFICULTY_GUIDELINES = {
 - Simple descriptive blanks (adjectives, common nouns).
 - 3-4 acceptable answers.
 - Clear context that guides word choice.""",
-
     "medium": """## Medium (A2-B1):
 - More nuanced blanks (adverbs, expressive verbs, varied adjectives).
 - 4-5 acceptable answers.
 - Context requires more precise word choice.""",
-
     "hard": """## Hard (B1-B2):
 - Complex blanks (idiomatic expressions, register-appropriate words, nuanced vocabulary).
 - 3-5 acceptable answers.
@@ -182,7 +177,13 @@ WRITING_FB_JSON_SCHEMA: dict[str, Any] = {
                         "type": "string",
                     },
                 },
-                "required": ["context", "sentence", "correct_answer", "acceptable_answers", "difficulty"],
+                "required": [
+                    "context",
+                    "sentence",
+                    "correct_answer",
+                    "acceptable_answers",
+                    "difficulty",
+                ],
             },
         },
     },
@@ -245,13 +246,11 @@ WRITING_SC_DIFFICULTY_GUIDELINES = {
 - Short sentences (5-8 words).
 - Common vocabulary. Clear error type.
 - Example incorrect: "She go to school every day." → correct: "She goes to school every day." """,
-
     "medium": """## Medium (A2-B1):
 - 1-2 errors per sentence.
 - Moderate sentences (8-12 words).
 - Errors require some thought to identify.
 - Example incorrect: "Yesterday I have went to the park." → correct: "Yesterday I went to the park." """,
-
     "hard": """## Hard (B1-B2):
 - 2-3 subtle errors per sentence.
 - Complex sentences (12+ words).
@@ -311,7 +310,13 @@ WRITING_SC_JSON_SCHEMA: dict[str, Any] = {
                         "type": "string",
                     },
                 },
-                "required": ["context", "incorrect_sentence", "correct_sentence", "error_type", "difficulty"],
+                "required": [
+                    "context",
+                    "incorrect_sentence",
+                    "correct_sentence",
+                    "error_type",
+                    "difficulty",
+                ],
             },
         },
     },
@@ -341,12 +346,10 @@ WRITING_FR_DIFFICULTY_GUIDELINES = {
 - Simple prompts requiring 15-40 words.
 - Describe, list, or give simple opinions.
 - Example: "Describe your favorite food. What does it taste like?" (15-40 words)""",
-
     "medium": """## Medium (A2-B1):
 - Moderate prompts requiring 30-80 words.
 - Compare, explain, or give opinions with reasons.
 - Example: "Compare two seasons. Which do you prefer and why?" (30-80 words)""",
-
     "hard": """## Hard (B1-B2):
 - Complex prompts requiring 60-150 words.
 - Analyze, argue, or write creative narratives.
@@ -416,7 +419,14 @@ WRITING_FR_JSON_SCHEMA: dict[str, Any] = {
                         "description": "3-5 criteria for teacher grading.",
                     },
                 },
-                "required": ["prompt", "context", "min_words", "max_words", "difficulty", "rubric_hints"],
+                "required": [
+                    "prompt",
+                    "context",
+                    "min_words",
+                    "max_words",
+                    "difficulty",
+                    "rubric_hints",
+                ],
             },
         },
     },

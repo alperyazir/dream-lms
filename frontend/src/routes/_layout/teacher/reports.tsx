@@ -3,29 +3,26 @@
  * Story 5.6: Time-Based Reporting & Trend Analysis
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { ClockIcon, FileText } from "lucide-react"
-import { useState } from "react"
-import { FiBarChart2 } from "react-icons/fi"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { ReportBuilder } from "@/components/reports/ReportBuilder"
-import { ReportHistory } from "@/components/reports/ReportHistory"
-import { ReportProgress } from "@/components/reports/ReportProgress"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { ClockIcon, FileText } from "lucide-react";
+import { useState } from "react";
+import { FiBarChart2 } from "react-icons/fi";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { ReportBuilder } from "@/components/reports/ReportBuilder";
+import { ReportHistory } from "@/components/reports/ReportHistory";
+import { ReportProgress } from "@/components/reports/ReportProgress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useDeleteReportHistory,
   useDownloadReport,
   useReportHistory,
   useReportWorkflow,
-} from "@/hooks/useReports"
-import { getMyClasses, getMyStudents } from "@/services/teachersApi"
-import type {
-  ReportGenerateRequest,
-  ReportHistoryItem,
-} from "@/types/reports"
+} from "@/hooks/useReports";
+import { getMyClasses, getMyStudents } from "@/services/teachersApi";
+import type { ReportGenerateRequest, ReportHistoryItem } from "@/types/reports";
 
 export const Route = createFileRoute("/_layout/teacher/reports")({
   component: () => (
@@ -33,72 +30,72 @@ export const Route = createFileRoute("/_layout/teacher/reports")({
       <TeacherReportsPage />
     </ErrorBoundary>
   ),
-})
+});
 
-type PageView = "builder" | "progress"
+type PageView = "builder" | "progress";
 
 function TeacherReportsPage() {
-  const [activeTab, setActiveTab] = useState<"build" | "history">("build")
-  const [pageView, setPageView] = useState<PageView>("builder")
+  const [activeTab, setActiveTab] = useState<"build" | "history">("build");
+  const [pageView, setPageView] = useState<PageView>("builder");
   const [currentConfig, setCurrentConfig] =
-    useState<ReportGenerateRequest | null>(null)
+    useState<ReportGenerateRequest | null>(null);
 
   const { data: classes = [], isLoading: classesLoading } = useQuery({
     queryKey: ["teacher-classes"],
     queryFn: getMyClasses,
-  })
+  });
 
   const { data: students = [], isLoading: studentsLoading } = useQuery({
     queryKey: ["teacher-students"],
     queryFn: getMyStudents,
-  })
+  });
 
-  const workflow = useReportWorkflow()
-  const history = useReportHistory()
-  const { download: downloadHistoryReport } = useDownloadReport()
+  const workflow = useReportWorkflow();
+  const history = useReportHistory();
+  const { download: downloadHistoryReport } = useDownloadReport();
   const { deleteReport, isDeleting: isDeletingReport } =
-    useDeleteReportHistory()
+    useDeleteReportHistory();
 
   const handleGenerate = async (config: ReportGenerateRequest) => {
-    setCurrentConfig(config)
-    setPageView("progress")
+    setCurrentConfig(config);
+    setPageView("progress");
     try {
-      await workflow.startReport(config)
+      await workflow.startReport(config);
     } catch {
       // Error handled by workflow
     }
-  }
+  };
 
-  const handleProgressDownload = () => workflow.download()
+  const handleProgressDownload = () => workflow.download();
 
   const handleRetry = () => {
     if (currentConfig) {
-      handleGenerate(currentConfig)
+      handleGenerate(currentConfig);
     }
-  }
+  };
 
   const handleCancel = () => {
-    workflow.reset()
-    setPageView("builder")
-  }
+    workflow.reset();
+    setPageView("builder");
+  };
 
   const handleHistoryDownload = (report: ReportHistoryItem) => {
     if (report.download_url) {
       downloadHistoryReport({
         jobId: report.id,
         filename: `${report.report_type}_report.${report.format}`,
-      })
+      });
     }
-  }
+  };
 
   const handleHistoryDelete = (report: ReportHistoryItem) => {
-    deleteReport(report.id)
-  }
+    deleteReport(report.id);
+  };
 
-  const isDataLoading = classesLoading || studentsLoading
+  const isDataLoading = classesLoading || studentsLoading;
 
   if (isDataLoading) {
-    return <ReportsPageSkeleton />
+    return <ReportsPageSkeleton />;
   }
 
   if (pageView === "progress") {
@@ -124,7 +121,7 @@ function TeacherReportsPage() {
           />
         </div>
       </PageContainer>
-    )
+    );
   }
 
   return (
@@ -171,7 +168,7 @@ function TeacherReportsPage() {
         </TabsContent>
       </Tabs>
     </PageContainer>
-  )
+  );
 }
 
 function ReportsPageHeader() {
@@ -181,7 +178,7 @@ function ReportsPageHeader() {
       title="Reports"
       description="Generate and download performance reports for students and classes."
     />
-  )
+  );
 }
 
 function ReportsPageSkeleton() {
@@ -196,5 +193,5 @@ function ReportsPageSkeleton() {
         <Skeleton className="h-96 max-w-lg" />
       </div>
     </PageContainer>
-  )
+  );
 }

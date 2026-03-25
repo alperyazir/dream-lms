@@ -14,8 +14,8 @@
  * - Teacher feedback (if available and published)
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Activity as ActivityIcon,
   AlertCircle,
@@ -25,12 +25,12 @@ import {
   ListTodo,
   MessageSquare,
   Reply,
-} from "lucide-react"
-import { StudentScoreBreakdown } from "@/components/analytics/StudentScoreBreakdown"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { BadgeDisplay } from "@/components/feedback/BadgeDisplay"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from "lucide-react";
+import { StudentScoreBreakdown } from "@/components/analytics/StudentScoreBreakdown";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { BadgeDisplay } from "@/components/feedback/BadgeDisplay";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -38,9 +38,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { useMyFeedback } from "@/hooks/useFeedback"
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useMyFeedback } from "@/hooks/useFeedback";
 import {
   parseAIQuizResult,
   parseListeningFillBlankResult,
@@ -52,31 +52,31 @@ import {
   parseVocabularyQuizResult,
   parseWordBuilderResult,
   parseWritingFillBlankResult,
-} from "@/lib/resultParsers"
+} from "@/lib/resultParsers";
 import {
   getAssignmentResult,
   getStudentAssignments,
   startMultiActivityAssignment,
-} from "@/services/assignmentsApi"
-import { EMOJI_DISPLAY, isFeedbackStudentView } from "@/types/feedback"
+} from "@/services/assignmentsApi";
+import { EMOJI_DISPLAY, isFeedbackStudentView } from "@/types/feedback";
 
 export const Route = createFileRoute(
   "/_layout/student/assignments/$assignmentId/",
 )({
   component: AssignmentDetailPage,
-})
+});
 
 function AssignmentDetailPage() {
   return (
     <ErrorBoundary>
       <AssignmentDetailContent />
     </ErrorBoundary>
-  )
+  );
 }
 
 function AssignmentDetailContent() {
-  const { assignmentId } = Route.useParams()
-  const navigate = useNavigate()
+  const { assignmentId } = Route.useParams();
+  const navigate = useNavigate();
 
   // Fetch all student assignments and find the specific one
   const {
@@ -86,16 +86,16 @@ function AssignmentDetailContent() {
   } = useQuery({
     queryKey: ["studentAssignments"],
     queryFn: () => getStudentAssignments(),
-  })
+  });
 
-  const assignment = assignments.find((a) => a.assignment_id === assignmentId)
+  const assignment = assignments.find((a) => a.assignment_id === assignmentId);
 
   // Fetch feedback for completed assignments (Story 6.4)
   const {
     feedback,
     isLoading: isFeedbackLoading,
     hasFeedback,
-  } = useMyFeedback(assignment?.status === "completed" ? assignmentId : null)
+  } = useMyFeedback(assignment?.status === "completed" ? assignmentId : null);
 
   // Fetch result data for completed assignments to calculate accurate score
   const { data: resultData } = useQuery({
@@ -104,103 +104,125 @@ function AssignmentDetailContent() {
     enabled: assignment?.status === "completed",
     retry: false,
     staleTime: 30000,
-  })
+  });
 
   // Calculate accurate score from parsed result data
   const calculatedScore = (() => {
     if (!resultData || !resultData.config_json || !resultData.answers_json) {
-      return assignment?.score ?? null
+      return assignment?.score ?? null;
     }
 
-    const { activity_type, config_json, answers_json, score } = resultData
+    const { activity_type, config_json, answers_json, score } = resultData;
 
-    let parsedResult = null
+    let parsedResult = null;
     switch (activity_type) {
       case "ai_quiz":
       case "listening_quiz":
-        parsedResult = parseAIQuizResult(config_json, answers_json, score)
-        break
+        parsedResult = parseAIQuizResult(config_json, answers_json, score);
+        break;
       case "vocabulary_quiz":
         parsedResult = parseVocabularyQuizResult(
           config_json,
           answers_json,
           score,
-        )
-        break
+        );
+        break;
       case "reading_comprehension":
         parsedResult = parseReadingComprehensionResult(
           config_json,
           answers_json,
           score,
-        )
-        break
+        );
+        break;
       case "sentence_builder":
       case "listening_sentence_builder":
         parsedResult = parseSentenceBuilderResult(
           config_json,
           answers_json,
           score,
-        )
-        break
+        );
+        break;
       case "word_builder":
       case "listening_word_builder":
-        parsedResult = parseWordBuilderResult(config_json, answers_json, score)
-        break
+        parsedResult = parseWordBuilderResult(config_json, answers_json, score);
+        break;
       case "listening_fill_blank":
-        parsedResult = parseListeningFillBlankResult(config_json, answers_json, score)
-        break
+        parsedResult = parseListeningFillBlankResult(
+          config_json,
+          answers_json,
+          score,
+        );
+        break;
       case "writing_sentence_corrector":
-        parsedResult = parseSentenceCorrectorResult(config_json, answers_json, score)
-        break
+        parsedResult = parseSentenceCorrectorResult(
+          config_json,
+          answers_json,
+          score,
+        );
+        break;
       case "writing_fill_blank":
       case "grammar_fill_blank":
-        parsedResult = parseWritingFillBlankResult(config_json, answers_json, score)
-        break
+        parsedResult = parseWritingFillBlankResult(
+          config_json,
+          answers_json,
+          score,
+        );
+        break;
       case "vocabulary_matching":
-        parsedResult = parseVocabularyMatchingResult(config_json, answers_json, score)
-        break
+        parsedResult = parseVocabularyMatchingResult(
+          config_json,
+          answers_json,
+          score,
+        );
+        break;
       case "mix_mode":
-        parsedResult = parseMixModeResult(config_json, answers_json, score)
-        break
+        parsedResult = parseMixModeResult(config_json, answers_json, score);
+        break;
     }
 
-    if (!parsedResult) return assignment?.score ?? null
+    if (!parsedResult) return assignment?.score ?? null;
 
     // Mix mode: use auto_scored counts
     if ("auto_scored" in parsedResult && "auto_correct" in parsedResult) {
-      const mix = parsedResult as { auto_scored: number; auto_correct: number }
-      return mix.auto_scored > 0 ? Math.round((mix.auto_correct / mix.auto_scored) * 100) : (assignment?.score ?? null)
+      const mix = parsedResult as { auto_scored: number; auto_correct: number };
+      return mix.auto_scored > 0
+        ? Math.round((mix.auto_correct / mix.auto_scored) * 100)
+        : (assignment?.score ?? null);
     }
 
     // Calculate score based on activity type
-    let correct = 0
-    let total = 0
+    let correct = 0;
+    let total = 0;
 
     if ("question_results" in parsedResult) {
-      correct = parsedResult.question_results.filter((r) => r.is_correct).length
-      total = parsedResult.total
+      correct = parsedResult.question_results.filter(
+        (r) => r.is_correct,
+      ).length;
+      total = parsedResult.total;
     } else if ("results" in parsedResult) {
-      correct = parsedResult.results.filter((r) => r.is_correct).length
-      total = parsedResult.total
+      correct = parsedResult.results.filter((r) => r.is_correct).length;
+      total = parsedResult.total;
     } else if ("sentence_results" in parsedResult) {
-      correct = parsedResult.sentence_results.filter((r) => r.is_correct).length
-      total = parsedResult.total
+      correct = parsedResult.sentence_results.filter(
+        (r) => r.is_correct,
+      ).length;
+      total = parsedResult.total;
     } else if ("word_results" in parsedResult) {
-      correct = parsedResult.correct_count
-      total = parsedResult.total
+      correct = parsedResult.correct_count;
+      total = parsedResult.total;
     } else if ("item_results" in parsedResult) {
-      correct = parsedResult.item_results.filter((r) => r.is_correct).length
-      total = parsedResult.total
+      correct = parsedResult.item_results.filter((r) => r.is_correct).length;
+      total = parsedResult.total;
     }
 
     return total > 0
       ? Math.round((correct / total) * 100)
-      : (assignment?.score ?? null)
-  })()
+      : (assignment?.score ?? null);
+  })();
 
   // Get activity count from assignment data
-  const activityCount = assignment?.activity_count || 1
-  const isMultiActivity = activityCount > 1
+  const activityCount = assignment?.activity_count || 1;
+  const isMultiActivity = activityCount > 1;
 
   // Optionally fetch multi-activity details for UI display (progress per activity)
   // Only fetch if this IS a multi-activity assignment and not completed
@@ -210,19 +232,11 @@ function AssignmentDetailContent() {
     enabled: isMultiActivity && assignment?.status !== "completed",
     retry: false,
     staleTime: 30000, // Cache for 30 seconds
-  })
+  });
 
   // Get completed activities count from multi-activity data if available
-  const completedActivities = multiActivityData?.completed_activities_count || 0
-
-  // Debug: Log routing decision - now always routes to play-multi
-  console.log("Assignment routing:", {
-    assignmentId,
-    activityCount,
-    isMultiActivity,
-    status: assignment?.status,
-    willRouteTo: "/play-multi", // Always use unified player
-  })
+  const completedActivities =
+    multiActivityData?.completed_activities_count || 0;
 
   if (isLoading) {
     return (
@@ -233,7 +247,7 @@ function AssignmentDetailContent() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error || !assignment) {
@@ -257,20 +271,20 @@ function AssignmentDetailContent() {
           </CardFooter>
         </Card>
       </div>
-    )
+    );
   }
 
   const statusColors = {
     not_started: "bg-blue-100 text-blue-800",
     in_progress: "bg-yellow-100 text-yellow-800",
     completed: "bg-green-100 text-green-800",
-  }
+  };
 
   const statusLabels = {
     not_started: "Not Started",
     in_progress: "In Progress",
     completed: "Completed",
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -356,8 +370,8 @@ function AssignmentDetailContent() {
                   {multiActivityData.activities.map((activity, index) => {
                     const progress = multiActivityData.activity_progress.find(
                       (p) => p.activity_id === activity.id,
-                    )
-                    const status = progress?.status || "not_started"
+                    );
+                    const status = progress?.status || "not_started";
 
                     return (
                       <div
@@ -396,7 +410,7 @@ function AssignmentDetailContent() {
                             </span>
                           )}
                       </div>
-                    )
+                    );
                   })}
                 </div>
               )}
@@ -719,7 +733,7 @@ function AssignmentDetailContent() {
                         ?.scrollIntoView({
                           behavior: "smooth",
                           block: "center",
-                        })
+                        });
                     }}
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
@@ -749,5 +763,5 @@ function AssignmentDetailContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }

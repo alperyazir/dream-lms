@@ -1,25 +1,25 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Pencil, Save, X } from "lucide-react"
-import { useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Save, X } from "lucide-react";
+import { useState } from "react";
+import { type SubmitHandler, useForm } from "react-hook-form";
 import {
   type ApiError,
   type UserPublic,
   UsersService,
   type UserUpdateMe,
-} from "@/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import useAuth from "@/hooks/useAuth"
-import useCustomToast from "@/hooks/useCustomToast"
-import { emailPattern, handleError } from "@/utils"
+} from "@/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import useAuth from "@/hooks/useAuth";
+import useCustomToast from "@/hooks/useCustomToast";
+import { emailPattern, handleError } from "@/utils";
 
 const UserInformation = () => {
-  const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
-  const [editMode, setEditMode] = useState(false)
-  const { user: currentUser } = useAuth()
+  const queryClient = useQueryClient();
+  const { showSuccessToast } = useCustomToast();
+  const [editMode, setEditMode] = useState(false);
+  const { user: currentUser } = useAuth();
   const {
     register,
     handleSubmit,
@@ -33,35 +33,35 @@ const UserInformation = () => {
       full_name: currentUser?.full_name,
       email: currentUser?.email,
     },
-  })
+  });
 
   const toggleEditMode = () => {
-    setEditMode(!editMode)
-  }
+    setEditMode(!editMode);
+  };
 
   const mutation = useMutation({
     mutationFn: (data: UserUpdateMe) =>
       UsersService.updateUserMe({ requestBody: data }),
     onSuccess: () => {
-      showSuccessToast("User updated successfully.")
-      setEditMode(false)
+      showSuccessToast("User updated successfully.");
+      setEditMode(false);
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
     onSettled: () => {
-      queryClient.invalidateQueries()
+      queryClient.invalidateQueries();
     },
-  })
+  });
 
   const onSubmit: SubmitHandler<UserUpdateMe> = async (data) => {
-    mutation.mutate(data)
-  }
+    mutation.mutate(data);
+  };
 
   const onCancel = () => {
-    reset()
-    toggleEditMode()
-  }
+    reset();
+    toggleEditMode();
+  };
 
   return (
     <div className="space-y-6">
@@ -153,7 +153,7 @@ const UserInformation = () => {
         )}
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default UserInformation
+export default UserInformation;

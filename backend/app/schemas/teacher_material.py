@@ -11,8 +11,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.models import MaterialType
-
+from app.models import MaterialType, TeacherMaterial
 
 # =============================================================================
 # Text Extraction Schemas
@@ -79,11 +78,13 @@ class TeacherMaterialResponse(BaseModel):
     @classmethod
     def from_material(cls, material: "TeacherMaterial") -> "TeacherMaterialResponse":
         """Create response from TeacherMaterial model."""
-        from app.models import TeacherMaterial
 
         # Determine source type from material type
         source_type: Literal["pdf", "text", "other"]
-        if material.type == MaterialType.document and material.mime_type == "application/pdf":
+        if (
+            material.type == MaterialType.document
+            and material.mime_type == "application/pdf"
+        ):
             source_type = "pdf"
         elif material.type == MaterialType.text_note:
             source_type = "text"

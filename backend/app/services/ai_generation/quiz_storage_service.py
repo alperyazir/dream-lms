@@ -10,7 +10,6 @@ and reading comprehension activities.
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
 from uuid import UUID
 
 from app.schemas.ai_quiz import (
@@ -20,60 +19,15 @@ from app.schemas.ai_quiz import (
     AIQuizQuestionResult,
     AIQuizResult,
 )
-from app.schemas.reading_comprehension import (
-    ReadingComprehensionActivity,
-    ReadingComprehensionActivityPublic,
-    ReadingComprehensionAnswer,
-    ReadingComprehensionQuestionPublic,
-    ReadingComprehensionQuestionResult,
-    ReadingComprehensionResult,
-)
-from app.schemas.sentence_builder import (
-    SentenceBuilderActivity,
-    SentenceBuilderActivityPublic,
-    SentenceBuilderItemPublic,
-    SentenceBuilderResult,
-    SentenceBuilderSubmission,
-)
-from app.schemas.word_builder import (
-    WordBuilderActivity,
-    WordBuilderActivityPublic,
-    WordBuilderItemPublic,
-    WordBuilderResult,
-    WordBuilderSubmission,
-)
 from app.schemas.grammar_fill_blank import (
     GrammarFillBlankActivity,
     GrammarFillBlankActivityPublic,
     GrammarFillBlankItemPublic,
 )
-from app.schemas.writing_fill_blank import (
-    WritingFillBlankActivity,
-    WritingFillBlankActivityPublic,
-    WritingFillBlankItemPublic,
-)
-from app.schemas.writing_sentence_corrector import (
-    WritingSentenceCorrectorActivity,
-    WritingSentenceCorrectorActivityPublic,
-    WritingSentenceCorrectorItemPublic,
-)
-from app.schemas.writing_free_response import (
-    WritingFreeResponseActivity,
-    WritingFreeResponseActivityPublic,
-    WritingFreeResponseItemPublic,
-)
-from app.schemas.speaking_open_response import (
-    SpeakingOpenResponseActivity,
-    SpeakingOpenResponseActivityPublic,
-)
 from app.schemas.listening_fill_blank import (
     ListeningFillBlankActivity,
     ListeningFillBlankActivityPublic,
     ListeningFillBlankItemPublic,
-)
-from app.schemas.mix_mode import (
-    MixModeActivity,
-    MixModeActivityPublic,
 )
 from app.schemas.listening_quiz import (
     ListeningQuizActivity,
@@ -90,9 +44,34 @@ from app.schemas.listening_word_builder import (
     ListeningWordBuilderActivityPublic,
     ListeningWordBuilderItemPublic,
 )
+from app.schemas.mix_mode import (
+    MixModeActivity,
+    MixModeActivityPublic,
+)
+from app.schemas.reading_comprehension import (
+    ReadingComprehensionActivity,
+    ReadingComprehensionActivityPublic,
+    ReadingComprehensionAnswer,
+    ReadingComprehensionQuestionPublic,
+    ReadingComprehensionQuestionResult,
+    ReadingComprehensionResult,
+)
+from app.schemas.sentence_builder import (
+    SentenceBuilderActivity,
+    SentenceBuilderActivityPublic,
+    SentenceBuilderItemPublic,
+    SentenceBuilderResult,
+    SentenceBuilderSubmission,
+)
+from app.schemas.speaking_open_response import (
+    SpeakingOpenResponseActivity,
+    SpeakingOpenResponseActivityPublic,
+)
 from app.schemas.vocabulary_matching import (
     VocabularyMatchingActivity,
     VocabularyMatchingActivityPublic,
+)
+from app.schemas.vocabulary_matching import (
     to_public as vocab_matching_to_public,
 )
 from app.schemas.vocabulary_quiz import (
@@ -101,6 +80,28 @@ from app.schemas.vocabulary_quiz import (
     VocabularyQuizPublic,
     VocabularyQuizQuestionPublic,
     VocabularyQuizResult,
+)
+from app.schemas.word_builder import (
+    WordBuilderActivity,
+    WordBuilderActivityPublic,
+    WordBuilderItemPublic,
+    WordBuilderResult,
+    WordBuilderSubmission,
+)
+from app.schemas.writing_fill_blank import (
+    WritingFillBlankActivity,
+    WritingFillBlankActivityPublic,
+    WritingFillBlankItemPublic,
+)
+from app.schemas.writing_free_response import (
+    WritingFreeResponseActivity,
+    WritingFreeResponseActivityPublic,
+    WritingFreeResponseItemPublic,
+)
+from app.schemas.writing_sentence_corrector import (
+    WritingSentenceCorrectorActivity,
+    WritingSentenceCorrectorActivityPublic,
+    WritingSentenceCorrectorItemPublic,
 )
 
 logger = logging.getLogger(__name__)
@@ -145,39 +146,63 @@ class QuizStorageService:
         self._ai_quizzes: dict[str, tuple[AIQuiz, datetime]] = {}
         self._ai_submissions: dict[str, dict[str, AIQuizResult]] = {}
         # Reading comprehension activity storage
-        self._reading_activities: dict[str, tuple[ReadingComprehensionActivity, datetime]] = {}
+        self._reading_activities: dict[
+            str, tuple[ReadingComprehensionActivity, datetime]
+        ] = {}
         self._reading_submissions: dict[str, dict[str, ReadingComprehensionResult]] = {}
         # Sentence builder activity storage
-        self._sentence_activities: dict[str, tuple[SentenceBuilderActivity, datetime]] = {}
+        self._sentence_activities: dict[
+            str, tuple[SentenceBuilderActivity, datetime]
+        ] = {}
         self._sentence_submissions: dict[str, dict[str, SentenceBuilderResult]] = {}
         # Word builder activity storage
-        self._word_builder_activities: dict[str, tuple[WordBuilderActivity, datetime]] = {}
+        self._word_builder_activities: dict[
+            str, tuple[WordBuilderActivity, datetime]
+        ] = {}
         self._word_builder_submissions: dict[str, dict[str, WordBuilderResult]] = {}
         # Listening quiz activity storage (Story 30.4)
-        self._listening_activities: dict[str, tuple[ListeningQuizActivity, datetime]] = {}
+        self._listening_activities: dict[
+            str, tuple[ListeningQuizActivity, datetime]
+        ] = {}
         # Listening fill-blank activity storage (Story 30.5)
-        self._listening_fb_activities: dict[str, tuple[ListeningFillBlankActivity, datetime]] = {}
+        self._listening_fb_activities: dict[
+            str, tuple[ListeningFillBlankActivity, datetime]
+        ] = {}
         # Grammar fill-blank activity storage (Story 30.6)
-        self._grammar_fb_activities: dict[str, tuple[GrammarFillBlankActivity, datetime]] = {}
+        self._grammar_fb_activities: dict[
+            str, tuple[GrammarFillBlankActivity, datetime]
+        ] = {}
         # Writing fill-blank activity storage (Story 30.7)
-        self._writing_fb_activities: dict[str, tuple[WritingFillBlankActivity, datetime]] = {}
+        self._writing_fb_activities: dict[
+            str, tuple[WritingFillBlankActivity, datetime]
+        ] = {}
         # Writing sentence corrector activity storage
-        self._writing_sc_activities: dict[str, tuple[WritingSentenceCorrectorActivity, datetime]] = {}
+        self._writing_sc_activities: dict[
+            str, tuple[WritingSentenceCorrectorActivity, datetime]
+        ] = {}
         # Writing free response activity storage
-        self._writing_fr_activities: dict[str, tuple[WritingFreeResponseActivity, datetime]] = {}
+        self._writing_fr_activities: dict[
+            str, tuple[WritingFreeResponseActivity, datetime]
+        ] = {}
         # Listening sentence builder activity storage
-        self._listening_sb_activities: dict[str, tuple[ListeningSentenceBuilderActivity, datetime]] = {}
+        self._listening_sb_activities: dict[
+            str, tuple[ListeningSentenceBuilderActivity, datetime]
+        ] = {}
         # Listening word builder activity storage
-        self._listening_wb_activities: dict[str, tuple[ListeningWordBuilderActivity, datetime]] = {}
+        self._listening_wb_activities: dict[
+            str, tuple[ListeningWordBuilderActivity, datetime]
+        ] = {}
         # Vocabulary matching activity storage
-        self._vocab_matching_activities: dict[str, tuple[VocabularyMatchingActivity, datetime]] = {}
+        self._vocab_matching_activities: dict[
+            str, tuple[VocabularyMatchingActivity, datetime]
+        ] = {}
         # Speaking open response activity storage
-        self._speaking_or_activities: dict[str, tuple[SpeakingOpenResponseActivity, datetime]] = {}
+        self._speaking_or_activities: dict[
+            str, tuple[SpeakingOpenResponseActivity, datetime]
+        ] = {}
         # Mix mode activity storage (Story 30.8)
         self._mix_mode_activities: dict[str, tuple[MixModeActivity, datetime]] = {}
-        logger.info(
-            f"QuizStorageService initialized with TTL={ttl_seconds}s"
-        )
+        logger.info(f"QuizStorageService initialized with TTL={ttl_seconds}s")
 
     async def save_quiz(self, quiz: VocabularyQuiz) -> str:
         """
@@ -777,9 +802,7 @@ class QuizStorageService:
 
         return activity_submissions.get(str(student_id))
 
-    async def has_submitted_reading(
-        self, activity_id: str, student_id: UUID
-    ) -> bool:
+    async def has_submitted_reading(self, activity_id: str, student_id: UUID) -> bool:
         """
         Check if a student has already submitted this reading activity.
 
@@ -800,9 +823,7 @@ class QuizStorageService:
 
     # ========== Sentence Builder Activity Methods ==========
 
-    async def save_sentence_activity(
-        self, activity: SentenceBuilderActivity
-    ) -> str:
+    async def save_sentence_activity(self, activity: SentenceBuilderActivity) -> str:
         """
         Save a sentence builder activity to storage.
 
@@ -817,7 +838,9 @@ class QuizStorageService:
             activity,
             datetime.now(timezone.utc),
         )
-        logger.info(f"Sentence builder activity saved: activity_id={activity.activity_id}")
+        logger.info(
+            f"Sentence builder activity saved: activity_id={activity.activity_id}"
+        )
         return activity.activity_id
 
     async def get_sentence_activity(
@@ -952,9 +975,7 @@ class QuizStorageService:
 
         return activity_submissions.get(str(student_id))
 
-    async def has_submitted_sentence(
-        self, activity_id: str, student_id: UUID
-    ) -> bool:
+    async def has_submitted_sentence(self, activity_id: str, student_id: UUID) -> bool:
         """
         Check if a student has already submitted a sentence builder activity.
 
@@ -976,9 +997,7 @@ class QuizStorageService:
 
     # ========== Word Builder Activity Storage ==========
 
-    async def save_word_builder_activity(
-        self, activity: WordBuilderActivity
-    ) -> str:
+    async def save_word_builder_activity(self, activity: WordBuilderActivity) -> str:
         """
         Save a word builder activity to storage.
 
@@ -1043,8 +1062,14 @@ class QuizStorageService:
             WordBuilderItemPublic(
                 item_id=item.item_id,
                 letters=item.letters,
-                definition=item.definition if activity.hint_type in ("definition", "both") else "",
-                audio_url=item.audio_url if activity.hint_type in ("audio", "both") else None,
+                definition=(
+                    item.definition
+                    if activity.hint_type in ("definition", "both")
+                    else ""
+                ),
+                audio_url=(
+                    item.audio_url if activity.hint_type in ("audio", "both") else None
+                ),
                 letter_count=len(item.correct_word),
             )
             for item in activity.words
@@ -1158,7 +1183,8 @@ class QuizStorageService:
         """Save a grammar fill-blank activity."""
         await self._cleanup_expired()
         self._grammar_fb_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Grammar fill-blank saved: id={activity.activity_id}")
         return activity.activity_id
@@ -1212,7 +1238,8 @@ class QuizStorageService:
         """Save a writing fill-blank activity."""
         await self._cleanup_expired()
         self._writing_fb_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Writing fill-blank saved: id={activity.activity_id}")
         return activity.activity_id
@@ -1263,7 +1290,8 @@ class QuizStorageService:
         """Save a writing sentence corrector activity."""
         await self._cleanup_expired()
         self._writing_sc_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Writing sentence corrector saved: id={activity.activity_id}")
         return activity.activity_id
@@ -1315,7 +1343,8 @@ class QuizStorageService:
         """Save a writing free response activity."""
         await self._cleanup_expired()
         self._writing_fr_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Writing free response saved: id={activity.activity_id}")
         return activity.activity_id
@@ -1369,7 +1398,8 @@ class QuizStorageService:
         """Save a listening fill-blank activity."""
         await self._cleanup_expired()
         self._listening_fb_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Listening fill-blank saved: id={activity.activity_id}")
         return activity.activity_id
@@ -1415,9 +1445,7 @@ class QuizStorageService:
 
     # ---- Listening Quiz (Story 30.4) ----
 
-    async def save_listening_activity(
-        self, activity: ListeningQuizActivity
-    ) -> str:
+    async def save_listening_activity(self, activity: ListeningQuizActivity) -> str:
         """Save a listening quiz activity to storage."""
         await self._cleanup_expired()
         self._listening_activities[activity.activity_id] = (
@@ -1479,7 +1507,8 @@ class QuizStorageService:
         """Save a vocabulary matching activity."""
         await self._cleanup_expired()
         self._vocab_matching_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Vocabulary matching saved: id={activity.activity_id}")
         return activity.activity_id
@@ -1512,7 +1541,8 @@ class QuizStorageService:
         """Save a speaking open response activity."""
         await self._cleanup_expired()
         self._speaking_or_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Speaking open response saved: id={activity.activity_id}")
         return activity.activity_id
@@ -1549,20 +1579,17 @@ class QuizStorageService:
 
     # ---- Mix Mode (Story 30.8) ----
 
-    async def save_mix_mode_activity(
-        self, activity: MixModeActivity
-    ) -> str:
+    async def save_mix_mode_activity(self, activity: MixModeActivity) -> str:
         """Save a mix mode activity."""
         await self._cleanup_expired()
         self._mix_mode_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Mix mode activity saved: id={activity.activity_id}")
         return activity.activity_id
 
-    async def get_mix_mode_activity(
-        self, activity_id: str
-    ) -> MixModeActivity | None:
+    async def get_mix_mode_activity(self, activity_id: str) -> MixModeActivity | None:
         entry = self._mix_mode_activities.get(activity_id)
         if entry is None:
             return None
@@ -1600,7 +1627,8 @@ class QuizStorageService:
         """Save a listening sentence builder activity."""
         await self._cleanup_expired()
         self._listening_sb_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Listening sentence builder saved: id={activity.activity_id}")
         return activity.activity_id
@@ -1653,7 +1681,8 @@ class QuizStorageService:
         """Save a listening word builder activity."""
         await self._cleanup_expired()
         self._listening_wb_activities[activity.activity_id] = (
-            activity, datetime.now(timezone.utc),
+            activity,
+            datetime.now(timezone.utc),
         )
         logger.info(f"Listening word builder saved: id={activity.activity_id}")
         return activity.activity_id
@@ -1846,7 +1875,19 @@ class QuizStorageService:
         for activity_id in expired_mix:
             self._mix_mode_activities.pop(activity_id, None)
 
-        total_expired = len(expired) + len(expired_ai) + len(expired_reading) + len(expired_listening) + len(expired_lfb) + len(expired_gfb) + len(expired_wfb) + len(expired_lsb) + len(expired_lwb) + len(expired_vm) + len(expired_mix)
+        total_expired = (
+            len(expired)
+            + len(expired_ai)
+            + len(expired_reading)
+            + len(expired_listening)
+            + len(expired_lfb)
+            + len(expired_gfb)
+            + len(expired_wfb)
+            + len(expired_lsb)
+            + len(expired_lwb)
+            + len(expired_vm)
+            + len(expired_mix)
+        )
         if total_expired:
             logger.info(
                 f"Cleaned up {len(expired)} vocabulary quizzes, "

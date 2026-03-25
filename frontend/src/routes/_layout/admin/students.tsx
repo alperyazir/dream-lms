@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   Check,
   Copy,
@@ -17,23 +17,23 @@ import {
   Trash2,
   User,
   X,
-} from "lucide-react"
-import { useEffect, useState } from "react"
-import { FiUsers } from "react-icons/fi"
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { FiUsers } from "react-icons/fi";
 import {
   AdminService,
   type StudentCreateAPI,
   type StudentPublic,
   type StudentUpdate,
-} from "@/client"
-import { ImportStudentsDialog } from "@/components/Admin/ImportStudentsDialog"
-import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { StudentPasswordModal } from "@/components/student/StudentPasswordModal"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/client";
+import { ImportStudentsDialog } from "@/components/Admin/ImportStudentsDialog";
+import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { StudentPasswordModal } from "@/components/student/StudentPasswordModal";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -41,9 +41,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -51,9 +51,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import useCustomToast from "@/hooks/useCustomToast"
-import { generateUsername } from "@/utils/usernameGenerator"
+} from "@/components/ui/table";
+import useCustomToast from "@/hooks/useCustomToast";
+import { generateUsername } from "@/utils/usernameGenerator";
 
 export const Route = createFileRoute("/_layout/admin/students")({
   component: () => (
@@ -61,45 +61,45 @@ export const Route = createFileRoute("/_layout/admin/students")({
       <AdminStudents />
     </ErrorBoundary>
   ),
-})
+});
 
 function AdminStudents() {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const PAGE_SIZE = 20
-  const [searchQuery, setSearchQuery] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const skip = (currentPage - 1) * PAGE_SIZE
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const PAGE_SIZE = 20;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const skip = (currentPage - 1) * PAGE_SIZE;
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentPublic | null>(
     null,
-  )
+  );
   const [studentToDelete, setStudentToDelete] = useState<{
-    id: string
-    name: string
-  } | null>(null)
+    id: string;
+    name: string;
+  } | null>(null);
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
-    useState(false)
+    useState(false);
   const [isPasswordResultDialogOpen, setIsPasswordResultDialogOpen] =
-    useState(false)
+    useState(false);
   const [studentToResetPassword, setStudentToResetPassword] = useState<{
-    userId: string
-    userName: string
-  } | null>(null)
+    userId: string;
+    userName: string;
+  } | null>(null);
   const [resetResult, setResetResult] = useState<{
-    passwordEmailed: boolean
-    temporaryPassword: string | null
-    message: string
-  } | null>(null)
-  const [passwordCopied, setPasswordCopied] = useState(false)
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+    passwordEmailed: boolean;
+    temporaryPassword: string | null;
+    message: string;
+  } | null>(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
     new Set(),
-  )
+  );
   const [newStudent, setNewStudent] = useState<StudentCreateAPI>({
     username: "",
     user_email: "",
@@ -107,33 +107,33 @@ function AdminStudents() {
     grade_level: undefined,
     parent_email: undefined,
     password: undefined,
-  })
+  });
   // Story 28.1: Password management state
-  const [autoGeneratePassword, setAutoGeneratePassword] = useState(true)
-  const [showPassword, setShowPassword] = useState(false)
+  const [autoGeneratePassword, setAutoGeneratePassword] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   // Story 28.1: Password modal state
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [selectedStudentForPassword, setSelectedStudentForPassword] = useState<{
-    id: string
-    name: string
-  } | null>(null)
+    id: string;
+    name: string;
+  } | null>(null);
   const [editStudent, setEditStudent] = useState<StudentUpdate>({
     user_email: "",
     user_username: "",
     user_full_name: "",
     grade_level: "",
     parent_email: "",
-  })
+  });
 
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery)
-      setCurrentPage(1)
-      setSelectedStudentIds(new Set())
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+      setSelectedStudentIds(new Set());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch students from API with server-side pagination
   const {
@@ -148,19 +148,19 @@ function AdminStudents() {
         limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
       }),
-  })
+  });
 
-  const students = studentsResponse?.items ?? []
-  const totalStudents = studentsResponse?.total ?? 0
-  const totalPages = Math.ceil(totalStudents / PAGE_SIZE)
+  const students = studentsResponse?.items ?? [];
+  const totalStudents = studentsResponse?.total ?? 0;
+  const totalPages = Math.ceil(totalStudents / PAGE_SIZE);
 
   // Create student mutation
   const createStudentMutation = useMutation({
     mutationFn: (data: StudentCreateAPI) =>
       AdminService.createStudent({ requestBody: data }),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["students"] })
-      setIsAddDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      setIsAddDialogOpen(false);
       setNewStudent({
         username: "",
         user_email: "",
@@ -168,31 +168,31 @@ function AdminStudents() {
         grade_level: undefined,
         parent_email: undefined,
         password: undefined,
-      })
+      });
       // Story 28.1: Reset password state
-      setAutoGeneratePassword(true)
-      setShowPassword(false)
+      setAutoGeneratePassword(true);
+      setShowPassword(false);
 
       if (response.password_emailed) {
-        showSuccessToast("Student created. Password sent to their email.")
+        showSuccessToast("Student created. Password sent to their email.");
       } else if (response.temporary_password) {
         // Show one-time password dialog
         setResetResult({
           passwordEmailed: false,
           temporaryPassword: response.temporary_password,
           message: "Student created successfully",
-        })
-        setIsPasswordResultDialogOpen(true)
+        });
+        setIsPasswordResultDialogOpen(true);
       } else {
-        showSuccessToast("Student created successfully!")
+        showSuccessToast("Student created successfully!");
       }
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to create student. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Update student mutation
   const updateStudentMutation = useMutation({
@@ -200,36 +200,36 @@ function AdminStudents() {
       studentId,
       data,
     }: {
-      studentId: string
-      data: StudentUpdate
+      studentId: string;
+      data: StudentUpdate;
     }) => AdminService.updateStudent({ studentId, requestBody: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["students"] })
-      setIsEditDialogOpen(false)
-      setSelectedStudent(null)
-      showSuccessToast("Student updated successfully!")
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      setIsEditDialogOpen(false);
+      setSelectedStudent(null);
+      showSuccessToast("Student updated successfully!");
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to update student. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Delete student mutation
   const deleteStudentMutation = useMutation({
     mutationFn: (studentId: string) =>
       AdminService.deleteStudent({ studentId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["students"] })
-      showSuccessToast("Student deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      showSuccessToast("Student deleted successfully!");
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to delete student. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Reset password mutation [Story 11.4]
   const resetPasswordMutation = useMutation({
@@ -239,159 +239,159 @@ function AdminStudents() {
         passwordEmailed: response.password_emailed,
         temporaryPassword: response.temporary_password ?? null,
         message: response.message,
-      })
-      setIsResetPasswordDialogOpen(false)
-      setIsPasswordResultDialogOpen(true)
-      queryClient.invalidateQueries({ queryKey: ["students"] })
+      });
+      setIsResetPasswordDialogOpen(false);
+      setIsPasswordResultDialogOpen(true);
+      queryClient.invalidateQueries({ queryKey: ["students"] });
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to reset password. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: (ids: string[]) =>
       AdminService.bulkDeleteStudents({ requestBody: { ids } }),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["students"] })
-      setSelectedStudentIds(new Set())
-      setIsBulkDeleteDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      setSelectedStudentIds(new Set());
+      setIsBulkDeleteDialogOpen(false);
       if (response.deleted_count > 0) {
         showSuccessToast(
           `Successfully deleted ${response.deleted_count} student(s)`,
-        )
+        );
       }
       if (response.failed_count > 0) {
-        showErrorToast(`Failed to delete ${response.failed_count} student(s)`)
+        showErrorToast(`Failed to delete ${response.failed_count} student(s)`);
       }
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to delete students. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   const handleAddStudent = () => {
     if (!newStudent.username || !newStudent.full_name) {
-      showErrorToast("Please fill in all required fields")
-      return
+      showErrorToast("Please fill in all required fields");
+      return;
     }
 
     // Validate username format
     if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(newStudent.username)) {
       showErrorToast(
         "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
-      )
-      return
+      );
+      return;
     }
 
     // Story 28.1: Validate password if not auto-generating
     if (!autoGeneratePassword && newStudent.password) {
       if (newStudent.password.length < 4) {
-        showErrorToast("Password must be at least 4 characters")
-        return
+        showErrorToast("Password must be at least 4 characters");
+        return;
       }
       if (newStudent.password.length > 50) {
-        showErrorToast("Password must be 50 characters or less")
-        return
+        showErrorToast("Password must be 50 characters or less");
+        return;
       }
     }
 
-    createStudentMutation.mutate(newStudent)
-  }
+    createStudentMutation.mutate(newStudent);
+  };
 
   const handleEditStudent = (student: StudentPublic) => {
-    setSelectedStudent(student)
+    setSelectedStudent(student);
     setEditStudent({
       user_email: student.user_email || "",
       user_username: student.user_username || "",
       user_full_name: student.user_full_name || "",
       grade_level: student.grade_level || "",
       parent_email: student.parent_email || "",
-    })
-    setIsEditDialogOpen(true)
-  }
+    });
+    setIsEditDialogOpen(true);
+  };
 
   const handleUpdateStudent = () => {
-    if (!selectedStudent) return
+    if (!selectedStudent) return;
     updateStudentMutation.mutate({
       studentId: selectedStudent.id,
       data: editStudent,
-    })
-  }
+    });
+  };
 
   const handleDeleteStudent = (studentId: string, studentName: string) => {
-    setStudentToDelete({ id: studentId, name: studentName })
-    setIsDeleteDialogOpen(true)
-  }
+    setStudentToDelete({ id: studentId, name: studentName });
+    setIsDeleteDialogOpen(true);
+  };
 
   const confirmDeleteStudent = () => {
     if (studentToDelete) {
-      deleteStudentMutation.mutate(studentToDelete.id)
-      setStudentToDelete(null)
+      deleteStudentMutation.mutate(studentToDelete.id);
+      setStudentToDelete(null);
     }
-  }
+  };
 
   // Password reset handlers [Story 9.2]
   const _handleResetPassword = (userId: string, userName: string) => {
-    setStudentToResetPassword({ userId, userName })
-    setIsResetPasswordDialogOpen(true)
-  }
+    setStudentToResetPassword({ userId, userName });
+    setIsResetPasswordDialogOpen(true);
+  };
 
   const confirmResetPassword = () => {
     if (studentToResetPassword) {
-      resetPasswordMutation.mutate(studentToResetPassword.userId)
+      resetPasswordMutation.mutate(studentToResetPassword.userId);
     }
-  }
+  };
 
   const handleCopyPassword = async () => {
     if (resetResult?.temporaryPassword) {
-      await navigator.clipboard.writeText(resetResult.temporaryPassword)
-      setPasswordCopied(true)
-      showSuccessToast("Password copied to clipboard")
-      setTimeout(() => setPasswordCopied(false), 2000)
+      await navigator.clipboard.writeText(resetResult.temporaryPassword);
+      setPasswordCopied(true);
+      showSuccessToast("Password copied to clipboard");
+      setTimeout(() => setPasswordCopied(false), 2000);
     }
-  }
+  };
 
   const closePasswordResultDialog = () => {
-    setIsPasswordResultDialogOpen(false)
-    setResetResult(null)
-    setStudentToResetPassword(null)
-    setPasswordCopied(false)
-  }
+    setIsPasswordResultDialogOpen(false);
+    setResetResult(null);
+    setStudentToResetPassword(null);
+    setPasswordCopied(false);
+  };
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedStudentIds(new Set(students.map((s) => s.id)))
+      setSelectedStudentIds(new Set(students.map((s) => s.id)));
     } else {
-      setSelectedStudentIds(new Set())
+      setSelectedStudentIds(new Set());
     }
-  }
+  };
 
   const handleSelectStudent = (studentId: string, checked: boolean) => {
-    const newSelected = new Set(selectedStudentIds)
+    const newSelected = new Set(selectedStudentIds);
     if (checked) {
-      newSelected.add(studentId)
+      newSelected.add(studentId);
     } else {
-      newSelected.delete(studentId)
+      newSelected.delete(studentId);
     }
-    setSelectedStudentIds(newSelected)
-  }
+    setSelectedStudentIds(newSelected);
+  };
 
   const handleBulkDelete = () => {
     if (selectedStudentIds.size > 0) {
-      setIsBulkDeleteDialogOpen(true)
+      setIsBulkDeleteDialogOpen(true);
     }
-  }
+  };
 
   const confirmBulkDelete = () => {
-    bulkDeleteMutation.mutate(Array.from(selectedStudentIds))
-  }
+    bulkDeleteMutation.mutate(Array.from(selectedStudentIds));
+  };
 
   if (error) {
     return (
@@ -400,7 +400,7 @@ function AdminStudents() {
           Error loading students. Please try again later.
         </div>
       </PageContainer>
-    )
+    );
   }
 
   return (
@@ -496,9 +496,7 @@ function AdminStudents() {
                     <Checkbox
                       checked={
                         students.length > 0 &&
-                        students.every((s) =>
-                          selectedStudentIds.has(s.id),
-                        )
+                        students.every((s) => selectedStudentIds.has(s.id))
                       }
                       onCheckedChange={handleSelectAll}
                       aria-label="Select all"
@@ -577,8 +575,8 @@ function AdminStudents() {
                             setSelectedStudentForPassword({
                               id: student.id,
                               name: student.user_full_name || "Student",
-                            })
-                            setIsPasswordModalOpen(true)
+                            });
+                            setIsPasswordModalOpen(true);
                           }}
                           className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                           title="View/Set Password"
@@ -630,8 +628,8 @@ function AdminStudents() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p - 1)
-                setSelectedStudentIds(new Set())
+                setCurrentPage((p) => p - 1);
+                setSelectedStudentIds(new Set());
               }}
               disabled={currentPage === 1}
             >
@@ -645,8 +643,8 @@ function AdminStudents() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p + 1)
-                setSelectedStudentIds(new Set())
+                setCurrentPage((p) => p + 1);
+                setSelectedStudentIds(new Set());
               }}
               disabled={currentPage === totalPages}
             >
@@ -679,15 +677,15 @@ function AdminStudents() {
                 placeholder="e.g., John Doe"
                 value={newStudent.full_name}
                 onChange={(e) => {
-                  const fullName = e.target.value
+                  const fullName = e.target.value;
                   // Auto-generate username with Turkish character support
-                  const generatedUsername = generateUsername(fullName)
+                  const generatedUsername = generateUsername(fullName);
 
                   setNewStudent({
                     ...newStudent,
                     full_name: fullName,
                     username: generatedUsername,
-                  })
+                  });
                 }}
               />
             </div>
@@ -733,9 +731,9 @@ function AdminStudents() {
                   <Checkbox
                     checked={autoGeneratePassword}
                     onCheckedChange={(checked) => {
-                      setAutoGeneratePassword(checked === true)
+                      setAutoGeneratePassword(checked === true);
                       if (checked) {
-                        setNewStudent({ ...newStudent, password: undefined })
+                        setNewStudent({ ...newStudent, password: undefined });
                       }
                     }}
                   />
@@ -1039,7 +1037,7 @@ function AdminStudents() {
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
         onImportComplete={() => {
-          queryClient.invalidateQueries({ queryKey: ["students"] })
+          queryClient.invalidateQueries({ queryKey: ["students"] });
         }}
         isAdmin={true}
       />
@@ -1064,11 +1062,11 @@ function AdminStudents() {
           studentName={selectedStudentForPassword.name}
           isOpen={isPasswordModalOpen}
           onClose={() => {
-            setIsPasswordModalOpen(false)
-            setSelectedStudentForPassword(null)
+            setIsPasswordModalOpen(false);
+            setSelectedStudentForPassword(null);
           }}
         />
       )}
     </PageContainer>
-  )
+  );
 }

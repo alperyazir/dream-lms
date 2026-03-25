@@ -19,8 +19,8 @@ import {
   Trash2,
   Volume2,
   X,
-} from "lucide-react"
-import { useCallback, useRef, useState } from "react"
+} from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,30 +30,30 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import type {
   ActivityType,
   GeneratedActivity,
-} from "@/hooks/useGenerationState"
-import { cn } from "@/lib/utils"
+} from "@/hooks/useGenerationState";
+import { cn } from "@/lib/utils";
 
 interface GenerationPreviewProps {
-  activityType: ActivityType
-  result: GeneratedActivity
-  onEdit?: () => void
-  onSave?: () => void
-  onCreateAssignment?: () => void
-  onRegenerate?: () => void
-  onUpdateQuestion?: (index: number, question: any) => void
-  onDeleteQuestion?: (index: number) => void
+  activityType: ActivityType;
+  result: GeneratedActivity;
+  onEdit?: () => void;
+  onSave?: () => void;
+  onCreateAssignment?: () => void;
+  onRegenerate?: () => void;
+  onUpdateQuestion?: (index: number, question: any) => void;
+  onDeleteQuestion?: (index: number) => void;
 }
 
 export function GenerationPreview({
@@ -66,205 +66,205 @@ export function GenerationPreview({
   onUpdateQuestion,
   onDeleteQuestion,
 }: GenerationPreviewProps) {
-  const [isExpanded, setIsExpanded] = useState(true) // Default to expanded for editing
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [isExpanded, setIsExpanded] = useState(true); // Default to expanded for editing
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<{
-    question_text: string
-    options: string[]
-    correct_index: number
-  } | null>(null)
+    question_text: string;
+    options: string[];
+    correct_index: number;
+  } | null>(null);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(
     null,
-  )
+  );
 
   // Vocabulary quiz edit form state
   const [vocabEditForm, setVocabEditForm] = useState<{
-    definition: string
-    correct_answer: string
-  } | null>(null)
+    definition: string;
+    correct_answer: string;
+  } | null>(null);
 
   // Vocabulary matching edit form state
   const [matchingEditForm, setMatchingEditForm] = useState<{
-    left_item: string
-    right_item: string
-  } | null>(null)
+    left_item: string;
+    right_item: string;
+  } | null>(null);
 
   // Sentence builder edit form state
   const [sentenceEditForm, setSentenceEditForm] = useState<{
-    correct_sentence: string
-  } | null>(null)
+    correct_sentence: string;
+  } | null>(null);
 
   // Word builder edit form state
   const [wordEditForm, setWordEditForm] = useState<{
-    correct_word: string
-    definition: string
-  } | null>(null)
+    correct_word: string;
+    definition: string;
+  } | null>(null);
 
   // Audio playback state
   const [playingAudioIndex, setPlayingAudioIndex] = useState<number | null>(
     null,
-  )
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  );
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Get preview data based on activity type
-  const preview = getPreviewData(activityType, result)
+  const preview = getPreviewData(activityType, result);
 
   // Get API base URL from environment
-  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   // Get audio info for a question (vocabulary quiz only)
   const getAudioInfo = (
     index: number,
   ): { bookId: number; wordId: string } | null => {
-    if (activityType !== "vocabulary_quiz") return null
-    const questions = (result as any).questions || []
-    const question = questions[index]
-    if (!question) return null
+    if (activityType !== "vocabulary_quiz") return null;
+    const questions = (result as any).questions || [];
+    const question = questions[index];
+    if (!question) return null;
 
     // Get book_id from the quiz result
-    const bookId = (result as any).book_id
-    if (!bookId) return null
+    const bookId = (result as any).book_id;
+    if (!bookId) return null;
 
     // Get vocabulary_id from the question (DCS word ID like "word_1")
-    const wordId = question.vocabulary_id
-    if (!wordId) return null
+    const wordId = question.vocabulary_id;
+    if (!wordId) return null;
 
-    return { bookId, wordId }
-  }
+    return { bookId, wordId };
+  };
 
   // Handle audio playback - fetches from backend proxy endpoint
   const handlePlayAudio = useCallback(
     async (index: number) => {
-      const audioInfo = getAudioInfo(index)
-      if (!audioInfo) return
+      const audioInfo = getAudioInfo(index);
+      if (!audioInfo) return;
 
       // Stop current audio if playing
       if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current = null
+        audioRef.current.pause();
+        audioRef.current = null;
       }
 
       // If clicking the same one that's playing, just stop
       if (playingAudioIndex === index) {
-        setPlayingAudioIndex(null)
-        return
+        setPlayingAudioIndex(null);
+        return;
       }
 
-      setPlayingAudioIndex(index)
+      setPlayingAudioIndex(index);
 
       try {
         // Get auth token from localStorage
-        const token = localStorage.getItem("access_token")
+        const token = localStorage.getItem("access_token");
 
         // Fetch audio from backend proxy using word_id (not word text)
         // Backend: GET /api/v1/ai/audio/vocabulary/{book_id}/{lang}/{word_id}
-        const audioUrl = `${API_BASE_URL}/api/v1/ai/audio/vocabulary/${audioInfo.bookId}/en/${audioInfo.wordId}`
+        const audioUrl = `${API_BASE_URL}/api/v1/ai/audio/vocabulary/${audioInfo.bookId}/en/${audioInfo.wordId}`;
         const response = await fetch(audioUrl, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
-        })
+        });
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch audio: ${response.status}`)
+          throw new Error(`Failed to fetch audio: ${response.status}`);
         }
 
         // Create blob URL and play
-        const blob = await response.blob()
-        const blobUrl = URL.createObjectURL(blob)
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
 
-        const audio = new Audio(blobUrl)
-        audioRef.current = audio
+        const audio = new Audio(blobUrl);
+        audioRef.current = audio;
 
         audio.onended = () => {
-          setPlayingAudioIndex(null)
-          audioRef.current = null
-          URL.revokeObjectURL(blobUrl)
-        }
+          setPlayingAudioIndex(null);
+          audioRef.current = null;
+          URL.revokeObjectURL(blobUrl);
+        };
 
         audio.onerror = () => {
-          setPlayingAudioIndex(null)
-          audioRef.current = null
-          URL.revokeObjectURL(blobUrl)
-        }
+          setPlayingAudioIndex(null);
+          audioRef.current = null;
+          URL.revokeObjectURL(blobUrl);
+        };
 
-        await audio.play()
+        await audio.play();
       } catch (error) {
-        console.error("Audio playback failed:", error)
-        setPlayingAudioIndex(null)
-        audioRef.current = null
+        console.error("Audio playback failed:", error);
+        setPlayingAudioIndex(null);
+        audioRef.current = null;
       }
     },
     [playingAudioIndex, getAudioInfo],
-  )
+  );
 
   // Start editing an item
   const handleStartEdit = (index: number) => {
-    setEditingIndex(index)
+    setEditingIndex(index);
 
     // Clear all edit forms first
-    setEditForm(null)
-    setVocabEditForm(null)
-    setMatchingEditForm(null)
-    setSentenceEditForm(null)
-    setWordEditForm(null)
+    setEditForm(null);
+    setVocabEditForm(null);
+    setMatchingEditForm(null);
+    setSentenceEditForm(null);
+    setWordEditForm(null);
 
     if (activityType === "vocabulary_quiz") {
-      const questions = (result as any).questions || []
-      const q = questions[index]
+      const questions = (result as any).questions || [];
+      const q = questions[index];
       if (q) {
         setVocabEditForm({
           definition: q.definition,
           correct_answer: q.correct_answer,
-        })
+        });
       }
     } else if (
       activityType === "ai_quiz" ||
       activityType === "reading_comprehension"
     ) {
-      const questions = (result as any).questions || []
-      const q = questions[index]
+      const questions = (result as any).questions || [];
+      const q = questions[index];
       if (q) {
         setEditForm({
           question_text: q.question_text,
           options: q.options ? [...q.options] : [],
           correct_index: q.correct_index ?? 0,
-        })
+        });
       }
     } else if (activityType === "sentence_builder") {
-      const sentences = (result as any).sentences || []
-      const s = sentences[index]
+      const sentences = (result as any).sentences || [];
+      const s = sentences[index];
       if (s) {
         setSentenceEditForm({
           correct_sentence: s.correct_sentence || s.sentence || "",
-        })
+        });
       }
     } else if (activityType === "word_builder") {
-      const words = (result as any).words || []
-      const w = words[index]
+      const words = (result as any).words || [];
+      const w = words[index];
       if (w) {
         setWordEditForm({
           correct_word: w.word || w.correct_word || "",
           definition: w.definition || w.hint || "",
-        })
+        });
       }
     }
-  }
+  };
 
   // Cancel editing
   const handleCancelEdit = () => {
-    setEditingIndex(null)
-    setEditForm(null)
-    setVocabEditForm(null)
-    setMatchingEditForm(null)
-    setSentenceEditForm(null)
-    setWordEditForm(null)
-  }
+    setEditingIndex(null);
+    setEditForm(null);
+    setVocabEditForm(null);
+    setMatchingEditForm(null);
+    setSentenceEditForm(null);
+    setWordEditForm(null);
+  };
 
   // Save edit
   const handleSaveEdit = () => {
     if (editingIndex !== null && onUpdateQuestion) {
       if (activityType === "vocabulary_quiz" && vocabEditForm) {
-        const questions = (result as any).questions || []
-        const originalQuestion = questions[editingIndex]
+        const questions = (result as any).questions || [];
+        const originalQuestion = questions[editingIndex];
         // Update vocabulary quiz question
         onUpdateQuestion(editingIndex, {
           ...originalQuestion,
@@ -276,14 +276,14 @@ export function GenerationPreview({
               ? vocabEditForm.correct_answer
               : opt,
           ),
-        })
+        });
       } else if (
         (activityType === "ai_quiz" ||
           activityType === "reading_comprehension") &&
         editForm
       ) {
-        const questions = (result as any).questions || []
-        const originalQuestion = questions[editingIndex]
+        const questions = (result as any).questions || [];
+        const originalQuestion = questions[editingIndex];
         // Update AI Quiz / Reading Comprehension question
         onUpdateQuestion(editingIndex, {
           ...originalQuestion,
@@ -291,28 +291,28 @@ export function GenerationPreview({
           options: editForm.options,
           correct_index: editForm.correct_index,
           correct_answer: editForm.options[editForm.correct_index],
-        })
+        });
       } else if (activityType === "sentence_builder" && sentenceEditForm) {
-        const sentences = (result as any).sentences || []
-        const originalSentence = sentences[editingIndex]
+        const sentences = (result as any).sentences || [];
+        const originalSentence = sentences[editingIndex];
         // Update sentence builder - re-split words from the new sentence
         const words = sentenceEditForm.correct_sentence
           .split(/\s+/)
-          .filter(Boolean)
+          .filter(Boolean);
         onUpdateQuestion(editingIndex, {
           ...originalSentence,
           correct_sentence: sentenceEditForm.correct_sentence,
           sentence: sentenceEditForm.correct_sentence,
           words: words,
           word_count: words.length,
-        })
+        });
       } else if (activityType === "word_builder" && wordEditForm) {
-        const words = (result as any).words || []
-        const originalWord = words[editingIndex]
+        const words = (result as any).words || [];
+        const originalWord = words[editingIndex];
         // Update word builder - re-scramble letters from new word
         const letters = wordEditForm.correct_word
           .split("")
-          .sort(() => Math.random() - 0.5)
+          .sort(() => Math.random() - 0.5);
         onUpdateQuestion(editingIndex, {
           ...originalWord,
           word: wordEditForm.correct_word,
@@ -320,38 +320,38 @@ export function GenerationPreview({
           definition: wordEditForm.definition,
           hint: wordEditForm.definition,
           letters: letters,
-        })
+        });
       }
     }
-    handleCancelEdit()
-  }
+    handleCancelEdit();
+  };
 
   // Update option text
   const handleOptionChange = (optIndex: number, value: string) => {
     if (editForm) {
-      const newOptions = [...editForm.options]
-      newOptions[optIndex] = value
-      setEditForm({ ...editForm, options: newOptions })
+      const newOptions = [...editForm.options];
+      newOptions[optIndex] = value;
+      setEditForm({ ...editForm, options: newOptions });
     }
-  }
+  };
 
   // Handle delete - show confirmation dialog
   const handleDeleteClick = (index: number) => {
-    setDeleteConfirmIndex(index)
-  }
+    setDeleteConfirmIndex(index);
+  };
 
   // Confirm delete
   const handleConfirmDelete = () => {
     if (deleteConfirmIndex !== null && onDeleteQuestion) {
-      onDeleteQuestion(deleteConfirmIndex)
+      onDeleteQuestion(deleteConfirmIndex);
     }
-    setDeleteConfirmIndex(null)
-  }
+    setDeleteConfirmIndex(null);
+  };
 
   // Cancel delete
   const handleCancelDelete = () => {
-    setDeleteConfirmIndex(null)
-  }
+    setDeleteConfirmIndex(null);
+  };
 
   // Support editing for all activity types
   const editableTypes = [
@@ -360,9 +360,9 @@ export function GenerationPreview({
     "reading_comprehension",
     "sentence_builder",
     "word_builder",
-  ]
-  const canEdit = editableTypes.includes(activityType) && onUpdateQuestion
-  const canDelete = editableTypes.includes(activityType) && onDeleteQuestion
+  ];
+  const canEdit = editableTypes.includes(activityType) && onUpdateQuestion;
+  const canDelete = editableTypes.includes(activityType) && onDeleteQuestion;
 
   return (
     <Card>
@@ -859,7 +859,7 @@ export function GenerationPreview({
         </AlertDialogContent>
       </AlertDialog>
     </Card>
-  )
+  );
 }
 
 /**
@@ -880,7 +880,7 @@ export function GenerationPreviewEmpty() {
         </p>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 /**
@@ -890,30 +890,30 @@ function getPreviewData(
   activityType: ActivityType,
   result: any,
 ): {
-  activityName: string
-  stats: Array<{ label: string; value: string | number }>
+  activityName: string;
+  stats: Array<{ label: string; value: string | number }>;
   samples: Array<{
-    question: string
-    details?: string
-    options?: Array<{ label: string; text: string; isCorrect?: boolean }>
-  }>
+    question: string;
+    details?: string;
+    options?: Array<{ label: string; text: string; isCorrect?: boolean }>;
+  }>;
 } {
   // Default preview structure
-  let activityName = ""
-  let stats: Array<{ label: string; value: string | number }> = []
+  let activityName = "";
+  let stats: Array<{ label: string; value: string | number }> = [];
   let samples: Array<{
-    question: string
-    details?: string
-    options?: Array<{ label: string; text: string; isCorrect?: boolean }>
-  }> = []
+    question: string;
+    details?: string;
+    options?: Array<{ label: string; text: string; isCorrect?: boolean }>;
+  }> = [];
 
   switch (activityType) {
     case "ai_quiz":
-      activityName = "Quiz"
+      activityName = "Quiz";
       stats = [
         { label: "Questions", value: result.questions?.length || 0 },
         { label: "Difficulty", value: result.difficulty || "Medium" },
-      ]
+      ];
       samples = (result.questions || []).map((q: any, i: number) => ({
         question: `Q${i + 1}: ${q.question_text}`,
         options: q.options
@@ -923,36 +923,36 @@ function getPreviewData(
               isCorrect: idx === q.correct_index,
             }))
           : undefined,
-      }))
-      break
+      }));
+      break;
 
     case "vocabulary_quiz": {
-      activityName = "Vocabulary Quiz"
+      activityName = "Vocabulary Quiz";
       // Count unique words (some questions might have duplicate words)
       const uniqueWords = new Set(
         (result.questions || []).map((q: any) => q.correct_answer),
-      )
+      );
       stats = [
         { label: "Words", value: uniqueWords.size },
         { label: "Questions", value: result.questions?.length || 0 },
-      ]
+      ];
       samples = (result.questions || []).map((q: any, i: number) => ({
         question: `Q${i + 1}: ${q.correct_answer}`,
         details: q.definition,
-      }))
-      break
+      }));
+      break;
     }
 
     case "reading_comprehension": {
-      activityName = "Reading Comprehension"
+      activityName = "Reading Comprehension";
       // Calculate word count for passage
       const passageWordCount = result.passage
         ? result.passage.split(/\s+/).length
-        : 0
+        : 0;
       stats = [
         { label: "Questions", value: result.questions?.length || 0 },
         { label: "Passage Words", value: passageWordCount },
-      ]
+      ];
       samples = (result.questions || []).map((q: any, i: number) => ({
         question: `Q${i + 1}: ${q.question_text}`,
         details: `Type: ${q.question_type || "Unknown"}`,
@@ -961,35 +961,35 @@ function getPreviewData(
           text: opt,
           isCorrect: optIdx === q.correct_index,
         })),
-      }))
-      break
+      }));
+      break;
     }
 
     case "sentence_builder":
-      activityName = "Sentence Builder"
+      activityName = "Sentence Builder";
       stats = [
         { label: "Sentences", value: result.sentences?.length || 0 },
         { label: "Difficulty", value: result.difficulty || "Medium" },
-      ]
+      ];
       samples = (result.sentences || []).map((s: any, i: number) => ({
         question: `${i + 1}. ${s.correct_sentence || s.sentence || ""}`,
         details: s.word_count ? `${s.word_count} words` : undefined,
-      }))
-      break
+      }));
+      break;
 
     case "word_builder":
-      activityName = "Word Builder"
+      activityName = "Word Builder";
       stats = [
         { label: "Words", value: result.words?.length || 0 },
         { label: "Hint Type", value: result.hint_type || "Both" },
-      ]
+      ];
       samples = (result.words || []).map((w: any, i: number) => ({
         // Handle both field naming conventions: word/correct_word
         question: `${i + 1}. ${w.correct_word || w.word || ""}`,
         details: w.definition || w.hint || "",
-      }))
-      break
+      }));
+      break;
   }
 
-  return { activityName, stats, samples }
+  return { activityName, stats, samples };
 }

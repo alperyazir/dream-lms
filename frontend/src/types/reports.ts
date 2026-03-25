@@ -6,17 +6,17 @@
 /**
  * Type of report to generate
  */
-export type ReportType = "student" | "class" | "assignment"
+export type ReportType = "student" | "class" | "assignment";
 
 /**
  * Output format for generated reports
  */
-export type ReportFormat = "pdf" | "excel"
+export type ReportFormat = "pdf" | "excel";
 
 /**
  * Time period for report data
  */
-export type ReportPeriod = "week" | "month" | "semester" | "custom"
+export type ReportPeriod = "week" | "month" | "semester" | "custom";
 
 /**
  * Predefined report template types
@@ -25,98 +25,98 @@ export type ReportTemplateType =
   | "weekly_class_summary"
   | "student_progress_report"
   | "monthly_assignment_overview"
-  | "parent_teacher_conference"
+  | "parent_teacher_conference";
 
 /**
  * Status of a report generation job
  */
-export type ReportJobStatus = "pending" | "processing" | "completed" | "failed"
+export type ReportJobStatus = "pending" | "processing" | "completed" | "failed";
 
 /**
  * Request to generate a new report
  */
 export interface ReportGenerateRequest {
-  report_type: ReportType
-  period: ReportPeriod
-  start_date?: string | null
-  end_date?: string | null
-  target_id: string
-  format: ReportFormat
-  template_type?: ReportTemplateType | null
+  report_type: ReportType;
+  period: ReportPeriod;
+  start_date?: string | null;
+  end_date?: string | null;
+  target_id: string;
+  format: ReportFormat;
+  template_type?: ReportTemplateType | null;
 }
 
 /**
  * Response after initiating report generation
  */
 export interface ReportJobResponse {
-  job_id: string
-  status: ReportJobStatus
-  created_at: string
-  estimated_completion?: string | null
+  job_id: string;
+  status: ReportJobStatus;
+  created_at: string;
+  estimated_completion?: string | null;
 }
 
 /**
  * Response for checking report job status
  */
 export interface ReportStatusResponse {
-  job_id: string
-  status: ReportJobStatus
-  progress_percentage: number
-  download_url?: string | null
-  error_message?: string | null
+  job_id: string;
+  status: ReportJobStatus;
+  progress_percentage: number;
+  download_url?: string | null;
+  error_message?: string | null;
 }
 
 /**
  * A saved report configuration template
  */
 export interface SavedReportTemplate {
-  id: string
-  name: string
-  config: ReportGenerateRequest
-  created_at: string
+  id: string;
+  name: string;
+  config: ReportGenerateRequest;
+  created_at: string;
 }
 
 /**
  * Request to save a report configuration as a template
  */
 export interface SavedReportTemplateCreate {
-  name: string
-  config: ReportGenerateRequest
+  name: string;
+  config: ReportGenerateRequest;
 }
 
 /**
  * A previously generated report in history
  */
 export interface ReportHistoryItem {
-  id: string
-  job_id: string
-  report_type: ReportType
-  template_type: ReportTemplateType | null
-  format: ReportFormat
-  target_name: string
-  created_at: string
-  expires_at: string
-  download_url: string | null
-  is_expired: boolean
+  id: string;
+  job_id: string;
+  report_type: ReportType;
+  template_type: ReportTemplateType | null;
+  format: ReportFormat;
+  target_name: string;
+  created_at: string;
+  expires_at: string;
+  download_url: string | null;
+  is_expired: boolean;
 }
 
 /**
  * Response containing report history list
  */
 export interface ReportHistoryResponse {
-  reports: ReportHistoryItem[]
+  reports: ReportHistoryItem[];
 }
 
 /**
  * Template display information
  */
 export interface ReportTemplateInfo {
-  type: ReportTemplateType
-  name: string
-  description: string
-  icon: string
-  reportType: ReportType
-  defaultPeriod: ReportPeriod
+  type: ReportTemplateType;
+  name: string;
+  description: string;
+  icon: string;
+  reportType: ReportType;
+  defaultPeriod: ReportPeriod;
 }
 
 /**
@@ -155,7 +155,7 @@ export const PREDEFINED_TEMPLATES: ReportTemplateInfo[] = [
     reportType: "student",
     defaultPeriod: "semester",
   },
-]
+];
 
 /**
  * Report type display labels
@@ -164,7 +164,7 @@ export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
   student: "Student Report",
   class: "Class Report",
   assignment: "Assignment Overview",
-}
+};
 
 /**
  * Report period display labels
@@ -174,7 +174,7 @@ export const REPORT_PERIOD_LABELS: Record<ReportPeriod, string> = {
   month: "Last 30 Days",
   semester: "This Semester",
   custom: "Custom Date Range",
-}
+};
 
 /**
  * Report format display labels
@@ -182,4 +182,4 @@ export const REPORT_PERIOD_LABELS: Record<ReportPeriod, string> = {
 export const REPORT_FORMAT_LABELS: Record<ReportFormat, string> = {
   pdf: "PDF Document",
   excel: "Excel Spreadsheet",
-}
+};

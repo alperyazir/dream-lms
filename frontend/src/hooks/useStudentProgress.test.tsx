@@ -3,17 +3,17 @@
  * Story 5.5: Student Progress Tracking & Personal Analytics
  */
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { renderHook, waitFor } from "@testing-library/react"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import * as studentsApi from "@/services/studentsApi"
-import type { StudentProgressResponse } from "@/types/analytics"
-import { useStudentProgress } from "./useStudentProgress"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as studentsApi from "@/services/studentsApi";
+import type { StudentProgressResponse } from "@/types/analytics";
+import { useStudentProgress } from "./useStudentProgress";
 
 // Mock the studentsApi
 vi.mock("@/services/studentsApi", () => ({
   getStudentProgress: vi.fn(),
-}))
+}));
 
 const mockProgress: StudentProgressResponse = {
   stats: {
@@ -69,10 +69,10 @@ const mockProgress: StudentProgressResponse = {
     avg_per_assignment: 12.5,
   },
   improvement_tips: ["Keep up the great work!", "You're on a 3-day streak!"],
-}
+};
 
 describe("useStudentProgress", () => {
-  let queryClient: QueryClient
+  let queryClient: QueryClient;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -81,93 +81,93 @@ describe("useStudentProgress", () => {
           retry: false,
         },
       },
-    })
-    vi.clearAllMocks()
-  })
+    });
+    vi.clearAllMocks();
+  });
 
   afterEach(() => {
-    queryClient.clear()
-  })
+    queryClient.clear();
+  });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  )
+  );
 
   it("should fetch progress data with default period", async () => {
-    vi.mocked(studentsApi.getStudentProgress).mockResolvedValue(mockProgress)
+    vi.mocked(studentsApi.getStudentProgress).mockResolvedValue(mockProgress);
 
-    const { result } = renderHook(() => useStudentProgress(), { wrapper })
+    const { result } = renderHook(() => useStudentProgress(), { wrapper });
 
-    expect(result.current.isLoading).toBe(true)
+    expect(result.current.isLoading).toBe(true);
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
-    expect(studentsApi.getStudentProgress).toHaveBeenCalledWith("this_month")
-    expect(result.current.progress).toEqual(mockProgress)
-    expect(result.current.error).toBeNull()
-  })
+    expect(studentsApi.getStudentProgress).toHaveBeenCalledWith("this_month");
+    expect(result.current.progress).toEqual(mockProgress);
+    expect(result.current.error).toBeNull();
+  });
 
   it("should fetch progress data with custom period", async () => {
-    vi.mocked(studentsApi.getStudentProgress).mockResolvedValue(mockProgress)
+    vi.mocked(studentsApi.getStudentProgress).mockResolvedValue(mockProgress);
 
     const { result } = renderHook(
       () => useStudentProgress({ period: "all_time" }),
       { wrapper },
-    )
+    );
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
-    expect(studentsApi.getStudentProgress).toHaveBeenCalledWith("all_time")
-    expect(result.current.progress).toEqual(mockProgress)
-  })
+    expect(studentsApi.getStudentProgress).toHaveBeenCalledWith("all_time");
+    expect(result.current.progress).toEqual(mockProgress);
+  });
 
   it("should handle API errors", async () => {
-    const error = new Error("Failed to fetch progress")
-    vi.mocked(studentsApi.getStudentProgress).mockRejectedValue(error)
+    const error = new Error("Failed to fetch progress");
+    vi.mocked(studentsApi.getStudentProgress).mockRejectedValue(error);
 
-    const { result } = renderHook(() => useStudentProgress(), { wrapper })
+    const { result } = renderHook(() => useStudentProgress(), { wrapper });
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
-    expect(result.current.error).toBeTruthy()
-    expect(result.current.progress).toBeNull()
-  })
+    expect(result.current.error).toBeTruthy();
+    expect(result.current.progress).toBeNull();
+  });
 
   it("should not fetch when disabled", async () => {
-    vi.mocked(studentsApi.getStudentProgress).mockResolvedValue(mockProgress)
+    vi.mocked(studentsApi.getStudentProgress).mockResolvedValue(mockProgress);
 
     const { result } = renderHook(
       () => useStudentProgress({ enabled: false }),
       { wrapper },
-    )
+    );
 
     // Wait a bit to ensure no fetch happens
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-    expect(studentsApi.getStudentProgress).not.toHaveBeenCalled()
-    expect(result.current.isLoading).toBe(false)
-    expect(result.current.progress).toBeNull()
-  })
+    expect(studentsApi.getStudentProgress).not.toHaveBeenCalled();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.progress).toBeNull();
+  });
 
   it("should return refetch function", async () => {
-    vi.mocked(studentsApi.getStudentProgress).mockResolvedValue(mockProgress)
+    vi.mocked(studentsApi.getStudentProgress).mockResolvedValue(mockProgress);
 
-    const { result } = renderHook(() => useStudentProgress(), { wrapper })
+    const { result } = renderHook(() => useStudentProgress(), { wrapper });
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+      expect(result.current.isLoading).toBe(false);
+    });
 
-    expect(typeof result.current.refetch).toBe("function")
+    expect(typeof result.current.refetch).toBe("function");
 
     // Refetch and verify it's called again
-    await result.current.refetch()
-    expect(studentsApi.getStudentProgress).toHaveBeenCalledTimes(2)
-  })
-})
+    await result.current.refetch();
+    expect(studentsApi.getStudentProgress).toHaveBeenCalledTimes(2);
+  });
+});

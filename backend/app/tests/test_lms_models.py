@@ -1,6 +1,7 @@
 """
 Unit tests for LMS domain models (Publisher, School, Teacher, Student)
 """
+
 import pytest
 from sqlmodel import Session, select
 

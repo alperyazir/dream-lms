@@ -6,18 +6,18 @@
  * State persists in session for convenience.
  */
 
-import { create } from "zustand"
-import { persist } from "zustand/middleware"
-import type { VocabularyWord } from "@/types/vocabulary-explorer"
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { VocabularyWord } from "@/types/vocabulary-explorer";
 
 interface QuizCartState {
-  words: Map<string, VocabularyWord>
-  addWord: (word: VocabularyWord) => void
-  removeWord: (vocabularyId: string) => void
-  hasWord: (vocabularyId: string) => boolean
-  clearCart: () => void
-  getCartWords: () => VocabularyWord[]
-  getCartSize: () => number
+  words: Map<string, VocabularyWord>;
+  addWord: (word: VocabularyWord) => void;
+  removeWord: (vocabularyId: string) => void;
+  hasWord: (vocabularyId: string) => boolean;
+  clearCart: () => void;
+  getCartWords: () => VocabularyWord[];
+  getCartSize: () => number;
 }
 
 /**
@@ -33,34 +33,34 @@ export const useQuizCart = create<QuizCartState>()(
 
       addWord: (word: VocabularyWord) => {
         set((state) => {
-          const newWords = new Map(state.words)
-          newWords.set(word.id, word)
-          return { words: newWords }
-        })
+          const newWords = new Map(state.words);
+          newWords.set(word.id, word);
+          return { words: newWords };
+        });
       },
 
       removeWord: (vocabularyId: string) => {
         set((state) => {
-          const newWords = new Map(state.words)
-          newWords.delete(vocabularyId)
-          return { words: newWords }
-        })
+          const newWords = new Map(state.words);
+          newWords.delete(vocabularyId);
+          return { words: newWords };
+        });
       },
 
       hasWord: (vocabularyId: string) => {
-        return get().words.has(vocabularyId)
+        return get().words.has(vocabularyId);
       },
 
       clearCart: () => {
-        set({ words: new Map() })
+        set({ words: new Map() });
       },
 
       getCartWords: () => {
-        return Array.from(get().words.values())
+        return Array.from(get().words.values());
       },
 
       getCartSize: () => {
-        return get().words.size
+        return get().words.size;
       },
     }),
     {
@@ -68,19 +68,19 @@ export const useQuizCart = create<QuizCartState>()(
       // Custom storage to handle Map serialization
       storage: {
         getItem: (name) => {
-          const str = sessionStorage.getItem(name)
-          if (!str) return null
+          const str = sessionStorage.getItem(name);
+          if (!str) return null;
 
-          const { state } = JSON.parse(str)
+          const { state } = JSON.parse(str);
           return {
             state: {
               ...state,
               words: new Map(Object.entries(state.words || {})),
             },
-          }
+          };
         },
         setItem: (name, value) => {
-          const wordsObj = Object.fromEntries(value.state.words)
+          const wordsObj = Object.fromEntries(value.state.words);
           sessionStorage.setItem(
             name,
             JSON.stringify({
@@ -89,10 +89,10 @@ export const useQuizCart = create<QuizCartState>()(
                 words: wordsObj,
               },
             }),
-          )
+          );
         },
         removeItem: (name) => sessionStorage.removeItem(name),
       },
     },
   ),
-)
+);

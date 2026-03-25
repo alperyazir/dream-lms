@@ -224,7 +224,9 @@ class WebhookRegistrationService:
 
                 if force_recreate:
                     # Delete existing and create new
-                    logger.info(f"Force recreate requested. Deleting subscription {subscription_id}...")
+                    logger.info(
+                        f"Force recreate requested. Deleting subscription {subscription_id}..."
+                    )
                     try:
                         async with httpx.AsyncClient() as client:
                             await client.delete(

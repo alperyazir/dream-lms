@@ -545,9 +545,7 @@ class GeminiProvider(LLMProvider):
             # Combine text from non-thinking parts only
             # Gemini 2.5+ models include "thought" parts for reasoning
             content = "".join(
-                part.get("text", "")
-                for part in parts
-                if not part.get("thought", False)
+                part.get("text", "") for part in parts if not part.get("thought", False)
             )
 
             # Extract token usage

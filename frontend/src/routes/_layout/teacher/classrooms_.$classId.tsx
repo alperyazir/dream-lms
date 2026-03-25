@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Link, useParams } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowDown,
@@ -12,8 +12,8 @@ import {
   Minus,
   TrendingUp,
   Users,
-} from "lucide-react"
-import { useMemo, useState } from "react"
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -23,18 +23,18 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
-import { type StudentPublic, TeachersService } from "@/client"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "recharts";
+import { type StudentPublic, TeachersService } from "@/client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -42,14 +42,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useClassAnalytics } from "@/hooks/useClassAnalytics"
-import type { ClassPeriodType, TrendData } from "@/types/analytics"
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useClassAnalytics } from "@/hooks/useClassAnalytics";
+import type { ClassPeriodType, TrendData } from "@/types/analytics";
 
 export const Route = createFileRoute("/_layout/teacher/classrooms_/$classId")({
   component: ClassDetailPage,
-})
+});
 
 // Period options for the selector
 const periodOptions: { value: ClassPeriodType; label: string }[] = [
@@ -57,7 +57,7 @@ const periodOptions: { value: ClassPeriodType; label: string }[] = [
   { value: "monthly", label: "This Month" },
   { value: "semester", label: "This Semester" },
   { value: "ytd", label: "Year to Date" },
-]
+];
 
 // Colors for score distribution buckets
 const BUCKET_COLORS = [
@@ -66,17 +66,17 @@ const BUCKET_COLORS = [
   "#EAB308", // Yellow for 70-79%
   "#22C55E", // Green for 80-89%
   "#14B8A6", // Teal for 90-100%
-]
+];
 
 function TrendIndicator({ trend }: { trend: TrendData }) {
   const Icon =
-    trend.trend === "up" ? ArrowUp : trend.trend === "down" ? ArrowDown : Minus
+    trend.trend === "up" ? ArrowUp : trend.trend === "down" ? ArrowDown : Minus;
   const colorClass =
     trend.trend === "up"
       ? "text-green-600"
       : trend.trend === "down"
         ? "text-red-600"
-        : "text-gray-500"
+        : "text-gray-500";
 
   return (
     <div className={`flex items-center gap-1 ${colorClass}`}>
@@ -86,27 +86,27 @@ function TrendIndicator({ trend }: { trend: TrendData }) {
         {trend.change_percent.toFixed(1)}%
       </span>
     </div>
-  )
+  );
 }
 
 function ClassDetailPage() {
-  const params = useParams({ from: "/_layout/teacher/classrooms_/$classId" })
-  const classId = params.classId
-  const [period, setPeriod] = useState<ClassPeriodType>("monthly")
-  const [activeTab, setActiveTab] = useState("analytics")
+  const params = useParams({ from: "/_layout/teacher/classrooms_/$classId" });
+  const classId = params.classId;
+  const [period, setPeriod] = useState<ClassPeriodType>("monthly");
+  const [activeTab, setActiveTab] = useState("analytics");
 
   // Fetch class details
   const { data: classDetail, isLoading: isLoadingClass } = useQuery({
     queryKey: ["classDetail", classId],
     queryFn: () => TeachersService.getClassDetails({ classId }),
-  })
+  });
 
   // Fetch class students separately
   const { data: classStudents = [] } = useQuery<StudentPublic[]>({
     queryKey: ["classStudents", classId],
     queryFn: () => TeachersService.getClassStudents({ classId }),
     enabled: !!classId,
-  })
+  });
 
   // Fetch class analytics
   const {
@@ -116,35 +116,35 @@ function ClassDetailPage() {
   } = useClassAnalytics({
     classId,
     period,
-  })
+  });
 
   // Transform score distribution for chart
   const scoreDistributionData = useMemo(() => {
-    if (!analytics) return []
+    if (!analytics) return [];
     return analytics.score_distribution.map((bucket, idx) => ({
       name: bucket.range_label,
       count: bucket.count,
       fill: BUCKET_COLORS[idx],
-    }))
-  }, [analytics])
+    }));
+  }, [analytics]);
 
   // Transform activity type performance for chart
   const activityTypeData = useMemo(() => {
-    if (!analytics) return []
+    if (!analytics) return [];
     return analytics.activity_type_performance.map((item) => ({
       name: item.activity_type,
       avgScore: item.avg_score,
       count: item.count,
-    }))
-  }, [analytics])
+    }));
+  }, [analytics]);
 
   // Find trends
   const scoreTrend = analytics?.trends.find(
     (t) => t.metric_name === "Average Score",
-  )
+  );
   const completionTrend = analytics?.trends.find(
     (t) => t.metric_name === "Completions",
-  )
+  );
 
   // Loading state
   if (isLoadingClass || isLoadingAnalytics) {
@@ -157,7 +157,7 @@ function ClassDetailPage() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   // Error state
@@ -181,7 +181,7 @@ function ClassDetailPage() {
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -298,7 +298,9 @@ function ClassDetailPage() {
                 <div className="text-2xl font-bold">
                   {analytics.summary.avg_score.toFixed(1)}%
                 </div>
-                {scoreTrend && scoreTrend.change_percent !== 0 && <TrendIndicator trend={scoreTrend} />}
+                {scoreTrend && scoreTrend.change_percent !== 0 && (
+                  <TrendIndicator trend={scoreTrend} />
+                )}
               </CardContent>
             </Card>
 
@@ -313,7 +315,9 @@ function ClassDetailPage() {
                 <div className="text-2xl font-bold">
                   {(analytics.summary.completion_rate * 100).toFixed(0)}%
                 </div>
-                {completionTrend && completionTrend.change_percent !== 0 && <TrendIndicator trend={completionTrend} />}
+                {completionTrend && completionTrend.change_percent !== 0 && (
+                  <TrendIndicator trend={completionTrend} />
+                )}
               </CardContent>
             </Card>
 
@@ -571,8 +575,7 @@ function ClassDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
       </Tabs>
     </div>
-  )
+  );
 }

@@ -4,55 +4,55 @@
  * API client for content review, regeneration, and save operations.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 
 export interface RegenerateQuestionRequest {
-  quiz_id: string
-  question_index: number
-  context: Record<string, any>
+  quiz_id: string;
+  question_index: number;
+  context: Record<string, any>;
 }
 
 export interface AIQuizQuestion {
-  question_id: string
-  question_text: string
-  options: string[]
-  correct_answer: string
-  correct_index: number
-  explanation: string | null
-  source_module_id: number
-  source_page?: number | null
-  difficulty: string
+  question_id: string;
+  question_text: string;
+  options: string[];
+  correct_answer: string;
+  correct_index: number;
+  explanation: string | null;
+  source_module_id: number;
+  source_page?: number | null;
+  difficulty: string;
 }
 
 export interface SaveToLibraryRequest {
-  quiz_id: string
-  activity_type: string
-  title: string
-  description?: string | null
-  content?: Record<string, any> | null
+  quiz_id: string;
+  activity_type: string;
+  title: string;
+  description?: string | null;
+  content?: Record<string, any> | null;
 }
 
 export interface SaveToLibraryResponse {
-  content_id: string
-  title: string
-  activity_type: string
-  created_at: string
+  content_id: string;
+  title: string;
+  activity_type: string;
+  created_at: string;
 }
 
 export interface CreateAssignmentRequest {
-  quiz_id: string
-  activity_type: string
-  title: string
-  description?: string | null
+  quiz_id: string;
+  activity_type: string;
+  title: string;
+  description?: string | null;
 }
 
 export interface CreateAssignmentResponse {
-  message: string
-  quiz_id: string
-  activity_type: string
-  title: string
-  redirect_url: string
+  message: string;
+  quiz_id: string;
+  activity_type: string;
+  title: string;
+  redirect_url: string;
 }
 
 /**
@@ -62,15 +62,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -85,12 +85,12 @@ apiClient.interceptors.request.use(async (config) => {
               | "PATCH",
             url: config.url || "",
           })
-        : token
-    config.headers.Authorization = `Bearer ${tokenValue}`
+        : token;
+    config.headers.Authorization = `Bearer ${tokenValue}`;
   }
 
-  return config
-})
+  return config;
+});
 
 export const contentReviewApi = {
   /**
@@ -102,8 +102,8 @@ export const contentReviewApi = {
     const response = await apiClient.post<AIQuizQuestion>(
       "/api/v1/ai/quiz/regenerate-question",
       request,
-    )
-    return response.data
+    );
+    return response.data;
   },
 
   /**
@@ -115,8 +115,8 @@ export const contentReviewApi = {
     const response = await apiClient.post<SaveToLibraryResponse>(
       "/api/v1/ai/content/save-to-library",
       request,
-    )
-    return response.data
+    );
+    return response.data;
   },
 
   /**
@@ -128,7 +128,7 @@ export const contentReviewApi = {
     const response = await apiClient.post<CreateAssignmentResponse>(
       "/api/v1/ai/content/create-assignment",
       request,
-    )
-    return response.data
+    );
+    return response.data;
   },
-}
+};

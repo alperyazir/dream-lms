@@ -5,10 +5,10 @@
  * For classes tab: pick a class, write a message → broadcast to all students.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Loader2, Send, Users, Check } from "lucide-react"
-import React, { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Send, Users, Check } from "lucide-react";
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,131 +16,134 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { useComposeMessage, CONVERSATIONS_QUERY_KEY } from "@/hooks/useMessages"
-import useAuth from "@/hooks/useAuth"
-import { getMyClasses } from "@/services/teachersApi"
-import { broadcastToClass } from "@/services/messagesApi"
-import type { Recipient } from "@/types/message"
-import type { Class } from "@/types/teacher"
-import { RecipientItem } from "./RecipientItem"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  useComposeMessage,
+  CONVERSATIONS_QUERY_KEY,
+} from "@/hooks/useMessages";
+import useAuth from "@/hooks/useAuth";
+import { getMyClasses } from "@/services/teachersApi";
+import { broadcastToClass } from "@/services/messagesApi";
+import type { Recipient } from "@/types/message";
+import type { Class } from "@/types/teacher";
+import { RecipientItem } from "./RecipientItem";
 
 export interface ComposeMessageModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSuccess?: (recipientId: string) => void
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: (recipientId: string) => void;
 }
 
 export const ComposeMessageModal = React.memo(
   ({ isOpen, onClose, onSuccess }: ComposeMessageModalProps) => {
-    const { user } = useAuth()
-    const isTeacher = user?.role === "teacher"
+    const { user } = useAuth();
+    const isTeacher = user?.role === "teacher";
 
-    const [tab, setTab] = useState<string>("students")
+    const [tab, setTab] = useState<string>("students");
     const [selectedRecipient, setSelectedRecipient] =
-      useState<Recipient | null>(null)
-    const [selectedClass, setSelectedClass] = useState<Class | null>(null)
-    const [searchTerm, setSearchTerm] = useState("")
-    const [classSearchTerm, setClassSearchTerm] = useState("")
-    const [body, setBody] = useState("")
+      useState<Recipient | null>(null);
+    const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [classSearchTerm, setClassSearchTerm] = useState("");
+    const [body, setBody] = useState("");
 
     const { recipients, recipientsLoading, sendMessage, isSending, sendError } =
-      useComposeMessage()
-    const queryClient = useQueryClient()
+      useComposeMessage();
+    const queryClient = useQueryClient();
 
     const { data: classes = [], isLoading: classesLoading } = useQuery({
       queryKey: ["teacher", "classes"],
       queryFn: getMyClasses,
       enabled: isOpen && isTeacher,
       staleTime: 60000,
-    })
+    });
 
     const broadcastMutation = useMutation({
       mutationFn: broadcastToClass,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: CONVERSATIONS_QUERY_KEY })
+        queryClient.invalidateQueries({ queryKey: CONVERSATIONS_QUERY_KEY });
       },
-    })
+    });
 
-    const isBroadcasting = broadcastMutation.isPending
-    const sending = isSending || isBroadcasting
+    const isBroadcasting = broadcastMutation.isPending;
+    const sending = isSending || isBroadcasting;
 
     const filteredRecipients = React.useMemo(() => {
-      if (!searchTerm) return recipients
-      const s = searchTerm.toLowerCase()
+      if (!searchTerm) return recipients;
+      const s = searchTerm.toLowerCase();
       return recipients.filter(
         (r) =>
           r.name.toLowerCase().includes(s) ||
           r.email.toLowerCase().includes(s) ||
           r.organization_name?.toLowerCase().includes(s),
-      )
-    }, [recipients, searchTerm])
+      );
+    }, [recipients, searchTerm]);
 
     const filteredClasses = React.useMemo(() => {
-      if (!classSearchTerm) return classes
-      const s = classSearchTerm.toLowerCase()
+      if (!classSearchTerm) return classes;
+      const s = classSearchTerm.toLowerCase();
       return classes.filter(
         (c) =>
           c.name.toLowerCase().includes(s) ||
           c.grade_level?.toLowerCase().includes(s) ||
           c.subject?.toLowerCase().includes(s),
-      )
-    }, [classes, classSearchTerm])
+      );
+    }, [classes, classSearchTerm]);
 
     const resetAndClose = () => {
-      setSelectedRecipient(null)
-      setSelectedClass(null)
-      setSearchTerm("")
-      setClassSearchTerm("")
-      setBody("")
-      setTab("students")
-      onClose()
-    }
+      setSelectedRecipient(null);
+      setSelectedClass(null);
+      setSearchTerm("");
+      setClassSearchTerm("");
+      setBody("");
+      setTab("students");
+      onClose();
+    };
 
     const handleClose = () => {
-      if (!sending) resetAndClose()
-    }
+      if (!sending) resetAndClose();
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault()
-      if (!body.trim()) return
+      e.preventDefault();
+      if (!body.trim()) return;
 
       if (tab === "classes" && selectedClass) {
         try {
           await broadcastMutation.mutateAsync({
             class_id: selectedClass.id,
             body: body.trim(),
-          })
-          resetAndClose()
-          onSuccess?.("")
+          });
+          resetAndClose();
+          onSuccess?.("");
         } catch (error) {
-          console.error("Error broadcasting message:", error)
+          console.error("Error broadcasting message:", error);
         }
       } else if (tab === "students" && selectedRecipient) {
         try {
           await sendMessage({
             recipient_id: selectedRecipient.user_id,
             body: body.trim(),
-          })
-          const id = selectedRecipient.user_id
-          resetAndClose()
-          onSuccess?.(id)
+          });
+          const id = selectedRecipient.user_id;
+          resetAndClose();
+          onSuccess?.(id);
         } catch (error) {
-          console.error("Error sending message:", error)
+          console.error("Error sending message:", error);
         }
       }
-    }
+    };
 
     const isValid =
       body.trim().length > 0 &&
       ((tab === "students" && selectedRecipient) ||
-        (tab === "classes" && selectedClass))
+        (tab === "classes" && selectedClass));
 
-    const error = sendError || broadcastMutation.error
+    const error = sendError || broadcastMutation.error;
 
     return (
       <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -159,12 +162,12 @@ export const ComposeMessageModal = React.memo(
               <Tabs
                 value={tab}
                 onValueChange={(v) => {
-                  setTab(v)
-                  setSelectedRecipient(null)
-                  setSelectedClass(null)
-                  setSearchTerm("")
-                  setClassSearchTerm("")
-                  setBody("")
+                  setTab(v);
+                  setSelectedRecipient(null);
+                  setSelectedClass(null);
+                  setSearchTerm("");
+                  setClassSearchTerm("");
+                  setBody("");
                 }}
               >
                 <TabsList className="w-full">
@@ -212,9 +215,7 @@ export const ComposeMessageModal = React.memo(
                     loading={classesLoading}
                     selectedId={selectedClass?.id ?? null}
                     onToggle={(c) =>
-                      setSelectedClass((prev) =>
-                        prev?.id === c.id ? null : c,
-                      )
+                      setSelectedClass((prev) => (prev?.id === c.id ? null : c))
                     }
                   />
                 </TabsContent>
@@ -308,11 +309,11 @@ export const ComposeMessageModal = React.memo(
           </form>
         </DialogContent>
       </Dialog>
-    )
+    );
   },
-)
+);
 
-ComposeMessageModal.displayName = "ComposeMessageModal"
+ComposeMessageModal.displayName = "ComposeMessageModal";
 
 /** Scrollable recipient list with click-to-toggle selection */
 function RecipientList({
@@ -322,11 +323,11 @@ function RecipientList({
   onToggle,
   emptyText,
 }: {
-  recipients: Recipient[]
-  loading: boolean
-  selectedId: string | null
-  onToggle: (r: Recipient) => void
-  emptyText: string
+  recipients: Recipient[];
+  loading: boolean;
+  selectedId: string | null;
+  onToggle: (r: Recipient) => void;
+  emptyText: string;
 }) {
   return (
     <div className="max-h-48 overflow-y-auto border rounded-lg">
@@ -351,7 +352,7 @@ function RecipientList({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 /** Scrollable class list with click-to-toggle selection */
@@ -361,10 +362,10 @@ function ClassList({
   selectedId,
   onToggle,
 }: {
-  classes: Class[]
-  loading: boolean
-  selectedId: string | null
-  onToggle: (c: Class) => void
+  classes: Class[];
+  loading: boolean;
+  selectedId: string | null;
+  onToggle: (c: Class) => void;
 }) {
   return (
     <div className="max-h-48 overflow-y-auto border rounded-lg">
@@ -379,7 +380,7 @@ function ClassList({
       ) : (
         <div className="p-1">
           {classes.map((cls) => {
-            const isSelected = cls.id === selectedId
+            const isSelected = cls.id === selectedId;
             return (
               <div
                 key={cls.id}
@@ -393,8 +394,8 @@ function ClassList({
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault()
-                    onToggle(cls)
+                    e.preventDefault();
+                    onToggle(cls);
                   }
                 }}
               >
@@ -415,10 +416,10 @@ function ClassList({
                   <Check className="h-4 w-4 text-teal-600 shrink-0" />
                 )}
               </div>
-            )
+            );
           })}
         </div>
       )}
     </div>
-  )
+  );
 }

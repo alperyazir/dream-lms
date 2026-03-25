@@ -1,46 +1,46 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Award, Clock, Mail, Target } from "lucide-react"
-import { useMemo, useState } from "react"
-import { SkillProfileCard } from "@/components/analytics/SkillProfileCard"
-import { ActivityHistoryTable } from "@/components/charts/ActivityHistoryTable"
-import { StudentProgressChart } from "@/components/charts/StudentProgressChart"
-import { ComposeMessageModal } from "@/components/messaging/ComposeMessageModal"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Award, Clock, Mail, Target } from "lucide-react";
+import { useMemo, useState } from "react";
+import { SkillProfileCard } from "@/components/analytics/SkillProfileCard";
+import { ActivityHistoryTable } from "@/components/charts/ActivityHistoryTable";
+import { StudentProgressChart } from "@/components/charts/StudentProgressChart";
+import { ComposeMessageModal } from "@/components/messaging/ComposeMessageModal";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useStudentAnalytics } from "@/hooks/useStudentAnalytics"
-import type { PeriodType } from "@/types/analytics"
+} from "@/components/ui/select";
+import { useStudentAnalytics } from "@/hooks/useStudentAnalytics";
+import type { PeriodType } from "@/types/analytics";
 
 export const Route = createFileRoute("/_layout/teacher/analytics/$studentId")({
   component: StudentAnalyticsDetail,
-})
+});
 
 function StudentAnalyticsDetail() {
-  const { studentId } = Route.useParams()
-  const navigate = useNavigate()
-  const [period, setPeriod] = useState<PeriodType>("30d")
-  const [showMessageModal, setShowMessageModal] = useState(false)
+  const { studentId } = Route.useParams();
+  const navigate = useNavigate();
+  const [period, setPeriod] = useState<PeriodType>("30d");
+  const [showMessageModal, setShowMessageModal] = useState(false);
 
   // Fetch analytics data from API
   const { analytics, isLoading, error } = useStudentAnalytics({
     studentId,
     period,
-  })
+  });
 
   // Transform data for charts
   const chartData = useMemo(() => {
-    if (!analytics) return null
+    if (!analytics) return null;
 
     // Transform performance trend for StudentProgressChart
-    const scores = analytics.performance_trend.map((point) => point.score)
-    const dates = analytics.performance_trend.map((point) => point.date)
+    const scores = analytics.performance_trend.map((point) => point.score);
+    const dates = analytics.performance_trend.map((point) => point.date);
 
     // Transform recent activity for ActivityHistoryTable
     const activityHistory = analytics.recent_activity.map((item) => ({
@@ -51,14 +51,14 @@ function StudentAnalyticsDetail() {
       time_spent_minutes: item.time_spent_minutes,
       status: "completed" as const,
       assignment_id: item.assignment_id,
-    }))
+    }));
 
     return {
       scores,
       dates,
       activityHistory,
-    }
-  }, [analytics])
+    };
+  }, [analytics]);
 
   // Loading state
   if (isLoading) {
@@ -71,7 +71,7 @@ function StudentAnalyticsDetail() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   // Error state
@@ -96,7 +96,7 @@ function StudentAnalyticsDetail() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   // Get initials for avatar
@@ -104,7 +104,7 @@ function StudentAnalyticsDetail() {
     .split(" ")
     .map((n) => n[0])
     .join("")
-    .toUpperCase()
+    .toUpperCase();
 
   return (
     <>
@@ -206,8 +206,8 @@ function StudentAnalyticsDetail() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-                {Math.floor(analytics.time_analytics.total_time_this_week / 60)}h{" "}
-                {analytics.time_analytics.total_time_this_week % 60}m
+                {Math.floor(analytics.time_analytics.total_time_this_week / 60)}
+                h {analytics.time_analytics.total_time_this_week % 60}m
               </div>
             </CardContent>
           </Card>
@@ -347,8 +347,8 @@ function StudentAnalyticsDetail() {
             {chartData && chartData.activityHistory.length > 0 ? (
               <ActivityHistoryTable
                 entries={chartData.activityHistory}
-                onRowClick={(assignmentId) => {
-                  console.log("Navigate to assignment:", assignmentId)
+                onRowClick={(_assignmentId) => {
+                  // intentionally empty
                 }}
               />
             ) : (
@@ -360,5 +360,5 @@ function StudentAnalyticsDetail() {
         </Card>
       </div>
     </>
-  )
+  );
 }

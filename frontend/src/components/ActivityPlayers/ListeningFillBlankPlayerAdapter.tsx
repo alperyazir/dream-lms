@@ -6,40 +6,40 @@
  * from the word bank to fill multiple blanks.
  */
 
-import { Loader2, Pause, Play } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import type { ActivityConfig } from "@/lib/mockData"
-import { cn } from "@/lib/utils"
-import type { QuestionNavigationState } from "@/types/activity-player"
+import { Loader2, Pause, Play } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import type { ActivityConfig } from "@/lib/mockData";
+import { cn } from "@/lib/utils";
+import type { QuestionNavigationState } from "@/types/activity-player";
 
 interface ListeningFillBlankItem {
-  item_id: string
-  display_sentence: string
-  word_bank: string[]
-  audio_url: string | null
-  audio_data?: { audio_base64?: string }
-  audio_status: string
-  difficulty?: string
+  item_id: string;
+  display_sentence: string;
+  word_bank: string[];
+  audio_url: string | null;
+  audio_data?: { audio_base64?: string };
+  audio_status: string;
+  difficulty?: string;
 }
 
 interface ListeningFillBlankContent {
-  activity_id: string
-  items: ListeningFillBlankItem[]
-  total_items: number
-  difficulty: string
+  activity_id: string;
+  items: ListeningFillBlankItem[];
+  total_items: number;
+  difficulty: string;
 }
 
 interface ListeningFillBlankPlayerAdapterProps {
-  activity: ActivityConfig
-  onAnswersChange: (answers: Map<string, string>) => void
-  showResults: boolean
-  correctAnswers: Set<string>
-  initialAnswers?: Map<string, string>
-  showCorrectAnswers?: boolean
-  currentQuestionIndex?: number
-  onQuestionIndexChange?: (index: number) => void
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  activity: ActivityConfig;
+  onAnswersChange: (answers: Map<string, string>) => void;
+  showResults: boolean;
+  correctAnswers: Set<string>;
+  initialAnswers?: Map<string, string>;
+  showCorrectAnswers?: boolean;
+  currentQuestionIndex?: number;
+  onQuestionIndexChange?: (index: number) => void;
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 /**
@@ -47,12 +47,12 @@ interface ListeningFillBlankPlayerAdapterProps {
  * Each item's answer is stored as JSON: '["word1","word2"]'
  */
 function parseFilledWords(raw: string | undefined): string[] {
-  if (!raw) return []
+  if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return []
+    return [];
   }
 }
 
@@ -67,158 +67,158 @@ export function ListeningFillBlankPlayerAdapter({
   onQuestionIndexChange: _onQuestionIndexChange,
   onNavigationStateChange,
 }: ListeningFillBlankPlayerAdapterProps) {
-  const content = (activity as any).content as ListeningFillBlankContent
-  const items = content?.items || []
+  const content = (activity as any).content as ListeningFillBlankContent;
+  const items = content?.items || [];
 
   // answers: Map<item_id, JSON stringified array of filled words>
   const [answers, setAnswers] = useState<Map<string, string>>(
     () => initialAnswers || new Map(),
-  )
+  );
 
   // Audio state
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [audioLoading, setAudioLoading] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
 
-  const qIndex = currentQuestionIndex ?? 0
-  const currentItem = items[qIndex]
+  const qIndex = currentQuestionIndex ?? 0;
+  const currentItem = items[qIndex];
 
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
 
   useEffect(() => {
-    onAnswersChangeRef.current(new Map(answers))
-  }, [answers])
+    onAnswersChangeRef.current(new Map(answers));
+  }, [answers]);
 
   // Compute blank count and filled words for current item
   const blankCount = currentItem
     ? currentItem.display_sentence.split("_______").length - 1
-    : 0
-  const filledWords = parseFilledWords(answers.get(currentItem?.item_id || ""))
+    : 0;
+  const filledWords = parseFilledWords(answers.get(currentItem?.item_id || ""));
 
   // Track which word bank words are used by the current item
-  const usedWords = new Set<string>()
+  const usedWords = new Set<string>();
   for (const word of filledWords) {
-    if (word) usedWords.add(word)
+    if (word) usedWords.add(word);
   }
 
   useEffect(() => {
     if (onNavigationStateChange) {
       const answeredIndices = items
         .map((item, i) => {
-          const filled = parseFilledWords(answers.get(item.item_id))
-          const blanks = item.display_sentence.split("_______").length - 1
+          const filled = parseFilledWords(answers.get(item.item_id));
+          const blanks = item.display_sentence.split("_______").length - 1;
           // Consider answered if all blanks are filled
-          return filled.filter(Boolean).length === blanks ? i : -1
+          return filled.filter(Boolean).length === blanks ? i : -1;
         })
-        .filter((i) => i >= 0)
+        .filter((i) => i >= 0);
       onNavigationStateChange({
         currentIndex: qIndex,
         totalItems: items.length,
         answeredItemIds: items
           .filter((item) => {
-            const filled = parseFilledWords(answers.get(item.item_id))
-            const blanks = item.display_sentence.split("_______").length - 1
-            return filled.filter(Boolean).length === blanks
+            const filled = parseFilledWords(answers.get(item.item_id));
+            const blanks = item.display_sentence.split("_______").length - 1;
+            return filled.filter(Boolean).length === blanks;
           })
           .map((item) => item.item_id),
         answeredIndices,
-      })
+      });
     }
-  }, [answers, items, qIndex, onNavigationStateChange])
+  }, [answers, items, qIndex, onNavigationStateChange]);
 
   // Tap a word from the word bank → fill the next empty blank
   const handleWordBankTap = useCallback(
     (word: string) => {
-      if (!currentItem || showResults) return
+      if (!currentItem || showResults) return;
       setAnswers((prev) => {
-        const next = new Map(prev)
-        const filled = parseFilledWords(next.get(currentItem.item_id))
+        const next = new Map(prev);
+        const filled = parseFilledWords(next.get(currentItem.item_id));
         // Ensure array has enough slots
-        while (filled.length < blankCount) filled.push("")
+        while (filled.length < blankCount) filled.push("");
         // Find next empty blank
-        const emptyIdx = filled.indexOf("")
-        if (emptyIdx === -1) return prev // all blanks filled
-        filled[emptyIdx] = word
-        next.set(currentItem.item_id, JSON.stringify(filled))
-        return next
-      })
+        const emptyIdx = filled.indexOf("");
+        if (emptyIdx === -1) return prev; // all blanks filled
+        filled[emptyIdx] = word;
+        next.set(currentItem.item_id, JSON.stringify(filled));
+        return next;
+      });
     },
     [currentItem, blankCount, showResults],
-  )
+  );
 
   // Tap a filled blank → remove the word back to word bank
   const handleBlankTap = useCallback(
     (blankIdx: number) => {
-      if (!currentItem || showResults) return
+      if (!currentItem || showResults) return;
       setAnswers((prev) => {
-        const next = new Map(prev)
-        const filled = parseFilledWords(next.get(currentItem.item_id))
+        const next = new Map(prev);
+        const filled = parseFilledWords(next.get(currentItem.item_id));
         if (blankIdx < filled.length && filled[blankIdx]) {
-          filled[blankIdx] = ""
-          next.set(currentItem.item_id, JSON.stringify(filled))
+          filled[blankIdx] = "";
+          next.set(currentItem.item_id, JSON.stringify(filled));
         }
-        return next
-      })
+        return next;
+      });
     },
     [currentItem, showResults],
-  )
+  );
 
   // Audio controls
   const handlePlayAudio = useCallback(() => {
     const audioSrc = currentItem?.audio_data?.audio_base64
       ? `data:audio/mpeg;base64,${currentItem.audio_data.audio_base64}`
-      : currentItem?.audio_url
-    if (!audioSrc) return
-    const audio = audioRef.current
-    if (!audio) return
+      : currentItem?.audio_url;
+    if (!audioSrc) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
     if (isPlaying) {
-      audio.pause()
-      setIsPlaying(false)
+      audio.pause();
+      setIsPlaying(false);
     } else {
-      audio.src = audioSrc
-      setAudioLoading(true)
+      audio.src = audioSrc;
+      setAudioLoading(true);
       audio
         .play()
         .then(() => {
-          setIsPlaying(true)
-          setAudioLoading(false)
+          setIsPlaying(true);
+          setAudioLoading(false);
         })
-        .catch(() => setAudioLoading(false))
+        .catch(() => setAudioLoading(false));
     }
-  }, [currentItem, isPlaying])
+  }, [currentItem, isPlaying]);
 
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    const onEnded = () => setIsPlaying(false)
-    audio.addEventListener("ended", onEnded)
-    return () => audio.removeEventListener("ended", onEnded)
-  }, [])
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onEnded = () => setIsPlaying(false);
+    audio.addEventListener("ended", onEnded);
+    return () => audio.removeEventListener("ended", onEnded);
+  }, []);
 
   useEffect(() => {
-    const audio = audioRef.current
+    const audio = audioRef.current;
     if (audio) {
-      audio.pause()
-      setIsPlaying(false)
+      audio.pause();
+      setIsPlaying(false);
     }
-  }, [qIndex])
+  }, [qIndex]);
 
   if (!currentItem) {
     return (
       <div className="flex items-center justify-center p-8 text-muted-foreground">
         No items available.
       </div>
-    )
+    );
   }
 
   if (showResults) {
-    const total = items.length
+    const total = items.length;
     const correct = items.filter((item) =>
       correctAnswers.has(item.item_id),
-    ).length
-    const score = total > 0 ? Math.round((correct / total) * 100) : 0
+    ).length;
+    const score = total > 0 ? Math.round((correct / total) * 100) : 0;
     return (
       <div className="p-8 text-center">
         <h2 className="text-2xl font-bold mb-4">
@@ -229,11 +229,11 @@ export function ListeningFillBlankPlayerAdapter({
           {correct} out of {total} correct
         </p>
       </div>
-    )
+    );
   }
 
   // Parse display_sentence by splitting on _______
-  const sentenceParts = currentItem.display_sentence.split("_______")
+  const sentenceParts = currentItem.display_sentence.split("_______");
 
   return (
     <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
@@ -243,27 +243,27 @@ export function ListeningFillBlankPlayerAdapter({
         <CardContent className="p-6">
           {/* Audio play button — only shown when audio is available */}
           {(currentItem.audio_url || currentItem.audio_data?.audio_base64) &&
-          currentItem.audio_status === "ready" && (
-            <div className="mb-4 flex justify-center">
-              <button
-                onClick={handlePlayAudio}
-                className={cn(
-                  "flex items-center justify-center w-12 h-12 rounded-full transition-all shadow-md",
-                  isPlaying
-                    ? "bg-teal-600 hover:bg-teal-700 scale-110"
-                    : "bg-teal-500 hover:bg-teal-600",
-                )}
-              >
-                {audioLoading ? (
-                  <Loader2 className="h-5 w-5 text-white animate-spin" />
-                ) : isPlaying ? (
-                  <Pause className="h-5 w-5 text-white" />
-                ) : (
-                  <Play className="h-5 w-5 text-white ml-0.5" />
-                )}
-              </button>
-            </div>
-          )}
+            currentItem.audio_status === "ready" && (
+              <div className="mb-4 flex justify-center">
+                <button
+                  onClick={handlePlayAudio}
+                  className={cn(
+                    "flex items-center justify-center w-12 h-12 rounded-full transition-all shadow-md",
+                    isPlaying
+                      ? "bg-teal-600 hover:bg-teal-700 scale-110"
+                      : "bg-teal-500 hover:bg-teal-600",
+                  )}
+                >
+                  {audioLoading ? (
+                    <Loader2 className="h-5 w-5 text-white animate-spin" />
+                  ) : isPlaying ? (
+                    <Pause className="h-5 w-5 text-white" />
+                  ) : (
+                    <Play className="h-5 w-5 text-white ml-0.5" />
+                  )}
+                </button>
+              </div>
+            )}
 
           {/* Sentence with inline blank slots */}
           <div className="mb-6 rounded-lg bg-gradient-to-r from-teal-50 to-cyan-50 p-6 dark:from-teal-950/50 dark:to-cyan-950/50">
@@ -297,7 +297,7 @@ export function ListeningFillBlankPlayerAdapter({
           {currentItem.word_bank && currentItem.word_bank.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2">
               {currentItem.word_bank.map((word, wIdx) => {
-                const isUsed = usedWords.has(word)
+                const isUsed = usedWords.has(word);
                 return (
                   <button
                     key={wIdx}
@@ -312,12 +312,12 @@ export function ListeningFillBlankPlayerAdapter({
                   >
                     {word}
                   </button>
-                )
+                );
               })}
             </div>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

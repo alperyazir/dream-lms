@@ -109,7 +109,6 @@ DIFFICULTY_GUIDELINES = {
 - Test recognition and basic recall of topic knowledge
 - Fill-in-blank sentences should be short and straightforward
 - Example: "The sky during daytime is usually _______." (blue/red/green/black)""",
-
     "medium": """## Medium Difficulty (A2-B1) Guidelines:
 - Test understanding of concepts and relationships
 - Include some application of knowledge
@@ -117,7 +116,6 @@ DIFFICULTY_GUIDELINES = {
 - Use vocabulary appropriate to intermediate learners
 - Questions may involve making simple connections
 - Example: "If you mix blue and yellow paint, what color will you get?" """,
-
     "hard": """## Hard Difficulty (B1-B2) Guidelines:
 - Require deeper understanding and application
 - Include inference and analysis questions

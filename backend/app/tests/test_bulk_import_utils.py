@@ -1,4 +1,5 @@
 """Unit tests for bulk import utility functions."""
+
 import io
 import uuid
 from typing import Any
@@ -49,10 +50,7 @@ def create_test_excel_file(data: list[dict[str, Any]]) -> bytes:
 
 def create_upload_file(content: bytes, filename: str = "test.xlsx") -> UploadFile:
     """Create an UploadFile instance for testing."""
-    return UploadFile(
-        filename=filename,
-        file=io.BytesIO(content)
-    )
+    return UploadFile(filename=filename, file=io.BytesIO(content))
 
 
 @pytest.mark.asyncio
@@ -60,7 +58,7 @@ async def test_parse_valid_excel_file() -> None:
     """Test parsing a well-formed Excel file."""
     test_data = [
         {"First Name": "John", "Last Name": "Doe", "Email": "john@test.com"},
-        {"First Name": "Jane", "Last Name": "Smith", "Email": "jane@test.com"}
+        {"First Name": "Jane", "Last Name": "Smith", "Email": "jane@test.com"},
     ]
 
     excel_content = create_test_excel_file(test_data)
@@ -178,7 +176,7 @@ def test_check_existing_users(session: Session) -> None:
         id=uuid.uuid4(),
         email="existing@test.com",
         hashed_password="hashed",
-        role=UserRole.student
+        role=UserRole.student,
     )
     session.add(user)
     session.commit()
@@ -198,7 +196,7 @@ def test_validate_user_row_valid(session: Session) -> None:
         "Last Name": "Doe",
         "Email": "john@test.com",
         "Grade Level": "5",
-        "Parent Email": "parent@test.com"
+        "Parent Email": "parent@test.com",
     }
 
     result = validate_user_row(
@@ -207,7 +205,7 @@ def test_validate_user_row_valid(session: Session) -> None:
         role=UserRole.student,
         existing_emails=set(),
         seen_emails=set(),
-        session=session
+        session=session,
     )
 
     assert result.is_valid is True
@@ -228,7 +226,7 @@ def test_validate_user_row_missing_required_fields(session: Session) -> None:
         role=UserRole.student,
         existing_emails=set(),
         seen_emails=set(),
-        session=session
+        session=session,
     )
 
     assert result.is_valid is False
@@ -239,11 +237,7 @@ def test_validate_user_row_missing_required_fields(session: Session) -> None:
 
 def test_validate_user_row_invalid_email(session: Session) -> None:
     """Test validation fails for invalid email format."""
-    row = {
-        "First Name": "John",
-        "Last Name": "Doe",
-        "Email": "not-an-email"
-    }
+    row = {"First Name": "John", "Last Name": "Doe", "Email": "not-an-email"}
 
     result = validate_user_row(
         row=row,
@@ -251,7 +245,7 @@ def test_validate_user_row_invalid_email(session: Session) -> None:
         role=UserRole.student,
         existing_emails=set(),
         seen_emails=set(),
-        session=session
+        session=session,
     )
 
     assert result.is_valid is False
@@ -260,11 +254,7 @@ def test_validate_user_row_invalid_email(session: Session) -> None:
 
 def test_validate_user_row_duplicate_email(session: Session) -> None:
     """Test validation detects duplicate email within file."""
-    row = {
-        "First Name": "John",
-        "Last Name": "Doe",
-        "Email": "duplicate@test.com"
-    }
+    row = {"First Name": "John", "Last Name": "Doe", "Email": "duplicate@test.com"}
 
     seen_emails = {"duplicate@test.com"}  # Already seen in this import
 
@@ -274,7 +264,7 @@ def test_validate_user_row_duplicate_email(session: Session) -> None:
         role=UserRole.student,
         existing_emails=set(),
         seen_emails=seen_emails,
-        session=session
+        session=session,
     )
 
     assert result.is_valid is False
@@ -288,16 +278,12 @@ def test_validate_user_row_existing_user_conflict(session: Session) -> None:
         id=uuid.uuid4(),
         email="existing@test.com",
         hashed_password="hashed",
-        role=UserRole.student
+        role=UserRole.student,
     )
     session.add(user)
     session.commit()
 
-    row = {
-        "First Name": "John",
-        "Last Name": "Doe",
-        "Email": "existing@test.com"
-    }
+    row = {"First Name": "John", "Last Name": "Doe", "Email": "existing@test.com"}
 
     existing_emails = {"existing@test.com"}
 
@@ -307,7 +293,7 @@ def test_validate_user_row_existing_user_conflict(session: Session) -> None:
         role=UserRole.student,
         existing_emails=existing_emails,
         seen_emails=set(),
-        session=session
+        session=session,
     )
 
     assert result.is_valid is False
@@ -321,14 +307,14 @@ def test_validate_bulk_import_all_valid(session: Session) -> None:
             "First Name": "John",
             "Last Name": "Doe",
             "Email": "john@test.com",
-            "_row_number": 2
+            "_row_number": 2,
         },
         {
             "First Name": "Jane",
             "Last Name": "Smith",
             "Email": "jane@test.com",
-            "_row_number": 3
-        }
+            "_row_number": 3,
+        },
     ]
 
     result = validate_bulk_import(rows, UserRole.student, session)
@@ -345,14 +331,14 @@ def test_validate_bulk_import_some_invalid(session: Session) -> None:
             "First Name": "John",
             "Last Name": "Doe",
             "Email": "john@test.com",
-            "_row_number": 2
+            "_row_number": 2,
         },
         {
             "First Name": "Jane",
             # Missing "Last Name"
             "Email": "not-an-email",
-            "_row_number": 3
-        }
+            "_row_number": 3,
+        },
     ]
 
     result = validate_bulk_import(rows, UserRole.student, session)
@@ -368,7 +354,7 @@ def test_validate_teacher_row_missing_school_id(session: Session) -> None:
     row = {
         "First Name": "John",
         "Last Name": "Doe",
-        "Email": "john@test.com"
+        "Email": "john@test.com",
         # Missing "School ID"
     }
 
@@ -378,7 +364,7 @@ def test_validate_teacher_row_missing_school_id(session: Session) -> None:
         role=UserRole.teacher,
         existing_emails=set(),
         seen_emails=set(),
-        session=session
+        session=session,
     )
 
     assert result.is_valid is False
@@ -390,7 +376,7 @@ def test_validate_publisher_row_missing_company_name(session: Session) -> None:
     row = {
         "First Name": "John",
         "Last Name": "Doe",
-        "Email": "john@test.com"
+        "Email": "john@test.com",
         # Missing "Company Name"
     }
 
@@ -400,7 +386,7 @@ def test_validate_publisher_row_missing_company_name(session: Session) -> None:
         role=UserRole.publisher,
         existing_emails=set(),
         seen_emails=set(),
-        session=session
+        session=session,
     )
 
     assert result.is_valid is False

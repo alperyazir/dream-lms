@@ -5,31 +5,37 @@
  * highlighting correct and incorrect fills.
  */
 
-import { CheckCircle2, XCircle } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import type { ListeningFillBlankResult } from "@/lib/resultParsers"
+import { CheckCircle2, XCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { ListeningFillBlankResult } from "@/lib/resultParsers";
 
 interface ListeningFillBlankResultsProps {
-  result: ListeningFillBlankResult
-  hideSummary?: boolean
+  result: ListeningFillBlankResult;
+  hideSummary?: boolean;
 }
 
 export function ListeningFillBlankResults({
   result,
   hideSummary = false,
 }: ListeningFillBlankResultsProps) {
-  const correctCount = result.item_results.filter((r) => r.is_correct).length
+  const correctCount = result.item_results.filter((r) => r.is_correct).length;
   // Calculate actual percentage from parsed results (stored percentage may be stale)
-  const actualPercentage = result.total > 0
-    ? Math.round((correctCount / result.total) * 100)
-    : result.percentage
+  const actualPercentage =
+    result.total > 0
+      ? Math.round((correctCount / result.total) * 100)
+      : result.percentage;
 
   return (
-    <div className={cn("mx-auto flex max-w-2xl flex-col gap-4", !hideSummary && "p-4")}>
+    <div
+      className={cn(
+        "mx-auto flex max-w-2xl flex-col gap-4",
+        !hideSummary && "p-4",
+      )}
+    >
       <div className="space-y-3">
         {result.item_results.map((item, index) => {
-          const parts = item.display_sentence.split("_______")
+          const parts = item.display_sentence.split("_______");
 
           return (
             <Card
@@ -77,8 +83,12 @@ export function ListeningFillBlankResults({
                                 className={cn(
                                   "mx-1 inline-block rounded px-2 py-0.5 font-semibold",
                                   item.submitted_words[pIdx]
-                                    ? item.submitted_words[pIdx].toLowerCase() ===
-                                      (item.missing_words[pIdx] || "").toLowerCase()
+                                    ? item.submitted_words[
+                                        pIdx
+                                      ].toLowerCase() ===
+                                      (
+                                        item.missing_words[pIdx] || ""
+                                      ).toLowerCase()
                                       ? "bg-green-200 text-green-900 dark:bg-green-800 dark:text-green-100"
                                       : "bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100"
                                     : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400",
@@ -116,11 +126,11 @@ export function ListeningFillBlankResults({
                 </div>
               </CardContent>
             </Card>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
-export default ListeningFillBlankResults
+export default ListeningFillBlankResults;

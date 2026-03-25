@@ -15,47 +15,47 @@ import {
   Volume2,
   VolumeX,
   X,
-} from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Slider } from "@/components/ui/slider"
+} from "@/components/ui/dropdown-menu";
+import { Slider } from "@/components/ui/slider";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export interface AudioPlayerProps {
   /** URL to the audio file */
-  src: string
+  src: string;
   /** Whether the player is expanded/visible */
-  isExpanded?: boolean
+  isExpanded?: boolean;
   /** Callback when close button is clicked */
-  onClose?: () => void
+  onClose?: () => void;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 /** Available playback speeds */
-const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 /**
  * Format seconds as MM:SS
  */
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) {
-    return "0:00"
+    return "0:00";
   }
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, "0")}`
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 export function AudioPlayer({
@@ -64,168 +64,168 @@ export function AudioPlayer({
   onClose,
   className,
 }: AudioPlayerProps) {
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [volume, setVolume] = useState(1)
-  const [isMuted, setIsMuted] = useState(false)
-  const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
   // Handle play/pause
   const togglePlay = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = audioRef.current;
+    if (!audio) return;
 
     if (isPlaying) {
-      audio.pause()
+      audio.pause();
     } else {
       audio.play().catch((err) => {
-        setError("Failed to play audio")
-        console.error("Audio play error:", err)
-      })
+        setError("Failed to play audio");
+        console.error("Audio play error:", err);
+      });
     }
-  }, [isPlaying])
+  }, [isPlaying]);
 
   // Handle seek
   const handleSeek = useCallback(
     (value: number[]) => {
-      const audio = audioRef.current
-      if (!audio || !duration) return
+      const audio = audioRef.current;
+      if (!audio || !duration) return;
 
-      const newTime = (value[0] / 100) * duration
-      audio.currentTime = newTime
-      setCurrentTime(newTime)
+      const newTime = (value[0] / 100) * duration;
+      audio.currentTime = newTime;
+      setCurrentTime(newTime);
     },
     [duration],
-  )
+  );
 
   // Handle retry on error
   const handleRetry = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    setError(null)
-    setIsLoading(true)
-    audio.load()
-  }, [])
+    setError(null);
+    setIsLoading(true);
+    audio.load();
+  }, []);
 
   // Handle volume change
   const handleVolumeChange = useCallback(
     (value: number[]) => {
-      const audio = audioRef.current
-      if (!audio) return
+      const audio = audioRef.current;
+      if (!audio) return;
 
-      const newVolume = value[0] / 100
-      audio.volume = newVolume
-      setVolume(newVolume)
+      const newVolume = value[0] / 100;
+      audio.volume = newVolume;
+      setVolume(newVolume);
       if (newVolume > 0 && isMuted) {
-        setIsMuted(false)
-        audio.muted = false
+        setIsMuted(false);
+        audio.muted = false;
       }
     },
     [isMuted],
-  )
+  );
 
   // Handle mute toggle
   const toggleMute = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    const newMuted = !isMuted
-    audio.muted = newMuted
-    setIsMuted(newMuted)
-  }, [isMuted])
+    const newMuted = !isMuted;
+    audio.muted = newMuted;
+    setIsMuted(newMuted);
+  }, [isMuted]);
 
   // Handle playback speed change
   const handleSpeedChange = useCallback((speed: number) => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    audio.playbackRate = speed
-    setPlaybackSpeed(speed)
-  }, [])
+    audio.playbackRate = speed;
+    setPlaybackSpeed(speed);
+  }, []);
 
   // Audio event handlers
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = audioRef.current;
+    if (!audio) return;
 
     const handleLoadedMetadata = () => {
-      setDuration(audio.duration)
-      setIsLoading(false)
-    }
+      setDuration(audio.duration);
+      setIsLoading(false);
+    };
 
     const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime)
-    }
+      setCurrentTime(audio.currentTime);
+    };
 
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
     const handleEnded = () => {
-      setIsPlaying(false)
-      setCurrentTime(0)
+      setIsPlaying(false);
+      setCurrentTime(0);
       if (audio) {
-        audio.currentTime = 0
+        audio.currentTime = 0;
       }
-    }
+    };
 
     const handleError = () => {
-      setError("Failed to load audio")
-      setIsLoading(false)
-    }
+      setError("Failed to load audio");
+      setIsLoading(false);
+    };
 
     const handleCanPlay = () => {
-      setIsLoading(false)
-      setError(null)
-    }
+      setIsLoading(false);
+      setError(null);
+    };
 
     const handleLoadStart = () => {
-      setIsLoading(true)
-      setError(null)
-    }
+      setIsLoading(true);
+      setError(null);
+    };
 
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata)
-    audio.addEventListener("timeupdate", handleTimeUpdate)
-    audio.addEventListener("play", handlePlay)
-    audio.addEventListener("pause", handlePause)
-    audio.addEventListener("ended", handleEnded)
-    audio.addEventListener("error", handleError)
-    audio.addEventListener("canplay", handleCanPlay)
-    audio.addEventListener("loadstart", handleLoadStart)
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
+    audio.addEventListener("canplay", handleCanPlay);
+    audio.addEventListener("loadstart", handleLoadStart);
 
     return () => {
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
-      audio.removeEventListener("timeupdate", handleTimeUpdate)
-      audio.removeEventListener("play", handlePlay)
-      audio.removeEventListener("pause", handlePause)
-      audio.removeEventListener("ended", handleEnded)
-      audio.removeEventListener("error", handleError)
-      audio.removeEventListener("canplay", handleCanPlay)
-      audio.removeEventListener("loadstart", handleLoadStart)
-    }
-  }, [])
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
+      audio.removeEventListener("canplay", handleCanPlay);
+      audio.removeEventListener("loadstart", handleLoadStart);
+    };
+  }, []);
 
   // Cleanup: pause audio when component unmounts or src changes
   useEffect(() => {
     return () => {
-      const audio = audioRef.current
+      const audio = audioRef.current;
       if (audio) {
-        audio.pause()
+        audio.pause();
       }
-    }
-  }, [])
+    };
+  }, []);
 
   // Calculate progress percentage
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   // Get volume icon based on state
   const VolumeIcon =
-    isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2
+    isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
-  if (!isExpanded) return null
+  if (!isExpanded) return null;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -401,5 +401,5 @@ export function AudioPlayer({
         </div>
       </div>
     </TooltipProvider>
-  )
+  );
 }

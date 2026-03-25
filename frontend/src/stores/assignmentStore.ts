@@ -1,11 +1,11 @@
-import { create } from "zustand"
-import { type AssignmentFull, mockAssignments } from "@/lib/mockData"
+import { create } from "zustand";
+import { type AssignmentFull, mockAssignments } from "@/lib/mockData";
 
 interface AssignmentStore {
-  assignments: AssignmentFull[]
-  addAssignment: (assignment: AssignmentFull) => void
-  updateAssignment: (id: string, updates: Partial<AssignmentFull>) => void
-  deleteAssignment: (id: string) => void
+  assignments: AssignmentFull[];
+  addAssignment: (assignment: AssignmentFull) => void;
+  updateAssignment: (id: string, updates: Partial<AssignmentFull>) => void;
+  deleteAssignment: (id: string) => void;
 }
 
 export const useAssignmentStore = create<AssignmentStore>((set) => ({
@@ -27,4 +27,4 @@ export const useAssignmentStore = create<AssignmentStore>((set) => ({
     set((state) => ({
       assignments: state.assignments.filter((a) => a.id !== id),
     })),
-}))
+}));

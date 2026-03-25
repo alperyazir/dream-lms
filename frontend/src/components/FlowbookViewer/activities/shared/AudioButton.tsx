@@ -1,11 +1,11 @@
-import { Volume2 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useFlowbookAudioStore } from "../../stores"
+import { Volume2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useFlowbookAudioStore } from "../../stores";
 
 interface AudioButtonProps {
-  audioSrc: string
-  size?: "sm" | "md"
-  className?: string
+  audioSrc: string;
+  size?: "sm" | "md";
+  className?: string;
 }
 
 export function AudioButton({
@@ -13,25 +13,25 @@ export function AudioButton({
   size = "md",
   className,
 }: AudioButtonProps) {
-  const { currentSrc, isPlaying, play, pause } = useFlowbookAudioStore()
+  const { currentSrc, isPlaying, play, pause } = useFlowbookAudioStore();
 
-  const isActive = currentSrc === audioSrc
-  const isThisPlaying = isActive && isPlaying
+  const isActive = currentSrc === audioSrc;
+  const isThisPlaying = isActive && isPlaying;
 
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
+    e.stopPropagation();
 
     if (isThisPlaying) {
-      pause()
+      pause();
     } else {
-      play(audioSrc)
+      play(audioSrc);
     }
-  }
+  };
 
   const sizeClasses = {
     sm: "h-6 w-6 p-1",
     md: "h-8 w-8 p-1.5",
-  }
+  };
 
   return (
     <button
@@ -50,5 +50,5 @@ export function AudioButton({
         className={cn("h-full w-full", isThisPlaying && "animate-pulse")}
       />
     </button>
-  )
+  );
 }

@@ -1,20 +1,20 @@
-import { Loader2 } from "lucide-react"
-import { useEffect } from "react"
-import { cn } from "@/lib/utils"
-import type { ActivityReference, ActivityType } from "@/types/flowbook"
-import { useFlowbookBookStore, useFlowbookUIStore } from "../stores"
-import { getSpreadPages } from "../utils"
-import { ActivityToolbar } from "./ActivityToolbar"
-import { CircleMark } from "./players/CircleMark"
-import { DragDropPicture } from "./players/DragDropPicture"
-import { DragDropPictureGroup } from "./players/DragDropPictureGroup"
-import { FillBlanks } from "./players/FillBlanks"
-import { FillPicture } from "./players/FillPicture"
-import { MatchTheWords } from "./players/MatchTheWords"
-import { WordSearch } from "./players/WordSearch"
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { cn } from "@/lib/utils";
+import type { ActivityReference, ActivityType } from "@/types/flowbook";
+import { useFlowbookBookStore, useFlowbookUIStore } from "../stores";
+import { getSpreadPages } from "../utils";
+import { ActivityToolbar } from "./ActivityToolbar";
+import { CircleMark } from "./players/CircleMark";
+import { DragDropPicture } from "./players/DragDropPicture";
+import { DragDropPictureGroup } from "./players/DragDropPictureGroup";
+import { FillBlanks } from "./players/FillBlanks";
+import { FillPicture } from "./players/FillPicture";
+import { MatchTheWords } from "./players/MatchTheWords";
+import { WordSearch } from "./players/WordSearch";
 
 interface ActivityOverlayProps {
-  activityId: string
+  activityId: string;
 }
 
 const ACTIVITY_PLAYERS: Record<
@@ -28,67 +28,67 @@ const ACTIVITY_PLAYERS: Record<
   circleMark: CircleMark,
   fillBlanks: FillBlanks,
   wordSearch: WordSearch,
-}
+};
 
-const DEFAULT_HEADER = "Complete the activity"
+const DEFAULT_HEADER = "Complete the activity";
 
 function findActivityInPage(
   page:
     | {
-        activities?: ActivityReference[]
-        sections?: { activities?: ActivityReference[] }[]
+        activities?: ActivityReference[];
+        sections?: { activities?: ActivityReference[] }[];
       }
     | undefined,
   activityId: string,
 ): ActivityReference | undefined {
-  if (!page) return undefined
+  if (!page) return undefined;
 
-  const pageActivity = page.activities?.find((a) => a.id === activityId)
-  if (pageActivity) return pageActivity
+  const pageActivity = page.activities?.find((a) => a.id === activityId);
+  if (pageActivity) return pageActivity;
 
   if (page.sections) {
     for (const section of page.sections) {
       const sectionActivity = section.activities?.find(
         (a) => a.id === activityId,
-      )
-      if (sectionActivity) return sectionActivity
+      );
+      if (sectionActivity) return sectionActivity;
     }
   }
 
-  return undefined
+  return undefined;
 }
 
 export function ActivityOverlay({ activityId }: ActivityOverlayProps) {
-  const { closeActivity, viewMode } = useFlowbookUIStore()
-  const { config, currentPageIndex } = useFlowbookBookStore()
+  const { closeActivity, viewMode } = useFlowbookUIStore();
+  const { config, currentPageIndex } = useFlowbookBookStore();
 
   const spreadPages = config
     ? getSpreadPages(currentPageIndex, config.pages.length, viewMode)
-    : []
+    : [];
 
-  let activity: ActivityReference | undefined
+  let activity: ActivityReference | undefined;
   for (const pageIdx of spreadPages) {
-    const page = config?.pages[pageIdx]
-    activity = findActivityInPage(page, activityId)
-    if (activity) break
+    const page = config?.pages[pageIdx];
+    activity = findActivityInPage(page, activityId);
+    if (activity) break;
   }
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        closeActivity()
+        closeActivity();
       }
-    }
-    window.addEventListener("keydown", handleEscape)
-    return () => window.removeEventListener("keydown", handleEscape)
-  }, [closeActivity])
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [closeActivity]);
 
   useEffect(() => {
-    document.body.style.overflow = "hidden"
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = ""
-    }
-  }, [])
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   if (!activity) {
     return (
@@ -104,18 +104,18 @@ export function ActivityOverlay({ activityId }: ActivityOverlayProps) {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
-  const ActivityPlayer = ACTIVITY_PLAYERS[activity.type]
+  const ActivityPlayer = ACTIVITY_PLAYERS[activity.type];
   const activityConfig = activity.config as {
-    title?: string
-    headerText?: string
-    instructions?: string
-  }
+    title?: string;
+    headerText?: string;
+    instructions?: string;
+  };
 
   const headerText =
-    activityConfig.headerText || activityConfig.instructions || DEFAULT_HEADER
+    activityConfig.headerText || activityConfig.instructions || DEFAULT_HEADER;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -160,5 +160,5 @@ export function ActivityOverlay({ activityId }: ActivityOverlayProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

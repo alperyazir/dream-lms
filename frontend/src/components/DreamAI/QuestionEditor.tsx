@@ -5,36 +5,36 @@
  * Allows editing question text, options, correct answer, and explanation.
  */
 
-import { Check } from "lucide-react"
-import { useState } from "react"
+import { Check } from "lucide-react";
+import { useState } from "react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 
-import { RegenerateButton } from "./RegenerateButton"
+import { RegenerateButton } from "./RegenerateButton";
 
 export interface QuestionData {
-  question_id: string
-  question_text: string
-  options: string[]
-  correct_answer: string
-  correct_index: number
-  explanation?: string | null
-  source_module_id?: number
-  difficulty?: string
+  question_id: string;
+  question_text: string;
+  options: string[];
+  correct_answer: string;
+  correct_index: number;
+  explanation?: string | null;
+  source_module_id?: number;
+  difficulty?: string;
 }
 
 export interface QuestionEditorProps {
-  question: QuestionData
-  questionNumber: number
-  onUpdate: (updates: Partial<QuestionData>) => void
-  onDelete: () => void
-  onRegenerate: () => void
-  isRegenerating?: boolean
-  showActions?: boolean
+  question: QuestionData;
+  questionNumber: number;
+  onUpdate: (updates: Partial<QuestionData>) => void;
+  onDelete: () => void;
+  onRegenerate: () => void;
+  isRegenerating?: boolean;
+  showActions?: boolean;
 }
 
 export function QuestionEditor({
@@ -46,52 +46,52 @@ export function QuestionEditor({
   isRegenerating = false,
   showActions = true,
 }: QuestionEditorProps) {
-  const [isEditingQuestion, setIsEditingQuestion] = useState(false)
-  const [isEditingOptions, setIsEditingOptions] = useState<number | null>(null)
-  const [isEditingExplanation, setIsEditingExplanation] = useState(false)
+  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
+  const [isEditingOptions, setIsEditingOptions] = useState<number | null>(null);
+  const [isEditingExplanation, setIsEditingExplanation] = useState(false);
 
   const [tempQuestionText, setTempQuestionText] = useState(
     question.question_text,
-  )
-  const [tempOptions, setTempOptions] = useState([...question.options])
+  );
+  const [tempOptions, setTempOptions] = useState([...question.options]);
   const [tempExplanation, setTempExplanation] = useState(
     question.explanation || "",
-  )
+  );
 
   const handleQuestionBlur = () => {
     if (tempQuestionText !== question.question_text) {
-      onUpdate({ question_text: tempQuestionText })
+      onUpdate({ question_text: tempQuestionText });
     }
-    setIsEditingQuestion(false)
-  }
+    setIsEditingQuestion(false);
+  };
 
   const handleOptionBlur = (index: number) => {
     if (tempOptions[index] !== question.options[index]) {
-      onUpdate({ options: tempOptions })
+      onUpdate({ options: tempOptions });
       // If this was the correct option, update correct_answer
       if (index === question.correct_index) {
         onUpdate({
           options: tempOptions,
           correct_answer: tempOptions[index],
-        })
+        });
       }
     }
-    setIsEditingOptions(null)
-  }
+    setIsEditingOptions(null);
+  };
 
   const handleCorrectAnswerChange = (index: number) => {
     onUpdate({
       correct_index: index,
       correct_answer: question.options[index],
-    })
-  }
+    });
+  };
 
   const handleExplanationBlur = () => {
     if (tempExplanation !== (question.explanation || "")) {
-      onUpdate({ explanation: tempExplanation })
+      onUpdate({ explanation: tempExplanation });
     }
-    setIsEditingExplanation(false)
-  }
+    setIsEditingExplanation(false);
+  };
 
   return (
     <Card className="relative">
@@ -159,9 +159,9 @@ export function QuestionEditor({
                     <Textarea
                       value={tempOptions[index]}
                       onChange={(e) => {
-                        const newOptions = [...tempOptions]
-                        newOptions[index] = e.target.value
-                        setTempOptions(newOptions)
+                        const newOptions = [...tempOptions];
+                        newOptions[index] = e.target.value;
+                        setTempOptions(newOptions);
                       }}
                       onBlur={() => handleOptionBlur(index)}
                       className="min-h-[60px]"
@@ -215,5 +215,5 @@ export function QuestionEditor({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

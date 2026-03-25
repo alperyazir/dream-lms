@@ -8,7 +8,7 @@
  * - List of assigned schools/teachers
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen,
   Building2,
@@ -16,8 +16,8 @@ import {
   Share2,
   Trash2,
   User,
-} from "lucide-react"
-import { useEffect, useState } from "react"
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,30 +27,30 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import useCustomToast from "@/hooks/useCustomToast";
 import {
   type BookAssignmentResponse,
   deleteBookAssignment,
   getBookAssignments,
-} from "@/services/bookAssignmentsApi"
-import { getAuthenticatedCoverUrl } from "@/services/booksApi"
-import type { Book } from "@/types/book"
-import { BookAssignmentDialog } from "./BookAssignmentDialog"
+} from "@/services/bookAssignmentsApi";
+import { getAuthenticatedCoverUrl } from "@/services/booksApi";
+import type { Book } from "@/types/book";
+import { BookAssignmentDialog } from "./BookAssignmentDialog";
 
 interface BookDetailsDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  book: Book
+  isOpen: boolean;
+  onClose: () => void;
+  book: Book;
 }
 
 export function BookDetailsDialog({
@@ -58,46 +58,46 @@ export function BookDetailsDialog({
   onClose,
   book,
 }: BookDetailsDialogProps) {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const queryClient = useQueryClient();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
-  const [coverUrl, setCoverUrl] = useState<string | null>(null)
-  const [isLoadingCover, setIsLoadingCover] = useState(true)
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [isLoadingCover, setIsLoadingCover] = useState(true);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] =
-    useState<BookAssignmentResponse | null>(null)
+    useState<BookAssignmentResponse | null>(null);
 
   // Fetch cover image
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
     async function fetchCover() {
       if (!book.cover_image_url) {
-        setIsLoadingCover(false)
-        return
+        setIsLoadingCover(false);
+        return;
       }
 
-      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url
-        setCoverUrl(url)
-        setIsLoadingCover(false)
+        blobUrl = url;
+        setCoverUrl(url);
+        setIsLoadingCover(false);
       }
     }
 
     if (isOpen) {
-      fetchCover()
+      fetchCover();
     }
 
     return () => {
-      isMounted = false
+      isMounted = false;
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [book.cover_image_url, isOpen])
+    };
+  }, [book.cover_image_url, isOpen]);
 
   // Fetch book assignments
   const { data: assignments = [], isLoading: assignmentsLoading } = useQuery({
@@ -105,30 +105,30 @@ export function BookDetailsDialog({
     queryFn: () => getBookAssignments(book.id),
     enabled: isOpen,
     staleTime: 30000,
-  })
+  });
 
   // Delete assignment mutation
   const deleteMutation = useMutation({
     mutationFn: (assignmentId: string) => deleteBookAssignment(assignmentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bookAssignments", book.id] })
-      showSuccessToast("Assignment removed successfully")
-      setDeleteDialogOpen(false)
-      setAssignmentToDelete(null)
+      queryClient.invalidateQueries({ queryKey: ["bookAssignments", book.id] });
+      showSuccessToast("Assignment removed successfully");
+      setDeleteDialogOpen(false);
+      setAssignmentToDelete(null);
     },
     onError: (error: Error) => {
-      showErrorToast(`Failed to remove assignment: ${error.message}`)
+      showErrorToast(`Failed to remove assignment: ${error.message}`);
     },
-  })
+  });
 
   const handleDeleteClick = (assignment: BookAssignmentResponse) => {
-    setAssignmentToDelete(assignment)
-    setDeleteDialogOpen(true)
-  }
+    setAssignmentToDelete(assignment);
+    setDeleteDialogOpen(true);
+  };
 
   // Group assignments by type
-  const schoolAssignments = assignments.filter((a) => !a.teacher_id)
-  const teacherAssignments = assignments.filter((a) => a.teacher_id)
+  const schoolAssignments = assignments.filter((a) => !a.teacher_id);
+  const teacherAssignments = assignments.filter((a) => a.teacher_id);
 
   return (
     <>
@@ -282,11 +282,11 @@ export function BookDetailsDialog({
       <BookAssignmentDialog
         isOpen={assignDialogOpen}
         onClose={() => {
-          setAssignDialogOpen(false)
+          setAssignDialogOpen(false);
           // Refresh assignments after closing
           queryClient.invalidateQueries({
             queryKey: ["bookAssignments", book.id],
-          })
+          });
         }}
         book={book}
       />
@@ -324,5 +324,5 @@ export function BookDetailsDialog({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }

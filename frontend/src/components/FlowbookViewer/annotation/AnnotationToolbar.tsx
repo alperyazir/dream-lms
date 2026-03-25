@@ -8,11 +8,15 @@ import {
   Redo2,
   Trash2,
   Undo2,
-} from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { cn } from "@/lib/utils"
-import { useAnnotationStore, useFlowbookBookStore, useFlowbookUIStore } from "../stores"
-import { ConfirmDialog } from "../ui/ConfirmDialog"
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import {
+  useAnnotationStore,
+  useFlowbookBookStore,
+  useFlowbookUIStore,
+} from "../stores";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 // Main/common colors - easy to reach
 const MAIN_COLORS = [
@@ -24,7 +28,7 @@ const MAIN_COLORS = [
   "#3B82F6", // Blue
   "#8B5CF6", // Purple
   "#EC4899", // Pink
-]
+];
 
 // Extended colors
 const MORE_PEN_COLORS = [
@@ -40,7 +44,7 @@ const MORE_PEN_COLORS = [
   "#A855F7", // Violet
   "#D946EF", // Fuchsia
   "#F43F5E", // Rose
-]
+];
 
 // Highlight colors - pastel/semi-transparent looking
 const MAIN_HIGHLIGHT_COLORS = [
@@ -52,7 +56,7 @@ const MAIN_HIGHLIGHT_COLORS = [
   "#A78BFA", // Purple
   "#FCA5A5", // Red
   "#60A5FA", // Blue
-]
+];
 
 const MORE_HIGHLIGHT_COLORS = [
   "#FEF08A", // Yellow light
@@ -67,12 +71,12 @@ const MORE_HIGHLIGHT_COLORS = [
   "#FDBA74", // Orange
   "#C4B5FD", // Purple light
   "#FECACA", // Red light
-]
+];
 
-const WIDTH_OPTIONS = [2, 4, 8, 12]
+const WIDTH_OPTIONS = [2, 4, 8, 12];
 
 interface AnnotationToolbarProps {
-  onClose: () => void
+  onClose: () => void;
 }
 
 export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
@@ -92,200 +96,202 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
     canvas,
     history,
     historyIndex,
-  } = useAnnotationStore()
+  } = useAnnotationStore();
 
-  const { currentPageIndex, totalPages } = useFlowbookBookStore()
-  const { viewMode } = useFlowbookUIStore()
+  const { currentPageIndex, totalPages } = useFlowbookBookStore();
+  const { viewMode } = useFlowbookUIStore();
 
   // Compute canUndo and canRedo reactively based on history state
-  const currentHistoryIndex = historyIndex[currentPageIndex] ?? -1
-  const pageHistory = history[currentPageIndex] ?? []
-  const canUndoNow = currentHistoryIndex > 0
-  const canRedoNow = currentHistoryIndex < pageHistory.length - 1
-  const hasCanvas = canvas !== null
+  const currentHistoryIndex = historyIndex[currentPageIndex] ?? -1;
+  const pageHistory = history[currentPageIndex] ?? [];
+  const canUndoNow = currentHistoryIndex > 0;
+  const canRedoNow = currentHistoryIndex < pageHistory.length - 1;
+  const hasCanvas = canvas !== null;
 
   // Dragging state
-  const [position, setPosition] = useState({ x: 16, y: 80 })
-  const [isDragging, setIsDragging] = useState(false)
-  const dragStartRef = useRef({ x: 0, y: 0 })
-  const positionRef = useRef(position)
+  const [position, setPosition] = useState({ x: 16, y: 80 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const positionRef = useRef(position);
 
   // Color picker state
-  const [showMoreColors, setShowMoreColors] = useState(false)
-  const [customColor, setCustomColor] = useState("#000000")
-  const colorInputRef = useRef<HTMLInputElement>(null)
+  const [showMoreColors, setShowMoreColors] = useState(false);
+  const [customColor, setCustomColor] = useState("#000000");
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Clear confirmation dialog state
-  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const currentColor = activeTool === "highlight" ? highlightColor : penColor
-  const mainColors = activeTool === "highlight" ? MAIN_HIGHLIGHT_COLORS : MAIN_COLORS
-  const moreColors = activeTool === "highlight" ? MORE_HIGHLIGHT_COLORS : MORE_PEN_COLORS
+  const currentColor = activeTool === "highlight" ? highlightColor : penColor;
+  const mainColors =
+    activeTool === "highlight" ? MAIN_HIGHLIGHT_COLORS : MAIN_COLORS;
+  const moreColors =
+    activeTool === "highlight" ? MORE_HIGHLIGHT_COLORS : MORE_PEN_COLORS;
 
   // Update position ref when position changes
   useEffect(() => {
-    positionRef.current = position
-  }, [position])
+    positionRef.current = position;
+  }, [position]);
 
   // Handle drag start
   const handleDragStart = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
-      e.preventDefault()
-      setIsDragging(true)
+      e.preventDefault();
+      setIsDragging(true);
 
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
       dragStartRef.current = {
         x: clientX - positionRef.current.x,
         y: clientY - positionRef.current.y,
-      }
+      };
     },
-    []
-  )
+    [],
+  );
 
   // Handle drag move
   useEffect(() => {
-    if (!isDragging) return
+    if (!isDragging) return;
 
     const handleMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
-      const newX = clientX - dragStartRef.current.x
-      const newY = clientY - dragStartRef.current.y
+      const newX = clientX - dragStartRef.current.x;
+      const newY = clientY - dragStartRef.current.y;
 
       // Keep within viewport bounds
-      const maxX = window.innerWidth - 220
-      const maxY = window.innerHeight - 300
+      const maxX = window.innerWidth - 220;
+      const maxY = window.innerHeight - 300;
 
       setPosition({
         x: Math.max(0, Math.min(maxX, newX)),
         y: Math.max(0, Math.min(maxY, newY)),
-      })
-    }
+      });
+    };
 
     const handleEnd = () => {
-      setIsDragging(false)
-    }
+      setIsDragging(false);
+    };
 
-    window.addEventListener("mousemove", handleMove)
-    window.addEventListener("mouseup", handleEnd)
-    window.addEventListener("touchmove", handleMove)
-    window.addEventListener("touchend", handleEnd)
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleEnd);
 
     return () => {
-      window.removeEventListener("mousemove", handleMove)
-      window.removeEventListener("mouseup", handleEnd)
-      window.removeEventListener("touchmove", handleMove)
-      window.removeEventListener("touchend", handleEnd)
-    }
-  }, [isDragging])
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
+    };
+  }, [isDragging]);
 
   // Handle tool change
   const handleToolChange = (tool: "pen" | "highlight") => {
-    setActiveTool(tool)
-    setShowMoreColors(false)
-  }
+    setActiveTool(tool);
+    setShowMoreColors(false);
+  };
 
   // Handle color change
   const handleColorChange = (color: string) => {
     if (activeTool === "highlight") {
-      setHighlightColor(color)
+      setHighlightColor(color);
     } else {
-      setPenColor(color)
+      setPenColor(color);
     }
-  }
+  };
 
   // Handle custom color from input
   const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const color = e.target.value
-    setCustomColor(color)
-    handleColorChange(color)
-  }
+    const color = e.target.value;
+    setCustomColor(color);
+    handleColorChange(color);
+  };
 
   // Handle undo
   const handleUndo = () => {
     if (hasCanvas && canUndoNow) {
-      undo(currentPageIndex)
+      undo(currentPageIndex);
     }
-  }
+  };
 
   // Handle redo
   const handleRedo = () => {
     if (hasCanvas && canRedoNow) {
-      redo(currentPageIndex)
+      redo(currentPageIndex);
     }
-  }
+  };
 
   // Handle clear - show confirmation dialog
   const handleClearClick = () => {
     if (hasCanvas) {
-      setShowClearConfirm(true)
+      setShowClearConfirm(true);
     }
-  }
+  };
 
   // Confirm clear action - clears both pages in double mode
   const handleClearConfirm = () => {
     // Clear current page
-    clearAnnotations(currentPageIndex)
+    clearAnnotations(currentPageIndex);
 
     // In double mode, also clear the adjacent page
     if (viewMode === "double") {
-      const total = totalPages()
+      const total = totalPages();
       // Normalize to even index (left page of spread)
-      const normalizedIndex = currentPageIndex % 2 === 0 ? currentPageIndex : currentPageIndex - 1
-      const rightPageIndex = normalizedIndex + 1
+      const normalizedIndex =
+        currentPageIndex % 2 === 0 ? currentPageIndex : currentPageIndex - 1;
+      const rightPageIndex = normalizedIndex + 1;
 
       // Clear the right page if it exists
       if (rightPageIndex < total) {
-        clearAnnotations(rightPageIndex)
+        clearAnnotations(rightPageIndex);
       }
       // Also ensure left page is cleared if we started on the right
       if (currentPageIndex !== normalizedIndex) {
-        clearAnnotations(normalizedIndex)
+        clearAnnotations(normalizedIndex);
       }
     }
 
-    setShowClearConfirm(false)
-  }
+    setShowClearConfirm(false);
+  };
 
   // Handle save - save annotations and close toolbar
   const handleSave = () => {
     // Save current page
-    savePageAnnotations(currentPageIndex)
+    savePageAnnotations(currentPageIndex);
 
     // In double mode, also save the adjacent page
     if (viewMode === "double") {
-      const total = totalPages()
-      const normalizedIndex = currentPageIndex % 2 === 0 ? currentPageIndex : currentPageIndex - 1
-      const rightPageIndex = normalizedIndex + 1
+      const total = totalPages();
+      const normalizedIndex =
+        currentPageIndex % 2 === 0 ? currentPageIndex : currentPageIndex - 1;
+      const rightPageIndex = normalizedIndex + 1;
 
       if (rightPageIndex < total) {
-        savePageAnnotations(rightPageIndex)
+        savePageAnnotations(rightPageIndex);
       }
       if (currentPageIndex !== normalizedIndex) {
-        savePageAnnotations(normalizedIndex)
+        savePageAnnotations(normalizedIndex);
       }
     }
 
     // Close toolbar after saving
-    setActiveTool(null)
-    onClose()
-  }
+    setActiveTool(null);
+    onClose();
+  };
 
   // Handle exit without explicit save (auto-save already happens on each stroke)
   const handleExit = () => {
-    setActiveTool(null)
-    onClose()
-  }
+    setActiveTool(null);
+    onClose();
+  };
 
   return (
     <>
       {/* Mode Notification - stays visible until toolbar closes */}
-      <div
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top duration-300"
-      >
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top duration-300">
         <div className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg">
           {activeTool === "highlight" ? (
             <Highlighter className="h-4 w-4 text-yellow-400" />
@@ -303,7 +309,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
         className={cn(
           "fixed z-50 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden",
           "transition-shadow duration-200",
-          isDragging && "shadow-3xl"
+          isDragging && "shadow-3xl",
         )}
         style={{
           left: position.x,
@@ -334,7 +340,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs transition-all",
               activeTool === "pen"
                 ? "bg-cyan-600 text-white"
-                : "bg-slate-700/50 text-slate-400 hover:bg-slate-700"
+                : "bg-slate-700/50 text-slate-400 hover:bg-slate-700",
             )}
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -346,7 +352,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs transition-all",
               activeTool === "highlight"
                 ? "bg-cyan-600 text-white"
-                : "bg-slate-700/50 text-slate-400 hover:bg-slate-700"
+                : "bg-slate-700/50 text-slate-400 hover:bg-slate-700",
             )}
           >
             <Highlighter className="h-3.5 w-3.5" />
@@ -357,7 +363,9 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
         {/* Color Section */}
         <div className="px-2 py-2 border-b border-slate-700/50">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] text-slate-500 uppercase tracking-wide">Color</span>
+            <span className="text-[10px] text-slate-500 uppercase tracking-wide">
+              Color
+            </span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowMoreColors(!showMoreColors)}
@@ -391,7 +399,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
                   "w-5 h-5 rounded-full border transition-all hover:scale-110",
                   currentColor === color
                     ? "border-white scale-110 ring-1 ring-white/50"
-                    : "border-slate-600"
+                    : "border-slate-600",
                 )}
                 style={{
                   backgroundColor: color,
@@ -412,7 +420,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
                     "w-4 h-4 rounded-full border transition-all hover:scale-110",
                     currentColor === color
                       ? "border-white scale-110"
-                      : "border-slate-600"
+                      : "border-slate-600",
                   )}
                   style={{
                     backgroundColor: color,
@@ -432,13 +440,17 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
                 opacity: activeTool === "highlight" ? 0.6 : 1,
               }}
             />
-            <span className="text-[10px] text-slate-500 font-mono">{currentColor}</span>
+            <span className="text-[10px] text-slate-500 font-mono">
+              {currentColor}
+            </span>
           </div>
         </div>
 
         {/* Size Section */}
         <div className="px-2 py-2 border-b border-slate-700/50">
-          <span className="text-[10px] text-slate-500 uppercase tracking-wide block mb-1.5">Size</span>
+          <span className="text-[10px] text-slate-500 uppercase tracking-wide block mb-1.5">
+            Size
+          </span>
           <div className="flex gap-1">
             {WIDTH_OPTIONS.map((width) => (
               <button
@@ -448,7 +460,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
                   "flex-1 flex items-center justify-center h-7 rounded-lg transition-all",
                   penWidth === width
                     ? "bg-cyan-600"
-                    : "bg-slate-700/50 hover:bg-slate-700"
+                    : "bg-slate-700/50 hover:bg-slate-700",
                 )}
               >
                 <div
@@ -473,7 +485,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
                 "p-1.5 rounded-lg transition-all",
                 hasCanvas && canUndoNow
                   ? "text-slate-300 hover:bg-slate-700"
-                  : "text-slate-600 cursor-not-allowed"
+                  : "text-slate-600 cursor-not-allowed",
               )}
               title="Undo"
             >
@@ -486,7 +498,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
                 "p-1.5 rounded-lg transition-all",
                 hasCanvas && canRedoNow
                   ? "text-slate-300 hover:bg-slate-700"
-                  : "text-slate-600 cursor-not-allowed"
+                  : "text-slate-600 cursor-not-allowed",
               )}
               title="Redo"
             >
@@ -500,7 +512,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
               "flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all",
               hasCanvas
                 ? "bg-red-600/20 text-red-400 hover:bg-red-600/30"
-                : "text-slate-600 cursor-not-allowed"
+                : "text-slate-600 cursor-not-allowed",
             )}
             title="Clear all"
           >
@@ -518,7 +530,7 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
               "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all",
               hasCanvas
                 ? "bg-cyan-600 text-white hover:bg-cyan-700"
-                : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                : "bg-slate-700 text-slate-500 cursor-not-allowed",
             )}
           >
             <Check className="h-3.5 w-3.5" />
@@ -545,5 +557,5 @@ export function AnnotationToolbar({ onClose }: AnnotationToolbarProps) {
         onCancel={() => setShowClearConfirm(false)}
       />
     </>
-  )
+  );
 }

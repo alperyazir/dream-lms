@@ -80,14 +80,24 @@ def sanitize_filename(text: str, max_length: int = 50, ascii_only: bool = False)
     if ascii_only:
         # Turkish character mappings
         turkish_map = {
-            'ı': 'i', 'İ': 'I', 'ş': 's', 'Ş': 'S', 'ğ': 'g', 'Ğ': 'G',
-            'ü': 'u', 'Ü': 'U', 'ö': 'o', 'Ö': 'O', 'ç': 'c', 'Ç': 'C',
+            "ı": "i",
+            "İ": "I",
+            "ş": "s",
+            "Ş": "S",
+            "ğ": "g",
+            "Ğ": "G",
+            "ü": "u",
+            "Ü": "U",
+            "ö": "o",
+            "Ö": "O",
+            "ç": "c",
+            "Ç": "C",
         }
         for turkish_char, ascii_char in turkish_map.items():
             text = text.replace(turkish_char, ascii_char)
 
         # Remove any remaining non-ASCII characters
-        text = text.encode('ascii', 'ignore').decode('ascii')
+        text = text.encode("ascii", "ignore").decode("ascii")
 
     # Replace spaces with underscores
     text = text.replace(" ", "_")
@@ -215,7 +225,9 @@ def get_period_dates(
     return current_start, current_end, previous_start, previous_end
 
 
-def calculate_trend(current_value: float, previous_value: float | None) -> TrendAnalysis:
+def calculate_trend(
+    current_value: float, previous_value: float | None
+) -> TrendAnalysis:
     """
     Calculate trend analysis comparing current to previous period.
 
@@ -685,7 +697,8 @@ async def generate_student_report_data(
     # Calculate metrics
     current_summary = _calculate_summary(current_assignments)
     previous_avg = (
-        sum(a["score"] for a in previous_assignments if a["score"]) / len(previous_assignments)
+        sum(a["score"] for a in previous_assignments if a["score"])
+        / len(previous_assignments)
         if previous_assignments
         else None
     )
@@ -835,8 +848,7 @@ async def generate_class_report_data(
     prev_assignment_ids = [a[0] for a in prev_assignments_result.all()]
 
     prev_submissions_result = await session.execute(
-        select(AssignmentStudent.score)
-        .where(
+        select(AssignmentStudent.score).where(
             AssignmentStudent.student_id.in_(student_ids),
             AssignmentStudent.assignment_id.in_(prev_assignment_ids),
             AssignmentStudent.status == AssignmentStatus.completed,
@@ -849,7 +861,9 @@ async def generate_class_report_data(
     trend = calculate_trend(current_avg, prev_avg)
 
     # Completion rate
-    total_expected = len(student_ids) * len(assignment_ids) if student_ids and assignment_ids else 1
+    total_expected = (
+        len(student_ids) * len(assignment_ids) if student_ids and assignment_ids else 1
+    )
     completion_rate = len(submissions) / total_expected if total_expected > 0 else 0
 
     summary = ReportSummaryStats(
@@ -868,7 +882,9 @@ async def generate_class_report_data(
             student_avgs[sub.student_id].append(sub.score)
 
     student_scores = [
-        (sid, sum(scores) / len(scores)) for sid, scores in student_avgs.items() if scores
+        (sid, sum(scores) / len(scores))
+        for sid, scores in student_avgs.items()
+        if scores
     ]
     student_scores.sort(key=lambda x: x[1], reverse=True)
 
@@ -880,7 +896,11 @@ async def generate_class_report_data(
     student_names = {s.id: u.full_name or u.email for s, u in students}
 
     top_students = [
-        {"name": student_names.get(sid, "Unknown"), "avg_score": round(avg, 1), "rank": i + 1}
+        {
+            "name": student_names.get(sid, "Unknown"),
+            "avg_score": round(avg, 1),
+            "rank": i + 1,
+        }
         for i, (sid, avg) in enumerate(student_scores[:5])
     ]
 
@@ -899,20 +919,25 @@ async def generate_class_report_data(
     for assignment in assignments:
         assignment_subs = [sub for sub, a in submissions if a.id == assignment.id]
         if assignment_subs:
-            avg = sum(s.score for s in assignment_subs if s.score) / len(assignment_subs)
+            avg = sum(s.score for s in assignment_subs if s.score) / len(
+                assignment_subs
+            )
             comp_rate = len(assignment_subs) / len(student_ids) if student_ids else 0
-            assignment_perf.append({
-                "name": assignment.name,
-                "avg_score": round(avg, 1),
-                "completion_rate": round(comp_rate, 2),
-            })
+            assignment_perf.append(
+                {
+                    "name": assignment.name,
+                    "avg_score": round(avg, 1),
+                    "completion_rate": round(comp_rate, 2),
+                }
+            )
 
     # Skill breakdown - infer from assignment names
     class_assignments_list = [
-        {"name": assignment.name, "score": sub.score}
-        for sub, assignment in submissions
+        {"name": assignment.name, "score": sub.score} for sub, assignment in submissions
     ]
-    skill_breakdown = _calculate_skill_breakdown_from_assignments(class_assignments_list)
+    skill_breakdown = _calculate_skill_breakdown_from_assignments(
+        class_assignments_list
+    )
 
     data = ClassReportData(
         class_name=class_obj.name,
@@ -986,8 +1011,7 @@ async def generate_assignment_report_data(
     # Get submissions for these assignments
     assignment_ids = [a.id for a, _ in assignments]
     submissions_result = await session.execute(
-        select(AssignmentStudent)
-        .where(
+        select(AssignmentStudent).where(
             AssignmentStudent.assignment_id.in_(assignment_ids),
             AssignmentStudent.status == AssignmentStatus.completed,
         )
@@ -1000,8 +1024,7 @@ async def generate_assignment_report_data(
 
     # Get previous period metrics
     prev_assignments_result = await session.execute(
-        select(Assignment.id)
-        .where(
+        select(Assignment.id).where(
             Assignment.teacher_id == teacher_id,
             Assignment.created_at >= previous_start,
             Assignment.created_at <= previous_end,
@@ -1010,8 +1033,7 @@ async def generate_assignment_report_data(
     prev_assignment_ids = [a[0] for a in prev_assignments_result.all()]
 
     prev_submissions_result = await session.execute(
-        select(AssignmentStudent.score)
-        .where(
+        select(AssignmentStudent.score).where(
             AssignmentStudent.assignment_id.in_(prev_assignment_ids),
             AssignmentStudent.status == AssignmentStatus.completed,
             AssignmentStudent.score.isnot(None),
@@ -1024,15 +1046,18 @@ async def generate_assignment_report_data(
 
     # Summary
     total_assigned_result = await session.execute(
-        select(func.count(AssignmentStudent.id))
-        .where(AssignmentStudent.assignment_id.in_(assignment_ids))
+        select(func.count(AssignmentStudent.id)).where(
+            AssignmentStudent.assignment_id.in_(assignment_ids)
+        )
     )
     total_assigned = total_assigned_result.scalar_one() or 0
 
     summary = ReportSummaryStats(
         avg_score=round(current_avg, 1),
         total_completed=len(submissions),
-        completion_rate=round(len(submissions) / total_assigned, 2) if total_assigned > 0 else 0,
+        completion_rate=(
+            round(len(submissions) / total_assigned, 2) if total_assigned > 0 else 0
+        ),
         total_assigned=total_assigned,
     )
 
@@ -1043,25 +1068,32 @@ async def generate_assignment_report_data(
         if assignment_subs:
             scores = [s.score for s in assignment_subs if s.score is not None]
             avg = sum(scores) / len(scores) if scores else 0
-            times = [s.time_spent_minutes for s in assignment_subs if s.time_spent_minutes]
+            times = [
+                s.time_spent_minutes for s in assignment_subs if s.time_spent_minutes
+            ]
             avg_time = sum(times) / len(times) if times else 0
 
             assigned_count_result = await session.execute(
-                select(func.count(AssignmentStudent.id))
-                .where(AssignmentStudent.assignment_id == assignment.id)
+                select(func.count(AssignmentStudent.id)).where(
+                    AssignmentStudent.assignment_id == assignment.id
+                )
             )
             assigned_count = assigned_count_result.scalar_one() or 1
 
-            assignment_metrics.append({
-                "name": assignment.name,
-                "avg_score": round(avg, 1),
-                "completion_rate": round(len(assignment_subs) / assigned_count, 2),
-                "time_spent": round(avg_time, 1),
-                "activity_type": activity.activity_type,
-            })
+            assignment_metrics.append(
+                {
+                    "name": assignment.name,
+                    "avg_score": round(avg, 1),
+                    "completion_rate": round(len(assignment_subs) / assigned_count, 2),
+                    "time_spent": round(avg_time, 1),
+                    "activity_type": activity.activity_type,
+                }
+            )
 
     # Sort for most/least successful
-    sorted_by_score = sorted(assignment_metrics, key=lambda x: x["avg_score"], reverse=True)
+    sorted_by_score = sorted(
+        assignment_metrics, key=lambda x: x["avg_score"], reverse=True
+    )
     most_successful = sorted_by_score[:3]
     least_successful = sorted_by_score[-3:][::-1] if len(sorted_by_score) > 3 else []
 

@@ -22,7 +22,9 @@ app = None
 settings = None
 get_dream_storage_client = None
 
-pytestmark = pytest.mark.skip(reason="DEPRECATED: Publisher model removed - logos now from DCS API")
+pytestmark = pytest.mark.skip(
+    reason="DEPRECATED: Publisher model removed - logos now from DCS API"
+)
 
 
 @pytest.fixture
@@ -95,7 +97,10 @@ class TestPublisherLogoEndpoint:
         mock_dcs_client: AsyncMock,
     ):
         """Test successful logo retrieval with PNG format."""
-        mock_dcs_client.get_publisher_logo.return_value = (b"PNG_IMAGE_DATA", "image/png")
+        mock_dcs_client.get_publisher_logo.return_value = (
+            b"PNG_IMAGE_DATA",
+            "image/png",
+        )
 
         # Override the DCS client dependency
         app.dependency_overrides[get_dream_storage_client] = lambda: mock_dcs_client
@@ -114,7 +119,9 @@ class TestPublisherLogoEndpoint:
             assert "etag" in response.headers
 
             # Verify client was called with publisher name
-            mock_dcs_client.get_publisher_logo.assert_called_once_with("Logo Test Publisher")
+            mock_dcs_client.get_publisher_logo.assert_called_once_with(
+                "Logo Test Publisher"
+            )
         finally:
             app.dependency_overrides.pop(get_dream_storage_client, None)
 
@@ -125,7 +132,10 @@ class TestPublisherLogoEndpoint:
         mock_dcs_client: AsyncMock,
     ):
         """Test successful logo retrieval with JPEG format."""
-        mock_dcs_client.get_publisher_logo.return_value = (b"JPEG_IMAGE_DATA", "image/jpeg")
+        mock_dcs_client.get_publisher_logo.return_value = (
+            b"JPEG_IMAGE_DATA",
+            "image/jpeg",
+        )
 
         app.dependency_overrides[get_dream_storage_client] = lambda: mock_dcs_client
 
@@ -191,9 +201,7 @@ class TestPublisherLogoEndpoint:
     ):
         """Test 404 when publisher doesn't exist."""
         fake_id = uuid.uuid4()
-        response = client.get(
-            f"{settings.API_V1_STR}/publishers/{fake_id}/logo"
-        )
+        response = client.get(f"{settings.API_V1_STR}/publishers/{fake_id}/logo")
 
         assert response.status_code == 404
         assert "Publisher not found" in response.json()["detail"]
@@ -205,7 +213,9 @@ class TestPublisherLogoEndpoint:
         mock_dcs_client: AsyncMock,
     ):
         """Test 503 on DCS connection error."""
-        mock_dcs_client.get_publisher_logo.side_effect = DreamStorageError("Connection failed")
+        mock_dcs_client.get_publisher_logo.side_effect = DreamStorageError(
+            "Connection failed"
+        )
 
         app.dependency_overrides[get_dream_storage_client] = lambda: mock_dcs_client
 

@@ -9,7 +9,6 @@ Epic 30 - Listening Skill: Sentence Builder Format
 
 from typing import Any
 
-
 LISTENING_SB_SYSTEM_PROMPT = """You are an expert ESL/EFL activity designer specializing in listening-based sentence building exercises.
 
 ## Activity Design:
@@ -53,14 +52,12 @@ LISTENING_SB_DIFFICULTY_GUIDELINES = {
 - Basic, high-frequency vocabulary.
 - Present simple or present continuous tense.
 - IMPORTANT: Vary lengths — some 5 words, some 7-8 words. Do NOT make all sentences the same short length.""",
-
     "medium": """## Medium (A2-B1):
 - Sentences with 8-12 words each.
 - Compound sentences with conjunctions (and, but, because, so).
 - Intermediate vocabulary and varied tenses.
 - Include prepositional phrases and adverbs.
 - IMPORTANT: Vary lengths — some 8 words, some 10-12 words.""",
-
     "hard": """## Hard (B1-B2):
 - Sentences with 12-18 words each.
 - Complex sentences with subordinate clauses (although, while, because, if).

@@ -5,15 +5,15 @@
  * API client functions for browsing book vocabulary from DCS AI data
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   AudioUrlResponse,
   BookWithVocabulary,
   PaginationParams,
   VocabularyFilters,
   VocabularyListResponse,
-} from "../types/vocabulary-explorer"
+} from "../types/vocabulary-explorer";
 
 /**
  * Create axios instance with OpenAPI config
@@ -22,15 +22,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -45,15 +45,15 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
-  return config
-})
+  return config;
+});
 
-const VOCAB_BASE = "/api/v1/ai/vocabulary"
+const VOCAB_BASE = "/api/v1/ai/vocabulary";
 
 /**
  * Get list of books with AI vocabulary data processed
@@ -63,9 +63,9 @@ const VOCAB_BASE = "/api/v1/ai/vocabulary"
  * @returns Promise with list of books with vocabulary
  */
 export async function getBooksWithVocabulary(): Promise<BookWithVocabulary[]> {
-  const url = `${VOCAB_BASE}/books`
-  const response = await apiClient.get<BookWithVocabulary[]>(url)
-  return response.data
+  const url = `${VOCAB_BASE}/books`;
+  const response = await apiClient.get<BookWithVocabulary[]>(url);
+  return response.data;
 }
 
 /**
@@ -83,27 +83,27 @@ export async function getVocabulary(
     book_id: filters.bookId.toString(),
     page: pagination.page.toString(),
     page_size: pagination.pageSize.toString(),
-  })
+  });
 
   if (filters.moduleId) {
-    params.set("module_id", filters.moduleId)
+    params.set("module_id", filters.moduleId);
   }
 
   if (filters.search) {
-    params.set("search", filters.search)
+    params.set("search", filters.search);
   }
 
   if (filters.cefrLevels && filters.cefrLevels.length > 0) {
-    params.set("levels", filters.cefrLevels.join(","))
+    params.set("levels", filters.cefrLevels.join(","));
   }
 
   if (filters.partOfSpeech) {
-    params.set("part_of_speech", filters.partOfSpeech)
+    params.set("part_of_speech", filters.partOfSpeech);
   }
 
-  const url = `${VOCAB_BASE}?${params.toString()}`
-  const response = await apiClient.get<VocabularyListResponse>(url)
-  return response.data
+  const url = `${VOCAB_BASE}?${params.toString()}`;
+  const response = await apiClient.get<VocabularyListResponse>(url);
+  return response.data;
 }
 
 /**
@@ -122,12 +122,12 @@ export async function getAudioUrl(
   language: string,
   word: string,
 ): Promise<AudioUrlResponse> {
-  const url = `${VOCAB_BASE}/${bookId}/audio`
+  const url = `${VOCAB_BASE}/${bookId}/audio`;
   const response = await apiClient.post<AudioUrlResponse>(url, {
     language,
     word,
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 /**
@@ -137,6 +137,6 @@ export const vocabularyExplorerApi = {
   getBooksWithVocabulary,
   getVocabulary,
   getAudioUrl,
-}
+};
 
-export default vocabularyExplorerApi
+export default vocabularyExplorerApi;

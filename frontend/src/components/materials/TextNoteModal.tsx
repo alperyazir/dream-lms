@@ -5,9 +5,9 @@
  * Modal for creating and editing text notes with rich text editor.
  */
 
-import { AlertCircle, Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,19 +15,23 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import type { Material, TextNoteCreate, TextNoteUpdate } from "@/types/material"
-import { MAX_TEXT_NOTE_SIZE } from "@/types/material"
-import { RichTextEditor } from "./RichTextEditor"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type {
+  Material,
+  TextNoteCreate,
+  TextNoteUpdate,
+} from "@/types/material";
+import { MAX_TEXT_NOTE_SIZE } from "@/types/material";
+import { RichTextEditor } from "./RichTextEditor";
 
 interface TextNoteModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  material?: Material | null
-  onSave: (data: TextNoteCreate | TextNoteUpdate) => Promise<void>
-  isSaving?: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  material?: Material | null;
+  onSave: (data: TextNoteCreate | TextNoteUpdate) => Promise<void>;
+  isSaving?: boolean;
 }
 
 /**
@@ -40,76 +44,76 @@ export function TextNoteModal({
   onSave,
   isSaving = false,
 }: TextNoteModalProps) {
-  const [name, setName] = useState("")
-  const [content, setContent] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const [name, setName] = useState("");
+  const [content, setContent] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const isEditing = !!material
-  const contentSize = new Blob([content]).size
-  const isOverLimit = contentSize > MAX_TEXT_NOTE_SIZE
+  const isEditing = !!material;
+  const contentSize = new Blob([content]).size;
+  const isOverLimit = contentSize > MAX_TEXT_NOTE_SIZE;
 
   // Reset form when modal opens/closes or material changes
   useEffect(() => {
     if (open) {
       if (material) {
-        setName(material.name)
-        setContent(material.text_content || "")
+        setName(material.name);
+        setContent(material.text_content || "");
       } else {
-        setName("")
-        setContent("")
+        setName("");
+        setContent("");
       }
-      setError(null)
+      setError(null);
     }
-  }, [open, material])
+  }, [open, material]);
 
   // Handle save
   const handleSave = async () => {
     // Validate
     if (!name.trim()) {
-      setError("Title is required")
-      return
+      setError("Title is required");
+      return;
     }
     // Strip HTML tags for content validation
-    const textContent = content.replace(/<[^>]*>/g, "").trim()
+    const textContent = content.replace(/<[^>]*>/g, "").trim();
     if (!textContent) {
-      setError("Content is required")
-      return
+      setError("Content is required");
+      return;
     }
     if (isOverLimit) {
-      setError(`Content exceeds ${MAX_TEXT_NOTE_SIZE / 1024}KB limit`)
-      return
+      setError(`Content exceeds ${MAX_TEXT_NOTE_SIZE / 1024}KB limit`);
+      return;
     }
 
-    setError(null)
+    setError(null);
 
     try {
       if (isEditing) {
         await onSave({
           name: name.trim(),
           content: content,
-        } as TextNoteUpdate)
+        } as TextNoteUpdate);
       } else {
         await onSave({
           name: name.trim(),
           content: content,
-        } as TextNoteCreate)
+        } as TextNoteCreate);
       }
-      onOpenChange(false)
+      onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save note")
+      setError(err instanceof Error ? err.message : "Failed to save note");
     }
-  }
+  };
 
   // Handle cancel
   const handleCancel = () => {
-    onOpenChange(false)
-  }
+    onOpenChange(false);
+  };
 
   // Format size display
   const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`
-    return `${(bytes / 1024).toFixed(1)} KB`
-  }
+    if (bytes < 1024) return `${bytes} B`;
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -194,7 +198,7 @@ export function TextNoteModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-TextNoteModal.displayName = "TextNoteModal"
+TextNoteModal.displayName = "TextNoteModal";

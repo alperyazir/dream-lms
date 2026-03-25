@@ -5,23 +5,23 @@
  * Used by teachers/publishers to test an activity before adding to assignments.
  */
 
-import { X } from "lucide-react"
-import { useCallback, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { X } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import type { ActivityConfig } from "@/lib/mockData"
-import type { ActivityPreviewResponse } from "@/types/assignment"
-import { ActivityPlayer } from "../ActivityPlayers/ActivityPlayer"
+} from "@/components/ui/dialog";
+import type { ActivityConfig } from "@/lib/mockData";
+import type { ActivityPreviewResponse } from "@/types/assignment";
+import { ActivityPlayer } from "../ActivityPlayers/ActivityPlayer";
 
 interface ActivityPreviewModalProps {
-  isOpen: boolean
-  onClose: () => void
-  activity: ActivityPreviewResponse | null
+  isOpen: boolean;
+  onClose: () => void;
+  activity: ActivityPreviewResponse | null;
 }
 
 /**
@@ -46,10 +46,10 @@ function normalizeActivityType(
     markwithx: "markwithx",
     puzzlefindwords: "puzzleFindWords",
     puzzleFindWords: "puzzleFindWords",
-  }
+  };
   return (typeMap[type.toLowerCase()] || type) as ReturnType<
     typeof normalizeActivityType
-  >
+  >;
 }
 
 export function ActivityPreviewModal({
@@ -57,22 +57,22 @@ export function ActivityPreviewModal({
   onClose,
   activity,
 }: ActivityPreviewModalProps) {
-  const [score, setScore] = useState<number | null>(null)
+  const [score, setScore] = useState<number | null>(null);
 
   const handleActivityComplete = useCallback(
     (activityScore: number, _answersJson: Record<string, unknown>) => {
-      setScore(activityScore)
+      setScore(activityScore);
     },
     [],
-  )
+  );
 
   const handleClose = useCallback(() => {
-    setScore(null)
-    onClose()
-  }, [onClose])
+    setScore(null);
+    onClose();
+  }, [onClose]);
 
   if (!activity) {
-    return null
+    return null;
   }
 
   return (
@@ -125,5 +125,5 @@ export function ActivityPreviewModal({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

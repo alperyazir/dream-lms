@@ -2,13 +2,10 @@
 Tests for Usage Tracking Service - Story 27.22
 """
 
-import uuid
-from datetime import UTC, datetime
-
 import pytest
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models import AIUsageLog, Teacher, User
+from app.models import Teacher, User
 from app.services.usage_tracking_service import (
     log_llm_usage,
     log_tts_usage,

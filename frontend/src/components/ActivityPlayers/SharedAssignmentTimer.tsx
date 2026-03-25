@@ -9,35 +9,35 @@
  * Warning states for countdown: yellow when < 5 minutes, red when < 1 minute.
  */
 
-import { useCallback, useEffect, useState } from "react"
-import { cn } from "@/lib/utils"
+import { useCallback, useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export interface SharedAssignmentTimerProps {
   /** Total time limit in minutes (null/undefined for elapsed mode) */
-  totalTimeLimit?: number | null
+  totalTimeLimit?: number | null;
   /** Time already elapsed in minutes (for resume) */
-  elapsedMinutes: number
+  elapsedMinutes: number;
   /** Callback when time expires (only for countdown mode) */
-  onTimeExpired?: () => void
+  onTimeExpired?: () => void;
   /** Callback to report current elapsed seconds (for saving) */
-  onElapsedChange?: (elapsedSeconds: number) => void
+  onElapsedChange?: (elapsedSeconds: number) => void;
 }
 
 /**
  * Format seconds to MM:SS or HH:MM:SS display
  */
 function formatTime(totalSeconds: number, includeHours = false): string {
-  if (totalSeconds < 0) totalSeconds = 0
+  if (totalSeconds < 0) totalSeconds = 0;
 
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
   if (includeHours || hours > 0) {
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
 
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 export function SharedAssignmentTimer({
@@ -46,27 +46,27 @@ export function SharedAssignmentTimer({
   onTimeExpired,
   onElapsedChange,
 }: SharedAssignmentTimerProps) {
-  const isCountdownMode = totalTimeLimit != null && totalTimeLimit > 0
+  const isCountdownMode = totalTimeLimit != null && totalTimeLimit > 0;
 
   // For countdown: track remaining seconds
   // For elapsed: track elapsed seconds
   const [seconds, setSeconds] = useState(() => {
     if (isCountdownMode) {
-      const totalSeconds = totalTimeLimit * 60
-      const elapsedSeconds = elapsedMinutes * 60
-      return Math.max(0, totalSeconds - elapsedSeconds)
+      const totalSeconds = totalTimeLimit * 60;
+      const elapsedSeconds = elapsedMinutes * 60;
+      return Math.max(0, totalSeconds - elapsedSeconds);
     }
     // Elapsed mode: start from previously elapsed time
-    return Math.floor(elapsedMinutes * 60)
-  })
+    return Math.floor(elapsedMinutes * 60);
+  });
 
   // Track if we've already fired the expiry callback
-  const [hasExpired, setHasExpired] = useState(false)
+  const [hasExpired, setHasExpired] = useState(false);
 
   // Track elapsed time for both modes (for saving progress)
   const [_elapsedTime, setElapsedTime] = useState(
     Math.floor(elapsedMinutes * 60),
-  )
+  );
 
   // Timer tick
   useEffect(() => {
@@ -74,81 +74,81 @@ export function SharedAssignmentTimer({
       // Countdown mode
       if (seconds <= 0) {
         if (!hasExpired) {
-          setHasExpired(true)
-          onTimeExpired?.()
+          setHasExpired(true);
+          onTimeExpired?.();
         }
-        return
+        return;
       }
 
       const intervalId = setInterval(() => {
         setSeconds((prev) => {
-          const newValue = prev - 1
+          const newValue = prev - 1;
           if (newValue <= 0) {
-            clearInterval(intervalId)
+            clearInterval(intervalId);
           }
-          return newValue
-        })
+          return newValue;
+        });
         // Track elapsed time in countdown mode too
         setElapsedTime((prev) => {
-          const newElapsed = prev + 1
-          onElapsedChange?.(newElapsed)
-          return newElapsed
-        })
-      }, 1000)
+          const newElapsed = prev + 1;
+          onElapsedChange?.(newElapsed);
+          return newElapsed;
+        });
+      }, 1000);
 
-      return () => clearInterval(intervalId)
+      return () => clearInterval(intervalId);
     }
     // Elapsed mode - count up
     const intervalId = setInterval(() => {
       setSeconds((prev) => {
-        const newValue = prev + 1
-        onElapsedChange?.(newValue)
-        return newValue
-      })
-    }, 1000)
+        const newValue = prev + 1;
+        onElapsedChange?.(newValue);
+        return newValue;
+      });
+    }, 1000);
 
-    return () => clearInterval(intervalId)
-  }, [isCountdownMode, seconds, hasExpired, onTimeExpired, onElapsedChange])
+    return () => clearInterval(intervalId);
+  }, [isCountdownMode, seconds, hasExpired, onTimeExpired, onElapsedChange]);
 
   // Report initial elapsed time on mount
   useEffect(() => {
-    const initialElapsed = Math.floor(elapsedMinutes * 60)
-    onElapsedChange?.(initialElapsed)
+    const initialElapsed = Math.floor(elapsedMinutes * 60);
+    onElapsedChange?.(initialElapsed);
     // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elapsedMinutes, onElapsedChange])
+  }, [elapsedMinutes, onElapsedChange]);
 
   // Determine state based on time (only for countdown)
-  const remainingMinutes = isCountdownMode ? Math.floor(seconds / 60) : 0
-  const isCritical = isCountdownMode && remainingMinutes < 1 && seconds > 0
+  const remainingMinutes = isCountdownMode ? Math.floor(seconds / 60) : 0;
+  const isCritical = isCountdownMode && remainingMinutes < 1 && seconds > 0;
   const isWarning =
-    isCountdownMode && remainingMinutes < 5 && remainingMinutes >= 1
-  const isExpired = isCountdownMode && seconds <= 0
+    isCountdownMode && remainingMinutes < 5 && remainingMinutes >= 1;
+  const isExpired = isCountdownMode && seconds <= 0;
 
   // Accessibility announcement for screen readers
   const handleAnnounce = useCallback(() => {
-    if (!isCountdownMode) return null
+    if (!isCountdownMode) return null;
     if (remainingMinutes === 5) {
-      return "5 minutes remaining"
+      return "5 minutes remaining";
     }
     if (remainingMinutes === 1) {
-      return "1 minute remaining"
+      return "1 minute remaining";
     }
-    return null
-  }, [isCountdownMode, remainingMinutes])
+    return null;
+  }, [isCountdownMode, remainingMinutes]);
 
   useEffect(() => {
-    const announcement = handleAnnounce()
+    const announcement = handleAnnounce();
     if (announcement) {
-      const announcer = document.getElementById("timer-announcer")
+      const announcer = document.getElementById("timer-announcer");
       if (announcer) {
-        announcer.textContent = announcement
+        announcer.textContent = announcement;
       }
     }
-  }, [handleAnnounce])
+  }, [handleAnnounce]);
 
   // Show hours if elapsed time is > 1 hour
-  const showHours = !isCountdownMode && seconds >= 3600
+  const showHours = !isCountdownMode && seconds >= 3600;
 
   return (
     <>
@@ -206,5 +206,5 @@ export function SharedAssignmentTimer({
         </span>
       </div>
     </>
-  )
+  );
 }

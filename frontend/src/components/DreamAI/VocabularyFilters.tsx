@@ -5,33 +5,33 @@
  * Filter bar for vocabulary explorer with book, module, search, and CEFR level filters.
  */
 
-import { Search } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import type {
   BookWithVocabulary,
   CEFRLevel,
   VocabularyFilters as VocabularyFiltersType,
-} from "@/types/vocabulary-explorer"
+} from "@/types/vocabulary-explorer";
 
 export interface VocabularyFiltersProps {
-  books: BookWithVocabulary[]
-  selectedBookId: number | null
-  filters: VocabularyFiltersType | null
-  onFiltersChange: (filters: VocabularyFiltersType | null) => void
+  books: BookWithVocabulary[];
+  selectedBookId: number | null;
+  filters: VocabularyFiltersType | null;
+  onFiltersChange: (filters: VocabularyFiltersType | null) => void;
 }
 
-const CEFR_LEVELS: CEFRLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"]
+const CEFR_LEVELS: CEFRLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 /**
  * Vocabulary Explorer Filters
@@ -48,10 +48,10 @@ export function VocabularyFilters({
   filters,
   onFiltersChange,
 }: VocabularyFiltersProps) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedLevels, setSelectedLevels] = useState<CEFRLevel[]>([])
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLevels, setSelectedLevels] = useState<CEFRLevel[]>([]);
 
-  const selectedBook = books.find((b) => b.id === selectedBookId)
+  const selectedBook = books.find((b) => b.id === selectedBookId);
 
   // Debounce search input (300ms)
   useEffect(() => {
@@ -60,48 +60,48 @@ export function VocabularyFilters({
         onFiltersChange({
           ...filters,
           search: searchTerm || undefined,
-        })
+        });
       }
-    }, 300)
+    }, 300);
 
-    return () => clearTimeout(timer)
-  }, [searchTerm, filters, onFiltersChange])
+    return () => clearTimeout(timer);
+  }, [searchTerm, filters, onFiltersChange]);
 
   const handleBookChange = (bookId: string) => {
-    const id = parseInt(bookId, 10)
-    const book = books.find((b) => b.id === id)
+    const id = parseInt(bookId, 10);
+    const book = books.find((b) => b.id === id);
     if (book) {
       onFiltersChange({
         bookId: id,
         cefrLevels: selectedLevels.length > 0 ? selectedLevels : undefined,
-      })
-      setSearchTerm("")
+      });
+      setSearchTerm("");
     }
-  }
+  };
 
   const handleModuleChange = (moduleId: string) => {
     if (filters) {
       onFiltersChange({
         ...filters,
         moduleId: moduleId === "all" ? undefined : moduleId,
-      })
+      });
     }
-  }
+  };
 
   const handleLevelToggle = (level: CEFRLevel) => {
     const newLevels = selectedLevels.includes(level)
       ? selectedLevels.filter((l) => l !== level)
-      : [...selectedLevels, level]
+      : [...selectedLevels, level];
 
-    setSelectedLevels(newLevels)
+    setSelectedLevels(newLevels);
 
     if (filters) {
       onFiltersChange({
         ...filters,
         cefrLevels: newLevels.length > 0 ? newLevels : undefined,
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="space-y-4 p-4 bg-white dark:bg-neutral-800 rounded-lg border">
@@ -232,5 +232,5 @@ export function VocabularyFilters({
         </div>
       )}
     </div>
-  )
+  );
 }

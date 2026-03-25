@@ -7,40 +7,42 @@
  * Shows a splash screen with animated book cover before opening viewer.
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { BookOpen, Eye, RefreshCw, Search, X } from "lucide-react"
-import { Suspense, lazy, useCallback, useMemo, useState } from "react"
-import { BookEntrySplash } from "@/components/FlowbookViewer/BookEntrySplash"
-import { LibraryBookCard } from "@/components/library/LibraryBookCard"
-import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen, Eye, RefreshCw, Search, X } from "lucide-react";
+import { Suspense, lazy, useCallback, useMemo, useState } from "react";
+import { BookEntrySplash } from "@/components/FlowbookViewer/BookEntrySplash";
+import { LibraryBookCard } from "@/components/library/LibraryBookCard";
+import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { booksApi } from "@/services/booksApi"
-import type { Book } from "@/types/book"
-import type { BookConfig } from "@/types/flowbook"
-import type { LibraryBook } from "@/types/library"
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { booksApi } from "@/services/booksApi";
+import type { Book } from "@/types/book";
+import type { BookConfig } from "@/types/flowbook";
+import type { LibraryBook } from "@/types/library";
 
 // Lazy load FlowbookViewer for code splitting
 const FlowbookViewer = lazy(() =>
-  import("@/components/FlowbookViewer").then((m) => ({ default: m.FlowbookViewer }))
-)
+  import("@/components/FlowbookViewer").then((m) => ({
+    default: m.FlowbookViewer,
+  })),
+);
 
 interface LibraryViewerProps {
   /** Whether to show publisher filter (admins/supervisors can filter by publisher) */
-  showPublisherFilter?: boolean
+  showPublisherFilter?: boolean;
   /** Title override */
-  title?: string
+  title?: string;
   /** Description override */
-  description?: string
+  description?: string;
 }
 
 export function LibraryViewer({
@@ -49,18 +51,18 @@ export function LibraryViewer({
   description = "Browse and preview books from the DCS library",
 }: LibraryViewerProps) {
   // State for search and filters
-  const [searchInput, setSearchInput] = useState("")
-  const [selectedPublisher, setSelectedPublisher] = useState<string>("")
-  const debouncedSearch = useDebouncedValue(searchInput, 300)
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedPublisher, setSelectedPublisher] = useState<string>("");
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
 
   // State for preview - two stages: splash screen then viewer
-  const [previewBook, setPreviewBook] = useState<LibraryBook | null>(null)
-  const [showViewer, setShowViewer] = useState(false) // false = splash, true = viewer
-  const [bookConfig, setBookConfig] = useState<BookConfig | null>(null)
-  const [loadingPreview, setLoadingPreview] = useState(false)
+  const [previewBook, setPreviewBook] = useState<LibraryBook | null>(null);
+  const [showViewer, setShowViewer] = useState(false); // false = splash, true = viewer
+  const [bookConfig, setBookConfig] = useState<BookConfig | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   // State for download
-  const [downloadBook, setDownloadBook] = useState<LibraryBook | null>(null)
+  const [downloadBook, setDownloadBook] = useState<LibraryBook | null>(null);
 
   // Fetch books
   const {
@@ -76,38 +78,44 @@ export function LibraryViewer({
         search: debouncedSearch || undefined,
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
-  })
+  });
 
   // Extract unique publishers for filter
   const publishers = useMemo(() => {
-    if (!booksResponse?.items) return []
-    const publisherSet = new Set(booksResponse.items.map((b) => b.publisher_name))
-    return Array.from(publisherSet).sort()
-  }, [booksResponse?.items])
+    if (!booksResponse?.items) return [];
+    const publisherSet = new Set(
+      booksResponse.items.map((b) => b.publisher_name),
+    );
+    return Array.from(publisherSet).sort();
+  }, [booksResponse?.items]);
 
   // Filter books by publisher (client-side)
   const filteredBooks = useMemo(() => {
-    if (!booksResponse?.items) return []
-    if (!selectedPublisher) return booksResponse.items
-    return booksResponse.items.filter((b) => b.publisher_name === selectedPublisher)
-  }, [booksResponse?.items, selectedPublisher])
+    if (!booksResponse?.items) return [];
+    if (!selectedPublisher) return booksResponse.items;
+    return booksResponse.items.filter(
+      (b) => b.publisher_name === selectedPublisher,
+    );
+  }, [booksResponse?.items, selectedPublisher]);
 
   // Handle preview click - show splash screen first
   const handlePreview = useCallback((book: LibraryBook) => {
-    setPreviewBook(book)
-    setShowViewer(false) // Start with splash screen
-    setBookConfig(null)
-  }, [])
+    setPreviewBook(book);
+    setShowViewer(false); // Start with splash screen
+    setBookConfig(null);
+  }, []);
 
   // Handle "Open Book" click from splash screen - load the viewer
   const handleOpenBook = useCallback(async () => {
-    if (!previewBook) return
+    if (!previewBook) return;
 
-    setLoadingPreview(true)
+    setLoadingPreview(true);
 
     try {
       // Fetch book pages detail to construct BookConfig
-      const pagesDetail = await booksApi.getBookPagesDetail(String(previewBook.id))
+      const pagesDetail = await booksApi.getBookPagesDetail(
+        String(previewBook.id),
+      );
 
       // Build BookConfig from pages detail
       const config: BookConfig = {
@@ -125,52 +133,53 @@ export function LibraryViewer({
           image: p.image_url,
           audio: [],
           video: [],
-          activities: p.activities?.map((a) => ({
-            id: a.id,
-            type: a.activity_type as any,
-            x: a.coords?.x || 0,
-            y: a.coords?.y || 0,
-            width: a.coords?.w || 100,
-            height: a.coords?.h || 100,
-            config: {},
-          })) || [],
+          activities:
+            p.activities?.map((a) => ({
+              id: a.id,
+              type: a.activity_type as any,
+              x: a.coords?.x || 0,
+              y: a.coords?.y || 0,
+              width: a.coords?.w || 100,
+              height: a.coords?.h || 100,
+              config: {},
+            })) || [],
         })),
-      }
+      };
 
-      setBookConfig(config)
-      setShowViewer(true) // Show the viewer
+      setBookConfig(config);
+      setShowViewer(true); // Show the viewer
     } catch (err) {
-      console.error("Failed to load book for preview:", err)
-      setPreviewBook(null)
+      console.error("Failed to load book for preview:", err);
+      setPreviewBook(null);
     } finally {
-      setLoadingPreview(false)
+      setLoadingPreview(false);
     }
-  }, [previewBook])
+  }, [previewBook]);
 
   // Close preview (from viewer or splash)
   const handleClosePreview = useCallback(() => {
-    setPreviewBook(null)
-    setBookConfig(null)
-    setShowViewer(false)
-  }, [])
+    setPreviewBook(null);
+    setBookConfig(null);
+    setShowViewer(false);
+  }, []);
 
   // Handle download click
   const handleDownload = useCallback((book: LibraryBook) => {
-    setDownloadBook(book)
-  }, [])
+    setDownloadBook(book);
+  }, []);
 
   // Close download dialog
   const handleCloseDownload = useCallback(() => {
-    setDownloadBook(null)
-  }, [])
+    setDownloadBook(null);
+  }, []);
 
   // Clear filters
   const clearFilters = () => {
-    setSearchInput("")
-    setSelectedPublisher("")
-  }
+    setSearchInput("");
+    setSelectedPublisher("");
+  };
 
-  const hasFilters = searchInput || selectedPublisher
+  const hasFilters = searchInput || selectedPublisher;
 
   // Convert Book to LibraryBook
   const toLibraryBook = (book: Book): LibraryBook => ({
@@ -182,7 +191,7 @@ export function LibraryViewer({
     publisher_name: book.publisher_name,
     cover_image_url: book.cover_image_url,
     activity_count: book.activity_count || 0,
-  })
+  });
 
   return (
     <div className="max-w-full p-6 space-y-6">
@@ -216,7 +225,10 @@ export function LibraryViewer({
 
         {/* Publisher Filter */}
         {showPublisherFilter && publishers.length > 0 && (
-          <Select value={selectedPublisher} onValueChange={setSelectedPublisher}>
+          <Select
+            value={selectedPublisher}
+            onValueChange={setSelectedPublisher}
+          >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="All Publishers" />
             </SelectTrigger>
@@ -260,7 +272,9 @@ export function LibraryViewer({
         /* Error State */
         <div className="text-center py-12">
           <BookOpen className="h-16 w-16 mx-auto text-destructive mb-4" />
-          <p className="text-lg text-muted-foreground mb-2">Failed to load books</p>
+          <p className="text-lg text-muted-foreground mb-2">
+            Failed to load books
+          </p>
           <Button variant="outline" onClick={() => refetch()}>
             Try Again
           </Button>
@@ -335,7 +349,7 @@ export function LibraryViewer({
         />
       )}
     </div>
-  )
+  );
 }
 
-export default LibraryViewer
+export default LibraryViewer;

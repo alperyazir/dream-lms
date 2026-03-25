@@ -1,8 +1,8 @@
 /**
  * Import Students Dialog - Bulk student import via Excel (Story 9.9)
  */
-import { useMutation, useQuery } from "@tanstack/react-query"
-import axios from "axios"
+import { useMutation, useQuery } from "@tanstack/react-query";
+import axios from "axios";
 import {
   AlertCircle,
   AlertTriangle,
@@ -12,8 +12,8 @@ import {
   FileSpreadsheet,
   Upload,
   X,
-} from "lucide-react"
-import { useCallback, useRef, useState } from "react"
+} from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import {
   AdminService,
   type ImportCredential,
@@ -22,10 +22,10 @@ import {
   type SchoolPublic,
   StudentsService,
   type TeacherPublic,
-} from "@/client"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from "@/client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -33,15 +33,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -49,16 +49,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/table";
+import useCustomToast from "@/hooks/useCustomToast";
 
-type ImportStep = "upload" | "validate" | "preview" | "importing" | "complete"
+type ImportStep = "upload" | "validate" | "preview" | "importing" | "complete";
 
 interface ImportStudentsDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onImportComplete?: () => void
-  isAdmin: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onImportComplete?: () => void;
+  isAdmin: boolean;
 }
 
 export function ImportStudentsDialog({
@@ -67,160 +67,162 @@ export function ImportStudentsDialog({
   onImportComplete,
   isAdmin,
 }: ImportStudentsDialogProps) {
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State
-  const [step, setStep] = useState<ImportStep>("upload")
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string>("")
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string>("")
+  const [step, setStep] = useState<ImportStep>("upload");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string>("");
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
   const [validationResult, setValidationResult] =
-    useState<ImportValidationResponse | null>(null)
+    useState<ImportValidationResponse | null>(null);
   const [importedCredentials, setImportedCredentials] = useState<
     ImportCredential[]
-  >([])
-  const [importErrors, setImportErrors] = useState<string[]>([])
-  const [dragActive, setDragActive] = useState(false)
+  >([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [dragActive, setDragActive] = useState(false);
 
   // Fetch schools for admin
   const { data: schools = [] } = useQuery({
     queryKey: ["schools"],
     queryFn: () => AdminService.listSchools({}),
     enabled: isAdmin && open,
-  })
+  });
 
   // Fetch teachers for the selected school (admin only)
   const { data: teachers = [] } = useQuery({
     queryKey: ["teachers", selectedSchoolId],
     queryFn: () => AdminService.listTeachers({ schoolId: selectedSchoolId }),
     enabled: isAdmin && open && !!selectedSchoolId,
-  })
+  });
 
   // Validation mutation
   const validateMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = { file }
-      return StudentsService.validateImportFile({ formData })
+      const formData = { file };
+      return StudentsService.validateImportFile({ formData });
     },
     onSuccess: (data) => {
-      setValidationResult(data)
-      setStep("preview")
+      setValidationResult(data);
+      setStep("preview");
     },
     onError: (error: any) => {
-      showErrorToast(error.body?.detail || "Failed to validate file")
-      setStep("upload")
+      showErrorToast(error.body?.detail || "Failed to validate file");
+      setStep("upload");
     },
-  })
+  });
 
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = { file }
+      const formData = { file };
       return StudentsService.executeImport({
         formData,
         schoolId: isAdmin ? selectedSchoolId : undefined,
         teacherId: isAdmin && selectedTeacherId ? selectedTeacherId : undefined,
-      })
+      });
     },
     onSuccess: (data) => {
-      setImportedCredentials(data.credentials)
-      setImportErrors(data.errors || [])
-      setStep("complete")
+      setImportedCredentials(data.credentials);
+      setImportErrors(data.errors || []);
+      setStep("complete");
       if (data.created_count > 0) {
-        showSuccessToast(`Successfully imported ${data.created_count} students`)
-        onImportComplete?.()
+        showSuccessToast(
+          `Successfully imported ${data.created_count} students`,
+        );
+        onImportComplete?.();
       }
     },
     onError: (error: any) => {
-      showErrorToast(error.body?.detail || "Failed to import students")
-      setStep("preview")
+      showErrorToast(error.body?.detail || "Failed to import students");
+      setStep("preview");
     },
-  })
+  });
 
   // Reset state when dialog closes
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setStep("upload")
-      setSelectedFile(null)
-      setSelectedSchoolId("")
-      setSelectedTeacherId("")
-      setValidationResult(null)
-      setImportedCredentials([])
-      setImportErrors([])
+      setStep("upload");
+      setSelectedFile(null);
+      setSelectedSchoolId("");
+      setSelectedTeacherId("");
+      setValidationResult(null);
+      setImportedCredentials([]);
+      setImportErrors([]);
     }
-    onOpenChange(open)
-  }
+    onOpenChange(open);
+  };
 
   // Reset teacher when school changes
   const handleSchoolChange = (schoolId: string) => {
-    setSelectedSchoolId(schoolId)
-    setSelectedTeacherId("") // Reset teacher when school changes
-  }
+    setSelectedSchoolId(schoolId);
+    setSelectedTeacherId(""); // Reset teacher when school changes
+  };
 
   // File handling
   const handleFileSelect = (file: File) => {
     const validTypes = [
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "application/vnd.ms-excel",
-    ]
+    ];
     if (!validTypes.includes(file.type) && !file.name.endsWith(".xlsx")) {
-      showErrorToast("Please select an Excel file (.xlsx)")
-      return
+      showErrorToast("Please select an Excel file (.xlsx)");
+      return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      showErrorToast("File size must be less than 5MB")
-      return
+      showErrorToast("File size must be less than 5MB");
+      return;
     }
-    setSelectedFile(file)
-  }
+    setSelectedFile(file);
+  };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true)
+      setDragActive(true);
     } else if (e.type === "dragleave") {
-      setDragActive(false)
+      setDragActive(false);
     }
-  }, [])
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setDragActive(false)
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
       if (e.dataTransfer.files?.[0]) {
-        handleFileSelect(e.dataTransfer.files[0])
+        handleFileSelect(e.dataTransfer.files[0]);
       }
     },
     [handleFileSelect],
-  )
+  );
 
   const handleValidate = () => {
-    if (!selectedFile) return
+    if (!selectedFile) return;
     if (isAdmin && !selectedSchoolId) {
-      showErrorToast("Please select a school")
-      return
+      showErrorToast("Please select a school");
+      return;
     }
     if (isAdmin && !selectedTeacherId) {
-      showErrorToast("Please select a teacher")
-      return
+      showErrorToast("Please select a teacher");
+      return;
     }
-    setStep("validate")
-    validateMutation.mutate(selectedFile)
-  }
+    setStep("validate");
+    validateMutation.mutate(selectedFile);
+  };
 
   const handleImport = () => {
-    if (!selectedFile) return
-    setStep("importing")
-    importMutation.mutate(selectedFile)
-  }
+    if (!selectedFile) return;
+    setStep("importing");
+    importMutation.mutate(selectedFile);
+  };
 
   const handleDownloadTemplate = async () => {
     try {
-      const token = localStorage.getItem("access_token")
-      const baseUrl = import.meta.env.VITE_API_URL || ""
+      const token = localStorage.getItem("access_token");
+      const baseUrl = import.meta.env.VITE_API_URL || "";
       const response = await axios.get(
         `${baseUrl}/api/v1/students/import-template`,
         {
@@ -229,40 +231,40 @@ export function ImportStudentsDialog({
             Authorization: `Bearer ${token}`,
           },
         },
-      )
+      );
 
       // Check if response is actually an Excel file (should be > 1KB)
       if (response.data.byteLength < 1000) {
         // Might be an error response, try to decode it
-        const decoder = new TextDecoder("utf-8")
-        const text = decoder.decode(response.data)
-        console.error("Template download failed:", text)
-        showErrorToast("Failed to download template - server error")
-        return
+        const decoder = new TextDecoder("utf-8");
+        const text = decoder.decode(response.data);
+        console.error("Template download failed:", text);
+        showErrorToast("Failed to download template - server error");
+        return;
       }
 
       const blob = new Blob([response.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = "student_import_template.xlsx"
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "student_import_template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error: any) {
-      console.error("Template download error:", error)
-      showErrorToast("Failed to download template")
+      console.error("Template download error:", error);
+      showErrorToast("Failed to download template");
     }
-  }
+  };
 
   const handleDownloadCredentials = async () => {
-    if (importedCredentials.length === 0) return
+    if (importedCredentials.length === 0) return;
     try {
-      const token = localStorage.getItem("access_token")
-      const baseUrl = import.meta.env.VITE_API_URL || ""
+      const token = localStorage.getItem("access_token");
+      const baseUrl = import.meta.env.VITE_API_URL || "";
       const response = await axios.post(
         `${baseUrl}/api/v1/students/import/credentials`,
         { credentials: importedCredentials },
@@ -273,24 +275,24 @@ export function ImportStudentsDialog({
             "Content-Type": "application/json",
           },
         },
-      )
+      );
 
       const blob = new Blob([response.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `student_credentials_${new Date().toISOString().split("T")[0]}.xlsx`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      showSuccessToast("Credentials downloaded successfully")
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `student_credentials_${new Date().toISOString().split("T")[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showSuccessToast("Credentials downloaded successfully");
     } catch {
-      showErrorToast("Failed to download credentials")
+      showErrorToast("Failed to download credentials");
     }
-  }
+  };
 
   const getStatusBadge = (status: ImportRowResult["status"]) => {
     switch (status) {
@@ -300,32 +302,32 @@ export function ImportStudentsDialog({
             <CheckCircle2 className="w-3 h-3 mr-1" />
             Valid
           </Badge>
-        )
+        );
       case "warning":
         return (
           <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
             <AlertTriangle className="w-3 h-3 mr-1" />
             Warning
           </Badge>
-        )
+        );
       case "error":
         return (
           <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
             <AlertCircle className="w-3 h-3 mr-1" />
             Error
           </Badge>
-        )
+        );
     }
-  }
+  };
 
   // Rows with warnings can still be imported (warnings are auto-fixed, like username conflicts)
   const importableCount = validationResult
     ? validationResult.valid_count + validationResult.warning_count
-    : 0
+    : 0;
   const canProceedToImport =
     validationResult &&
     importableCount > 0 &&
-    validationResult.error_count === 0
+    validationResult.error_count === 0;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -437,7 +439,7 @@ export function ImportStudentsDialog({
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files?.[0]) {
-                    handleFileSelect(e.target.files[0])
+                    handleFileSelect(e.target.files[0]);
                   }
                 }}
               />
@@ -775,8 +777,8 @@ export function ImportStudentsDialog({
               <Button
                 variant="outline"
                 onClick={() => {
-                  setStep("upload")
-                  setValidationResult(null)
+                  setStep("upload");
+                  setValidationResult(null);
                 }}
               >
                 Back
@@ -797,5 +799,5 @@ export function ImportStudentsDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

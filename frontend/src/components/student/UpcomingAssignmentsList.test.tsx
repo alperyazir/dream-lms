@@ -3,10 +3,10 @@
  * Story 22.1: Dashboard Layout Refactor
  */
 
-import { render, screen } from "@testing-library/react"
-import { vi } from "vitest"
-import type { StudentAssignmentResponse } from "@/types/assignment"
-import { UpcomingAssignmentsList } from "./UpcomingAssignmentsList"
+import { render, screen } from "@testing-library/react";
+import { vi } from "vitest";
+import type { StudentAssignmentResponse } from "@/types/assignment";
+import { UpcomingAssignmentsList } from "./UpcomingAssignmentsList";
 
 // Mock Link component from router
 vi.mock("@tanstack/react-router", () => ({
@@ -15,11 +15,11 @@ vi.mock("@tanstack/react-router", () => ({
     to,
     params,
   }: {
-    children: React.ReactNode
-    to: string
-    params?: Record<string, string>
+    children: React.ReactNode;
+    to: string;
+    params?: Record<string, string>;
   }) => <a href={to}>{children}</a>,
-}))
+}));
 
 describe("UpcomingAssignmentsList", () => {
   const mockAssignments: StudentAssignmentResponse[] = [
@@ -89,34 +89,34 @@ describe("UpcomingAssignmentsList", () => {
       is_past_due: false,
       days_until_due: 1,
     },
-  ]
+  ];
 
   it("renders the card title", () => {
-    render(<UpcomingAssignmentsList assignments={mockAssignments} />)
-    expect(screen.getByText("Upcoming Assignments")).toBeInTheDocument()
-  })
+    render(<UpcomingAssignmentsList assignments={mockAssignments} />);
+    expect(screen.getByText("Upcoming Assignments")).toBeInTheDocument();
+  });
 
   it("renders 'View All' link", () => {
-    render(<UpcomingAssignmentsList assignments={mockAssignments} />)
-    expect(screen.getByText("View All")).toBeInTheDocument()
-  })
+    render(<UpcomingAssignmentsList assignments={mockAssignments} />);
+    expect(screen.getByText("View All")).toBeInTheDocument();
+  });
 
   it("shows empty state when no upcoming assignments", () => {
-    render(<UpcomingAssignmentsList assignments={[]} />)
-    expect(screen.getByText("No upcoming assignments!")).toBeInTheDocument()
-    expect(screen.getByText("You're all caught up. 🎉")).toBeInTheDocument()
-  })
+    render(<UpcomingAssignmentsList assignments={[]} />);
+    expect(screen.getByText("No upcoming assignments!")).toBeInTheDocument();
+    expect(screen.getByText("You're all caught up. 🎉")).toBeInTheDocument();
+  });
 
   it("filters out completed assignments", () => {
-    render(<UpcomingAssignmentsList assignments={mockAssignments} />)
-    expect(screen.queryByText("Completed Assignment")).not.toBeInTheDocument()
-  })
+    render(<UpcomingAssignmentsList assignments={mockAssignments} />);
+    expect(screen.queryByText("Completed Assignment")).not.toBeInTheDocument();
+  });
 
   it("displays upcoming assignments in order", () => {
-    render(<UpcomingAssignmentsList assignments={mockAssignments} />)
-    expect(screen.getByText("Math Quiz")).toBeInTheDocument()
-    expect(screen.getByText("English Essay")).toBeInTheDocument()
-  })
+    render(<UpcomingAssignmentsList assignments={mockAssignments} />);
+    expect(screen.getByText("Math Quiz")).toBeInTheDocument();
+    expect(screen.getByText("English Essay")).toBeInTheDocument();
+  });
 
   it("limits assignments to specified limit", () => {
     const manyAssignments: StudentAssignmentResponse[] = Array.from(
@@ -127,16 +127,16 @@ describe("UpcomingAssignmentsList", () => {
         assignment_name: `Assignment ${i}`,
         due_date: `2025-12-${27 + i}T10:00:00Z`,
       }),
-    )
+    );
 
-    render(<UpcomingAssignmentsList assignments={manyAssignments} limit={3} />)
+    render(<UpcomingAssignmentsList assignments={manyAssignments} limit={3} />);
 
     // Should only show 3 assignments
-    expect(screen.getByText("Assignment 0")).toBeInTheDocument()
-    expect(screen.getByText("Assignment 1")).toBeInTheDocument()
-    expect(screen.getByText("Assignment 2")).toBeInTheDocument()
-    expect(screen.queryByText("Assignment 3")).not.toBeInTheDocument()
-  })
+    expect(screen.getByText("Assignment 0")).toBeInTheDocument();
+    expect(screen.getByText("Assignment 1")).toBeInTheDocument();
+    expect(screen.getByText("Assignment 2")).toBeInTheDocument();
+    expect(screen.queryByText("Assignment 3")).not.toBeInTheDocument();
+  });
 
   it("filters out assignments without due dates", () => {
     const assignmentsWithoutDueDate = [
@@ -148,9 +148,9 @@ describe("UpcomingAssignmentsList", () => {
         due_date: null,
         status: "not_started" as const,
       },
-    ]
+    ];
 
-    render(<UpcomingAssignmentsList assignments={assignmentsWithoutDueDate} />)
-    expect(screen.queryByText("No Due Date")).not.toBeInTheDocument()
-  })
-})
+    render(<UpcomingAssignmentsList assignments={assignmentsWithoutDueDate} />);
+    expect(screen.queryByText("No Due Date")).not.toBeInTheDocument();
+  });
+});

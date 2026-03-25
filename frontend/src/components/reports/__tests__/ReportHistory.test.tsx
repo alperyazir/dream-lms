@@ -3,10 +3,10 @@
  * Story 5.6: Time-Based Reporting & Trend Analysis
  */
 
-import { fireEvent, render, screen } from "@testing-library/react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { ReportHistoryItem } from "@/types/reports"
-import { ReportHistory } from "../ReportHistory"
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReportHistoryItem } from "@/types/reports";
+import { ReportHistory } from "../ReportHistory";
 
 const mockReports: ReportHistoryItem[] = [
   {
@@ -33,14 +33,14 @@ const mockReports: ReportHistoryItem[] = [
     is_expired: true,
     download_url: null,
   },
-]
+];
 
 describe("ReportHistory", () => {
-  const mockOnDownload = vi.fn()
+  const mockOnDownload = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   it("renders loading state correctly", () => {
     render(
@@ -49,11 +49,11 @@ describe("ReportHistory", () => {
         isLoading={true}
         onDownload={mockOnDownload}
       />,
-    )
+    );
 
-    expect(screen.getByText("Report History")).toBeInTheDocument()
+    expect(screen.getByText("Report History")).toBeInTheDocument();
     // Skeleton elements should be rendered (we can check for the container)
-  })
+  });
 
   it("renders empty state when no reports", () => {
     render(
@@ -62,13 +62,13 @@ describe("ReportHistory", () => {
         isLoading={false}
         onDownload={mockOnDownload}
       />,
-    )
+    );
 
-    expect(screen.getByText("No reports generated yet")).toBeInTheDocument()
+    expect(screen.getByText("No reports generated yet")).toBeInTheDocument();
     expect(
       screen.getByText("Reports are available for 7 days after generation"),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it("renders reports table with data", () => {
     render(
@@ -77,20 +77,20 @@ describe("ReportHistory", () => {
         isLoading={false}
         onDownload={mockOnDownload}
       />,
-    )
+    );
 
     // Check table headers
-    expect(screen.getByText("Type")).toBeInTheDocument()
-    expect(screen.getByText("Target")).toBeInTheDocument()
-    expect(screen.getByText("Format")).toBeInTheDocument()
-    expect(screen.getByText("Generated")).toBeInTheDocument()
-    expect(screen.getByText("Status")).toBeInTheDocument()
-    expect(screen.getByText("Action")).toBeInTheDocument()
+    expect(screen.getByText("Type")).toBeInTheDocument();
+    expect(screen.getByText("Target")).toBeInTheDocument();
+    expect(screen.getByText("Format")).toBeInTheDocument();
+    expect(screen.getByText("Generated")).toBeInTheDocument();
+    expect(screen.getByText("Status")).toBeInTheDocument();
+    expect(screen.getByText("Action")).toBeInTheDocument();
 
     // Check report data
-    expect(screen.getByText("Class A")).toBeInTheDocument()
-    expect(screen.getByText("John Doe")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Class A")).toBeInTheDocument();
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+  });
 
   it("displays expired badge for expired reports", () => {
     render(
@@ -99,10 +99,10 @@ describe("ReportHistory", () => {
         isLoading={false}
         onDownload={mockOnDownload}
       />,
-    )
+    );
 
-    expect(screen.getByText("Expired")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Expired")).toBeInTheDocument();
+  });
 
   it("shows download button for non-expired reports", () => {
     render(
@@ -111,12 +111,12 @@ describe("ReportHistory", () => {
         isLoading={false}
         onDownload={mockOnDownload}
       />,
-    )
+    );
 
     // There should be one download button (for the non-expired report)
-    const downloadButtons = screen.getAllByRole("button")
-    expect(downloadButtons.length).toBeGreaterThan(0)
-  })
+    const downloadButtons = screen.getAllByRole("button");
+    expect(downloadButtons.length).toBeGreaterThan(0);
+  });
 
   it("calls onDownload when download button is clicked", () => {
     render(
@@ -125,14 +125,14 @@ describe("ReportHistory", () => {
         isLoading={false}
         onDownload={mockOnDownload}
       />,
-    )
+    );
 
     // Find and click the download button
-    const downloadButton = screen.getAllByRole("button")[0]
-    fireEvent.click(downloadButton)
+    const downloadButton = screen.getAllByRole("button")[0];
+    fireEvent.click(downloadButton);
 
-    expect(mockOnDownload).toHaveBeenCalledWith(mockReports[0])
-  })
+    expect(mockOnDownload).toHaveBeenCalledWith(mockReports[0]);
+  });
 
   it("does not show download button for expired reports", () => {
     const expiredOnly: ReportHistoryItem[] = [
@@ -141,7 +141,7 @@ describe("ReportHistory", () => {
         is_expired: true,
         download_url: null,
       },
-    ]
+    ];
 
     render(
       <ReportHistory
@@ -149,11 +149,11 @@ describe("ReportHistory", () => {
         isLoading={false}
         onDownload={mockOnDownload}
       />,
-    )
+    );
 
     // Should show dash instead of download button
-    expect(screen.getByText("—")).toBeInTheDocument()
-  })
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
 
   it("displays correct format labels", () => {
     render(
@@ -162,10 +162,10 @@ describe("ReportHistory", () => {
         isLoading={false}
         onDownload={mockOnDownload}
       />,
-    )
+    );
 
     // Check format labels (component uses uppercase text-xs)
-    expect(screen.getByText("pdf")).toBeInTheDocument()
-    expect(screen.getByText("excel")).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("pdf")).toBeInTheDocument();
+    expect(screen.getByText("excel")).toBeInTheDocument();
+  });
+});

@@ -3,10 +3,10 @@
  * Story 5.5: Student Progress Tracking & Personal Analytics
  */
 
-import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
-import type { Achievement } from "@/types/analytics"
-import { AchievementBadges } from "../AchievementBadges"
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import type { Achievement } from "@/types/analytics";
+import { AchievementBadges } from "../AchievementBadges";
 
 const mockAchievements: Achievement[] = [
   {
@@ -33,60 +33,60 @@ const mockAchievements: Achievement[] = [
     earned_at: "2025-01-25T09:00:00Z",
     icon: "flame",
   },
-]
+];
 
-const emptyAchievements: Achievement[] = []
+const emptyAchievements: Achievement[] = [];
 
 describe("AchievementBadges", () => {
   it("renders component title", () => {
-    render(<AchievementBadges achievements={mockAchievements} />)
+    render(<AchievementBadges achievements={mockAchievements} />);
 
-    expect(screen.getByText("Achievements")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Achievements")).toBeInTheDocument();
+  });
 
   it("renders empty state when no achievements", () => {
-    render(<AchievementBadges achievements={emptyAchievements} />)
+    render(<AchievementBadges achievements={emptyAchievements} />);
 
-    expect(screen.getByText("Achievements")).toBeInTheDocument()
+    expect(screen.getByText("Achievements")).toBeInTheDocument();
     expect(
       screen.getByText("Complete assignments to earn badges!"),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it("displays count of earned achievements", () => {
-    render(<AchievementBadges achievements={mockAchievements} />)
+    render(<AchievementBadges achievements={mockAchievements} />);
 
-    expect(screen.getByText("3 earned")).toBeInTheDocument()
-  })
+    expect(screen.getByText("3 earned")).toBeInTheDocument();
+  });
 
   it("renders all achievement titles", () => {
-    render(<AchievementBadges achievements={mockAchievements} />)
+    render(<AchievementBadges achievements={mockAchievements} />);
 
-    expect(screen.getByText("First Steps")).toBeInTheDocument()
-    expect(screen.getByText("Perfect!")).toBeInTheDocument()
-    expect(screen.getByText("Week Warrior")).toBeInTheDocument()
-  })
+    expect(screen.getByText("First Steps")).toBeInTheDocument();
+    expect(screen.getByText("Perfect!")).toBeInTheDocument();
+    expect(screen.getByText("Week Warrior")).toBeInTheDocument();
+  });
 
   it("formats earned dates correctly", () => {
-    render(<AchievementBadges achievements={mockAchievements} />)
+    render(<AchievementBadges achievements={mockAchievements} />);
 
-    expect(screen.getByText("Jan 20")).toBeInTheDocument()
-    expect(screen.getByText("Jan 22")).toBeInTheDocument()
-    expect(screen.getByText("Jan 25")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Jan 20")).toBeInTheDocument();
+    expect(screen.getByText("Jan 22")).toBeInTheDocument();
+    expect(screen.getByText("Jan 25")).toBeInTheDocument();
+  });
 
   it("has title attribute with description for accessibility", () => {
-    render(<AchievementBadges achievements={mockAchievements} />)
+    render(<AchievementBadges achievements={mockAchievements} />);
 
-    const badge = screen.getByTitle("Completed your first assignment!")
-    expect(badge).toBeInTheDocument()
-  })
+    const badge = screen.getByTitle("Completed your first assignment!");
+    expect(badge).toBeInTheDocument();
+  });
 
   it("renders single achievement correctly", () => {
-    const singleAchievement = [mockAchievements[0]]
-    render(<AchievementBadges achievements={singleAchievement} />)
+    const singleAchievement = [mockAchievements[0]];
+    render(<AchievementBadges achievements={singleAchievement} />);
 
-    expect(screen.getByText("1 earned")).toBeInTheDocument()
-    expect(screen.getByText("First Steps")).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("1 earned")).toBeInTheDocument();
+    expect(screen.getByText("First Steps")).toBeInTheDocument();
+  });
+});

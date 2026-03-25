@@ -4,7 +4,11 @@ from typing import Any
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from app.core.security import encrypt_viewable_password, get_password_hash, verify_password
+from app.core.security import (
+    encrypt_viewable_password,
+    get_password_hash,
+    verify_password,
+)
 from app.models import (
     Student,
     StudentCreate,
@@ -24,7 +28,9 @@ def create_user(*, session: Session, user_create: UserCreate) -> User:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # Check username uniqueness
-    existing_user_username = get_user_by_username(session=session, username=user_create.username)
+    existing_user_username = get_user_by_username(
+        session=session, username=user_create.username
+    )
     if existing_user_username:
         raise HTTPException(status_code=400, detail="Username already taken")
 
@@ -109,7 +115,13 @@ def authenticate_with_username_or_email(
 
 
 def create_teacher(
-    *, session: Session, email: str, username: str, password: str, full_name: str, teacher_create: TeacherCreate
+    *,
+    session: Session,
+    email: str,
+    username: str,
+    password: str,
+    full_name: str,
+    teacher_create: TeacherCreate
 ) -> tuple[User, Teacher]:
     """
     Create a new teacher user and associated teacher record atomically.
@@ -146,13 +158,14 @@ def create_teacher(
         full_name=full_name,
         role=UserRole.teacher,
         is_active=True,
-        is_superuser=False
+        is_superuser=False,
     )
     db_user = User.model_validate(
-        user_create, update={
+        user_create,
+        update={
             "hashed_password": get_password_hash(password),
-            "must_change_password": True  # New users must change password on first login
-        }
+            "must_change_password": True,  # New users must change password on first login
+        },
     )
     session.add(db_user)
     session.flush()  # Get user.id without committing
@@ -172,7 +185,15 @@ def create_teacher(
 
 
 def create_student(
-    *, session: Session, email: str | None, username: str, password: str, full_name: str, student_create: StudentCreate, created_by_teacher_id: uuid.UUID | None = None, store_viewable_password: bool = True
+    *,
+    session: Session,
+    email: str | None,
+    username: str,
+    password: str,
+    full_name: str,
+    student_create: StudentCreate,
+    created_by_teacher_id: uuid.UUID | None = None,
+    store_viewable_password: bool = True
 ) -> tuple[User, Student]:
     """
     Create a new student user and associated student record atomically.
@@ -212,7 +233,7 @@ def create_student(
         full_name=full_name,
         role=UserRole.student,
         is_active=True,
-        is_superuser=False
+        is_superuser=False,
     )
 
     # Build update dict for User model
@@ -224,7 +245,9 @@ def create_student(
     # Store encrypted password for teacher viewing if configured
     if store_viewable_password:
         try:
-            update_data["viewable_password_encrypted"] = encrypt_viewable_password(password)
+            update_data["viewable_password_encrypted"] = encrypt_viewable_password(
+                password
+            )
         except ValueError:
             # PASSWORD_ENCRYPTION_KEY not configured - skip viewable password storage
             pass

@@ -5,7 +5,6 @@ Contains prompt templates for generating synonyms and antonyms
 for vocabulary matching activities.
 """
 
-
 # Synonym generation prompt template
 SYNONYM_PROMPT_TEMPLATE = """Given the word "{word}" at CEFR level {level}:
 Generate one clear synonym at the same difficulty level.

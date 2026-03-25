@@ -133,7 +133,9 @@ async def create_feedback(
 
     # Send notification if not a draft
     if not is_draft:
-        await _send_feedback_notification(db, feedback, new_badges=badges or [], arq_pool=arq_pool)
+        await _send_feedback_notification(
+            db, feedback, new_badges=badges or [], arq_pool=arq_pool
+        )
 
     return feedback
 
@@ -205,7 +207,9 @@ async def update_feedback(
 
     # Send notification if changing from draft to published
     if was_draft and is_draft is False:
-        await _send_feedback_notification(db, feedback, new_badges=new_badges, arq_pool=arq_pool)
+        await _send_feedback_notification(
+            db, feedback, new_badges=new_badges, arq_pool=arq_pool
+        )
 
     return feedback
 
@@ -271,8 +275,10 @@ async def get_feedback_for_student_view(
         return None
 
     # Get teacher info
-    teacher_query = select(Teacher, User).join(User, Teacher.user_id == User.id).where(
-        Teacher.id == feedback.teacher_id
+    teacher_query = (
+        select(Teacher, User)
+        .join(User, Teacher.user_id == User.id)
+        .where(Teacher.id == feedback.teacher_id)
     )
     teacher_result = await db.execute(teacher_query)
     teacher_row = teacher_result.first()
@@ -339,8 +345,10 @@ async def get_feedback_public(
         return None
 
     # Get student and user
-    student_query = select(Student, User).join(User, Student.user_id == User.id).where(
-        Student.id == assignment_student.student_id
+    student_query = (
+        select(Student, User)
+        .join(User, Student.user_id == User.id)
+        .where(Student.id == assignment_student.student_id)
     )
     student_result = await db.execute(student_query)
     student_row = student_result.first()
@@ -351,8 +359,10 @@ async def get_feedback_public(
     student, student_user = student_row
 
     # Get teacher and user
-    teacher_query = select(Teacher, User).join(User, Teacher.user_id == User.id).where(
-        Teacher.id == feedback.teacher_id
+    teacher_query = (
+        select(Teacher, User)
+        .join(User, Teacher.user_id == User.id)
+        .where(Teacher.id == feedback.teacher_id)
     )
     teacher_result = await db.execute(teacher_query)
     teacher_row = teacher_result.first()
@@ -497,9 +507,9 @@ async def get_student_badge_counts(
     if not feedback_rows:
         # Return zero counts for all badge types
         return {
-            "badge_counts": {slug: 0 for slug in VALID_BADGE_SLUGS},
+            "badge_counts": dict.fromkeys(VALID_BADGE_SLUGS, 0),
             "total": 0,
-            "this_month": {slug: 0 for slug in VALID_BADGE_SLUGS},
+            "this_month": dict.fromkeys(VALID_BADGE_SLUGS, 0),
             "this_month_total": 0,
         }
 
@@ -521,7 +531,9 @@ async def get_student_badge_counts(
 
     # Ensure all badge types are present (with 0 if not earned)
     result_counts = {slug: badge_counts.get(slug, 0) for slug in VALID_BADGE_SLUGS}
-    result_this_month = {slug: this_month_counts.get(slug, 0) for slug in VALID_BADGE_SLUGS}
+    result_this_month = {
+        slug: this_month_counts.get(slug, 0) for slug in VALID_BADGE_SLUGS
+    }
 
     return {
         "badge_counts": result_counts,

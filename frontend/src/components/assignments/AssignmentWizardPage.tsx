@@ -10,11 +10,11 @@
  * - Step 5: Review & Create
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
-import { format } from "date-fns"
-import { ChevronDown, ClipboardEdit, Eye, Plus, X } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { ChevronDown, ClipboardEdit, Eye, Plus, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,25 +24,28 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import useCustomToast from "@/hooks/useCustomToast"
-import { useContentLibraryDetail } from "@/hooks/useContentLibrary"
-import { useQuickActivityPreview } from "@/hooks/usePreviewMode"
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import useCustomToast from "@/hooks/useCustomToast";
+import { useContentLibraryDetail } from "@/hooks/useContentLibrary";
+import { useQuickActivityPreview } from "@/hooks/usePreviewMode";
 import {
   getActivityTypeColorClasses,
   getActivityTypeConfig,
-} from "@/lib/activityTypeConfig"
-import { mapAssignmentForEditToFormData } from "@/lib/assignment-utils"
-import { assignmentsApi, getAssignmentForEdit } from "@/services/assignmentsApi"
-import { getDownloadUrl as getMaterialDownloadUrl } from "@/services/materialsApi"
+} from "@/lib/activityTypeConfig";
+import { mapAssignmentForEditToFormData } from "@/lib/assignment-utils";
+import {
+  assignmentsApi,
+  getAssignmentForEdit,
+} from "@/services/assignmentsApi";
+import { getDownloadUrl as getMaterialDownloadUrl } from "@/services/materialsApi";
 import type {
   AdditionalResources,
   AdditionalResourcesResponse,
@@ -50,30 +53,30 @@ import type {
   AssignmentForEditResponse,
   AssignmentFormData,
   TeacherMaterialResourceResponse,
-} from "@/types/assignment"
-import type { Book } from "@/types/book"
-import type { ContentItem } from "@/types/content-library"
-import { ActivityPreviewModal } from "../preview"
-import { StepAdditionalResources } from "./StepAdditionalResources"
-import { StepConfigureSettings } from "./StepConfigureSettings"
-import { StepSelectActivities } from "./StepSelectActivities"
-import { StepSelectRecipients } from "./StepSelectRecipients"
-import { type SourceType, StepSelectSource } from "./StepSelectSource"
-import { TimePlanningWarningDialog } from "./TimePlanningWarningDialog"
+} from "@/types/assignment";
+import type { Book } from "@/types/book";
+import type { ContentItem } from "@/types/content-library";
+import { ActivityPreviewModal } from "../preview";
+import { StepAdditionalResources } from "./StepAdditionalResources";
+import { StepConfigureSettings } from "./StepConfigureSettings";
+import { StepSelectActivities } from "./StepSelectActivities";
+import { StepSelectRecipients } from "./StepSelectRecipients";
+import { type SourceType, StepSelectSource } from "./StepSelectSource";
+import { TimePlanningWarningDialog } from "./TimePlanningWarningDialog";
 
 export interface AssignmentWizardContentProps {
-  mode: "create" | "edit"
-  prefilledPublishDate?: string | null
-  preSelectedContentId?: string | null
-  assignmentId?: string
-  onClose: () => void
+  mode: "create" | "edit";
+  prefilledPublishDate?: string | null;
+  preSelectedContentId?: string | null;
+  assignmentId?: string;
+  onClose: () => void;
 }
 
 interface AssignmentWizardPageProps {
-  mode: "create" | "edit"
-  prefilledPublishDate?: string | null
-  preSelectedContentId?: string | null
-  assignmentId?: string
+  mode: "create" | "edit";
+  prefilledPublishDate?: string | null;
+  preSelectedContentId?: string | null;
+  assignmentId?: string;
 }
 
 const STEPS = [
@@ -83,7 +86,7 @@ const STEPS = [
   { number: 3, label: "Resources" },
   { number: 4, label: "Settings" },
   { number: 5, label: "Review" },
-]
+];
 
 /**
  * Core wizard content — used both by the full-page wrapper and the bottom sheet.
@@ -96,48 +99,48 @@ export function AssignmentWizardContent({
   assignmentId,
   onClose,
 }: AssignmentWizardContentProps) {
-  const queryClient = useQueryClient()
-  const navigate = useNavigate()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
-  const isEditMode = mode === "edit"
+  const isEditMode = mode === "edit";
 
   // Fetch existing assignment data for edit mode
   const { data: existingAssignment } = useQuery<AssignmentForEditResponse>({
     queryKey: ["assignment-for-edit", assignmentId],
     queryFn: () => getAssignmentForEdit(assignmentId!),
     enabled: isEditMode && !!assignmentId,
-  })
+  });
 
   // Fetch pre-selected AI content by ID
   const { data: preSelectedContentDetail } = useContentLibraryDetail(
     preSelectedContentId || "",
-  )
+  );
   // Convert ContentItemDetail to ContentItem (they extend each other)
   const preSelectedAIContent: ContentItem | null =
-    preSelectedContentDetail || null
+    preSelectedContentDetail || null;
 
   // State
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null)
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
     null,
-  )
-  const [selectedActivityIds, setSelectedActivityIds] = useState<string[]>([])
-  const [currentStep, setCurrentStep] = useState(0)
-  const [validationError, setValidationError] = useState<string | null>(null)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [showTimePlanningWarning, setShowTimePlanningWarning] = useState(false)
-  const [initialized, setInitialized] = useState(false)
-  const createAnotherRef = useRef(false)
+  );
+  const [selectedActivityIds, setSelectedActivityIds] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showTimePlanningWarning, setShowTimePlanningWarning] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const createAnotherRef = useRef(false);
 
   // Derive sourceType from selections
-  const sourceType: SourceType = selectedContent ? "ai_content" : "book"
+  const sourceType: SourceType = selectedContent ? "ai_content" : "book";
 
   const {
     previewActivity,
     isModalOpen: isPreviewModalOpen,
     closePreview,
-  } = useQuickActivityPreview()
+  } = useQuickActivityPreview();
 
   const [formData, setFormData] = useState<AssignmentFormData>({
     name: "",
@@ -152,16 +155,16 @@ export function AssignmentWizardContent({
     date_groups: [],
     video_path: null,
     resources: null,
-  })
+  });
 
   // Initialize state based on mode and props
   useEffect(() => {
-    if (initialized) return
+    if (initialized) return;
 
     if (isEditMode && existingAssignment) {
-      const mappedData = mapAssignmentForEditToFormData(existingAssignment)
-      setFormData(mappedData)
-      setSelectedActivityIds(mappedData.activity_ids)
+      const mappedData = mapAssignmentForEditToFormData(existingAssignment);
+      setFormData(mappedData);
+      setSelectedActivityIds(mappedData.activity_ids);
 
       const bookFromPreview: Book = {
         id: Number(existingAssignment.book_id),
@@ -172,15 +175,15 @@ export function AssignmentWizardContent({
         description: null,
         cover_image_url: existingAssignment.book_cover_url,
         activity_count: existingAssignment.total_activities,
-      }
-      setSelectedBook(bookFromPreview)
-      setCurrentStep(1)
-      setInitialized(true)
+      };
+      setSelectedBook(bookFromPreview);
+      setCurrentStep(1);
+      setInitialized(true);
     } else if (!isEditMode && preSelectedAIContent) {
-      setCurrentStep(1)
-      setSelectedContent(preSelectedAIContent)
-      setSelectedBook(null)
-      setSelectedActivityIds([])
+      setCurrentStep(1);
+      setSelectedContent(preSelectedAIContent);
+      setSelectedBook(null);
+      setSelectedActivityIds([]);
       setFormData({
         name: preSelectedAIContent.title,
         instructions: "",
@@ -196,8 +199,8 @@ export function AssignmentWizardContent({
         date_groups: [],
         video_path: null,
         resources: null,
-      })
-      setInitialized(true)
+      });
+      setInitialized(true);
     } else if (!isEditMode && !preSelectedContentId) {
       // Normal create mode (no pre-selected content to wait for)
       setFormData((prev) => ({
@@ -205,8 +208,8 @@ export function AssignmentWizardContent({
         scheduled_publish_date: prefilledPublishDate
           ? new Date(prefilledPublishDate)
           : null,
-      }))
-      setInitialized(true)
+      }));
+      setInitialized(true);
     }
   }, [
     initialized,
@@ -215,60 +218,60 @@ export function AssignmentWizardContent({
     preSelectedAIContent,
     preSelectedContentId,
     prefilledPublishDate,
-  ])
+  ]);
 
   // Unsaved changes: beforeunload warning
   const isFormDirty = useCallback((): boolean => {
-    if (currentStep > 0) return true
-    if (selectedActivityIds.length > 0) return true
-    if (selectedContent !== null) return true
+    if (currentStep > 0) return true;
+    if (selectedActivityIds.length > 0) return true;
+    if (selectedContent !== null) return true;
     if (formData.student_ids.length > 0 || formData.class_ids.length > 0)
-      return true
-    if (formData.instructions.trim() !== "") return true
-    if (formData.due_date !== null) return true
-    if (formData.time_limit_minutes !== null) return true
-    if (formData.scheduled_publish_date !== null) return true
-    return false
-  }, [currentStep, selectedActivityIds, selectedContent, formData])
+      return true;
+    if (formData.instructions.trim() !== "") return true;
+    if (formData.due_date !== null) return true;
+    if (formData.time_limit_minutes !== null) return true;
+    if (formData.scheduled_publish_date !== null) return true;
+    return false;
+  }, [currentStep, selectedActivityIds, selectedContent, formData]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (isFormDirty()) {
-        e.preventDefault()
+        e.preventDefault();
       }
-    }
-    window.addEventListener("beforeunload", handler)
-    return () => window.removeEventListener("beforeunload", handler)
-  }, [isFormDirty])
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isFormDirty]);
 
   // Update form name when activities are selected (only in create mode)
   useEffect(() => {
     if (!isEditMode && selectedActivityIds.length > 0 && selectedBook) {
-      const activityCount = selectedActivityIds.length
-      const dateStr = format(new Date(), "MMM dd, yyyy")
+      const activityCount = selectedActivityIds.length;
+      const dateStr = format(new Date(), "MMM dd, yyyy");
       const newName =
         activityCount === 1
           ? `${selectedBook.title} Activity - ${dateStr}`
-          : `${selectedBook.title} (${activityCount} activities) - ${dateStr}`
+          : `${selectedBook.title} (${activityCount} activities) - ${dateStr}`;
       setFormData((prev) => ({
         ...prev,
         name: newName,
         activity_ids: selectedActivityIds,
-      }))
+      }));
     } else if (isEditMode) {
       setFormData((prev) => ({
         ...prev,
         activity_ids: selectedActivityIds,
-      }))
+      }));
     }
-  }, [selectedActivityIds, selectedBook, isEditMode])
+  }, [selectedActivityIds, selectedBook, isEditMode]);
 
   const resetWizard = useCallback(() => {
-    setSelectedBook(null)
-    setSelectedContent(null)
-    setSelectedActivityIds([])
-    setCurrentStep(0)
-    setValidationError(null)
+    setSelectedBook(null);
+    setSelectedContent(null);
+    setSelectedActivityIds([]);
+    setCurrentStep(0);
+    setValidationError(null);
     setFormData({
       name: "",
       instructions: "",
@@ -282,158 +285,158 @@ export function AssignmentWizardContent({
       date_groups: [],
       video_path: null,
       resources: null,
-    })
-  }, [])
+    });
+  }, []);
 
   // Mutations
   const createAssignmentMutation = useMutation({
     mutationFn: assignmentsApi.createAssignment,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] });
 
       showSuccessToast(
         `Assignment "${data.name}" created successfully for ${data.student_count} student${data.student_count !== 1 ? "s" : ""}`,
-      )
+      );
 
       if (createAnotherRef.current) {
-        resetWizard()
-        return
+        resetWizard();
+        return;
       }
 
-      onClose()
+      onClose();
       navigate({
         to: "/teacher/assignments/$assignmentId",
         params: { assignmentId: data.id },
-      })
+      });
     },
     onError: (error: any) => {
-      console.error("Failed to create assignment:", error)
-      const detail = error?.response?.data?.detail
+      console.error("Failed to create assignment:", error);
+      const detail = error?.response?.data?.detail;
       const errorMessage =
         typeof detail === "string"
           ? detail
           : Array.isArray(detail)
             ? detail.map((e: any) => e.msg || e.message || String(e)).join(", ")
-            : "Failed to create assignment"
-      showErrorToast(errorMessage)
+            : "Failed to create assignment";
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   const createBulkAssignmentsMutation = useMutation({
     mutationFn: assignmentsApi.createBulkAssignments,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] });
 
       showSuccessToast(
         `${data.total_created} assignments created successfully! They will become visible on their scheduled dates.`,
-      )
+      );
 
       if (createAnotherRef.current) {
-        resetWizard()
-        return
+        resetWizard();
+        return;
       }
 
-      onClose()
+      onClose();
     },
     onError: (error: any) => {
-      console.error("Failed to create bulk assignments:", error)
+      console.error("Failed to create bulk assignments:", error);
       const errorMessage =
-        error?.response?.data?.detail || "Failed to create assignments"
-      showErrorToast(errorMessage)
+        error?.response?.data?.detail || "Failed to create assignments";
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   const updateAssignmentMutation = useMutation({
     mutationFn: (data: { id: string; data: any }) =>
       assignmentsApi.updateAssignment(data.id, data.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
-      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] })
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-assignments"] });
       if (assignmentId) {
         queryClient.invalidateQueries({
           queryKey: ["assignment-preview", assignmentId],
-        })
+        });
       }
 
-      showSuccessToast("Assignment updated successfully")
+      showSuccessToast("Assignment updated successfully");
 
-      onClose()
+      onClose();
       navigate({
         to: "/teacher/assignments/$assignmentId",
         params: { assignmentId: assignmentId! },
-      })
+      });
     },
     onError: (error: any) => {
-      console.error("Failed to update assignment:", error)
+      console.error("Failed to update assignment:", error);
       const errorMessage =
-        error?.response?.data?.detail || "Failed to update assignment"
-      showErrorToast(errorMessage)
+        error?.response?.data?.detail || "Failed to update assignment";
+      showErrorToast(errorMessage);
     },
-  })
+  });
 
   // Handlers
   const handleFormDataChange = (updates: Partial<AssignmentFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }))
+    setFormData((prev) => ({ ...prev, ...updates }));
     if (validationError) {
-      setValidationError(null)
+      setValidationError(null);
     }
-  }
+  };
 
   const handleTimePlanningToggle = (enabled: boolean) => {
     if (enabled && selectedActivityIds.length > 0) {
-      setShowTimePlanningWarning(true)
+      setShowTimePlanningWarning(true);
     } else {
-      handleFormDataChange({ time_planning_enabled: enabled })
+      handleFormDataChange({ time_planning_enabled: enabled });
     }
-  }
+  };
 
   const handleTimePlanningWarningConfirm = () => {
-    setSelectedActivityIds([])
+    setSelectedActivityIds([]);
     handleFormDataChange({
       time_planning_enabled: true,
       activity_ids: [],
-    })
-    setShowTimePlanningWarning(false)
-  }
+    });
+    setShowTimePlanningWarning(false);
+  };
 
   const handleTimePlanningWarningCancel = () => {
-    setShowTimePlanningWarning(false)
-  }
+    setShowTimePlanningWarning(false);
+  };
 
   const handleActivityIdsChange = useCallback((activityIds: string[]) => {
-    setSelectedActivityIds(activityIds)
-  }, [])
+    setSelectedActivityIds(activityIds);
+  }, []);
 
   const handleBookSelect = useCallback((book: Book | null) => {
-    setSelectedBook(book)
+    setSelectedBook(book);
     if (book) {
-      setCurrentStep(1)
+      setCurrentStep(1);
     }
-  }, [])
+  }, []);
 
   const handleContentSelect = useCallback((content: ContentItem | null) => {
-    setSelectedContent(content)
+    setSelectedContent(content);
     if (content) {
-      setSelectedActivityIds([])
-      const dateStr = format(new Date(), "MMM dd, yyyy")
+      setSelectedActivityIds([]);
+      const dateStr = format(new Date(), "MMM dd, yyyy");
       setFormData((prev) => ({
         ...prev,
         name: `${content.title} - ${dateStr}`,
         activity_ids: [],
-      }))
+      }));
     }
-  }, [])
+  }, []);
 
   const handleNext = () => {
     if (currentStep === 0) {
       if (!selectedBook) {
-        showErrorToast("Please select a book")
-        return
+        showErrorToast("Please select a book");
+        return;
       }
     }
 
@@ -441,113 +444,115 @@ export function AssignmentWizardContent({
       if (selectedActivityIds.length === 0 && !selectedContent) {
         showErrorToast(
           "Please select at least one activity or an AI content item",
-        )
-        return
+        );
+        return;
       }
       if (selectedActivityIds.length > 0 && formData.time_planning_enabled) {
         if (formData.date_groups.length === 0) {
           showErrorToast(
             "Please add at least one date when Time Planning is enabled",
-          )
-          return
+          );
+          return;
         }
         const hasEmptyGroup = formData.date_groups.some(
           (g) => g.activityIds.length === 0,
-        )
+        );
         if (hasEmptyGroup) {
-          showErrorToast("Each date must have at least one activity assigned")
-          return
+          showErrorToast("Each date must have at least one activity assigned");
+          return;
         }
       }
     }
 
     if (currentStep === 2) {
       const hasRecipients =
-        formData.class_ids.length > 0 || formData.student_ids.length > 0
+        formData.class_ids.length > 0 || formData.student_ids.length > 0;
       if (!hasRecipients) {
-        showErrorToast("Please select at least one class or student")
-        return
+        showErrorToast("Please select at least one class or student");
+        return;
       }
     }
 
     if (currentStep === 4) {
       if (!formData.name || formData.name.trim() === "") {
-        showErrorToast("Please enter an assignment name")
-        return
+        showErrorToast("Please enter an assignment name");
+        return;
       }
       if (
         formData.time_limit_minutes !== null &&
         formData.time_limit_minutes < 1
       ) {
-        showErrorToast("Time limit must be at least 1 minute")
-        return
+        showErrorToast("Time limit must be at least 1 minute");
+        return;
       }
       if (formData.scheduled_publish_date) {
         if (formData.scheduled_publish_date <= new Date()) {
-          showErrorToast("Scheduled publish date must be in the future")
-          return
+          showErrorToast("Scheduled publish date must be in the future");
+          return;
         }
         if (
           formData.due_date &&
           formData.scheduled_publish_date > formData.due_date
         ) {
-          showErrorToast("Publish date must be before or equal to the due date")
-          return
+          showErrorToast(
+            "Publish date must be before or equal to the due date",
+          );
+          return;
         }
       }
     }
 
-    setValidationError(null)
+    setValidationError(null);
     if (currentStep < STEPS.length - 1) {
       if (currentStep === 2 && sourceType === "ai_content") {
-        setCurrentStep(4)
+        setCurrentStep(4);
       } else {
-        setCurrentStep((prev) => prev + 1)
+        setCurrentStep((prev) => prev + 1);
       }
     }
-  }
+  };
 
   const handleBack = () => {
-    setValidationError(null)
+    setValidationError(null);
     if (currentStep > 0) {
       if (currentStep === 1) {
         // If AI content is selected, go back to content list first
         if (selectedContent) {
-          setSelectedContent(null)
-          return
+          setSelectedContent(null);
+          return;
         }
-        setSelectedBook(null)
-        setSelectedActivityIds([])
+        setSelectedBook(null);
+        setSelectedActivityIds([]);
       }
       if (currentStep === 4 && sourceType === "ai_content") {
-        setCurrentStep(2)
+        setCurrentStep(2);
       } else {
-        setCurrentStep((prev) => prev - 1)
+        setCurrentStep((prev) => prev - 1);
       }
     }
-  }
+  };
 
   const handleCancelClick = () => {
     if (isFormDirty()) {
-      setShowCancelConfirm(true)
+      setShowCancelConfirm(true);
     } else {
-      onClose()
+      onClose();
     }
-  }
+  };
 
   const handleCancel = () => {
-    setShowCancelConfirm(false)
-    onClose()
-  }
+    setShowCancelConfirm(false);
+    onClose();
+  };
 
   const transformResourcesForPreview = useCallback(
     (
       resources: AdditionalResources | null,
     ): AdditionalResourcesResponse | null => {
-      if (!resources) return null
+      if (!resources) return null;
 
-      const token = localStorage.getItem("access_token")
-      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ""
+      const token = localStorage.getItem("access_token");
+      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
 
       const transformedMaterials: TeacherMaterialResourceResponse[] = (
         resources.teacher_materials ?? []
@@ -555,7 +560,7 @@ export function AssignmentWizardContent({
         const downloadUrl =
           mat.material_type !== "url" && mat.material_type !== "text_note"
             ? `${getMaterialDownloadUrl(mat.material_id)}${tokenParam}`
-            : null
+            : null;
         return {
           ...mat,
           is_available: true,
@@ -564,25 +569,25 @@ export function AssignmentWizardContent({
           url: mat.url ?? null,
           text_content: mat.text_content ?? null,
           download_url: downloadUrl,
-        }
-      })
+        };
+      });
 
       return {
         videos: resources.videos,
         teacher_materials: transformedMaterials,
-      }
+      };
     },
     [],
-  )
+  );
 
   const handlePreviewInNewTab = useCallback(() => {
     if (sourceType === "book") {
       if (!selectedBook || selectedActivityIds.length === 0) {
-        showErrorToast("Please select a book and activities first")
-        return
+        showErrorToast("Please select a book and activities first");
+        return;
       }
 
-      const previewResources = transformResourcesForPreview(formData.resources)
+      const previewResources = transformResourcesForPreview(formData.resources);
 
       const previewData = {
         bookId: selectedBook.id,
@@ -593,17 +598,17 @@ export function AssignmentWizardContent({
         assignmentName: formData.name || `${selectedBook.title} Preview`,
         timeLimitMinutes: formData.time_limit_minutes,
         resources: previewResources,
-      }
+      };
       sessionStorage.setItem(
         "assignment-preview-data",
         JSON.stringify(previewData),
-      )
+      );
 
-      window.open("/teacher/assignments/preview", "_blank")
+      window.open("/teacher/assignments/preview", "_blank");
     } else {
       showErrorToast(
         "AI content preview is shown in Step 1. Click Back to view.",
-      )
+      );
     }
   }, [
     sourceType,
@@ -614,7 +619,7 @@ export function AssignmentWizardContent({
     formData.resources,
     showErrorToast,
     transformResourcesForPreview,
-  ])
+  ]);
 
   const handleCreateAssignment = async () => {
     if (isEditMode && assignmentId) {
@@ -625,24 +630,24 @@ export function AssignmentWizardContent({
         time_limit_minutes: formData.time_limit_minutes || null,
         activity_ids: selectedActivityIds,
         resources: formData.resources,
-      }
+      };
 
       updateAssignmentMutation.mutate({
         id: assignmentId,
         data: updateData,
-      })
-      return
+      });
+      return;
     }
 
     if (sourceType === "book") {
       if (!selectedBook) {
-        showErrorToast("Please select a book")
-        return
+        showErrorToast("Please select a book");
+        return;
       }
 
       if (selectedActivityIds.length === 0) {
-        showErrorToast("Please select at least one activity")
-        return
+        showErrorToast("Please select at least one activity");
+        return;
       }
 
       if (formData.time_planning_enabled && formData.date_groups.length > 0) {
@@ -660,9 +665,9 @@ export function AssignmentWizardContent({
             time_limit_minutes: group.timeLimit || null,
             activity_ids: group.activityIds,
           })),
-        }
-        createBulkAssignmentsMutation.mutate(requestData)
-        return
+        };
+        createBulkAssignmentsMutation.mutate(requestData);
+        return;
       }
 
       const requestData: AssignmentCreateRequest = {
@@ -681,13 +686,13 @@ export function AssignmentWizardContent({
           : null,
         video_path: formData.video_path,
         resources: formData.resources,
-      }
+      };
 
-      createAssignmentMutation.mutate(requestData)
+      createAssignmentMutation.mutate(requestData);
     } else {
       if (!selectedContent) {
-        showErrorToast("Please select AI content")
-        return
+        showErrorToast("Please select AI content");
+        return;
       }
 
       const requestData: AssignmentCreateRequest = {
@@ -706,16 +711,16 @@ export function AssignmentWizardContent({
           ? formData.scheduled_publish_date.toISOString()
           : null,
         resources: formData.resources,
-      }
+      };
 
-      createAssignmentMutation.mutate(requestData)
+      createAssignmentMutation.mutate(requestData);
     }
-  }
+  };
 
   const isMutating =
     createAssignmentMutation.isPending ||
     createBulkAssignmentsMutation.isPending ||
-    updateAssignmentMutation.isPending
+    updateAssignmentMutation.isPending;
 
   return (
     <>
@@ -744,7 +749,7 @@ export function AssignmentWizardContent({
               {/* Connecting lines between steps */}
               <div className="absolute top-4 left-0 right-0 flex justify-between px-4">
                 {STEPS.slice(0, -1).map((step, i) => {
-                  const isSegmentCompleted = currentStep > i
+                  const isSegmentCompleted = currentStep > i;
                   return (
                     <div
                       key={step.number}
@@ -754,7 +759,7 @@ export function AssignmentWizardContent({
                           : "bg-gray-200 dark:bg-gray-700"
                       }`}
                     />
-                  )
+                  );
                 })}
               </div>
 
@@ -762,9 +767,9 @@ export function AssignmentWizardContent({
               <div className="relative flex justify-between">
                 {STEPS.map((step) => {
                   const isSkipped =
-                    step.number === 3 && sourceType === "ai_content"
-                  const isCompleted = currentStep > step.number || isSkipped
-                  const isCurrent = currentStep === step.number && !isSkipped
+                    step.number === 3 && sourceType === "ai_content";
+                  const isCompleted = currentStep > step.number || isSkipped;
+                  const isCurrent = currentStep === step.number && !isSkipped;
 
                   return (
                     <div
@@ -808,7 +813,7 @@ export function AssignmentWizardContent({
                         {step.label}
                       </span>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -837,7 +842,9 @@ export function AssignmentWizardContent({
         )}
 
         {/* Other steps scroll normally */}
-        <div className={`flex-1 overflow-y-auto ${currentStep === 1 ? "hidden" : ""}`}>
+        <div
+          className={`flex-1 overflow-y-auto ${currentStep === 1 ? "hidden" : ""}`}
+        >
           <div className="max-w-5xl mx-auto px-6 py-6 h-full">
             {currentStep === 0 && (
               <StepSelectSource
@@ -938,8 +945,8 @@ export function AssignmentWizardContent({
                     <div className="flex items-center">
                       <Button
                         onClick={() => {
-                          createAnotherRef.current = false
-                          handleCreateAssignment()
+                          createAnotherRef.current = false;
+                          handleCreateAssignment();
                         }}
                         disabled={isMutating}
                         className="bg-teal-600 hover:bg-teal-700 rounded-r-none"
@@ -962,8 +969,8 @@ export function AssignmentWizardContent({
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => {
-                              createAnotherRef.current = true
-                              handleCreateAssignment()
+                              createAnotherRef.current = true;
+                              handleCreateAssignment();
                             }}
                           >
                             <Plus className="h-4 w-4 mr-2" />
@@ -1016,7 +1023,7 @@ export function AssignmentWizardContent({
         activityCount={selectedActivityIds.length}
       />
     </>
-  )
+  );
 }
 
 /**
@@ -1028,7 +1035,7 @@ export function AssignmentWizardPage({
   preSelectedContentId,
   assignmentId,
 }: AssignmentWizardPageProps) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   return (
     <div className="fixed inset-0 z-50 bg-background">
@@ -1040,16 +1047,16 @@ export function AssignmentWizardPage({
         onClose={() => navigate({ to: "/teacher/assignments" })}
       />
     </div>
-  )
+  );
 }
 
 // Review step component (extracted from dialog's StepReviewCreateMulti)
 interface StepReviewCreateProps {
-  book: Book | null
-  selectedContent: ContentItem | null
-  sourceType: SourceType
-  activityCount: number
-  formData: AssignmentFormData
+  book: Book | null;
+  selectedContent: ContentItem | null;
+  sourceType: SourceType;
+  activityCount: number;
+  formData: AssignmentFormData;
 }
 
 function StepReviewCreate({
@@ -1062,14 +1069,14 @@ function StepReviewCreate({
   const recipientCount =
     formData.class_ids.length > 0
       ? `${formData.class_ids.length} class(es)`
-      : `${formData.student_ids.length} student(s)`
+      : `${formData.student_ids.length} student(s)`;
 
   const aiContentConfig = selectedContent
     ? getActivityTypeConfig(selectedContent.activity_type)
-    : null
+    : null;
   const aiColorClasses = aiContentConfig
     ? getActivityTypeColorClasses(aiContentConfig.color)
-    : null
+    : null;
 
   return (
     <div className="flex flex-col h-full">
@@ -1226,5 +1233,5 @@ function StepReviewCreate({
         </div>
       </ScrollArea>
     </div>
-  )
+  );
 }

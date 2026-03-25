@@ -6,7 +6,7 @@
  * Story 9.x: Time Planning mode - configure each date group separately
  */
 
-import { format } from "date-fns"
+import { format } from "date-fns";
 import {
   CalendarDays,
   Calendar as CalendarIcon,
@@ -16,29 +16,29 @@ import {
   Pencil,
   Send,
   Timer,
-} from "lucide-react"
-import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
-import type { AssignmentFormData } from "@/types/assignment"
+} from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import type { AssignmentFormData } from "@/types/assignment";
 
 interface StepConfigureSettingsProps {
-  formData: AssignmentFormData
-  onFormDataChange: (data: Partial<AssignmentFormData>) => void
-  activityCount?: number
+  formData: AssignmentFormData;
+  onFormDataChange: (data: Partial<AssignmentFormData>) => void;
+  activityCount?: number;
 }
 
 export function StepConfigureSettings({
@@ -49,108 +49,110 @@ export function StepConfigureSettings({
   // Track publish mode: "immediate" or "scheduled"
   const [publishMode, setPublishMode] = useState<"immediate" | "scheduled">(
     formData.scheduled_publish_date ? "scheduled" : "immediate",
-  )
+  );
 
   // Track selected date index for Time Planning mode
-  const [selectedDateIndex, setSelectedDateIndex] = useState(0)
+  const [selectedDateIndex, setSelectedDateIndex] = useState(0);
 
   // Track if we're editing a date
-  const [editingDateIndex, setEditingDateIndex] = useState<number | null>(null)
+  const [editingDateIndex, setEditingDateIndex] = useState<number | null>(null);
 
   const handleNameChange = (value: string) => {
-    onFormDataChange({ name: value })
-  }
+    onFormDataChange({ name: value });
+  };
 
   const handleInstructionsChange = (value: string) => {
-    onFormDataChange({ instructions: value })
-  }
+    onFormDataChange({ instructions: value });
+  };
 
   const handleDueDateChange = (value: string) => {
-    onFormDataChange({ due_date: value ? new Date(value) : null })
-  }
+    onFormDataChange({ due_date: value ? new Date(value) : null });
+  };
 
   const handleTimeLimitChange = (value: string) => {
-    const minutes = value ? Number.parseInt(value, 10) : null
-    onFormDataChange({ time_limit_minutes: minutes })
-  }
+    const minutes = value ? Number.parseInt(value, 10) : null;
+    onFormDataChange({ time_limit_minutes: minutes });
+  };
 
   const handlePublishModeChange = (mode: "immediate" | "scheduled") => {
-    setPublishMode(mode)
+    setPublishMode(mode);
     if (mode === "immediate") {
-      onFormDataChange({ scheduled_publish_date: null })
+      onFormDataChange({ scheduled_publish_date: null });
     }
-  }
+  };
 
   const handleScheduledPublishDateChange = (value: string) => {
-    onFormDataChange({ scheduled_publish_date: value ? new Date(value) : null })
-  }
+    onFormDataChange({
+      scheduled_publish_date: value ? new Date(value) : null,
+    });
+  };
 
   // Time Planning: Update date group's date
   const handleDateGroupDateChange = (index: number, newDate: Date) => {
     const newGroups = formData.date_groups.map((group, i) => {
       if (i === index) {
-        return { ...group, date: newDate }
+        return { ...group, date: newDate };
       }
-      return group
-    })
-    onFormDataChange({ date_groups: newGroups })
-    setEditingDateIndex(null)
-  }
+      return group;
+    });
+    onFormDataChange({ date_groups: newGroups });
+    setEditingDateIndex(null);
+  };
 
   // Time Planning: Update date group's due date
   const handleDateGroupDueDateChange = (index: number, value: string) => {
     const newGroups = formData.date_groups.map((group, i) => {
       if (i === index) {
-        return { ...group, dueDate: value ? new Date(value) : null }
+        return { ...group, dueDate: value ? new Date(value) : null };
       }
-      return group
-    })
-    onFormDataChange({ date_groups: newGroups })
-  }
+      return group;
+    });
+    onFormDataChange({ date_groups: newGroups });
+  };
 
   // Time Planning: Update date group's time limit
   const handleDateGroupTimeLimitChange = (index: number, value: string) => {
     const newGroups = formData.date_groups.map((group, i) => {
       if (i === index) {
-        const minutes = value ? Number.parseInt(value, 10) : null
-        return { ...group, timeLimit: minutes }
+        const minutes = value ? Number.parseInt(value, 10) : null;
+        return { ...group, timeLimit: minutes };
       }
-      return group
-    })
-    onFormDataChange({ date_groups: newGroups })
-  }
+      return group;
+    });
+    onFormDataChange({ date_groups: newGroups });
+  };
 
   const formatDateForInput = (date: Date | null | undefined): string => {
-    if (!date) return ""
-    const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, "0")
-    const day = String(d.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
+    if (!date) return "";
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   const formatDateTimeForInput = (date: Date | null): string => {
-    if (!date) return ""
-    const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, "0")
-    const day = String(d.getDate()).padStart(2, "0")
-    const hours = String(d.getHours()).padStart(2, "0")
-    const minutes = String(d.getMinutes()).padStart(2, "0")
-    return `${year}-${month}-${day}T${hours}:${minutes}`
-  }
+    if (!date) return "";
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   const isScheduledDateValid = (): boolean => {
-    if (!formData.scheduled_publish_date) return true
-    if (!formData.due_date) return true
-    return formData.scheduled_publish_date <= formData.due_date
-  }
+    if (!formData.scheduled_publish_date) return true;
+    if (!formData.due_date) return true;
+    return formData.scheduled_publish_date <= formData.due_date;
+  };
 
   const isTimePlanningMode =
-    formData.time_planning_enabled && formData.date_groups.length > 0
+    formData.time_planning_enabled && formData.date_groups.length > 0;
   const currentGroup = isTimePlanningMode
     ? formData.date_groups[selectedDateIndex]
-    : null
+    : null;
 
   // Time Planning Mode Layout
   if (isTimePlanningMode) {
@@ -211,7 +213,7 @@ export function StepConfigureSettings({
                                 selected={group.date}
                                 onSelect={(date) => {
                                   if (date)
-                                    handleDateGroupDateChange(index, date)
+                                    handleDateGroupDateChange(index, date);
                                 }}
                                 initialFocus
                               />
@@ -235,8 +237,8 @@ export function StepConfigureSettings({
                         size="icon"
                         className="h-5 w-5"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          setEditingDateIndex(index)
+                          e.stopPropagation();
+                          setEditingDateIndex(index);
                         }}
                       >
                         <Pencil className="h-3 w-3" />
@@ -391,7 +393,7 @@ export function StepConfigureSettings({
           <Badge variant="secondary">Time Planning Mode</Badge>
         </div>
       </div>
-    )
+    );
   }
 
   // Normal Mode Layout (existing)
@@ -587,5 +589,5 @@ export function StepConfigureSettings({
         </div>
       </ScrollArea>
     </div>
-  )
+  );
 }

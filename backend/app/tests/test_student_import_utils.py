@@ -1,4 +1,5 @@
 """Unit tests for student import utility functions (Story 9.9)."""
+
 import pytest
 
 from app.utils import (
@@ -36,7 +37,7 @@ class TestTurkishToAscii:
 
     def test_all_mappings_present(self) -> None:
         """Verify all Turkish characters are in the mapping."""
-        expected_chars = ['ı', 'İ', 'ğ', 'Ğ', 'ü', 'Ü', 'ş', 'Ş', 'ö', 'Ö', 'ç', 'Ç']
+        expected_chars = ["ı", "İ", "ğ", "Ğ", "ü", "Ü", "ş", "Ş", "ö", "Ö", "ç", "Ç"]
         for char in expected_chars:
             assert char in TURKISH_CHAR_MAP
 
@@ -169,18 +170,20 @@ class TestGenerateStudentPassword:
     def test_no_confusing_characters(self) -> None:
         """Test password excludes confusing characters (Story 9.9 AC 23)."""
         # Generate many passwords to ensure consistent behavior
-        confusing_chars = {'0', 'O', '1', 'l', 'I'}
+        confusing_chars = {"0", "O", "1", "l", "I"}
         for _ in range(100):
             password = generate_student_password()
-            assert not any(c in confusing_chars for c in password), \
-                f"Password '{password}' contains confusing characters"
+            assert not any(
+                c in confusing_chars for c in password
+            ), f"Password '{password}' contains confusing characters"
 
     def test_only_alphanumeric(self) -> None:
         """Test password contains only alphanumeric characters."""
         for _ in range(50):
             password = generate_student_password()
-            assert password.isalnum(), \
-                f"Password '{password}' contains non-alphanumeric characters"
+            assert (
+                password.isalnum()
+            ), f"Password '{password}' contains non-alphanumeric characters"
 
     def test_uniqueness(self) -> None:
         """Test that generated passwords are unique (probabilistic)."""

@@ -14,17 +14,17 @@ import {
   Search,
   Trash2,
   X,
-} from "lucide-react"
-import React, { useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+} from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -32,40 +32,40 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
-import type { Material, MaterialType } from "@/types/material"
-import { MATERIAL_TYPE_LABELS } from "@/types/material"
-import { MaterialTypeIcon } from "./MaterialTypeIcon"
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import type { Material, MaterialType } from "@/types/material";
+import { MATERIAL_TYPE_LABELS } from "@/types/material";
+import { MaterialTypeIcon } from "./MaterialTypeIcon";
 
 interface TeacherMaterialsTableProps {
-  materials: Material[]
-  isLoading?: boolean
-  itemsPerPage?: number
-  onPreview?: (material: Material) => void
-  onDownload?: (material: Material) => void
-  onRename?: (material: Material) => void
-  onEdit?: (material: Material) => void
-  onDelete?: (material: Material) => void
+  materials: Material[];
+  isLoading?: boolean;
+  itemsPerPage?: number;
+  onPreview?: (material: Material) => void;
+  onDownload?: (material: Material) => void;
+  onRename?: (material: Material) => void;
+  onEdit?: (material: Material) => void;
+  onDelete?: (material: Material) => void;
 }
 
-type SortBy = "date" | "name"
-type SortOrder = "asc" | "desc"
+type SortBy = "date" | "name";
+type SortOrder = "asc" | "desc";
 
 /**
  * Format bytes to human-readable string
  */
 function formatFileSize(bytes: number | null): string {
-  if (bytes === null || bytes === 0) return "-"
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes === null || bytes === 0) return "-";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 /**
@@ -76,7 +76,7 @@ function formatDate(dateString: string): string {
     year: "numeric",
     month: "short",
     day: "numeric",
-  })
+  });
 }
 
 /**
@@ -92,78 +92,78 @@ export function TeacherMaterialsTable({
   onEdit,
   onDelete,
 }: TeacherMaterialsTableProps) {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [sortBy, setSortBy] = useState<SortBy>("date")
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
-  const [typeFilter, setTypeFilter] = useState<MaterialType | "all">("all")
-  const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortBy>("date");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [typeFilter, setTypeFilter] = useState<MaterialType | "all">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Filter materials by type and search query
   const filteredMaterials = useMemo(() => {
-    let filtered = materials
+    let filtered = materials;
 
     // Filter by type
     if (typeFilter !== "all") {
-      filtered = filtered.filter((m) => m.type === typeFilter)
+      filtered = filtered.filter((m) => m.type === typeFilter);
     }
 
     // Filter by search query
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
+      const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(
         (m) =>
           m.name.toLowerCase().includes(query) ||
           m.original_filename?.toLowerCase().includes(query),
-      )
+      );
     }
 
-    return filtered
-  }, [materials, typeFilter, searchQuery])
+    return filtered;
+  }, [materials, typeFilter, searchQuery]);
 
   // Sort materials
   const sortedMaterials = useMemo(() => {
     const sorted = [...filteredMaterials].sort((a, b) => {
       if (sortBy === "date") {
-        const dateA = new Date(a.created_at).getTime()
-        const dateB = new Date(b.created_at).getTime()
-        return sortOrder === "asc" ? dateA - dateB : dateB - dateA
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
       }
-      const comparison = a.name.localeCompare(b.name)
-      return sortOrder === "asc" ? comparison : -comparison
-    })
-    return sorted
-  }, [filteredMaterials, sortBy, sortOrder])
+      const comparison = a.name.localeCompare(b.name);
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+    return sorted;
+  }, [filteredMaterials, sortBy, sortOrder]);
 
   // Pagination
-  const totalPages = Math.ceil(sortedMaterials.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentMaterials = sortedMaterials.slice(startIndex, endIndex)
+  const totalPages = Math.ceil(sortedMaterials.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentMaterials = sortedMaterials.slice(startIndex, endIndex);
 
   // Reset to first page when filter or search changes
   React.useEffect(() => {
-    setCurrentPage(1)
-  }, [])
+    setCurrentPage(1);
+  }, []);
 
   // Handle sort toggle
   const handleSortChange = (newSortBy: SortBy) => {
     if (sortBy === newSortBy) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
-      setSortBy(newSortBy)
-      setSortOrder(newSortBy === "date" ? "desc" : "asc")
+      setSortBy(newSortBy);
+      setSortOrder(newSortBy === "date" ? "desc" : "asc");
     }
-  }
+  };
 
   // Can download check
   const canDownload = (material: Material): boolean => {
-    return !["url", "text_note"].includes(material.type)
-  }
+    return !["url", "text_note"].includes(material.type);
+  };
 
   // Can edit check (only text notes)
   const canEdit = (material: Material): boolean => {
-    return material.type === "text_note"
-  }
+    return material.type === "text_note";
+  };
 
   // Loading skeleton
   if (isLoading) {
@@ -183,7 +183,7 @@ export function TeacherMaterialsTable({
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -444,7 +444,7 @@ export function TeacherMaterialsTable({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-TeacherMaterialsTable.displayName = "TeacherMaterialsTable"
+TeacherMaterialsTable.displayName = "TeacherMaterialsTable";

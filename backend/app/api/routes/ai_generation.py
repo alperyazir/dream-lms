@@ -17,6 +17,7 @@ from sqlmodel import select
 
 from app.api.deps import AsyncSessionDep, CurrentUser, require_role
 from app.models import TeacherGeneratedContent, User, UserRole
+from app.schemas.ai_generation_v2 import GenerationRequestV2
 from app.schemas.ai_quiz import (
     AIQuiz,
     AIQuizGenerationRequest,
@@ -29,10 +30,6 @@ from app.schemas.ai_quiz import (
     SaveToLibraryRequest,
     SaveToLibraryResponse,
 )
-from app.schemas.dcs_ai_data import (
-    ModuleListResponse,
-    ProcessingMetadata,
-)
 from app.schemas.content_library import (
     AssignContentRequest,
     AssignContentResponse,
@@ -43,6 +40,10 @@ from app.schemas.content_library import (
     LibraryResponse,
     UpdateContentRequest,
     UpdateContentResponse,
+)
+from app.schemas.dcs_ai_data import (
+    ModuleListResponse,
+    ProcessingMetadata,
 )
 from app.schemas.reading_comprehension import (
     ReadingComprehensionActivity,
@@ -94,7 +95,6 @@ from app.services.ai_generation.word_builder_service import (
     WordBuilderError,
     WordBuilderService,
 )
-from app.schemas.ai_generation_v2 import GenerationRequestV2
 from app.services.dcs_ai import DCSAIServiceClient, get_dcs_ai_client
 from app.services.dcs_ai.exceptions import (
     DCSAIDataAuthError,
@@ -103,8 +103,8 @@ from app.services.dcs_ai.exceptions import (
     DCSAIDataNotReadyError,
 )
 from app.services.llm import LLMManager, get_llm_manager
-from app.services.llm.rate_limiter import RateLimiter, get_rate_limiter
 from app.services.llm.exceptions import RateLimitExceededError
+from app.services.llm.rate_limiter import RateLimiter, get_rate_limiter
 from app.services.tts import TTSManager, get_tts_manager
 from app.services.tts.providers.edge import EdgeTTSProvider
 
@@ -169,7 +169,9 @@ DCSClientDep = Annotated[DCSAIServiceClient, Depends(get_dcs_client_dep)]
 StorageDep = Annotated[QuizStorageService, Depends(get_storage_dep)]
 QuizServiceDep = Annotated[VocabularyQuizService, Depends(get_quiz_service_dep)]
 AIQuizServiceDep = Annotated[AIQuizService, Depends(get_ai_quiz_service_dep)]
-ReadingServiceDep = Annotated[ReadingComprehensionService, Depends(get_reading_service_dep)]
+ReadingServiceDep = Annotated[
+    ReadingComprehensionService, Depends(get_reading_service_dep)
+]
 
 
 # Dependency to get rate limiter
@@ -200,7 +202,9 @@ async def get_sentence_service_dep(
     return SentenceBuilderService(dcs_client, llm_manager, tts_manager)
 
 
-SentenceServiceDep = Annotated[SentenceBuilderService, Depends(get_sentence_service_dep)]
+SentenceServiceDep = Annotated[
+    SentenceBuilderService, Depends(get_sentence_service_dep)
+]
 
 
 # Dependency to get word builder service
@@ -212,12 +216,12 @@ async def get_word_builder_service_dep(
     return WordBuilderService(dcs_client, tts_manager)
 
 
-WordBuilderServiceDep = Annotated[WordBuilderService, Depends(get_word_builder_service_dep)]
+WordBuilderServiceDep = Annotated[
+    WordBuilderService, Depends(get_word_builder_service_dep)
+]
 
 # Roles that can generate quizzes
-TeacherOrHigher = require_role(
-    UserRole.teacher, UserRole.supervisor, UserRole.admin
-)
+TeacherOrHigher = require_role(UserRole.teacher, UserRole.supervisor, UserRole.admin)
 
 
 # =============================================================================
@@ -241,9 +245,7 @@ async def get_book_ai_status(
 
     Returns processing status, total modules, vocabulary count, and languages.
     """
-    logger.info(
-        f"AI status requested: book_id={book_id}, user_id={current_user.id}"
-    )
+    logger.info(f"AI status requested: book_id={book_id}, user_id={current_user.id}")
 
     try:
         metadata = await dcs_client.get_processing_status(book_id)
@@ -286,9 +288,7 @@ async def get_book_ai_modules(
     Returns module IDs, titles, page numbers, and word counts.
     Use these module_ids when generating activities.
     """
-    logger.info(
-        f"AI modules requested: book_id={book_id}, user_id={current_user.id}"
-    )
+    logger.info(f"AI modules requested: book_id={book_id}, user_id={current_user.id}")
 
     try:
         # First check if book is processed
@@ -353,7 +353,9 @@ TTSManagerDep = Annotated[TTSManager | None, Depends(get_tts_manager_dep)]
     },
 )
 async def generate_tts_audio(
-    text: str = Query(..., min_length=1, max_length=200, description="Text to convert to speech"),
+    text: str = Query(
+        ..., min_length=1, max_length=200, description="Text to convert to speech"
+    ),
     lang: str = Query("en", description="Language code (en, tr, etc.)"),
     tts_manager: TTSManagerDep = None,
 ):
@@ -775,6 +777,7 @@ async def debug_quiz_request(
 ) -> dict:
     """Debug endpoint to see what the frontend is sending."""
     import logging
+
     logging.getLogger(__name__).info(f"DEBUG RAW REQUEST: {request}")
     return {"received": request}
 
@@ -1806,6 +1809,7 @@ async def save_content_to_library(
     try:
         # Get teacher_id — query directly since cached users don't have relationships loaded
         from app.models import Teacher
+
         teacher_result = await db.execute(
             select(Teacher).where(Teacher.user_id == current_user.id)
         )
@@ -1831,9 +1835,7 @@ async def save_content_to_library(
             book_id = request.content.get("book_id")
         else:
             # Fall back to looking up from in-memory storage (legacy)
-            logger.info(
-                f"Looking up content from storage, quiz_id={request.quiz_id}"
-            )
+            logger.info(f"Looking up content from storage, quiz_id={request.quiz_id}")
 
             if request.activity_type == "ai_quiz":
                 quiz = await storage.get_ai_quiz(request.quiz_id)
@@ -1927,29 +1929,39 @@ async def save_content_to_library(
                             break
 
                 has_audio = request.activity_type in (
-                    "listening_fill_blank", "listening_quiz",
-                    "listening_sentence_builder", "listening_word_builder",
-                    "vocabulary_matching", "word_builder",
+                    "listening_fill_blank",
+                    "listening_quiz",
+                    "listening_sentence_builder",
+                    "listening_word_builder",
+                    "vocabulary_matching",
+                    "word_builder",
                 )
                 has_passage = request.activity_type in (
-                    "reading_comprehension", "reading", "mix_mode",
+                    "reading_comprehension",
+                    "reading",
+                    "mix_mode",
                 )
                 from datetime import datetime, timezone
-                dcs_entry = await dcs_ai.create_content(book_id, {
-                    "manifest": {
-                        "activity_type": request.activity_type,
-                        "title": request.title,
-                        "item_count": item_count,
-                        "has_audio": has_audio,
-                        "has_passage": has_passage,
-                        "difficulty": content_data.get("difficulty"),
-                        "language": content_data.get("language", "en"),
-                        "created_by": str(current_user.id),
-                        "created_by_name": current_user.full_name or current_user.email,
-                        "created_at": datetime.now(timezone.utc).isoformat(),
+
+                dcs_entry = await dcs_ai.create_content(
+                    book_id,
+                    {
+                        "manifest": {
+                            "activity_type": request.activity_type,
+                            "title": request.title,
+                            "item_count": item_count,
+                            "has_audio": has_audio,
+                            "has_passage": has_passage,
+                            "difficulty": content_data.get("difficulty"),
+                            "language": content_data.get("language", "en"),
+                            "created_by": str(current_user.id),
+                            "created_by_name": current_user.full_name
+                            or current_user.email,
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                        },
+                        "content": content_data,
                     },
-                    "content": content_data,
-                })
+                )
                 dcs_cid = dcs_entry.get("content_id") or dcs_entry.get("id")
                 if dcs_cid:
                     generated_content.dcs_content_id = dcs_cid
@@ -1959,17 +1971,25 @@ async def save_content_to_library(
                     # Upload audio files from audio_data (base64) to DCS
                     if request.activity_type in _LISTENING_AUDIO_MAP and dcs_cid:
                         import base64
-                        items_key, _text_key = _LISTENING_AUDIO_MAP[request.activity_type]
+
+                        items_key, _text_key = _LISTENING_AUDIO_MAP[
+                            request.activity_type
+                        ]
                         audio_uploaded = 0
                         for item in content_data.get(items_key, []):
-                            audio_b64 = (item.get("audio_data") or {}).get("audio_base64")
+                            audio_b64 = (item.get("audio_data") or {}).get(
+                                "audio_base64"
+                            )
                             item_id = item.get("item_id") or item.get("question_id", "")
                             if audio_b64 and item_id:
                                 try:
                                     audio_bytes = base64.b64decode(audio_b64)
                                     filename = f"{item_id}.mp3"
                                     await dcs_ai.upload_audio(
-                                        book_id, dcs_cid, filename, audio_bytes,
+                                        book_id,
+                                        dcs_cid,
+                                        filename,
+                                        audio_bytes,
                                     )
                                     item["audio_url"] = (
                                         f"/api/v1/ai/content/{book_id}/{dcs_cid}/audio/{filename}"
@@ -1977,28 +1997,38 @@ async def save_content_to_library(
                                     item["audio_status"] = "ready"
                                     audio_uploaded += 1
                                 except Exception as audio_err:
-                                    logger.warning(f"Failed to upload audio for {item_id}: {audio_err}")
+                                    logger.warning(
+                                        f"Failed to upload audio for {item_id}: {audio_err}"
+                                    )
                         if audio_uploaded > 0:
                             # Update content in DB with DCS audio URLs (strip base64 data)
                             generated_content.content = _strip_audio_data(content_data)
                             db.add(generated_content)
                             await db.commit()
-                            logger.info(f"Uploaded {audio_uploaded} audio files to DCS: {dcs_cid}")
+                            logger.info(
+                                f"Uploaded {audio_uploaded} audio files to DCS: {dcs_cid}"
+                            )
 
                     # Upload audio for mix mode listening questions
                     if request.activity_type == "mix_mode" and dcs_cid:
                         import base64
+
                         audio_uploaded = 0
                         for q in content_data.get("questions", []):
                             qdata = q.get("question_data", {})
-                            audio_b64 = (qdata.get("audio_data") or {}).get("audio_base64")
+                            audio_b64 = (qdata.get("audio_data") or {}).get(
+                                "audio_base64"
+                            )
                             q_id = q.get("question_id", "")
                             if audio_b64 and q_id:
                                 try:
                                     audio_bytes = base64.b64decode(audio_b64)
                                     filename = f"{q_id}.mp3"
                                     await dcs_ai.upload_audio(
-                                        book_id, dcs_cid, filename, audio_bytes,
+                                        book_id,
+                                        dcs_cid,
+                                        filename,
+                                        audio_bytes,
                                     )
                                     qdata["audio_url"] = (
                                         f"/api/v1/ai/content/{book_id}/{dcs_cid}/audio/{filename}"
@@ -2006,12 +2036,16 @@ async def save_content_to_library(
                                     qdata["audio_status"] = "ready"
                                     audio_uploaded += 1
                                 except Exception as audio_err:
-                                    logger.warning(f"Failed to upload mix audio for {q_id}: {audio_err}")
+                                    logger.warning(
+                                        f"Failed to upload mix audio for {q_id}: {audio_err}"
+                                    )
                         if audio_uploaded > 0:
                             generated_content.content = _strip_audio_data(content_data)
                             db.add(generated_content)
                             await db.commit()
-                            logger.info(f"Uploaded {audio_uploaded} mix mode audio files to DCS: {dcs_cid}")
+                            logger.info(
+                                f"Uploaded {audio_uploaded} mix mode audio files to DCS: {dcs_cid}"
+                            )
 
                 logger.info(
                     f"Content also saved to DCS: book_id={book_id}, "
@@ -2097,11 +2131,7 @@ async def create_assignment_from_content(
                 detail="Content not found or expired.",
             )
 
-        # TODO: Integrate with assignment creation system
-        # For now, return a placeholder response that indicates the assignment wizard URL
-        logger.info(
-            f"Assignment creation initiated for quiz_id={request.quiz_id}"
-        )
+        logger.info(f"Assignment creation initiated for quiz_id={request.quiz_id}")
 
         return {
             "message": "Assignment created successfully",
@@ -2139,9 +2169,13 @@ async def list_library_content(
     current_user: Annotated[User, TeacherOrHigher],
     db: AsyncSessionDep,
     activity_type: str | None = Query(None, description="Filter by activity type"),
-    source_type: str | None = Query(None, description="Filter by source type (book/material)"),
+    source_type: str | None = Query(
+        None, description="Filter by source type (book/material)"
+    ),
     book_id: int | None = Query(None, description="Filter by book ID"),
-    skill: str | None = Query(None, description="Filter by skill slug (e.g., vocabulary, grammar)"),
+    skill: str | None = Query(
+        None, description="Filter by skill slug (e.g., vocabulary, grammar)"
+    ),
     date_from: str | None = Query(None, description="Filter by creation date (from)"),
     date_to: str | None = Query(None, description="Filter by creation date (to)"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -2188,22 +2222,23 @@ async def list_library_content(
         # Skill filter (Epic 30 - Story 30.3)
         if skill:
             from app.models import SkillCategory as SC
-            skill_result = await db.execute(
-                select(SC).where(SC.slug == skill)
-            )
+
+            skill_result = await db.execute(select(SC).where(SC.slug == skill))
             skill_record = skill_result.scalar_one_or_none()
             if skill_record:
                 query = query.where(TeacherGeneratedContent.skill_id == skill_record.id)
             else:
                 # Unknown skill slug — return empty results
-                query = query.where(TeacherGeneratedContent.skill_id == None)  # noqa: E711
+                query = query.where(
+                    TeacherGeneratedContent.skill_id == None  # noqa: E711
+                )
 
         if date_from:
-            date_from_dt = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+            date_from_dt = datetime.fromisoformat(date_from.replace("Z", "+00:00"))
             query = query.where(TeacherGeneratedContent.created_at >= date_from_dt)
 
         if date_to:
-            date_to_dt = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+            date_to_dt = datetime.fromisoformat(date_to.replace("Z", "+00:00"))
             query = query.where(TeacherGeneratedContent.created_at <= date_to_dt)
 
         # Get total count
@@ -2226,9 +2261,12 @@ async def list_library_content(
         if book_ids:
             try:
                 from app.services.dream_storage_client import get_dream_storage_client
+
                 dcs_client = await get_dream_storage_client()
                 all_books = await dcs_client.get_books()
-                book_titles_map = {b.id: b.title or b.name or f"Book {b.id}" for b in all_books}
+                book_titles_map = {
+                    b.id: b.title or b.name or f"Book {b.id}" for b in all_books
+                }
             except Exception as e:
                 logger.warning(f"Failed to fetch book titles from DCS: {e}")
                 # Fallback to placeholder titles
@@ -2243,11 +2281,15 @@ async def list_library_content(
             material_name = None
 
             if content.book_id:
-                book_title = book_titles_map.get(content.book_id, f"Book {content.book_id}")
+                book_title = book_titles_map.get(
+                    content.book_id, f"Book {content.book_id}"
+                )
             elif content.material_id:
                 # Fetch material name
                 material_result = await db.execute(
-                    select(TeacherMaterial).where(TeacherMaterial.id == content.material_id)
+                    select(TeacherMaterial).where(
+                        TeacherMaterial.id == content.material_id
+                    )
                 )
                 material = material_result.scalar_one_or_none()
                 material_name = material.name if material else "Unknown Material"
@@ -2259,16 +2301,21 @@ async def list_library_content(
             from app.models import Teacher
 
             creator_result = await db.execute(
-                select(Teacher).where(Teacher.id == content.teacher_id).options(selectinload(Teacher.user))
+                select(Teacher)
+                .where(Teacher.id == content.teacher_id)
+                .options(selectinload(Teacher.user))
             )
             creator = creator_result.scalar_one_or_none()
-            creator_name = creator.user.full_name if creator and creator.user else "Unknown"
+            creator_name = (
+                creator.user.full_name if creator and creator.user else "Unknown"
+            )
 
             # Resolve skill/format names if present (Epic 30)
             content_skill_name = None
             content_format_name = None
             if content.skill_id:
                 from app.models import SkillCategory as SC
+
                 sk_result = await db.execute(
                     select(SC).where(SC.id == content.skill_id)
                 )
@@ -2276,6 +2323,7 @@ async def list_library_content(
                 content_skill_name = sk.name if sk else None
             if content.format_id:
                 from app.models import ActivityFormat as AF
+
                 af_result = await db.execute(
                     select(AF).where(AF.id == content.format_id)
                 )
@@ -2298,8 +2346,7 @@ async def list_library_content(
                     used_in_assignments=1 if content.is_used else 0,
                     is_shared=content.book_id is not None,
                     created_by=ContentCreator(
-                        id=creator.id if creator else teacher_id,
-                        name=creator_name
+                        id=creator.id if creator else teacher_id, name=creator_name
                     ),
                     skill_id=content.skill_id,
                     skill_name=content_skill_name,
@@ -2348,7 +2395,9 @@ async def get_library_content_detail(
     """
     from app.models import Teacher, TeacherMaterial
 
-    logger.info(f"Library detail requested: content_id={content_id}, user_id={current_user.id}")
+    logger.info(
+        f"Library detail requested: content_id={content_id}, user_id={current_user.id}"
+    )
 
     try:
         # Get teacher ID
@@ -2362,7 +2411,9 @@ async def get_library_content_detail(
 
         # Get content with access check
         result = await db.execute(
-            select(TeacherGeneratedContent).where(TeacherGeneratedContent.id == content_id)
+            select(TeacherGeneratedContent).where(
+                TeacherGeneratedContent.id == content_id
+            )
         )
         content = result.scalar_one_or_none()
 
@@ -2388,11 +2439,14 @@ async def get_library_content_detail(
             # Fetch book title from DCS
             try:
                 from app.services.dream_storage_client import get_dream_storage_client
+
                 dcs_client = await get_dream_storage_client()
                 all_books = await dcs_client.get_books()
                 for book in all_books:
                     if book.id == content.book_id:
-                        book_title = book.title or book.name or f"Book {content.book_id}"
+                        book_title = (
+                            book.title or book.name or f"Book {content.book_id}"
+                        )
                         break
                 if not book_title:
                     book_title = f"Book {content.book_id}"
@@ -2411,7 +2465,9 @@ async def get_library_content_detail(
 
         # Get creator info
         creator_result = await db.execute(
-            select(Teacher).where(Teacher.id == content.teacher_id).options(selectinload(Teacher.user))
+            select(Teacher)
+            .where(Teacher.id == content.teacher_id)
+            .options(selectinload(Teacher.user))
         )
         creator = creator_result.scalar_one_or_none()
         creator_name = creator.user.full_name if creator and creator.user else "Unknown"
@@ -2433,8 +2489,7 @@ async def get_library_content_detail(
             used_in_assignments=1 if content.is_used else 0,
             is_shared=content.book_id is not None,
             created_by=ContentCreator(
-                id=creator.id if creator else teacher_id,
-                name=creator_name
+                id=creator.id if creator else teacher_id, name=creator_name
             ),
             content=content.content,
         )
@@ -2466,7 +2521,9 @@ async def delete_library_content(
     Only the teacher who created the content can delete it.
     TODO: Add constraint to prevent deletion if content is used in active assignments.
     """
-    logger.info(f"Library delete requested: content_id={content_id}, user_id={current_user.id}")
+    logger.info(
+        f"Library delete requested: content_id={content_id}, user_id={current_user.id}"
+    )
 
     try:
         # Get teacher ID
@@ -2480,7 +2537,9 @@ async def delete_library_content(
 
         # Get content
         result = await db.execute(
-            select(TeacherGeneratedContent).where(TeacherGeneratedContent.id == content_id)
+            select(TeacherGeneratedContent).where(
+                TeacherGeneratedContent.id == content_id
+            )
         )
         content = result.scalar_one_or_none()
 
@@ -2496,9 +2555,6 @@ async def delete_library_content(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only the creator can delete this content.",
             )
-
-        # TODO: Check if content is used in active assignments
-        # For now, we allow deletion even if is_used is True
 
         # Delete content
         await db.delete(content)
@@ -2541,7 +2597,9 @@ async def update_library_content(
     """
     from datetime import datetime, timezone
 
-    logger.info(f"Library update requested: content_id={content_id}, user_id={current_user.id}")
+    logger.info(
+        f"Library update requested: content_id={content_id}, user_id={current_user.id}"
+    )
 
     try:
         # Get teacher ID
@@ -2555,7 +2613,9 @@ async def update_library_content(
 
         # Get content
         result = await db.execute(
-            select(TeacherGeneratedContent).where(TeacherGeneratedContent.id == content_id)
+            select(TeacherGeneratedContent).where(
+                TeacherGeneratedContent.id == content_id
+            )
         )
         content = result.scalar_one_or_none()
 
@@ -2642,9 +2702,12 @@ async def assign_library_content(
     Creates an Assignment with the AI content and assigns to all students in selected classes.
     """
     from datetime import datetime, timezone
-    from app.models import Assignment, AssignmentStudent, Class, Student, ActivityType
 
-    logger.info(f"Assign content requested: content_id={content_id}, user_id={current_user.id}")
+    from app.models import ActivityType, Assignment, AssignmentStudent, Class, Student
+
+    logger.info(
+        f"Assign content requested: content_id={content_id}, user_id={current_user.id}"
+    )
 
     try:
         # Get teacher ID
@@ -2658,7 +2721,9 @@ async def assign_library_content(
 
         # Get content
         result = await db.execute(
-            select(TeacherGeneratedContent).where(TeacherGeneratedContent.id == content_id)
+            select(TeacherGeneratedContent).where(
+                TeacherGeneratedContent.id == content_id
+            )
         )
         content = result.scalar_one_or_none()
 
@@ -2702,6 +2767,7 @@ async def assign_library_content(
 
         # Get all students from selected classes via ClassStudent junction table
         from app.models import ClassStudent
+
         students_result = await db.execute(
             select(Student)
             .join(ClassStudent, ClassStudent.student_id == Student.id)
@@ -2738,7 +2804,9 @@ async def assign_library_content(
             activity_type=activity_type_enum,
             activity_content=content.content,
             generation_source="book" if content.book_id else "material",
-            source_id=str(content.book_id) if content.book_id else str(content.material_id),
+            source_id=(
+                str(content.book_id) if content.book_id else str(content.material_id)
+            ),
             status="published",
         )
         db.add(assignment)
@@ -2820,7 +2888,7 @@ async def generate_content_v2(
 
     from sqlmodel import Session as SyncSession
 
-    from app.schemas.ai_generation_v2 import GenerationRequestV2, GenerationResponseV2
+    from app.schemas.ai_generation_v2 import GenerationResponseV2
     from app.services.skill_generation_dispatcher import dispatch
 
     # Check rate limit
@@ -2839,8 +2907,9 @@ async def generate_content_v2(
         )
 
     # Check monthly quota
-    from app.models import Teacher as _TeacherQ
     from app.core.config import settings as _settings
+    from app.models import Teacher as _TeacherQ
+
     _tq_result = await db.execute(
         select(_TeacherQ).where(_TeacherQ.user_id == current_user.id)
     )
@@ -2857,6 +2926,7 @@ async def generate_content_v2(
     )
 
     import time as _time
+
     _gen_start = _time.time()
 
     # Reset tracking attributes
@@ -2871,7 +2941,12 @@ async def generate_content_v2(
             from app.services.dream_storage_client import DreamCentralStorageClient
 
             dcs_ai_content = get_dcs_ai_content_client(DreamCentralStorageClient())
-            mix_service = MixModeService(dcs_client, llm_manager, tts_manager, dcs_ai_content_client=dcs_ai_content)
+            mix_service = MixModeService(
+                dcs_client,
+                llm_manager,
+                tts_manager,
+                dcs_ai_content_client=dcs_ai_content,
+            )
             mix_activity = await mix_service.generate_activity(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
@@ -2895,7 +2970,9 @@ async def generate_content_v2(
                 key = (q.skill_slug, q.format_slug)
                 if key in _MIX_AUDIO_MAP:
                     text_field, fallback_field = _MIX_AUDIO_MAP[key]
-                    text = q.question_data.get(text_field) or q.question_data.get(fallback_field, "")
+                    text = q.question_data.get(text_field) or q.question_data.get(
+                        fallback_field, ""
+                    )
                     if text:
                         q.question_data["audio_url"] = (
                             f"/api/v1/ai/tts/audio"
@@ -2910,19 +2987,25 @@ async def generate_content_v2(
 
             # Track AI usage quota for mix mode
             _gen_duration_ms = int((_time.time() - _gen_start) * 1000)
-            _last_result = getattr(llm_manager, 'last_generation_result', None)
+            _last_result = getattr(llm_manager, "last_generation_result", None)
             _input_tokens = _last_result.token_usage.input_tokens if _last_result else 0
-            _output_tokens = _last_result.token_usage.output_tokens if _last_result else 0
-            _est_cost = _last_result.token_usage.estimated_cost_usd if _last_result else 0.0
-            _prov_name = getattr(llm_manager, 'last_provider_name', 'unknown')
+            _output_tokens = (
+                _last_result.token_usage.output_tokens if _last_result else 0
+            )
+            _est_cost = (
+                _last_result.token_usage.estimated_cost_usd if _last_result else 0.0
+            )
+            _prov_name = getattr(llm_manager, "last_provider_name", "unknown")
             try:
                 from app.models import Teacher as _Teacher
+
                 teacher_result = await db.execute(
                     select(_Teacher).where(_Teacher.user_id == current_user.id)
                 )
                 _teacher = teacher_result.scalar_one_or_none()
                 if _teacher:
                     from app.services.usage_tracking_service import log_llm_usage
+
                     await log_llm_usage(
                         db=db,
                         teacher_id=_teacher.id,
@@ -2938,6 +3021,7 @@ async def generate_content_v2(
                 logger.warning(f"Failed to track AI usage: {usage_err}")
 
             from app.schemas.ai_generation_v2 import GenerationResponseV2
+
             mix_response = GenerationResponseV2(
                 content_id=mix_activity.activity_id,
                 activity_type="mix_mode",
@@ -2967,8 +3051,9 @@ async def generate_content_v2(
 
     # Dispatch: validate combination and get generator key
     # Use a sync session for the dispatcher's DB lookups
-    from app.core.config import settings
     from sqlmodel import create_engine
+
+    from app.core.config import settings
 
     sync_engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
     with SyncSession(sync_engine) as sync_session:
@@ -2982,6 +3067,7 @@ async def generate_content_v2(
     # Create DCS AI content client for audio uploads
     from app.services.dcs_ai_content_client import get_dcs_ai_content_client
     from app.services.dream_storage_client import DreamCentralStorageClient as _DCS
+
     dcs_ai_content = get_dcs_ai_content_client(_DCS())
 
     # Route to the appropriate generator
@@ -2994,6 +3080,7 @@ async def generate_content_v2(
 
         if generator_key == "vocabulary_quiz":
             from app.schemas.vocabulary_quiz import VocabularyQuizGenerationRequest
+
             vocab_request = VocabularyQuizGenerationRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids,
@@ -3009,6 +3096,7 @@ async def generate_content_v2(
 
         elif generator_key == "word_builder":
             from app.schemas.word_builder import WordBuilderRequest
+
             wb_request = WordBuilderRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids,
@@ -3024,10 +3112,13 @@ async def generate_content_v2(
 
         elif generator_key == "ai_quiz":
             from app.schemas.ai_quiz import AIQuizGenerationRequest
+
             quiz_request = AIQuizGenerationRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
-                difficulty=request.difficulty if request.difficulty != "auto" else "medium",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "medium"
+                ),
                 question_count=request.count,
                 language=request.language,
             )
@@ -3042,10 +3133,13 @@ async def generate_content_v2(
             # Grammar uses AIQuizService with a grammar-focused system prompt
             from app.schemas.ai_quiz import AIQuizGenerationRequest
             from app.services.ai_generation.prompts import GRAMMAR_MCQ_SYSTEM_PROMPT
+
             quiz_request = AIQuizGenerationRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
-                difficulty=request.difficulty if request.difficulty != "auto" else "medium",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "medium"
+                ),
                 question_count=request.count,
                 language=request.language,
             )
@@ -3061,11 +3155,14 @@ async def generate_content_v2(
 
         elif generator_key == "sentence_builder":
             from app.schemas.sentence_builder import SentenceBuilderRequest
+
             sb_request = SentenceBuilderRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids,
                 sentence_count=min(request.count, 10),
-                difficulty=request.difficulty if request.difficulty != "auto" else "medium",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "medium"
+                ),
                 include_audio=request.include_audio,
             )
             sb_service = SentenceBuilderService(dcs_client, llm_manager, tts_manager)
@@ -3077,6 +3174,7 @@ async def generate_content_v2(
 
         elif generator_key == "reading_comprehension":
             from app.schemas.reading_comprehension import ReadingComprehensionRequest
+
             extra = request.extra_config or {}
             passage_count = min(int(extra.get("passage_count", 1)), 5)
             questions_per_passage = min(request.count, 20)
@@ -3093,17 +3191,23 @@ async def generate_content_v2(
             primary_module_id = all_module_ids[0]
             rc_requests = []
             for i in range(passage_count):
-                rc_requests.append(ReadingComprehensionRequest(
-                    book_id=request.book_id,
-                    module_id=primary_module_id,
-                    module_ids=all_module_ids,
-                    question_count=questions_per_passage,
-                    difficulty=request.difficulty if request.difficulty != "auto" else "medium",
-                    language=request.language,
-                    passage_length=passage_length,
-                    passage_index=i + 1,
-                    total_passages=passage_count,
-                ))
+                rc_requests.append(
+                    ReadingComprehensionRequest(
+                        book_id=request.book_id,
+                        module_id=primary_module_id,
+                        module_ids=all_module_ids,
+                        question_count=questions_per_passage,
+                        difficulty=(
+                            request.difficulty
+                            if request.difficulty != "auto"
+                            else "medium"
+                        ),
+                        language=request.language,
+                        passage_length=passage_length,
+                        passage_index=i + 1,
+                        total_passages=passage_count,
+                    )
+                )
 
             # Generate all passages in parallel
             activities = await asyncio.gather(
@@ -3112,13 +3216,17 @@ async def generate_content_v2(
 
             for activity in activities:
                 await storage.save_reading_activity(activity)
-                passages.append({
-                    "passage_id": activity.activity_id,
-                    "passage": activity.passage,
-                    "module_id": activity.module_id,
-                    "module_title": activity.module_title,
-                    "questions": [q.model_dump(mode="json") for q in activity.questions],
-                })
+                passages.append(
+                    {
+                        "passage_id": activity.activity_id,
+                        "passage": activity.passage,
+                        "module_id": activity.module_id,
+                        "module_title": activity.module_title,
+                        "questions": [
+                            q.model_dump(mode="json") for q in activity.questions
+                        ],
+                    }
+                )
                 all_questions.extend(activity.questions)
 
             if passage_count == 1:
@@ -3141,11 +3249,14 @@ async def generate_content_v2(
             from app.services.ai_generation.listening_quiz_service import (
                 ListeningQuizService,
             )
+
             lq_request = ListeningQuizRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
                 question_count=min(request.count, 20),
-                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "auto"
+                ),
                 language=request.language,
             )
             lq_service = ListeningQuizService(dcs_client, llm_manager, tts_manager)
@@ -3160,14 +3271,22 @@ async def generate_content_v2(
             from app.services.ai_generation.listening_fill_blank_service import (
                 ListeningFillBlankService,
             )
+
             lfb_request = ListeningFillBlankRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
                 item_count=min(request.count, 20),
-                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "auto"
+                ),
                 language=request.language,
             )
-            lfb_service = ListeningFillBlankService(dcs_client, llm_manager, tts_manager, dcs_ai_content_client=dcs_ai_content)
+            lfb_service = ListeningFillBlankService(
+                dcs_client,
+                llm_manager,
+                tts_manager,
+                dcs_ai_content_client=dcs_ai_content,
+            )
             activity = await lfb_service.generate_activity(lfb_request)
             await storage.save_listening_fill_blank_activity(activity)
             content_data = activity.model_dump(mode="json")
@@ -3179,14 +3298,25 @@ async def generate_content_v2(
             from app.services.ai_generation.grammar_fill_blank_service import (
                 GrammarFillBlankService,
             )
+
             gfb_request = GrammarFillBlankRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
                 item_count=min(request.count, 20),
-                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "auto"
+                ),
                 language=request.language,
-                mode=request.extra_config.get("mode", "word_bank") if request.extra_config else "word_bank",
-                include_hints=request.extra_config.get("include_hints", True) if request.extra_config else True,
+                mode=(
+                    request.extra_config.get("mode", "word_bank")
+                    if request.extra_config
+                    else "word_bank"
+                ),
+                include_hints=(
+                    request.extra_config.get("include_hints", True)
+                    if request.extra_config
+                    else True
+                ),
             )
             gfb_service = GrammarFillBlankService(dcs_client, llm_manager)
             activity = await gfb_service.generate_activity(gfb_request)
@@ -3196,15 +3326,20 @@ async def generate_content_v2(
             item_count = len(activity.items)
 
         elif generator_key == "writing_sentence_corrector":
-            from app.schemas.writing_sentence_corrector import WritingSentenceCorrectorRequest
+            from app.schemas.writing_sentence_corrector import (
+                WritingSentenceCorrectorRequest,
+            )
             from app.services.ai_generation.writing_sentence_corrector_service import (
                 WritingSentenceCorrectorService,
             )
+
             wsc_request = WritingSentenceCorrectorRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
                 item_count=min(request.count, 20),
-                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "auto"
+                ),
                 language=request.language,
             )
             wsc_service = WritingSentenceCorrectorService(dcs_client, llm_manager)
@@ -3219,11 +3354,14 @@ async def generate_content_v2(
             from app.services.ai_generation.writing_fill_blank_service import (
                 WritingFillBlankService,
             )
+
             wfb_request = WritingFillBlankRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
                 item_count=min(request.count, 20),
-                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "auto"
+                ),
                 language=request.language,
             )
             wfb_service = WritingFillBlankService(dcs_client, llm_manager)
@@ -3238,11 +3376,14 @@ async def generate_content_v2(
             from app.services.ai_generation.writing_free_response_service import (
                 WritingFreeResponseService,
             )
+
             wfr_request = WritingFreeResponseRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
                 item_count=min(request.count, 10),
-                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "auto"
+                ),
                 language=request.language,
             )
             wfr_service = WritingFreeResponseService(dcs_client, llm_manager)
@@ -3257,11 +3398,14 @@ async def generate_content_v2(
             from app.services.ai_generation.speaking_open_response_service import (
                 SpeakingOpenResponseService,
             )
+
             sor_request = SpeakingOpenResponseRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
                 item_count=min(request.count, 10),
-                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "auto"
+                ),
                 language=request.language,
             )
             sor_service = SpeakingOpenResponseService(dcs_client, llm_manager)
@@ -3272,18 +3416,28 @@ async def generate_content_v2(
             item_count = len(activity.items)
 
         elif generator_key == "listening_sentence_builder":
-            from app.schemas.listening_sentence_builder import ListeningSentenceBuilderRequest
+            from app.schemas.listening_sentence_builder import (
+                ListeningSentenceBuilderRequest,
+            )
             from app.services.ai_generation.listening_sentence_builder_service import (
                 ListeningSentenceBuilderService,
             )
+
             lsb_request = ListeningSentenceBuilderRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
                 sentence_count=min(request.count, 15),
-                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "auto"
+                ),
                 language=request.language,
             )
-            lsb_service = ListeningSentenceBuilderService(dcs_client, llm_manager, tts_manager, dcs_ai_content_client=dcs_ai_content)
+            lsb_service = ListeningSentenceBuilderService(
+                dcs_client,
+                llm_manager,
+                tts_manager,
+                dcs_ai_content_client=dcs_ai_content,
+            )
             activity = await lsb_service.generate_activity(lsb_request)
             await storage.save_listening_sentence_builder_activity(activity)
             content_data = activity.model_dump(mode="json")
@@ -3295,14 +3449,22 @@ async def generate_content_v2(
             from app.services.ai_generation.listening_word_builder_service import (
                 ListeningWordBuilderService,
             )
+
             lwb_request = ListeningWordBuilderRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids or [],
                 word_count=min(request.count, 20),
-                difficulty=request.difficulty if request.difficulty != "auto" else "auto",
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "auto"
+                ),
                 language=request.language,
             )
-            lwb_service = ListeningWordBuilderService(dcs_client, llm_manager, tts_manager, dcs_ai_content_client=dcs_ai_content)
+            lwb_service = ListeningWordBuilderService(
+                dcs_client,
+                llm_manager,
+                tts_manager,
+                dcs_ai_content_client=dcs_ai_content,
+            )
             activity = await lwb_service.generate_activity(lwb_request)
             await storage.save_listening_word_builder_activity(activity)
             content_data = activity.model_dump(mode="json")
@@ -3314,6 +3476,7 @@ async def generate_content_v2(
             from app.services.ai_generation.vocabulary_matching_service import (
                 VocabularyMatchingService,
             )
+
             vm_request = VocabularyMatchingRequest(
                 book_id=request.book_id,
                 module_ids=request.module_ids,
@@ -3338,19 +3501,23 @@ async def generate_content_v2(
 
         # Track AI usage quota
         _gen_duration_ms = int((_time.time() - _gen_start) * 1000)
-        _last_result = getattr(llm_manager, 'last_generation_result', None)
+        _last_result = getattr(llm_manager, "last_generation_result", None)
         _input_tokens = _last_result.token_usage.prompt_tokens if _last_result else 0
-        _output_tokens = _last_result.token_usage.completion_tokens if _last_result else 0
+        _output_tokens = (
+            _last_result.token_usage.completion_tokens if _last_result else 0
+        )
         _est_cost = _last_result.token_usage.estimated_cost_usd if _last_result else 0.0
-        _prov_name = getattr(llm_manager, 'last_provider_name', 'unknown')
+        _prov_name = getattr(llm_manager, "last_provider_name", "unknown")
         try:
             from app.models import Teacher as _Teacher
+
             teacher_result = await db.execute(
                 select(_Teacher).where(_Teacher.user_id == current_user.id)
             )
             _teacher = teacher_result.scalar_one_or_none()
             if _teacher:
                 from app.services.usage_tracking_service import log_llm_usage
+
                 await log_llm_usage(
                     db=db,
                     teacher_id=_teacher.id,
@@ -3464,7 +3631,6 @@ async def generate_content_v2_stream(
     from fastapi.responses import StreamingResponse
     from sqlmodel import Session as SyncSession
 
-    from app.schemas.ai_generation_v2 import GenerationRequestV2, GenerationResponseV2
     from app.schemas.reading_comprehension import ReadingComprehensionRequest
     from app.services.skill_generation_dispatcher import dispatch
 
@@ -3478,8 +3644,9 @@ async def generate_content_v2_stream(
         )
 
     # Dispatch to get generator key
-    from app.core.config import settings
     from sqlmodel import create_engine
+
+    from app.core.config import settings
 
     sync_engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
     with SyncSession(sync_engine) as sync_session:
@@ -3509,17 +3676,21 @@ async def generate_content_v2_stream(
 
     rc_requests = []
     for i in range(passage_count):
-        rc_requests.append(ReadingComprehensionRequest(
-            book_id=request.book_id,
-            module_id=primary_module_id,
-            module_ids=all_module_ids,
-            question_count=questions_per_passage,
-            difficulty=request.difficulty if request.difficulty != "auto" else "medium",
-            language=request.language,
-            passage_length=250,
-            passage_index=i + 1,
-            total_passages=passage_count,
-        ))
+        rc_requests.append(
+            ReadingComprehensionRequest(
+                book_id=request.book_id,
+                module_id=primary_module_id,
+                module_ids=all_module_ids,
+                question_count=questions_per_passage,
+                difficulty=(
+                    request.difficulty if request.difficulty != "auto" else "medium"
+                ),
+                language=request.language,
+                passage_length=250,
+                passage_index=i + 1,
+                total_passages=passage_count,
+            )
+        )
 
     async def event_generator():
         passages = []
@@ -3541,7 +3712,9 @@ async def generate_content_v2_stream(
                     "passage": activity.passage,
                     "module_id": activity.module_id,
                     "module_title": activity.module_title,
-                    "questions": [q.model_dump(mode="json") for q in activity.questions],
+                    "questions": [
+                        q.model_dump(mode="json") for q in activity.questions
+                    ],
                 }
                 passages.append(passage_data)
                 all_questions.extend(activity.questions)

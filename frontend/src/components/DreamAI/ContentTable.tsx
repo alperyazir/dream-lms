@@ -5,9 +5,9 @@
  * Displays content items in a compact table format with sortable columns.
  */
 
-import { BookOpen, FileText, Pencil, Play, Trash2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { BookOpen, FileText, Pencil, Play, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -15,24 +15,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 import {
   getActivityTypeColorClasses,
   getActivityTypeConfig,
-} from "@/lib/activityTypeConfig"
-import type { ContentItem } from "@/types/content-library"
+} from "@/lib/activityTypeConfig";
+import type { ContentItem } from "@/types/content-library";
 
 interface ContentTableProps {
-  items: ContentItem[]
-  onEdit: (content: ContentItem) => void
-  onUse: (content: ContentItem) => void
-  onDelete: (content: ContentItem) => void
+  items: ContentItem[];
+  onEdit: (content: ContentItem) => void;
+  onUse: (content: ContentItem) => void;
+  onDelete: (content: ContentItem) => void;
 }
 
 export function ContentTable({
@@ -42,15 +42,15 @@ export function ContentTable({
   onDelete,
 }: ContentTableProps) {
   const formatDate = (dateString: string) => {
-    if (!dateString) return "—"
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return "—"
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "—";
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })
-  }
+    });
+  };
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
@@ -69,9 +69,9 @@ export function ContentTable({
         </TableHeader>
         <TableBody>
           {items.map((content) => {
-            const config = getActivityTypeConfig(content.activity_type)
-            const colorClasses = getActivityTypeColorClasses(config.color)
-            const IconComponent = config.icon
+            const config = getActivityTypeConfig(content.activity_type);
+            const colorClasses = getActivityTypeColorClasses(config.color);
+            const IconComponent = config.icon;
 
             return (
               <TableRow key={content.id}>
@@ -209,10 +209,10 @@ export function ContentTable({
                   </TooltipProvider>
                 </TableCell>
               </TableRow>
-            )
+            );
           })}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

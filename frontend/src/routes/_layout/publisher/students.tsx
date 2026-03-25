@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
@@ -7,15 +7,15 @@ import {
   Mail,
   Search,
   User,
-} from "lucide-react"
-import { useEffect, useState } from "react"
-import { FiUsers } from "react-icons/fi"
-import { PublishersService, type PublisherStudentItem } from "@/client"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { FiUsers } from "react-icons/fi";
+import { PublishersService, type PublisherStudentItem } from "@/client";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -23,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 
 export const Route = createFileRoute("/_layout/publisher/students")({
   component: () => (
@@ -31,23 +31,23 @@ export const Route = createFileRoute("/_layout/publisher/students")({
       <PublisherStudents />
     </ErrorBoundary>
   ),
-})
+});
 
 function PublisherStudents() {
-  const PAGE_SIZE = 20
-  const [searchQuery, setSearchQuery] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const skip = (currentPage - 1) * PAGE_SIZE
+  const PAGE_SIZE = 20;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const skip = (currentPage - 1) * PAGE_SIZE;
 
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery)
-      setCurrentPage(1)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const {
     data: studentsResponse,
@@ -61,11 +61,11 @@ function PublisherStudents() {
         limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
       }),
-  })
+  });
 
-  const students = studentsResponse?.items ?? []
-  const totalStudents = studentsResponse?.total ?? 0
-  const totalPages = Math.ceil(totalStudents / PAGE_SIZE)
+  const students = studentsResponse?.items ?? [];
+  const totalStudents = studentsResponse?.total ?? 0;
+  const totalPages = Math.ceil(totalStudents / PAGE_SIZE);
 
   if (error) {
     return (
@@ -74,7 +74,7 @@ function PublisherStudents() {
           Error loading students. Please try again later.
         </div>
       </PageContainer>
-    )
+    );
   }
 
   return (
@@ -146,9 +146,7 @@ function PublisherStudents() {
                           <span className="text-sm">{student.user_email}</span>
                         </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">
-                          —
-                        </span>
+                        <span className="text-sm text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     <TableCell className="text-sm font-mono">
@@ -215,5 +213,5 @@ function PublisherStudents() {
         </div>
       )}
     </PageContainer>
-  )
+  );
 }

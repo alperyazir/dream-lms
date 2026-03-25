@@ -7,36 +7,34 @@ and error handling with mocked DCS AI client.
 Story 27.14: Word Builder (Spelling Activity)
 """
 
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
+
+import pytest
 
 from app.schemas.dcs_ai_data import (
-    VocabularyWord,
-    VocabularyResponse,
     ProcessingMetadata,
+    VocabularyResponse,
+    VocabularyWord,
 )
 from app.schemas.word_builder import (
-    WordBuilderRequest,
-    WordBuilderSubmission,
     WordBuilderActivity,
     WordBuilderItem,
+    WordBuilderRequest,
+    WordBuilderSubmission,
 )
 from app.services.ai_generation.word_builder_service import (
-    InsufficientVocabularyError,
-    WordBuilderError,
-    WordBuilderService,
-    scramble_letters,
-    calculate_points,
-    MIN_WORD_LENGTH,
     MAX_WORD_LENGTH,
+    MIN_WORD_LENGTH,
+    InsufficientVocabularyError,
+    WordBuilderService,
+    calculate_points,
+    scramble_letters,
 )
 from app.services.dcs_ai.exceptions import (
     DCSAIDataNotFoundError,
     DCSAIDataNotReadyError,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -219,7 +217,7 @@ class TestLetterScrambling:
         scrambled = scramble_letters(word)
 
         # For a 2-letter word, the only scramble is to swap
-        assert scrambled == ['o', 'g'] or scrambled != list(word.lower())
+        assert scrambled == ["o", "g"] or scrambled != list(word.lower())
 
     def test_scramble_preserves_lowercase(self):
         """Test that scrambled letters are lowercase."""
@@ -271,12 +269,20 @@ class TestVocabularyFiltering:
         """Test that words shorter than MIN_WORD_LENGTH are excluded."""
         short_words = [
             VocabularyWord(
-                id="short_1", word="cat", definition="a small animal",
-                part_of_speech="noun", level="A1", module_id=1,
+                id="short_1",
+                word="cat",
+                definition="a small animal",
+                part_of_speech="noun",
+                level="A1",
+                module_id=1,
             ),
             VocabularyWord(
-                id="short_2", word="dog", definition="a loyal pet",
-                part_of_speech="noun", level="A1", module_id=1,
+                id="short_2",
+                word="dog",
+                definition="a loyal pet",
+                part_of_speech="noun",
+                level="A1",
+                module_id=1,
             ),
         ]
 
@@ -287,15 +293,21 @@ class TestVocabularyFiltering:
         """Test that words longer than MAX_WORD_LENGTH are excluded."""
         long_words = [
             VocabularyWord(
-                id="long_1", word="internationalization", definition="the process of making something international",
-                part_of_speech="noun", level="C1", module_id=1,
+                id="long_1",
+                word="internationalization",
+                definition="the process of making something international",
+                part_of_speech="noun",
+                level="C1",
+                module_id=1,
             ),
         ]
 
         filtered = word_builder_service._filter_by_length(long_words)
         assert len(filtered) == 0
 
-    def test_filter_by_length_keeps_valid_words(self, word_builder_service, sample_vocabulary):
+    def test_filter_by_length_keeps_valid_words(
+        self, word_builder_service, sample_vocabulary
+    ):
         """Test that words within valid length range are kept."""
         filtered = word_builder_service._filter_by_length(sample_vocabulary)
 
@@ -306,19 +318,29 @@ class TestVocabularyFiltering:
         """Test that words without definitions are excluded."""
         words_without_defs = [
             VocabularyWord(
-                id="no_def_1", word="example", definition="",
-                part_of_speech="noun", level="A1", module_id=1,
+                id="no_def_1",
+                word="example",
+                definition="",
+                part_of_speech="noun",
+                level="A1",
+                module_id=1,
             ),
             VocabularyWord(
-                id="no_def_2", word="sample", definition="   ",
-                part_of_speech="noun", level="A1", module_id=1,
+                id="no_def_2",
+                word="sample",
+                definition="   ",
+                part_of_speech="noun",
+                level="A1",
+                module_id=1,
             ),
         ]
 
         filtered = word_builder_service._filter_with_definitions(words_without_defs)
         assert len(filtered) == 0
 
-    def test_filter_with_definitions_keeps_valid(self, word_builder_service, sample_vocabulary):
+    def test_filter_with_definitions_keeps_valid(
+        self, word_builder_service, sample_vocabulary
+    ):
         """Test that words with definitions are kept."""
         filtered = word_builder_service._filter_with_definitions(sample_vocabulary)
 
@@ -382,8 +404,12 @@ class TestActivityGeneration:
         for word_item in activity.words:
             # Find original vocabulary word
             original = next(
-                (w for w in sample_vocabulary_response.words if w.id == word_item.vocabulary_id),
-                None
+                (
+                    w
+                    for w in sample_vocabulary_response.words
+                    if w.id == word_item.vocabulary_id
+                ),
+                None,
             )
             assert original is not None
             assert original.level in ["A1", "A2"]
@@ -401,12 +427,20 @@ class TestActivityGeneration:
             total_words=2,
             words=[
                 VocabularyWord(
-                    id="vocab_1", word="apple", definition="a fruit",
-                    part_of_speech="noun", level="A1", module_id=1,
+                    id="vocab_1",
+                    word="apple",
+                    definition="a fruit",
+                    part_of_speech="noun",
+                    level="A1",
+                    module_id=1,
                 ),
                 VocabularyWord(
-                    id="vocab_2", word="banana", definition="a yellow fruit",
-                    part_of_speech="noun", level="A1", module_id=1,
+                    id="vocab_2",
+                    word="banana",
+                    definition="a yellow fruit",
+                    part_of_speech="noun",
+                    level="A1",
+                    module_id=1,
                 ),
             ],
         )
@@ -558,7 +592,7 @@ class TestResultCalculation:
 
         submission = WordBuilderSubmission(
             answers={
-                "item_1": "apple",   # Correct, 1st try -> 100 points
+                "item_1": "apple",  # Correct, 1st try -> 100 points
                 "item_2": "banana",  # Correct, 2nd try -> 70 points
                 "item_3": "cherry",  # Correct, 4th try -> 30 points
             },
@@ -613,8 +647,8 @@ class TestResultCalculation:
 
         submission = WordBuilderSubmission(
             answers={
-                "item_1": "apple",   # Correct
-                "item_2": "bananaa", # Incorrect (typo)
+                "item_1": "apple",  # Correct
+                "item_2": "bananaa",  # Incorrect (typo)
             },
             attempts={
                 "item_1": 1,

@@ -1,4 +1,4 @@
-import type { ViewMode } from "@/types/flowbook"
+import type { ViewMode } from "@/types/flowbook";
 
 /**
  * Get the pages to display in the current spread
@@ -10,27 +10,27 @@ export function getSpreadPages(
   totalPages: number,
   viewMode: ViewMode,
 ): number[] {
-  if (totalPages === 0) return []
+  if (totalPages === 0) return [];
 
   if (viewMode === "single") {
-    return [currentPageIndex]
+    return [currentPageIndex];
   }
 
   // Double page view
   // If on an even index (0, 2, 4...), show current and next
   // If on an odd index (1, 3, 5...), show previous and current
-  const isEven = currentPageIndex % 2 === 0
+  const isEven = currentPageIndex % 2 === 0;
 
   if (isEven) {
     // Show current page on left, next on right
     if (currentPageIndex + 1 < totalPages) {
-      return [currentPageIndex, currentPageIndex + 1]
+      return [currentPageIndex, currentPageIndex + 1];
     }
     // Last page alone
-    return [currentPageIndex]
+    return [currentPageIndex];
   }
   // Show previous page on left, current on right
-  return [currentPageIndex - 1, currentPageIndex]
+  return [currentPageIndex - 1, currentPageIndex];
 }
 
 /**
@@ -49,19 +49,19 @@ export function calculatePosition(
     top: `${(y / containerHeight) * 100}%`,
     width: `${(elementWidth / containerWidth) * 100}%`,
     height: `${(elementHeight / containerHeight) * 100}%`,
-  }
+  };
 }
 
 /**
  * Format page number for display (1-indexed)
  */
 export function formatPageNumber(index: number): string {
-  return String(index + 1)
+  return String(index + 1);
 }
 
 /**
  * Clamp a value between min and max
  */
 export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value))
+  return Math.max(min, Math.min(max, value));
 }

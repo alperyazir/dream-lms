@@ -20,7 +20,7 @@ def _get_fernet() -> Fernet:
         if not settings.PASSWORD_ENCRYPTION_KEY:
             raise ValueError(
                 "PASSWORD_ENCRYPTION_KEY not configured. "
-                "Generate with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+                'Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
             )
         _fernet_cipher = Fernet(settings.PASSWORD_ENCRYPTION_KEY.encode())
     return _fernet_cipher
@@ -62,7 +62,11 @@ def decrypt_viewable_password(encrypted_password: str) -> str | None:
 ALGORITHM = "HS256"
 
 
-def create_access_token(subject: str | Any, expires_delta: timedelta, extra_claims: dict[str, Any] | None = None) -> str:
+def create_access_token(
+    subject: str | Any,
+    expires_delta: timedelta,
+    extra_claims: dict[str, Any] | None = None,
+) -> str:
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode = {"exp": expire, "sub": str(subject)}
     if extra_claims:

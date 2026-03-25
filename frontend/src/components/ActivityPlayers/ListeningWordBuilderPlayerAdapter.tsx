@@ -7,41 +7,41 @@
  * Answer format: Map<item_id, joinedLettersString>
  */
 
-import { Eye, EyeOff, Loader2, Pause, Play, RotateCcw } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import type { ActivityConfig } from "@/lib/mockData"
-import { cn } from "@/lib/utils"
-import type { QuestionNavigationState } from "@/types/activity-player"
+import { Eye, EyeOff, Loader2, Pause, Play, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import type { ActivityConfig } from "@/lib/mockData";
+import { cn } from "@/lib/utils";
+import type { QuestionNavigationState } from "@/types/activity-player";
 
 interface ListeningWBItem {
-  item_id: string
-  letters: string[]
-  letter_count: number
-  definition?: string
-  audio_url: string | null
-  audio_data?: { audio_base64?: string }
-  audio_status: string
-  difficulty?: string
+  item_id: string;
+  letters: string[];
+  letter_count: number;
+  definition?: string;
+  audio_url: string | null;
+  audio_data?: { audio_base64?: string };
+  audio_status: string;
+  difficulty?: string;
 }
 
 interface ListeningWBContent {
-  activity_id: string
-  words: ListeningWBItem[]
-  total_items: number
-  difficulty: string
+  activity_id: string;
+  words: ListeningWBItem[];
+  total_items: number;
+  difficulty: string;
 }
 
 interface ListeningWordBuilderPlayerAdapterProps {
-  activity: ActivityConfig
-  onAnswersChange: (answers: Map<string, string>) => void
-  showResults: boolean
-  correctAnswers: Set<string>
-  initialAnswers?: Map<string, string>
-  showCorrectAnswers?: boolean
-  currentQuestionIndex?: number
-  onQuestionIndexChange?: (index: number) => void
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  activity: ActivityConfig;
+  onAnswersChange: (answers: Map<string, string>) => void;
+  showResults: boolean;
+  correctAnswers: Set<string>;
+  initialAnswers?: Map<string, string>;
+  showCorrectAnswers?: boolean;
+  currentQuestionIndex?: number;
+  onQuestionIndexChange?: (index: number) => void;
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 export function ListeningWordBuilderPlayerAdapter({
@@ -55,41 +55,43 @@ export function ListeningWordBuilderPlayerAdapter({
   onQuestionIndexChange: _onQuestionIndexChange,
   onNavigationStateChange,
 }: ListeningWordBuilderPlayerAdapterProps) {
-  const content = (activity as any).content as ListeningWBContent
-  const items = content?.words || []
+  const content = (activity as any).content as ListeningWBContent;
+  const items = content?.words || [];
 
   // answers: Map<item_id, joined-letters string>
   const [answers, setAnswers] = useState<Map<string, string>>(
     () => initialAnswers || new Map(),
-  )
+  );
 
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [audioLoading, setAudioLoading] = useState(false)
-  const [showHint, setShowHint] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [showHint, setShowHint] = useState(false);
 
-  const qIndex = currentQuestionIndex ?? 0
-  const currentItem = items[qIndex]
+  const qIndex = currentQuestionIndex ?? 0;
+  const currentItem = items[qIndex];
 
-  const onAnswersChangeRef = useRef(onAnswersChange)
-  onAnswersChangeRef.current = onAnswersChange
+  const onAnswersChangeRef = useRef(onAnswersChange);
+  onAnswersChangeRef.current = onAnswersChange;
 
   useEffect(() => {
-    onAnswersChangeRef.current(new Map(answers))
-  }, [answers])
+    onAnswersChangeRef.current(new Map(answers));
+  }, [answers]);
 
   // Letters placed by the student
-  const placedLetters = (answers.get(currentItem?.item_id || "") || "").split("")
+  const placedLetters = (answers.get(currentItem?.item_id || "") || "").split(
+    "",
+  );
 
   // Track which letter bank indices are used
-  const usedIndices = new Set<number>()
+  const usedIndices = new Set<number>();
   if (currentItem) {
-    const placed = [...placedLetters]
+    const placed = [...placedLetters];
     for (const letter of placed) {
       for (let i = 0; i < currentItem.letters.length; i++) {
         if (!usedIndices.has(i) && currentItem.letters[i] === letter) {
-          usedIndices.add(i)
-          break
+          usedIndices.add(i);
+          break;
         }
       }
     }
@@ -100,122 +102,122 @@ export function ListeningWordBuilderPlayerAdapter({
     if (onNavigationStateChange) {
       const answeredIndices = items
         .map((item, i) => {
-          const ans = answers.get(item.item_id) || ""
-          return ans.length === item.letter_count ? i : -1
+          const ans = answers.get(item.item_id) || "";
+          return ans.length === item.letter_count ? i : -1;
         })
-        .filter((i) => i >= 0)
+        .filter((i) => i >= 0);
       onNavigationStateChange({
         currentIndex: qIndex,
         totalItems: items.length,
         answeredItemIds: items
           .filter((item) => {
-            const ans = answers.get(item.item_id) || ""
-            return ans.length === item.letter_count
+            const ans = answers.get(item.item_id) || "";
+            return ans.length === item.letter_count;
           })
           .map((item) => item.item_id),
         answeredIndices,
-      })
+      });
     }
-  }, [answers, items, qIndex, onNavigationStateChange])
+  }, [answers, items, qIndex, onNavigationStateChange]);
 
   // Tap a letter from the bank -> add to answer
   const handleLetterTap = useCallback(
     (letter: string, bankIdx: number) => {
-      if (!currentItem || showResults) return
-      if (usedIndices.has(bankIdx)) return
+      if (!currentItem || showResults) return;
+      if (usedIndices.has(bankIdx)) return;
       setAnswers((prev) => {
-        const next = new Map(prev)
-        const current = next.get(currentItem.item_id) || ""
-        if (current.length >= currentItem.letter_count) return prev
-        next.set(currentItem.item_id, current + letter)
-        return next
-      })
+        const next = new Map(prev);
+        const current = next.get(currentItem.item_id) || "";
+        if (current.length >= currentItem.letter_count) return prev;
+        next.set(currentItem.item_id, current + letter);
+        return next;
+      });
     },
     [currentItem, showResults, usedIndices],
-  )
+  );
 
   // Tap a placed letter -> remove it (remove last occurrence for simplicity)
   const handlePlacedTap = useCallback(
     (letterIdx: number) => {
-      if (!currentItem || showResults) return
+      if (!currentItem || showResults) return;
       setAnswers((prev) => {
-        const next = new Map(prev)
-        const current = next.get(currentItem.item_id) || ""
-        const letters = current.split("")
-        letters.splice(letterIdx, 1)
-        next.set(currentItem.item_id, letters.join(""))
-        return next
-      })
+        const next = new Map(prev);
+        const current = next.get(currentItem.item_id) || "";
+        const letters = current.split("");
+        letters.splice(letterIdx, 1);
+        next.set(currentItem.item_id, letters.join(""));
+        return next;
+      });
     },
     [currentItem, showResults],
-  )
+  );
 
   // Reset current item
   const handleReset = useCallback(() => {
-    if (!currentItem || showResults) return
+    if (!currentItem || showResults) return;
     setAnswers((prev) => {
-      const next = new Map(prev)
-      next.delete(currentItem.item_id)
-      return next
-    })
-  }, [currentItem, showResults])
+      const next = new Map(prev);
+      next.delete(currentItem.item_id);
+      return next;
+    });
+  }, [currentItem, showResults]);
 
   // Audio controls
   const handlePlayAudio = useCallback(() => {
     const audioSrc = currentItem?.audio_data?.audio_base64
       ? `data:audio/mpeg;base64,${currentItem.audio_data.audio_base64}`
-      : currentItem?.audio_url
-    if (!audioSrc) return
-    const audio = audioRef.current
-    if (!audio) return
+      : currentItem?.audio_url;
+    if (!audioSrc) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
     if (isPlaying) {
-      audio.pause()
-      setIsPlaying(false)
+      audio.pause();
+      setIsPlaying(false);
     } else {
-      audio.src = audioSrc
-      setAudioLoading(true)
+      audio.src = audioSrc;
+      setAudioLoading(true);
       audio
         .play()
         .then(() => {
-          setIsPlaying(true)
-          setAudioLoading(false)
+          setIsPlaying(true);
+          setAudioLoading(false);
         })
-        .catch(() => setAudioLoading(false))
+        .catch(() => setAudioLoading(false));
     }
-  }, [currentItem, isPlaying])
+  }, [currentItem, isPlaying]);
 
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    const onEnded = () => setIsPlaying(false)
-    audio.addEventListener("ended", onEnded)
-    return () => audio.removeEventListener("ended", onEnded)
-  }, [])
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onEnded = () => setIsPlaying(false);
+    audio.addEventListener("ended", onEnded);
+    return () => audio.removeEventListener("ended", onEnded);
+  }, []);
 
   useEffect(() => {
-    const audio = audioRef.current
+    const audio = audioRef.current;
     if (audio) {
-      audio.pause()
-      setIsPlaying(false)
+      audio.pause();
+      setIsPlaying(false);
     }
-    setShowHint(false)
-  }, [qIndex])
+    setShowHint(false);
+  }, [qIndex]);
 
   if (!currentItem) {
     return (
       <div className="flex items-center justify-center p-8 text-muted-foreground">
         No items available.
       </div>
-    )
+    );
   }
 
   if (showResults) {
-    const total = items.length
+    const total = items.length;
     const correct = items.filter((item) =>
       correctAnswers.has(item.item_id),
-    ).length
-    const score = total > 0 ? Math.round((correct / total) * 100) : 0
+    ).length;
+    const score = total > 0 ? Math.round((correct / total) * 100) : 0;
     return (
       <div className="p-8 text-center">
         <h2 className="text-2xl font-bold mb-4">
@@ -226,7 +228,7 @@ export function ListeningWordBuilderPlayerAdapter({
           {correct} out of {total} correct
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -263,7 +265,12 @@ export function ListeningWordBuilderPlayerAdapter({
           ) : null}
 
           {/* Definition hint toggle - always reserves space */}
-          <div className={cn("mb-3 flex flex-col items-center gap-1", !currentItem.definition && "invisible")}>
+          <div
+            className={cn(
+              "mb-3 flex flex-col items-center gap-1",
+              !currentItem.definition && "invisible",
+            )}
+          >
             <button
               onClick={() => setShowHint(!showHint)}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -275,17 +282,20 @@ export function ListeningWordBuilderPlayerAdapter({
               )}
               {showHint ? "Hide hint" : "Show hint"}
             </button>
-            <p className={cn(
-              "text-sm text-muted-foreground italic px-4 text-center min-h-[20px]",
-              !showHint && "invisible",
-            )}>
+            <p
+              className={cn(
+                "text-sm text-muted-foreground italic px-4 text-center min-h-[20px]",
+                !showHint && "invisible",
+              )}
+            >
               {currentItem.definition || "\u00A0"}
             </p>
           </div>
 
           {/* Answer area - placed letters */}
           <div className="mb-4 w-full h-[64px] p-3 rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/50 dark:bg-teal-900/10 flex flex-wrap gap-1.5 items-center justify-center">
-            {placedLetters.length === 0 || (placedLetters.length === 1 && placedLetters[0] === "") ? (
+            {placedLetters.length === 0 ||
+            (placedLetters.length === 1 && placedLetters[0] === "") ? (
               <span className="text-sm text-muted-foreground">
                 Tap letters below to spell the word
               </span>
@@ -308,7 +318,9 @@ export function ListeningWordBuilderPlayerAdapter({
               onClick={handleReset}
               className={cn(
                 "flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors",
-                (placedLetters.length === 0 || (placedLetters.length === 1 && placedLetters[0] === "")) && "invisible",
+                (placedLetters.length === 0 ||
+                  (placedLetters.length === 1 && placedLetters[0] === "")) &&
+                  "invisible",
               )}
             >
               <RotateCcw className="h-3 w-3" />
@@ -319,7 +331,7 @@ export function ListeningWordBuilderPlayerAdapter({
           {/* Letter bank - tappable scrambled letters */}
           <div className="flex flex-wrap justify-center gap-2">
             {currentItem.letters.map((letter, lIdx) => {
-              const isUsed = usedIndices.has(lIdx)
+              const isUsed = usedIndices.has(lIdx);
               return (
                 <button
                   key={lIdx}
@@ -334,11 +346,11 @@ export function ListeningWordBuilderPlayerAdapter({
                 >
                   {letter}
                 </button>
-              )
+              );
             })}
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

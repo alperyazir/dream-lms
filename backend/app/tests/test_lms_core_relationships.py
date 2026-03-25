@@ -1,6 +1,7 @@
 """
 Integration tests for LMS Core relationships
 """
+
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -163,16 +164,12 @@ def test_complete_assignment_workflow(session: Session) -> None:
     assert len(enrollments) == 2
 
     # Query all assignments for the teacher
-    result = session.exec(
-        select(Assignment).where(Assignment.teacher_id == teacher.id)
-    )
+    result = session.exec(select(Assignment).where(Assignment.teacher_id == teacher.id))
     teacher_assignments = result.all()
     assert len(teacher_assignments) == 1
 
     # Query all activity types in the book
-    result = session.exec(
-        select(Activity).where(Activity.book_id == book.id)
-    )
+    result = session.exec(select(Activity).where(Activity.book_id == book.id))
     book_activities = result.all()
     assert len(book_activities) == 2
     assert book_activities[0].activity_type == ActivityType.dragdroppicture
@@ -258,9 +255,7 @@ def test_query_students_in_class(session: Session) -> None:
 
     # Query all students in the class
     result = session.exec(
-        select(Student)
-        .join(ClassStudent)
-        .where(ClassStudent.class_id == class_obj.id)
+        select(Student).join(ClassStudent).where(ClassStudent.class_id == class_obj.id)
     )
     enrolled_students = result.all()
 
@@ -331,9 +326,7 @@ def test_query_assignments_for_teacher(session: Session) -> None:
     session.commit()
 
     # Query all assignments for the teacher
-    result = session.exec(
-        select(Assignment).where(Assignment.teacher_id == teacher.id)
-    )
+    result = session.exec(select(Assignment).where(Assignment.teacher_id == teacher.id))
     teacher_assignments = result.all()
 
     assert len(teacher_assignments) == 3
@@ -482,9 +475,7 @@ def test_query_assignment_progress_for_student(session: Session) -> None:
 
     # Query assignment progress for the student
     result = session.exec(
-        select(AssignmentStudent).where(
-            AssignmentStudent.student_id == student.id
-        )
+        select(AssignmentStudent).where(AssignmentStudent.student_id == student.id)
     )
     student_submissions = result.all()
 
@@ -562,9 +553,7 @@ def test_cascade_delete_class_to_enrollments(session: Session) -> None:
     session.commit()
 
     # Verify enrollment is deleted
-    result = session.exec(
-        select(ClassStudent).where(ClassStudent.id == enrollment_id)
-    )
+    result = session.exec(select(ClassStudent).where(ClassStudent.id == enrollment_id))
     assert result.first() is None
 
 
@@ -860,9 +849,7 @@ def test_query_teacher_classes_with_students(session: Session) -> None:
 
     # Query students in first class
     result = session.exec(
-        select(Student)
-        .join(ClassStudent)
-        .where(ClassStudent.class_id == class1.id)
+        select(Student).join(ClassStudent).where(ClassStudent.class_id == class1.id)
     )
     class1_students = result.all()
 

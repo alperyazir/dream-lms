@@ -5,28 +5,28 @@
  * Clicking a page toggles all activities on that page.
  */
 
-import { Check, ImageIcon } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { getPageThumbnailUrl } from "@/services/booksApi"
-import type { ModuleWithActivities, PageWithActivities } from "@/types/book"
+import { Check, ImageIcon } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { getPageThumbnailUrl } from "@/services/booksApi";
+import type { ModuleWithActivities, PageWithActivities } from "@/types/book";
 
 interface PageSelectionGridProps {
-  modules: ModuleWithActivities[]
-  selectedActivityIds: Set<string>
+  modules: ModuleWithActivities[];
+  selectedActivityIds: Set<string>;
   onPageToggle: (
     pageNumber: number,
     activityIds: string[],
     moduleName: string,
-  ) => void
+  ) => void;
 }
 
 interface PageCardProps {
-  page: PageWithActivities
-  isSelected: boolean
-  partiallySelected: boolean
-  onToggle: () => void
+  page: PageWithActivities;
+  isSelected: boolean;
+  partiallySelected: boolean;
+  onToggle: () => void;
 }
 
 function PageCard({
@@ -35,20 +35,20 @@ function PageCard({
   partiallySelected,
   onToggle,
 }: PageCardProps) {
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null)
-  const [thumbnailError, setThumbnailError] = useState(false)
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [thumbnailError, setThumbnailError] = useState(false);
 
   // Load thumbnail on mount
   useEffect(() => {
     if (page.thumbnail_url) {
       getPageThumbnailUrl(page.thumbnail_url)
         .then((url) => {
-          if (url) setThumbnailUrl(url)
-          else setThumbnailError(true)
+          if (url) setThumbnailUrl(url);
+          else setThumbnailError(true);
         })
-        .catch(() => setThumbnailError(true))
+        .catch(() => setThumbnailError(true));
     }
-  }, [page.thumbnail_url])
+  }, [page.thumbnail_url]);
 
   return (
     <button
@@ -110,7 +110,7 @@ function PageCard({
         </Badge>
       </div>
     </button>
-  )
+  );
 }
 
 export function PageSelectionGrid({
@@ -121,19 +121,19 @@ export function PageSelectionGrid({
   // Check if a page is fully selected (all activities selected)
   const isPageFullySelected = useCallback(
     (page: PageWithActivities): boolean => {
-      return page.activity_ids.every((id) => selectedActivityIds.has(id))
+      return page.activity_ids.every((id) => selectedActivityIds.has(id));
     },
     [selectedActivityIds],
-  )
+  );
 
   // Check if a page is partially selected (some activities selected)
   const isPagePartiallySelected = useCallback(
     (page: PageWithActivities): boolean => {
-      if (isPageFullySelected(page)) return false
-      return page.activity_ids.some((id) => selectedActivityIds.has(id))
+      if (isPageFullySelected(page)) return false;
+      return page.activity_ids.some((id) => selectedActivityIds.has(id));
     },
     [selectedActivityIds, isPageFullySelected],
-  )
+  );
 
   return (
     <ScrollArea className="h-full">
@@ -158,8 +158,8 @@ export function PageSelectionGrid({
             {/* Pages Grid */}
             <div className="grid grid-cols-6 gap-2">
               {module.pages.map((page) => {
-                const isFullySelected = isPageFullySelected(page)
-                const isPartiallySelected = isPagePartiallySelected(page)
+                const isFullySelected = isPageFullySelected(page);
+                const isPartiallySelected = isPagePartiallySelected(page);
 
                 return (
                   <PageCard
@@ -175,12 +175,12 @@ export function PageSelectionGrid({
                       )
                     }
                   />
-                )
+                );
               })}
             </div>
           </div>
         ))}
       </div>
     </ScrollArea>
-  )
+  );
 }

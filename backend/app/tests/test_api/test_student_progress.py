@@ -71,7 +71,9 @@ def school_fixture(session: Session, progress_publisher: Publisher) -> School:
 
 
 @pytest.fixture(name="progress_teacher")
-def teacher_fixture(session: Session, progress_school: School) -> tuple[Teacher, User, str]:
+def teacher_fixture(
+    session: Session, progress_school: School
+) -> tuple[Teacher, User, str]:
     """Create teacher with token."""
     teacher_user = User(
         email="progress.teacher@test.com",
@@ -103,7 +105,9 @@ def teacher_fixture(session: Session, progress_school: School) -> tuple[Teacher,
 
 @pytest.fixture(name="progress_student")
 def student_fixture(
-    session: Session, progress_school: School, progress_teacher: tuple[Teacher, User, str]
+    session: Session,
+    progress_school: School,
+    progress_teacher: tuple[Teacher, User, str],
 ) -> tuple[Student, User, str]:
     """Create student with token enrolled in teacher's class."""
     teacher, _, _ = progress_teacher
@@ -191,7 +195,7 @@ def student_progress_fixture(
             book_id=book.id,
             dream_activity_id=f"progress-activity-{i}",
             module_name=f"Module {i+1}",
-            page_number=i+1,
+            page_number=i + 1,
             section_index=i,
             activity_type=act_type,
             title=f"Progress Activity {i+1}",

@@ -5,17 +5,17 @@
  * Displays personalized improvement tips for the student
  */
 
-import { Lightbulb, Sparkles } from "lucide-react"
-import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Lightbulb, Sparkles } from "lucide-react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface ImprovementTipsProps {
-  tips: string[]
+  tips: string[];
 }
 
 export const ImprovementTips = React.memo(({ tips }: ImprovementTipsProps) => {
   if (tips.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -44,7 +44,7 @@ export const ImprovementTips = React.memo(({ tips }: ImprovementTipsProps) => {
         </div>
       </CardContent>
     </Card>
-  )
-})
+  );
+});
 
-ImprovementTips.displayName = "ImprovementTips"
+ImprovementTips.displayName = "ImprovementTips";

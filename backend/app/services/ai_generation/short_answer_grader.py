@@ -128,9 +128,7 @@ def grade_short_answer_with_alternatives(
     best_match = expected_answers[0]
 
     for expected in expected_answers:
-        is_correct, similarity = grade_short_answer(
-            student_answer, expected, threshold
-        )
+        is_correct, similarity = grade_short_answer(student_answer, expected, threshold)
 
         if similarity > best_similarity:
             best_similarity = similarity

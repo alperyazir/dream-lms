@@ -5,22 +5,22 @@
  * Displays recent completed assignments with scores
  */
 
-import { BookOpen, CheckCircle, Clock, Star } from "lucide-react"
-import React from "react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { ProgressRecentAssignment } from "@/types/analytics"
+import { BookOpen, CheckCircle, Clock, Star } from "lucide-react";
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ProgressRecentAssignment } from "@/types/analytics";
 
 export interface RecentAssignmentsProps {
-  assignments: ProgressRecentAssignment[]
+  assignments: ProgressRecentAssignment[];
 }
 
 const getScoreColor = (score: number): string => {
-  if (score >= 90) return "text-green-500"
-  if (score >= 80) return "text-teal-500"
-  if (score >= 70) return "text-amber-500"
-  return "text-red-500"
-}
+  if (score >= 90) return "text-green-500";
+  if (score >= 80) return "text-teal-500";
+  if (score >= 70) return "text-amber-500";
+  return "text-red-500";
+};
 
 export const RecentAssignments = React.memo(
   ({ assignments }: RecentAssignmentsProps) => {
@@ -39,16 +39,16 @@ export const RecentAssignments = React.memo(
             </p>
           </CardContent>
         </Card>
-      )
+      );
     }
 
     const formatDate = (dateString: string) => {
-      const date = new Date(dateString)
+      const date = new Date(dateString);
       return date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
-      })
-    }
+      });
+    };
 
     return (
       <Card className="shadow-neuro border-teal-100 dark:border-teal-900">
@@ -112,8 +112,8 @@ export const RecentAssignments = React.memo(
           </div>
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-RecentAssignments.displayName = "RecentAssignments"
+RecentAssignments.displayName = "RecentAssignments";

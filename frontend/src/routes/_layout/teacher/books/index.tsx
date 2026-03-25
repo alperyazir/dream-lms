@@ -11,25 +11,29 @@
  * - Book download with platform selection (Story 29.3)
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
-import { useCallback, useMemo, useState } from "react"
-import { FiBook } from "react-icons/fi"
-import { useDebouncedCallback } from "use-debounce"
-import { BookCard } from "@/components/books/BookCard"
-import { BookTableView } from "@/components/books/BookTableView"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
+import { useQuery } from "@tanstack/react-query";
+import {
+  createFileRoute,
+  useNavigate,
+  useSearch,
+} from "@tanstack/react-router";
+import { useCallback, useMemo, useState } from "react";
+import { FiBook } from "react-icons/fi";
+import { useDebouncedCallback } from "use-debounce";
+import { BookCard } from "@/components/books/BookCard";
+import { BookTableView } from "@/components/books/BookTableView";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
 import {
   LibraryFilters,
   type LibraryFiltersState,
-} from "@/components/library/LibraryFilters"
-import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ViewModeToggle } from "@/components/ui/view-mode-toggle"
-import { useViewPreference } from "@/hooks/useViewPreference"
-import { booksApi } from "@/services/booksApi"
-import type { Book, BooksFilter } from "@/types/book"
+} from "@/components/library/LibraryFilters";
+import { PlatformSelectDialog } from "@/components/library/PlatformSelectDialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle";
+import { useViewPreference } from "@/hooks/useViewPreference";
+import { booksApi } from "@/services/booksApi";
+import type { Book, BooksFilter } from "@/types/book";
 
 export const Route = createFileRoute("/_layout/teacher/books/")({
   component: () => (
@@ -42,16 +46,16 @@ export const Route = createFileRoute("/_layout/teacher/books/")({
     publisher: (search.publisher as string) || "",
     activity: (search.activity as string) || "",
   }),
-})
+});
 
 function TeacherBooksPage() {
-  const search = useSearch({ strict: false })
-  const navigate = useNavigate()
+  const search = useSearch({ strict: false });
+  const navigate = useNavigate();
   // View preference from localStorage
-  const [viewMode, setViewMode] = useViewPreference("teacher-library", "grid")
+  const [viewMode, setViewMode] = useViewPreference("teacher-library", "grid");
 
   // State for download - Story 29.3
-  const [downloadBook, setDownloadBook] = useState<Book | null>(null)
+  const [downloadBook, setDownloadBook] = useState<Book | null>(null);
 
   // Parse filters from URL
   const filters: LibraryFiltersState = useMemo(
@@ -61,7 +65,7 @@ function TeacherBooksPage() {
       activityType: (search as any).activity || "",
     }),
     [search],
-  )
+  );
 
   // Debounced URL update for filters
   const debouncedNavigate = useDebouncedCallback(
@@ -74,56 +78,56 @@ function TeacherBooksPage() {
           activity: newFilters.activityType || "",
         }),
         replace: true,
-      } as any)
+      } as any);
     },
     300,
-  )
+  );
 
   const setFilters = useCallback(
     (newFilters: LibraryFiltersState) => {
-      debouncedNavigate(newFilters)
+      debouncedNavigate(newFilters);
     },
     [debouncedNavigate],
-  )
+  );
 
   // Build backend filter object
   const backendFilters: BooksFilter = {
     ...(filters.search && { search: filters.search }),
     ...(filters.publisher && { publisher: filters.publisher }),
     ...(filters.activityType && { activity_type: filters.activityType as any }),
-  }
+  };
 
   // Fetch books with backend filtering
   const { data, isLoading, error } = useQuery({
     queryKey: ["books", backendFilters],
     queryFn: () => booksApi.getBooks(backendFilters),
     staleTime: 30 * 1000, // 30 seconds — book assignments can change anytime
-  })
+  });
 
-  const books = data?.items ?? []
-  const total = data?.total ?? 0
+  const books = data?.items ?? [];
+  const total = data?.total ?? 0;
 
   // Get unique publishers for filter dropdown
   const publishers = useMemo(() => {
-    const unique = [...new Set(books.map((b: Book) => b.publisher_name))]
-    return unique.sort()
-  }, [books])
+    const unique = [...new Set(books.map((b: Book) => b.publisher_name))];
+    return unique.sort();
+  }, [books]);
 
   // Handle open in FlowbookViewer - Opens in new tab
   const handleOpenFlowbook = useCallback((book: Book) => {
     // Open FlowbookViewer in a new tab
-    window.open(`/viewer/${book.id}`, "_blank")
-  }, [])
+    window.open(`/viewer/${book.id}`, "_blank");
+  }, []);
 
   // Handle download click - Story 29.3
   const handleDownload = useCallback((book: Book) => {
-    setDownloadBook(book)
-  }, [])
+    setDownloadBook(book);
+  }, []);
 
   // Close download dialog - Story 29.3
   const handleCloseDownload = useCallback(() => {
-    setDownloadBook(null)
-  }, [])
+    setDownloadBook(null);
+  }, []);
 
   return (
     <PageContainer>
@@ -223,5 +227,5 @@ function TeacherBooksPage() {
         />
       )}
     </PageContainer>
-  )
+  );
 }

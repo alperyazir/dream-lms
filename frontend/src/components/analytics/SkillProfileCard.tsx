@@ -3,14 +3,17 @@
  * Story 30.14: Shows radar chart + per-skill list with proficiency, confidence, trend.
  */
 
-import { ArrowDown, ArrowRight, ArrowUp, Radar } from "lucide-react"
-import { useQuery } from "@tanstack/react-query"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { getMySkillProfile, getStudentSkillProfile } from "@/services/skillsApi"
-import type { SkillProfileItem } from "@/types/skill"
-import { SkillRadarChart } from "./SkillRadarChart"
+import { ArrowDown, ArrowRight, ArrowUp, Radar } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  getMySkillProfile,
+  getStudentSkillProfile,
+} from "@/services/skillsApi";
+import type { SkillProfileItem } from "@/types/skill";
+import { SkillRadarChart } from "./SkillRadarChart";
 
 const SKILL_COLORS: Record<string, { bg: string; text: string }> = {
   blue: {
@@ -37,10 +40,10 @@ const SKILL_COLORS: Record<string, { bg: string; text: string }> = {
     bg: "bg-rose-100 dark:bg-rose-900/30",
     text: "text-rose-700 dark:text-rose-300",
   },
-}
+};
 
 function getColor(color: string) {
-  return SKILL_COLORS[color] || SKILL_COLORS.blue
+  return SKILL_COLORS[color] || SKILL_COLORS.blue;
 }
 
 const CONFIDENCE_LABELS: Record<string, string> = {
@@ -48,15 +51,15 @@ const CONFIDENCE_LABELS: Record<string, string> = {
   low: "Low confidence",
   moderate: "Moderate",
   high: "High confidence",
-}
+};
 
 interface SkillProfileCardProps {
   /** Pass studentId for teacher view, omit for student self-view */
-  studentId?: string
+  studentId?: string;
   /** Chart size */
-  size?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg";
   /** Whether to show the per-skill list below the chart */
-  showList?: boolean
+  showList?: boolean;
 }
 
 export function SkillProfileCard({
@@ -69,10 +72,8 @@ export function SkillProfileCard({
       ? ["student-skill-profile", studentId]
       : ["my-skill-profile"],
     queryFn: () =>
-      studentId
-        ? getStudentSkillProfile(studentId)
-        : getMySkillProfile(),
-  })
+      studentId ? getStudentSkillProfile(studentId) : getMySkillProfile(),
+  });
 
   if (isLoading) {
     return (
@@ -84,11 +85,11 @@ export function SkillProfileCard({
           <Skeleton className="mx-auto h-48 w-48 rounded-full" />
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error || !data) {
-    return null
+    return null;
   }
 
   if (data.total_ai_assignments_completed === 0) {
@@ -107,7 +108,7 @@ export function SkillProfileCard({
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -130,11 +131,11 @@ export function SkillProfileCard({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function SkillRow({ skill }: { skill: SkillProfileItem }) {
-  const colors = getColor(skill.skill_color)
+  const colors = getColor(skill.skill_color);
 
   return (
     <div className="flex items-center justify-between rounded-lg border px-3 py-2">
@@ -165,20 +166,20 @@ function SkillRow({ skill }: { skill: SkillProfileItem }) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function TrendIndicator({
   trend,
 }: {
-  trend: "improving" | "stable" | "declining"
+  trend: "improving" | "stable" | "declining";
 }) {
   switch (trend) {
     case "improving":
-      return <ArrowUp className="h-4 w-4 text-green-600" />
+      return <ArrowUp className="h-4 w-4 text-green-600" />;
     case "declining":
-      return <ArrowDown className="h-4 w-4 text-red-600" />
+      return <ArrowDown className="h-4 w-4 text-red-600" />;
     case "stable":
-      return <ArrowRight className="h-4 w-4 text-gray-400" />
+      return <ArrowRight className="h-4 w-4 text-gray-400" />;
   }
 }

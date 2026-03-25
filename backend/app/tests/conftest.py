@@ -1,6 +1,7 @@
 """
 Test fixtures for pytest
 """
+
 import uuid
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
@@ -93,6 +94,7 @@ def session_fixture(db_path: str) -> Generator[Session, None, None]:
         cursor.close()
 
     from sqlmodel import SQLModel
+
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
@@ -128,11 +130,13 @@ def client_fixture(session: Session, db_path: str) -> Generator[TestClient, Any,
             yield async_session
 
     from app.api.deps import get_async_db, get_db
+
     app.dependency_overrides[get_db] = get_session_override
     app.dependency_overrides[get_async_db] = get_async_session_override
 
     # Reset rate limiter state between tests to prevent cross-test interference
     from app.core.rate_limit import limiter
+
     limiter.reset()
 
     client = TestClient(app)
@@ -141,6 +145,7 @@ def client_fixture(session: Session, db_path: str) -> Generator[TestClient, Any,
 
     # Clean up async engine
     import asyncio
+
     try:
         asyncio.run(async_engine.dispose())
     except RuntimeError:
@@ -159,7 +164,7 @@ def admin_user_fixture(session: Session) -> User:
         role=UserRole.admin,
         is_active=True,
         is_superuser=True,
-        full_name="Admin User"
+        full_name="Admin User",
     )
     session.add(user)
     session.commit()
@@ -178,7 +183,7 @@ def supervisor_user_fixture(session: Session) -> User:
         role=UserRole.supervisor,
         is_active=True,
         is_superuser=False,
-        full_name="Supervisor User"
+        full_name="Supervisor User",
     )
     session.add(user)
     session.commit()
@@ -197,7 +202,7 @@ def publisher_user_fixture(session: Session) -> User:
         role=UserRole.publisher,
         is_active=True,
         is_superuser=False,
-        full_name="Publisher User"
+        full_name="Publisher User",
     )
     session.add(user)
     session.commit()
@@ -216,7 +221,7 @@ def teacher_user_fixture(session: Session) -> User:
         role=UserRole.teacher,
         is_active=True,
         is_superuser=False,
-        full_name="Teacher User"
+        full_name="Teacher User",
     )
     session.add(user)
     session.commit()
@@ -235,7 +240,7 @@ def student_user_fixture(session: Session) -> User:
         role=UserRole.student,
         is_active=True,
         is_superuser=False,
-        full_name="Student User"
+        full_name="Student User",
     )
     session.add(user)
     session.commit()
@@ -248,7 +253,7 @@ def admin_token_fixture(client: TestClient, admin_user: User) -> str:
     """Get access token for admin user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": admin_user.email, "password": "adminpassword"}
+        data={"username": admin_user.email, "password": "adminpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -259,7 +264,7 @@ def supervisor_token_fixture(client: TestClient, supervisor_user: User) -> str:
     """Get access token for supervisor user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": supervisor_user.email, "password": "supervisorpassword"}
+        data={"username": supervisor_user.email, "password": "supervisorpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -270,7 +275,7 @@ def publisher_token_fixture(client: TestClient, publisher_user: User) -> str:
     """Get access token for publisher user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": publisher_user.email, "password": "publisherpassword"}
+        data={"username": publisher_user.email, "password": "publisherpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -281,7 +286,7 @@ def teacher_token_fixture(client: TestClient, teacher_user: User) -> str:
     """Get access token for teacher user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": teacher_user.email, "password": "teacherpassword"}
+        data={"username": teacher_user.email, "password": "teacherpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -292,7 +297,7 @@ def student_token_fixture(client: TestClient, student_user: User) -> str:
     """Get access token for student user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": student_user.email, "password": "studentpassword"}
+        data={"username": student_user.email, "password": "studentpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -324,7 +329,7 @@ def teacher_user_with_record_fixture(session: Session) -> User:
         role=UserRole.teacher,
         is_active=True,
         is_superuser=False,
-        full_name="Teacher Bulk User"
+        full_name="Teacher Bulk User",
     )
     session.add(user)
     session.commit()
@@ -332,7 +337,7 @@ def teacher_user_with_record_fixture(session: Session) -> User:
     school = School(
         id=uuid.uuid4(),
         name="Bulk Test School",
-        dcs_publisher_id=mock_dcs_publisher_id  # DCS publisher ID (integer, not UUID)
+        dcs_publisher_id=mock_dcs_publisher_id,  # DCS publisher ID (integer, not UUID)
     )
     session.add(school)
     session.commit()
@@ -341,7 +346,7 @@ def teacher_user_with_record_fixture(session: Session) -> User:
         id=uuid.uuid4(),
         user_id=user.id,
         school_id=school.id,
-        subject_specialization="Bulk Test Subject"
+        subject_specialization="Bulk Test Subject",
     )
     session.add(teacher)
     session.commit()
@@ -354,18 +359,20 @@ def teacher_user_with_record_fixture(session: Session) -> User:
 @pytest.fixture(name="assignment_with_activity")
 def assignment_with_activity_fixture(session: Session, student_user) -> tuple:
     """Create an assignment with a linked activity for testing AI activity progress."""
-    from datetime import datetime, UTC, timedelta
+    from datetime import UTC, datetime, timedelta
+
+    from sqlalchemy import select
+
     from app.models import (
         Activity,
         ActivityType,
         Assignment,
-        AssignmentStudent,
         AssignmentActivity,
+        AssignmentStudent,
         School,
-        Teacher,
         Student,
+        Teacher,
     )
-    from sqlalchemy import select
 
     # Create school with mock DCS publisher ID
     mock_dcs_publisher_id = 999
@@ -402,9 +409,7 @@ def assignment_with_activity_fixture(session: Session, student_user) -> tuple:
     session.commit()
 
     # Get student record from student_user
-    result = session.execute(
-        select(Student).where(Student.user_id == student_user.id)
-    )
+    result = session.execute(select(Student).where(Student.user_id == student_user.id))
     student = result.scalar_one_or_none()
 
     # Create student if not exists

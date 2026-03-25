@@ -2,8 +2,8 @@
  * Usage By Teacher Table Component
  */
 
-import { formatDistanceToNow } from "date-fns"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatDistanceToNow } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,12 +11,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { UsageByTeacher } from "@/types/ai-usage"
+} from "@/components/ui/table";
+import type { UsageByTeacher } from "@/types/ai-usage";
 
 interface UsageByTeacherTableProps {
-  data: UsageByTeacher[]
-  isLoading?: boolean
+  data: UsageByTeacher[];
+  isLoading?: boolean;
 }
 
 export function UsageByTeacherTable({
@@ -37,7 +37,7 @@ export function UsageByTeacherTable({
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (!data || data.length === 0) {
@@ -52,7 +52,7 @@ export function UsageByTeacherTable({
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -102,5 +102,5 @@ export function UsageByTeacherTable({
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }

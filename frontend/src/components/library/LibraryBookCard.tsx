@@ -5,30 +5,30 @@
  * Displays a book in the library viewer with preview and download actions.
  */
 
-import { Download, Eye, Play } from "lucide-react"
-import { useState } from "react"
-import { BookCover } from "@/components/books/BookCover"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Download, Eye, Play } from "lucide-react";
+import { useState } from "react";
+import { BookCover } from "@/components/books/BookCover";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import type { LibraryBook } from "@/types/library"
+} from "@/components/ui/tooltip";
+import type { LibraryBook } from "@/types/library";
 
 interface LibraryBookCardProps {
-  book: LibraryBook
-  onPreview?: (book: LibraryBook) => void
-  onDownload?: (book: LibraryBook) => void
-  showActions?: boolean
+  book: LibraryBook;
+  onPreview?: (book: LibraryBook) => void;
+  onDownload?: (book: LibraryBook) => void;
+  showActions?: boolean;
 }
 
 export function LibraryBookCard({
@@ -37,7 +37,7 @@ export function LibraryBookCard({
   onDownload,
   showActions = true,
 }: LibraryBookCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <Card
@@ -99,14 +99,18 @@ export function LibraryBookCard({
             variant="secondary"
             className="absolute top-2 right-2 bg-primary text-primary-foreground"
           >
-            {book.activity_count} {book.activity_count === 1 ? "Activity" : "Activities"}
+            {book.activity_count}{" "}
+            {book.activity_count === 1 ? "Activity" : "Activities"}
           </Badge>
         )}
       </CardHeader>
 
       <CardContent className="p-3">
         {/* Book Title */}
-        <h3 className="font-semibold text-sm line-clamp-2 mb-1" title={book.title}>
+        <h3
+          className="font-semibold text-sm line-clamp-2 mb-1"
+          title={book.title}
+        >
           {book.title}
         </h3>
 
@@ -130,5 +134,5 @@ export function LibraryBookCard({
         </CardFooter>
       )}
     </Card>
-  )
+  );
 }

@@ -1,8 +1,8 @@
-import * as React from "react"
-import { Button, type ButtonProps } from "./button"
+import * as React from "react";
+import { Button, type ButtonProps } from "./button";
 
 export interface LinkButtonProps extends ButtonProps {
-  href: string
+  href: string;
 }
 
 export const LinkButton = React.forwardRef<HTMLAnchorElement, LinkButtonProps>(
@@ -11,6 +11,6 @@ export const LinkButton = React.forwardRef<HTMLAnchorElement, LinkButtonProps>(
       <a href={href} ref={ref}>
         <Button {...props} />
       </a>
-    )
-  }
-)
+    );
+  },
+);

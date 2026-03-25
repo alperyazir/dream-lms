@@ -2,6 +2,7 @@
 Integration tests for LMS domain model relationships
 Tests complete hierarchy and cascade delete scenarios
 """
+
 import pytest
 from sqlmodel import Session, select
 

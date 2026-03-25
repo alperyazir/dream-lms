@@ -96,9 +96,7 @@ class TokenUsage(BaseModel):
             LLMProviderType.OPENAI: (3.00 / 1_000_000, 15.00 / 1_000_000),
         }
 
-        input_rate, output_rate = pricing.get(
-            provider, (0.0, 0.0)
-        )
+        input_rate, output_rate = pricing.get(provider, (0.0, 0.0))
         estimated_cost = (prompt_tokens * input_rate) + (
             completion_tokens * output_rate
         )

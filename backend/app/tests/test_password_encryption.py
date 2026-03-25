@@ -1,7 +1,8 @@
 """
 Tests for password encryption utilities - Story 28.1
 """
-from unittest.mock import patch, MagicMock
+
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -15,15 +16,20 @@ class TestPasswordEncryption:
         mock_settings = MagicMock()
         # Generate a valid Fernet key for testing
         from cryptography.fernet import Fernet
+
         test_key = Fernet.generate_key().decode()
         mock_settings.PASSWORD_ENCRYPTION_KEY = test_key
 
         with patch("app.core.security.settings", mock_settings):
             # Reset the cached cipher
             import app.core.security as security_module
+
             security_module._fernet_cipher = None
 
-            from app.core.security import encrypt_viewable_password, decrypt_viewable_password
+            from app.core.security import (
+                decrypt_viewable_password,
+                encrypt_viewable_password,
+            )
 
             original_password = "mysecretpassword123"
 
@@ -50,6 +56,7 @@ class TestPasswordEncryption:
         with patch("app.core.security.settings", mock_settings):
             # Reset the cached cipher
             import app.core.security as security_module
+
             security_module._fernet_cipher = None
 
             from app.core.security import encrypt_viewable_password
@@ -66,12 +73,14 @@ class TestPasswordEncryption:
         """Test that decrypt returns None for invalid encrypted data."""
         mock_settings = MagicMock()
         from cryptography.fernet import Fernet
+
         test_key = Fernet.generate_key().decode()
         mock_settings.PASSWORD_ENCRYPTION_KEY = test_key
 
         with patch("app.core.security.settings", mock_settings):
             # Reset the cached cipher
             import app.core.security as security_module
+
             security_module._fernet_cipher = None
 
             from app.core.security import decrypt_viewable_password
@@ -88,12 +97,14 @@ class TestPasswordEncryption:
         """Test that encryption is non-deterministic (Fernet uses random IV)."""
         mock_settings = MagicMock()
         from cryptography.fernet import Fernet
+
         test_key = Fernet.generate_key().decode()
         mock_settings.PASSWORD_ENCRYPTION_KEY = test_key
 
         with patch("app.core.security.settings", mock_settings):
             # Reset the cached cipher
             import app.core.security as security_module
+
             security_module._fernet_cipher = None
 
             from app.core.security import encrypt_viewable_password
@@ -113,15 +124,20 @@ class TestPasswordEncryption:
         """Test encryption handles empty password."""
         mock_settings = MagicMock()
         from cryptography.fernet import Fernet
+
         test_key = Fernet.generate_key().decode()
         mock_settings.PASSWORD_ENCRYPTION_KEY = test_key
 
         with patch("app.core.security.settings", mock_settings):
             # Reset the cached cipher
             import app.core.security as security_module
+
             security_module._fernet_cipher = None
 
-            from app.core.security import encrypt_viewable_password, decrypt_viewable_password
+            from app.core.security import (
+                decrypt_viewable_password,
+                encrypt_viewable_password,
+            )
 
             empty_password = ""
 
@@ -137,15 +153,20 @@ class TestPasswordEncryption:
         """Test encryption handles unicode characters."""
         mock_settings = MagicMock()
         from cryptography.fernet import Fernet
+
         test_key = Fernet.generate_key().decode()
         mock_settings.PASSWORD_ENCRYPTION_KEY = test_key
 
         with patch("app.core.security.settings", mock_settings):
             # Reset the cached cipher
             import app.core.security as security_module
+
             security_module._fernet_cipher = None
 
-            from app.core.security import encrypt_viewable_password, decrypt_viewable_password
+            from app.core.security import (
+                decrypt_viewable_password,
+                encrypt_viewable_password,
+            )
 
             unicode_password = "şifre123çöğü"
 

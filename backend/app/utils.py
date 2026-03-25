@@ -184,14 +184,11 @@ def generate_temp_password(length: int = 12) -> str:
         12
     """
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
-
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def generate_username_from_name(
-    full_name: str,
-    session: Session,
-    max_length: int = 50
+    full_name: str, session: Session, max_length: int = 50
 ) -> str:
     """
     Generate a unique username from a person's full name.
@@ -241,7 +238,7 @@ def generate_username_from_name(
         base_username = base_username + "user"
 
     # Truncate to max length minus space for potential suffix
-    base_username = base_username[:max_length - 3]
+    base_username = base_username[: max_length - 3]
 
     # Check for uniqueness and append number if needed
     username = base_username
@@ -250,7 +247,7 @@ def generate_username_from_name(
     while crud.get_user_by_username(session=session, username=username):
         # Add counter suffix
         suffix = f".{counter}"
-        username = base_username[:max_length - len(suffix)] + suffix
+        username = base_username[: max_length - len(suffix)] + suffix
         counter += 1
 
     return username
@@ -258,12 +255,18 @@ def generate_username_from_name(
 
 # Turkish character mapping for username generation (Story 9.9)
 TURKISH_CHAR_MAP: dict[str, str] = {
-    'ı': 'i', 'İ': 'I',
-    'ğ': 'g', 'Ğ': 'G',
-    'ü': 'u', 'Ü': 'U',
-    'ş': 's', 'Ş': 'S',
-    'ö': 'o', 'Ö': 'O',
-    'ç': 'c', 'Ç': 'C',
+    "ı": "i",
+    "İ": "I",
+    "ğ": "g",
+    "Ğ": "G",
+    "ü": "u",
+    "Ü": "U",
+    "ş": "s",
+    "Ş": "S",
+    "ö": "o",
+    "Ö": "O",
+    "ç": "c",
+    "Ç": "C",
 }
 
 
@@ -284,7 +287,7 @@ def turkish_to_ascii(text: str) -> str:
     result = []
     for char in text:
         result.append(TURKISH_CHAR_MAP.get(char, char))
-    return ''.join(result)
+    return "".join(result)
 
 
 def generate_username_from_fullname(full_name: str) -> str:
@@ -320,19 +323,19 @@ def generate_username_from_fullname(full_name: str) -> str:
     name = name.lower()
 
     # Replace multiple spaces with single space
-    name = re.sub(r'\s+', ' ', name)
+    name = re.sub(r"\s+", " ", name)
 
     # Replace spaces with dots
-    name = name.replace(' ', '.')
+    name = name.replace(" ", ".")
 
     # Remove all characters except alphanumeric and dots
-    name = re.sub(r'[^a-z0-9.]', '', name)
+    name = re.sub(r"[^a-z0-9.]", "", name)
 
     # Remove consecutive dots
-    name = re.sub(r'\.+', '.', name)
+    name = re.sub(r"\.+", ".", name)
 
     # Remove leading/trailing dots
-    name = name.strip('.')
+    name = name.strip(".")
 
     return name
 
@@ -362,7 +365,9 @@ def ensure_unique_username(base_username: str, existing_usernames: set[str]) -> 
             return candidate
         counter += 1
         if counter > 1000:  # Safety limit
-            raise ValueError(f"Could not generate unique username for '{base_username}'")
+            raise ValueError(
+                f"Could not generate unique username for '{base_username}'"
+            )
 
 
 def generate_student_password(length: int = 8) -> str:
@@ -387,9 +392,9 @@ def generate_student_password(length: int = 8) -> str:
         8
     """
     # Unambiguous characters - excluding 0, O, 1, l, I
-    lowercase = 'abcdefghjkmnpqrstuvwxyz'  # no l
-    uppercase = 'ABCDEFGHJKMNPQRSTUVWXYZ'  # no I, O
-    digits = '23456789'  # no 0, 1
+    lowercase = "abcdefghjkmnpqrstuvwxyz"  # no l
+    uppercase = "ABCDEFGHJKMNPQRSTUVWXYZ"  # no I, O
+    digits = "23456789"  # no 0, 1
 
     # Ensure at least one of each type
     password_chars = [
@@ -406,7 +411,7 @@ def generate_student_password(length: int = 8) -> str:
     # Shuffle to randomize position
     secrets.SystemRandom().shuffle(password_chars)
 
-    return ''.join(password_chars)
+    return "".join(password_chars)
 
 
 def generate_username(full_name: str, session: Session) -> str:
@@ -448,7 +453,7 @@ def generate_username(full_name: str, session: Session) -> str:
     normalized_name = unidecode(full_name.strip())
 
     # Remove special characters, keep only alphanumeric and spaces
-    cleaned_name = re.sub(r'[^a-zA-Z0-9\s]', '', normalized_name)
+    cleaned_name = re.sub(r"[^a-zA-Z0-9\s]", "", normalized_name)
 
     # Split into parts
     parts = cleaned_name.split()
@@ -467,8 +472,10 @@ def generate_username(full_name: str, session: Session) -> str:
         base_username = f"{first_initial}{last_name}"
 
     # Validate base username format
-    if not re.match(r'^[a-zA-Z0-9_-]+$', base_username):
-        raise ValueError(f"Generated username '{base_username}' contains invalid characters")
+    if not re.match(r"^[a-zA-Z0-9_-]+$", base_username):
+        raise ValueError(
+            f"Generated username '{base_username}' contains invalid characters"
+        )
 
     # Check uniqueness and increment if needed
     max_attempts = 100
@@ -484,7 +491,9 @@ def generate_username(full_name: str, session: Session) -> str:
         username = f"{base_username}{attempt + 1}"
 
     # All variations taken
-    raise ValueError(f"Could not generate unique username for '{full_name}' after {max_attempts} attempts")
+    raise ValueError(
+        f"Could not generate unique username for '{full_name}' after {max_attempts} attempts"
+    )
 
 
 async def validate_file_size(file: UploadFile, max_size_mb: int = 5) -> bool:
@@ -556,7 +565,9 @@ async def parse_excel_file(file: UploadFile) -> list[dict[str, Any]]:
 
         # Parse data rows
         rows = []
-        for idx, row in enumerate(rows_iter, start=1):  # Start at 1 for user-friendly display
+        for idx, row in enumerate(
+            rows_iter, start=1
+        ):  # Start at 1 for user-friendly display
             row_dict: dict[str, Any] = {}
 
             # Map headers to values
@@ -565,7 +576,7 @@ async def parse_excel_file(file: UploadFile) -> list[dict[str, Any]]:
                     row_dict[str(header)] = value
 
             # Add row number for error reporting (user-friendly, starting from 1)
-            row_dict['_row_number'] = idx
+            row_dict["_row_number"] = idx
             rows.append(row_dict)
 
         workbook.close()

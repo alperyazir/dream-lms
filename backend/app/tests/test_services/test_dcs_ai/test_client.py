@@ -4,8 +4,9 @@ Tests for DCS AI Service Client.
 Tests the DCSAIServiceClient class with mocked DCS client and cache.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from app.schemas.dcs_ai_data import (
     ModuleDetail,
@@ -25,7 +26,6 @@ from app.services.dream_storage_client import (
     DreamStorageNotFoundError,
     DreamStorageServerError,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -180,9 +180,7 @@ async def test_get_processing_status_returns_none_for_404(
 ):
     """Test that get_processing_status returns None for 404."""
     # Arrange
-    mock_dcs_client._make_request.side_effect = DreamStorageNotFoundError(
-        "Not found"
-    )
+    mock_dcs_client._make_request.side_effect = DreamStorageNotFoundError("Not found")
 
     # Act
     result = await dcs_ai_client.get_processing_status(book_id=999)
@@ -416,7 +414,9 @@ async def test_get_audio_url_returns_presigned_url(
     mock_dcs_client._make_request.return_value = mock_response
 
     # Act
-    result = await dcs_ai_client.get_audio_url(book_id=123, lang="en", word="accomplish")
+    result = await dcs_ai_client.get_audio_url(
+        book_id=123, lang="en", word="accomplish"
+    )
 
     # Assert
     assert result == "https://dcs.example.com/audio/presigned"
@@ -453,7 +453,9 @@ async def test_get_audio_url_returns_none_for_404(
     mock_dcs_client._make_request.side_effect = DreamStorageNotFoundError("Not found")
 
     # Act
-    result = await dcs_ai_client.get_audio_url(book_id=123, lang="en", word="nonexistent")
+    result = await dcs_ai_client.get_audio_url(
+        book_id=123, lang="en", word="nonexistent"
+    )
 
     # Assert
     assert result is None
@@ -536,9 +538,7 @@ async def test_is_book_processed_returns_false_on_error(
 
 
 @pytest.mark.asyncio
-async def test_exception_mapping_not_found(
-    dcs_ai_client, mock_dcs_client, mock_cache
-):
+async def test_exception_mapping_not_found(dcs_ai_client, mock_dcs_client, mock_cache):
     """Test that DreamStorageNotFoundError results in None return."""
     # Arrange
     mock_dcs_client._make_request.side_effect = DreamStorageNotFoundError("Not found")
@@ -551,9 +551,7 @@ async def test_exception_mapping_not_found(
 
 
 @pytest.mark.asyncio
-async def test_exception_mapping_auth_error(
-    dcs_ai_client, mock_dcs_client, mock_cache
-):
+async def test_exception_mapping_auth_error(dcs_ai_client, mock_dcs_client, mock_cache):
     """Test that DreamStorageAuthError maps to DCSAIDataAuthError."""
     # Arrange
     mock_dcs_client._make_request.side_effect = DreamStorageAuthError("Auth failed")

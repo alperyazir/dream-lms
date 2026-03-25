@@ -104,7 +104,9 @@ async def lifespan(app: FastAPI):
     if settings.emails_enabled:
         logger.info(f"✅ Email enabled via SMTP: {settings.SMTP_HOST}")
     else:
-        logger.warning("⚠️  Email disabled - SMTP not configured. New users will receive passwords in UI.")
+        logger.warning(
+            "⚠️  Email disabled - SMTP not configured. New users will receive passwords in UI."
+        )
 
     # Register webhooks with Dream Central Storage
     logger.info("Attempting to register webhooks with Dream Central Storage...")
@@ -117,7 +119,9 @@ async def lifespan(app: FastAPI):
             logger.warning("   You can manually register via admin sync endpoint")
     except Exception as e:
         logger.error(f"❌ Error during webhook registration: {e}")
-        logger.warning("   Webhook registration will be skipped. Use admin sync endpoint to register manually.")
+        logger.warning(
+            "   Webhook registration will be skipped. Use admin sync endpoint to register manually."
+        )
 
     # Note: Publishers no longer synced to local DB - managed via DCS caching service
     # Publishers are fetched on-demand from DCS and cached (see publisher_service_v2.py)
@@ -129,9 +133,9 @@ async def lifespan(app: FastAPI):
         from app.services.dcs_cache import get_dcs_cache
         from app.services.publisher_service_v2 import get_publisher_service
 
-        cache = get_dcs_cache()
+        get_dcs_cache()
         publisher_service = get_publisher_service()
-        book_service = get_book_service()
+        get_book_service()
 
         try:
             # Pre-fetch publishers

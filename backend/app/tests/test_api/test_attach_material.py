@@ -46,7 +46,9 @@ def school_fixture(session: Session) -> School:
 
 
 @pytest.fixture(name="teacher_with_record")
-def teacher_with_record_fixture(session: Session, school: School) -> tuple[User, Teacher]:
+def teacher_with_record_fixture(
+    session: Session, school: School
+) -> tuple[User, Teacher]:
     """Create a teacher user with Teacher record."""
     # NOTE: Using mock DCS publisher ID (publishers now managed in Dream Central Storage)
     mock_dcs_publisher_id = 999
@@ -137,7 +139,9 @@ def test_attach_material_success(
 ):
     """Test successfully attaching a material to an assignment."""
     teacher_user, teacher = teacher_with_record
-    token = create_access_token(subject=str(teacher_user.id), expires_delta=timedelta(minutes=30))
+    token = create_access_token(
+        subject=str(teacher_user.id), expires_delta=timedelta(minutes=30)
+    )
 
     # Create an assignment
     assignment = Assignment(
@@ -204,7 +208,9 @@ def test_attach_material_not_owned_by_teacher(
     """Test that a teacher cannot attach another teacher's material."""
     teacher_user, teacher = teacher_with_record
     other_teacher_user, other_teacher_record = other_teacher
-    token = create_access_token(subject=str(teacher_user.id), expires_delta=timedelta(minutes=30))
+    token = create_access_token(
+        subject=str(teacher_user.id), expires_delta=timedelta(minutes=30)
+    )
 
     # Create an assignment owned by the teacher
     assignment = Assignment(
@@ -259,7 +265,9 @@ def test_attach_material_to_not_owned_assignment(
     """Test that a teacher cannot attach a material to another teacher's assignment."""
     teacher_user, teacher = teacher_with_record
     other_teacher_user, other_teacher_record = other_teacher
-    token = create_access_token(subject=str(teacher_user.id), expires_delta=timedelta(minutes=30))
+    token = create_access_token(
+        subject=str(teacher_user.id), expires_delta=timedelta(minutes=30)
+    )
 
     # Create an assignment owned by another teacher
     assignment = Assignment(
@@ -313,7 +321,9 @@ def test_attach_material_duplicate(
 ):
     """Test that attaching the same material twice is rejected."""
     teacher_user, teacher = teacher_with_record
-    token = create_access_token(subject=str(teacher_user.id), expires_delta=timedelta(minutes=30))
+    token = create_access_token(
+        subject=str(teacher_user.id), expires_delta=timedelta(minutes=30)
+    )
 
     # Create an assignment
     assignment = Assignment(
@@ -426,7 +436,9 @@ def test_attach_material_requires_teacher_role(
 ):
     """Test that attaching a material requires teacher role."""
     teacher_user, teacher = teacher_with_record
-    student_token = create_access_token(subject=str(student_user.id), expires_delta=timedelta(minutes=30))
+    student_token = create_access_token(
+        subject=str(student_user.id), expires_delta=timedelta(minutes=30)
+    )
 
     # Create an assignment
     assignment = Assignment(

@@ -7,7 +7,7 @@ unified progress API (save_activity_progress endpoint).
 """
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 from app.core.config import settings

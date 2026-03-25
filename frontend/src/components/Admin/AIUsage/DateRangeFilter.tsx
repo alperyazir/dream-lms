@@ -2,28 +2,28 @@
  * Date Range Filter Component
  */
 
-import { endOfMonth, format, startOfMonth, subDays, subMonths } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { endOfMonth, format, startOfMonth, subDays, subMonths } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import type { DateRange } from "@/types/ai-usage"
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import type { DateRange } from "@/types/ai-usage";
 
 interface DateRangeFilterProps {
-  dateRange: DateRange
-  onDateRangeChange: (range: DateRange) => void
+  dateRange: DateRange;
+  onDateRangeChange: (range: DateRange) => void;
 }
 
 type PresetOption = {
-  label: string
-  getValue: () => DateRange
-}
+  label: string;
+  getValue: () => DateRange;
+};
 
 const presets: PresetOption[] = [
   {
@@ -57,11 +57,11 @@ const presets: PresetOption[] = [
   {
     label: "Last Month",
     getValue: () => {
-      const lastMonth = subMonths(new Date(), 1)
+      const lastMonth = subMonths(new Date(), 1);
       return {
         from: startOfMonth(lastMonth),
         to: endOfMonth(lastMonth),
-      }
+      };
     },
   },
   {
@@ -71,34 +71,34 @@ const presets: PresetOption[] = [
       to: null,
     }),
   },
-]
+];
 
 export function DateRangeFilter({
   dateRange,
   onDateRangeChange,
 }: DateRangeFilterProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
 
   const formatDateRange = () => {
     if (!dateRange.from && !dateRange.to) {
-      return "All Time"
+      return "All Time";
     }
     if (dateRange.from && dateRange.to) {
-      return `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}`
+      return `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}`;
     }
     if (dateRange.from) {
-      return `From ${format(dateRange.from, "MMM d, yyyy")}`
+      return `From ${format(dateRange.from, "MMM d, yyyy")}`;
     }
     if (dateRange.to) {
-      return `Until ${format(dateRange.to, "MMM d, yyyy")}`
+      return `Until ${format(dateRange.to, "MMM d, yyyy")}`;
     }
-    return "Select date range"
-  }
+    return "Select date range";
+  };
 
   const handlePresetClick = (preset: PresetOption) => {
-    onDateRangeChange(preset.getValue())
-    setIsOpen(false)
-  }
+    onDateRangeChange(preset.getValue());
+    setIsOpen(false);
+  };
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -145,7 +145,7 @@ export function DateRangeFilter({
                   onDateRangeChange({
                     from: range.from ?? null,
                     to: range.to ?? null,
-                  })
+                  });
                 }
               }}
               numberOfMonths={2}
@@ -154,5 +154,5 @@ export function DateRangeFilter({
         </div>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

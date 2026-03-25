@@ -5,25 +5,25 @@
  * Displays storage usage with visual progress bar and warning states.
  */
 
-import { AlertCircle, AlertTriangle } from "lucide-react"
-import { cn } from "@/lib/utils"
-import type { StorageQuota } from "@/types/material"
+import { AlertCircle, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { StorageQuota } from "@/types/material";
 
 interface StorageQuotaBarProps {
-  quota: StorageQuota | null
-  className?: string
+  quota: StorageQuota | null;
+  className?: string;
 }
 
 /**
  * Format bytes to human-readable string
  */
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B"
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes === 0) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024)
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
 /**
@@ -38,23 +38,23 @@ export function StorageQuotaBar({ quota, className }: StorageQuotaBarProps) {
           <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
       </div>
-    )
+    );
   }
 
   const { used_bytes, quota_bytes, used_percentage, is_warning, is_full } =
-    quota
+    quota;
 
   const getProgressColor = () => {
-    if (is_full) return "bg-red-500"
-    if (is_warning) return "bg-amber-500"
-    return "bg-teal-500"
-  }
+    if (is_full) return "bg-red-500";
+    if (is_warning) return "bg-amber-500";
+    return "bg-teal-500";
+  };
 
   const getTextColor = () => {
-    if (is_full) return "text-red-500"
-    if (is_warning) return "text-amber-500"
-    return "text-muted-foreground"
-  }
+    if (is_full) return "text-red-500";
+    if (is_warning) return "text-amber-500";
+    return "text-muted-foreground";
+  };
 
   return (
     <div className={cn("rounded-lg border bg-card p-4", className)}>
@@ -94,7 +94,7 @@ export function StorageQuotaBar({ quota, className }: StorageQuotaBarProps) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-StorageQuotaBar.displayName = "StorageQuotaBar"
+StorageQuotaBar.displayName = "StorageQuotaBar";

@@ -21,7 +21,7 @@ async def test_user_with_book_id(async_session: AsyncSession):
         hashed_password="hashed",
         role=UserRole.admin,
         is_active=True,
-        full_name="Service Test Admin"
+        full_name="Service Test Admin",
     )
     async_session.add(user)
     await async_session.commit()
@@ -37,7 +37,7 @@ async def school_with_teacher(async_session: AsyncSession):
     school = School(
         id=uuid.uuid4(),
         name="Service Test School",
-        dcs_publisher_id=456  # Mock DCS publisher ID
+        dcs_publisher_id=456,  # Mock DCS publisher ID
     )
     async_session.add(school)
     await async_session.commit()
@@ -51,18 +51,14 @@ async def school_with_teacher(async_session: AsyncSession):
         hashed_password="hashed",
         role=UserRole.teacher,
         is_active=True,
-        full_name="Service Test Teacher"
+        full_name="Service Test Teacher",
     )
     async_session.add(teacher_user)
     await async_session.commit()
     await async_session.refresh(teacher_user)
 
     # Create teacher record
-    teacher = Teacher(
-        id=uuid.uuid4(),
-        user_id=teacher_user.id,
-        school_id=school.id
-    )
+    teacher = Teacher(id=uuid.uuid4(), user_id=teacher_user.id, school_id=school.id)
     async_session.add(teacher)
     await async_session.commit()
     await async_session.refresh(teacher)
@@ -87,7 +83,7 @@ class TestCreateAssignment:
             book_id=book_id,
             assigned_by=user.id,
             school_id=school.id,
-            teacher_id=None
+            teacher_id=None,
         )
 
         assert assignment is not None
@@ -111,7 +107,7 @@ class TestCreateAssignment:
             book_id=book_id,
             assigned_by=user.id,
             school_id=school.id,
-            teacher_id=teacher.id
+            teacher_id=teacher.id,
         )
 
         assert assignment is not None
@@ -133,7 +129,7 @@ class TestCreateAssignment:
                 book_id=book_id,
                 assigned_by=user.id,
                 school_id=None,
-                teacher_id=None
+                teacher_id=None,
             )
 
 
@@ -154,7 +150,7 @@ class TestCreateBulkAssignments:
             book_id=book_id,
             school_id=school.id,
             assigned_by=user.id,
-            assign_to_all=True
+            assign_to_all=True,
         )
 
         assert len(assignments) == 1
@@ -179,15 +175,13 @@ class TestCreateBulkAssignments:
             hashed_password="hashed",
             role=UserRole.teacher,
             is_active=True,
-            full_name="Service Test Teacher 2"
+            full_name="Service Test Teacher 2",
         )
         async_session.add(teacher_user2)
         await async_session.commit()
 
         teacher2 = Teacher(
-            id=uuid.uuid4(),
-            user_id=teacher_user2.id,
-            school_id=school.id
+            id=uuid.uuid4(), user_id=teacher_user2.id, school_id=school.id
         )
         async_session.add(teacher2)
         await async_session.commit()
@@ -198,7 +192,7 @@ class TestCreateBulkAssignments:
             school_id=school.id,
             assigned_by=user.id,
             teacher_ids=[teacher.id, teacher2.id],
-            assign_to_all=False
+            assign_to_all=False,
         )
 
         assert len(assignments) == 2
@@ -226,13 +220,11 @@ class TestCheckTeacherBookAccess:
             book_id=book_id,
             assigned_by=user.id,
             school_id=school.id,
-            teacher_id=teacher.id
+            teacher_id=teacher.id,
         )
 
         has_access = await book_assignment_service.check_teacher_book_access(
-            db=async_session,
-            teacher_id=teacher.id,
-            book_id=book_id
+            db=async_session, teacher_id=teacher.id, book_id=book_id
         )
 
         assert has_access is True
@@ -253,13 +245,11 @@ class TestCheckTeacherBookAccess:
             book_id=book_id,
             assigned_by=user.id,
             school_id=school.id,
-            teacher_id=None
+            teacher_id=None,
         )
 
         has_access = await book_assignment_service.check_teacher_book_access(
-            db=async_session,
-            teacher_id=teacher.id,
-            book_id=book_id
+            db=async_session, teacher_id=teacher.id, book_id=book_id
         )
 
         assert has_access is True
@@ -275,9 +265,7 @@ class TestCheckTeacherBookAccess:
         # No assignment created
 
         has_access = await book_assignment_service.check_teacher_book_access(
-            db=async_session,
-            teacher_id=teacher.id,
-            book_id=book_id
+            db=async_session, teacher_id=teacher.id, book_id=book_id
         )
 
         assert has_access is False
@@ -302,12 +290,11 @@ class TestGetAccessibleBookIds:
             book_id=book_id,
             assigned_by=user.id,
             school_id=school.id,
-            teacher_id=teacher.id
+            teacher_id=teacher.id,
         )
 
         accessible_ids = await book_assignment_service.get_accessible_book_ids(
-            db=async_session,
-            teacher_id=teacher.id
+            db=async_session, teacher_id=teacher.id
         )
 
         assert book_id in accessible_ids
@@ -320,8 +307,7 @@ class TestGetAccessibleBookIds:
         teacher = school_with_teacher["teacher"]
 
         accessible_ids = await book_assignment_service.get_accessible_book_ids(
-            db=async_session,
-            teacher_id=teacher.id
+            db=async_session, teacher_id=teacher.id
         )
 
         assert len(accessible_ids) == 0
@@ -338,9 +324,7 @@ class TestDeleteAssignment:
         # delete_assignment is deprecated - publisher role removed
         # Function always returns False now
         result = await book_assignment_service.delete_assignment(
-            db=async_session,
-            assignment_id=uuid.uuid4(),
-            publisher_id=uuid.uuid4()
+            db=async_session, assignment_id=uuid.uuid4(), publisher_id=uuid.uuid4()
         )
 
         assert result is False

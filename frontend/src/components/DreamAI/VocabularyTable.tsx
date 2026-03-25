@@ -6,15 +6,15 @@
  * Includes pagination controls.
  */
 
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,23 +22,23 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { VocabularyWord } from "@/types/vocabulary-explorer"
-import { CEFRBadge } from "./CEFRBadge"
-import { WordAudioButton } from "./WordAudioButton"
+} from "@/components/ui/table";
+import type { VocabularyWord } from "@/types/vocabulary-explorer";
+import { CEFRBadge } from "./CEFRBadge";
+import { WordAudioButton } from "./WordAudioButton";
 
 export interface VocabularyTableProps {
-  words: VocabularyWord[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
-  onPageChange: (page: number) => void
-  onPageSizeChange: (pageSize: number) => void
-  isLoading?: boolean
+  words: VocabularyWord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  isLoading?: boolean;
 }
 
-const PAGE_SIZE_OPTIONS = [25, 50, 100]
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
 /**
  * Vocabulary Table with Pagination
@@ -62,20 +62,20 @@ export function VocabularyTable({
   onPageSizeChange,
   isLoading = false,
 }: VocabularyTableProps) {
-  const startIndex = (page - 1) * pageSize + 1
-  const endIndex = Math.min(page * pageSize, total)
+  const startIndex = (page - 1) * pageSize + 1;
+  const endIndex = Math.min(page * pageSize, total);
 
   const handlePrevious = () => {
     if (page > 1) {
-      onPageChange(page - 1)
+      onPageChange(page - 1);
     }
-  }
+  };
 
   const handleNext = () => {
     if (page < totalPages) {
-      onPageChange(page + 1)
+      onPageChange(page + 1);
     }
-  }
+  };
 
   if (words.length === 0 && !isLoading) {
     return (
@@ -85,7 +85,7 @@ export function VocabularyTable({
           Try adjusting your filters or search term.
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -234,5 +234,5 @@ export function VocabularyTable({
         </div>
       </div>
     </div>
-  )
+  );
 }

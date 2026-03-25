@@ -1,10 +1,10 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
   Link as RouterLink,
   redirect,
-} from "@tanstack/react-router"
-import { motion } from "framer-motion"
+} from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import {
   BarChart3,
   Eye,
@@ -15,29 +15,29 @@ import {
   Sun,
   User,
   Zap,
-} from "lucide-react"
-import { useTheme } from "next-themes"
-import { useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import type { Body_login_login_access_token as AccessToken } from "@/client"
-import { OpenAPI } from "@/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { WaveAnimation } from "@/components/ui/wave-animation"
-import useAuth, { isLoggedIn } from "@/hooks/useAuth"
+} from "lucide-react";
+import { useTheme } from "next-themes";
+import { useState } from "react";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import type { Body_login_login_access_token as AccessToken } from "@/client";
+import { OpenAPI } from "@/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { WaveAnimation } from "@/components/ui/wave-animation";
+import useAuth, { isLoggedIn } from "@/hooks/useAuth";
 
 // Type for quick login users response
 interface QuickLoginUser {
-  username: string
-  email: string | null
+  username: string;
+  email: string | null;
 }
 
 interface QuickLoginUsers {
-  admin: QuickLoginUser[]
-  supervisor: QuickLoginUser[]
-  publisher: QuickLoginUser[]
-  teacher: QuickLoginUser[]
-  student: QuickLoginUser[]
+  admin: QuickLoginUser[];
+  supervisor: QuickLoginUser[];
+  publisher: QuickLoginUser[];
+  teacher: QuickLoginUser[];
+  student: QuickLoginUser[];
 }
 
 export const Route = createFileRoute("/login")({
@@ -46,10 +46,10 @@ export const Route = createFileRoute("/login")({
     if (isLoggedIn()) {
       throw redirect({
         to: "/",
-      })
+      });
     }
   },
-})
+});
 
 // Feature data
 const features = [
@@ -68,7 +68,7 @@ const features = [
     title: "Smart Assignments",
     description: "Adaptive assessments that evolve with you",
   },
-]
+];
 
 // Animation variants
 const containerVariants = {
@@ -80,7 +80,7 @@ const containerVariants = {
       delayChildren: 0.2,
     },
   },
-}
+};
 
 const itemVariants = {
   hidden: { opacity: 0, x: -20 },
@@ -89,7 +89,7 @@ const itemVariants = {
     x: 0,
     transition: { duration: 0.5, ease: "easeOut" as const },
   },
-}
+};
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -98,13 +98,13 @@ const cardVariants = {
     y: 0,
     transition: { duration: 0.5, ease: "easeOut" as const },
   },
-}
+};
 
 function Login() {
-  const { loginMutation } = useAuth()
-  const { theme, setTheme } = useTheme()
-  const [loginError, setLoginError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
+  const { loginMutation } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -116,7 +116,7 @@ function Login() {
       username: "",
       password: "",
     },
-  })
+  });
 
   // Fetch quick login users (development only)
   const { data: quickLoginUsers, isError } = useQuery<QuickLoginUsers>({
@@ -130,31 +130,31 @@ function Login() {
             "Content-Type": "application/json",
           },
         },
-      )
+      );
       if (!response.ok) {
-        throw new Error("Failed to fetch quick login users")
+        throw new Error("Failed to fetch quick login users");
       }
-      return response.json()
+      return response.json();
     },
     enabled: import.meta.env.DEV,
     retry: false,
     staleTime: 0,
-  })
+  });
 
   const onSubmit: SubmitHandler<AccessToken> = async (data) => {
-    if (isSubmitting) return
-    setLoginError(null)
+    if (isSubmitting) return;
+    setLoginError(null);
 
     try {
-      await loginMutation.mutateAsync(data)
+      await loginMutation.mutateAsync(data);
     } catch (err: unknown) {
-      const error = err as { body?: { detail?: string } }
-      setLoginError(error.body?.detail || "Invalid credentials")
+      const error = err as { body?: { detail?: string } };
+      setLoginError(error.body?.detail || "Invalid credentials");
     }
-  }
+  };
 
   const instantLogin = async (username: string) => {
-    setLoginError(null)
+    setLoginError(null);
     try {
       const response = await fetch(
         `${OpenAPI.BASE}/api/v1/dev/instant-login/${username}`,
@@ -162,23 +162,23 @@ function Login() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         },
-      )
+      );
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.detail || "Login failed")
+        const error = await response.json();
+        throw new Error(error.detail || "Login failed");
       }
-      const data = await response.json()
-      localStorage.setItem("access_token", data.access_token)
-      window.location.href = "/"
+      const data = await response.json();
+      localStorage.setItem("access_token", data.access_token);
+      window.location.href = "/";
     } catch (err: unknown) {
-      const error = err as Error
-      setLoginError(error.message || "Login failed")
+      const error = err as Error;
+      setLoginError(error.message || "Login failed");
     }
-  }
+  };
 
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
-  }
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -316,7 +316,9 @@ function Login() {
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
-                      {...register("password", { required: "Password is required" })}
+                      {...register("password", {
+                        required: "Password is required",
+                      })}
                       placeholder="Enter password"
                       type={showPassword ? "text" : "password"}
                       className="pl-12 pr-12 h-12 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700 focus:border-teal-500 focus:ring-teal-500/20 transition-all"
@@ -417,14 +419,16 @@ function Login() {
                           color: "text-purple-600 dark:text-purple-400",
                         },
                       ].map((role) => {
-                        const users = quickLoginUsers[role.key] || []
-                        if (users.length === 0) return null
+                        const users = quickLoginUsers[role.key] || [];
+                        if (users.length === 0) return null;
                         return (
                           <div
                             key={role.key}
                             className="flex flex-wrap items-center gap-1.5"
                           >
-                            <span className={`text-xs font-medium ${role.color} w-[70px] shrink-0`}>
+                            <span
+                              className={`text-xs font-medium ${role.color} w-[70px] shrink-0`}
+                            >
                               {role.label}:
                             </span>
                             {users.slice(0, 5).map((user) => (
@@ -440,7 +444,7 @@ function Login() {
                               </Button>
                             ))}
                           </div>
-                        )
+                        );
                       })}
                     </div>
                   )}
@@ -480,5 +484,5 @@ function Login() {
       {/* Wave Animation - Full Width */}
       <WaveAnimation />
     </div>
-  )
+  );
 }

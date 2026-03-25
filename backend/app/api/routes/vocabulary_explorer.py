@@ -18,16 +18,17 @@ from app.models import User, UserRole
 from app.services.dcs_ai import DCSAIServiceClient
 from app.services.dcs_ai.exceptions import DCSAIDataAuthError, DCSAIDataConnectionError
 from app.services.dcs_cache import DCSCache
-from app.services.dream_storage_client import DreamCentralStorageClient, get_dream_storage_client
+from app.services.dream_storage_client import (
+    DreamCentralStorageClient,
+    get_dream_storage_client,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai/vocabulary", tags=["vocabulary-explorer"])
 
 # Roles that can access vocabulary explorer
-TeacherOrHigher = require_role(
-    UserRole.teacher, UserRole.supervisor, UserRole.admin
-)
+TeacherOrHigher = require_role(UserRole.teacher, UserRole.supervisor, UserRole.admin)
 
 
 # ============================================================================
@@ -195,9 +196,15 @@ async def get_vocabulary(
     page: Annotated[int, Query(ge=1, description="Page number")] = 1,
     page_size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 25,
     module_id: Annotated[str | None, Query(description="Filter by module ID")] = None,
-    search: Annotated[str | None, Query(description="Search in word/definition")] = None,
-    levels: Annotated[str | None, Query(description="CEFR levels, comma-separated")] = None,
-    part_of_speech: Annotated[str | None, Query(description="Filter by part of speech")] = None,
+    search: Annotated[
+        str | None, Query(description="Search in word/definition")
+    ] = None,
+    levels: Annotated[
+        str | None, Query(description="CEFR levels, comma-separated")
+    ] = None,
+    part_of_speech: Annotated[
+        str | None, Query(description="Filter by part of speech")
+    ] = None,
 ) -> VocabularyListResponse:
     """
     Get paginated vocabulary list with filtering.
@@ -231,7 +238,9 @@ async def get_vocabulary(
 
         # Apply filters to vocabulary
         words = vocab_response.words
-        cefr_levels = [level.strip().upper() for level in levels.split(",")] if levels else []
+        cefr_levels = (
+            [level.strip().upper() for level in levels.split(",")] if levels else []
+        )
 
         filtered_words = []
         for word in words:

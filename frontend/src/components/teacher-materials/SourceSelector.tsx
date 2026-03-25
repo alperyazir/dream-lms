@@ -6,62 +6,62 @@
  * for AI generation forms.
  */
 
-import { AlertCircle, BookOpen, FileText, Loader2, Plus } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
+import { AlertCircle, BookOpen, FileText, Loader2, Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
-import { booksApi } from "@/services/booksApi"
-import { teacherMaterialsApi } from "@/services/teacherMaterialsApi"
-import type { Book, BookStructureResponse } from "@/types/book"
-import type { TeacherMaterial } from "@/types/teacher-material"
-import { MaterialLibrary } from "./MaterialLibrary"
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { booksApi } from "@/services/booksApi";
+import { teacherMaterialsApi } from "@/services/teacherMaterialsApi";
+import type { Book, BookStructureResponse } from "@/types/book";
+import type { TeacherMaterial } from "@/types/teacher-material";
+import { MaterialLibrary } from "./MaterialLibrary";
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export type SourceType = "book" | "material"
+export type SourceType = "book" | "material";
 
 export interface SelectedSource {
-  type: SourceType
+  type: SourceType;
   // Book source
-  bookId?: number
-  bookName?: string
-  bookStructure?: BookStructureResponse
+  bookId?: number;
+  bookName?: string;
+  bookStructure?: BookStructureResponse;
   // Material source
-  materialId?: string
-  materialName?: string
-  extractedText?: string
-  wordCount?: number
-  language?: string | null
+  materialId?: string;
+  materialName?: string;
+  extractedText?: string;
+  wordCount?: number;
+  language?: string | null;
 }
 
 interface SourceSelectorProps {
   /** Currently selected source */
-  selectedSource: SelectedSource | null
+  selectedSource: SelectedSource | null;
   /** Callback when source changes */
-  onSourceChange: (source: SelectedSource | null) => void
+  onSourceChange: (source: SelectedSource | null) => void;
   /** Whether to show book structure selector (for vocab/module-based activities) */
-  showBookModules?: boolean
+  showBookModules?: boolean;
   /** Whether the form is disabled */
-  disabled?: boolean
+  disabled?: boolean;
   /** Error message */
-  error?: string | null
+  error?: string | null;
   /** Callback to open upload dialog */
-  onUploadClick?: () => void
+  onUploadClick?: () => void;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 // =============================================================================
@@ -80,85 +80,85 @@ export function SourceSelector({
   // Active tab
   const [activeTab, setActiveTab] = useState<SourceType>(
     selectedSource?.type || "book",
-  )
+  );
 
   // Books data
-  const [books, setBooks] = useState<Book[]>([])
-  const [loadingBooks, setLoadingBooks] = useState(true)
-  const [bookError, setBookError] = useState<string | null>(null)
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loadingBooks, setLoadingBooks] = useState(true);
+  const [bookError, setBookError] = useState<string | null>(null);
 
   // Book structure (for module selection)
-  const [loadingStructure, setLoadingStructure] = useState(false)
+  const [loadingStructure, setLoadingStructure] = useState(false);
 
   // Materials data
-  const [materials, setMaterials] = useState<TeacherMaterial[]>([])
-  const [loadingMaterials, setLoadingMaterials] = useState(true)
-  const [materialsError, setMaterialsError] = useState<string | null>(null)
+  const [materials, setMaterials] = useState<TeacherMaterial[]>([]);
+  const [loadingMaterials, setLoadingMaterials] = useState(true);
+  const [materialsError, setMaterialsError] = useState<string | null>(null);
 
   // Load books on mount
   useEffect(() => {
     async function loadBooks() {
       try {
-        setLoadingBooks(true)
-        setBookError(null)
-        const response = await booksApi.getBooks({ limit: 100 })
-        setBooks(response.items)
+        setLoadingBooks(true);
+        setBookError(null);
+        const response = await booksApi.getBooks({ limit: 100 });
+        setBooks(response.items);
       } catch (err) {
-        console.error("Failed to load books:", err)
-        setBookError("Failed to load books")
+        console.error("Failed to load books:", err);
+        setBookError("Failed to load books");
       } finally {
-        setLoadingBooks(false)
+        setLoadingBooks(false);
       }
     }
-    loadBooks()
-  }, [])
+    loadBooks();
+  }, []);
 
   // Load materials on mount
   useEffect(() => {
     async function loadMaterials() {
       try {
-        setLoadingMaterials(true)
-        setMaterialsError(null)
-        const response = await teacherMaterialsApi.listProcessableMaterials()
-        setMaterials(response.materials)
+        setLoadingMaterials(true);
+        setMaterialsError(null);
+        const response = await teacherMaterialsApi.listProcessableMaterials();
+        setMaterials(response.materials);
       } catch (err) {
-        console.error("Failed to load materials:", err)
-        setMaterialsError("Failed to load materials")
+        console.error("Failed to load materials:", err);
+        setMaterialsError("Failed to load materials");
       } finally {
-        setLoadingMaterials(false)
+        setLoadingMaterials(false);
       }
     }
-    loadMaterials()
-  }, [])
+    loadMaterials();
+  }, []);
 
   // Handle tab change
   const handleTabChange = useCallback(
     (value: string) => {
-      const newTab = value as SourceType
-      setActiveTab(newTab)
+      const newTab = value as SourceType;
+      setActiveTab(newTab);
       // Clear selection when switching tabs
-      onSourceChange(null)
+      onSourceChange(null);
     },
     [onSourceChange],
-  )
+  );
 
   // Handle book selection
   const handleBookSelect = useCallback(
     async (bookIdStr: string) => {
-      const bookId = parseInt(bookIdStr, 10)
-      const book = books.find((b) => b.id === bookId)
-      if (!book) return
+      const bookId = parseInt(bookIdStr, 10);
+      const book = books.find((b) => b.id === bookId);
+      if (!book) return;
 
       // If we need book structure, load it
-      let structure: BookStructureResponse | undefined
+      let structure: BookStructureResponse | undefined;
       if (showBookModules) {
         try {
-          setLoadingStructure(true)
-          structure = await booksApi.getBookStructure(bookId)
+          setLoadingStructure(true);
+          structure = await booksApi.getBookStructure(bookId);
         } catch (err) {
-          console.error("Failed to load book structure:", err)
+          console.error("Failed to load book structure:", err);
         } finally {
-          setLoadingStructure(false)
+          setLoadingStructure(false);
         }
       }
 
@@ -167,10 +167,10 @@ export function SourceSelector({
         bookId,
         bookName: book.title,
         bookStructure: structure,
-      })
+      });
     },
     [books, showBookModules, onSourceChange],
-  )
+  );
 
   // Handle material selection
   const handleMaterialSelect = useCallback(
@@ -182,23 +182,23 @@ export function SourceSelector({
         extractedText: material.extracted_text || undefined,
         wordCount: material.word_count || undefined,
         language: material.language,
-      })
+      });
     },
     [onSourceChange],
-  )
+  );
 
   // Refresh materials list
   const refreshMaterials = useCallback(async () => {
     try {
-      setLoadingMaterials(true)
-      const response = await teacherMaterialsApi.listProcessableMaterials()
-      setMaterials(response.materials)
+      setLoadingMaterials(true);
+      const response = await teacherMaterialsApi.listProcessableMaterials();
+      setMaterials(response.materials);
     } catch (err) {
-      console.error("Failed to refresh materials:", err)
+      console.error("Failed to refresh materials:", err);
     } finally {
-      setLoadingMaterials(false)
+      setLoadingMaterials(false);
     }
-  }, [])
+  }, []);
 
   // =============================================================================
   // Render
@@ -350,7 +350,7 @@ export function SourceSelector({
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
 
-SourceSelector.displayName = "SourceSelector"
+SourceSelector.displayName = "SourceSelector";

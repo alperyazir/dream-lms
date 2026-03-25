@@ -1,19 +1,19 @@
-import { fireEvent, render, screen } from "@testing-library/react"
-import { afterEach, describe, expect, it, vi } from "vitest"
-import { LibraryFilters, type LibraryFiltersState } from "../LibraryFilters"
+import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { LibraryFilters, type LibraryFiltersState } from "../LibraryFilters";
 
 describe("LibraryFilters", () => {
   const emptyFilters: LibraryFiltersState = {
     search: "",
     publisher: "",
     activityType: "",
-  }
+  };
 
-  const mockOnChange = vi.fn()
+  const mockOnChange = vi.fn();
 
   afterEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   it("renders search input", () => {
     render(
@@ -22,10 +22,10 @@ describe("LibraryFilters", () => {
         onChange={mockOnChange}
         publishers={[]}
       />,
-    )
+    );
 
-    expect(screen.getByPlaceholderText("Search books...")).toBeInTheDocument()
-  })
+    expect(screen.getByPlaceholderText("Search books...")).toBeInTheDocument();
+  });
 
   it("calls onChange when search input changes", () => {
     render(
@@ -34,23 +34,23 @@ describe("LibraryFilters", () => {
         onChange={mockOnChange}
         publishers={[]}
       />,
-    )
+    );
 
-    const searchInput = screen.getByPlaceholderText("Search books...")
-    fireEvent.change(searchInput, { target: { value: "test query" } })
+    const searchInput = screen.getByPlaceholderText("Search books...");
+    fireEvent.change(searchInput, { target: { value: "test query" } });
 
     expect(mockOnChange).toHaveBeenCalledWith({
       ...emptyFilters,
       search: "test query",
-    })
-  })
+    });
+  });
 
   it("shows clear button when filters are active", () => {
     const activeFilters: LibraryFiltersState = {
       search: "test",
       publisher: "",
       activityType: "",
-    }
+    };
 
     render(
       <LibraryFilters
@@ -58,10 +58,10 @@ describe("LibraryFilters", () => {
         onChange={mockOnChange}
         publishers={[]}
       />,
-    )
+    );
 
-    expect(screen.getByText("Clear")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Clear")).toBeInTheDocument();
+  });
 
   it("does not show clear button when no filters are active", () => {
     render(
@@ -70,17 +70,17 @@ describe("LibraryFilters", () => {
         onChange={mockOnChange}
         publishers={[]}
       />,
-    )
+    );
 
-    expect(screen.queryByText("Clear")).not.toBeInTheDocument()
-  })
+    expect(screen.queryByText("Clear")).not.toBeInTheDocument();
+  });
 
   it("calls onChange with empty filters when clear button is clicked", () => {
     const activeFilters: LibraryFiltersState = {
       search: "test",
       publisher: "Publisher A",
       activityType: "dragdroppicture",
-    }
+    };
 
     render(
       <LibraryFilters
@@ -89,13 +89,13 @@ describe("LibraryFilters", () => {
         publishers={["Publisher A"]}
         showPublisherFilter={true}
       />,
-    )
+    );
 
-    const clearButton = screen.getByText("Clear")
-    fireEvent.click(clearButton)
+    const clearButton = screen.getByText("Clear");
+    fireEvent.click(clearButton);
 
-    expect(mockOnChange).toHaveBeenCalledWith(emptyFilters)
-  })
+    expect(mockOnChange).toHaveBeenCalledWith(emptyFilters);
+  });
 
   it("displays result count correctly", () => {
     render(
@@ -106,10 +106,10 @@ describe("LibraryFilters", () => {
         resultCount={5}
         totalCount={10}
       />,
-    )
+    );
 
-    expect(screen.getByText("5 of 10 books")).toBeInTheDocument()
-  })
+    expect(screen.getByText("5 of 10 books")).toBeInTheDocument();
+  });
 
   it("displays total count when result equals total", () => {
     render(
@@ -120,8 +120,8 @@ describe("LibraryFilters", () => {
         resultCount={10}
         totalCount={10}
       />,
-    )
+    );
 
-    expect(screen.getByText("10 books")).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("10 books")).toBeInTheDocument();
+  });
+});

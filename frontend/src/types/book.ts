@@ -14,7 +14,7 @@ export type ActivityType =
   | "markwithx"
   | "puzzleFindWords"
   | "fillSentencesWithDots"
-  | "fillpicture"
+  | "fillpicture";
 
 /**
  * Activity types that have implemented players and can be assigned
@@ -27,13 +27,13 @@ export const SUPPORTED_ACTIVITY_TYPES: ReadonlySet<ActivityType> = new Set([
   "circle",
   "markwithx",
   "puzzleFindWords",
-])
+]);
 
 /**
  * Check if an activity type is supported for assignment
  */
 export function isActivityTypeSupported(type: ActivityType): boolean {
-  return SUPPORTED_ACTIVITY_TYPES.has(type)
+  return SUPPORTED_ACTIVITY_TYPES.has(type);
 }
 
 /**
@@ -43,47 +43,47 @@ export function isActivityTypeSupported(type: ActivityType): boolean {
  * Books are fetched from Dream Central Storage on-demand.
  */
 export interface Book {
-  id: number // Changed from string to number (DCS book ID)
-  dream_storage_id: string
-  title: string
-  publisher_id: number // DCS publisher ID for logo URL
-  publisher_name: string
-  description: string | null
-  cover_image_url: string | null
-  activity_count: number
+  id: number; // Changed from string to number (DCS book ID)
+  dream_storage_id: string;
+  title: string;
+  publisher_id: number; // DCS publisher ID for logo URL
+  publisher_name: string;
+  description: string | null;
+  cover_image_url: string | null;
+  activity_count: number;
 }
 
 /**
  * Activity data from API
  */
 export interface Activity {
-  id: string
-  book_id: number // Changed from string to number (DCS book ID)
-  activity_type: ActivityType
-  title: string | null
-  config_json: any
-  order_index: number
+  id: string;
+  book_id: number; // Changed from string to number (DCS book ID)
+  activity_type: ActivityType;
+  title: string | null;
+  config_json: any;
+  order_index: number;
 }
 
 /**
  * Paginated book list response
  */
 export interface BookListResponse {
-  items: Book[]
-  total: number
-  skip: number
-  limit: number
+  items: Book[];
+  total: number;
+  skip: number;
+  limit: number;
 }
 
 /**
  * Filter parameters for book catalog
  */
 export interface BooksFilter {
-  search?: string
-  publisher?: string
-  activity_type?: ActivityType
-  skip?: number
-  limit?: number
+  search?: string;
+  publisher?: string;
+  activity_type?: ActivityType;
+  skip?: number;
+  limit?: number;
 }
 
 /**
@@ -92,9 +92,9 @@ export interface BooksFilter {
 export const ACTIVITY_TYPE_CONFIG: Record<
   ActivityType,
   {
-    label: string
-    color: string
-    badgeVariant: "default" | "secondary" | "destructive" | "outline"
+    label: string;
+    color: string;
+    badgeVariant: "default" | "secondary" | "destructive" | "outline";
   }
 > = {
   dragdroppicture: {
@@ -137,7 +137,7 @@ export const ACTIVITY_TYPE_CONFIG: Record<
     color: "teal",
     badgeVariant: "secondary",
   },
-}
+};
 
 // --- Story 8.2: Page-Based Activity Selection ---
 
@@ -145,38 +145,38 @@ export const ACTIVITY_TYPE_CONFIG: Record<
  * Information about a single page in a book module
  */
 export interface PageInfo {
-  page_number: number
-  activity_count: number
-  thumbnail_url: string
+  page_number: number;
+  activity_count: number;
+  thumbnail_url: string;
 }
 
 /**
  * A module with its pages containing activities
  */
 export interface ModulePages {
-  name: string
-  pages: PageInfo[]
+  name: string;
+  pages: PageInfo[];
 }
 
 /**
  * Response from GET /api/v1/books/{book_id}/pages
  */
 export interface BookPagesResponse {
-  book_id: number // Changed from string to number (DCS book ID)
-  modules: ModulePages[]
-  total_pages: number
-  total_activities: number
+  book_id: number; // Changed from string to number (DCS book ID)
+  modules: ModulePages[];
+  total_pages: number;
+  total_activities: number;
 }
 
 /**
  * Activity response for page-based selection (simplified)
  */
 export interface PageActivity {
-  id: string
-  title: string | null
-  activity_type: ActivityType
-  section_index: number
-  order_index: number
+  id: string;
+  title: string | null;
+  activity_type: ActivityType;
+  section_index: number;
+  order_index: number;
 }
 
 // --- Story 8.2 Enhanced: Page Viewer with Activity Markers ---
@@ -185,82 +185,82 @@ export interface PageActivity {
  * Coordinates for an activity marker on a page
  */
 export interface ActivityCoords {
-  x: number
-  y: number
-  w: number
-  h: number
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 /**
  * Activity marker with position and metadata for page viewer
  */
 export interface ActivityMarker {
-  id: string
-  title: string | null
-  activity_type: ActivityType
-  section_index: number
-  coords: ActivityCoords | null
-  config: Record<string, unknown>
+  id: string;
+  title: string | null;
+  activity_type: ActivityType;
+  section_index: number;
+  coords: ActivityCoords | null;
+  config: Record<string, unknown>;
 }
 
 /**
  * Audio marker for page viewer
  */
 export interface AudioMarker {
-  id: string
-  src: string
-  x: number
-  y: number
-  width: number
-  height: number
+  id: string;
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /**
  * Video marker for page viewer
  */
 export interface VideoMarker {
-  id: string
-  src: string
-  poster: string | null
-  subtitle_src: string | null
-  x: number
-  y: number
-  width: number
-  height: number
+  id: string;
+  src: string;
+  poster: string | null;
+  subtitle_src: string | null;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /**
  * Fill answer marker for page viewer (clickable answer areas)
  */
 export interface FillAnswerMarker {
-  id: string
-  x: number
-  y: number
-  width: number
-  height: number
-  text: string
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text: string;
 }
 
 /**
  * Detailed page information including image and activity markers
  */
 export interface PageDetail {
-  page_number: number
-  image_url: string
-  module_name: string
-  activities: ActivityMarker[]
-  audio?: AudioMarker[]
-  video?: VideoMarker[]
-  fill_answers?: FillAnswerMarker[]
+  page_number: number;
+  image_url: string;
+  module_name: string;
+  activities: ActivityMarker[];
+  audio?: AudioMarker[];
+  video?: VideoMarker[];
+  fill_answers?: FillAnswerMarker[];
 }
 
 /**
  * Module metadata for navigation shortcuts
  */
 export interface ModuleInfo {
-  name: string
-  first_page_index: number // Index in the flat pages array
-  page_count: number
+  name: string;
+  first_page_index: number; // Index in the flat pages array
+  page_count: number;
 }
 
 /**
@@ -268,19 +268,19 @@ export interface ModuleInfo {
  * @deprecated Use ModuleInfo + flat pages list instead
  */
 export interface ModulePagesDetail {
-  name: string
-  pages: PageDetail[]
+  name: string;
+  pages: PageDetail[];
 }
 
 /**
  * Enhanced book pages response with activity coordinates for page viewer
  */
 export interface BookPagesDetailResponse {
-  book_id: number // Changed from string to number (DCS book ID)
-  modules: ModuleInfo[] // Module shortcuts for navigation
-  pages: PageDetail[] // Flat list of ALL pages in order
-  total_pages: number
-  total_activities: number
+  book_id: number; // Changed from string to number (DCS book ID)
+  modules: ModuleInfo[]; // Module shortcuts for navigation
+  pages: PageDetail[]; // Flat list of ALL pages in order
+  total_pages: number;
+  total_activities: number;
 }
 
 // --- Story 9.5: Activity Selection Tabs ---
@@ -289,30 +289,30 @@ export interface BookPagesDetailResponse {
  * Page information with activity IDs for bulk selection
  */
 export interface PageWithActivities {
-  page_number: number
-  thumbnail_url: string
-  activity_count: number
-  activity_ids: string[]
+  page_number: number;
+  thumbnail_url: string;
+  activity_count: number;
+  activity_ids: string[];
 }
 
 /**
  * Module information with pages and activity IDs for bulk selection
  */
 export interface ModuleWithActivities {
-  name: string
-  page_start: number
-  page_end: number
-  activity_count: number
-  activity_ids: string[]
-  pages: PageWithActivities[]
+  name: string;
+  page_start: number;
+  page_end: number;
+  activity_count: number;
+  activity_ids: string[];
+  pages: PageWithActivities[];
 }
 
 /**
  * Book structure response with modules and pages for activity selection tabs
  */
 export interface BookStructureResponse {
-  book_id: number // Changed from string to number (DCS book ID)
-  modules: ModuleWithActivities[]
-  total_pages: number
-  total_activities: number
+  book_id: number; // Changed from string to number (DCS book ID)
+  modules: ModuleWithActivities[];
+  total_pages: number;
+  total_activities: number;
 }

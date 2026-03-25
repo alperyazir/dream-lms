@@ -1,33 +1,30 @@
 """Tests for Assignment Skill Classification (Story 30.2)."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
 from sqlmodel import Session
 
+from app.core.security import get_password_hash
 from app.models import (
     ActivityFormat,
     Assignment,
-    AssignmentStudent,
     School,
     SkillCategory,
-    Student,
     Teacher,
     User,
     UserRole,
 )
-from app.core.security import get_password_hash
 from app.schemas.assignment import (
     AssignmentCreate,
     AssignmentListItem,
     AssignmentResponse,
-    SkillInfoCompact,
     FormatInfoCompact,
+    SkillInfoCompact,
 )
 from app.schemas.skill import MixModeContent, MixModeQuestion
-
 
 # ---------------------------------------------------------------------------
 # Model Tests
@@ -75,8 +72,12 @@ class TestAssignmentSkillFields:
         teacher = self._create_teacher(session)
 
         skill = SkillCategory(
-            name="Listening", slug="listening", icon="ear", color="blue",
-            display_order=1, is_active=True,
+            name="Listening",
+            slug="listening",
+            icon="ear",
+            color="blue",
+            display_order=1,
+            is_active=True,
         )
         fmt = ActivityFormat(name="Quiz (MCQ)", slug="multiple_choice")
         session.add_all([skill, fmt])
@@ -99,7 +100,9 @@ class TestAssignmentSkillFields:
         assert assignment.activity_format_id == fmt.id
         assert assignment.is_mix_mode is False
 
-    def test_create_assignment_without_skill_backward_compat(self, session: Session) -> None:
+    def test_create_assignment_without_skill_backward_compat(
+        self, session: Session
+    ) -> None:
         """Test creating assignment WITHOUT skill fields (backward compatibility)."""
         teacher = self._create_teacher(session)
 
@@ -133,15 +136,21 @@ class TestAssignmentSkillFields:
         session.refresh(assignment)
 
         assert assignment.is_mix_mode is True
-        assert assignment.primary_skill_id is None  # Mix mode has no single primary skill
+        assert (
+            assignment.primary_skill_id is None
+        )  # Mix mode has no single primary skill
 
     def test_assignment_skill_relationship(self, session: Session) -> None:
         """Test that the primary_skill relationship loads correctly."""
         teacher = self._create_teacher(session)
 
         skill = SkillCategory(
-            name="Reading", slug="reading", icon="book-open", color="green",
-            display_order=2, is_active=True,
+            name="Reading",
+            slug="reading",
+            icon="book-open",
+            color="green",
+            display_order=2,
+            is_active=True,
         )
         session.add(skill)
         session.commit()
@@ -383,7 +392,10 @@ class TestMixModeContentSchema:
                     skill_id=uuid.uuid4(),
                     skill_slug="listening",
                     format_slug="multiple_choice",
-                    question_data={"prompt": "What did you hear?", "options": ["A", "B"]},
+                    question_data={
+                        "prompt": "What did you hear?",
+                        "options": ["A", "B"],
+                    },
                 ),
                 MixModeQuestion(
                     question_id="q2",

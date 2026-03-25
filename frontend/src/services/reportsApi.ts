@@ -5,8 +5,8 @@
  * This service provides functions to interact with the Reports API endpoints.
  */
 
-import axios from "axios"
-import { OpenAPI } from "../client"
+import axios from "axios";
+import { OpenAPI } from "../client";
 import type {
   ReportGenerateRequest,
   ReportHistoryResponse,
@@ -14,7 +14,7 @@ import type {
   ReportStatusResponse,
   SavedReportTemplate,
   SavedReportTemplateCreate,
-} from "../types/reports"
+} from "../types/reports";
 
 /**
  * Create axios instance with OpenAPI config
@@ -23,15 +23,15 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Add token interceptor
 apiClient.interceptors.request.use(async (config) => {
   if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE
+    config.baseURL = OpenAPI.BASE;
   }
 
-  const token = OpenAPI.TOKEN
+  const token = OpenAPI.TOKEN;
   if (token) {
     const tokenValue =
       typeof token === "function"
@@ -46,15 +46,15 @@ apiClient.interceptors.request.use(async (config) => {
               | "HEAD",
             url: config.url || "",
           })
-        : token
+        : token;
 
     if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`
+      config.headers.Authorization = `Bearer ${tokenValue}`;
     }
   }
 
-  return config
-})
+  return config;
+});
 
 /**
  * Generate a new report
@@ -68,8 +68,8 @@ export async function generateReport(
   const response = await apiClient.post<ReportJobResponse>(
     "/api/v1/reports/generate",
     config,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -83,8 +83,8 @@ export async function getReportStatus(
 ): Promise<ReportStatusResponse> {
   const response = await apiClient.get<ReportStatusResponse>(
     `/api/v1/reports/${jobId}/status`,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -99,39 +99,32 @@ export async function downloadReport(
 ): Promise<void> {
   const response = await apiClient.get(`/api/v1/reports/${jobId}/download`, {
     responseType: "blob",
-  })
+  });
 
   // Create a download link
-  const url = window.URL.createObjectURL(new Blob([response.data]))
-  const link = document.createElement("a")
-  link.href = url
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement("a");
+  link.href = url;
 
   // Get filename from content-disposition header or use default
-  const contentDisposition = response.headers["content-disposition"]
-  let downloadFilename = filename || `report-${jobId}.pdf`
-
-  console.log("DEBUG: Content-Disposition header:", contentDisposition)
-  console.log("DEBUG: All headers:", response.headers)
+  const contentDisposition = response.headers["content-disposition"];
+  let downloadFilename = filename || `report-${jobId}.pdf`;
 
   if (contentDisposition) {
     // Match both quoted and unquoted filenames in Content-Disposition header
     const filenameMatch = contentDisposition.match(
       /filename[^;=\n]*=["']?([^"';\n]+)["']?/,
-    )
-    console.log("DEBUG: Filename match:", filenameMatch)
+    );
     if (filenameMatch?.[1]) {
-      downloadFilename = filenameMatch[1].trim()
-      console.log("DEBUG: Extracted filename:", downloadFilename)
+      downloadFilename = filenameMatch[1].trim();
     }
   }
 
-  console.log("DEBUG: Final download filename:", downloadFilename)
-
-  link.setAttribute("download", downloadFilename)
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.URL.revokeObjectURL(url)
+  link.setAttribute("download", downloadFilename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 /**
@@ -143,8 +136,8 @@ export async function downloadReport(
 export async function getReportPreviewBlob(jobId: string): Promise<Blob> {
   const response = await apiClient.get(`/api/v1/reports/${jobId}/preview`, {
     responseType: "blob",
-  })
-  return new Blob([response.data], { type: "application/pdf" })
+  });
+  return new Blob([response.data], { type: "application/pdf" });
 }
 
 /**
@@ -155,8 +148,8 @@ export async function getReportPreviewBlob(jobId: string): Promise<Blob> {
 export async function getReportHistory(): Promise<ReportHistoryResponse> {
   const response = await apiClient.get<ReportHistoryResponse>(
     "/api/v1/reports/history",
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -171,8 +164,8 @@ export async function saveReportTemplate(
   const response = await apiClient.post<SavedReportTemplate>(
     "/api/v1/reports/templates",
     template,
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -183,8 +176,8 @@ export async function saveReportTemplate(
 export async function getReportTemplates(): Promise<SavedReportTemplate[]> {
   const response = await apiClient.get<SavedReportTemplate[]>(
     "/api/v1/reports/templates",
-  )
-  return response.data
+  );
+  return response.data;
 }
 
 /**
@@ -193,7 +186,7 @@ export async function getReportTemplates(): Promise<SavedReportTemplate[]> {
  * @param templateId - Template UUID
  */
 export async function deleteReportTemplate(templateId: string): Promise<void> {
-  await apiClient.delete(`/api/v1/reports/templates/${templateId}`)
+  await apiClient.delete(`/api/v1/reports/templates/${templateId}`);
 }
 
 /**
@@ -202,7 +195,7 @@ export async function deleteReportTemplate(templateId: string): Promise<void> {
  * @param jobId - Report job UUID
  */
 export async function deleteReportHistoryItem(jobId: string): Promise<void> {
-  await apiClient.delete(`/api/v1/reports/history/${jobId}`)
+  await apiClient.delete(`/api/v1/reports/history/${jobId}`);
 }
 
 /**
@@ -217,6 +210,6 @@ export const reportsApi = {
   getReportTemplates,
   deleteReportTemplate,
   deleteReportHistoryItem,
-}
+};
 
-export default reportsApi
+export default reportsApi;

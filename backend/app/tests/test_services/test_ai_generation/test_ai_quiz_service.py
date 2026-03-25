@@ -4,15 +4,12 @@ Tests for AI Quiz Service.
 Tests quiz generation with mocked LLM and DCS AI client.
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
 
 from app.schemas.ai_quiz import (
     AIQuizGenerationRequest,
-    AIQuiz,
-    AIQuizQuestion,
 )
 from app.schemas.dcs_ai_data import ModuleDetail
 from app.services.ai_generation.ai_quiz_service import (
@@ -20,7 +17,6 @@ from app.services.ai_generation.ai_quiz_service import (
     QuizGenerationError,
 )
 from app.services.dcs_ai.exceptions import DCSAIDataNotFoundError
-
 
 # ============================================================================
 # Fixtures
@@ -110,7 +106,12 @@ class TestAIQuizServiceGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_quiz_success(
-        self, quiz_service, mock_dcs_ai_client, mock_llm_manager, sample_module, sample_llm_response
+        self,
+        quiz_service,
+        mock_dcs_ai_client,
+        mock_llm_manager,
+        sample_module,
+        sample_llm_response,
     ):
         """Test successful MCQ generation with mocked LLM."""
         # Setup
@@ -135,14 +136,22 @@ class TestAIQuizServiceGeneration:
         assert quiz.language == "en"
 
         # Verify questions
-        assert quiz.questions[0].question_text == "What is important for language learning according to the text?"
+        assert (
+            quiz.questions[0].question_text
+            == "What is important for language learning according to the text?"
+        )
         assert quiz.questions[0].correct_index == 0
         assert quiz.questions[0].correct_answer == "Reading comprehension"
         assert len(quiz.questions[0].options) == 4
 
     @pytest.mark.asyncio
     async def test_generate_quiz_combines_multiple_modules(
-        self, quiz_service, mock_dcs_ai_client, mock_llm_manager, sample_module, sample_llm_response
+        self,
+        quiz_service,
+        mock_dcs_ai_client,
+        mock_llm_manager,
+        sample_module,
+        sample_llm_response,
     ):
         """Test content from multiple modules is combined."""
         # Setup - two modules
@@ -176,7 +185,12 @@ class TestAIQuizServiceGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_quiz_easy_difficulty(
-        self, quiz_service, mock_dcs_ai_client, mock_llm_manager, sample_module, sample_llm_response
+        self,
+        quiz_service,
+        mock_dcs_ai_client,
+        mock_llm_manager,
+        sample_module,
+        sample_llm_response,
     ):
         """Test easy difficulty includes appropriate prompt guidance."""
         mock_dcs_ai_client.get_module_detail.return_value = sample_module
@@ -198,7 +212,12 @@ class TestAIQuizServiceGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_quiz_hard_difficulty(
-        self, quiz_service, mock_dcs_ai_client, mock_llm_manager, sample_module, sample_llm_response
+        self,
+        quiz_service,
+        mock_dcs_ai_client,
+        mock_llm_manager,
+        sample_module,
+        sample_llm_response,
     ):
         """Test hard difficulty includes appropriate prompt guidance."""
         mock_dcs_ai_client.get_module_detail.return_value = sample_module
@@ -302,7 +321,12 @@ class TestAIQuizServiceGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_quiz_with_explanations(
-        self, quiz_service, mock_dcs_ai_client, mock_llm_manager, sample_module, sample_llm_response
+        self,
+        quiz_service,
+        mock_dcs_ai_client,
+        mock_llm_manager,
+        sample_module,
+        sample_llm_response,
     ):
         """Test quiz generation with explanations enabled."""
         mock_dcs_ai_client.get_module_detail.return_value = sample_module
@@ -322,7 +346,12 @@ class TestAIQuizServiceGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_quiz_without_explanations(
-        self, quiz_service, mock_dcs_ai_client, mock_llm_manager, sample_module, sample_llm_response
+        self,
+        quiz_service,
+        mock_dcs_ai_client,
+        mock_llm_manager,
+        sample_module,
+        sample_llm_response,
     ):
         """Test quiz generation with explanations disabled."""
         mock_dcs_ai_client.get_module_detail.return_value = sample_module

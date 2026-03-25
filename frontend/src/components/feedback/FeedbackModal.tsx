@@ -7,9 +7,9 @@
  * Supports draft saving, publishing, and badge/emoji functionality.
  */
 
-import { useEffect, useState } from "react"
-import { LuLoader, LuSave, LuSend } from "react-icons/lu"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react";
+import { LuLoader, LuSave, LuSend } from "react-icons/lu";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -17,22 +17,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/hooks/use-toast"
-import { useFeedbackModal } from "@/hooks/useFeedback"
-import { isFeedbackPublic } from "@/types/feedback"
-import { EmojiPicker } from "./EmojiPicker"
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/hooks/use-toast";
+import { useFeedbackModal } from "@/hooks/useFeedback";
+import { isFeedbackPublic } from "@/types/feedback";
+import { EmojiPicker } from "./EmojiPicker";
 
 interface FeedbackModalProps {
-  isOpen: boolean
-  onClose: () => void
-  assignmentId: string
-  studentId: string
-  studentName: string
-  assignmentName: string
-  score?: number | null
+  isOpen: boolean;
+  onClose: () => void;
+  assignmentId: string;
+  studentId: string;
+  studentName: string;
+  assignmentName: string;
+  score?: number | null;
 }
 
 export function FeedbackModal({
@@ -44,8 +44,8 @@ export function FeedbackModal({
   assignmentName,
   score,
 }: FeedbackModalProps) {
-  const [feedbackText, setFeedbackText] = useState("")
-  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
+  const [feedbackText, setFeedbackText] = useState("");
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
 
   const {
     feedback,
@@ -55,30 +55,30 @@ export function FeedbackModal({
     saveDraft,
     publish,
     reset,
-  } = useFeedbackModal(isOpen ? assignmentId : null, isOpen ? studentId : null)
+  } = useFeedbackModal(isOpen ? assignmentId : null, isOpen ? studentId : null);
 
   // Load existing feedback when modal opens
   useEffect(() => {
     if (isOpen && feedback && isFeedbackPublic(feedback)) {
-      setFeedbackText(feedback.feedback_text || "")
+      setFeedbackText(feedback.feedback_text || "");
       // emoji_reactions is an array, take first element if exists
       setSelectedEmoji(
         feedback.emoji_reactions && feedback.emoji_reactions.length > 0
           ? feedback.emoji_reactions[0]
           : null,
-      )
+      );
     } else if (isOpen && !feedback) {
-      setFeedbackText("")
-      setSelectedEmoji(null)
+      setFeedbackText("");
+      setSelectedEmoji(null);
     }
-  }, [isOpen, feedback])
+  }, [isOpen, feedback]);
 
   // Reset on close
   useEffect(() => {
     if (!isOpen) {
-      reset()
+      reset();
     }
-  }, [isOpen, reset])
+  }, [isOpen, reset]);
 
   const handleSaveDraft = async () => {
     if (!feedbackText.trim()) {
@@ -86,26 +86,26 @@ export function FeedbackModal({
         title: "Error",
         description: "Please enter some feedback text",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
       await saveDraft(feedbackText, {
         emoji_reaction: selectedEmoji,
-      })
+      });
       toast({
         title: "Draft Saved",
         description: "Feedback saved as draft",
-      })
+      });
     } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to save draft. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handlePublish = async () => {
     if (!feedbackText.trim()) {
@@ -113,32 +113,32 @@ export function FeedbackModal({
         title: "Error",
         description: "Please enter some feedback text",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
       await publish(feedbackText, {
         emoji_reaction: selectedEmoji,
-      })
+      });
       toast({
         title: "Feedback Published",
         description: "Student has been notified of your feedback",
-      })
-      onClose()
+      });
+      onClose();
     } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to publish feedback. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
-  const isDraft = feedback && isFeedbackPublic(feedback) && feedback.is_draft
-  const isExisting = feedback && isFeedbackPublic(feedback)
-  const characterCount = feedbackText.length
-  const maxCharacters = 1000
+  const isDraft = feedback && isFeedbackPublic(feedback) && feedback.is_draft;
+  const isExisting = feedback && isFeedbackPublic(feedback);
+  const characterCount = feedbackText.length;
+  const maxCharacters = 1000;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -232,7 +232,7 @@ export function FeedbackModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-export default FeedbackModal
+export default FeedbackModal;

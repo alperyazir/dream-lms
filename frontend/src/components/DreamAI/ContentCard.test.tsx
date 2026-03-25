@@ -3,11 +3,11 @@
  * Story 27.21: Content Library UI - Task 11
  */
 
-import { render, screen } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
-import type { ContentItem } from "@/types/content-library"
-import { ContentCard } from "./ContentCard"
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+import type { ContentItem } from "@/types/content-library";
+import { ContentCard } from "./ContentCard";
 
 describe("ContentCard", () => {
   const mockContent: ContentItem = {
@@ -28,10 +28,10 @@ describe("ContentCard", () => {
       id: "teacher-id",
       name: "John Doe",
     },
-  }
+  };
 
-  const mockOnPreview = vi.fn()
-  const mockOnUse = vi.fn()
+  const mockOnPreview = vi.fn();
+  const mockOnUse = vi.fn();
 
   it("renders content card with basic information", () => {
     render(
@@ -40,12 +40,12 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    expect(screen.getByText("Test Quiz")).toBeInTheDocument()
-    expect(screen.getByText("Quiz")).toBeInTheDocument()
-    expect(screen.getByText("Test Book")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Test Quiz")).toBeInTheDocument();
+    expect(screen.getByText("Quiz")).toBeInTheDocument();
+    expect(screen.getByText("Test Book")).toBeInTheDocument();
+  });
 
   it("shows item count correctly", () => {
     render(
@@ -54,10 +54,10 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    expect(screen.getByText("10 items")).toBeInTheDocument()
-  })
+    expect(screen.getByText("10 items")).toBeInTheDocument();
+  });
 
   it("shows usage badge when used in assignments", () => {
     render(
@@ -66,10 +66,10 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    expect(screen.getByText("Used 2x")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Used 2x")).toBeInTheDocument();
+  });
 
   it("shows shared badge for shared content", () => {
     render(
@@ -78,10 +78,10 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    expect(screen.getByText("Shared")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Shared")).toBeInTheDocument();
+  });
 
   it("shows creator name for shared content", () => {
     render(
@@ -90,13 +90,13 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    expect(screen.getByText(/By: John Doe/)).toBeInTheDocument()
-  })
+    expect(screen.getByText(/By: John Doe/)).toBeInTheDocument();
+  });
 
   it("calls onPreview when Preview button is clicked", async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup();
 
     render(
       <ContentCard
@@ -104,16 +104,16 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    const previewButton = screen.getByRole("button", { name: /preview/i })
-    await user.click(previewButton)
+    const previewButton = screen.getByRole("button", { name: /preview/i });
+    await user.click(previewButton);
 
-    expect(mockOnPreview).toHaveBeenCalledWith(mockContent)
-  })
+    expect(mockOnPreview).toHaveBeenCalledWith(mockContent);
+  });
 
   it("calls onUse when Use button is clicked", async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup();
 
     render(
       <ContentCard
@@ -121,13 +121,13 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    const useButton = screen.getByRole("button", { name: /use/i })
-    await user.click(useButton)
+    const useButton = screen.getByRole("button", { name: /use/i });
+    await user.click(useButton);
 
-    expect(mockOnUse).toHaveBeenCalledWith(mockContent)
-  })
+    expect(mockOnUse).toHaveBeenCalledWith(mockContent);
+  });
 
   it("displays material name for material-based content", () => {
     const materialContent: ContentItem = {
@@ -138,7 +138,7 @@ describe("ContentCard", () => {
       material_id: "material-id",
       material_name: "My PDF Material",
       is_shared: false,
-    }
+    };
 
     render(
       <ContentCard
@@ -146,11 +146,11 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    expect(screen.getByText("My PDF Material")).toBeInTheDocument()
-    expect(screen.queryByText("Shared")).not.toBeInTheDocument()
-  })
+    expect(screen.getByText("My PDF Material")).toBeInTheDocument();
+    expect(screen.queryByText("Shared")).not.toBeInTheDocument();
+  });
 
   it("displays 'My Material' when material name is null", () => {
     const materialContent: ContentItem = {
@@ -161,7 +161,7 @@ describe("ContentCard", () => {
       material_id: "material-id",
       material_name: null,
       is_shared: false,
-    }
+    };
 
     render(
       <ContentCard
@@ -169,16 +169,16 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    expect(screen.getByText("My Material")).toBeInTheDocument()
-  })
+    expect(screen.getByText("My Material")).toBeInTheDocument();
+  });
 
   it("shows singular 'item' for count of 1", () => {
     const singleItemContent: ContentItem = {
       ...mockContent,
       item_count: 1,
-    }
+    };
 
     render(
       <ContentCard
@@ -186,16 +186,16 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    expect(screen.getByText("1 item")).toBeInTheDocument()
-  })
+    expect(screen.getByText("1 item")).toBeInTheDocument();
+  });
 
   it("does not show usage badge when not used", () => {
     const unusedContent: ContentItem = {
       ...mockContent,
       used_in_assignments: 0,
-    }
+    };
 
     render(
       <ContentCard
@@ -203,8 +203,8 @@ describe("ContentCard", () => {
         onPreview={mockOnPreview}
         onUse={mockOnUse}
       />,
-    )
+    );
 
-    expect(screen.queryByText(/Used/)).not.toBeInTheDocument()
-  })
-})
+    expect(screen.queryByText(/Used/)).not.toBeInTheDocument();
+  });
+});

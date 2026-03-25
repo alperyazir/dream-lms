@@ -5,7 +5,7 @@
  * and individual activity player components (both existing and AI-generated types).
  */
 
-import type { ActivityType } from "./book"
+import type { ActivityType } from "./book";
 
 /**
  * Standard props interface that all activity players must implement.
@@ -18,19 +18,19 @@ import type { ActivityType } from "./book"
  */
 export interface ActivityPlayerProps {
   /** Unique identifier for the assignment */
-  assignmentId: string
+  assignmentId: string;
 
   /** Type of activity being played */
-  activityType: ActivityType
+  activityType: ActivityType;
 
   /** Activity-specific content data (structure varies by activity type) */
-  activityContent: ActivityContent
+  activityContent: ActivityContent;
 
   /** Callback when activity is completed with final results */
-  onComplete: (result: ActivityResult) => void
+  onComplete: (result: ActivityResult) => void;
 
   /** Callback for intermediate progress updates (autosave, partial completion) */
-  onProgress: (progress: ProgressUpdate) => void
+  onProgress: (progress: ProgressUpdate) => void;
 }
 
 /**
@@ -39,10 +39,10 @@ export interface ActivityPlayerProps {
  */
 export interface ActivityContent {
   /** Activity type discriminator */
-  type: ActivityType
+  type: ActivityType;
 
   /** Additional properties defined by specific activity types */
-  [key: string]: unknown
+  [key: string]: unknown;
 }
 
 /**
@@ -51,25 +51,25 @@ export interface ActivityContent {
  */
 export interface ActivityResult {
   /** Final completion status */
-  status: "completed"
+  status: "completed";
 
   /** Calculated score (0-100 percentage) */
-  score: number
+  score: number;
 
   /** Maximum possible score */
-  maxScore: number
+  maxScore: number;
 
   /** Number of correct answers */
-  correctCount: number
+  correctCount: number;
 
   /** Total number of questions/items */
-  totalCount: number
+  totalCount: number;
 
   /** Time spent in seconds */
-  timeSpent: number
+  timeSpent: number;
 
   /** Activity-specific response data for storage */
-  responseData: Record<string, unknown>
+  responseData: Record<string, unknown>;
 }
 
 /**
@@ -78,19 +78,19 @@ export interface ActivityResult {
  */
 export interface ProgressUpdate {
   /** Current progress status */
-  status: "in_progress"
+  status: "in_progress";
 
   /** Partial score if applicable */
-  score?: number
+  score?: number;
 
   /** Maximum possible score */
-  maxScore?: number
+  maxScore?: number;
 
   /** Time spent so far in seconds */
-  timeSpent: number
+  timeSpent: number;
 
   /** Partial response data for autosave */
-  responseData: Record<string, unknown>
+  responseData: Record<string, unknown>;
 }
 
 /**
@@ -99,47 +99,47 @@ export interface ProgressUpdate {
  */
 export interface ActivityProgress {
   /** Assignment identifier */
-  assignmentId: string
+  assignmentId: string;
 
   /** Activity identifier */
-  activityId?: string
+  activityId?: string;
 
   /** Student identifier */
-  studentId: string
+  studentId: string;
 
   /** Current status */
-  status: "not_started" | "in_progress" | "completed"
+  status: "not_started" | "in_progress" | "completed";
 
   /** Current score (0-100) */
-  score: number
+  score: number;
 
   /** Maximum possible score */
-  maxScore: number
+  maxScore: number;
 
   /** Number of correct answers */
-  correctCount: number
+  correctCount: number;
 
   /** Total number of items */
-  totalCount: number
+  totalCount: number;
 
   /** Time spent in seconds */
-  timeSpent: number
+  timeSpent: number;
 
   /** When activity was started */
-  startedAt: string | null
+  startedAt: string | null;
 
   /** When activity was completed */
-  completedAt: string | null
+  completedAt: string | null;
 
   /** Activity-specific details */
-  details: ActivitySpecificDetails
+  details: ActivitySpecificDetails;
 }
 
 /**
  * Activity-specific details stored in response_data.
  * Structure varies by activity type.
  */
-export type ActivitySpecificDetails = Record<string, unknown>
+export type ActivitySpecificDetails = Record<string, unknown>;
 
 /**
  * Type guard to check if an object implements ActivityPlayerProps
@@ -147,9 +147,9 @@ export type ActivitySpecificDetails = Record<string, unknown>
 export function isActivityPlayerProps(
   obj: unknown,
 ): obj is ActivityPlayerProps {
-  if (typeof obj !== "object" || obj === null) return false
+  if (typeof obj !== "object" || obj === null) return false;
 
-  const props = obj as Record<string, unknown>
+  const props = obj as Record<string, unknown>;
 
   return (
     typeof props.assignmentId === "string" &&
@@ -157,7 +157,7 @@ export function isActivityPlayerProps(
     typeof props.activityContent === "object" &&
     typeof props.onComplete === "function" &&
     typeof props.onProgress === "function"
-  )
+  );
 }
 
 /**
@@ -179,7 +179,7 @@ export function createActivityResult(
     totalCount,
     timeSpent,
     responseData,
-  }
+  };
 }
 
 /**
@@ -197,7 +197,7 @@ export function createProgressUpdate(
     responseData,
     ...(score !== undefined && { score }),
     ...(maxScore !== undefined && { maxScore }),
-  }
+  };
 }
 
 // ============================================================================
@@ -214,13 +214,13 @@ export function createProgressUpdate(
  */
 export interface QuestionNavigationState {
   /** Current question/item index (0-based) */
-  currentIndex: number
+  currentIndex: number;
   /** Total number of questions/items */
-  totalItems: number
+  totalItems: number;
   /** IDs of items that have been answered/completed */
-  answeredItemIds: string[]
+  answeredItemIds: string[];
   /** Indices of answered items (for UI rendering) */
-  answeredIndices: number[]
+  answeredIndices: number[];
 }
 
 /**
@@ -229,11 +229,11 @@ export interface QuestionNavigationState {
  */
 export interface QuestionNavigationProps {
   /** External control: current item index (when controlled by parent) */
-  currentItemIndex?: number
+  currentItemIndex?: number;
   /** External control: callback when item index should change */
-  onItemIndexChange?: (index: number) => void
+  onItemIndexChange?: (index: number) => void;
   /** Callback to expose navigation state to parent */
-  onNavigationStateChange?: (state: QuestionNavigationState) => void
+  onNavigationStateChange?: (state: QuestionNavigationState) => void;
 }
 
 /**
@@ -257,10 +257,10 @@ export const QUESTION_NAV_ACTIVITY_TYPES = [
   "listening_word_builder",
   "speaking_open_response",
   "mix_mode",
-] as const
+] as const;
 
 export type QuestionNavActivityType =
-  (typeof QUESTION_NAV_ACTIVITY_TYPES)[number]
+  (typeof QUESTION_NAV_ACTIVITY_TYPES)[number];
 
 /**
  * Check if an activity type supports question-level navigation
@@ -268,5 +268,5 @@ export type QuestionNavActivityType =
 export function supportsQuestionNavigation(activityType: string): boolean {
   return QUESTION_NAV_ACTIVITY_TYPES.includes(
     activityType as QuestionNavActivityType,
-  )
+  );
 }

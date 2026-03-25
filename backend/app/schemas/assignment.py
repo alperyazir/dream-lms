@@ -21,6 +21,7 @@ from app.models import AssignmentPublishStatus, AssignmentStatus
 
 class ResourceType(str, Enum):
     """Types of additional resources that can be attached to assignments."""
+
     video = "video"
     teacher_material = "teacher_material"
 
@@ -30,6 +31,7 @@ class VideoResource(BaseModel):
 
     Story 10.3+: Video with subtitle control for students.
     """
+
     type: Literal["video"] = "video"
     path: str  # Relative path like "video/1.mp4"
     name: str  # Display name
@@ -53,6 +55,7 @@ class TeacherMaterialResource(BaseModel):
     Story 13.3: Teacher Materials Assignment Integration.
     Stores denormalized name/type for display even if material is deleted.
     """
+
     type: Literal["teacher_material"] = "teacher_material"
     material_id: uuid.UUID
     # Denormalized fields for display (cached from TeacherMaterial)
@@ -65,6 +68,7 @@ class TeacherMaterialResourceResponse(TeacherMaterialResource):
 
     Used when returning assignment resources to include current material state.
     """
+
     is_available: bool = True
     file_size: int | None = None
     mime_type: str | None = None
@@ -81,12 +85,14 @@ class AdditionalResources(BaseModel):
 
     Supports video resources and teacher-uploaded materials.
     """
+
     videos: list[VideoResource] = []
     teacher_materials: list[TeacherMaterialResource] = []
 
 
 class AdditionalResourcesResponse(BaseModel):
     """Response schema with enriched material data and availability status."""
+
     videos: list[VideoResource] = []
     teacher_materials: list[TeacherMaterialResourceResponse] = []
 
@@ -96,6 +102,7 @@ class DateGroupCreate(BaseModel):
 
     Each date group creates a separate assignment with its own publish date.
     """
+
     scheduled_publish_date: datetime  # When to publish/make visible
     due_date: datetime | None = None  # When due for this group
     time_limit_minutes: int | None = None
@@ -227,10 +234,16 @@ class AssignmentCreate(BaseModel):
             if self.book_id is None:
                 raise ValueError("book_id is required for AI content assignments")
             # AI content doesn't use activity_id, activity_ids, or date_groups
-            if self.activity_id is not None or (self.activity_ids is not None and len(self.activity_ids) > 0):
-                raise ValueError("activity_id/activity_ids should not be provided for AI content assignments")
+            if self.activity_id is not None or (
+                self.activity_ids is not None and len(self.activity_ids) > 0
+            ):
+                raise ValueError(
+                    "activity_id/activity_ids should not be provided for AI content assignments"
+                )
             if self.date_groups is not None and len(self.date_groups) > 0:
-                raise ValueError("date_groups should not be provided for AI content assignments")
+                raise ValueError(
+                    "date_groups should not be provided for AI content assignments"
+                )
             return self
 
         # Book assignments: require book_id and activity_id/activity_ids
@@ -245,7 +258,9 @@ class AssignmentCreate(BaseModel):
         if has_date_groups:
             # When using date_groups, don't require activity_id or activity_ids
             if has_single or has_multi:
-                raise ValueError("Cannot provide activity_id or activity_ids with date_groups")
+                raise ValueError(
+                    "Cannot provide activity_id or activity_ids with date_groups"
+                )
             return self
 
         # Standard mode: require activity_id or activity_ids
@@ -264,7 +279,9 @@ class AssignmentCreate(BaseModel):
             and self.due_date is not None
             and self.scheduled_publish_date > self.due_date
         ):
-            raise ValueError("Scheduled publish date must be before or equal to due date")
+            raise ValueError(
+                "Scheduled publish date must be before or equal to due date"
+            )
         return self
 
     def get_activity_ids(self) -> list[uuid.UUID]:
@@ -334,10 +351,14 @@ class AssignmentUpdate(BaseModel):
 
     @field_validator("activity_ids")
     @classmethod
-    def validate_activity_ids_not_empty(cls, v: list[uuid.UUID] | None) -> list[uuid.UUID] | None:
+    def validate_activity_ids_not_empty(
+        cls, v: list[uuid.UUID] | None
+    ) -> list[uuid.UUID] | None:
         """Validate activity_ids list is not empty if provided."""
         if v is not None and len(v) == 0:
-            raise ValueError("Activity list cannot be empty - must have at least one activity")
+            raise ValueError(
+                "Activity list cannot be empty - must have at least one activity"
+            )
         return v
 
     @field_validator("video_path")
@@ -379,6 +400,7 @@ class ActivityInfo(BaseModel):
 
 class SkillInfoCompact(BaseModel):
     """Compact skill info for assignment responses."""
+
     id: uuid.UUID
     name: str
     slug: str
@@ -388,6 +410,7 @@ class SkillInfoCompact(BaseModel):
 
 class FormatInfoCompact(BaseModel):
     """Compact format info for assignment responses."""
+
     id: uuid.UUID
     name: str
     slug: str
@@ -519,7 +542,9 @@ class StudentAssignmentResponse(BaseModel):
         if self.status == "completed":
             return False
         # Ensure both datetimes are timezone-aware for comparison
-        due_date_aware = self.due_date if self.due_date.tzinfo else self.due_date.replace(tzinfo=UTC)
+        due_date_aware = (
+            self.due_date if self.due_date.tzinfo else self.due_date.replace(tzinfo=UTC)
+        )
         return due_date_aware < datetime.now(UTC)
 
     @computed_field  # type: ignore[misc]
@@ -529,7 +554,9 @@ class StudentAssignmentResponse(BaseModel):
         if self.due_date is None:
             return None
         # Ensure both datetimes are timezone-aware for comparison
-        due_date_aware = self.due_date if self.due_date.tzinfo else self.due_date.replace(tzinfo=UTC)
+        due_date_aware = (
+            self.due_date if self.due_date.tzinfo else self.due_date.replace(tzinfo=UTC)
+        )
         delta = due_date_aware - datetime.now(UTC)
         return delta.days
 
@@ -642,7 +669,9 @@ class AssignmentSaveProgressRequest(BaseModel):
         Story 4.8 QA Fix: Limit payload to 100KB to prevent abuse with large payloads.
         This protects the server from excessive memory usage and database bloat.
         """
-        MAX_PAYLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5MB (speaking audio stored as base64)
+        MAX_PAYLOAD_SIZE_BYTES = (
+            5 * 1024 * 1024
+        )  # 5MB (speaking audio stored as base64)
 
         # Serialize to JSON to get actual byte size
         try:
@@ -782,7 +811,9 @@ class ActivityProgressSaveRequest(BaseModel):
     @classmethod
     def validate_payload_size(cls, v: dict) -> dict:
         """Validate response_data payload size to prevent DoS attacks."""
-        MAX_PAYLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5MB (speaking audio stored as base64)
+        MAX_PAYLOAD_SIZE_BYTES = (
+            5 * 1024 * 1024
+        )  # 5MB (speaking audio stored as base64)
 
         try:
             payload_json = json.dumps(v, ensure_ascii=False)
@@ -830,7 +861,9 @@ class SubmitActivityState(BaseModel):
 class MultiActivitySubmitRequest(BaseModel):
     """Request schema for submitting a multi-activity assignment."""
 
-    force_submit: bool = False  # Force submit even if not all activities completed (for timeout)
+    force_submit: bool = (
+        False  # Force submit even if not all activities completed (for timeout)
+    )
     total_time_spent_minutes: int = 0  # Deprecated: use total_time_spent_seconds
     total_time_spent_seconds: int | None = None  # Preferred: precise time in seconds
     # Activity states with scores and answers - required for Content Library assignments
@@ -913,7 +946,9 @@ class MultiActivityAnalyticsResponse(BaseModel):
     total_students: int
     submitted_count: int  # Students who submitted (completed status)
     activities: list[ActivityAnalyticsItem]
-    expanded_students: list[StudentActivityScore] | None = None  # Populated when expand_activity_id provided
+    expanded_students: list[StudentActivityScore] | None = (
+        None  # Populated when expand_activity_id provided
+    )
 
 
 class ActivityReviewItem(BaseModel):

@@ -5,7 +5,7 @@
  * Auto-saves data at regular intervals and provides manual save trigger.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface UseAutoSaveOptions {
   /**
@@ -13,34 +13,34 @@ export interface UseAutoSaveOptions {
    * @param answers - Current answers to save
    * @param timeSpent - Time spent in minutes
    */
-  onSave: (answers: Record<string, any>, timeSpent: number) => Promise<void>
+  onSave: (answers: Record<string, any>, timeSpent: number) => Promise<void>;
 
   /**
    * Auto-save interval in milliseconds (default: 30000ms = 30 seconds)
    */
-  interval?: number
+  interval?: number;
 
   /**
    * Whether auto-save is enabled (default: true)
    */
-  enabled?: boolean
+  enabled?: boolean;
 }
 
 export interface UseAutoSaveReturn {
   /**
    * Timestamp of last successful save
    */
-  lastSavedAt: Date | null
+  lastSavedAt: Date | null;
 
   /**
    * Whether a save operation is currently in progress
    */
-  isSaving: boolean
+  isSaving: boolean;
 
   /**
    * Manually trigger a save operation
    */
-  triggerManualSave: () => Promise<void>
+  triggerManualSave: () => Promise<void>;
 }
 
 /**
@@ -64,13 +64,13 @@ export interface UseAutoSaveReturn {
  * ```
  */
 export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
-  const { onSave, interval = 30000, enabled = true } = options
+  const { onSave, interval = 30000, enabled = true } = options;
 
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const answersRef = useRef<Record<string, any>>({})
-  const timeSpentRef = useRef<number>(0)
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const answersRef = useRef<Record<string, any>>({});
+  const timeSpentRef = useRef<number>(0);
 
   /**
    * Save function that handles the actual save operation
@@ -78,27 +78,27 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
   const performSave = useCallback(async () => {
     if (isSaving) {
       // Already saving, skip this attempt
-      return
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
-      await onSave(answersRef.current, timeSpentRef.current)
-      setLastSavedAt(new Date())
+      await onSave(answersRef.current, timeSpentRef.current);
+      setLastSavedAt(new Date());
     } catch (error) {
-      console.error("Auto-save failed:", error)
+      console.error("Auto-save failed:", error);
       // Don't throw - let the app continue
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }, [isSaving, onSave])
+  }, [isSaving, onSave]);
 
   /**
    * Manual save trigger
    */
   const triggerManualSave = useCallback(async () => {
-    await performSave()
-  }, [performSave])
+    await performSave();
+  }, [performSave]);
 
   /**
    * Set up auto-save interval
@@ -107,31 +107,31 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
     if (!enabled) {
       // Clear interval if disabled
       if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-      return
+      return;
     }
 
     // Set up interval
     intervalRef.current = setInterval(() => {
-      performSave()
-    }, interval)
+      performSave();
+    }, interval);
 
     // Cleanup on unmount or when deps change
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-    }
-  }, [enabled, interval, performSave])
+    };
+  }, [enabled, interval, performSave]);
 
   return {
     lastSavedAt,
     isSaving,
     triggerManualSave,
-  }
+  };
 }
 
 /**
@@ -142,40 +142,40 @@ export function useAutoSaveWithData(
   answers: Record<string, any>,
   timeSpent: number,
   options: Omit<UseAutoSaveOptions, "onSave"> & {
-    onSave: (answers: Record<string, any>, timeSpent: number) => Promise<void>
+    onSave: (answers: Record<string, any>, timeSpent: number) => Promise<void>;
   },
 ): UseAutoSaveReturn {
-  const { onSave, interval = 30000, enabled = true } = options
+  const { onSave, interval = 30000, enabled = true } = options;
 
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * Save function that uses current answers and timeSpent from props
    */
   const performSave = useCallback(async () => {
     if (isSaving) {
-      return
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
-      await onSave(answers, timeSpent)
-      setLastSavedAt(new Date())
+      await onSave(answers, timeSpent);
+      setLastSavedAt(new Date());
     } catch (error) {
-      console.error("Auto-save failed:", error)
+      console.error("Auto-save failed:", error);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }, [answers, timeSpent, isSaving, onSave])
+  }, [answers, timeSpent, isSaving, onSave]);
 
   /**
    * Manual save trigger
    */
   const triggerManualSave = useCallback(async () => {
-    await performSave()
-  }, [performSave])
+    await performSave();
+  }, [performSave]);
 
   /**
    * Set up auto-save interval
@@ -183,27 +183,27 @@ export function useAutoSaveWithData(
   useEffect(() => {
     if (!enabled) {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-      return
+      return;
     }
 
     intervalRef.current = setInterval(() => {
-      performSave()
-    }, interval)
+      performSave();
+    }, interval);
 
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-    }
-  }, [enabled, interval, performSave])
+    };
+  }, [enabled, interval, performSave]);
 
   return {
     lastSavedAt,
     isSaving,
     triggerManualSave,
-  }
+  };
 }

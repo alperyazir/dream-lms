@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   Check,
   ChevronLeft,
@@ -13,21 +13,21 @@ import {
   Shield,
   Trash2,
   X,
-} from "lucide-react"
-import { useEffect, useState } from "react"
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   type SupervisorCreateAPI,
   type SupervisorPublic,
   SupervisorsService,
   type SupervisorUpdate,
   type UserPublic,
-} from "@/client"
-import { ConfirmDialog } from "@/components/Common/ConfirmDialog"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/client";
+import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -35,10 +35,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -46,9 +46,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import useCustomToast from "@/hooks/useCustomToast"
-import { generateUsername } from "@/utils/usernameGenerator"
+} from "@/components/ui/table";
+import useCustomToast from "@/hooks/useCustomToast";
+import { generateUsername } from "@/utils/usernameGenerator";
 
 export const Route = createFileRoute("/_layout/admin/supervisors")({
   component: () => (
@@ -56,67 +56,67 @@ export const Route = createFileRoute("/_layout/admin/supervisors")({
       <AdminSupervisors />
     </ErrorBoundary>
   ),
-})
+});
 
 function AdminSupervisors() {
-  const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
-  const isAdmin = currentUser?.role === "admin"
+  const queryClient = useQueryClient();
+  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"]);
+  const isAdmin = currentUser?.role === "admin";
 
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const PAGE_SIZE = 20
-  const [searchQuery, setSearchQuery] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const PAGE_SIZE = 20;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedSupervisor, setSelectedSupervisor] =
-    useState<SupervisorPublic | null>(null)
+    useState<SupervisorPublic | null>(null);
   const [supervisorToDelete, setSupervisorToDelete] = useState<{
-    id: string
-    userName: string
-  } | null>(null)
+    id: string;
+    userName: string;
+  } | null>(null);
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
-    useState(false)
+    useState(false);
   const [isPasswordResultDialogOpen, setIsPasswordResultDialogOpen] =
-    useState(false)
+    useState(false);
   const [supervisorToResetPassword, setSupervisorToResetPassword] = useState<{
-    id: string
-    userName: string
-  } | null>(null)
+    id: string;
+    userName: string;
+  } | null>(null);
   const [resetResult, setResetResult] = useState<{
-    passwordEmailed: boolean
-    temporaryPassword: string | null
-    message: string
-  } | null>(null)
-  const [passwordCopied, setPasswordCopied] = useState(false)
+    passwordEmailed: boolean;
+    temporaryPassword: string | null;
+    message: string;
+  } | null>(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
   const [newSupervisor, setNewSupervisor] = useState<SupervisorCreateAPI>({
     username: "",
     user_email: "",
     full_name: "",
-  })
+  });
   const [editSupervisor, setEditSupervisor] = useState<SupervisorUpdate>({
     full_name: "",
     email: "",
     username: "",
     is_active: true,
-  })
+  });
 
   // Debounce search for server-side filtering
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery)
-      setCurrentPage(1)
-      setSelectedIds(new Set())
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+      setSelectedIds(new Set());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch supervisors from API (server-side pagination)
-  const skip = (currentPage - 1) * PAGE_SIZE
+  const skip = (currentPage - 1) * PAGE_SIZE;
   const {
     data: supervisorsResponse,
     isLoading,
@@ -129,44 +129,46 @@ function AdminSupervisors() {
         limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
       }),
-  })
-  const supervisors = supervisorsResponse?.items ?? []
-  const totalSupervisors = supervisorsResponse?.total ?? 0
-  const totalPages = Math.ceil(totalSupervisors / PAGE_SIZE)
+  });
+  const supervisors = supervisorsResponse?.items ?? [];
+  const totalSupervisors = supervisorsResponse?.total ?? 0;
+  const totalPages = Math.ceil(totalSupervisors / PAGE_SIZE);
 
   // Create supervisor mutation (Admin only)
   const createSupervisorMutation = useMutation({
     mutationFn: (data: SupervisorCreateAPI) =>
       SupervisorsService.createSupervisor({ requestBody: data }),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["supervisors"] })
-      setIsAddDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["supervisors"] });
+      setIsAddDialogOpen(false);
       setNewSupervisor({
         username: "",
         user_email: "",
         full_name: "",
-      })
+      });
 
       if (response.password_emailed) {
-        showSuccessToast("Supervisor created. Password sent to their email.")
+        showSuccessToast("Supervisor created. Password sent to their email.");
       } else if (response.temporary_password) {
         // Show one-time password dialog
         setResetResult({
           passwordEmailed: false,
           temporaryPassword: response.temporary_password,
           message: "Supervisor created successfully",
-        })
-        setIsPasswordResultDialogOpen(true)
+        });
+        setIsPasswordResultDialogOpen(true);
       } else {
-        showSuccessToast(response.message || "Supervisor created successfully!")
+        showSuccessToast(
+          response.message || "Supervisor created successfully!",
+        );
       }
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to create supervisor. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Update supervisor mutation (Admin only)
   const updateSupervisorMutation = useMutation({
@@ -174,39 +176,39 @@ function AdminSupervisors() {
       supervisorId,
       data,
     }: {
-      supervisorId: string
-      data: SupervisorUpdate
+      supervisorId: string;
+      data: SupervisorUpdate;
     }) =>
       SupervisorsService.updateSupervisor({ supervisorId, requestBody: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supervisors"] })
-      setIsEditDialogOpen(false)
-      setSelectedSupervisor(null)
-      showSuccessToast("Supervisor updated successfully!")
+      queryClient.invalidateQueries({ queryKey: ["supervisors"] });
+      setIsEditDialogOpen(false);
+      setSelectedSupervisor(null);
+      showSuccessToast("Supervisor updated successfully!");
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to update supervisor. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Delete supervisor mutation (Admin only)
   const deleteSupervisorMutation = useMutation({
     mutationFn: (supervisorId: string) =>
       SupervisorsService.deleteSupervisor({ supervisorId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supervisors"] })
-      setIsDeleteDialogOpen(false)
-      setSupervisorToDelete(null)
-      showSuccessToast("Supervisor deleted successfully!")
+      queryClient.invalidateQueries({ queryKey: ["supervisors"] });
+      setIsDeleteDialogOpen(false);
+      setSupervisorToDelete(null);
+      showSuccessToast("Supervisor deleted successfully!");
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to delete supervisor. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Reset password mutation (Admin only)
   const resetPasswordMutation = useMutation({
@@ -217,17 +219,17 @@ function AdminSupervisors() {
         passwordEmailed: response.password_emailed,
         temporaryPassword: response.temporary_password ?? null,
         message: response.message,
-      })
-      setIsResetPasswordDialogOpen(false)
-      setIsPasswordResultDialogOpen(true)
-      queryClient.invalidateQueries({ queryKey: ["supervisors"] })
+      });
+      setIsResetPasswordDialogOpen(false);
+      setIsPasswordResultDialogOpen(true);
+      queryClient.invalidateQueries({ queryKey: ["supervisors"] });
     },
     onError: (error: any) => {
       showErrorToast(
         error.body?.detail || "Failed to reset password. Please try again.",
-      )
+      );
     },
-  })
+  });
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
@@ -238,125 +240,127 @@ function AdminSupervisors() {
         ),
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supervisors"] })
-      setSelectedIds(new Set())
-      setIsBulkDeleteDialogOpen(false)
-      showSuccessToast(`Successfully deleted ${selectedIds.size} supervisor(s)`)
+      queryClient.invalidateQueries({ queryKey: ["supervisors"] });
+      setSelectedIds(new Set());
+      setIsBulkDeleteDialogOpen(false);
+      showSuccessToast(
+        `Successfully deleted ${selectedIds.size} supervisor(s)`,
+      );
     },
     onError: () => {
-      showErrorToast("Failed to delete some supervisors. Please try again.")
+      showErrorToast("Failed to delete some supervisors. Please try again.");
     },
-  })
+  });
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(supervisors.map((s) => s.id)))
+      setSelectedIds(new Set(supervisors.map((s) => s.id)));
     } else {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     }
-  }
+  };
 
   const handleSelect = (id: string, checked: boolean) => {
-    const newSelected = new Set(selectedIds)
+    const newSelected = new Set(selectedIds);
     if (checked) {
-      newSelected.add(id)
+      newSelected.add(id);
     } else {
-      newSelected.delete(id)
+      newSelected.delete(id);
     }
-    setSelectedIds(newSelected)
-  }
+    setSelectedIds(newSelected);
+  };
 
   const handleBulkDelete = () => {
     if (selectedIds.size > 0) {
-      setIsBulkDeleteDialogOpen(true)
+      setIsBulkDeleteDialogOpen(true);
     }
-  }
+  };
 
   const confirmBulkDelete = () => {
-    bulkDeleteMutation.mutate(Array.from(selectedIds))
-  }
+    bulkDeleteMutation.mutate(Array.from(selectedIds));
+  };
 
   const handleAddSupervisor = () => {
     if (!newSupervisor.username || !newSupervisor.full_name) {
       showErrorToast(
         "Please fill in all required fields (Username and Full Name)",
-      )
-      return
+      );
+      return;
     }
 
     // Validate username format
     if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(newSupervisor.username)) {
       showErrorToast(
         "Username must be 3-50 characters, alphanumeric, underscore, hyphen, or dot",
-      )
-      return
+      );
+      return;
     }
 
-    createSupervisorMutation.mutate(newSupervisor)
-  }
+    createSupervisorMutation.mutate(newSupervisor);
+  };
 
   const handleEditSupervisor = (supervisor: SupervisorPublic) => {
-    setSelectedSupervisor(supervisor)
+    setSelectedSupervisor(supervisor);
     setEditSupervisor({
       full_name: supervisor.full_name || "",
       email: supervisor.email || "",
       username: supervisor.username || "",
       is_active: supervisor.is_active,
-    })
-    setIsEditDialogOpen(true)
-  }
+    });
+    setIsEditDialogOpen(true);
+  };
 
   const handleUpdateSupervisor = () => {
-    if (!selectedSupervisor) return
+    if (!selectedSupervisor) return;
     if (!editSupervisor.full_name || !editSupervisor.username) {
-      showErrorToast("Please fill in all required fields")
-      return
+      showErrorToast("Please fill in all required fields");
+      return;
     }
     updateSupervisorMutation.mutate({
       supervisorId: selectedSupervisor.id,
       data: editSupervisor,
-    })
-  }
+    });
+  };
 
   const handleDeleteSupervisor = (supervisorId: string, userName: string) => {
-    setSupervisorToDelete({ id: supervisorId, userName })
-    setIsDeleteDialogOpen(true)
-  }
+    setSupervisorToDelete({ id: supervisorId, userName });
+    setIsDeleteDialogOpen(true);
+  };
 
   const confirmDeleteSupervisor = () => {
     if (supervisorToDelete) {
-      deleteSupervisorMutation.mutate(supervisorToDelete.id)
+      deleteSupervisorMutation.mutate(supervisorToDelete.id);
     }
-  }
+  };
 
   // Password reset handlers
   const handleResetPassword = (supervisorId: string, userName: string) => {
-    setSupervisorToResetPassword({ id: supervisorId, userName })
-    setIsResetPasswordDialogOpen(true)
-  }
+    setSupervisorToResetPassword({ id: supervisorId, userName });
+    setIsResetPasswordDialogOpen(true);
+  };
 
   const confirmResetPassword = () => {
     if (supervisorToResetPassword) {
-      resetPasswordMutation.mutate(supervisorToResetPassword.id)
+      resetPasswordMutation.mutate(supervisorToResetPassword.id);
     }
-  }
+  };
 
   const handleCopyPassword = async () => {
     if (resetResult?.temporaryPassword) {
-      await navigator.clipboard.writeText(resetResult.temporaryPassword)
-      setPasswordCopied(true)
-      showSuccessToast("Password copied to clipboard")
-      setTimeout(() => setPasswordCopied(false), 2000)
+      await navigator.clipboard.writeText(resetResult.temporaryPassword);
+      setPasswordCopied(true);
+      showSuccessToast("Password copied to clipboard");
+      setTimeout(() => setPasswordCopied(false), 2000);
     }
-  }
+  };
 
   const closePasswordResultDialog = () => {
-    setIsPasswordResultDialogOpen(false)
-    setResetResult(null)
-    setSupervisorToResetPassword(null)
-    setPasswordCopied(false)
-  }
+    setIsPasswordResultDialogOpen(false);
+    setResetResult(null);
+    setSupervisorToResetPassword(null);
+    setPasswordCopied(false);
+  };
 
   if (error) {
     return (
@@ -365,7 +369,7 @@ function AdminSupervisors() {
           Error loading supervisors. Please try again later.
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -463,9 +467,7 @@ function AdminSupervisors() {
                       <Checkbox
                         checked={
                           supervisors.length > 0 &&
-                          supervisors.every((s) =>
-                            selectedIds.has(s.id),
-                          )
+                          supervisors.every((s) => selectedIds.has(s.id))
                         }
                         onCheckedChange={handleSelectAll}
                         aria-label="Select all"
@@ -598,17 +600,16 @@ function AdminSupervisors() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {skip + 1} to{" "}
-            {Math.min(skip + PAGE_SIZE, totalSupervisors)} of{" "}
-            {totalSupervisors}
+            Showing {skip + 1} to {Math.min(skip + PAGE_SIZE, totalSupervisors)}{" "}
+            of {totalSupervisors}
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p - 1)
-                setSelectedIds(new Set())
+                setCurrentPage((p) => p - 1);
+                setSelectedIds(new Set());
               }}
               disabled={currentPage === 1}
             >
@@ -622,8 +623,8 @@ function AdminSupervisors() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => p + 1)
-                setSelectedIds(new Set())
+                setCurrentPage((p) => p + 1);
+                setSelectedIds(new Set());
               }}
               disabled={currentPage === totalPages}
             >
@@ -657,13 +658,13 @@ function AdminSupervisors() {
                 placeholder="e.g., John Doe"
                 value={newSupervisor.full_name}
                 onChange={(e) => {
-                  const fullName = e.target.value
-                  const generatedUsername = generateUsername(fullName)
+                  const fullName = e.target.value;
+                  const generatedUsername = generateUsername(fullName);
                   setNewSupervisor({
                     ...newSupervisor,
                     full_name: fullName,
                     username: generatedUsername,
-                  })
+                  });
                 }}
               />
             </div>
@@ -921,5 +922,5 @@ function AdminSupervisors() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

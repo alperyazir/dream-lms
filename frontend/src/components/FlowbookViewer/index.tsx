@@ -1,12 +1,12 @@
-import { lazy, Suspense } from "react"
-import type { FlowbookViewerProps } from "@/types/flowbook"
+import { lazy, Suspense } from "react";
+import type { FlowbookViewerProps } from "@/types/flowbook";
 
 // Lazy load the FlowbookViewer for code splitting
 const LazyFlowbookViewer = lazy(() =>
   import("./FlowbookViewer").then((module) => ({
     default: module.FlowbookViewer,
   })),
-)
+);
 
 // Loading fallback component
 function FlowbookViewerLoading() {
@@ -17,7 +17,7 @@ function FlowbookViewerLoading() {
         <span className="text-sm text-slate-400">Loading viewer...</span>
       </div>
     </div>
-  )
+  );
 }
 
 // Wrapped component with Suspense
@@ -26,7 +26,7 @@ export function FlowbookViewer(props: FlowbookViewerProps) {
     <Suspense fallback={<FlowbookViewerLoading />}>
       <LazyFlowbookViewer {...props} />
     </Suspense>
-  )
+  );
 }
 
 // Re-export types
@@ -39,11 +39,11 @@ export type {
   Module,
   Page,
   VideoReference,
-} from "@/types/flowbook"
+} from "@/types/flowbook";
 
 // Re-export stores for advanced usage
 export {
   useFlowbookAudioStore,
   useFlowbookBookStore,
   useFlowbookUIStore,
-} from "./stores"
+} from "./stores";

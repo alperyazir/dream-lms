@@ -1,6 +1,6 @@
 """Tests for Edge TTS provider implementation."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -227,7 +227,7 @@ class TestGenerateAudio:
         """Test audio generation for Turkish."""
         provider = EdgeTTSProvider()
 
-        result = await provider.generate_audio(
+        await provider.generate_audio(
             "Merhaba",
             AudioGenerationOptions(language="tr"),
         )
@@ -242,7 +242,7 @@ class TestGenerateAudio:
         """Test audio generation with specific voice."""
         provider = EdgeTTSProvider()
 
-        result = await provider.generate_audio(
+        await provider.generate_audio(
             "Test",
             AudioGenerationOptions(
                 language="en-US",
@@ -312,7 +312,9 @@ class TestGenerateAudio:
             provider = EdgeTTSProvider()
 
             with pytest.raises(TTSAudioGenerationError) as exc_info:
-                await provider.generate_audio("Test", AudioGenerationOptions(language="en"))
+                await provider.generate_audio(
+                    "Test", AudioGenerationOptions(language="en")
+                )
 
             assert "empty" in str(exc_info.value).lower()
 
@@ -325,7 +327,9 @@ class TestGenerateAudio:
             provider = EdgeTTSProvider()
 
             with pytest.raises(TTSConnectionError):
-                await provider.generate_audio("Test", AudioGenerationOptions(language="en"))
+                await provider.generate_audio(
+                    "Test", AudioGenerationOptions(language="en")
+                )
 
 
 class TestGenerateAudioBatch:
@@ -412,9 +416,15 @@ class TestGenerateAudioBatch:
             provider = EdgeTTSProvider()
 
             items = [
-                BatchAudioItem(text="One", options=AudioGenerationOptions(language="en")),
-                BatchAudioItem(text="Two", options=AudioGenerationOptions(language="en")),
-                BatchAudioItem(text="Three", options=AudioGenerationOptions(language="en")),
+                BatchAudioItem(
+                    text="One", options=AudioGenerationOptions(language="en")
+                ),
+                BatchAudioItem(
+                    text="Two", options=AudioGenerationOptions(language="en")
+                ),
+                BatchAudioItem(
+                    text="Three", options=AudioGenerationOptions(language="en")
+                ),
             ]
 
             result = await provider.generate_audio_batch(items)

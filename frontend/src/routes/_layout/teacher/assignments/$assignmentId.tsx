@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -13,8 +13,8 @@ import {
   Play,
   Users,
   XCircle,
-} from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
+} from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -24,31 +24,31 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
-import { AIQuizResults } from "@/components/ActivityPlayers/AIQuizResults"
-import { ReadingComprehensionResults } from "@/components/ActivityPlayers/ReadingComprehensionResults"
-import { SentenceBuilderResults } from "@/components/ActivityPlayers/SentenceBuilderResults"
-import { SpeakingOpenResponseResults } from "@/components/ActivityPlayers/SpeakingOpenResponseResults"
-import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQuizResults"
-import { WordBuilderResults } from "@/components/ActivityPlayers/WordBuilderResults"
-import { WritingFreeResponseResults } from "@/components/ActivityPlayers/WritingFreeResponseResults"
-import { MultiActivityAnalyticsTable } from "@/components/analytics/MultiActivityAnalyticsTable"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { FeedbackModal } from "@/components/feedback"
-import { GradingPanel } from "@/components/grading/GradingPanel"
-import { InlineFeedback } from "@/components/grading/InlineFeedback"
-import { TestModePlayer } from "@/components/preview"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "recharts";
+import { AIQuizResults } from "@/components/ActivityPlayers/AIQuizResults";
+import { ReadingComprehensionResults } from "@/components/ActivityPlayers/ReadingComprehensionResults";
+import { SentenceBuilderResults } from "@/components/ActivityPlayers/SentenceBuilderResults";
+import { SpeakingOpenResponseResults } from "@/components/ActivityPlayers/SpeakingOpenResponseResults";
+import { VocabularyQuizResults } from "@/components/ActivityPlayers/VocabularyQuizResults";
+import { WordBuilderResults } from "@/components/ActivityPlayers/WordBuilderResults";
+import { WritingFreeResponseResults } from "@/components/ActivityPlayers/WritingFreeResponseResults";
+import { MultiActivityAnalyticsTable } from "@/components/analytics/MultiActivityAnalyticsTable";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { FeedbackModal } from "@/components/feedback";
+import { GradingPanel } from "@/components/grading/GradingPanel";
+import { InlineFeedback } from "@/components/grading/InlineFeedback";
+import { TestModePlayer } from "@/components/preview";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -56,14 +56,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useAssignmentAnalytics } from "@/hooks/useAssignmentAnalytics"
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAssignmentAnalytics } from "@/hooks/useAssignmentAnalytics";
 import {
   useAssignmentResults,
   useStudentAnswers,
-} from "@/hooks/useAssignmentResults"
-import { useQuickAssignmentTest } from "@/hooks/usePreviewMode"
+} from "@/hooks/useAssignmentResults";
+import { useQuickAssignmentTest } from "@/hooks/usePreviewMode";
 import {
   parseAIQuizResult,
   parseFreeResponseResult,
@@ -71,13 +71,13 @@ import {
   parseSentenceBuilderResult,
   parseVocabularyQuizResult,
   parseWordBuilderResult,
-} from "@/lib/resultParsers"
+} from "@/lib/resultParsers";
 import type {
   ActivityTypeAnalysis,
   MostMissedQuestion,
   QuestionAnalysis,
   StudentResultItem,
-} from "@/types/analytics"
+} from "@/types/analytics";
 
 export const Route = createFileRoute(
   "/_layout/teacher/assignments/$assignmentId",
@@ -86,21 +86,22 @@ export const Route = createFileRoute(
   validateSearch: (search: Record<string, unknown>) => ({
     gradeStudentId: (search.gradeStudentId as string) || undefined,
     tab: (search.tab as string) || undefined,
-    openGrade: search.openGrade === true || search.openGrade === "true" || undefined,
+    openGrade:
+      search.openGrade === true || search.openGrade === "true" || undefined,
   }),
-})
+});
 
 function AssignmentDetailPage() {
   return (
     <ErrorBoundary>
       <AssignmentDetailContent />
     </ErrorBoundary>
-  )
+  );
 }
 
-type StudentStatus = "all" | "not_started" | "in_progress" | "completed"
-type SortBy = "name" | "score" | "time" | "completion"
-type SortDirection = "asc" | "desc"
+type StudentStatus = "all" | "not_started" | "in_progress" | "completed";
+type SortBy = "name" | "score" | "time" | "completion";
+type SortDirection = "asc" | "desc";
 
 // Colors for heatmap visualization
 const HEATMAP_COLORS = {
@@ -109,29 +110,29 @@ const HEATMAP_COLORS = {
   fair: "#EAB308", // Yellow for 40-59%
   poor: "#F97316", // Orange for 20-39%
   veryPoor: "#EF4444", // Red for 0-19%
-}
+};
 
 function getScoreColor(percentage: number): string {
-  if (percentage >= 80) return HEATMAP_COLORS.excellent
-  if (percentage >= 60) return HEATMAP_COLORS.good
-  if (percentage >= 40) return HEATMAP_COLORS.fair
-  if (percentage >= 20) return HEATMAP_COLORS.poor
-  return HEATMAP_COLORS.veryPoor
+  if (percentage >= 80) return HEATMAP_COLORS.excellent;
+  if (percentage >= 60) return HEATMAP_COLORS.good;
+  if (percentage >= 40) return HEATMAP_COLORS.fair;
+  if (percentage >= 20) return HEATMAP_COLORS.poor;
+  return HEATMAP_COLORS.veryPoor;
 }
 
 function CompletionOverviewCard({
   overview,
 }: {
   overview: {
-    completed: number
-    in_progress: number
-    not_started: number
-    past_due: number
-    total: number
-  }
+    completed: number;
+    in_progress: number;
+    not_started: number;
+    past_due: number;
+    total: number;
+  };
 }) {
   const completionPercent =
-    overview.total > 0 ? (overview.completed / overview.total) * 100 : 0
+    overview.total > 0 ? (overview.completed / overview.total) * 100 : 0;
 
   return (
     <Card>
@@ -181,18 +182,18 @@ function CompletionOverviewCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function ScoreStatisticsCard({
   stats,
 }: {
   stats: {
-    avg_score: number
-    median_score: number
-    highest_score: number
-    lowest_score: number
-  } | null
+    avg_score: number;
+    median_score: number;
+    highest_score: number;
+    lowest_score: number;
+  } | null;
 }) {
   if (!stats) {
     return (
@@ -209,7 +210,7 @@ function ScoreStatisticsCard({
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -243,16 +244,16 @@ function ScoreStatisticsCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function MostMissedQuestionsCard({
   questions,
 }: {
-  questions: MostMissedQuestion[] | null | undefined
+  questions: MostMissedQuestion[] | null | undefined;
 }) {
   if (!questions || questions.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -298,16 +299,16 @@ function MostMissedQuestionsCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function QuestionAnalysisChart({
   questions,
 }: {
-  questions: QuestionAnalysis[] | null | undefined
+  questions: QuestionAnalysis[] | null | undefined;
 }) {
   if (!questions || questions.length === 0) {
-    return null
+    return null;
   }
 
   const chartData = questions.map((q) => ({
@@ -318,7 +319,7 @@ function QuestionAnalysisChart({
     fullName: q.question_text,
     correctPercent: q.correct_percentage,
     total: q.total_responses,
-  }))
+  }));
 
   return (
     <Card>
@@ -357,13 +358,13 @@ function QuestionAnalysisChart({
         </ResponsiveContainer>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function ActivityTypeAnalysisSection({
   analysis,
 }: {
-  analysis: ActivityTypeAnalysis | null
+  analysis: ActivityTypeAnalysis | null;
 }) {
   if (!analysis) {
     return (
@@ -377,7 +378,7 @@ function ActivityTypeAnalysisSection({
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -475,7 +476,7 @@ function ActivityTypeAnalysisSection({
         </Card>
       )}
     </div>
-  )
+  );
 }
 
 function StudentResultsTable({
@@ -486,86 +487,88 @@ function StudentResultsTable({
   initialGradeStudentId,
   openGrade,
 }: {
-  students: StudentResultItem[]
-  assignmentId: string
-  assignmentName: string
-  activityType: string
-  initialGradeStudentId?: string
-  openGrade?: boolean
+  students: StudentResultItem[];
+  assignmentId: string;
+  assignmentName: string;
+  activityType: string;
+  initialGradeStudentId?: string;
+  openGrade?: boolean;
 }) {
   // If openGrade is true but no specific student, pick the first completed student with no score
-  const autoGradeStudentId = initialGradeStudentId ??
+  const autoGradeStudentId =
+    initialGradeStudentId ??
     (openGrade
-      ? students.find((s) => s.status === "completed" && s.score == null)?.student_id
-      : undefined)
+      ? students.find((s) => s.status === "completed" && s.score == null)
+          ?.student_id
+      : undefined);
 
-  const [statusFilter, setStatusFilter] = useState<StudentStatus>("all")
-  const [sortBy, setSortBy] = useState<SortBy>("name")
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [statusFilter, setStatusFilter] = useState<StudentStatus>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
     autoGradeStudentId ?? null,
-  )
+  );
   const [feedbackStudent, setFeedbackStudent] = useState<{
-    id: string
-    name: string
-    score: number | null
-  } | null>(null)
+    id: string;
+    name: string;
+    score: number | null;
+  } | null>(null);
 
   const filteredAndSortedStudents = useMemo(() => {
     let filtered = students.filter((student) => {
-      if (statusFilter === "all") return true
-      return student.status === statusFilter
-    })
+      if (statusFilter === "all") return true;
+      return student.status === statusFilter;
+    });
 
     filtered = filtered.sort((a, b) => {
-      let comparison = 0
+      let comparison = 0;
       switch (sortBy) {
         case "name":
-          comparison = a.name.localeCompare(b.name)
-          break
+          comparison = a.name.localeCompare(b.name);
+          break;
         case "score":
-          comparison = (a.score || 0) - (b.score || 0)
-          break
+          comparison = (a.score || 0) - (b.score || 0);
+          break;
         case "time":
-          comparison = a.time_spent_minutes - b.time_spent_minutes
-          break
+          comparison = a.time_spent_minutes - b.time_spent_minutes;
+          break;
         case "completion":
-          if (!a.completed_at) return 1
-          if (!b.completed_at) return -1
+          if (!a.completed_at) return 1;
+          if (!b.completed_at) return -1;
           comparison =
             new Date(a.completed_at).getTime() -
-            new Date(b.completed_at).getTime()
-          break
+            new Date(b.completed_at).getTime();
+          break;
       }
-      return sortDirection === "asc" ? comparison : -comparison
-    })
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
 
-    return filtered
-  }, [students, statusFilter, sortBy, sortDirection])
+    return filtered;
+  }, [students, statusFilter, sortBy, sortDirection]);
 
   const handleSort = (newSortBy: SortBy) => {
     if (sortBy === newSortBy) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      setSortBy(newSortBy)
-      setSortDirection("asc")
+      setSortBy(newSortBy);
+      setSortDirection("asc");
     }
-  }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>
+        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
       case "in_progress":
         return (
           <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>
-        )
+        );
       case "not_started":
-        return <Badge className="bg-blue-100 text-blue-800">Not Started</Badge>
+        return <Badge className="bg-blue-100 text-blue-800">Not Started</Badge>;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <>
@@ -685,12 +688,12 @@ function StudentResultsTable({
                           const totalSeconds =
                             student.time_spent_seconds ||
                             student.time_spent_minutes * 60 ||
-                            0
+                            0;
 
                           if (student.status !== "completed") {
                             return (
                               <span className="text-muted-foreground">—</span>
-                            )
+                            );
                           }
 
                           if (totalSeconds === 0) {
@@ -698,21 +701,21 @@ function StudentResultsTable({
                               <span className="text-muted-foreground">
                                 {"< 1 sec"}
                               </span>
-                            )
+                            );
                           }
 
-                          const minutes = Math.floor(totalSeconds / 60)
-                          const seconds = totalSeconds % 60
+                          const minutes = Math.floor(totalSeconds / 60);
+                          const seconds = totalSeconds % 60;
 
                           if (minutes === 0) {
-                            return <span>{seconds} sec</span>
+                            return <span>{seconds} sec</span>;
                           }
 
                           return (
                             <span>
                               {minutes} min {seconds} sec
                             </span>
-                          )
+                          );
                         })()}
                       </TableCell>
                       <TableCell>
@@ -742,13 +745,9 @@ function StudentResultsTable({
                             size="sm"
                             className="text-teal-600"
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              console.log(
-                                "[ViewDetails] Button clicked for student:",
-                                student.student_id,
-                              )
-                              setSelectedStudentId(student.student_id)
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedStudentId(student.student_id);
                             }}
                             disabled={student.status === "not_started"}
                           >
@@ -777,13 +776,13 @@ function StudentResultsTable({
                               student.has_feedback ? "text-green-600" : ""
                             }
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
+                              e.preventDefault();
+                              e.stopPropagation();
                               setFeedbackStudent({
                                 id: student.student_id,
                                 name: student.name,
                                 score: student.score,
-                              })
+                              });
                             }}
                             disabled={student.status === "not_started"}
                           >
@@ -822,7 +821,7 @@ function StudentResultsTable({
         score={feedbackStudent?.score}
       />
     </>
-  )
+  );
 }
 
 function StudentAnswersDialog({
@@ -831,18 +830,18 @@ function StudentAnswersDialog({
   activityType,
   onClose,
 }: {
-  assignmentId: string
-  studentId: string | null
-  activityType: string
-  onClose: () => void
+  assignmentId: string;
+  studentId: string | null;
+  activityType: string;
+  onClose: () => void;
 }) {
   const { answers, isLoading } = useStudentAnswers({
     assignmentId,
     studentId: studentId || "",
-  })
+  });
 
   if (!studentId) {
-    return null
+    return null;
   }
 
   return (
@@ -887,20 +886,20 @@ function StudentAnswersDialog({
                     const totalSeconds =
                       answers.time_spent_seconds ||
                       answers.time_spent_minutes * 60 ||
-                      0
+                      0;
 
                     if (totalSeconds === 0) {
-                      return "< 1 sec"
+                      return "< 1 sec";
                     }
 
-                    const minutes = Math.floor(totalSeconds / 60)
-                    const seconds = totalSeconds % 60
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
 
                     if (minutes === 0) {
-                      return `${seconds} sec`
+                      return `${seconds} sec`;
                     }
 
-                    return `${minutes} min ${seconds} sec`
+                    return `${minutes} min ${seconds} sec`;
                   })()}
                 </p>
               </div>
@@ -920,8 +919,8 @@ function StudentAnswersDialog({
                 {(() => {
                   // Try to parse and show detailed results for supported activity types
                   const responseActivityType =
-                    answers.activity_type || activityType
-                  const configJson = answers.config_json
+                    answers.activity_type || activityType;
+                  const configJson = answers.config_json;
 
                   if (configJson && answers.answers_json) {
                     // AI Quiz
@@ -930,11 +929,11 @@ function StudentAnswersDialog({
                         configJson,
                         answers.answers_json,
                         answers.score || 0,
-                      )
+                      );
                       if (parsedResult) {
                         return (
                           <AIQuizResults result={parsedResult} hideSummary />
-                        )
+                        );
                       }
                     }
 
@@ -944,14 +943,14 @@ function StudentAnswersDialog({
                         configJson,
                         answers.answers_json,
                         answers.score || 0,
-                      )
+                      );
                       if (parsedResult) {
                         return (
                           <VocabularyQuizResults
                             result={parsedResult}
                             hideSummary
                           />
-                        )
+                        );
                       }
                     }
 
@@ -961,14 +960,14 @@ function StudentAnswersDialog({
                         configJson,
                         answers.answers_json,
                         answers.score || 0,
-                      )
+                      );
                       if (parsedResult) {
                         return (
                           <ReadingComprehensionResults
                             result={parsedResult}
                             hideSummary
                           />
-                        )
+                        );
                       }
                     }
 
@@ -978,14 +977,14 @@ function StudentAnswersDialog({
                         configJson,
                         answers.answers_json,
                         answers.score || 0,
-                      )
+                      );
                       if (parsedResult) {
                         return (
                           <SentenceBuilderResults
                             result={parsedResult}
                             hideSummary
                           />
-                        )
+                        );
                       }
                     }
 
@@ -995,14 +994,14 @@ function StudentAnswersDialog({
                         configJson,
                         answers.answers_json,
                         answers.score || 0,
-                      )
+                      );
                       if (parsedResult) {
                         return (
                           <WordBuilderResults
                             result={parsedResult}
                             hideSummary
                           />
-                        )
+                        );
                       }
                     }
 
@@ -1011,7 +1010,7 @@ function StudentAnswersDialog({
                       const parsedResult = parseFreeResponseResult(
                         configJson,
                         answers.answers_json,
-                      )
+                      );
                       if (parsedResult) {
                         return (
                           <WritingFreeResponseResults
@@ -1019,7 +1018,7 @@ function StudentAnswersDialog({
                             hideSummary
                             score={answers.score}
                           />
-                        )
+                        );
                       }
                     }
 
@@ -1028,7 +1027,7 @@ function StudentAnswersDialog({
                       const parsedResult = parseFreeResponseResult(
                         configJson,
                         answers.answers_json,
-                      )
+                      );
                       if (parsedResult) {
                         return (
                           <SpeakingOpenResponseResults
@@ -1036,7 +1035,7 @@ function StudentAnswersDialog({
                             hideSummary
                             score={answers.score}
                           />
-                        )
+                        );
                       }
                     }
                   }
@@ -1048,7 +1047,7 @@ function StudentAnswersDialog({
                         {JSON.stringify(answers.answers_json, null, 2)}
                       </pre>
                     </div>
-                  )
+                  );
                 })()}
               </div>
             )}
@@ -1056,7 +1055,7 @@ function StudentAnswersDialog({
             {/* Teacher Grading Panel for writing/speaking activities */}
             {(() => {
               const responseActivityType =
-                answers.activity_type || activityType
+                answers.activity_type || activityType;
               if (
                 responseActivityType === "writing_free_response" ||
                 responseActivityType === "speaking_open_response"
@@ -1074,9 +1073,9 @@ function StudentAnswersDialog({
                       studentId={studentId!}
                     />
                   </>
-                )
+                );
               }
-              return null
+              return null;
             })()}
           </div>
         ) : (
@@ -1086,24 +1085,28 @@ function StudentAnswersDialog({
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 function AssignmentDetailContent() {
-  const { assignmentId } = Route.useParams()
-  const { gradeStudentId, tab, openGrade } = Route.useSearch()
+  const { assignmentId } = Route.useParams();
+  const { gradeStudentId, tab, openGrade } = Route.useSearch();
   const [activeTab, setActiveTab] = useState(
-    gradeStudentId || openGrade ? "students" : tab === "students" ? "students" : "results"
-  )
+    gradeStudentId || openGrade
+      ? "students"
+      : tab === "students"
+        ? "students"
+        : "results",
+  );
 
   // Fetch assignment results from API
   const { results, isLoading, error } = useAssignmentResults({
     assignmentId,
-  })
+  });
 
   // Fetch multi-activity analytics to check if this is a multi-activity assignment
-  const { data: analytics } = useAssignmentAnalytics(assignmentId)
-  const isMultiActivity = analytics && analytics.activities.length > 1
+  const { data: analytics } = useAssignmentAnalytics(assignmentId);
+  const isMultiActivity = analytics && analytics.activities.length > 1;
 
   // Story 9.7: Test mode functionality
   const {
@@ -1114,12 +1117,12 @@ function AssignmentDetailContent() {
     startTestMode,
     exitTestMode,
     retryTestMode,
-  } = useQuickAssignmentTest()
+  } = useQuickAssignmentTest();
 
   // Handle test mode start
   const handleStartTestMode = useCallback(() => {
-    startTestMode(assignmentId)
-  }, [assignmentId, startTestMode])
+    startTestMode(assignmentId);
+  }, [assignmentId, startTestMode]);
 
   // Loading state
   if (isLoading) {
@@ -1132,7 +1135,7 @@ function AssignmentDetailContent() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   // Error state
@@ -1154,7 +1157,7 @@ function AssignmentDetailContent() {
           </p>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -1295,5 +1298,5 @@ function AssignmentDetailContent() {
         )}
       </Tabs>
     </div>
-  )
+  );
 }

@@ -5,36 +5,36 @@
  */
 
 export interface WordPlacement {
-  word: string
-  startRow: number
-  startCol: number
-  direction: "horizontal" | "vertical" | "diagonal-down" | "diagonal-up"
-  cells: Array<{ row: number; col: number }>
+  word: string;
+  startRow: number;
+  startCol: number;
+  direction: "horizontal" | "vertical" | "diagonal-down" | "diagonal-up";
+  cells: Array<{ row: number; col: number }>;
 }
 
 export interface WordSearchGrid {
-  grid: string[][]
-  placements: WordPlacement[]
-  size: number
+  grid: string[][];
+  placements: WordPlacement[];
+  size: number;
 }
 
 /**
  * Simple seeded random number generator for deterministic grids
  */
 class SeededRandom {
-  private seed: number
+  private seed: number;
 
   constructor(seed: number) {
-    this.seed = seed
+    this.seed = seed;
   }
 
   next(): number {
-    this.seed = (this.seed * 9301 + 49297) % 233280
-    return this.seed / 233280
+    this.seed = (this.seed * 9301 + 49297) % 233280;
+    return this.seed / 233280;
   }
 
   nextInt(min: number, max: number): number {
-    return Math.floor(this.next() * (max - min + 1)) + min
+    return Math.floor(this.next() * (max - min + 1)) + min;
   }
 }
 
@@ -50,8 +50,8 @@ export function generateWordSearch(
   gridSize?: number,
 ): WordSearchGrid {
   // Convert seed to number
-  const numericSeed = typeof seed === "string" ? hashCode(seed) : seed
-  const rng = new SeededRandom(numericSeed)
+  const numericSeed = typeof seed === "string" ? hashCode(seed) : seed;
+  const rng = new SeededRandom(numericSeed);
 
   // Calculate grid size if not provided
   const size =
@@ -59,67 +59,67 @@ export function generateWordSearch(
     Math.max(
       12,
       Math.ceil(Math.sqrt(words.reduce((sum, w) => sum + w.length, 0)) * 1.5),
-    )
+    );
 
   // Initialize empty grid
   const grid: string[][] = Array(size)
     .fill(null)
-    .map(() => Array(size).fill(""))
+    .map(() => Array(size).fill(""));
 
-  const placements: WordPlacement[] = []
+  const placements: WordPlacement[] = [];
   const directions: WordPlacement["direction"][] = [
     "horizontal",
     "vertical",
     "diagonal-down",
     "diagonal-up",
-  ]
+  ];
 
   // Try to place each word
   for (const word of words) {
-    const upperWord = word.toUpperCase()
-    let placed = false
-    let attempts = 0
-    const maxAttempts = 100
+    const upperWord = word.toUpperCase();
+    let placed = false;
+    let attempts = 0;
+    const maxAttempts = 100;
 
     while (!placed && attempts < maxAttempts) {
-      attempts++
+      attempts++;
 
       // Random starting position and direction
-      const row = rng.nextInt(0, size - 1)
-      const col = rng.nextInt(0, size - 1)
-      const direction = directions[rng.nextInt(0, directions.length - 1)]
+      const row = rng.nextInt(0, size - 1);
+      const col = rng.nextInt(0, size - 1);
+      const direction = directions[rng.nextInt(0, directions.length - 1)];
 
       // Try to place word
       if (canPlaceWord(grid, upperWord, row, col, direction, size)) {
-        const cells = placeWord(grid, upperWord, row, col, direction)
+        const cells = placeWord(grid, upperWord, row, col, direction);
         placements.push({
           word: upperWord,
           startRow: row,
           startCol: col,
           direction,
           cells,
-        })
-        placed = true
+        });
+        placed = true;
       }
     }
 
     // If word couldn't be placed after max attempts, skip it
     if (!placed) {
-      console.warn(`Could not place word: ${word}`)
+      // intentionally empty
     }
   }
 
   // Fill empty cells with random letters
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   for (let row = 0; row < size; row++) {
     for (let col = 0; col < size; col++) {
       if (grid[row][col] === "") {
-        grid[row][col] = letters[rng.nextInt(0, letters.length - 1)]
+        grid[row][col] = letters[rng.nextInt(0, letters.length - 1)];
       }
     }
   }
 
-  return { grid, placements, size }
+  return { grid, placements, size };
 }
 
 /**
@@ -138,30 +138,30 @@ function canPlaceWord(
       ? 1
       : direction === "diagonal-up"
         ? -1
-        : 0
+        : 0;
   const colDelta =
     direction === "horizontal" ||
     direction === "diagonal-down" ||
     direction === "diagonal-up"
       ? 1
-      : 0
+      : 0;
 
   for (let i = 0; i < word.length; i++) {
-    const row = startRow + i * rowDelta
-    const col = startCol + i * colDelta
+    const row = startRow + i * rowDelta;
+    const col = startCol + i * colDelta;
 
     // Check bounds
     if (row < 0 || row >= size || col < 0 || col >= size) {
-      return false
+      return false;
     }
 
     // Check if cell is empty or has the same letter
     if (grid[row][col] !== "" && grid[row][col] !== word[i]) {
-      return false
+      return false;
     }
   }
 
-  return true
+  return true;
 }
 
 /**
@@ -179,35 +179,35 @@ function placeWord(
       ? 1
       : direction === "diagonal-up"
         ? -1
-        : 0
+        : 0;
   const colDelta =
     direction === "horizontal" ||
     direction === "diagonal-down" ||
     direction === "diagonal-up"
       ? 1
-      : 0
+      : 0;
 
-  const cells: Array<{ row: number; col: number }> = []
+  const cells: Array<{ row: number; col: number }> = [];
 
   for (let i = 0; i < word.length; i++) {
-    const row = startRow + i * rowDelta
-    const col = startCol + i * colDelta
-    grid[row][col] = word[i]
-    cells.push({ row, col })
+    const row = startRow + i * rowDelta;
+    const col = startCol + i * colDelta;
+    grid[row][col] = word[i];
+    cells.push({ row, col });
   }
 
-  return cells
+  return cells;
 }
 
 /**
  * Hash a string to a number (for seed generation)
  */
 function hashCode(str: string): number {
-  let hash = 0
+  let hash = 0;
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = (hash << 5) - hash + char
-    hash = hash & hash // Convert to 32bit integer
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
   }
-  return Math.abs(hash)
+  return Math.abs(hash);
 }

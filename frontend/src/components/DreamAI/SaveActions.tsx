@@ -6,10 +6,10 @@
  * - Create Assignment
  */
 
-import { useMutation } from "@tanstack/react-query"
-import { BookMarked, ClipboardList } from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useMutation } from "@tanstack/react-query";
+import { BookMarked, ClipboardList } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -17,25 +17,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/hooks/use-toast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/hooks/use-toast";
 
 import {
   type CreateAssignmentRequest,
   contentReviewApi,
   type SaveToLibraryRequest,
-} from "@/services/contentReviewApi"
+} from "@/services/contentReviewApi";
 
 export interface SaveActionsProps {
-  quizId: string
-  activityType: string
-  defaultTitle?: string
-  content?: Record<string, any> | null
-  onSaveSuccess?: () => void
-  onAssignmentSuccess?: (redirectUrl: string) => void
+  quizId: string;
+  activityType: string;
+  defaultTitle?: string;
+  content?: Record<string, any> | null;
+  onSaveSuccess?: () => void;
+  onAssignmentSuccess?: (redirectUrl: string) => void;
 }
 
 export function SaveActions({
@@ -46,13 +46,13 @@ export function SaveActions({
   onSaveSuccess,
   onAssignmentSuccess,
 }: SaveActionsProps) {
-  const [showSaveDialog, setShowSaveDialog] = useState(false)
-  const [showAssignmentDialog, setShowAssignmentDialog] = useState(false)
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
 
-  const [saveTitle, setSaveTitle] = useState(defaultTitle)
-  const [saveDescription, setSaveDescription] = useState("")
-  const [assignmentTitle, setAssignmentTitle] = useState(defaultTitle)
-  const [assignmentDescription, setAssignmentDescription] = useState("")
+  const [saveTitle, setSaveTitle] = useState(defaultTitle);
+  const [saveDescription, setSaveDescription] = useState("");
+  const [assignmentTitle, setAssignmentTitle] = useState(defaultTitle);
+  const [assignmentDescription, setAssignmentDescription] = useState("");
 
   // Save to library mutation
   const saveToLibraryMutation = useMutation({
@@ -62,11 +62,11 @@ export function SaveActions({
       toast({
         title: "Content saved!",
         description: "You can now reuse this content in assignments.",
-      })
-      setShowSaveDialog(false)
-      setSaveTitle("")
-      setSaveDescription("")
-      onSaveSuccess?.()
+      });
+      setShowSaveDialog(false);
+      setSaveTitle("");
+      setSaveDescription("");
+      onSaveSuccess?.();
     },
     onError: (error: any) => {
       toast({
@@ -74,9 +74,9 @@ export function SaveActions({
         description:
           error.response?.data?.detail || "Failed to save content to library",
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
   // Create assignment mutation
   const createAssignmentMutation = useMutation({
@@ -86,11 +86,11 @@ export function SaveActions({
       toast({
         title: "Assignment created!",
         description: "Redirecting to assignment wizard...",
-      })
-      setShowAssignmentDialog(false)
-      setAssignmentTitle("")
-      setAssignmentDescription("")
-      onAssignmentSuccess?.(data.redirect_url)
+      });
+      setShowAssignmentDialog(false);
+      setAssignmentTitle("");
+      setAssignmentDescription("");
+      onAssignmentSuccess?.(data.redirect_url);
     },
     onError: (error: any) => {
       toast({
@@ -98,9 +98,9 @@ export function SaveActions({
         description:
           error.response?.data?.detail || "Failed to create assignment",
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
   const handleSaveToLibrary = () => {
     if (!saveTitle.trim()) {
@@ -108,8 +108,8 @@ export function SaveActions({
         title: "Error",
         description: "Please enter a title",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     saveToLibraryMutation.mutate({
@@ -118,8 +118,8 @@ export function SaveActions({
       title: saveTitle,
       description: saveDescription || null,
       content: content || null,
-    })
-  }
+    });
+  };
 
   const handleCreateAssignment = () => {
     if (!assignmentTitle.trim()) {
@@ -127,8 +127,8 @@ export function SaveActions({
         title: "Error",
         description: "Please enter a title",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     createAssignmentMutation.mutate({
@@ -136,8 +136,8 @@ export function SaveActions({
       activity_type: activityType,
       title: assignmentTitle,
       description: assignmentDescription || null,
-    })
-  }
+    });
+  };
 
   return (
     <>
@@ -267,5 +267,5 @@ export function SaveActions({
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

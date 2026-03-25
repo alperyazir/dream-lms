@@ -1,5 +1,5 @@
-export { AnnotationCanvas } from "./AnnotationCanvas"
-export { AnnotationToolbar } from "./AnnotationToolbar"
-export { PieMenu } from "./PieMenu"
-export * from "./tools/penTool"
-export * from "./tools/highlightTool"
+export { AnnotationCanvas } from "./AnnotationCanvas";
+export { AnnotationToolbar } from "./AnnotationToolbar";
+export { PieMenu } from "./PieMenu";
+export * from "./tools/penTool";
+export * from "./tools/highlightTool";

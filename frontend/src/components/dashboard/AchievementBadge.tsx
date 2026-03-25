@@ -1,10 +1,10 @@
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface AchievementBadgeProps {
-  title: string
-  description: string
-  icon: string
-  earnedDate: string
+  title: string;
+  description: string;
+  icon: string;
+  earnedDate: string;
 }
 
 export function AchievementBadge({
@@ -14,9 +14,9 @@ export function AchievementBadge({
   earnedDate,
 }: AchievementBadgeProps) {
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-  }
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   return (
     <Card className="shadow-neuro border-teal-100 dark:border-teal-900 hover:shadow-neuro-lg hover:scale-105 transition-all overflow-hidden group">
@@ -35,5 +35,5 @@ export function AchievementBadge({
         </p>
       </CardContent>
     </Card>
-  )
+  );
 }

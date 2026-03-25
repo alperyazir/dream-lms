@@ -5,13 +5,13 @@
  * Displays summary statistics for student progress
  */
 
-import { CheckCircle2, Target } from "lucide-react"
-import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { StudentProgressStats } from "@/types/analytics"
+import { CheckCircle2, Target } from "lucide-react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { StudentProgressStats } from "@/types/analytics";
 
 export interface ProgressStatsCardProps {
-  stats: StudentProgressStats
+  stats: StudentProgressStats;
 }
 
 export const ProgressStatsCard = React.memo(
@@ -50,8 +50,8 @@ export const ProgressStatsCard = React.memo(
           </div>
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-ProgressStatsCard.displayName = "ProgressStatsCard"
+ProgressStatsCard.displayName = "ProgressStatsCard";

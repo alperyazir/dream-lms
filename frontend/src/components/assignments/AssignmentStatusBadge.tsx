@@ -1,10 +1,10 @@
-import { Badge } from "@/components/ui/badge"
-import type { AssignmentPublishStatus } from "@/types/assignment"
+import { Badge } from "@/components/ui/badge";
+import type { AssignmentPublishStatus } from "@/types/assignment";
 
 interface AssignmentStatusBadgeProps {
-  status: AssignmentPublishStatus
-  dueDate?: string | null
-  className?: string
+  status: AssignmentPublishStatus;
+  dueDate?: string | null;
+  className?: string;
 }
 
 export function AssignmentStatusBadge({
@@ -14,14 +14,14 @@ export function AssignmentStatusBadge({
 }: AssignmentStatusBadgeProps) {
   // Check if past due (only for published assignments)
   const isPastDue =
-    status === "published" && dueDate && new Date(dueDate) < new Date()
+    status === "published" && dueDate && new Date(dueDate) < new Date();
 
   if (isPastDue) {
     return (
       <Badge variant="destructive" className={className}>
         Past Due
       </Badge>
-    )
+    );
   }
 
   switch (status) {
@@ -33,7 +33,7 @@ export function AssignmentStatusBadge({
         >
           Draft
         </Badge>
-      )
+      );
     case "scheduled":
       return (
         <Badge
@@ -42,7 +42,7 @@ export function AssignmentStatusBadge({
         >
           Scheduled
         </Badge>
-      )
+      );
     case "published":
       return (
         <Badge
@@ -51,14 +51,14 @@ export function AssignmentStatusBadge({
         >
           Active
         </Badge>
-      )
+      );
     case "archived":
       return (
         <Badge variant="secondary" className={className}>
           Archived
         </Badge>
-      )
+      );
     default:
-      return null
+      return null;
   }
 }

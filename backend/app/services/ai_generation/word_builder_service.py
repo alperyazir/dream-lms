@@ -22,7 +22,10 @@ from app.schemas.word_builder import (
     WordResult,
 )
 from app.services.dcs_ai import DCSAIServiceClient
-from app.services.dcs_ai.exceptions import DCSAIDataNotFoundError, DCSAIDataNotReadyError
+from app.services.dcs_ai.exceptions import (
+    DCSAIDataNotFoundError,
+    DCSAIDataNotReadyError,
+)
 from app.services.tts import TTSManager
 
 logger = logging.getLogger(__name__)
@@ -35,8 +38,8 @@ MAX_WORD_LENGTH = 12
 # Scoring based on attempts
 POINTS_BY_ATTEMPTS = {
     1: 100,  # Perfect (1st try)
-    2: 70,   # 2nd try
-    3: 50,   # 3rd try
+    2: 70,  # 2nd try
+    3: 50,  # 3rd try
 }
 DEFAULT_POINTS = 30  # 4+ tries
 
@@ -185,22 +188,20 @@ class WordBuilderService:
             )
 
         # Fetch vocabulary
-        vocabulary = await self._fetch_vocabulary(
-            request.book_id, request.module_ids
-        )
+        vocabulary = await self._fetch_vocabulary(request.book_id, request.module_ids)
 
         # Filter by CEFR level if specified
         if request.cefr_levels:
-            vocabulary = [
-                w for w in vocabulary if w.level in request.cefr_levels
-            ]
+            vocabulary = [w for w in vocabulary if w.level in request.cefr_levels]
             logger.debug(
                 f"Filtered by CEFR levels {request.cefr_levels}: {len(vocabulary)} words"
             )
 
         # Filter for suitable word length
         vocabulary = self._filter_by_length(vocabulary)
-        logger.debug(f"Filtered by length ({MIN_WORD_LENGTH}-{MAX_WORD_LENGTH}): {len(vocabulary)} words")
+        logger.debug(
+            f"Filtered by length ({MIN_WORD_LENGTH}-{MAX_WORD_LENGTH}): {len(vocabulary)} words"
+        )
 
         # Prefer words with clear definitions
         vocabulary = self._filter_with_definitions(vocabulary)
@@ -232,9 +233,7 @@ class WordBuilderService:
             word_items.append(word_item)
 
         # Determine module IDs used
-        module_ids = request.module_ids or list(
-            set(w.module_id for w in selected_words)
-        )
+        module_ids = request.module_ids or list({w.module_id for w in selected_words})
 
         activity = WordBuilderActivity(
             activity_id=str(uuid4()),
@@ -304,8 +303,7 @@ class WordBuilderService:
             Filtered list with words 4-12 letters long.
         """
         return [
-            w for w in vocabulary
-            if MIN_WORD_LENGTH <= len(w.word) <= MAX_WORD_LENGTH
+            w for w in vocabulary if MIN_WORD_LENGTH <= len(w.word) <= MAX_WORD_LENGTH
         ]
 
     def _filter_with_definitions(
@@ -320,10 +318,7 @@ class WordBuilderService:
         Returns:
             Filtered list with words that have non-empty definitions.
         """
-        return [
-            w for w in vocabulary
-            if w.definition and len(w.definition.strip()) > 0
-        ]
+        return [w for w in vocabulary if w.definition and len(w.definition.strip()) > 0]
 
     async def _create_word_item(
         self,
@@ -397,6 +392,7 @@ class WordBuilderService:
 
                 # Return base64 data URL
                 import base64
+
                 audio_b64 = base64.b64encode(result.audio_data).decode("utf-8")
                 return f"data:audio/{result.format};base64,{audio_b64}"
 

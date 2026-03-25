@@ -13,10 +13,10 @@ import {
   PenLine,
   Puzzle,
   Type,
-} from "lucide-react"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
-import type { ActivityFormat } from "@/types/skill"
+} from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import type { ActivityFormat } from "@/types/skill";
 
 /** Map format slug to icon + description */
 const FORMAT_META: Record<
@@ -63,18 +63,18 @@ const FORMAT_META: Record<
     description: "Open-ended writing prompts",
     gradient: "from-emerald-500 to-teal-600",
   },
-}
+};
 
 const DEFAULT_META = {
   icon: ClipboardList,
   description: "Generate practice activities",
   gradient: "from-gray-500 to-gray-600",
-}
+};
 
 interface FormatSelectionPanelProps {
-  formats: ActivityFormat[]
-  selectedFormatSlug: string | null
-  onSelect: (slug: string) => void
+  formats: ActivityFormat[];
+  selectedFormatSlug: string | null;
+  onSelect: (slug: string) => void;
 }
 
 export function FormatSelectionPanel({
@@ -87,7 +87,7 @@ export function FormatSelectionPanel({
       <div className="text-center py-8 text-sm text-muted-foreground">
         No formats available for this skill.
       </div>
-    )
+    );
   }
 
   return (
@@ -101,10 +101,10 @@ export function FormatSelectionPanel({
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-1">
         {formats.map((format) => {
-          const meta = FORMAT_META[format.slug] || DEFAULT_META
-          const IconComp = meta.icon
-          const isSelected = selectedFormatSlug === format.slug
-          const isComingSoon = format.coming_soon === true
+          const meta = FORMAT_META[format.slug] || DEFAULT_META;
+          const IconComp = meta.icon;
+          const isSelected = selectedFormatSlug === format.slug;
+          const isComingSoon = format.coming_soon === true;
 
           return (
             <button
@@ -119,7 +119,8 @@ export function FormatSelectionPanel({
                   : "hover:shadow-lg hover:shadow-purple-500/20 hover:-translate-y-0.5",
                 isSelected && !isComingSoon
                   ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20"
-                  : !isComingSoon && "border-muted bg-card hover:border-purple-400/50",
+                  : !isComingSoon &&
+                      "border-muted bg-card hover:border-purple-400/50",
               )}
             >
               {isComingSoon && (
@@ -147,9 +148,9 @@ export function FormatSelectionPanel({
                 {format.description || meta.description}
               </div>
             </button>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

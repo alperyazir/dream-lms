@@ -8,10 +8,10 @@
  * - Results display after submission
  */
 
-import { useCallback, useState } from "react"
-import { ReadingComprehensionPlayer } from "@/components/ActivityPlayers/ReadingComprehensionPlayer"
-import { ReadingComprehensionResults } from "@/components/ActivityPlayers/ReadingComprehensionResults"
-import { readingComprehensionApi } from "@/services/readingComprehensionApi"
+import { useCallback, useState } from "react";
+import { ReadingComprehensionPlayer } from "@/components/ActivityPlayers/ReadingComprehensionPlayer";
+import { ReadingComprehensionResults } from "@/components/ActivityPlayers/ReadingComprehensionResults";
+import { readingComprehensionApi } from "@/services/readingComprehensionApi";
 import type {
   ReadingComprehensionActivity,
   ReadingComprehensionActivityPublic,
@@ -19,16 +19,16 @@ import type {
   ReadingComprehensionContainerState,
   ReadingComprehensionRequest,
   ReadingComprehensionResult,
-} from "@/types/reading-comprehension"
-import { ReadingComprehensionForm } from "./ReadingComprehensionForm"
+} from "@/types/reading-comprehension";
+import { ReadingComprehensionForm } from "./ReadingComprehensionForm";
 
 interface ReadingComprehensionContainerProps {
   /** Initial activity ID to load (for students accessing shared activity) */
-  initialActivityId?: string
+  initialActivityId?: string;
   /** Whether to show the generation form (for teachers) */
-  showForm?: boolean
+  showForm?: boolean;
   /** Callback when activity is completed */
-  onComplete?: (result: ReadingComprehensionResult) => void
+  onComplete?: (result: ReadingComprehensionResult) => void;
 }
 
 export function ReadingComprehensionContainer({
@@ -38,27 +38,27 @@ export function ReadingComprehensionContainer({
 }: ReadingComprehensionContainerProps) {
   const [phase, setPhase] = useState<ReadingComprehensionContainerState>(
     initialActivityId ? "playing" : "form",
-  )
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Activity data
   const [_generatedActivity, setGeneratedActivity] =
-    useState<ReadingComprehensionActivity | null>(null)
+    useState<ReadingComprehensionActivity | null>(null);
   const [publicActivity, setPublicActivity] =
-    useState<ReadingComprehensionActivityPublic | null>(null)
-  const [result, setResult] = useState<ReadingComprehensionResult | null>(null)
+    useState<ReadingComprehensionActivityPublic | null>(null);
+  const [result, setResult] = useState<ReadingComprehensionResult | null>(null);
 
   // Generate a new activity
   const handleGenerate = useCallback(
     async (request: ReadingComprehensionRequest) => {
       try {
-        setIsLoading(true)
-        setPhase("generating")
-        setError(null)
+        setIsLoading(true);
+        setPhase("generating");
+        setError(null);
         const activity =
-          await readingComprehensionApi.generateReadingActivity(request)
-        setGeneratedActivity(activity)
+          await readingComprehensionApi.generateReadingActivity(request);
+        setGeneratedActivity(activity);
         // Also create public version for the player
         setPublicActivity({
           activity_id: activity.activity_id,
@@ -77,89 +77,89 @@ export function ReadingComprehensionContainer({
             question_text: q.question_text,
             options: q.options,
           })),
-        })
-        setPhase("playing")
+        });
+        setPhase("playing");
       } catch (err: any) {
         const message =
           err?.response?.data?.detail ||
           err?.message ||
-          "Failed to generate activity. Please try again."
-        setError(message)
-        setPhase("form")
+          "Failed to generate activity. Please try again.";
+        setError(message);
+        setPhase("form");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
     [],
-  )
+  );
 
   // Load existing activity by ID
   const loadActivity = useCallback(async (activityId: string) => {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
       const activity =
-        await readingComprehensionApi.getReadingActivity(activityId)
-      setPublicActivity(activity)
-      setPhase("playing")
+        await readingComprehensionApi.getReadingActivity(activityId);
+      setPublicActivity(activity);
+      setPhase("playing");
     } catch (err: any) {
       const message =
         err?.response?.data?.detail ||
         err?.message ||
-        "Failed to load activity. Please try again."
-      setError(message)
+        "Failed to load activity. Please try again.";
+      setError(message);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   // Submit activity answers
   const handleSubmit = useCallback(
     async (answers: ReadingComprehensionAnswer[]) => {
-      if (!publicActivity) return
+      if (!publicActivity) return;
 
       try {
-        setIsLoading(true)
-        setError(null)
+        setIsLoading(true);
+        setError(null);
         const activityResult =
           await readingComprehensionApi.submitReadingActivity(
             publicActivity.activity_id,
             answers,
-          )
-        setResult(activityResult)
-        setPhase("results")
-        onComplete?.(activityResult)
+          );
+        setResult(activityResult);
+        setPhase("results");
+        onComplete?.(activityResult);
       } catch (err: any) {
         const message =
           err?.response?.data?.detail ||
           err?.message ||
-          "Failed to submit activity. Please try again."
-        setError(message)
+          "Failed to submit activity. Please try again.";
+        setError(message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
     [publicActivity, onComplete],
-  )
+  );
 
   // Retry the activity
   const handleRetry = useCallback(() => {
-    setResult(null)
-    setPhase("playing")
-  }, [])
+    setResult(null);
+    setPhase("playing");
+  }, []);
 
   // Go back to form
   const handleBackToForm = useCallback(() => {
-    setGeneratedActivity(null)
-    setPublicActivity(null)
-    setResult(null)
-    setError(null)
-    setPhase("form")
-  }, [])
+    setGeneratedActivity(null);
+    setPublicActivity(null);
+    setResult(null);
+    setError(null);
+    setPhase("form");
+  }, []);
 
   // Load initial activity if provided
   if (initialActivityId && !publicActivity && !isLoading && !error) {
-    loadActivity(initialActivityId)
+    loadActivity(initialActivityId);
   }
 
   // Render based on current phase
@@ -170,7 +170,7 @@ export function ReadingComprehensionContainer({
         isGenerating={isLoading}
         error={error}
       />
-    )
+    );
   }
 
   if (phase === "generating") {
@@ -188,7 +188,7 @@ export function ReadingComprehensionContainer({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (phase === "playing" && publicActivity) {
@@ -198,7 +198,7 @@ export function ReadingComprehensionContainer({
         onSubmit={handleSubmit}
         isSubmitting={isLoading}
       />
-    )
+    );
   }
 
   if (phase === "results" && result) {
@@ -208,7 +208,7 @@ export function ReadingComprehensionContainer({
         onRetry={handleRetry}
         onBack={showForm ? handleBackToForm : undefined}
       />
-    )
+    );
   }
 
   // Loading or error state
@@ -220,7 +220,7 @@ export function ReadingComprehensionContainer({
           <p className="text-muted-foreground">Loading activity...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -241,10 +241,10 @@ export function ReadingComprehensionContainer({
           )}
         </div>
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }
 
-export default ReadingComprehensionContainer
+export default ReadingComprehensionContainer;

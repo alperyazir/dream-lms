@@ -8,9 +8,9 @@
  * - Assign button (placeholder for Story 3.7)
  */
 
-import { Eye, Plus } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Eye, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -18,19 +18,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import type { Activity } from "@/types/book"
-import { ACTIVITY_TYPE_CONFIG } from "@/types/book"
+} from "@/components/ui/tooltip";
+import type { Activity } from "@/types/book";
+import { ACTIVITY_TYPE_CONFIG } from "@/types/book";
 
 export interface ActivityListProps {
-  activities: Activity[]
-  onAssign?: (activity: Activity) => void
+  activities: Activity[];
+  onAssign?: (activity: Activity) => void;
 }
 
 /**
@@ -44,7 +44,7 @@ export function ActivityList({ activities, onAssign }: ActivityListProps) {
       <div className="text-center py-12 text-muted-foreground">
         <p>No activities available for this book.</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -60,7 +60,7 @@ export function ActivityList({ activities, onAssign }: ActivityListProps) {
         </TableHeader>
         <TableBody>
           {activities.map((activity, index) => {
-            const typeConfig = ACTIVITY_TYPE_CONFIG[activity.activity_type]
+            const typeConfig = ACTIVITY_TYPE_CONFIG[activity.activity_type];
 
             return (
               <TableRow key={activity.id}>
@@ -111,10 +111,10 @@ export function ActivityList({ activities, onAssign }: ActivityListProps) {
                   </div>
                 </TableCell>
               </TableRow>
-            )
+            );
           })}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

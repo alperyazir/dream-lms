@@ -5,9 +5,9 @@
  * Displays table comparing class performance vs benchmarks by activity type
  */
 
-import { ArrowDownRight, ArrowUpRight, Layers, Minus } from "lucide-react"
-import React, { useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowDownRight, ArrowUpRight, Layers, Minus } from "lucide-react";
+import React, { useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -15,37 +15,37 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { ActivityTypeBenchmark } from "@/types/benchmarks"
+} from "@/components/ui/table";
+import type { ActivityTypeBenchmark } from "@/types/benchmarks";
 
 export interface ActivityBenchmarkTableProps {
-  activityBenchmarks: ActivityTypeBenchmark[]
-  showSchoolBenchmark?: boolean
+  activityBenchmarks: ActivityTypeBenchmark[];
+  showSchoolBenchmark?: boolean;
 }
 
 /**
  * Get color classes based on difference percentage
  */
 function getDifferenceColors(difference: number): {
-  textColor: string
-  bgColor: string
+  textColor: string;
+  bgColor: string;
 } {
   if (difference > 5) {
     return {
       textColor: "text-green-600 dark:text-green-400",
       bgColor: "bg-green-50 dark:bg-green-900/20",
-    }
+    };
   }
   if (difference < -5) {
     return {
       textColor: "text-red-600 dark:text-red-400",
       bgColor: "bg-red-50 dark:bg-red-900/20",
-    }
+    };
   }
   return {
     textColor: "text-muted-foreground",
     bgColor: "bg-muted/50",
-  }
+  };
 }
 
 /**
@@ -53,12 +53,12 @@ function getDifferenceColors(difference: number): {
  */
 function DifferenceIcon({ difference }: { difference: number }) {
   if (difference > 5) {
-    return <ArrowUpRight className="w-4 h-4" />
+    return <ArrowUpRight className="w-4 h-4" />;
   }
   if (difference < -5) {
-    return <ArrowDownRight className="w-4 h-4" />
+    return <ArrowDownRight className="w-4 h-4" />;
   }
-  return <Minus className="w-4 h-4" />
+  return <Minus className="w-4 h-4" />;
 }
 
 export const ActivityBenchmarkTable = React.memo(
@@ -71,8 +71,8 @@ export const ActivityBenchmarkTable = React.memo(
       return [...activityBenchmarks].sort(
         (a, b) =>
           Math.abs(b.difference_percent) - Math.abs(a.difference_percent),
-      )
-    }, [activityBenchmarks])
+      );
+    }, [activityBenchmarks]);
 
     if (activityBenchmarks.length === 0) {
       return (
@@ -89,7 +89,7 @@ export const ActivityBenchmarkTable = React.memo(
             </div>
           </CardContent>
         </Card>
-      )
+      );
     }
 
     return (
@@ -117,7 +117,7 @@ export const ActivityBenchmarkTable = React.memo(
                 {sortedBenchmarks.map((benchmark) => {
                   const { textColor, bgColor } = getDifferenceColors(
                     benchmark.difference_percent,
-                  )
+                  );
                   return (
                     <TableRow key={benchmark.activity_type}>
                       <TableCell className="font-medium">
@@ -143,7 +143,7 @@ export const ActivityBenchmarkTable = React.memo(
                         </span>
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })}
               </TableBody>
             </Table>
@@ -166,8 +166,8 @@ export const ActivityBenchmarkTable = React.memo(
           </div>
         </CardContent>
       </Card>
-    )
+    );
   },
-)
+);
 
-ActivityBenchmarkTable.displayName = "ActivityBenchmarkTable"
+ActivityBenchmarkTable.displayName = "ActivityBenchmarkTable";

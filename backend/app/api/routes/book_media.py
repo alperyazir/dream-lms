@@ -75,7 +75,9 @@ def get_media_user(
         )
 
     # Convert string UUID to UUID object
-    user_id = uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    user_id = (
+        uuid.UUID(token_data.sub) if isinstance(token_data.sub, str) else token_data.sub
+    )
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -83,6 +85,7 @@ def get_media_user(
         raise HTTPException(status_code=400, detail="Inactive user")
 
     return user
+
 
 # Media MIME types
 MEDIA_MIME_TYPES = {
@@ -173,7 +176,9 @@ async def stream_media(
     book_id: Annotated[int, Path(description="DCS Book ID")],
     asset_path: Annotated[
         str,
-        Path(description="Relative path to media (e.g., 'audio/08.mp3', 'videos/intro.mp4')"),
+        Path(
+            description="Relative path to media (e.g., 'audio/08.mp3', 'videos/intro.mp4')"
+        ),
     ],
     current_user: Annotated[User, Depends(get_media_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -202,7 +207,9 @@ async def stream_media(
     # Check book access
     book = await _check_book_access(book_id, current_user, db)
 
-    logger.info(f"Streaming media: book_id={book_id}, publisher={book.publisher_name}, book_name={book.name}, asset_path={asset_path}, range_header={range_header}")
+    logger.info(
+        f"Streaming media: book_id={book_id}, publisher={book.publisher_name}, book_name={book.name}, asset_path={asset_path}, range_header={range_header}"
+    )
 
     # Get DCS client
     client = await get_dream_storage_client()
@@ -216,8 +223,12 @@ async def stream_media(
         )
         logger.info(f"Media file size: {file_size} bytes")
     except DreamStorageNotFoundError:
-        logger.warning(f"Media not found: book_id={book_id}, publisher={book.publisher_name}, book_name={book.name}, asset_path={asset_path}")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media not found")
+        logger.warning(
+            f"Media not found: book_id={book_id}, publisher={book.publisher_name}, book_name={book.name}, asset_path={asset_path}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Media not found"
+        )
     except DreamStorageError as e:
         logger.error(f"DCS error getting media size: {e}")
         raise HTTPException(

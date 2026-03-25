@@ -5,45 +5,45 @@
  * Allows teachers to configure word builder parameters: book, modules, word count, hint type.
  */
 
-import { BookOpen, Lightbulb, Loader2, Sparkles, Volume2 } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { BookOpen, Lightbulb, Loader2, Sparkles, Volume2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { booksApi } from "@/services/booksApi"
-import type { Book, BookStructureResponse } from "@/types/book"
+} from "@/components/ui/select";
+import { booksApi } from "@/services/booksApi";
+import type { Book, BookStructureResponse } from "@/types/book";
 import type {
   HintType,
   WordBuilderRequest,
   WordCount,
-} from "@/types/word-builder"
+} from "@/types/word-builder";
 import {
   HINT_TYPE_DESCRIPTIONS,
   HINT_TYPE_LABELS,
   HINT_TYPES,
   WORD_COUNT_OPTIONS,
-} from "@/types/word-builder"
+} from "@/types/word-builder";
 
 // CEFR levels for filtering
-const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const
+const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
 interface WordBuilderFormProps {
   /** Callback when activity generation is requested */
-  onGenerate: (request: WordBuilderRequest) => void
+  onGenerate: (request: WordBuilderRequest) => void;
   /** Whether generation is in progress */
-  isGenerating?: boolean
+  isGenerating?: boolean;
   /** Error message to display */
-  error?: string | null
+  error?: string | null;
 }
 
 export function WordBuilderForm({
@@ -52,126 +52,128 @@ export function WordBuilderForm({
   error = null,
 }: WordBuilderFormProps) {
   // Books data
-  const [books, setBooks] = useState<Book[]>([])
-  const [loadingBooks, setLoadingBooks] = useState(true)
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loadingBooks, setLoadingBooks] = useState(true);
 
   // Selected book and its structure
-  const [selectedBookId, setSelectedBookId] = useState<number | null>(null)
+  const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
   const [bookStructure, setBookStructure] =
-    useState<BookStructureResponse | null>(null)
-  const [loadingStructure, setLoadingStructure] = useState(false)
+    useState<BookStructureResponse | null>(null);
+  const [loadingStructure, setLoadingStructure] = useState(false);
 
   // Form state
-  const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set())
-  const [allModulesSelected, setAllModulesSelected] = useState(true)
-  const [hintType, setHintType] = useState<HintType>("both")
-  const [wordCount, setWordCount] = useState<WordCount>(10)
+  const [selectedModules, setSelectedModules] = useState<Set<string>>(
+    new Set(),
+  );
+  const [allModulesSelected, setAllModulesSelected] = useState(true);
+  const [hintType, setHintType] = useState<HintType>("both");
+  const [wordCount, setWordCount] = useState<WordCount>(10);
   const [selectedCefrLevels, setSelectedCefrLevels] = useState<Set<string>>(
     new Set(),
-  )
-  const [allLevelsSelected, setAllLevelsSelected] = useState(true)
+  );
+  const [allLevelsSelected, setAllLevelsSelected] = useState(true);
 
   // Load books on mount
   useEffect(() => {
     async function loadBooks() {
       try {
-        setLoadingBooks(true)
-        const response = await booksApi.getBooks({ limit: 100 })
-        setBooks(response.items)
+        setLoadingBooks(true);
+        const response = await booksApi.getBooks({ limit: 100 });
+        setBooks(response.items);
       } catch (err) {
-        console.error("Failed to load books:", err)
+        console.error("Failed to load books:", err);
       } finally {
-        setLoadingBooks(false)
+        setLoadingBooks(false);
       }
     }
-    loadBooks()
-  }, [])
+    loadBooks();
+  }, []);
 
   // Load book structure when book is selected
   useEffect(() => {
     async function loadStructure() {
       if (!selectedBookId) {
-        setBookStructure(null)
-        return
+        setBookStructure(null);
+        return;
       }
 
       try {
-        setLoadingStructure(true)
-        const structure = await booksApi.getBookStructure(selectedBookId)
-        setBookStructure(structure)
+        setLoadingStructure(true);
+        const structure = await booksApi.getBookStructure(selectedBookId);
+        setBookStructure(structure);
         // Reset module selection when book changes
-        setSelectedModules(new Set())
-        setAllModulesSelected(true)
+        setSelectedModules(new Set());
+        setAllModulesSelected(true);
       } catch (err) {
-        console.error("Failed to load book structure:", err)
-        setBookStructure(null)
+        console.error("Failed to load book structure:", err);
+        setBookStructure(null);
       } finally {
-        setLoadingStructure(false)
+        setLoadingStructure(false);
       }
     }
-    loadStructure()
-  }, [selectedBookId])
+    loadStructure();
+  }, [selectedBookId]);
 
   // Handle book selection
   const handleBookChange = useCallback((value: string) => {
-    setSelectedBookId(parseInt(value, 10))
-  }, [])
+    setSelectedBookId(parseInt(value, 10));
+  }, []);
 
   // Handle all modules toggle
   const handleAllModulesToggle = useCallback((checked: boolean) => {
-    setAllModulesSelected(checked)
+    setAllModulesSelected(checked);
     if (checked) {
-      setSelectedModules(new Set())
+      setSelectedModules(new Set());
     }
-  }, [])
+  }, []);
 
   // Handle individual module toggle
   const handleModuleToggle = useCallback(
     (moduleName: string, checked: boolean) => {
       setSelectedModules((prev) => {
-        const next = new Set(prev)
+        const next = new Set(prev);
         if (checked) {
-          next.add(moduleName)
+          next.add(moduleName);
         } else {
-          next.delete(moduleName)
+          next.delete(moduleName);
         }
-        return next
-      })
+        return next;
+      });
       // If modules are manually selected, uncheck "all modules"
       if (checked) {
-        setAllModulesSelected(false)
+        setAllModulesSelected(false);
       }
     },
     [],
-  )
+  );
 
   // Handle all CEFR levels toggle
   const handleAllLevelsToggle = useCallback((checked: boolean) => {
-    setAllLevelsSelected(checked)
+    setAllLevelsSelected(checked);
     if (checked) {
-      setSelectedCefrLevels(new Set())
+      setSelectedCefrLevels(new Set());
     }
-  }, [])
+  }, []);
 
   // Handle individual CEFR level toggle
   const handleCefrToggle = useCallback((level: string, checked: boolean) => {
     setSelectedCefrLevels((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (checked) {
-        next.add(level)
+        next.add(level);
       } else {
-        next.delete(level)
+        next.delete(level);
       }
-      return next
-    })
+      return next;
+    });
     if (checked) {
-      setAllLevelsSelected(false)
+      setAllLevelsSelected(false);
     }
-  }, [])
+  }, []);
 
   // Handle form submission
   const handleSubmit = useCallback(() => {
-    if (!selectedBookId) return
+    if (!selectedBookId) return;
 
     // Get module IDs from selected module names
     const moduleIds: number[] | undefined =
@@ -179,13 +181,13 @@ export function WordBuilderForm({
         ? undefined // All modules
         : bookStructure?.modules
             .filter((m) => selectedModules.has(m.name))
-            .map((_, index) => index + 1) // Using 1-based index as module ID
+            .map((_, index) => index + 1); // Using 1-based index as module ID
 
     // Get CEFR levels
     const cefrLevels: string[] | undefined =
       allLevelsSelected || selectedCefrLevels.size === 0
         ? undefined
-        : Array.from(selectedCefrLevels)
+        : Array.from(selectedCefrLevels);
 
     const request: WordBuilderRequest = {
       book_id: selectedBookId,
@@ -193,9 +195,9 @@ export function WordBuilderForm({
       word_count: wordCount,
       cefr_levels: cefrLevels,
       hint_type: hintType,
-    }
+    };
 
-    onGenerate(request)
+    onGenerate(request);
   }, [
     selectedBookId,
     allModulesSelected,
@@ -206,9 +208,9 @@ export function WordBuilderForm({
     selectedCefrLevels,
     hintType,
     onGenerate,
-  ])
+  ]);
 
-  const isFormValid = selectedBookId !== null
+  const isFormValid = selectedBookId !== null;
 
   return (
     <Card className="mx-auto max-w-2xl shadow-lg">
@@ -452,7 +454,7 @@ export function WordBuilderForm({
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-export default WordBuilderForm
+export default WordBuilderForm;

@@ -6,10 +6,10 @@
  * Shows a searchable, filterable list of the teacher's materials.
  */
 
-import { Check, FolderOpen, Plus, Search } from "lucide-react"
-import { useMemo, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Check, FolderOpen, Plus, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -17,39 +17,39 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useMaterials } from "@/hooks/useMaterials"
-import type { Material, MaterialType } from "@/types/material"
-import { getMaterialTypeLabel, MaterialTypeIcon } from "./MaterialTypeIcon"
+} from "@/components/ui/select";
+import { useMaterials } from "@/hooks/useMaterials";
+import type { Material, MaterialType } from "@/types/material";
+import { getMaterialTypeLabel, MaterialTypeIcon } from "./MaterialTypeIcon";
 
 interface TeacherMaterialPickerProps {
   /** Whether the dialog is open */
-  open: boolean
+  open: boolean;
   /** Callback to close the dialog */
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (open: boolean) => void;
   /** Currently selected material IDs */
-  selectedIds: string[]
+  selectedIds: string[];
   /** Callback when materials are selected */
-  onSelect: (materials: Material[]) => void
+  onSelect: (materials: Material[]) => void;
 }
 
 /**
  * Format file size for display
  */
 function formatFileSize(bytes: number | null): string {
-  if (!bytes) return "-"
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (!bytes) return "-";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 /**
@@ -64,63 +64,63 @@ export function TeacherMaterialPicker({
   // Local state for selections before confirming
   const [pendingIds, setPendingIds] = useState<Set<string>>(
     new Set(selectedIds),
-  )
-  const [searchQuery, setSearchQuery] = useState("")
-  const [typeFilter, setTypeFilter] = useState<MaterialType | "all">("all")
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<MaterialType | "all">("all");
 
   // Fetch teacher's materials
-  const { data, isLoading, error } = useMaterials()
-  const materials = data?.materials ?? []
+  const { data, isLoading, error } = useMaterials();
+  const materials = data?.materials ?? [];
 
   // Filter materials based on search and type
   const filteredMaterials = useMemo(() => {
     return materials.filter((mat) => {
       // Type filter
       if (typeFilter !== "all" && mat.type !== typeFilter) {
-        return false
+        return false;
       }
       // Search filter
       if (searchQuery) {
-        const query = searchQuery.toLowerCase()
+        const query = searchQuery.toLowerCase();
         return (
           mat.name.toLowerCase().includes(query) ||
           (mat.original_filename?.toLowerCase().includes(query) ?? false)
-        )
+        );
       }
-      return true
-    })
-  }, [materials, searchQuery, typeFilter])
+      return true;
+    });
+  }, [materials, searchQuery, typeFilter]);
 
   // Reset pending selections when dialog opens
   const handleOpenChange = (open: boolean) => {
     if (open) {
-      setPendingIds(new Set(selectedIds))
-      setSearchQuery("")
-      setTypeFilter("all")
+      setPendingIds(new Set(selectedIds));
+      setSearchQuery("");
+      setTypeFilter("all");
     }
-    onOpenChange(open)
-  }
+    onOpenChange(open);
+  };
 
   // Toggle material selection
   const toggleSelection = (materialId: string) => {
-    const newSet = new Set(pendingIds)
+    const newSet = new Set(pendingIds);
     if (newSet.has(materialId)) {
-      newSet.delete(materialId)
+      newSet.delete(materialId);
     } else {
-      newSet.add(materialId)
+      newSet.add(materialId);
     }
-    setPendingIds(newSet)
-  }
+    setPendingIds(newSet);
+  };
 
   // Confirm selection
   const handleConfirm = () => {
-    const selectedMaterials = materials.filter((mat) => pendingIds.has(mat.id))
-    onSelect(selectedMaterials)
-    onOpenChange(false)
-  }
+    const selectedMaterials = materials.filter((mat) => pendingIds.has(mat.id));
+    onSelect(selectedMaterials);
+    onOpenChange(false);
+  };
 
   // Get count of pending selections
-  const pendingCount = pendingIds.size
+  const pendingCount = pendingIds.size;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -187,7 +187,7 @@ export function TeacherMaterialPicker({
           ) : (
             <div className="p-2 space-y-1">
               {filteredMaterials.map((material) => {
-                const isSelected = pendingIds.has(material.id)
+                const isSelected = pendingIds.has(material.id);
                 return (
                   <button
                     key={material.id}
@@ -230,7 +230,7 @@ export function TeacherMaterialPicker({
                       </div>
                     </div>
                   </button>
-                )
+                );
               })}
             </div>
           )}
@@ -257,9 +257,9 @@ export function TeacherMaterialPicker({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-TeacherMaterialPicker.displayName = "TeacherMaterialPicker"
+TeacherMaterialPicker.displayName = "TeacherMaterialPicker";
 
-export default TeacherMaterialPicker
+export default TeacherMaterialPicker;

@@ -4,31 +4,37 @@
  * Shows each sentence with the student's typed answer and the correct answer when wrong.
  */
 
-import { CheckCircle2, XCircle } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import type { WritingFillBlankResult } from "@/lib/resultParsers"
+import { CheckCircle2, XCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { WritingFillBlankResult } from "@/lib/resultParsers";
 
 interface WritingFillBlankResultsProps {
-  result: WritingFillBlankResult
-  hideSummary?: boolean
+  result: WritingFillBlankResult;
+  hideSummary?: boolean;
 }
 
 export function WritingFillBlankResults({
   result,
   hideSummary = false,
 }: WritingFillBlankResultsProps) {
-  const correctCount = result.item_results.filter((r) => r.is_correct).length
-  const actualPercentage = result.total > 0
-    ? Math.round((correctCount / result.total) * 100)
-    : result.percentage
+  const correctCount = result.item_results.filter((r) => r.is_correct).length;
+  const actualPercentage =
+    result.total > 0
+      ? Math.round((correctCount / result.total) * 100)
+      : result.percentage;
 
   return (
-    <div className={cn("mx-auto flex max-w-2xl flex-col gap-4", !hideSummary && "p-4")}>
+    <div
+      className={cn(
+        "mx-auto flex max-w-2xl flex-col gap-4",
+        !hideSummary && "p-4",
+      )}
+    >
       <div className="space-y-3">
         {result.item_results.map((item, index) => {
           // Split sentence at blank marker to show inline
-          const parts = item.display_sentence.split("_______")
+          const parts = item.display_sentence.split("_______");
 
           return (
             <Card
@@ -135,11 +141,11 @@ export function WritingFillBlankResults({
                 </div>
               </CardContent>
             </Card>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
-export default WritingFillBlankResults
+export default WritingFillBlankResults;

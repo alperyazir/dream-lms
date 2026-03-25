@@ -5,22 +5,22 @@
  * Handles loading preview data and managing preview/test mode state.
  */
 
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { useCallback, useState } from "react"
-import { previewActivity, previewAssignment } from "@/services/assignmentsApi"
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
+import { previewActivity, previewAssignment } from "@/services/assignmentsApi";
 import type {
   ActivityPreviewResponse,
   AssignmentPreviewResponse,
-} from "@/types/assignment"
+} from "@/types/assignment";
 
 interface UseActivityPreviewOptions {
-  activityId: string | null
-  enabled?: boolean
+  activityId: string | null;
+  enabled?: boolean;
 }
 
 interface UseAssignmentPreviewOptions {
-  assignmentId: string | null
-  enabled?: boolean
+  assignmentId: string | null;
+  enabled?: boolean;
 }
 
 /**
@@ -30,7 +30,7 @@ export function useActivityPreview({
   activityId,
   enabled = true,
 }: UseActivityPreviewOptions) {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
     data: activity,
@@ -42,15 +42,15 @@ export function useActivityPreview({
     queryFn: () => previewActivity(activityId!),
     enabled: enabled && !!activityId && isModalOpen,
     staleTime: 5 * 60 * 1000, // 5 minutes
-  })
+  });
 
   const openPreview = useCallback(() => {
-    setIsModalOpen(true)
-  }, [])
+    setIsModalOpen(true);
+  }, []);
 
   const closePreview = useCallback(() => {
-    setIsModalOpen(false)
-  }, [])
+    setIsModalOpen(false);
+  }, []);
 
   return {
     activity,
@@ -60,7 +60,7 @@ export function useActivityPreview({
     openPreview,
     closePreview,
     refetch,
-  }
+  };
 }
 
 /**
@@ -70,8 +70,8 @@ export function useAssignmentPreview({
   assignmentId,
   enabled = true,
 }: UseAssignmentPreviewOptions) {
-  const [isTestModeActive, setIsTestModeActive] = useState(false)
-  const [testKey, setTestKey] = useState(0) // For forcing re-mount on retry
+  const [isTestModeActive, setIsTestModeActive] = useState(false);
+  const [testKey, setTestKey] = useState(0); // For forcing re-mount on retry
 
   const {
     data: assignment,
@@ -83,20 +83,20 @@ export function useAssignmentPreview({
     queryFn: () => previewAssignment(assignmentId!),
     enabled: enabled && !!assignmentId && isTestModeActive,
     staleTime: 5 * 60 * 1000, // 5 minutes
-  })
+  });
 
   const startTestMode = useCallback(() => {
-    setIsTestModeActive(true)
-  }, [])
+    setIsTestModeActive(true);
+  }, []);
 
   const exitTestMode = useCallback(() => {
-    setIsTestModeActive(false)
-  }, [])
+    setIsTestModeActive(false);
+  }, []);
 
   const retryTestMode = useCallback(() => {
     // Increment key to force MultiActivityPlayer to re-mount
-    setTestKey((prev) => prev + 1)
-  }, [])
+    setTestKey((prev) => prev + 1);
+  }, []);
 
   return {
     assignment,
@@ -108,7 +108,7 @@ export function useAssignmentPreview({
     exitTestMode,
     retryTestMode,
     refetch,
-  }
+  };
 }
 
 /**
@@ -116,8 +116,8 @@ export function useAssignmentPreview({
  */
 export function useQuickActivityPreview() {
   const [previewActivity, setPreviewActivity] =
-    useState<ActivityPreviewResponse | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+    useState<ActivityPreviewResponse | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const mutation = useMutation({
     mutationFn: (activityId: string) =>
@@ -125,22 +125,22 @@ export function useQuickActivityPreview() {
         mod.previewActivity(activityId),
       ),
     onSuccess: (data) => {
-      setPreviewActivity(data)
-      setIsModalOpen(true)
+      setPreviewActivity(data);
+      setIsModalOpen(true);
     },
-  })
+  });
 
   const openPreview = useCallback(
     (activityId: string) => {
-      mutation.mutate(activityId)
+      mutation.mutate(activityId);
     },
     [mutation],
-  )
+  );
 
   const closePreview = useCallback(() => {
-    setIsModalOpen(false)
-    setPreviewActivity(null)
-  }, [])
+    setIsModalOpen(false);
+    setPreviewActivity(null);
+  }, []);
 
   return {
     previewActivity,
@@ -149,7 +149,7 @@ export function useQuickActivityPreview() {
     isModalOpen,
     openPreview,
     closePreview,
-  }
+  };
 }
 
 /**
@@ -157,9 +157,9 @@ export function useQuickActivityPreview() {
  */
 export function useQuickAssignmentTest() {
   const [previewAssignment, setPreviewAssignment] =
-    useState<AssignmentPreviewResponse | null>(null)
-  const [isTestModeActive, setIsTestModeActive] = useState(false)
-  const [testKey, setTestKey] = useState(0)
+    useState<AssignmentPreviewResponse | null>(null);
+  const [isTestModeActive, setIsTestModeActive] = useState(false);
+  const [testKey, setTestKey] = useState(0);
 
   const mutation = useMutation({
     mutationFn: (assignmentId: string) =>
@@ -167,26 +167,26 @@ export function useQuickAssignmentTest() {
         mod.previewAssignment(assignmentId),
       ),
     onSuccess: (data) => {
-      setPreviewAssignment(data)
-      setIsTestModeActive(true)
+      setPreviewAssignment(data);
+      setIsTestModeActive(true);
     },
-  })
+  });
 
   const startTestMode = useCallback(
     (assignmentId: string) => {
-      mutation.mutate(assignmentId)
+      mutation.mutate(assignmentId);
     },
     [mutation],
-  )
+  );
 
   const exitTestMode = useCallback(() => {
-    setIsTestModeActive(false)
-    setPreviewAssignment(null)
-  }, [])
+    setIsTestModeActive(false);
+    setPreviewAssignment(null);
+  }, []);
 
   const retryTestMode = useCallback(() => {
-    setTestKey((prev) => prev + 1)
-  }, [])
+    setTestKey((prev) => prev + 1);
+  }, []);
 
   return {
     previewAssignment,
@@ -197,5 +197,5 @@ export function useQuickAssignmentTest() {
     startTestMode,
     exitTestMode,
     retryTestMode,
-  }
+  };
 }

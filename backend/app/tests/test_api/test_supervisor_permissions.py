@@ -1,6 +1,7 @@
 """
 Tests for supervisor role permissions [Story 14.1]
 """
+
 import uuid
 
 from fastapi.testclient import TestClient
@@ -15,14 +16,16 @@ class TestSupervisorReadAccess:
     """Tests for supervisor read access to admin endpoints [Story 14.1]"""
 
     def test_supervisor_can_list_publishers(
-        self, client: TestClient, session: Session, supervisor_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        supervisor_token: str,
+        publisher_user: User,
     ):
         """Test supervisor can list publishers"""
         # Create publisher record
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Test Publisher for List"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Test Publisher for List"
         )
         session.add(publisher)
         session.commit()
@@ -36,23 +39,23 @@ class TestSupervisorReadAccess:
         assert isinstance(response.json(), list)
 
     def test_supervisor_can_list_schools(
-        self, client: TestClient, session: Session, supervisor_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        supervisor_token: str,
+        publisher_user: User,
     ):
         """Test supervisor can list schools"""
         # Create publisher and school
         publisher = Publisher(
             id=uuid.uuid4(),
             user_id=publisher_user.id,
-            name="Test Publisher for Schools"
+            name="Test Publisher for Schools",
         )
         session.add(publisher)
         session.commit()
 
-        school = School(
-            id=uuid.uuid4(),
-            name="Test School",
-            publisher_id=publisher.id
-        )
+        school = School(id=uuid.uuid4(), name="Test School", publisher_id=publisher.id)
         session.add(school)
         session.commit()
 
@@ -88,9 +91,7 @@ class TestSupervisorReadAccess:
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
-    def test_supervisor_can_get_stats(
-        self, client: TestClient, supervisor_token: str
-    ):
+    def test_supervisor_can_get_stats(self, client: TestClient, supervisor_token: str):
         """Test supervisor can get dashboard stats"""
         response = client.get(
             f"{settings.API_V1_STR}/admin/stats",
@@ -117,7 +118,7 @@ class TestSupervisorCreateAccess:
                 "contact_email": "contact@superpub.com",
                 "username": "superpub",
                 "user_email": "superpub@example.com",
-                "full_name": "Super Publisher"
+                "full_name": "Super Publisher",
             },
         )
 
@@ -126,14 +127,18 @@ class TestSupervisorCreateAccess:
         assert data["user"]["email"] == "superpub@example.com"
 
     def test_supervisor_can_create_school(
-        self, client: TestClient, session: Session, supervisor_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        supervisor_token: str,
+        publisher_user: User,
     ):
         """Test supervisor can create a school"""
         # Create publisher
         publisher = Publisher(
             id=uuid.uuid4(),
             user_id=publisher_user.id,
-            name="Publisher for Supervisor School"
+            name="Publisher for Supervisor School",
         )
         session.add(publisher)
         session.commit()
@@ -141,10 +146,7 @@ class TestSupervisorCreateAccess:
         response = client.post(
             f"{settings.API_V1_STR}/admin/schools",
             headers={"Authorization": f"Bearer {supervisor_token}"},
-            json={
-                "name": "School by Supervisor",
-                "publisher_id": str(publisher.id)
-            },
+            json={"name": "School by Supervisor", "publisher_id": str(publisher.id)},
         )
 
         assert response.status_code == 201
@@ -152,22 +154,22 @@ class TestSupervisorCreateAccess:
         assert data["name"] == "School by Supervisor"
 
     def test_supervisor_can_create_teacher(
-        self, client: TestClient, session: Session, supervisor_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        supervisor_token: str,
+        publisher_user: User,
     ):
         """Test supervisor can create a teacher"""
         # Create publisher and school
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=publisher_user.id,
-            name="Publisher for Teacher"
+            id=uuid.uuid4(), user_id=publisher_user.id, name="Publisher for Teacher"
         )
         session.add(publisher)
         session.commit()
 
         school = School(
-            id=uuid.uuid4(),
-            name="School for Teacher",
-            publisher_id=publisher.id
+            id=uuid.uuid4(), name="School for Teacher", publisher_id=publisher.id
         )
         session.add(school)
         session.commit()
@@ -179,7 +181,7 @@ class TestSupervisorCreateAccess:
                 "username": "superteacher",
                 "user_email": "superteacher@example.com",
                 "full_name": "Super Teacher",
-                "school_id": str(school.id)
+                "school_id": str(school.id),
             },
         )
 
@@ -197,7 +199,7 @@ class TestSupervisorCreateAccess:
             json={
                 "username": "superstudent",
                 "user_email": "superstudent@example.com",
-                "full_name": "Super Student"
+                "full_name": "Super Student",
             },
         )
 
@@ -220,15 +222,13 @@ class TestSupervisorDeletePermissions:
             username="deletemepub",
             hashed_password=get_password_hash("password"),
             role=UserRole.publisher,
-            is_active=True
+            is_active=True,
         )
         session.add(pub_user)
         session.commit()
 
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=pub_user.id,
-            name="Publisher to Delete"
+            id=uuid.uuid4(), user_id=pub_user.id, name="Publisher to Delete"
         )
         session.add(publisher)
         session.commit()
@@ -241,7 +241,11 @@ class TestSupervisorDeletePermissions:
         assert response.status_code == 204
 
     def test_supervisor_can_delete_teacher(
-        self, client: TestClient, session: Session, supervisor_token: str, publisher_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        supervisor_token: str,
+        publisher_user: User,
     ):
         """Test supervisor can delete a teacher"""
         # Create teacher user
@@ -251,7 +255,7 @@ class TestSupervisorDeletePermissions:
             username="deletemeteacher",
             hashed_password=get_password_hash("password"),
             role=UserRole.teacher,
-            is_active=True
+            is_active=True,
         )
         session.add(teacher_user)
         session.commit()
@@ -260,24 +264,18 @@ class TestSupervisorDeletePermissions:
         publisher = Publisher(
             id=uuid.uuid4(),
             user_id=publisher_user.id,
-            name="Publisher for Delete Teacher"
+            name="Publisher for Delete Teacher",
         )
         session.add(publisher)
         session.commit()
 
         school = School(
-            id=uuid.uuid4(),
-            name="School for Delete Teacher",
-            publisher_id=publisher.id
+            id=uuid.uuid4(), name="School for Delete Teacher", publisher_id=publisher.id
         )
         session.add(school)
         session.commit()
 
-        teacher = Teacher(
-            id=uuid.uuid4(),
-            user_id=teacher_user.id,
-            school_id=school.id
-        )
+        teacher = Teacher(id=uuid.uuid4(), user_id=teacher_user.id, school_id=school.id)
         session.add(teacher)
         session.commit()
 
@@ -299,15 +297,12 @@ class TestSupervisorDeletePermissions:
             username="deletemestudent",
             hashed_password=get_password_hash("password"),
             role=UserRole.student,
-            is_active=True
+            is_active=True,
         )
         session.add(student_user)
         session.commit()
 
-        student = Student(
-            id=uuid.uuid4(),
-            user_id=student_user.id
-        )
+        student = Student(id=uuid.uuid4(), user_id=student_user.id)
         session.add(student)
         session.commit()
 
@@ -329,16 +324,14 @@ class TestSupervisorDeletePermissions:
             username="adminnodelete",
             hashed_password=get_password_hash("password"),
             role=UserRole.admin,
-            is_active=True
+            is_active=True,
         )
         session.add(admin_user)
         session.commit()
 
         # Create a publisher record for this admin user
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=admin_user.id,
-            name="Admin Publisher (NoDelete)"
+            id=uuid.uuid4(), user_id=admin_user.id, name="Admin Publisher (NoDelete)"
         )
         session.add(publisher)
         session.commit()
@@ -364,7 +357,7 @@ class TestSupervisorDeletePermissions:
             username="othersupervisor",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
-            is_active=True
+            is_active=True,
         )
         session.add(other_supervisor_user)
         session.commit()
@@ -373,7 +366,7 @@ class TestSupervisorDeletePermissions:
         publisher = Publisher(
             id=uuid.uuid4(),
             user_id=other_supervisor_user.id,
-            name="Supervisor Publisher (NoDelete)"
+            name="Supervisor Publisher (NoDelete)",
         )
         session.add(publisher)
         session.commit()
@@ -396,9 +389,7 @@ class TestSelfDeletionPrevention:
         """Test admin cannot delete themselves"""
         # Create publisher record for admin user
         publisher = Publisher(
-            id=uuid.uuid4(),
-            user_id=admin_user.id,
-            name="Admin Publisher (Self)"
+            id=uuid.uuid4(), user_id=admin_user.id, name="Admin Publisher (Self)"
         )
         session.add(publisher)
         session.commit()
@@ -412,14 +403,18 @@ class TestSelfDeletionPrevention:
         assert "cannot delete your own account" in response.json()["detail"]
 
     def test_supervisor_cannot_delete_self(
-        self, client: TestClient, session: Session, supervisor_token: str, supervisor_user: User
+        self,
+        client: TestClient,
+        session: Session,
+        supervisor_token: str,
+        supervisor_user: User,
     ):
         """Test supervisor cannot delete themselves"""
         # Create publisher record for supervisor user
         publisher = Publisher(
             id=uuid.uuid4(),
             user_id=supervisor_user.id,
-            name="Supervisor Publisher (Self)"
+            name="Supervisor Publisher (Self)",
         )
         session.add(publisher)
         session.commit()
@@ -447,7 +442,7 @@ class TestSupervisorPasswordReset:
             username="resetpub",
             hashed_password=get_password_hash("password"),
             role=UserRole.publisher,
-            is_active=True
+            is_active=True,
         )
         session.add(pub_user)
         session.commit()
@@ -471,7 +466,7 @@ class TestSupervisorPasswordReset:
             username="resetteacher",
             hashed_password=get_password_hash("password"),
             role=UserRole.teacher,
-            is_active=True
+            is_active=True,
         )
         session.add(teacher_user)
         session.commit()
@@ -495,7 +490,7 @@ class TestSupervisorPasswordReset:
             username="resetstudent",
             hashed_password=get_password_hash("password"),
             role=UserRole.student,
-            is_active=True
+            is_active=True,
         )
         session.add(student_user)
         session.commit()
@@ -519,7 +514,7 @@ class TestSupervisorPasswordReset:
             username="othersuper",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
-            is_active=True
+            is_active=True,
         )
         session.add(other_supervisor)
         session.commit()
@@ -542,7 +537,7 @@ class TestSupervisorPasswordReset:
             username="adminnoreset",
             hashed_password=get_password_hash("password"),
             role=UserRole.admin,
-            is_active=True
+            is_active=True,
         )
         session.add(admin_user)
         session.commit()
@@ -563,11 +558,30 @@ class TestPermissionHelperFunctions:
         """Test admin can delete any user type"""
         from app.api.deps import can_delete_user
 
-        admin = User(id=uuid.uuid4(), role=UserRole.admin, username="admin", hashed_password="x")
-        publisher = User(id=uuid.uuid4(), role=UserRole.publisher, username="pub", hashed_password="x")
-        teacher = User(id=uuid.uuid4(), role=UserRole.teacher, username="teach", hashed_password="x")
-        student = User(id=uuid.uuid4(), role=UserRole.student, username="stud", hashed_password="x")
-        supervisor = User(id=uuid.uuid4(), role=UserRole.supervisor, username="super", hashed_password="x")
+        admin = User(
+            id=uuid.uuid4(), role=UserRole.admin, username="admin", hashed_password="x"
+        )
+        publisher = User(
+            id=uuid.uuid4(),
+            role=UserRole.publisher,
+            username="pub",
+            hashed_password="x",
+        )
+        teacher = User(
+            id=uuid.uuid4(),
+            role=UserRole.teacher,
+            username="teach",
+            hashed_password="x",
+        )
+        student = User(
+            id=uuid.uuid4(), role=UserRole.student, username="stud", hashed_password="x"
+        )
+        supervisor = User(
+            id=uuid.uuid4(),
+            role=UserRole.supervisor,
+            username="super",
+            hashed_password="x",
+        )
 
         assert can_delete_user(admin, publisher) is True
         assert can_delete_user(admin, teacher) is True
@@ -578,12 +592,36 @@ class TestPermissionHelperFunctions:
         """Test supervisor cannot delete admin or other supervisors"""
         from app.api.deps import can_delete_user
 
-        supervisor = User(id=uuid.uuid4(), role=UserRole.supervisor, username="super", hashed_password="x")
-        admin = User(id=uuid.uuid4(), role=UserRole.admin, username="admin", hashed_password="x")
-        other_supervisor = User(id=uuid.uuid4(), role=UserRole.supervisor, username="super2", hashed_password="x")
-        publisher = User(id=uuid.uuid4(), role=UserRole.publisher, username="pub", hashed_password="x")
-        teacher = User(id=uuid.uuid4(), role=UserRole.teacher, username="teach", hashed_password="x")
-        student = User(id=uuid.uuid4(), role=UserRole.student, username="stud", hashed_password="x")
+        supervisor = User(
+            id=uuid.uuid4(),
+            role=UserRole.supervisor,
+            username="super",
+            hashed_password="x",
+        )
+        admin = User(
+            id=uuid.uuid4(), role=UserRole.admin, username="admin", hashed_password="x"
+        )
+        other_supervisor = User(
+            id=uuid.uuid4(),
+            role=UserRole.supervisor,
+            username="super2",
+            hashed_password="x",
+        )
+        publisher = User(
+            id=uuid.uuid4(),
+            role=UserRole.publisher,
+            username="pub",
+            hashed_password="x",
+        )
+        teacher = User(
+            id=uuid.uuid4(),
+            role=UserRole.teacher,
+            username="teach",
+            hashed_password="x",
+        )
+        student = User(
+            id=uuid.uuid4(), role=UserRole.student, username="stud", hashed_password="x"
+        )
 
         # Supervisor CAN delete these
         assert can_delete_user(supervisor, publisher) is True
@@ -598,7 +636,9 @@ class TestPermissionHelperFunctions:
         """Test self-deletion is blocked"""
         from app.api.deps import can_delete_user
 
-        user = User(id=uuid.uuid4(), role=UserRole.admin, username="admin", hashed_password="x")
+        user = User(
+            id=uuid.uuid4(), role=UserRole.admin, username="admin", hashed_password="x"
+        )
 
         assert can_delete_user(user, user) is False
 
@@ -606,10 +646,27 @@ class TestPermissionHelperFunctions:
         """Test other roles cannot delete users"""
         from app.api.deps import can_delete_user
 
-        publisher = User(id=uuid.uuid4(), role=UserRole.publisher, username="pub", hashed_password="x")
-        teacher = User(id=uuid.uuid4(), role=UserRole.teacher, username="teach", hashed_password="x")
-        student = User(id=uuid.uuid4(), role=UserRole.student, username="stud", hashed_password="x")
-        target = User(id=uuid.uuid4(), role=UserRole.student, username="target", hashed_password="x")
+        publisher = User(
+            id=uuid.uuid4(),
+            role=UserRole.publisher,
+            username="pub",
+            hashed_password="x",
+        )
+        teacher = User(
+            id=uuid.uuid4(),
+            role=UserRole.teacher,
+            username="teach",
+            hashed_password="x",
+        )
+        student = User(
+            id=uuid.uuid4(), role=UserRole.student, username="stud", hashed_password="x"
+        )
+        target = User(
+            id=uuid.uuid4(),
+            role=UserRole.student,
+            username="target",
+            hashed_password="x",
+        )
 
         assert can_delete_user(publisher, target) is False
         assert can_delete_user(teacher, target) is False

@@ -179,7 +179,9 @@ async def test_stream_audio_file(client, test_book):
     """Test streaming an actual audio file if available."""
     try:
         # Try to find an audio file
-        contents = await client.list_book_contents(test_book.publisher, test_book.book_name)
+        contents = await client.list_book_contents(
+            test_book.publisher, test_book.book_name
+        )
 
         audio_files = [f for f in contents if f.endswith(".mp3")]
         if not audio_files:

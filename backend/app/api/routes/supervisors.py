@@ -5,6 +5,7 @@ CRUD operations for Supervisor users.
 - List/Get: Accessible by Admin and Supervisor
 - Create/Update/Delete/Reset Password: Admin only
 """
+
 import logging
 import uuid
 from typing import Any
@@ -13,10 +14,9 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
 from sqlmodel import func, or_, select
 from starlette.requests import Request
 
-from app.core.rate_limit import RateLimits, limiter
-
 from app.api.deps import AdminOrSupervisor, AsyncSessionDep, SessionDep, require_role
 from app.core.config import settings
+from app.core.rate_limit import RateLimits, limiter
 from app.core.security import get_password_hash
 from app.models import (
     PasswordResetResponse,
@@ -177,14 +177,12 @@ def get_supervisor(
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supervisor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor not found"
         )
 
     if user.role != UserRole.supervisor:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supervisor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor not found"
         )
 
     return SupervisorPublic(
@@ -237,7 +235,7 @@ async def create_supervisor(
         if existing_email.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this email already exists"
+                detail="A user with this email already exists",
             )
 
     # Check username uniqueness
@@ -247,7 +245,7 @@ async def create_supervisor(
     if existing_username.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A user with this username already exists"
+            detail="A user with this username already exists",
         )
 
     # Generate temporary password
@@ -291,9 +289,13 @@ async def create_supervisor(
         temp_password = None  # Don't return password if emailed
     else:
         if not supervisor_in.user_email:
-            message = "Supervisor created. No email provided - share the password manually."
+            message = (
+                "Supervisor created. No email provided - share the password manually."
+            )
         else:
-            message = "Supervisor created. Email is disabled - share the password manually."
+            message = (
+                "Supervisor created. Email is disabled - share the password manually."
+            )
 
     logger.info(
         f"Supervisor created: Admin {current_user.username} created supervisor "
@@ -337,14 +339,12 @@ def update_supervisor(
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supervisor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor not found"
         )
 
     if user.role != UserRole.supervisor:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supervisor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor not found"
         )
 
     # Validate email uniqueness if changed
@@ -355,7 +355,7 @@ def update_supervisor(
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this email already exists"
+                detail="A user with this email already exists",
             )
 
     # Validate username uniqueness if changed
@@ -366,7 +366,7 @@ def update_supervisor(
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this username already exists"
+                detail="A user with this username already exists",
             )
 
     # Update fields
@@ -423,14 +423,12 @@ def delete_supervisor(
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supervisor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor not found"
         )
 
     if user.role != UserRole.supervisor:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supervisor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor not found"
         )
 
     # Check self-deletion
@@ -441,7 +439,7 @@ def delete_supervisor(
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot delete your own account"
+            detail="You cannot delete your own account",
         )
 
     logger.info(
@@ -482,21 +480,17 @@ async def reset_supervisor_password(
 
     Admin only - Supervisors cannot reset passwords of other Supervisors.
     """
-    result = await session.execute(
-        select(User).where(User.id == supervisor_id)
-    )
+    result = await session.execute(select(User).where(User.id == supervisor_id))
     user = result.scalar_one_or_none()
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supervisor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor not found"
         )
 
     if user.role != UserRole.supervisor:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supervisor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor not found"
         )
 
     # Generate new password

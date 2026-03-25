@@ -6,17 +6,17 @@
  * Shows estimated time for longer generations
  */
 
-import { Loader2, Sparkles, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import type { ActivityType } from "@/hooks/useGenerationState"
+import { Loader2, Sparkles, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import type { ActivityType } from "@/hooks/useGenerationState";
 
 interface GenerateButtonProps {
-  isGenerating: boolean
-  isDisabled: boolean
-  activityType: ActivityType | null
-  onGenerate: () => void
-  onCancel?: () => void
+  isGenerating: boolean;
+  isDisabled: boolean;
+  activityType: ActivityType | null;
+  onGenerate: () => void;
+  onCancel?: () => void;
 }
 
 // Estimated generation times in seconds
@@ -36,7 +36,7 @@ const ESTIMATED_TIMES: Record<ActivityType, number> = {
   listening_sentence_builder: 12,
   listening_word_builder: 10,
   vocabulary_matching: 5,
-}
+};
 
 export function GenerateButton({
   isGenerating,
@@ -46,8 +46,8 @@ export function GenerateButton({
   onCancel,
 }: GenerateButtonProps) {
   // Get estimated time for current activity type
-  const estimatedTime = activityType ? ESTIMATED_TIMES[activityType] : 0
-  const showEstimate = estimatedTime > 10
+  const estimatedTime = activityType ? ESTIMATED_TIMES[activityType] : 0;
+  const showEstimate = estimatedTime > 10;
 
   if (isGenerating) {
     return (
@@ -86,7 +86,7 @@ export function GenerateButton({
           </Button>
         )}
       </div>
-    )
+    );
   }
 
   return (
@@ -113,5 +113,5 @@ export function GenerateButton({
         </p>
       )}
     </div>
-  )
+  );
 }

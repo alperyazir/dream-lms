@@ -7,49 +7,49 @@
  * - Vocabulary tab: Vocabulary explorer for the book
  */
 
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeft, BookOpen, BookText, Eye, Video } from "lucide-react"
-import { useEffect, useState } from "react"
-import { VideoPreviewModal } from "@/components/ActivityPlayers/VideoPreviewModal"
-import { ErrorBoundary } from "@/components/Common/ErrorBoundary"
-import { VocabularyTable } from "@/components/DreamAI/VocabularyTable"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useBookResources } from "@/hooks/useBookResources"
-import type { VideoInfo } from "@/services/booksApi"
-import { booksApi, getAuthenticatedCoverUrl } from "@/services/booksApi"
-import { vocabularyExplorerApi } from "@/services/vocabularyExplorerApi"
-import type { PaginationParams } from "@/types/vocabulary-explorer"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft, BookOpen, BookText, Eye, Video } from "lucide-react";
+import { useEffect, useState } from "react";
+import { VideoPreviewModal } from "@/components/ActivityPlayers/VideoPreviewModal";
+import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
+import { VocabularyTable } from "@/components/DreamAI/VocabularyTable";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useBookResources } from "@/hooks/useBookResources";
+import type { VideoInfo } from "@/services/booksApi";
+import { booksApi, getAuthenticatedCoverUrl } from "@/services/booksApi";
+import { vocabularyExplorerApi } from "@/services/vocabularyExplorerApi";
+import type { PaginationParams } from "@/types/vocabulary-explorer";
 
 export const Route = createFileRoute("/_layout/teacher/books/$bookId")({
   component: BookDetailPage,
-})
+});
 
 function BookDetailPage() {
   return (
     <ErrorBoundary>
       <BookDetailContent />
     </ErrorBoundary>
-  )
+  );
 }
 
 function BookDetailContent() {
-  const { bookId } = Route.useParams()
-  const [coverUrl, setCoverUrl] = useState<string | null>(null)
-  const [isLoadingCover, setIsLoadingCover] = useState(true)
-  const [imageError, setImageError] = useState(false)
-  const [activeTab, setActiveTab] = useState("videos")
+  const { bookId } = Route.useParams();
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [isLoadingCover, setIsLoadingCover] = useState(true);
+  const [imageError, setImageError] = useState(false);
+  const [activeTab, setActiveTab] = useState("videos");
   const [vocabularyPagination, setVocabularyPagination] =
     useState<PaginationParams>({
       page: 1,
       pageSize: 25,
-    })
-  const [previewVideo, setPreviewVideo] = useState<VideoInfo | null>(null)
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+    });
+  const [previewVideo, setPreviewVideo] = useState<VideoInfo | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Fetch book details
   const {
@@ -60,41 +60,41 @@ function BookDetailContent() {
     queryKey: ["book", bookId],
     queryFn: () => booksApi.getBookById(Number(bookId)),
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   // Story 9.8: Fetch authenticated cover URL
   useEffect(() => {
-    let isMounted = true
-    let blobUrl: string | null = null
+    let isMounted = true;
+    let blobUrl: string | null = null;
 
-    setImageError(false)
+    setImageError(false);
 
     async function fetchCover() {
       if (!book?.cover_image_url) {
-        setIsLoadingCover(false)
-        return
+        setIsLoadingCover(false);
+        return;
       }
 
-      const url = await getAuthenticatedCoverUrl(book.cover_image_url)
+      const url = await getAuthenticatedCoverUrl(book.cover_image_url);
       if (isMounted) {
-        blobUrl = url
-        setCoverUrl(url)
-        setIsLoadingCover(false)
+        blobUrl = url;
+        setCoverUrl(url);
+        setIsLoadingCover(false);
       }
     }
 
-    fetchCover()
+    fetchCover();
 
     return () => {
-      isMounted = false
+      isMounted = false;
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
+        URL.revokeObjectURL(blobUrl);
       }
-    }
-  }, [book?.cover_image_url])
+    };
+  }, [book?.cover_image_url]);
 
   // Fetch videos/resources for this book
-  const { videos, isLoading: videosLoading } = useBookResources(bookId)
+  const { videos, isLoading: videosLoading } = useBookResources(bookId);
 
   // Fetch vocabulary for this book
   const { data: vocabularyData, isLoading: vocabularyLoading } = useQuery({
@@ -106,20 +106,20 @@ function BookDetailContent() {
       ),
     staleTime: 5 * 60 * 1000,
     enabled: !!book,
-  })
+  });
 
   const handleVocabularyPageChange = (page: number) => {
-    setVocabularyPagination((prev) => ({ ...prev, page }))
-  }
+    setVocabularyPagination((prev) => ({ ...prev, page }));
+  };
 
   const handleVocabularyPageSizeChange = (pageSize: number) => {
-    setVocabularyPagination({ page: 1, pageSize })
-  }
+    setVocabularyPagination({ page: 1, pageSize });
+  };
 
   const handlePreviewVideo = (video: VideoInfo) => {
-    setPreviewVideo(video)
-    setIsPreviewOpen(true)
-  }
+    setPreviewVideo(video);
+    setIsPreviewOpen(true);
+  };
 
   // Loading state
   if (bookLoading) {
@@ -141,7 +141,7 @@ function BookDetailContent() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   // Error or not found
@@ -174,7 +174,7 @@ function BookDetailContent() {
           </Button>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -382,5 +382,5 @@ function BookDetailContent() {
         showAttachButton={false}
       />
     </div>
-  )
+  );
 }

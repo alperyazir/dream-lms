@@ -141,7 +141,9 @@ class TestExtractPageImagePaths:
                     "name": "Module 1",
                     "pages": [
                         {"page_number": 7},  # Missing image_path
-                        {"image_path": "./books/Test/images/page.png"},  # Missing page_number
+                        {
+                            "image_path": "./books/Test/images/page.png"
+                        },  # Missing page_number
                     ],
                 },
             ]
@@ -169,7 +171,10 @@ class TestGetBookPages:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -177,7 +182,9 @@ class TestGetBookPages:
         teacher = session.exec(
             select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
         ).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
         publisher = session.exec(
             select(Publisher).where(Publisher.id == school.publisher_id)
         ).first()
@@ -310,14 +317,20 @@ class TestGetBookPages:
 
         # Verify thumbnail URLs from config.json image_path
         # Format: /api/v1/books/{book_id}/assets/images/HB/modules/M1/pages/07.png
-        assert "/assets/images/HB/modules/M1/pages/07.png" in m1_pages[7]["thumbnail_url"]
-        assert "/assets/images/HB/modules/M1/pages/08.png" in m1_pages[8]["thumbnail_url"]
+        assert (
+            "/assets/images/HB/modules/M1/pages/07.png" in m1_pages[7]["thumbnail_url"]
+        )
+        assert (
+            "/assets/images/HB/modules/M1/pages/08.png" in m1_pages[8]["thumbnail_url"]
+        )
 
         # Verify Module 2 pages
         m2_pages = {p["page_number"]: p for p in modules["Module 2"]["pages"]}
         assert 15 in m2_pages
         assert m2_pages[15]["activity_count"] == 1
-        assert "/assets/images/HB/modules/M2/pages/15.png" in m2_pages[15]["thumbnail_url"]
+        assert (
+            "/assets/images/HB/modules/M2/pages/15.png" in m2_pages[15]["thumbnail_url"]
+        )
 
     def test_get_pages_returns_404_for_other_publisher_book(
         self,
@@ -329,7 +342,10 @@ class TestGetBookPages:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -394,7 +410,10 @@ class TestGetPageActivities:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -402,7 +421,9 @@ class TestGetPageActivities:
         teacher = session.exec(
             select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
         ).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
         publisher = session.exec(
             select(Publisher).where(Publisher.id == school.publisher_id)
         ).first()
@@ -512,7 +533,10 @@ class TestGetPageActivities:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -520,7 +544,9 @@ class TestGetPageActivities:
         teacher = session.exec(
             select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
         ).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
         publisher = session.exec(
             select(Publisher).where(Publisher.id == school.publisher_id)
         ).first()
@@ -595,7 +621,10 @@ class TestGetPageActivities:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user_with_record.email, "password": "teacherpassword"},
+            data={
+                "username": teacher_user_with_record.email,
+                "password": "teacherpassword",
+            },
         )
         teacher_token = response.json()["access_token"]
 
@@ -603,7 +632,9 @@ class TestGetPageActivities:
         teacher = session.exec(
             select(Teacher).where(Teacher.user_id == teacher_user_with_record.id)
         ).first()
-        school = session.exec(select(School).where(School.id == teacher.school_id)).first()
+        school = session.exec(
+            select(School).where(School.id == teacher.school_id)
+        ).first()
         publisher = session.exec(
             select(Publisher).where(Publisher.id == school.publisher_id)
         ).first()

@@ -3,9 +3,9 @@
  * Story 20.2: Unified Edit Assignment Dialog
  */
 
-import { describe, expect, it } from "vitest"
-import type { AssignmentPreviewResponse } from "@/types/assignment"
-import { mapAssignmentToFormData } from "../assignment-utils"
+import { describe, expect, it } from "vitest";
+import type { AssignmentPreviewResponse } from "@/types/assignment";
+import { mapAssignmentToFormData } from "../assignment-utils";
 
 describe("mapAssignmentToFormData", () => {
   it("should correctly map assignment preview to form data", () => {
@@ -44,21 +44,21 @@ describe("mapAssignmentToFormData", () => {
         videos: [],
         teacher_materials: [],
       },
-    }
+    };
 
-    const result = mapAssignmentToFormData(mockAssignment)
+    const result = mapAssignmentToFormData(mockAssignment);
 
-    expect(result.name).toBe("Test Assignment")
-    expect(result.instructions).toBe("Test instructions")
-    expect(result.due_date).toBeInstanceOf(Date)
-    expect(result.time_limit_minutes).toBe(60)
-    expect(result.activity_ids).toEqual(["act-1", "act-2"])
-    expect(result.class_ids).toEqual([])
-    expect(result.student_ids).toEqual([])
-    expect(result.scheduled_publish_date).toBeNull()
-    expect(result.time_planning_enabled).toBe(false)
-    expect(result.date_groups).toEqual([])
-  })
+    expect(result.name).toBe("Test Assignment");
+    expect(result.instructions).toBe("Test instructions");
+    expect(result.due_date).toBeInstanceOf(Date);
+    expect(result.time_limit_minutes).toBe(60);
+    expect(result.activity_ids).toEqual(["act-1", "act-2"]);
+    expect(result.class_ids).toEqual([]);
+    expect(result.student_ids).toEqual([]);
+    expect(result.scheduled_publish_date).toBeNull();
+    expect(result.time_planning_enabled).toBe(false);
+    expect(result.date_groups).toEqual([]);
+  });
 
   it("should handle null/empty fields correctly", () => {
     const mockAssignment: AssignmentPreviewResponse = {
@@ -86,16 +86,16 @@ describe("mapAssignmentToFormData", () => {
       is_preview: true,
       video_path: null,
       resources: null,
-    }
+    };
 
-    const result = mapAssignmentToFormData(mockAssignment)
+    const result = mapAssignmentToFormData(mockAssignment);
 
-    expect(result.name).toBe("Test Assignment")
-    expect(result.instructions).toBe("")
-    expect(result.due_date).toBeNull()
-    expect(result.time_limit_minutes).toBeNull()
-    expect(result.resources).toBeNull()
-  })
+    expect(result.name).toBe("Test Assignment");
+    expect(result.instructions).toBe("");
+    expect(result.due_date).toBeNull();
+    expect(result.time_limit_minutes).toBeNull();
+    expect(result.resources).toBeNull();
+  });
 
   it("should map resources with teacher materials correctly", () => {
     const mockAssignment: AssignmentPreviewResponse = {
@@ -146,14 +146,14 @@ describe("mapAssignmentToFormData", () => {
           },
         ],
       },
-    }
+    };
 
-    const result = mapAssignmentToFormData(mockAssignment)
+    const result = mapAssignmentToFormData(mockAssignment);
 
-    expect(result.resources).toBeDefined()
-    expect(result.resources?.videos).toHaveLength(1)
-    expect(result.resources?.teacher_materials).toHaveLength(1)
-    expect(result.resources?.videos[0].path).toBe("videos/intro.mp4")
-    expect(result.resources?.teacher_materials[0].material_id).toBe("mat-1")
-  })
-})
+    expect(result.resources).toBeDefined();
+    expect(result.resources?.videos).toHaveLength(1);
+    expect(result.resources?.teacher_materials).toHaveLength(1);
+    expect(result.resources?.videos[0].path).toBe("videos/intro.mp4");
+    expect(result.resources?.teacher_materials[0].material_id).toBe("mat-1");
+  });
+});
