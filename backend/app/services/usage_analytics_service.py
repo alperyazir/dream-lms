@@ -8,11 +8,11 @@ and error rates across teachers, activity types, and providers.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import func
+from sqlalchemy import Integer, case, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.models import AIUsageLog, User
+from app.models import AIUsageLog, Teacher, User
 
 
 class UsageSummary:
@@ -121,54 +121,59 @@ class UsageAnalyticsService:
     """Service for AI usage analytics and aggregations."""
 
     def __init__(self, db: AsyncSession):
-        """Initialize usage analytics service."""
         self.db = db
+
+    def _apply_date_filters(self, query, from_date, to_date):
+        if from_date:
+            query = query.where(AIUsageLog.timestamp >= from_date)
+        if to_date:
+            query = query.where(AIUsageLog.timestamp <= to_date)
+        return query
 
     async def get_usage_summary(
         self,
         from_date: datetime | None = None,
         to_date: datetime | None = None,
     ) -> UsageSummary:
-        """
-        Get overall usage summary.
-
-        Args:
-            from_date: Start date filter (inclusive)
-            to_date: End date filter (inclusive)
-
-        Returns:
-            UsageSummary with aggregated statistics
-        """
-        query = select(
-            func.count(AIUsageLog.id).label("total"),
-            func.sum(AIUsageLog.estimated_cost).label("total_cost"),
-            func.avg(func.cast(AIUsageLog.success, type_=func.Integer())).label("success_rate"),
-            func.count(func.nullif(AIUsageLog.operation_type != "llm_generation", True)).label("llm_count"),
-            func.count(func.nullif(AIUsageLog.operation_type != "tts_generation", True)).label("tts_count"),
-            func.sum(AIUsageLog.input_tokens).label("total_input"),
-            func.sum(AIUsageLog.output_tokens).label("total_output"),
-            func.sum(AIUsageLog.audio_characters).label("total_audio"),
-            func.avg(AIUsageLog.duration_ms).label("avg_duration"),
+        success_case = case(
+            (AIUsageLog.success == True, 1),  # noqa: E712
+            else_=0,
+        )
+        llm_case = case(
+            (AIUsageLog.operation_type == "llm_generation", 1),
+            else_=0,
+        )
+        tts_case = case(
+            (AIUsageLog.operation_type == "tts_generation", 1),
+            else_=0,
         )
 
-        if from_date:
-            query = query.where(AIUsageLog.timestamp >= from_date)
-        if to_date:
-            query = query.where(AIUsageLog.timestamp <= to_date)
+        query = select(
+            func.count(AIUsageLog.id).label("total"),
+            func.coalesce(func.sum(AIUsageLog.estimated_cost), 0).label("total_cost"),
+            func.avg(success_case).label("success_rate"),
+            func.sum(llm_case).label("llm_count"),
+            func.sum(tts_case).label("tts_count"),
+            func.coalesce(func.sum(AIUsageLog.input_tokens), 0).label("total_input"),
+            func.coalesce(func.sum(AIUsageLog.output_tokens), 0).label("total_output"),
+            func.coalesce(func.sum(AIUsageLog.audio_characters), 0).label("total_audio"),
+            func.coalesce(func.avg(AIUsageLog.duration_ms), 0).label("avg_duration"),
+        )
 
+        query = self._apply_date_filters(query, from_date, to_date)
         result = await self.db.execute(query)
         row = result.one()
 
         return UsageSummary(
             total_generations=row.total or 0,
-            total_cost=float(row.total_cost or 0.0),
-            success_rate=float(row.success_rate or 0.0) * 100,  # Convert to percentage
-            total_llm_generations=row.llm_count or 0,
-            total_tts_generations=row.tts_count or 0,
-            total_input_tokens=row.total_input or 0,
-            total_output_tokens=row.total_output or 0,
-            total_audio_characters=row.total_audio or 0,
-            average_duration_ms=float(row.avg_duration or 0.0),
+            total_cost=float(row.total_cost or 0),
+            success_rate=float(row.success_rate or 0) * 100,
+            total_llm_generations=int(row.llm_count or 0),
+            total_tts_generations=int(row.tts_count or 0),
+            total_input_tokens=int(row.total_input or 0),
+            total_output_tokens=int(row.total_output or 0),
+            total_audio_characters=int(row.total_audio or 0),
+            average_duration_ms=float(row.avg_duration or 0),
         )
 
     async def get_usage_by_type(
@@ -176,28 +181,23 @@ class UsageAnalyticsService:
         from_date: datetime | None = None,
         to_date: datetime | None = None,
     ) -> list[UsageByType]:
-        """
-        Get usage breakdown by activity type.
+        success_case = case(
+            (AIUsageLog.success == True, 1),  # noqa: E712
+            else_=0,
+        )
 
-        Args:
-            from_date: Start date filter (inclusive)
-            to_date: End date filter (inclusive)
+        query = (
+            select(
+                AIUsageLog.activity_type,
+                func.count(AIUsageLog.id).label("count"),
+                func.coalesce(func.sum(AIUsageLog.estimated_cost), 0).label("cost"),
+                func.avg(success_case).label("success_rate"),
+            )
+            .group_by(AIUsageLog.activity_type)
+            .order_by(func.count(AIUsageLog.id).desc())
+        )
 
-        Returns:
-            List of UsageByType statistics
-        """
-        query = select(
-            AIUsageLog.activity_type,
-            func.count(AIUsageLog.id).label("count"),
-            func.sum(AIUsageLog.estimated_cost).label("cost"),
-            func.avg(func.cast(AIUsageLog.success, type_=func.Integer())).label("success_rate"),
-        ).group_by(AIUsageLog.activity_type).order_by(func.count(AIUsageLog.id).desc())
-
-        if from_date:
-            query = query.where(AIUsageLog.timestamp >= from_date)
-        if to_date:
-            query = query.where(AIUsageLog.timestamp <= to_date)
-
+        query = self._apply_date_filters(query, from_date, to_date)
         result = await self.db.execute(query)
         rows = result.all()
 
@@ -205,8 +205,8 @@ class UsageAnalyticsService:
             UsageByType(
                 activity_type=row.activity_type,
                 count=row.count,
-                cost=float(row.cost or 0.0),
-                success_rate=float(row.success_rate or 0.0) * 100,
+                cost=float(row.cost or 0),
+                success_rate=float(row.success_rate or 0) * 100,
             )
             for row in rows
         ]
@@ -217,70 +217,46 @@ class UsageAnalyticsService:
         to_date: datetime | None = None,
         limit: int = 100,
     ) -> list[UsageByTeacher]:
-        """
-        Get usage breakdown by teacher.
-
-        Args:
-            from_date: Start date filter (inclusive)
-            to_date: End date filter (inclusive)
-            limit: Maximum number of teachers to return
-
-        Returns:
-            List of UsageByTeacher statistics
-        """
-        # Subquery for top activity type per teacher
-        from sqlalchemy import and_, literal_column
-        from sqlmodel import col
-
         query = (
             select(
                 AIUsageLog.teacher_id,
                 User.full_name.label("teacher_name"),
                 func.count(AIUsageLog.id).label("total_generations"),
-                func.sum(AIUsageLog.estimated_cost).label("estimated_cost"),
+                func.coalesce(func.sum(AIUsageLog.estimated_cost), 0).label("estimated_cost"),
                 func.max(AIUsageLog.timestamp).label("last_activity_date"),
             )
-            .join(User, User.id == AIUsageLog.teacher_id)
+            .join(Teacher, Teacher.id == AIUsageLog.teacher_id)
+            .join(User, User.id == Teacher.user_id)
             .group_by(AIUsageLog.teacher_id, User.full_name)
             .order_by(func.count(AIUsageLog.id).desc())
             .limit(limit)
         )
 
-        if from_date:
-            query = query.where(AIUsageLog.timestamp >= from_date)
-        if to_date:
-            query = query.where(AIUsageLog.timestamp <= to_date)
-
+        query = self._apply_date_filters(query, from_date, to_date)
         result = await self.db.execute(query)
         rows = result.all()
 
-        # For each teacher, get their most used activity type
         teachers = []
         for row in rows:
             # Get top activity type for this teacher
-            top_activity_query = (
-                select(AIUsageLog.activity_type, func.count().label("count"))
+            top_query = (
+                select(AIUsageLog.activity_type)
                 .where(AIUsageLog.teacher_id == row.teacher_id)
                 .group_by(AIUsageLog.activity_type)
                 .order_by(func.count().desc())
                 .limit(1)
             )
-
-            if from_date:
-                top_activity_query = top_activity_query.where(AIUsageLog.timestamp >= from_date)
-            if to_date:
-                top_activity_query = top_activity_query.where(AIUsageLog.timestamp <= to_date)
-
-            top_activity_result = await self.db.execute(top_activity_query)
-            top_activity_row = top_activity_result.first()
+            top_query = self._apply_date_filters(top_query, from_date, to_date)
+            top_result = await self.db.execute(top_query)
+            top_row = top_result.first()
 
             teachers.append(
                 UsageByTeacher(
                     teacher_id=row.teacher_id,
                     teacher_name=row.teacher_name or "Unknown",
                     total_generations=row.total_generations,
-                    estimated_cost=float(row.estimated_cost or 0.0),
-                    top_activity_type=top_activity_row.activity_type if top_activity_row else None,
+                    estimated_cost=float(row.estimated_cost or 0),
+                    top_activity_type=top_row[0] if top_row else None,
                     last_activity_date=row.last_activity_date,
                 )
             )
@@ -292,28 +268,18 @@ class UsageAnalyticsService:
         from_date: datetime | None = None,
         to_date: datetime | None = None,
     ) -> list[UsageByProvider]:
-        """
-        Get usage breakdown by provider.
+        query = (
+            select(
+                AIUsageLog.provider,
+                AIUsageLog.operation_type,
+                func.count(AIUsageLog.id).label("count"),
+                func.coalesce(func.sum(AIUsageLog.estimated_cost), 0).label("cost"),
+            )
+            .group_by(AIUsageLog.provider, AIUsageLog.operation_type)
+            .order_by(func.count(AIUsageLog.id).desc())
+        )
 
-        Args:
-            from_date: Start date filter (inclusive)
-            to_date: End date filter (inclusive)
-
-        Returns:
-            List of UsageByProvider statistics
-        """
-        query = select(
-            AIUsageLog.provider,
-            AIUsageLog.operation_type,
-            func.count(AIUsageLog.id).label("count"),
-            func.sum(AIUsageLog.estimated_cost).label("cost"),
-        ).group_by(AIUsageLog.provider, AIUsageLog.operation_type).order_by(func.count(AIUsageLog.id).desc())
-
-        if from_date:
-            query = query.where(AIUsageLog.timestamp >= from_date)
-        if to_date:
-            query = query.where(AIUsageLog.timestamp <= to_date)
-
+        query = self._apply_date_filters(query, from_date, to_date)
         result = await self.db.execute(query)
         rows = result.all()
 
@@ -321,7 +287,7 @@ class UsageAnalyticsService:
             UsageByProvider(
                 provider=row.provider,
                 count=row.count,
-                cost=float(row.cost or 0.0),
+                cost=float(row.cost or 0),
                 operation_type=row.operation_type,
             )
             for row in rows
@@ -332,31 +298,22 @@ class UsageAnalyticsService:
         from_date: datetime | None = None,
         to_date: datetime | None = None,
     ) -> dict[str, float]:
-        """
-        Get error rate statistics.
-
-        Args:
-            from_date: Start date filter (inclusive)
-            to_date: End date filter (inclusive)
-
-        Returns:
-            Dictionary with error statistics
-        """
-        query = select(
-            func.count(AIUsageLog.id).label("total"),
-            func.count(func.nullif(AIUsageLog.success, True)).label("errors"),
+        error_case = case(
+            (AIUsageLog.success == False, 1),  # noqa: E712
+            else_=0,
         )
 
-        if from_date:
-            query = query.where(AIUsageLog.timestamp >= from_date)
-        if to_date:
-            query = query.where(AIUsageLog.timestamp <= to_date)
+        query = select(
+            func.count(AIUsageLog.id).label("total"),
+            func.sum(error_case).label("errors"),
+        )
 
+        query = self._apply_date_filters(query, from_date, to_date)
         result = await self.db.execute(query)
         row = result.one()
 
         total = row.total or 0
-        errors = row.errors or 0
+        errors = int(row.errors or 0)
         error_rate = (errors / total * 100) if total > 0 else 0.0
 
         return {
@@ -372,30 +329,16 @@ class UsageAnalyticsService:
         to_date: datetime | None = None,
         limit: int = 100,
     ) -> list[ErrorLog]:
-        """
-        Get recent error logs.
-
-        Args:
-            from_date: Start date filter (inclusive)
-            to_date: End date filter (inclusive)
-            limit: Maximum number of errors to return
-
-        Returns:
-            List of ErrorLog entries
-        """
         query = (
             select(AIUsageLog, User.full_name.label("teacher_name"))
-            .join(User, User.id == AIUsageLog.teacher_id)
-            .where(AIUsageLog.success == False)
+            .join(Teacher, Teacher.id == AIUsageLog.teacher_id)
+            .join(User, User.id == Teacher.user_id)
+            .where(AIUsageLog.success == False)  # noqa: E712
             .order_by(AIUsageLog.timestamp.desc())
             .limit(limit)
         )
 
-        if from_date:
-            query = query.where(AIUsageLog.timestamp >= from_date)
-        if to_date:
-            query = query.where(AIUsageLog.timestamp <= to_date)
-
+        query = self._apply_date_filters(query, from_date, to_date)
         result = await self.db.execute(query)
         rows = result.all()
 
@@ -412,141 +355,3 @@ class UsageAnalyticsService:
             )
             for row in rows
         ]
-
-
-# Standalone wrapper functions for easier use
-async def get_usage_summary(
-    db: AsyncSession,
-    from_date: datetime | None = None,
-    to_date: datetime | None = None,
-) -> dict:
-    """Get overall usage summary (standalone function)."""
-    service = UsageAnalyticsService(db)
-    summary = await service.get_usage_summary(from_date, to_date)
-
-    return {
-        "total_generations": summary.total_generations,
-        "total_llm_requests": summary.total_llm_generations,
-        "total_tts_requests": summary.total_tts_generations,
-        "successful_generations": summary.total_generations - int((100 - summary.success_rate) / 100 * summary.total_generations),
-        "failed_generations": int((100 - summary.success_rate) / 100 * summary.total_generations),
-        "total_estimated_cost": summary.total_cost,
-        "total_llm_cost": summary.total_cost,  # Will be separated in real implementation
-        "total_tts_cost": 0.0,  # Will be calculated separately
-        "total_input_tokens": summary.total_input_tokens,
-        "total_output_tokens": summary.total_output_tokens,
-        "total_audio_characters": summary.total_audio_characters,
-        "success_rate_percentage": summary.success_rate,
-    }
-
-
-async def get_usage_by_type(
-    db: AsyncSession,
-    from_date: datetime | None = None,
-    to_date: datetime | None = None,
-) -> list[dict]:
-    """Get usage breakdown by activity type (standalone function)."""
-    service = UsageAnalyticsService(db)
-    usage_list = await service.get_usage_by_type(from_date, to_date)
-
-    # Calculate total for percentage
-    total = sum(u.count for u in usage_list)
-
-    return [
-        {
-            "activity_type": usage.activity_type,
-            "count": usage.count,
-            "cost": usage.cost,
-            "percentage": (usage.count / total * 100) if total > 0 else 0.0,
-            "success_rate": usage.success_rate,
-        }
-        for usage in usage_list
-    ]
-
-
-async def get_usage_by_teacher(
-    db: AsyncSession,
-    from_date: datetime | None = None,
-    to_date: datetime | None = None,
-    limit: int = 100,
-) -> list[dict]:
-    """Get usage breakdown by teacher (standalone function)."""
-    service = UsageAnalyticsService(db)
-    teachers = await service.get_usage_by_teacher(from_date, to_date, limit)
-
-    return [
-        {
-            "teacher_id": teacher.teacher_id,
-            "teacher_name": teacher.teacher_name,
-            "total_generations": teacher.total_generations,
-            "estimated_cost": teacher.estimated_cost,
-            "top_activity_type": teacher.top_activity_type,
-            "last_activity_date": teacher.last_activity_date,
-        }
-        for teacher in teachers
-    ]
-
-
-async def get_usage_by_provider(
-    db: AsyncSession,
-    from_date: datetime | None = None,
-    to_date: datetime | None = None,
-) -> dict:
-    """Get usage breakdown by provider (standalone function)."""
-    service = UsageAnalyticsService(db)
-    providers = await service.get_usage_by_provider(from_date, to_date)
-
-    llm_providers = []
-    tts_providers = []
-
-    for provider in providers:
-        provider_dict = {
-            "provider": provider.provider,
-            "count": provider.count,
-            "cost": provider.cost,
-        }
-
-        if provider.operation_type == "llm_generation":
-            llm_providers.append(provider_dict)
-        elif provider.operation_type == "tts_generation":
-            tts_providers.append(provider_dict)
-
-    return {
-        "llm_providers": llm_providers,
-        "tts_providers": tts_providers,
-    }
-
-
-async def get_error_rate(
-    db: AsyncSession,
-    from_date: datetime | None = None,
-    to_date: datetime | None = None,
-    limit: int = 100,
-) -> dict:
-    """Get error rate and recent errors (standalone function)."""
-    service = UsageAnalyticsService(db)
-    stats = await service.get_error_rate(from_date, to_date)
-    errors = await service.get_errors(from_date, to_date, limit)
-
-    return {
-        "error_statistics": {
-            "total_requests": stats["total_requests"],
-            "total_errors": stats["total_errors"],
-            "total_successes": stats["total_requests"] - stats["total_errors"],
-            "error_rate_percentage": stats["error_rate_percentage"],
-            "success_rate_percentage": stats["success_rate_percentage"],
-        },
-        "recent_errors": [
-            {
-                "id": error.id,
-                "timestamp": error.timestamp,
-                "provider": error.provider,
-                "error_message": error.error_message,
-                "teacher_id": error.teacher_id,
-                "teacher_name": error.teacher_name,
-                "activity_type": error.activity_type,
-                "operation_type": error.operation_type,
-            }
-            for error in errors
-        ],
-    }

@@ -124,6 +124,7 @@ class DeepSeekProvider(LLMProvider):
         )
 
         result = await self.generate(structured_prompt, json_options)
+        self.last_generation_result = result
 
         # Parse JSON response
         try:

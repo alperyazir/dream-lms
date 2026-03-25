@@ -4,6 +4,7 @@
 
 import { createFileRoute } from "@tanstack/react-router"
 import { subDays } from "date-fns"
+import { AlertCircle, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { FiActivity } from "react-icons/fi"
 import { DateRangeFilter } from "@/components/Admin/AIUsage/DateRangeFilter"
@@ -11,6 +12,7 @@ import { ExportButton } from "@/components/Admin/AIUsage/ExportButton"
 import { UsageByTeacherTable } from "@/components/Admin/AIUsage/UsageByTeacherTable"
 import { UsageSummaryCards } from "@/components/Admin/AIUsage/UsageSummaryCards"
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   useAIUsageByProvider,
@@ -31,15 +33,34 @@ function AIUsageDashboard() {
     to: new Date(),
   })
 
-  // Fetch all data
-  const { data: summary, isLoading: summaryLoading } =
-    useAIUsageSummary(dateRange)
-  const { data: byType, isLoading: byTypeLoading } = useAIUsageByType(dateRange)
-  const { data: byTeacher, isLoading: byTeacherLoading } =
-    useAIUsageByTeacher(dateRange)
-  const { data: byProvider, isLoading: byProviderLoading } =
-    useAIUsageByProvider(dateRange)
-  const { data: errors, isLoading: errorsLoading } = useAIUsageErrors(dateRange)
+  const {
+    data: summary,
+    isLoading: summaryLoading,
+    error: summaryError,
+  } = useAIUsageSummary(dateRange)
+  const {
+    data: byType,
+    isLoading: byTypeLoading,
+    error: byTypeError,
+  } = useAIUsageByType(dateRange)
+  const {
+    data: byTeacher,
+    isLoading: byTeacherLoading,
+    error: byTeacherError,
+  } = useAIUsageByTeacher(dateRange)
+  const {
+    data: byProvider,
+    isLoading: byProviderLoading,
+    error: byProviderError,
+  } = useAIUsageByProvider(dateRange)
+  const {
+    data: errors,
+    isLoading: errorsLoading,
+    error: errorsError,
+  } = useAIUsageErrors(dateRange)
+
+  const hasAnyError =
+    summaryError || byTypeError || byTeacherError || byProviderError || errorsError
 
   return (
     <PageContainer>
@@ -48,60 +69,91 @@ function AIUsageDashboard() {
         title="AI Usage Dashboard"
         description="Monitor AI generation costs and usage patterns"
       >
-        <DateRangeFilter
-          dateRange={dateRange}
-          onDateRangeChange={setDateRange}
-        />
-        <ExportButton dateRange={dateRange} />
+        <div className="flex items-center gap-2">
+          <DateRangeFilter
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+          />
+          <ExportButton dateRange={dateRange} />
+        </div>
       </PageHeader>
 
-      {/* Summary Cards */}
-      {summary && (
-        <UsageSummaryCards summary={summary} isLoading={summaryLoading} />
+      {/* API Error Banner */}
+      {hasAnyError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load some usage data. Make sure you are logged in as an
+            admin.
+          </AlertDescription>
+        </Alert>
       )}
+
+      {/* Summary Cards */}
+      <UsageSummaryCards
+        summary={
+          summary ?? {
+            total_generations: 0,
+            total_cost: 0,
+            success_rate: 0,
+            total_llm_generations: 0,
+            total_tts_generations: 0,
+            total_input_tokens: 0,
+            total_output_tokens: 0,
+            total_audio_characters: 0,
+            average_duration_ms: 0,
+            date_range: { from: null, to: null },
+          }
+        }
+        isLoading={summaryLoading}
+      />
 
       {/* Charts Row */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Usage by Type */}
         <Card>
           <CardHeader>
-            <CardTitle>Usage by Activity Type</CardTitle>
+            <CardTitle className="text-base">Usage by Activity Type</CardTitle>
           </CardHeader>
           <CardContent>
             {byTypeLoading ? (
-              <div className="h-64 flex items-center justify-center">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-              </div>
+              <LoadingSpinner />
             ) : byType && byType.length > 0 ? (
               <div className="space-y-3">
-                {byType.map((item) => (
-                  <div
-                    key={item.activity_type}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">
-                        {item.activity_type}
+                {byType.map((item) => {
+                  const label = item.activity_type
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase())
+                  return (
+                    <div
+                      key={item.activity_type}
+                      className="flex items-center gap-3"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">
+                          {label}
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-1.5 mt-1">
+                          <div
+                            className="bg-purple-500 h-1.5 rounded-full"
+                            style={{ width: `${Math.min(item.percentage, 100)}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {item.count} generations • ${item.cost.toFixed(2)}
+                      <div className="text-right shrink-0">
+                        <div className="font-semibold text-sm">
+                          {item.count}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {item.percentage.toFixed(1)}%
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold">
-                        {item.percentage.toFixed(1)}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {item.success_rate.toFixed(1)}% success
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm text-center">
-                No data available
-              </p>
+              <EmptyState message="No activity data for this period" />
             )}
           </CardContent>
         </Card>
@@ -109,29 +161,35 @@ function AIUsageDashboard() {
         {/* Provider Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>Provider Distribution</CardTitle>
+            <CardTitle className="text-base">Provider Distribution</CardTitle>
           </CardHeader>
           <CardContent>
             {byProviderLoading ? (
-              <div className="h-64 flex items-center justify-center">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-              </div>
-            ) : byProvider ? (
-              <div className="space-y-4">
+              <LoadingSpinner />
+            ) : byProvider &&
+              (byProvider.llm_providers.length > 0 ||
+                byProvider.tts_providers.length > 0) ? (
+              <div className="space-y-5">
                 {byProvider.llm_providers.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium mb-2">LLM Providers</h4>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                      LLM Providers
+                    </h4>
                     <div className="space-y-2">
                       {byProvider.llm_providers.map((provider) => (
                         <div
                           key={provider.provider}
-                          className="flex items-center justify-between"
+                          className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
                         >
-                          <span className="text-sm">{provider.provider}</span>
+                          <span className="text-sm font-medium">
+                            {provider.provider}
+                          </span>
                           <div className="text-right">
-                            <div className="font-medium">{provider.count}</div>
+                            <div className="font-semibold text-sm">
+                              {provider.count}
+                            </div>
                             <div className="text-xs text-muted-foreground">
-                              ${provider.cost.toFixed(2)}
+                              ${provider.cost.toFixed(4)}
                             </div>
                           </div>
                         </div>
@@ -141,18 +199,24 @@ function AIUsageDashboard() {
                 )}
                 {byProvider.tts_providers.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium mb-2">TTS Providers</h4>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                      TTS Providers
+                    </h4>
                     <div className="space-y-2">
                       {byProvider.tts_providers.map((provider) => (
                         <div
                           key={provider.provider}
-                          className="flex items-center justify-between"
+                          className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
                         >
-                          <span className="text-sm">{provider.provider}</span>
+                          <span className="text-sm font-medium">
+                            {provider.provider}
+                          </span>
                           <div className="text-right">
-                            <div className="font-medium">{provider.count}</div>
+                            <div className="font-semibold text-sm">
+                              {provider.count}
+                            </div>
                             <div className="text-xs text-muted-foreground">
-                              ${provider.cost.toFixed(2)}
+                              ${provider.cost.toFixed(4)}
                             </div>
                           </div>
                         </div>
@@ -162,66 +226,48 @@ function AIUsageDashboard() {
                 )}
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm text-center">
-                No data available
-              </p>
+              <EmptyState message="No provider data for this period" />
             )}
           </CardContent>
         </Card>
       </div>
 
       {/* Teacher Usage Table */}
-      {byTeacher && (
-        <UsageByTeacherTable data={byTeacher} isLoading={byTeacherLoading} />
-      )}
+      <UsageByTeacherTable
+        data={byTeacher ?? []}
+        isLoading={byTeacherLoading}
+      />
 
       {/* Error Monitor */}
       <Card>
         <CardHeader>
-          <CardTitle>Error Monitor</CardTitle>
+          <CardTitle className="text-base">Error Monitor</CardTitle>
         </CardHeader>
         <CardContent>
           {errorsLoading ? (
-            <div className="h-32 flex items-center justify-center">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-            </div>
+            <LoadingSpinner />
           ) : errors ? (
             <div className="space-y-4">
               {/* Error Statistics */}
-              <div className="grid grid-cols-4 gap-4 p-4 bg-muted rounded-lg">
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    Total Requests
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {errors.error_statistics.total_requests}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    Total Errors
-                  </div>
-                  <div className="text-2xl font-bold text-red-600">
-                    {errors.error_statistics.total_errors}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    Error Rate
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {errors.error_statistics.error_rate_percentage.toFixed(2)}%
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    Success Rate
-                  </div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {errors.error_statistics.success_rate_percentage.toFixed(2)}
-                    %
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+                <StatBlock
+                  label="Total Requests"
+                  value={errors.error_statistics.total_requests.toLocaleString()}
+                />
+                <StatBlock
+                  label="Total Errors"
+                  value={errors.error_statistics.total_errors.toLocaleString()}
+                  className="text-red-500"
+                />
+                <StatBlock
+                  label="Error Rate"
+                  value={`${errors.error_statistics.error_rate_percentage.toFixed(2)}%`}
+                />
+                <StatBlock
+                  label="Success Rate"
+                  value={`${errors.error_statistics.success_rate_percentage.toFixed(2)}%`}
+                  className="text-green-500"
+                />
               </div>
 
               {/* Recent Errors */}
@@ -229,7 +275,7 @@ function AIUsageDashboard() {
                 <div>
                   <h4 className="text-sm font-medium mb-3">Recent Errors</h4>
                   <div className="space-y-2">
-                    {errors.recent_errors.slice(0, 5).map((error) => (
+                    {errors.recent_errors.slice(0, 10).map((error) => (
                       <div
                         key={error.id}
                         className="p-3 border rounded-lg text-sm"
@@ -241,9 +287,10 @@ function AIUsageDashboard() {
                           </div>
                         </div>
                         <div className="text-muted-foreground text-xs mb-1">
-                          {error.teacher_name} • {error.activity_type}
+                          {error.teacher_name} &middot;{" "}
+                          {error.activity_type.replace(/_/g, " ")}
                         </div>
-                        <div className="text-red-600 text-xs">
+                        <div className="text-red-500 text-xs font-mono">
                           {error.error_message}
                         </div>
                       </div>
@@ -251,18 +298,49 @@ function AIUsageDashboard() {
                   </div>
                 </div>
               ) : (
-                <p className="text-center text-muted-foreground text-sm">
+                <p className="text-center text-muted-foreground text-sm py-4">
                   No errors in this period
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-muted-foreground text-sm text-center">
-              No error data available
-            </p>
+            <EmptyState message="No error data available" />
           )}
         </CardContent>
       </Card>
     </PageContainer>
+  )
+}
+
+function LoadingSpinner() {
+  return (
+    <div className="h-48 flex items-center justify-center">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  )
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="h-48 flex items-center justify-center">
+      <p className="text-muted-foreground text-sm">{message}</p>
+    </div>
+  )
+}
+
+function StatBlock({
+  label,
+  value,
+  className,
+}: {
+  label: string
+  value: string
+  className?: string
+}) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={`text-xl font-bold mt-1 ${className ?? ""}`}>{value}</div>
+    </div>
   )
 }

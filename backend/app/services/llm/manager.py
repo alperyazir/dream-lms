@@ -225,6 +225,9 @@ class LLMManager:
                 )
                 result = await provider.generate_structured(prompt, schema, options)
                 logger.info(f"Structured generation successful with {provider.get_name()}")
+                # Store metadata for usage tracking
+                self.last_provider_name = provider.get_name()
+                self.last_generation_result = getattr(provider, 'last_generation_result', None)
                 return result
 
             except LLMRateLimitError as e:

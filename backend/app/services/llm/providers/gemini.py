@@ -160,6 +160,7 @@ class GeminiProvider(LLMProvider):
         )
 
         result = await self.generate(structured_prompt, json_options)
+        self.last_generation_result = result
 
         # Parse JSON response with repair for common LLM issues
         try:

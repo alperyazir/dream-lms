@@ -105,8 +105,9 @@ class Settings(BaseSettings):
 
     # Dream Central Storage API Integration
     DREAM_CENTRAL_STORAGE_URL: str = "http://localhost:8081"
-    DREAM_CENTRAL_STORAGE_EMAIL: str = "admin@admin.com"
-    DREAM_CENTRAL_STORAGE_PASSWORD: str = "admin"
+    DREAM_CENTRAL_STORAGE_API_KEY: str = ""  # API key auth (preferred over email/password)
+    DREAM_CENTRAL_STORAGE_EMAIL: str = "admin@admin.com"  # Fallback: JWT auth
+    DREAM_CENTRAL_STORAGE_PASSWORD: str = "admin"  # Fallback: JWT auth
     DREAM_CENTRAL_STORAGE_TOKEN_EXPIRY: int = 1800  # 30 minutes in seconds
     DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET: str = "changethis"
     # External MinIO URL for presigned URLs (replaces internal Docker hostname)

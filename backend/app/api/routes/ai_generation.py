@@ -1804,14 +1804,19 @@ async def save_content_to_library(
     )
 
     try:
-        # Get teacher_id from current_user's teacher relationship
-        if not current_user.teacher:
+        # Get teacher_id — query directly since cached users don't have relationships loaded
+        from app.models import Teacher
+        teacher_result = await db.execute(
+            select(Teacher).where(Teacher.user_id == current_user.id)
+        )
+        teacher = teacher_result.scalar_one_or_none()
+        if not teacher:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Teacher profile not found. Only teachers can save content to library.",
             )
 
-        teacher_id = current_user.teacher.id
+        teacher_id = teacher.id
 
         # Check if content was provided directly in request
         content_data = None
@@ -2833,10 +2838,30 @@ async def generate_content_v2(
             },
         )
 
+    # Check monthly quota
+    from app.models import Teacher as _TeacherQ
+    from app.core.config import settings as _settings
+    _tq_result = await db.execute(
+        select(_TeacherQ).where(_TeacherQ.user_id == current_user.id)
+    )
+    _tq = _tq_result.scalar_one_or_none()
+    if _tq and _tq.ai_generations_used >= _settings.AI_MONTHLY_QUOTA:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Monthly AI generation quota exceeded. Resets next month.",
+        )
+
     logger.info(
         f"V2 generation requested: skill={request.skill_slug}, "
         f"format={request.format_slug}, user={current_user.id}"
     )
+
+    import time as _time
+    _gen_start = _time.time()
+
+    # Reset tracking attributes
+    llm_manager.last_provider_name = "unknown"
+    llm_manager.last_generation_result = None
 
     # Handle mix mode separately (no dispatcher needed)
     if request.skill_slug == "mix":
@@ -2882,6 +2907,35 @@ async def generate_content_v2(
             await storage.save_mix_mode_activity(mix_activity)
 
             rate_limiter.record_usage(str(current_user.id), 1)
+
+            # Track AI usage quota for mix mode
+            _gen_duration_ms = int((_time.time() - _gen_start) * 1000)
+            _last_result = getattr(llm_manager, 'last_generation_result', None)
+            _input_tokens = _last_result.token_usage.input_tokens if _last_result else 0
+            _output_tokens = _last_result.token_usage.output_tokens if _last_result else 0
+            _est_cost = _last_result.token_usage.estimated_cost_usd if _last_result else 0.0
+            _prov_name = getattr(llm_manager, 'last_provider_name', 'unknown')
+            try:
+                from app.models import Teacher as _Teacher
+                teacher_result = await db.execute(
+                    select(_Teacher).where(_Teacher.user_id == current_user.id)
+                )
+                _teacher = teacher_result.scalar_one_or_none()
+                if _teacher:
+                    from app.services.usage_tracking_service import log_llm_usage
+                    await log_llm_usage(
+                        db=db,
+                        teacher_id=_teacher.id,
+                        activity_type="mix_mode",
+                        provider=_prov_name,
+                        input_tokens=_input_tokens,
+                        output_tokens=_output_tokens,
+                        estimated_cost=_est_cost,
+                        duration_ms=_gen_duration_ms,
+                        success=True,
+                    )
+            except Exception as usage_err:
+                logger.warning(f"Failed to track AI usage: {usage_err}")
 
             from app.schemas.ai_generation_v2 import GenerationResponseV2
             mix_response = GenerationResponseV2(
@@ -3281,6 +3335,35 @@ async def generate_content_v2(
 
         # Record rate limit usage
         rate_limiter.record_usage(str(current_user.id), 1)
+
+        # Track AI usage quota
+        _gen_duration_ms = int((_time.time() - _gen_start) * 1000)
+        _last_result = getattr(llm_manager, 'last_generation_result', None)
+        _input_tokens = _last_result.token_usage.prompt_tokens if _last_result else 0
+        _output_tokens = _last_result.token_usage.completion_tokens if _last_result else 0
+        _est_cost = _last_result.token_usage.estimated_cost_usd if _last_result else 0.0
+        _prov_name = getattr(llm_manager, 'last_provider_name', 'unknown')
+        try:
+            from app.models import Teacher as _Teacher
+            teacher_result = await db.execute(
+                select(_Teacher).where(_Teacher.user_id == current_user.id)
+            )
+            _teacher = teacher_result.scalar_one_or_none()
+            if _teacher:
+                from app.services.usage_tracking_service import log_llm_usage
+                await log_llm_usage(
+                    db=db,
+                    teacher_id=_teacher.id,
+                    activity_type=dispatch_result.activity_type,
+                    provider=_prov_name,
+                    input_tokens=_input_tokens,
+                    output_tokens=_output_tokens,
+                    estimated_cost=_est_cost,
+                    duration_ms=_gen_duration_ms,
+                    success=True,
+                )
+        except Exception as usage_err:
+            logger.warning(f"Failed to track AI usage: {usage_err}")
 
         # Inject skill metadata into content
         content_data["_skill_metadata"] = {

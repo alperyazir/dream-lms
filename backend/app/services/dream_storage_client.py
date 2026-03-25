@@ -160,12 +160,16 @@ class DreamCentralStorageClient:
             pool=5.0,  # Pool acquisition timeout
         )
 
+        # API key auth (preferred) vs JWT auth (fallback)
+        self._api_key: str | None = settings.DREAM_CENTRAL_STORAGE_API_KEY or None
+        self._use_api_key = bool(self._api_key)
+
         # Initialize HTTP client
         self._client = httpx.AsyncClient(
             base_url=settings.DREAM_CENTRAL_STORAGE_URL, limits=limits, timeout=timeout
         )
 
-        # Token cache
+        # Token cache (only used for JWT fallback)
         self._token: str | None = None
         self._token_expires_at: datetime | None = None
         self._token_lock = asyncio.Lock()
@@ -173,7 +177,8 @@ class DreamCentralStorageClient:
         # Response cache
         self._cache: dict[str, dict[str, Any]] = {}
 
-        logger.info("DreamCentralStorageClient initialized")
+        auth_mode = "API key" if self._use_api_key else "JWT (email/password)"
+        logger.info(f"DreamCentralStorageClient initialized (auth: {auth_mode})")
 
     async def __aenter__(self) -> "DreamCentralStorageClient":
         """Async context manager entry."""
@@ -235,11 +240,33 @@ class DreamCentralStorageClient:
             logger.error(f"Authentication error: {e}")
             raise DreamStorageAuthError(f"Authentication failed: {e}") from e
 
+    async def _get_auth_headers(self) -> dict[str, str]:
+        """Get authentication headers (API key for API routes, JWT for storage routes)."""
+        if self._use_api_key:
+            return {"Authorization": f"Bearer {self._api_key}"}
+        token = await self._get_valid_token()
+        return {"Authorization": f"Bearer {token}"}
+
+    async def _get_jwt_auth_headers(self) -> dict[str, str]:
+        """Get JWT auth headers (for storage endpoints that don't support API keys)."""
+        token = await self._get_jwt_token()
+        return {"Authorization": f"Bearer {token}"}
+
+    async def _get_jwt_token(self) -> str:
+        """Get a valid JWT token via email/password login, with refresh."""
+        async with self._token_lock:
+            if self._token is None or self._token_expires_at is None:
+                await self.authenticate()
+            elif datetime.now(timezone.utc) >= self._token_expires_at:
+                logger.info("JWT token expired, refreshing...")
+                await self.authenticate()
+            if self._token is None:
+                raise DreamStorageAuthError("Failed to obtain valid JWT token")
+            return self._token
+
     async def _get_valid_token(self) -> str:
         """
         Get a valid JWT token, refreshing if necessary.
-
-        This method is thread-safe and ensures only one token refresh happens at a time.
 
         Returns:
             str: Valid JWT access token
@@ -323,12 +350,12 @@ class DreamCentralStorageClient:
             DreamStorageNotFoundError: Resource not found
             DreamStorageServerError: Server error after retries
         """
-        # Get valid token
-        token = await self._get_valid_token()
-
-        # Add authorization header
+        # Add authorization header — storage endpoints need JWT, others use API key
         headers = kwargs.pop("headers", {})
-        headers["Authorization"] = f"Bearer {token}"
+        if url.startswith("/storage/"):
+            headers.update(await self._get_jwt_auth_headers())
+        else:
+            headers.update(await self._get_auth_headers())
 
         # Override timeout for downloads
         if use_long_timeout:
@@ -350,10 +377,11 @@ class DreamCentralStorageClient:
 
                 # Handle specific status codes
                 if response.status_code == 401:
-                    # Unauthorized - refresh token and retry once
+                    if self._use_api_key and not url.startswith("/storage/"):
+                        raise DreamStorageAuthError("API key authentication failed (401). Check DREAM_CENTRAL_STORAGE_API_KEY.")
+                    # Unauthorized - refresh JWT token and retry once
                     if attempt == 0:
                         logger.warning("Received 401, refreshing token...")
-                        # Clear token and re-authenticate (no lock needed here)
                         self._token = None
                         self._token_expires_at = None
                         token_response = await self.authenticate()
@@ -737,13 +765,12 @@ class DreamCentralStorageClient:
         """
         self._validate_asset_path(asset_path)
 
-        # Get valid token
-        token = await self._get_valid_token()
+        auth_headers = await self._get_jwt_auth_headers()
 
         url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher}/{book_name}/object"
         params = {"path": asset_path}
         headers = {
-            "Authorization": f"Bearer {token}",
+            **auth_headers,
             "Range": "bytes=0-0",  # Request first byte to get total size
         }
 
@@ -802,12 +829,11 @@ class DreamCentralStorageClient:
         """
         self._validate_asset_path(asset_path)
 
-        # Get valid token
-        token = await self._get_valid_token()
+        auth_headers = await self._get_jwt_auth_headers()
 
         url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher}/{book_name}/object"
         params = {"path": asset_path}
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = {**auth_headers}
 
         # Add Range header if specified
         if end is not None:
@@ -926,8 +952,7 @@ class DreamCentralStorageClient:
         Raises:
             DreamStorageError: If upload fails
         """
-        # Get valid token
-        token = await self._get_valid_token()
+        auth_headers = await self._get_jwt_auth_headers()
 
         # Use DCS teacher upload endpoint
         url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/upload"
@@ -944,7 +969,7 @@ class DreamCentralStorageClient:
             response = await client.post(
                 url,
                 files=files,
-                headers={"Authorization": f"Bearer {token}"},
+                headers=auth_headers,
             )
 
             if response.status_code == 404:
@@ -1002,8 +1027,7 @@ class DreamCentralStorageClient:
             raise ValueError(f"Invalid storage path format: {storage_path}")
         _teacher_uuid, _materials, filename = parts
 
-        # Get valid token
-        token = await self._get_valid_token()
+        auth_headers = await self._get_jwt_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
@@ -1016,7 +1040,7 @@ class DreamCentralStorageClient:
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(
                 url,
-                headers={"Authorization": f"Bearer {token}"},
+                headers=auth_headers,
             )
 
             if response.status_code == 404:
@@ -1063,8 +1087,7 @@ class DreamCentralStorageClient:
             raise ValueError(f"Invalid storage path format: {storage_path}")
         _teacher_uuid, _materials, filename = parts
 
-        # Get valid token
-        token = await self._get_valid_token()
+        auth_headers = await self._get_jwt_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
@@ -1075,7 +1098,7 @@ class DreamCentralStorageClient:
         timeout = httpx.Timeout(connect=5.0, read=120.0, write=10.0, pool=5.0)
 
         # Prepare headers for streaming with range support
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = {**auth_headers}
         if end is not None:
             headers["Range"] = f"bytes={start}-{end}"
         elif start > 0:
@@ -1119,8 +1142,7 @@ class DreamCentralStorageClient:
             raise ValueError(f"Invalid storage path format: {storage_path}")
         _teacher_uuid, _materials, filename = parts
 
-        # Get valid token
-        token = await self._get_valid_token()
+        auth_headers = await self._get_jwt_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
@@ -1133,7 +1155,7 @@ class DreamCentralStorageClient:
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.delete(
                 url,
-                headers={"Authorization": f"Bearer {token}"},
+                headers=auth_headers,
             )
 
             if response.status_code == 404:
@@ -1180,7 +1202,7 @@ class DreamCentralStorageClient:
         _teacher_uuid, _materials, filename = parts
 
         # Verify file exists with Range request (HEAD not supported by DCS)
-        token = await self._get_valid_token()
+        auth_headers = await self._get_jwt_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
@@ -1194,7 +1216,7 @@ class DreamCentralStorageClient:
             response = await client.get(
                 url,
                 headers={
-                    "Authorization": f"Bearer {token}",
+                    **auth_headers,
                     "Range": "bytes=0-0",
                 },
             )
@@ -1251,7 +1273,7 @@ class DreamCentralStorageClient:
         _teacher_uuid, _materials, filename = parts
 
         # Get valid token
-        token = await self._get_valid_token()
+        auth_headers = await self._get_jwt_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
@@ -1266,7 +1288,7 @@ class DreamCentralStorageClient:
             response = await client.get(
                 url,
                 headers={
-                    "Authorization": f"Bearer {token}",
+                    **auth_headers,
                     "Range": "bytes=0-0",
                 },
             )

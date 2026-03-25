@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.models import AIUsageLog, Teacher
+from app.services.redis_cache import cache_invalidate
 
 
 class UsageTrackingService:
@@ -77,6 +78,10 @@ class UsageTrackingService:
 
         await self.db.commit()
         await self.db.refresh(log_entry)
+
+        # Invalidate cached AI usage so quota updates immediately
+        if success and teacher:
+            await cache_invalidate(f"user:{teacher.user_id}:ai_usage")
 
         return log_entry
 

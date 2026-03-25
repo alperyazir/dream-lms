@@ -5,6 +5,7 @@
  * then sees all AI content for that book from DCS (any teacher).
  */
 
+import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   AlertCircle,
@@ -92,6 +93,7 @@ function toContentItem(item: BookContentItem): ContentItem {
 
 function ContentLibraryPage() {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   // Book selection
   const [selectedBookId, setSelectedBookId] = useState<number | null>(null)
@@ -178,35 +180,36 @@ function ContentLibraryPage() {
         title="Dream AI Generation"
         description="Generate and manage AI-powered learning activities"
       >
-        <Button
-          onClick={() => setShowGenerateDialog(true)}
-          className="bg-purple-600 hover:bg-purple-700"
-        >
-          <Sparkles className="h-4 w-4 mr-2" />
-          AI Generation
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* AI Usage Quota */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border text-sm">
+            <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+            {isLoadingUsage ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            ) : myUsage ? (
+              <span>
+                <span className="font-semibold text-foreground">
+                  {myUsage.remaining_quota}
+                </span>
+                <span className="text-muted-foreground">
+                  {" "}/ {myUsage.monthly_quota}
+                </span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">--</span>
+            )}
+          </div>
+          <Button
+            onClick={() => setShowGenerateDialog(true)}
+            className="bg-purple-600 hover:bg-purple-700"
+            disabled={myUsage?.remaining_quota === 0}
+            title={myUsage?.remaining_quota === 0 ? "Monthly quota exceeded" : undefined}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI Generation
+          </Button>
+        </div>
       </PageHeader>
-
-      {/* AI Usage Quota */}
-      <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border w-fit">
-        <Sparkles className="h-4 w-4 text-purple-500" />
-        <span className="text-sm text-muted-foreground">Monthly Quota:</span>
-        {isLoadingUsage ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        ) : myUsage ? (
-          <span className="text-sm">
-            <span className="font-semibold text-foreground">
-              {myUsage.remaining_quota}
-            </span>
-            <span className="text-muted-foreground">
-              {" "}
-              / {myUsage.monthly_quota} remaining
-            </span>
-          </span>
-        ) : (
-          <span className="text-sm text-muted-foreground">--</span>
-        )}
-      </div>
 
       {/* Book Selector */}
       <div className="space-y-2">
@@ -424,10 +427,7 @@ function ContentLibraryPage() {
         open={showGenerateDialog}
         onOpenChange={setShowGenerateDialog}
         onSaveSuccess={() => {
-          // Refresh current book content if a book is selected
-          if (selectedBookId) {
-            // Query invalidation handled by the mutation
-          }
+          queryClient.invalidateQueries({ queryKey: ["ai-usage", "my-usage"] })
         }}
       />
     </PageContainer>
