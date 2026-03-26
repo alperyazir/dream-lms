@@ -2945,7 +2945,7 @@ async def assign_library_content(
 @limiter.limit(RateLimits.AI)
 async def generate_content_v2(
     request: Request,
-    gen_request: "GenerationRequestV2",
+    gen_request: GenerationRequestV2,
     current_user: Annotated[User, TeacherOrHigher],
     dcs_client: DCSClientDep,
     llm_manager: Annotated[LLMManager, Depends(get_llm_manager_dep)],
@@ -3680,7 +3680,7 @@ async def generate_content_v2(
 @limiter.limit(RateLimits.AI)
 async def generate_content_v2_stream(
     request: Request,
-    gen_request: "GenerationRequestV2",
+    gen_request: GenerationRequestV2,
     current_user: Annotated[User, TeacherOrHigher],
     dcs_client: DCSClientDep,
     llm_manager: Annotated[LLMManager, Depends(get_llm_manager_dep)],
@@ -3712,10 +3712,10 @@ async def generate_content_v2_stream(
     # Check rate limit
     try:
         rate_limiter.check_limits(str(current_user.id), 1)
-    except RateLimitExceededError as e:
+    except RateLimitExceededError:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=str(e),
+            detail="Rate limit exceeded. Please try again later.",
         )
 
     # Dispatch to get generator key — use shared engine (reuses connection pool)

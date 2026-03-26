@@ -18,8 +18,12 @@ import httpx
 from pydantic import BaseModel
 
 from app.core.config import settings
+from app.services.circuit_breaker import CircuitBreaker, CircuitBreakerOpenError
 
 logger = logging.getLogger(__name__)
+
+# Module-level circuit breaker for DCS external calls
+_dcs_circuit_breaker = CircuitBreaker("DCS", failure_threshold=5, recovery_timeout=30)
 
 
 # ============================================================================
@@ -352,6 +356,19 @@ class DreamCentralStorageClient:
             DreamStorageNotFoundError: Resource not found
             DreamStorageServerError: Server error after retries
         """
+        try:
+            return await _dcs_circuit_breaker.call(
+                self._make_request_inner, method, url, use_long_timeout, **kwargs
+            )
+        except CircuitBreakerOpenError:
+            raise DreamStorageServerError(
+                "DCS service temporarily unavailable (circuit breaker open)"
+            )
+
+    async def _make_request_inner(
+        self, method: str, url: str, use_long_timeout: bool = False, **kwargs: Any
+    ) -> httpx.Response:
+        """Inner request logic wrapped by circuit breaker."""
         # Add authorization header — storage endpoints need JWT, others use API key
         headers = kwargs.pop("headers", {})
         if url.startswith("/storage/"):

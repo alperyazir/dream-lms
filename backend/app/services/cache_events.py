@@ -83,9 +83,19 @@ _EVENT_REGISTRY: dict[str, list[str]] = {
         "teacher:{user_id}:classes",
         "teacher:{user_id}:students:*",
     ],
+    # Student list caches (when students are created/deleted/moved between classes)
+    "student_list_changed": [
+        "teacher:{user_id}:students:*",
+        "admin:students:*",
+    ],
     # Book assignments — invalidate all book list caches (teachers see different books after assign/unassign)
     "book_assignment_changed": [
         "books:*",
+    ],
+    # Publisher stats/profile
+    "publisher_data_changed": [
+        "publisher:{user_id}:profile",
+        "publisher:{user_id}:stats",
     ],
 }
 

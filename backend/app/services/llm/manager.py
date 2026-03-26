@@ -8,6 +8,7 @@ when the primary provider fails.
 import logging
 from typing import Any
 
+from app.services.circuit_breaker import CircuitBreaker, CircuitBreakerOpenError
 from app.services.llm.base import (
     GenerationOptions,
     GenerationResult,
@@ -47,6 +48,7 @@ class LLMManager:
         """
         self._settings = settings or get_llm_settings()
         self._providers: dict[LLMProviderType, LLMProvider] = providers or {}
+        self._circuit_breakers: dict[str, CircuitBreaker] = {}
         self._initialized = False
 
     @property
@@ -94,6 +96,16 @@ class LLMManager:
             The provider instance or None if not registered.
         """
         return self._providers.get(provider_type)
+
+    def _get_circuit_breaker(self, provider_name: str) -> CircuitBreaker:
+        """Get or create a circuit breaker for a provider."""
+        if provider_name not in self._circuit_breakers:
+            self._circuit_breakers[provider_name] = CircuitBreaker(
+                name=f"LLM-{provider_name}",
+                failure_threshold=3,
+                recovery_timeout=60.0,
+            )
+        return self._circuit_breakers[provider_name]
 
     def get_available_providers(self) -> list[LLMProvider]:
         """
@@ -152,17 +164,35 @@ class LLMManager:
         errors: list[tuple[str, LLMProviderError]] = []
 
         for provider in providers:
+            cb = self._get_circuit_breaker(provider.get_name())
+            if cb.state == CircuitBreaker.OPEN:
+                logger.warning(
+                    f"Skipping provider {provider.get_name()} — circuit breaker open"
+                )
+                errors.append(
+                    (provider.get_name(), LLMProviderError("Circuit breaker open"))
+                )
+                continue
+
             try:
                 logger.info(
                     f"Attempting generation with provider: {provider.get_name()}"
                 )
-                result = await provider.generate(prompt, options)
+                result = await cb.call(provider.generate, prompt, options)
                 logger.info(
                     f"Generation successful with {provider.get_name()}: "
                     f"{result.token_usage.total_tokens} tokens, "
                     f"${result.token_usage.estimated_cost_usd:.6f}"
                 )
                 return result
+
+            except CircuitBreakerOpenError:
+                logger.warning(
+                    f"Skipping provider {provider.get_name()} — circuit breaker open"
+                )
+                errors.append(
+                    (provider.get_name(), LLMProviderError("Circuit breaker open"))
+                )
 
             except LLMRateLimitError as e:
                 logger.warning(
@@ -221,11 +251,23 @@ class LLMManager:
         errors: list[tuple[str, LLMProviderError]] = []
 
         for provider in providers:
+            cb = self._get_circuit_breaker(provider.get_name())
+            if cb.state == CircuitBreaker.OPEN:
+                logger.warning(
+                    f"Skipping provider {provider.get_name()} — circuit breaker open"
+                )
+                errors.append(
+                    (provider.get_name(), LLMProviderError("Circuit breaker open"))
+                )
+                continue
+
             try:
                 logger.info(
                     f"Attempting structured generation with provider: {provider.get_name()}"
                 )
-                result = await provider.generate_structured(prompt, schema, options)
+                result = await cb.call(
+                    provider.generate_structured, prompt, schema, options
+                )
                 logger.info(
                     f"Structured generation successful with {provider.get_name()}"
                 )
@@ -235,6 +277,14 @@ class LLMManager:
                     provider, "last_generation_result", None
                 )
                 return result
+
+            except CircuitBreakerOpenError:
+                logger.warning(
+                    f"Skipping provider {provider.get_name()} — circuit breaker open"
+                )
+                errors.append(
+                    (provider.get_name(), LLMProviderError("Circuit breaker open"))
+                )
 
             except LLMRateLimitError as e:
                 logger.warning(

@@ -413,14 +413,11 @@ async def receive_dream_storage_webhook(
             detail="Missing webhook signature",
         )
 
-    logger.info(f"Signature header present: {signature[:20]}...")
+    logger.debug("Signature header present")
 
     # Read raw request body for signature validation
     payload_bytes = await request.body()
-    logger.info(f"Payload size: {len(payload_bytes)} bytes")
-    logger.info(
-        f"Raw payload: {payload_bytes.decode('utf-8')[:500]}..."
-    )  # First 500 chars
+    logger.debug(f"Payload size: {len(payload_bytes)} bytes")
 
     # Validate signature
     if not _validate_webhook_signature(

@@ -1,0 +1,36 @@
+name: CI
+on:
+  pull_request:
+    branches: [main, development]
+  push:
+    branches: [development]
+
+jobs:
+  lint-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff black
+      - run: cd backend && ruff check app/
+      - run: cd backend && black --check app/
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: cd frontend && npm ci
+      - run: cd frontend && npm run build
+
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: [lint-backend, build-frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t dream-lms-backend ./backend
+      - run: docker build -t dream-lms-frontend ./frontend

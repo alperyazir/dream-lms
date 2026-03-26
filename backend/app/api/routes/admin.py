@@ -88,6 +88,7 @@ from app.services.benchmark_service import get_admin_benchmark_overview
 from app.services.bulk_import import validate_bulk_import
 from app.services.dcs_cache import get_dcs_cache
 from app.services.publisher_service_v2 import get_publisher_service
+from app.services.redis_cache import cache_get, cache_set
 from app.services.skill_attribution_service import (
     backfill_all_skill_scores,
     recalculate_for_assignment,
@@ -1643,7 +1644,7 @@ async def bulk_import_publishers(
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format: {e}")
 
     if not rows:
         raise HTTPException(
@@ -1791,7 +1792,7 @@ async def bulk_import_teachers(
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format: {e}")
 
     if not rows:
         raise HTTPException(
@@ -1960,7 +1961,7 @@ async def bulk_import_students(
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format: {e}")
 
     if not rows:
         raise HTTPException(
@@ -2086,6 +2087,12 @@ async def get_stats(
     Get dashboard statistics for admin.
     Returns counts for users, publishers, teachers, students, and schools.
     """
+    # Check Redis cache first (short TTL since admin data changes infrequently)
+    cache_key = "admin:dashboard:stats"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return DashboardStats(**cached)
+
     # Count total users
     total_users = session.exec(select(func.count(User.id))).one()
 
@@ -2103,13 +2110,16 @@ async def get_stats(
     # Count schools (all schools are considered "active" for now)
     active_schools = session.exec(select(func.count(School.id))).one()
 
-    return DashboardStats(
+    result = DashboardStats(
         total_users=total_users,
         total_publishers=total_publishers,
         total_teachers=total_teachers,
         total_students=total_students,
         active_schools=active_schools,
     )
+
+    await cache_set(cache_key, result.model_dump(), ttl=120)
+    return result
 
 
 # ============================================================================

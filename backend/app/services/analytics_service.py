@@ -465,8 +465,8 @@ async def get_class_analytics(
             trends=[],
         )
 
-    # Get all assignment submissions for students in this class
-    submissions_query = (
+    # Base query joining all needed tables for students in this class
+    base_submissions_query = (
         select(AssignmentStudent, Assignment, Activity, Student, User)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
         .outerjoin(Activity, Assignment.activity_id == Activity.id)
@@ -474,10 +474,17 @@ async def get_class_analytics(
         .join(User, Student.user_id == User.id)
         .where(AssignmentStudent.student_id.in_(enrolled_student_ids))
     )
-    submissions_result = await session.execute(submissions_query)
+
+    # Fetch only submissions relevant to the analysis window (from previous_period_start onward)
+    # This avoids loading historical data outside the analysis range
+    filtered_query = base_submissions_query.where(
+        (AssignmentStudent.completed_at.is_(None))
+        | (AssignmentStudent.completed_at >= previous_start_naive)
+    )
+    submissions_result = await session.execute(filtered_query)
     all_submissions = submissions_result.all()
 
-    # Filter for current period
+    # Filter for current period (in Python, from the already-filtered set)
     current_period_submissions = [
         (asgn_student, assignment, activity, student, user)
         for asgn_student, assignment, activity, student, user in all_submissions
@@ -485,7 +492,7 @@ async def get_class_analytics(
         and asgn_student.completed_at >= current_start_naive
     ]
 
-    # Filter for previous period
+    # Filter for previous period (in Python, from the already-filtered set)
     previous_period_submissions = [
         (asgn_student, assignment, activity, student, user)
         for asgn_student, assignment, activity, student, user in all_submissions

@@ -590,6 +590,15 @@ async def get_students(
     Raises:
         HTTPException(404): Teacher record not found (for teacher role)
     """
+    # Check Redis cache first
+    if current_user.role == UserRole.teacher:
+        cache_key = f"teacher:{current_user.id}:students:list:{limit}:{offset}"
+    else:
+        cache_key = f"admin:students:list:{limit}:{offset}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return [StudentPublic(**s) for s in cached]
+
     if current_user.role in [UserRole.admin, UserRole.supervisor]:
         # Admin and Supervisor can see all students
         query = (
@@ -648,6 +657,7 @@ async def get_students(
             )
         )
 
+    await cache_set(cache_key, [s.model_dump() for s in students], ttl=300)
     return students
 
 
