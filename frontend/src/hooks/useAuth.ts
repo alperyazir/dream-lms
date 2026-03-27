@@ -119,8 +119,8 @@ const useAuth = () => {
     // Clear all query cache to remove old user data
     queryClient.clear();
 
-    // Navigate to login
-    navigate({ to: "/login" });
+    // Navigate to home
+    navigate({ to: "/home" });
   };
 
   return {

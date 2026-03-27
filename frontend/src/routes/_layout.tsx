@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_layout")({
   beforeLoad: async ({ context }) => {
     if (!isLoggedIn()) {
       throw redirect({
-        to: "/login",
+        to: "/home",
       });
     }
 

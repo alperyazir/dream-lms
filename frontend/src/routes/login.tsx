@@ -41,13 +41,12 @@ interface QuickLoginUsers {
 }
 
 export const Route = createFileRoute("/login")({
-  component: Login,
   beforeLoad: async () => {
     if (isLoggedIn()) {
-      throw redirect({
-        to: "/",
-      });
+      throw redirect({ to: "/" });
     }
+    // Redirect to home landing page (login is handled via sheet there)
+    throw redirect({ to: "/home" });
   },
 });
 

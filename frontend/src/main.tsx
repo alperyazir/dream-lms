@@ -22,7 +22,7 @@ OpenAPI.interceptors.response.use((response: AxiosResponse) => {
     localStorage.removeItem("access_token");
     sessionStorage.removeItem("must_change_password");
     sessionStorage.removeItem("user_role");
-    window.location.href = "/login";
+    window.location.href = "/home";
   }
   return response;
 });
@@ -53,7 +53,7 @@ const handleApiError = (error: Error) => {
     localStorage.removeItem("access_token");
     // Clear query cache to remove stale user data
     queryClient.clear();
-    window.location.href = "/login";
+    window.location.href = "/home";
   }
 };
 
