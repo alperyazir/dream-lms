@@ -8,24 +8,30 @@ on:
 jobs:
   lint-backend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install ruff black
-      - run: cd backend && ruff check app/
-      - run: cd backend && black --check app/
+      - run: ruff check app/
+      - run: black --check app/
 
   build-frontend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: cd frontend && npm ci
-      - run: cd frontend && npm run build
+      - run: npm ci
+      - run: npx vite build
 
   build-docker:
     runs-on: ubuntu-latest
