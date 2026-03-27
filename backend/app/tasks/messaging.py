@@ -50,7 +50,10 @@ async def task_create_system_message(
                 recipient_id=recipient_id,
             )
         except Exception as e:
-            logger.error(f"Cache invalidation failed for message to {recipient_id}: {e}", exc_info=True)
+            logger.error(
+                f"Cache invalidation failed for message to {recipient_id}: {e}",
+                exc_info=True,
+            )
     except Exception as e:
         logger.error(f"Failed to create system message: {e}", exc_info=True)
         raise  # Let Arq handle retry
@@ -105,7 +108,9 @@ async def task_create_system_messages_bulk(
                     recipient_id=rid,
                 )
         except Exception as e:
-            logger.error(f"Cache invalidation failed for bulk messages: {e}", exc_info=True)
+            logger.error(
+                f"Cache invalidation failed for bulk messages: {e}", exc_info=True
+            )
     except Exception as e:
         logger.error(f"Failed to create system messages bulk: {e}", exc_info=True)
         raise  # Let Arq handle retry

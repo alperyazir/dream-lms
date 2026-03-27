@@ -25,6 +25,7 @@ async def health_check():
     # Check database
     try:
         from sqlalchemy.ext.asyncio import AsyncSession
+
         async with AsyncSession(async_engine) as session:
             await session.execute(text("SELECT 1"))
         checks["database"] = {"status": "healthy"}
@@ -35,6 +36,7 @@ async def health_check():
     # Check Redis
     try:
         from app.services.redis_cache import cache_get
+
         await cache_get("health:ping")
         checks["redis"] = {"status": "healthy"}
     except Exception as e:
@@ -46,12 +48,16 @@ async def health_check():
         import httpx
 
         from app.core.config import settings
+
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(f"{settings.DREAM_CENTRAL_STORAGE_URL}/health")
             if resp.status_code < 500:
                 checks["dcs"] = {"status": "healthy"}
             else:
-                checks["dcs"] = {"status": "unhealthy", "error": f"HTTP {resp.status_code}"}
+                checks["dcs"] = {
+                    "status": "unhealthy",
+                    "error": f"HTTP {resp.status_code}",
+                }
                 overall = "degraded"
     except Exception as e:
         checks["dcs"] = {"status": "unhealthy", "error": str(type(e).__name__)}
@@ -60,6 +66,7 @@ async def health_check():
     status_code = 200 if overall != "unhealthy" else 503
 
     from fastapi.responses import JSONResponse
+
     return JSONResponse(
         status_code=status_code,
         content={

@@ -141,7 +141,9 @@ class Settings(BaseSettings):
     # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     PASSWORD_ENCRYPTION_KEY: str | None = None
 
-    def _check_default_secret(self, var_name: str, value: str | None, default: str = "changethis") -> None:
+    def _check_default_secret(
+        self, var_name: str, value: str | None, default: str = "changethis"
+    ) -> None:
         if value == default:
             message = (
                 f'The value of {var_name} is "{default}", '

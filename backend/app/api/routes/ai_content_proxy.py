@@ -265,7 +265,9 @@ async def delete_book_content(
     request: Request,
     book_id: int,
     content_id: str,
-    current_user: Annotated[User, require_role(UserRole.teacher, UserRole.supervisor, UserRole.admin)],
+    current_user: Annotated[
+        User, require_role(UserRole.teacher, UserRole.supervisor, UserRole.admin)
+    ],
     ai_content_client: AIContentClientDep,
 ):
     """Delete an AI-generated content entry from DCS."""

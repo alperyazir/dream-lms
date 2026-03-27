@@ -1893,7 +1893,9 @@ async def save_content_to_library(
             book_id = save_request.content.get("book_id")
         else:
             # Fall back to looking up from in-memory storage (legacy)
-            logger.info(f"Looking up content from storage, quiz_id={save_request.quiz_id}")
+            logger.info(
+                f"Looking up content from storage, quiz_id={save_request.quiz_id}"
+            )
 
             if save_request.activity_type == "ai_quiz":
                 quiz = await storage.get_ai_quiz(save_request.quiz_id)
@@ -2179,10 +2181,14 @@ async def create_assignment_from_content(
             activity = await storage.get_reading_activity_public(assign_request.quiz_id)
             content_exists = activity is not None
         elif assign_request.activity_type == "sentence_builder":
-            activity = await storage.get_sentence_activity_public(assign_request.quiz_id)
+            activity = await storage.get_sentence_activity_public(
+                assign_request.quiz_id
+            )
             content_exists = activity is not None
         elif assign_request.activity_type == "word_builder":
-            activity = await storage.get_word_builder_activity_public(assign_request.quiz_id)
+            activity = await storage.get_word_builder_activity_public(
+                assign_request.quiz_id
+            )
             content_exists = activity is not None
 
         if not content_exists:
@@ -2191,7 +2197,9 @@ async def create_assignment_from_content(
                 detail="Content not found or expired.",
             )
 
-        logger.info(f"Assignment creation initiated for quiz_id={assign_request.quiz_id}")
+        logger.info(
+            f"Assignment creation initiated for quiz_id={assign_request.quiz_id}"
+        )
 
         return {
             "message": "Assignment created successfully",
@@ -2390,12 +2398,18 @@ async def list_library_content(
                     content.book_id, f"Book {content.book_id}"
                 )
             elif content.material_id:
-                material_name = materials_map.get(content.material_id, "Unknown Material")
+                material_name = materials_map.get(
+                    content.material_id, "Unknown Material"
+                )
 
             item_count = _count_activity_items(content.activity_type, content.content)
             creator_name = teachers_map.get(content.teacher_id, "Unknown")
-            content_skill_name = skills_map.get(content.skill_id) if content.skill_id else None
-            content_format_name = formats_map.get(content.format_id) if content.format_id else None
+            content_skill_name = (
+                skills_map.get(content.skill_id) if content.skill_id else None
+            )
+            content_format_name = (
+                formats_map.get(content.format_id) if content.format_id else None
+            )
 
             items.append(
                 ContentItemPublic(
@@ -2412,9 +2426,7 @@ async def list_library_content(
                     updated_at=None,  # Not tracked in current model
                     used_in_assignments=1 if content.is_used else 0,
                     is_shared=content.book_id is not None,
-                    created_by=ContentCreator(
-                        id=content.teacher_id, name=creator_name
-                    ),
+                    created_by=ContentCreator(id=content.teacher_id, name=creator_name),
                     skill_id=content.skill_id,
                     skill_name=content_skill_name,
                     format_id=content.format_id,
@@ -3189,7 +3201,9 @@ async def generate_content_v2(
                 book_id=gen_request.book_id,
                 module_ids=gen_request.module_ids or [],
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "medium"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "medium"
                 ),
                 question_count=gen_request.count,
                 language=gen_request.language,
@@ -3210,7 +3224,9 @@ async def generate_content_v2(
                 book_id=gen_request.book_id,
                 module_ids=gen_request.module_ids or [],
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "medium"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "medium"
                 ),
                 question_count=gen_request.count,
                 language=gen_request.language,
@@ -3233,7 +3249,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids,
                 sentence_count=min(gen_request.count, 10),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "medium"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "medium"
                 ),
                 include_audio=gen_request.include_audio,
             )
@@ -3327,7 +3345,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids or [],
                 question_count=min(gen_request.count, 20),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
                 language=gen_request.language,
             )
@@ -3349,7 +3369,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids or [],
                 item_count=min(gen_request.count, 20),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
                 language=gen_request.language,
             )
@@ -3376,7 +3398,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids or [],
                 item_count=min(gen_request.count, 20),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
                 language=gen_request.language,
                 mode=(
@@ -3410,7 +3434,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids or [],
                 item_count=min(gen_request.count, 20),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
                 language=gen_request.language,
             )
@@ -3432,7 +3458,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids or [],
                 item_count=min(gen_request.count, 20),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
                 language=gen_request.language,
             )
@@ -3454,7 +3482,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids or [],
                 item_count=min(gen_request.count, 10),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
                 language=gen_request.language,
             )
@@ -3476,7 +3506,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids or [],
                 item_count=min(gen_request.count, 10),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
                 language=gen_request.language,
             )
@@ -3500,7 +3532,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids or [],
                 sentence_count=min(gen_request.count, 15),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
                 language=gen_request.language,
             )
@@ -3527,7 +3561,9 @@ async def generate_content_v2(
                 module_ids=gen_request.module_ids or [],
                 word_count=min(gen_request.count, 20),
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
                 language=gen_request.language,
             )
@@ -3752,7 +3788,9 @@ async def generate_content_v2_stream(
                 module_ids=all_module_ids,
                 question_count=questions_per_passage,
                 difficulty=(
-                    gen_request.difficulty if gen_request.difficulty != "auto" else "medium"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "medium"
                 ),
                 language=gen_request.language,
                 passage_length=250,

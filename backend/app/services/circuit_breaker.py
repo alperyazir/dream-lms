@@ -64,9 +64,7 @@ class CircuitBreaker:
         async with self._lock:
             self._failure_count = 0
             if self._state != self.CLOSED:
-                logger.info(
-                    f"Circuit breaker [{self.name}] CLOSED — service recovered"
-                )
+                logger.info(f"Circuit breaker [{self.name}] CLOSED — service recovered")
                 self._state = self.CLOSED
 
     async def _on_failure(self):

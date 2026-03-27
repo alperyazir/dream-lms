@@ -1644,7 +1644,9 @@ async def bulk_import_publishers(
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format: {e}"
+        )
 
     if not rows:
         raise HTTPException(
@@ -1792,7 +1794,9 @@ async def bulk_import_teachers(
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format: {e}"
+        )
 
     if not rows:
         raise HTTPException(
@@ -1961,7 +1965,9 @@ async def bulk_import_students(
     try:
         rows = await parse_excel_file(file)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format: {e}"
+        )
 
     if not rows:
         raise HTTPException(

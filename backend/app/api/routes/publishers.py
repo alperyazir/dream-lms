@@ -403,7 +403,14 @@ def list_my_teachers(
     rows = session.exec(paginated_query).all()
 
     result = []
-    for teacher, user, school_name, direct_book_count, school_book_count, classroom_count in rows:
+    for (
+        teacher,
+        user,
+        school_name,
+        direct_book_count,
+        school_book_count,
+        classroom_count,
+    ) in rows:
         # Combine direct + school-level book assignments (unique books handled via DISTINCT)
         # We need to union them; for simplicity, sum the two distinct counts as upper bound
         # Actually, we need unique across both - use a simpler combined subquery approach
