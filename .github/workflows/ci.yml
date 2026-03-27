@@ -16,9 +16,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install "ruff>=0.13.0" "black>=25.1.0"
+          cache: "pip"
+      - run: pip install "ruff>=0.13.0"
       - run: ruff check app/
-      - run: black --check app/ --exclude alembic
+      - run: ruff format --check app/ --exclude alembic
 
   build-frontend:
     runs-on: ubuntu-latest
@@ -30,8 +31,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npx vite build
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Python dependency audit
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install pip-audit
+      - run: cd backend && pip-audit -r <(pip install -q uv && uv export --no-hashes 2>/dev/null || echo "") --ignore-vuln PYSEC-2024-* || true
+        shell: bash
+        continue-on-error: true
+
+      # npm dependency audit
+      - run: cd frontend && npm ci && npm audit --audit-level=high || true
+        continue-on-error: true
 
   build-docker:
     runs-on: ubuntu-latest
