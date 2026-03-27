@@ -470,7 +470,7 @@ async def test_publish_multiple_scheduled_assignments(
             activity,
             student,
             scheduled_date,
-            name=f"Scheduled Assignment {i+1}",
+            name=f"Scheduled Assignment {i + 1}",
         )
 
     result = await publish_scheduled_assignments(async_session)

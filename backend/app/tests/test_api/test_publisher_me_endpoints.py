@@ -116,9 +116,7 @@ def publisher_token_no_dcs(client: TestClient, publisher_user_no_dcs: User) -> s
 
 
 @pytest.fixture
-def publisher_school(
-    session: Session, publisher_user_with_dcs: User
-) -> School:  # noqa: ARG001
+def publisher_school(session: Session, publisher_user_with_dcs: User) -> School:  # noqa: ARG001
     """Create a school belonging to the publisher."""
     school = School(
         id=uuid.uuid4(),

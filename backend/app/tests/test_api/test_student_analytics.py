@@ -187,11 +187,11 @@ def student_assignments_fixture(
             id=uuid.uuid4(),
             book_id=book.id,
             dream_activity_id=f"analytics-activity-{i}",
-            module_name=f"Module {i+1}",
+            module_name=f"Module {i + 1}",
             page_number=i + 1,
             section_index=i,
             activity_type=act_type,
-            title=f"Analytics Activity {i+1}",
+            title=f"Analytics Activity {i + 1}",
             config_json={"type": act_type, "question": "Test"},
         )
         session.add(activity)
@@ -211,8 +211,8 @@ def student_assignments_fixture(
             teacher_id=teacher.id,
             book_id=book.id,
             activity_id=activity.id,
-            name=f"Analytics Assignment {i+1}",
-            instructions=f"Complete activity {i+1}",
+            name=f"Analytics Assignment {i + 1}",
+            instructions=f"Complete activity {i + 1}",
             due_date=now + timedelta(days=7),
             time_limit_minutes=30,
         )

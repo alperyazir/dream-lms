@@ -2021,10 +2021,11 @@ async def get_insight_detail(
         assignment_id_str = insight_id.replace("low_perf_assignment_", "")
         try:
             assignment_uuid = uuid.UUID(assignment_id_str)
-            related_assignments, affected_students = (
-                await _get_assignment_insight_details(
-                    assignment_uuid, teacher_id, session
-                )
+            (
+                related_assignments,
+                affected_students,
+            ) = await _get_assignment_insight_details(
+                assignment_uuid, teacher_id, session
             )
         except ValueError:
             pass
@@ -2035,10 +2036,12 @@ async def get_insight_detail(
             try:
                 assignment_uuid = uuid.UUID(parts[0])
                 question_id = parts[1]
-                related_assignments, affected_students, related_questions = (
-                    await _get_misconception_insight_details(
-                        assignment_uuid, question_id, teacher_id, session
-                    )
+                (
+                    related_assignments,
+                    affected_students,
+                    related_questions,
+                ) = await _get_misconception_insight_details(
+                    assignment_uuid, question_id, teacher_id, session
                 )
             except ValueError:
                 pass
@@ -2055,18 +2058,20 @@ async def get_insight_detail(
 
     elif insight_id.startswith("activity_type_struggle_"):
         activity_type = insight_id.replace("activity_type_struggle_", "")
-        related_assignments, affected_students = (
-            await _get_activity_type_insight_details(activity_type, teacher_id, session)
-        )
+        (
+            related_assignments,
+            affected_students,
+        ) = await _get_activity_type_insight_details(activity_type, teacher_id, session)
 
     elif insight_id.startswith("time_management_"):
         assignment_id_str = insight_id.replace("time_management_", "")
         try:
             assignment_uuid = uuid.UUID(assignment_id_str)
-            related_assignments, affected_students = (
-                await _get_time_management_insight_details(
-                    assignment_uuid, teacher_id, session
-                )
+            (
+                related_assignments,
+                affected_students,
+            ) = await _get_time_management_insight_details(
+                assignment_uuid, teacher_id, session
             )
         except ValueError:
             pass

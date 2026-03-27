@@ -232,15 +232,16 @@ class TestStreamMediaEndpoint:
         """Test that Range requests return 206 Partial Content."""
         from app.api.routes.book_media import stream_media
 
-        with patch(
-            "app.api.routes.book_media._check_book_access", return_value=mock_book
-        ), patch(
-            "app.api.routes.book_media.get_dream_storage_client",
-            return_value=mock_dcs_client,
-        ), patch(
-            "app.api.routes.book_media._validate_asset_path"
+        with (
+            patch(
+                "app.api.routes.book_media._check_book_access", return_value=mock_book
+            ),
+            patch(
+                "app.api.routes.book_media.get_dream_storage_client",
+                return_value=mock_dcs_client,
+            ),
+            patch("app.api.routes.book_media._validate_asset_path"),
         ):
-
             # Mock db session
             mock_db = MagicMock()
 
@@ -262,15 +263,16 @@ class TestStreamMediaEndpoint:
         """Test that requests without Range header return 200 OK."""
         from app.api.routes.book_media import stream_media
 
-        with patch(
-            "app.api.routes.book_media._check_book_access", return_value=mock_book
-        ), patch(
-            "app.api.routes.book_media.get_dream_storage_client",
-            return_value=mock_dcs_client,
-        ), patch(
-            "app.api.routes.book_media._validate_asset_path"
+        with (
+            patch(
+                "app.api.routes.book_media._check_book_access", return_value=mock_book
+            ),
+            patch(
+                "app.api.routes.book_media.get_dream_storage_client",
+                return_value=mock_dcs_client,
+            ),
+            patch("app.api.routes.book_media._validate_asset_path"),
         ):
-
             mock_db = MagicMock()
 
             response = await stream_media(
@@ -292,15 +294,16 @@ class TestStreamMediaEndpoint:
         """Test that mp3 files return audio/mpeg content type."""
         from app.api.routes.book_media import stream_media
 
-        with patch(
-            "app.api.routes.book_media._check_book_access", return_value=mock_book
-        ), patch(
-            "app.api.routes.book_media.get_dream_storage_client",
-            return_value=mock_dcs_client,
-        ), patch(
-            "app.api.routes.book_media._validate_asset_path"
+        with (
+            patch(
+                "app.api.routes.book_media._check_book_access", return_value=mock_book
+            ),
+            patch(
+                "app.api.routes.book_media.get_dream_storage_client",
+                return_value=mock_dcs_client,
+            ),
+            patch("app.api.routes.book_media._validate_asset_path"),
         ):
-
             mock_db = MagicMock()
 
             response = await stream_media(
@@ -320,15 +323,16 @@ class TestStreamMediaEndpoint:
         """Test that mp4 files return video/mp4 content type."""
         from app.api.routes.book_media import stream_media
 
-        with patch(
-            "app.api.routes.book_media._check_book_access", return_value=mock_book
-        ), patch(
-            "app.api.routes.book_media.get_dream_storage_client",
-            return_value=mock_dcs_client,
-        ), patch(
-            "app.api.routes.book_media._validate_asset_path"
+        with (
+            patch(
+                "app.api.routes.book_media._check_book_access", return_value=mock_book
+            ),
+            patch(
+                "app.api.routes.book_media.get_dream_storage_client",
+                return_value=mock_dcs_client,
+            ),
+            patch("app.api.routes.book_media._validate_asset_path"),
         ):
-
             mock_db = MagicMock()
 
             response = await stream_media(
@@ -352,15 +356,16 @@ class TestStreamMediaEndpoint:
             side_effect=DreamStorageNotFoundError("Not found")
         )
 
-        with patch(
-            "app.api.routes.book_media._check_book_access", return_value=mock_book
-        ), patch(
-            "app.api.routes.book_media.get_dream_storage_client",
-            return_value=mock_client,
-        ), patch(
-            "app.api.routes.book_media._validate_asset_path"
+        with (
+            patch(
+                "app.api.routes.book_media._check_book_access", return_value=mock_book
+            ),
+            patch(
+                "app.api.routes.book_media.get_dream_storage_client",
+                return_value=mock_client,
+            ),
+            patch("app.api.routes.book_media._validate_asset_path"),
         ):
-
             mock_db = MagicMock()
 
             with pytest.raises(HTTPException) as exc_info:
@@ -386,15 +391,16 @@ class TestStreamMediaEndpoint:
             side_effect=DreamStorageError("Connection failed")
         )
 
-        with patch(
-            "app.api.routes.book_media._check_book_access", return_value=mock_book
-        ), patch(
-            "app.api.routes.book_media.get_dream_storage_client",
-            return_value=mock_client,
-        ), patch(
-            "app.api.routes.book_media._validate_asset_path"
+        with (
+            patch(
+                "app.api.routes.book_media._check_book_access", return_value=mock_book
+            ),
+            patch(
+                "app.api.routes.book_media.get_dream_storage_client",
+                return_value=mock_client,
+            ),
+            patch("app.api.routes.book_media._validate_asset_path"),
         ):
-
             mock_db = MagicMock()
 
             with pytest.raises(HTTPException) as exc_info:
@@ -415,15 +421,16 @@ class TestStreamMediaEndpoint:
         """Test that Cache-Control header is set for caching."""
         from app.api.routes.book_media import stream_media
 
-        with patch(
-            "app.api.routes.book_media._check_book_access", return_value=mock_book
-        ), patch(
-            "app.api.routes.book_media.get_dream_storage_client",
-            return_value=mock_dcs_client,
-        ), patch(
-            "app.api.routes.book_media._validate_asset_path"
+        with (
+            patch(
+                "app.api.routes.book_media._check_book_access", return_value=mock_book
+            ),
+            patch(
+                "app.api.routes.book_media.get_dream_storage_client",
+                return_value=mock_dcs_client,
+            ),
+            patch("app.api.routes.book_media._validate_asset_path"),
         ):
-
             mock_db = MagicMock()
 
             response = await stream_media(

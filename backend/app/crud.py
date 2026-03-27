@@ -121,7 +121,7 @@ def create_teacher(
     username: str,
     password: str,
     full_name: str,
-    teacher_create: TeacherCreate
+    teacher_create: TeacherCreate,
 ) -> tuple[User, Teacher]:
     """
     Create a new teacher user and associated teacher record atomically.
@@ -193,7 +193,7 @@ def create_student(
     full_name: str,
     student_create: StudentCreate,
     created_by_teacher_id: uuid.UUID | None = None,
-    store_viewable_password: bool = True
+    store_viewable_password: bool = True,
 ) -> tuple[User, Student]:
     """
     Create a new student user and associated student record atomically.

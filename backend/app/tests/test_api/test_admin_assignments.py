@@ -58,8 +58,8 @@ def sample_assignments(
     assignments = []
     for i in range(3):
         assignment = Assignment(
-            name=f"Test Assignment {i+1}",
-            instructions=f"Instructions for assignment {i+1}",
+            name=f"Test Assignment {i + 1}",
+            instructions=f"Instructions for assignment {i + 1}",
             teacher_id=teacher.id,
             dcs_book_id=1,  # Dummy book ID
             due_date=datetime.now(UTC) + timedelta(days=7),
