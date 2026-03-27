@@ -170,7 +170,7 @@ export function scoreCircle(
     });
 
     const totalCorrect = answers.filter((a) => a.isCorrect).length;
-    const rawScore = ((correct - incorrect) / totalCorrect) * 100;
+    const rawScore = totalCorrect > 0 ? ((correct - incorrect) / totalCorrect) * 100 : 0;
     const percentage = Math.max(0, Math.round(rawScore));
 
     return {
@@ -243,7 +243,7 @@ export function scoreWordSearch(
 ): ScoreResult {
   const correct = foundWords.size;
   const total = totalWords.length;
-  const percentage = Math.round((correct / total) * 100);
+  const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
 
   return {
     score: percentage,

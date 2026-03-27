@@ -465,8 +465,8 @@ async def get_class_analytics(
             trends=[],
         )
 
-    # Get all assignment submissions for students in this class
-    submissions_query = (
+    # Base query joining all needed tables for students in this class
+    base_submissions_query = (
         select(AssignmentStudent, Assignment, Activity, Student, User)
         .join(Assignment, AssignmentStudent.assignment_id == Assignment.id)
         .outerjoin(Activity, Assignment.activity_id == Activity.id)
@@ -474,10 +474,17 @@ async def get_class_analytics(
         .join(User, Student.user_id == User.id)
         .where(AssignmentStudent.student_id.in_(enrolled_student_ids))
     )
-    submissions_result = await session.execute(submissions_query)
+
+    # Fetch only submissions relevant to the analysis window (from previous_period_start onward)
+    # This avoids loading historical data outside the analysis range
+    filtered_query = base_submissions_query.where(
+        (AssignmentStudent.completed_at.is_(None))
+        | (AssignmentStudent.completed_at >= previous_start_naive)
+    )
+    submissions_result = await session.execute(filtered_query)
     all_submissions = submissions_result.all()
 
-    # Filter for current period
+    # Filter for current period (in Python, from the already-filtered set)
     current_period_submissions = [
         (asgn_student, assignment, activity, student, user)
         for asgn_student, assignment, activity, student, user in all_submissions
@@ -485,7 +492,7 @@ async def get_class_analytics(
         and asgn_student.completed_at >= current_start_naive
     ]
 
-    # Filter for previous period
+    # Filter for previous period (in Python, from the already-filtered set)
     previous_period_submissions = [
         (asgn_student, assignment, activity, student, user)
         for asgn_student, assignment, activity, student, user in all_submissions
@@ -2014,10 +2021,11 @@ async def get_insight_detail(
         assignment_id_str = insight_id.replace("low_perf_assignment_", "")
         try:
             assignment_uuid = uuid.UUID(assignment_id_str)
-            related_assignments, affected_students = (
-                await _get_assignment_insight_details(
-                    assignment_uuid, teacher_id, session
-                )
+            (
+                related_assignments,
+                affected_students,
+            ) = await _get_assignment_insight_details(
+                assignment_uuid, teacher_id, session
             )
         except ValueError:
             pass
@@ -2028,10 +2036,12 @@ async def get_insight_detail(
             try:
                 assignment_uuid = uuid.UUID(parts[0])
                 question_id = parts[1]
-                related_assignments, affected_students, related_questions = (
-                    await _get_misconception_insight_details(
-                        assignment_uuid, question_id, teacher_id, session
-                    )
+                (
+                    related_assignments,
+                    affected_students,
+                    related_questions,
+                ) = await _get_misconception_insight_details(
+                    assignment_uuid, question_id, teacher_id, session
                 )
             except ValueError:
                 pass
@@ -2048,18 +2058,20 @@ async def get_insight_detail(
 
     elif insight_id.startswith("activity_type_struggle_"):
         activity_type = insight_id.replace("activity_type_struggle_", "")
-        related_assignments, affected_students = (
-            await _get_activity_type_insight_details(activity_type, teacher_id, session)
-        )
+        (
+            related_assignments,
+            affected_students,
+        ) = await _get_activity_type_insight_details(activity_type, teacher_id, session)
 
     elif insight_id.startswith("time_management_"):
         assignment_id_str = insight_id.replace("time_management_", "")
         try:
             assignment_uuid = uuid.UUID(assignment_id_str)
-            related_assignments, affected_students = (
-                await _get_time_management_insight_details(
-                    assignment_uuid, teacher_id, session
-                )
+            (
+                related_assignments,
+                affected_students,
+            ) = await _get_time_management_insight_details(
+                assignment_uuid, teacher_id, session
             )
         except ValueError:
             pass

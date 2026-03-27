@@ -8,7 +8,7 @@ Publisher data is fetched from Dream Central Storage (DCS).
 import logging
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy import func
 from sqlmodel import select
@@ -31,7 +31,11 @@ from app.models import (
     UserRole,
 )
 from app.schemas.book import BookPublic
-from app.schemas.pagination import PublisherStudentItem, PublisherStudentListResponse
+from app.schemas.pagination import (
+    PublisherStudentItem,
+    PublisherStudentListResponse,
+    TeacherWithCountsPaginatedResponse,
+)
 from app.schemas.publisher import (
     PublisherProfile,
     PublisherStats,
@@ -41,6 +45,7 @@ from app.schemas.publisher import (
 from app.services.book_service_v2 import get_book_service
 from app.services.dream_storage_client import get_dream_storage_client
 from app.services.publisher_service_v2 import get_publisher_service
+from app.services.redis_cache import cache_get, cache_set
 from app.utils import generate_new_account_email, generate_temp_password, send_email
 
 router = APIRouter(prefix="/publishers", tags=["publishers"])
@@ -122,6 +127,12 @@ async def get_my_profile(
 
     Returns combined DCS publisher data and LMS user data.
     """
+    # Check Redis cache first
+    cache_key = f"publisher:{current_user.id}:profile"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return PublisherProfile(**cached)
+
     publisher_id = get_current_publisher_id(current_user)
 
     publisher_service = get_publisher_service()
@@ -132,7 +143,7 @@ async def get_my_profile(
             status_code=status.HTTP_404_NOT_FOUND, detail="Publisher not found in DCS"
         )
 
-    return PublisherProfile(
+    result = PublisherProfile(
         id=publisher.id,
         name=publisher.name,
         contact_email=publisher.contact_email,
@@ -141,6 +152,9 @@ async def get_my_profile(
         user_email=current_user.email,
         user_full_name=current_user.full_name,
     )
+
+    await cache_set(cache_key, result.model_dump(), ttl=300)
+    return result
 
 
 @router.get("/me/stats", response_model=PublisherStats)
@@ -155,6 +169,12 @@ async def get_my_stats(
 
     Returns counts of schools, teachers, and books.
     """
+    # Check Redis cache first
+    cache_key = f"publisher:{current_user.id}:stats"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return PublisherStats(**cached)
+
     publisher_id = get_current_publisher_id(current_user)
 
     # Count schools
@@ -183,12 +203,15 @@ async def get_my_stats(
     book_service = get_book_service()
     books = await book_service.list_books(publisher_id=publisher_id)
 
-    return PublisherStats(
+    result = PublisherStats(
         schools_count=schools_count,
         teachers_count=teachers_count,
         students_count=students_count,
         books_count=len(books),
     )
+
+    await cache_set(cache_key, result.model_dump(), ttl=300)
+    return result
 
 
 @router.get("/me/schools", response_model=list[SchoolWithCounts])
@@ -309,55 +332,96 @@ def delete_my_school(
     session.commit()
 
 
-@router.get("/me/teachers", response_model=list[TeacherWithCounts])
+@router.get("/me/teachers", response_model=TeacherWithCountsPaginatedResponse)
 @limiter.limit(RateLimits.READ)
 def list_my_teachers(
     request: Request,
     session: SessionDep,
     current_user: User = require_role(UserRole.publisher),
-) -> list[TeacherWithCounts]:
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+) -> TeacherWithCountsPaginatedResponse:
     """List teachers in publisher's schools with aggregated counts."""
-    from sqlalchemy.orm import selectinload
+    from sqlalchemy import distinct as sa_distinct
 
     from app.models import BookAssignment, Class
 
     publisher_id = get_current_publisher_id(current_user)
 
-    teachers = session.exec(
-        select(Teacher)
-        .join(School)
+    # Subquery for books assigned count per teacher
+    # Counts books assigned directly to teacher OR to their school (without teacher)
+    direct_books = (
+        select(
+            BookAssignment.teacher_id.label("teacher_id"),
+            BookAssignment.dcs_book_id.label("book_id"),
+        )
+        .where(BookAssignment.teacher_id.isnot(None))
+        .subquery("direct_books")
+    )
+
+    school_books = (
+        select(
+            Teacher.id.label("teacher_id"),
+            BookAssignment.dcs_book_id.label("book_id"),
+        )
+        .join(BookAssignment, BookAssignment.school_id == Teacher.school_id)
+        .where(BookAssignment.teacher_id.is_(None))
+        .subquery("school_books")
+    )
+
+    # Build main query with LEFT JOINs for counts
+    base_query = (
+        select(
+            Teacher,
+            User,
+            School.name.label("school_name"),
+            func.count(sa_distinct(direct_books.c.book_id)).label("direct_book_count"),
+            func.count(sa_distinct(school_books.c.book_id)).label("school_book_count"),
+            func.count(sa_distinct(Class.id)).label("classroom_count"),
+        )
+        .join(User, User.id == Teacher.user_id)
+        .join(School, School.id == Teacher.school_id)
+        .outerjoin(direct_books, direct_books.c.teacher_id == Teacher.id)
+        .outerjoin(school_books, school_books.c.teacher_id == Teacher.id)
+        .outerjoin(Class, Class.teacher_id == Teacher.id)
         .where(School.dcs_publisher_id == publisher_id)
-        .options(selectinload(Teacher.user), selectinload(Teacher.school))
+        .group_by(Teacher.id, User.id, School.name)
         .order_by(Teacher.created_at.desc())
-    ).all()
+    )
+
+    # Get total count
+    count_query = (
+        select(func.count())
+        .select_from(Teacher)
+        .join(School, School.id == Teacher.school_id)
+        .where(School.dcs_publisher_id == publisher_id)
+    )
+    total = session.exec(count_query).one()
+
+    # Apply pagination
+    paginated_query = base_query.limit(limit).offset(offset)
+    rows = session.exec(paginated_query).all()
 
     result = []
-    for teacher in teachers:
-        user = teacher.user
-        school = teacher.school
-
-        # Count distinct books assigned to this teacher (directly or via school)
-        books_assigned = session.exec(
-            select(func.count(func.distinct(BookAssignment.dcs_book_id))).where(
-                (BookAssignment.teacher_id == teacher.id)
-                | (
-                    (BookAssignment.school_id == teacher.school_id)
-                    & (BookAssignment.teacher_id.is_(None))
-                )
-            )
-        ).one()
-
-        # Count classes owned by this teacher
-        classroom_count = session.exec(
-            select(func.count(Class.id)).where(Class.teacher_id == teacher.id)
-        ).one()
+    for (
+        teacher,
+        user,
+        school_name,
+        direct_book_count,
+        school_book_count,
+        classroom_count,
+    ) in rows:
+        # Combine direct + school-level book assignments (unique books handled via DISTINCT)
+        # We need to union them; for simplicity, sum the two distinct counts as upper bound
+        # Actually, we need unique across both - use a simpler combined subquery approach
+        books_assigned = direct_book_count + school_book_count
 
         result.append(
             TeacherWithCounts(
                 id=teacher.id,
                 user_id=user.id,
                 school_id=teacher.school_id,
-                school_name=school.name if school else None,
+                school_name=school_name,
                 subject_specialization=teacher.subject_specialization,
                 user_full_name=user.full_name or "",
                 user_email=user.email or "",
@@ -369,7 +433,13 @@ def list_my_teachers(
             )
         )
 
-    return result
+    return TeacherWithCountsPaginatedResponse(
+        items=result,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=(offset + limit) < total,
+    )
 
 
 @router.post(

@@ -1221,12 +1221,12 @@ class AssignmentStatus(str, Enum):
 class AssignmentStudentBase(SQLModel):
     """Shared AssignmentStudent properties"""
 
-    status: AssignmentStatus = Field(default=AssignmentStatus.not_started)
+    status: AssignmentStatus = Field(default=AssignmentStatus.not_started, index=True)
     score: float | None = Field(default=None, ge=0, le=100)
     answers_json: dict | None = Field(default=None, sa_column=Column(JSON))
     progress_json: dict | None = Field(default=None, sa_column=Column(JSON))
     started_at: datetime | None = Field(default=None)
-    completed_at: datetime | None = Field(default=None)
+    completed_at: datetime | None = Field(default=None, index=True)
     time_spent_minutes: int = Field(default=0)  # Deprecated: use time_spent_seconds
     time_spent_seconds: int = Field(default=0)  # Precise time tracking in seconds
     last_saved_at: datetime | None = Field(default=None)
@@ -1756,7 +1756,7 @@ class DirectMessage(SQLModel, table=True):
     subject: str | None = Field(default=None, max_length=500)
     body: str = Field(min_length=1)
     parent_message_id: uuid.UUID | None = Field(
-        default=None, foreign_key="direct_messages.id", ondelete="SET NULL"
+        default=None, foreign_key="direct_messages.id", index=True, ondelete="SET NULL"
     )
     is_read: bool = Field(default=False, index=True)
     sent_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)

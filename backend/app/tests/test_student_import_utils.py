@@ -173,17 +173,17 @@ class TestGenerateStudentPassword:
         confusing_chars = {"0", "O", "1", "l", "I"}
         for _ in range(100):
             password = generate_student_password()
-            assert not any(
-                c in confusing_chars for c in password
-            ), f"Password '{password}' contains confusing characters"
+            assert not any(c in confusing_chars for c in password), (
+                f"Password '{password}' contains confusing characters"
+            )
 
     def test_only_alphanumeric(self) -> None:
         """Test password contains only alphanumeric characters."""
         for _ in range(50):
             password = generate_student_password()
-            assert (
-                password.isalnum()
-            ), f"Password '{password}' contains non-alphanumeric characters"
+            assert password.isalnum(), (
+                f"Password '{password}' contains non-alphanumeric characters"
+            )
 
     def test_uniqueness(self) -> None:
         """Test that generated passwords are unique (probabilistic)."""

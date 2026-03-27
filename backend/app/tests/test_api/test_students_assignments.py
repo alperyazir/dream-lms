@@ -136,8 +136,8 @@ class TestGetStudentAssignments:
                 teacher_id=teacher.id,
                 activity_id=activity.id,
                 book_id=book.id,
-                name=f"Assignment {i+1}",
-                instructions=f"Instructions {i+1}",
+                name=f"Assignment {i + 1}",
+                instructions=f"Instructions {i + 1}",
                 due_date=datetime.now(UTC) + timedelta(days=i + 1),
                 time_limit_minutes=30,
                 created_at=datetime.now(UTC),
@@ -285,7 +285,7 @@ class TestGetStudentAssignments:
                 teacher_id=teacher.id,
                 activity_id=activity.id,
                 book_id=book.id,
-                name=f"Student1 Assignment {i+1}",
+                name=f"Student1 Assignment {i + 1}",
                 created_at=datetime.now(UTC),
                 updated_at=datetime.now(UTC),
             )
@@ -308,7 +308,7 @@ class TestGetStudentAssignments:
                 teacher_id=teacher.id,
                 activity_id=activity.id,
                 book_id=book.id,
-                name=f"Student2 Assignment {i+1}",
+                name=f"Student2 Assignment {i + 1}",
                 created_at=datetime.now(UTC),
                 updated_at=datetime.now(UTC),
             )

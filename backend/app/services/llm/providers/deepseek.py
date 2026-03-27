@@ -5,6 +5,7 @@ Implements LLMProvider for DeepSeek API, using the deepseek-chat (V3) model.
 Compatible with OpenAI API format.
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -226,7 +227,7 @@ class DeepSeekProvider(LLMProvider):
                         f"DeepSeek request failed (attempt {attempt + 1}/{max_retries + 1}), "
                         f"retrying in {wait_time:.1f}s: {e}"
                     )
-                    time.sleep(wait_time)
+                    await asyncio.sleep(wait_time)
                 continue
             except LLMRateLimitError as e:
                 # Rate limit - retry with backoff
@@ -237,7 +238,7 @@ class DeepSeekProvider(LLMProvider):
                         f"DeepSeek rate limit hit (attempt {attempt + 1}/{max_retries + 1}), "
                         f"waiting {wait_time}s"
                     )
-                    time.sleep(wait_time)
+                    await asyncio.sleep(wait_time)
                 continue
             except LLMProviderError:
                 # Non-retryable errors (auth, etc.)

@@ -10,6 +10,7 @@ Provides endpoints for teachers to manage their personal materials:
 - Manage AI-generated content library (Story 27.15)
 """
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated
@@ -85,6 +86,8 @@ from app.services.pdf_processing_service import (
     get_pdf_processing_service,
 )
 from app.services.redis_cache import cache_get_sync, cache_set_sync
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/teachers/materials", tags=["teacher-materials"])
 
@@ -237,9 +240,10 @@ async def upload_material(
             material_type=material_type.value,
         )
     except DreamStorageError as e:
+        logger.error(f"Failed to upload file to storage: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to upload file to storage: {str(e)}",
+            detail="Failed to upload file to storage. Please try again.",
         )
 
     # Create material record
@@ -534,9 +538,10 @@ async def get_presigned_url(
             detail="File not found in storage",
         )
     except DreamStorageError as e:
+        logger.error(f"Failed to verify file: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to verify file: {str(e)}",
+            detail="Failed to verify file. Please try again.",
         )
 
 
@@ -607,9 +612,10 @@ async def delete_material(
             # File already gone, proceed with DB cleanup
             pass
         except DreamStorageError as e:
+            logger.error(f"Failed to delete file from storage: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Failed to delete file from storage: {str(e)}",
+                detail="Failed to delete file from storage. Please try again.",
             )
 
     # Update quota if file had size
@@ -712,9 +718,10 @@ async def download_material(
             detail="File not found in storage",
         )
     except DreamStorageError as e:
+        logger.error(f"Failed to download file: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to download file: {str(e)}",
+            detail="Failed to download file. Please try again.",
         )
 
     # Prepare filename for Content-Disposition (RFC 5987 encoding for non-ASCII)
@@ -818,9 +825,10 @@ async def stream_material(
             ):
                 yield chunk
         except DreamStorageError as e:
+            logger.error(f"Streaming failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Streaming failed: {str(e)}",
+                detail="Streaming failed. Please try again.",
             )
 
     # Calculate content length
@@ -910,9 +918,10 @@ async def upload_pdf_for_ai(
             material_type="document",
         )
     except DreamStorageError as e:
+        logger.error(f"Failed to upload file to storage: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to upload file to storage: {str(e)}",
+            detail="Failed to upload file to storage. Please try again.",
         )
 
     # Create material record with extracted text

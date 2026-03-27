@@ -226,9 +226,11 @@ async def test_token_refresh_thread_safe(client, mock_token_response):
 @pytest.mark.asyncio
 async def test_retry_on_5xx_errors(client, mock_token_response, mock_books_response):
     """Test that 5xx server errors trigger retries."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request, patch("asyncio.sleep", new_callable=AsyncMock):
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+        patch("asyncio.sleep", new_callable=AsyncMock),
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -257,9 +259,11 @@ async def test_retry_on_5xx_errors(client, mock_token_response, mock_books_respo
 @pytest.mark.asyncio
 async def test_max_retries_respected(client, mock_token_response):
     """Test that max retries (3) is respected."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request, patch("asyncio.sleep", new_callable=AsyncMock):
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+        patch("asyncio.sleep", new_callable=AsyncMock),
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -283,9 +287,10 @@ async def test_max_retries_respected(client, mock_token_response):
 @pytest.mark.asyncio
 async def test_no_retry_on_403(client, mock_token_response):
     """Test that 403 Forbidden errors don't trigger retries."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -309,9 +314,10 @@ async def test_no_retry_on_403(client, mock_token_response):
 @pytest.mark.asyncio
 async def test_no_retry_on_404(client, mock_token_response):
     """Test that 404 Not Found errors don't trigger retries."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -334,9 +340,11 @@ async def test_no_retry_on_404(client, mock_token_response):
 @pytest.mark.asyncio
 async def test_token_refresh_on_401(client, mock_token_response, mock_books_response):
     """Test that 401 triggers token refresh and retry."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request, patch("asyncio.sleep", new_callable=AsyncMock):
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+        patch("asyncio.sleep", new_callable=AsyncMock),
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -366,9 +374,11 @@ async def test_rate_limiting_respects_retry_after(
     client, mock_token_response, mock_books_response
 ):
     """Test that 429 rate limiting respects Retry-After header."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request, patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+        patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -404,9 +414,10 @@ async def test_cache_hit_returns_cached_data(
     client, mock_token_response, mock_books_response
 ):
     """Test that cached data is returned on cache hit."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -437,9 +448,10 @@ async def test_cache_miss_fetches_from_api(
     client, mock_token_response, mock_config_response
 ):
     """Test that cache miss triggers API call."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -465,9 +477,10 @@ async def test_cache_expiration_triggers_refresh(
     client, mock_token_response, mock_books_response
 ):
     """Test that expired cache triggers API refresh."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -502,9 +515,10 @@ async def test_cache_invalidation_clears_cache(
     client, mock_token_response, mock_books_response
 ):
     """Test that manual cache invalidation clears all cached data."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -540,9 +554,10 @@ async def test_cache_invalidation_clears_cache(
 @pytest.mark.asyncio
 async def test_get_books_returns_list(client, mock_token_response, mock_books_response):
     """Test get_books() returns list of BookRead models."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -569,9 +584,10 @@ async def test_get_book_by_id_returns_book(
     client, mock_token_response, mock_book_response
 ):
     """Test get_book_by_id() returns single BookRead model."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -597,9 +613,10 @@ async def test_get_book_config_returns_dict(
     client, mock_token_response, mock_config_response
 ):
     """Test get_book_config() returns config dictionary."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -623,9 +640,10 @@ async def test_get_book_config_returns_dict(
 @pytest.mark.asyncio
 async def test_list_book_contents_returns_list(client, mock_token_response):
     """Test list_book_contents() returns list of file paths."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200
@@ -649,9 +667,10 @@ async def test_list_book_contents_returns_list(client, mock_token_response):
 @pytest.mark.asyncio
 async def test_download_asset_returns_bytes(client, mock_token_response):
     """Test download_asset() returns file content as bytes."""
-    with patch.object(client._client, "post") as mock_post, patch.object(
-        client._client, "request"
-    ) as mock_request:
+    with (
+        patch.object(client._client, "post") as mock_post,
+        patch.object(client._client, "request") as mock_request,
+    ):
         # Mock auth
         auth_response = Mock()
         auth_response.status_code = 200

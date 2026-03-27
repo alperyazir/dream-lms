@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from app.models import SchoolPublic, StudentPublic, SupervisorPublic, TeacherPublic
 from app.schemas.assignment import AssignmentListItem
-from app.schemas.publisher import PublisherAccountPublic
+from app.schemas.publisher import PublisherAccountPublic, TeacherWithCounts
 
 
 class StudentListResponse(BaseModel):
@@ -64,6 +64,16 @@ class AssignmentListPaginatedResponse(BaseModel):
     """Paginated response for teacher assignment list."""
 
     items: list[AssignmentListItem]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool
+
+
+class TeacherWithCountsPaginatedResponse(BaseModel):
+    """Paginated response for publisher teacher list with counts."""
+
+    items: list[TeacherWithCounts]
     total: int
     limit: int
     offset: int

@@ -18,7 +18,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from starlette.requests import Request
 
+from app.api.deps import CurrentUser, require_role
 from app.core.rate_limit import RateLimits, limiter
+from app.models import User, UserRole
 from app.services.dcs_ai_content_client import (
     DCSAIContentClient,
     get_dcs_ai_content_client,
@@ -76,6 +78,7 @@ async def stream_ai_content_audio(
     book_id: int,
     content_id: str,
     filename: str,
+    current_user: CurrentUser,
     ai_content_client: AIContentClientDep,
 ):
     """
@@ -139,6 +142,7 @@ def _audio_response(audio_bytes: bytes, filename: str) -> StreamingResponse:
 async def list_book_content(
     request: Request,
     book_id: int,
+    current_user: CurrentUser,
     ai_content_client: AIContentClientDep,
     activity_type: str | None = Query(None),
     page: int = Query(1, ge=1),
@@ -221,6 +225,7 @@ async def get_book_content_detail(
     request: Request,
     book_id: int,
     content_id: str,
+    current_user: CurrentUser,
     ai_content_client: AIContentClientDep,
 ):
     """Get detailed AI-generated content entry from DCS."""
@@ -260,6 +265,9 @@ async def delete_book_content(
     request: Request,
     book_id: int,
     content_id: str,
+    current_user: Annotated[
+        User, require_role(UserRole.teacher, UserRole.supervisor, UserRole.admin)
+    ],
     ai_content_client: AIContentClientDep,
 ):
     """Delete an AI-generated content entry from DCS."""

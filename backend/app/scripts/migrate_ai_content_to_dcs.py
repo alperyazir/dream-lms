@@ -297,9 +297,9 @@ async def migrate(
                         items = rec_content.get(items_key, [])
                         for idx, filename in audio_items:
                             if idx < len(items):
-                                items[idx][
-                                    "audio_url"
-                                ] = f"/api/v1/ai/content/{rec_book_id}/{dcs_content_id}/audio/{filename}"
+                                items[idx]["audio_url"] = (
+                                    f"/api/v1/ai/content/{rec_book_id}/{dcs_content_id}/audio/{filename}"
+                                )
                                 items[idx]["audio_status"] = "ready"
 
                     # 4. Upload audio files to DCS

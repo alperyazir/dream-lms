@@ -271,7 +271,7 @@ def build_sentence_quality_prompt(
     """
     difficulty_guide = SENTENCE_DIFFICULTY_GUIDELINES.get(difficulty, "")
 
-    sentences_text = "\n".join(f"{i+1}. {s}" for i, s in enumerate(sentences))
+    sentences_text = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(sentences))
 
     return f"""Please evaluate the following sentences and select the {target_count} best ones for a sentence building activity at {difficulty} difficulty level.
 
@@ -301,7 +301,7 @@ def build_sentence_categorization_prompt(
     Returns:
         Formatted prompt string.
     """
-    sentences_text = "\n".join(f"{i+1}. {s}" for i, s in enumerate(sentences))
+    sentences_text = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(sentences))
 
     return f"""Categorize each of the following sentences by difficulty level based on word count and complexity:
 

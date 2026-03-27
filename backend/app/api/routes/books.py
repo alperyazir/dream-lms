@@ -1044,9 +1044,9 @@ async def get_book_pages_detail(
                         parts = audio_path.split("/", 2)
                         if len(parts) >= 3:
                             audio_path = parts[2]
-                    config["audio_extra"][
-                        "url"
-                    ] = f"/api/v1/books/{book_id}/media/{audio_path}"
+                    config["audio_extra"]["url"] = (
+                        f"/api/v1/books/{book_id}/media/{audio_path}"
+                    )
             activity_markers.append(
                 ActivityMarker(
                     id=activity.id,
@@ -1410,10 +1410,12 @@ async def import_book_activities(
     try:
         activity_data_list = parse_book_config(book_config)
     except Exception as e:
-        logger.error(f"Failed to parse config.json for book {book_id}: {e}")
+        logger.error(
+            f"Failed to parse config.json for book {book_id}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to parse book configuration: {str(e)}",
+            detail="Failed to parse book configuration. Please try again.",
         )
 
     # Filter for supported activity types only

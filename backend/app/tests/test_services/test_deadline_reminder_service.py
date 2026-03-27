@@ -380,7 +380,7 @@ async def test_approaching_deadline_multiple_assignments_aggregated(
             activity,
             student,
             due_date,
-            name=f"Assignment {i+1}",
+            name=f"Assignment {i + 1}",
         )
 
     result = await check_approaching_deadlines(async_session)

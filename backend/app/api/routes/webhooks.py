@@ -401,7 +401,7 @@ async def receive_dream_storage_webhook(
     logger.info(f"Request method: {request.method}")
     logger.info(f"Request URL: {request.url}")
     logger.info(f"Client host: {request.client.host if request.client else 'unknown'}")
-    logger.info(f"Headers: {dict(request.headers)}")
+    logger.info(f"Webhook received: content-type={request.headers.get('content-type')}")
 
     # Extract signature from header
     signature = request.headers.get("X-Webhook-Signature")
@@ -413,23 +413,17 @@ async def receive_dream_storage_webhook(
             detail="Missing webhook signature",
         )
 
-    logger.info(f"Signature header present: {signature[:20]}...")
+    logger.debug("Signature header present")
 
     # Read raw request body for signature validation
     payload_bytes = await request.body()
-    logger.info(f"Payload size: {len(payload_bytes)} bytes")
-    logger.info(
-        f"Raw payload: {payload_bytes.decode('utf-8')[:500]}..."
-    )  # First 500 chars
+    logger.debug(f"Payload size: {len(payload_bytes)} bytes")
 
     # Validate signature
     if not _validate_webhook_signature(
         payload_bytes, signature, settings.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET
     ):
         logger.warning("❌ Webhook signature VALIDATION FAILED")
-        logger.warning(
-            f"Expected secret: {settings.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET[:10]}..."
-        )
         logger.info("=" * 80)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -453,7 +447,7 @@ async def receive_dream_storage_webhook(
         logger.info("=" * 80)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid payload format: {str(e)}",
+            detail="Invalid payload format.",
         )
 
     # Determine if this is a book or publisher event

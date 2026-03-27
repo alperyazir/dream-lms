@@ -79,7 +79,7 @@ async def get_current_user(session: AsyncSessionDep, token: TokenDep) -> User:
             is_active=cached.get("is_active", True),
             is_superuser=cached.get("is_superuser", False),
             dcs_publisher_id=cached.get("dcs_publisher_id"),
-            hashed_password="",
+            hashed_password=cached.get("hashed_password", ""),
         )
         return user
 
@@ -102,6 +102,7 @@ async def get_current_user(session: AsyncSessionDep, token: TokenDep) -> User:
                 "is_active": user.is_active,
                 "is_superuser": user.is_superuser,
                 "dcs_publisher_id": user.dcs_publisher_id,
+                "hashed_password": user.hashed_password,
             },
             ttl=3600,
         )

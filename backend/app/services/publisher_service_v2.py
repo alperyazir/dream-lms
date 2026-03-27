@@ -35,7 +35,9 @@ class PublisherService:
         Cache TTL: 10 minutes.
         """
         return await self.cache.get_or_fetch(
-            CacheKeys.PUBLISHER_LIST, self._fetch_publishers, ttl=600  # 10 minutes
+            CacheKeys.PUBLISHER_LIST,
+            self._fetch_publishers,
+            ttl=600,  # 10 minutes
         )
 
     async def _fetch_publishers(self) -> list[PublisherPublic]:

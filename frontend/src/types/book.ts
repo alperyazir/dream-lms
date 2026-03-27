@@ -44,11 +44,12 @@ export function isActivityTypeSupported(type: ActivityType): boolean {
  */
 export interface Book {
   id: number; // Changed from string to number (DCS book ID)
-  dream_storage_id: string;
-  title: string;
+  dream_storage_id?: string | null; // Optional, for backwards compatibility
+  title: string | null;
+  book_name?: string | null; // DCS book_name
   publisher_id: number; // DCS publisher ID for logo URL
   publisher_name: string;
-  description: string | null;
+  description?: string | null; // Not sent by backend BookResponse; kept optional for safety
   cover_image_url: string | null;
   activity_count: number;
 }

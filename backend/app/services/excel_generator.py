@@ -252,9 +252,9 @@ def _create_student_data_sheet(wb: Workbook, data: dict) -> None:
 
         for i, item in enumerate(assignments):
             row += 1
-            ws.cell(row=row, column=1, value=item.get("name", "Unknown")).border = (
-                BORDER
-            )
+            ws.cell(
+                row=row, column=1, value=item.get("name", "Unknown")
+            ).border = BORDER
             ws.cell(row=row, column=2, value=f"{item.get('score', 0)}%").border = BORDER
             ws.cell(
                 row=row, column=3, value=f"{item.get('time_spent', 0)} min"
@@ -323,9 +323,9 @@ def _create_class_data_sheet(wb: Workbook, data: dict) -> None:
         for i, student in enumerate(top_students):
             row += 1
             ws.cell(row=row, column=1, value=student.get("rank", "")).border = BORDER
-            ws.cell(row=row, column=2, value=student.get("name", "Unknown")).border = (
-                BORDER
-            )
+            ws.cell(
+                row=row, column=2, value=student.get("name", "Unknown")
+            ).border = BORDER
             ws.cell(
                 row=row, column=3, value=f"{student.get('avg_score', 0):.1f}%"
             ).border = BORDER
@@ -351,15 +351,15 @@ def _create_class_data_sheet(wb: Workbook, data: dict) -> None:
 
         for i, student in enumerate(struggling_students):
             row += 1
-            ws.cell(row=row, column=1, value=student.get("name", "Unknown")).border = (
-                BORDER
-            )
+            ws.cell(
+                row=row, column=1, value=student.get("name", "Unknown")
+            ).border = BORDER
             ws.cell(
                 row=row, column=2, value=f"{student.get('avg_score', 0):.1f}%"
             ).border = BORDER
-            ws.cell(row=row, column=3, value=student.get("alert_reason", "")).border = (
-                BORDER
-            )
+            ws.cell(
+                row=row, column=3, value=student.get("alert_reason", "")
+            ).border = BORDER
             if i % 2 == 1:
                 for col in range(1, 4):
                     ws.cell(row=row, column=col).fill = ALT_ROW_FILL
@@ -382,9 +382,9 @@ def _create_class_data_sheet(wb: Workbook, data: dict) -> None:
 
         for i, item in enumerate(assignments):
             row += 1
-            ws.cell(row=row, column=1, value=item.get("name", "Unknown")).border = (
-                BORDER
-            )
+            ws.cell(
+                row=row, column=1, value=item.get("name", "Unknown")
+            ).border = BORDER
             ws.cell(
                 row=row, column=2, value=f"{item.get('avg_score', 0):.1f}%"
             ).border = BORDER
@@ -423,9 +423,9 @@ def _create_assignment_data_sheet(wb: Workbook, data: dict) -> None:
 
         for i, item in enumerate(assignments):
             row += 1
-            ws.cell(row=row, column=1, value=item.get("name", "Unknown")).border = (
-                BORDER
-            )
+            ws.cell(
+                row=row, column=1, value=item.get("name", "Unknown")
+            ).border = BORDER
             ws.cell(
                 row=row, column=2, value=f"{item.get('avg_score', 0):.1f}%"
             ).border = BORDER
@@ -460,9 +460,9 @@ def _create_assignment_data_sheet(wb: Workbook, data: dict) -> None:
 
         for i, item in enumerate(most_successful):
             row += 1
-            ws.cell(row=row, column=1, value=item.get("name", "Unknown")).border = (
-                BORDER
-            )
+            ws.cell(
+                row=row, column=1, value=item.get("name", "Unknown")
+            ).border = BORDER
             ws.cell(
                 row=row, column=2, value=f"{item.get('avg_score', 0):.1f}%"
             ).border = BORDER
@@ -488,9 +488,9 @@ def _create_assignment_data_sheet(wb: Workbook, data: dict) -> None:
 
         for i, item in enumerate(least_successful):
             row += 1
-            ws.cell(row=row, column=1, value=item.get("name", "Unknown")).border = (
-                BORDER
-            )
+            ws.cell(
+                row=row, column=1, value=item.get("name", "Unknown")
+            ).border = BORDER
             ws.cell(
                 row=row, column=2, value=f"{item.get('avg_score', 0):.1f}%"
             ).border = BORDER

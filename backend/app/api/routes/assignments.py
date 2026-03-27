@@ -5046,7 +5046,7 @@ async def preview_assignment(
             )
     elif current_user.role == UserRole.publisher:
         # Publisher must have published the book
-        if book.publisher_id != current_user.publisher_id:
+        if book.publisher_id != current_user.dcs_publisher_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only preview assignments for your books",
@@ -5198,7 +5198,7 @@ async def get_assignment_for_edit(
             )
     elif current_user.role == UserRole.publisher:
         # Publisher must have published the book
-        if book.publisher_id != current_user.publisher_id:
+        if book.publisher_id != current_user.dcs_publisher_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only edit assignments for your books",
@@ -5363,7 +5363,7 @@ async def preview_activity(
             )
     elif current_user.role == UserRole.publisher:
         # Publisher must have published the book
-        if book.publisher_id != current_user.publisher_id:
+        if book.publisher_id != current_user.dcs_publisher_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only preview activities from your own books",

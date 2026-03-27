@@ -180,7 +180,7 @@ async def get_books_with_vocabulary(
         logger.error(f"Error getting books with vocabulary: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error fetching books: {str(e)}",
+            detail="Error fetching books. Please try again.",
         ) from e
 
 
@@ -302,17 +302,17 @@ async def get_vocabulary(
         )
 
     except (DCSAIDataAuthError, DCSAIDataConnectionError) as e:
-        logger.error(f"DCS error fetching vocabulary: {e}")
+        logger.error(f"DCS error fetching vocabulary: {e}", exc_info=True)
         raise HTTPException(
             status_code=503,
-            detail=f"Error connecting to storage service: {str(e)}",
+            detail="Error connecting to storage service. Please try again later.",
         ) from e
 
     except Exception as e:
-        logger.error(f"Error fetching vocabulary: {e}")
+        logger.error(f"Error fetching vocabulary: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error fetching vocabulary: {str(e)}",
+            detail="Error fetching vocabulary. Please try again.",
         ) from e
 
 
@@ -372,15 +372,15 @@ async def get_audio_url(
         raise
 
     except (DCSAIDataAuthError, DCSAIDataConnectionError) as e:
-        logger.error(f"DCS error getting audio URL: {e}")
+        logger.error(f"DCS error getting audio URL: {e}", exc_info=True)
         raise HTTPException(
             status_code=503,
-            detail=f"Error connecting to storage service: {str(e)}",
+            detail="Error connecting to storage service. Please try again later.",
         ) from e
 
     except Exception as e:
-        logger.error(f"Error getting audio URL: {e}")
+        logger.error(f"Error getting audio URL: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error getting audio URL: {str(e)}",
+            detail="Error getting audio URL. Please try again.",
         ) from e

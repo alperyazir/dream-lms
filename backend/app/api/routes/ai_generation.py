@@ -14,8 +14,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
+from starlette.requests import Request
 
 from app.api.deps import AsyncSessionDep, CurrentUser, require_role
+from app.core.rate_limit import RateLimits, limiter
 from app.models import TeacherGeneratedContent, User, UserRole
 from app.schemas.ai_generation_v2 import GenerationRequestV2
 from app.schemas.ai_quiz import (
@@ -235,7 +237,9 @@ TeacherOrHigher = require_role(UserRole.teacher, UserRole.supervisor, UserRole.a
     summary="Get AI processing status for a book",
     description="Check if a book has been processed by the AI pipeline and get metadata.",
 )
+@limiter.limit(RateLimits.AI)
 async def get_book_ai_status(
+    request: Request,
     book_id: int,
     current_user: CurrentUser,
     dcs_client: DCSClientDep,
@@ -277,7 +281,9 @@ async def get_book_ai_status(
     summary="Get AI modules for a book",
     description="Get the list of modules with AI data for content generation.",
 )
+@limiter.limit(RateLimits.AI)
 async def get_book_ai_modules(
+    request: Request,
     book_id: int,
     current_user: CurrentUser,
     dcs_client: DCSClientDep,
@@ -352,7 +358,9 @@ TTSManagerDep = Annotated[TTSManager | None, Depends(get_tts_manager_dep)]
         }
     },
 )
+@limiter.limit(RateLimits.AI)
 async def generate_tts_audio(
+    request: Request,
     text: str = Query(
         ..., min_length=1, max_length=200, description="Text to convert to speech"
     ),
@@ -400,10 +408,10 @@ async def generate_tts_audio(
         )
 
     except Exception as e:
-        logger.error(f"TTS generation failed: {e}")
+        logger.error(f"TTS generation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate audio: {str(e)}",
+            detail="Failed to generate audio. Please try again.",
         )
 
 
@@ -421,8 +429,10 @@ async def generate_tts_audio(
         "word highlighting in the UI."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def generate_passage_audio(
-    request: dict,
+    request: Request,
+    body: dict,
     current_user: CurrentUser,
 ):
     """
@@ -431,14 +441,14 @@ async def generate_passage_audio(
     - **text**: The passage text to narrate (max 5000 characters)
     - **voice_id**: Optional Edge TTS voice name (e.g. 'en-US-JennyNeural')
     """
-    text = request.get("text", "")
+    text = body.get("text", "")
     if not text or len(text) > 5000:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Text is required and must be at most 5000 characters.",
         )
 
-    voice_id = request.get("voice_id") or "en-US-JennyNeural"
+    voice_id = body.get("voice_id") or "en-US-JennyNeural"
 
     try:
         provider = EdgeTTSProvider()
@@ -455,10 +465,10 @@ async def generate_passage_audio(
             "duration_seconds": result.duration_seconds,
         }
     except Exception as e:
-        logger.error(f"Edge TTS passage audio generation failed: {e}")
+        logger.error(f"Edge TTS passage audio generation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate passage audio: {str(e)}",
+            detail="Failed to generate passage audio. Please try again.",
         )
 
 
@@ -481,7 +491,9 @@ async def generate_passage_audio(
         }
     },
 )
+@limiter.limit(RateLimits.AI)
 async def stream_vocabulary_audio(
+    request: Request,
     book_id: int,
     lang: str,
     word_id: str,
@@ -557,8 +569,10 @@ async def stream_vocabulary_audio(
         "Only teachers, supervisors, and admins can generate quizzes."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def generate_vocabulary_quiz(
-    request: VocabularyQuizGenerationRequest,
+    request: Request,
+    quiz_request: VocabularyQuizGenerationRequest,
     current_user: Annotated[User, TeacherOrHigher],
     quiz_service: QuizServiceDep,
     storage: StorageDep,
@@ -598,11 +612,11 @@ async def generate_vocabulary_quiz(
 
     logger.info(
         f"Quiz generation requested by user_id={current_user.id}, "
-        f"book_id={request.book_id}"
+        f"book_id={quiz_request.book_id}"
     )
 
     try:
-        quiz = await quiz_service.generate_quiz(request)
+        quiz = await quiz_service.generate_quiz(quiz_request)
 
         # Save quiz to storage for later access
         await storage.save_quiz(quiz)
@@ -666,7 +680,9 @@ async def generate_vocabulary_quiz(
         "Returns the quiz without correct answers for students to take."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def get_vocabulary_quiz(
+    request: Request,
     quiz_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -697,7 +713,9 @@ async def get_vocabulary_quiz(
         "Returns the results with correct answers revealed."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def submit_vocabulary_quiz(
+    request: Request,
     quiz_id: str,
     submission: VocabularyQuizSubmission,
     current_user: CurrentUser,
@@ -744,7 +762,9 @@ async def submit_vocabulary_quiz(
     summary="Get quiz result",
     description="Get the result of a previously submitted quiz.",
 )
+@limiter.limit(RateLimits.AI)
 async def get_vocabulary_quiz_result(
+    request: Request,
     quiz_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -772,14 +792,16 @@ async def get_vocabulary_quiz_result(
     "/quiz/debug-request",
     summary="Debug endpoint to see raw request body",
 )
+@limiter.limit(RateLimits.AI)
 async def debug_quiz_request(
-    request: dict,
+    request: Request,
+    body: dict,
 ) -> dict:
     """Debug endpoint to see what the frontend is sending."""
     import logging
 
-    logging.getLogger(__name__).info(f"DEBUG RAW REQUEST: {request}")
-    return {"received": request}
+    logging.getLogger(__name__).info(f"DEBUG RAW REQUEST: {body}")
+    return {"received": body}
 
 
 @router.post(
@@ -792,8 +814,10 @@ async def debug_quiz_request(
         "Only teachers, supervisors, and admins can generate quizzes."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def generate_ai_quiz(
-    request: AIQuizGenerationRequest,
+    request: Request,
+    quiz_request: AIQuizGenerationRequest,
     current_user: Annotated[User, TeacherOrHigher],
     ai_quiz_service: AIQuizServiceDep,
     storage: StorageDep,
@@ -832,14 +856,14 @@ async def generate_ai_quiz(
         )
 
     # Debug logging to see what was received
-    logger.info(f"DEBUG: Received request: {request.model_dump()}")
+    logger.info(f"DEBUG: Received request: {quiz_request.model_dump()}")
     logger.info(
         f"AI Quiz generation requested by user_id={current_user.id}, "
-        f"book_id={request.book_id}, modules={request.module_ids}"
+        f"book_id={quiz_request.book_id}, modules={quiz_request.module_ids}"
     )
 
     try:
-        quiz = await ai_quiz_service.generate_quiz(request)
+        quiz = await ai_quiz_service.generate_quiz(quiz_request)
 
         # Save quiz to storage for later access
         await storage.save_ai_quiz(quiz)
@@ -899,7 +923,9 @@ async def generate_ai_quiz(
         "Returns the quiz without correct answers for students to take."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def get_ai_quiz(
+    request: Request,
     quiz_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -930,7 +956,9 @@ async def get_ai_quiz(
         "Returns the results with correct answers and explanations revealed."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def submit_ai_quiz(
+    request: Request,
     quiz_id: str,
     submission: AIQuizSubmission,
     current_user: CurrentUser,
@@ -977,7 +1005,9 @@ async def submit_ai_quiz(
     summary="Get AI quiz result",
     description="Get the result of a previously submitted AI quiz.",
 )
+@limiter.limit(RateLimits.AI)
 async def get_ai_quiz_result(
+    request: Request,
     quiz_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -1012,8 +1042,10 @@ async def get_ai_quiz_result(
         "Only teachers, supervisors, and admins can generate activities."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def generate_reading_activity(
-    request: ReadingComprehensionRequest,
+    request: Request,
+    reading_request: ReadingComprehensionRequest,
     current_user: Annotated[User, TeacherOrHigher],
     reading_service: ReadingServiceDep,
     storage: StorageDep,
@@ -1053,11 +1085,11 @@ async def generate_reading_activity(
 
     logger.info(
         f"Reading activity generation requested by user_id={current_user.id}, "
-        f"book_id={request.book_id}, module_id={request.module_id}"
+        f"book_id={reading_request.book_id}, module_id={reading_request.module_id}"
     )
 
     try:
-        activity = await reading_service.generate_activity(request)
+        activity = await reading_service.generate_activity(reading_request)
 
         # Save activity to storage for later access
         await storage.save_reading_activity(activity)
@@ -1117,7 +1149,9 @@ async def generate_reading_activity(
         "Returns the activity with passage but without correct answers."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def get_reading_activity(
+    request: Request,
     activity_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -1148,7 +1182,9 @@ async def get_reading_activity(
         "Returns the results with correct answers and explanations revealed."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def submit_reading_activity(
+    request: Request,
     activity_id: str,
     submission: ReadingComprehensionSubmission,
     current_user: CurrentUser,
@@ -1196,7 +1232,9 @@ async def submit_reading_activity(
     summary="Get reading comprehension result",
     description="Get the result of a previously submitted reading comprehension activity.",
 )
+@limiter.limit(RateLimits.AI)
 async def get_reading_result(
+    request: Request,
     activity_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -1231,8 +1269,10 @@ async def get_reading_result(
         "Only teachers, supervisors, and admins can generate activities."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def generate_sentence_activity(
-    request: SentenceBuilderRequest,
+    request: Request,
+    sentence_request: SentenceBuilderRequest,
     current_user: Annotated[User, TeacherOrHigher],
     sentence_service: SentenceServiceDep,
     storage: StorageDep,
@@ -1272,11 +1312,11 @@ async def generate_sentence_activity(
 
     logger.info(
         f"Sentence builder activity generation requested by user_id={current_user.id}, "
-        f"book_id={request.book_id}, difficulty={request.difficulty}"
+        f"book_id={sentence_request.book_id}, difficulty={sentence_request.difficulty}"
     )
 
     try:
-        activity = await sentence_service.generate_activity(request)
+        activity = await sentence_service.generate_activity(sentence_request)
 
         # Save activity to storage for later access
         await storage.save_sentence_activity(activity)
@@ -1347,7 +1387,9 @@ async def generate_sentence_activity(
         "Returns the activity with word banks but without correct sentence answers."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def get_sentence_activity(
+    request: Request,
     activity_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -1378,7 +1420,9 @@ async def get_sentence_activity(
         "Returns the results with correct sentences revealed."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def submit_sentence_activity(
+    request: Request,
     activity_id: str,
     submission: SentenceBuilderSubmission,
     current_user: CurrentUser,
@@ -1425,7 +1469,9 @@ async def submit_sentence_activity(
     summary="Get sentence builder result",
     description="Get the result of a previously submitted sentence builder activity.",
 )
+@limiter.limit(RateLimits.AI)
 async def get_sentence_result(
+    request: Request,
     activity_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -1460,8 +1506,10 @@ async def get_sentence_result(
         "Only teachers, supervisors, and admins can generate activities."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def generate_word_builder_activity(
-    request: WordBuilderRequest,
+    request: Request,
+    word_request: WordBuilderRequest,
     current_user: Annotated[User, TeacherOrHigher],
     word_builder_service: WordBuilderServiceDep,
     storage: StorageDep,
@@ -1501,11 +1549,11 @@ async def generate_word_builder_activity(
 
     logger.info(
         f"Word builder activity generation requested by user_id={current_user.id}, "
-        f"book_id={request.book_id}, word_count={request.word_count}"
+        f"book_id={word_request.book_id}, word_count={word_request.word_count}"
     )
 
     try:
-        activity = await word_builder_service.generate_activity(request)
+        activity = await word_builder_service.generate_activity(word_request)
 
         # Save activity to storage for later access
         await storage.save_word_builder_activity(activity)
@@ -1576,7 +1624,9 @@ async def generate_word_builder_activity(
         "Returns the activity with scrambled letters but without correct words."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def get_word_builder_activity(
+    request: Request,
     activity_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -1607,7 +1657,9 @@ async def get_word_builder_activity(
         "Returns the results with correct words and scores revealed."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def submit_word_builder_activity(
+    request: Request,
     activity_id: str,
     submission: WordBuilderSubmission,
     current_user: CurrentUser,
@@ -1655,7 +1707,9 @@ async def submit_word_builder_activity(
     summary="Get word builder result",
     description="Get the result of a previously submitted word builder activity.",
 )
+@limiter.limit(RateLimits.AI)
 async def get_word_builder_result(
+    request: Request,
     activity_id: str,
     current_user: CurrentUser,
     storage: StorageDep,
@@ -1688,8 +1742,10 @@ async def get_word_builder_result(
         "Only teachers, supervisors, and admins can regenerate questions."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def regenerate_quiz_question(
-    request: RegenerateQuestionRequest,
+    request: Request,
+    regen_request: RegenerateQuestionRequest,
     current_user: Annotated[User, TeacherOrHigher],
     ai_quiz_service: AIQuizServiceDep,
     storage: StorageDep,
@@ -1706,12 +1762,12 @@ async def regenerate_quiz_question(
     """
     logger.info(
         f"Question regeneration requested by user_id={current_user.id}, "
-        f"quiz_id={request.quiz_id}, question_index={request.question_index}"
+        f"quiz_id={regen_request.quiz_id}, question_index={regen_request.question_index}"
     )
 
     try:
         # Get the original quiz to access its metadata
-        quiz = await storage.get_ai_quiz(request.quiz_id)
+        quiz = await storage.get_ai_quiz(regen_request.quiz_id)
 
         if quiz is None:
             raise HTTPException(
@@ -1720,32 +1776,32 @@ async def regenerate_quiz_question(
             )
 
         # Validate question index
-        if request.question_index >= len(quiz.questions):
+        if regen_request.question_index >= len(quiz.questions):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid question index. Quiz has {len(quiz.questions)} questions.",
             )
 
         # Get the question being replaced (for context)
-        old_question = quiz.questions[request.question_index]
+        old_question = quiz.questions[regen_request.question_index]
 
         # Regenerate a single question using the same parameters
         new_question = await ai_quiz_service.regenerate_question(
-            quiz_id=request.quiz_id,
-            question_index=request.question_index,
+            quiz_id=regen_request.quiz_id,
+            question_index=regen_request.question_index,
             module_ids=quiz.module_ids,
-            difficulty=request.context.get("difficulty", quiz.difficulty),
-            language=request.context.get("language", quiz.language),
+            difficulty=regen_request.context.get("difficulty", quiz.difficulty),
+            language=regen_request.context.get("language", quiz.language),
             source_module_id=old_question.source_module_id,
         )
 
         # Update the quiz in storage (re-save to update)
-        quiz.questions[request.question_index] = new_question
+        quiz.questions[regen_request.question_index] = new_question
         await storage.save_ai_quiz(quiz)
 
         logger.info(
-            f"Question regenerated successfully: quiz_id={request.quiz_id}, "
-            f"question_index={request.question_index}"
+            f"Question regenerated successfully: quiz_id={regen_request.quiz_id}, "
+            f"question_index={regen_request.question_index}"
         )
 
         return new_question
@@ -1784,8 +1840,10 @@ def _strip_audio_data(obj: Any) -> Any:
         "Only teachers, supervisors, and admins can save content."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def save_content_to_library(
-    request: SaveToLibraryRequest,
+    request: Request,
+    save_request: SaveToLibraryRequest,
     current_user: Annotated[User, TeacherOrHigher],
     storage: StorageDep,
     db: AsyncSessionDep,
@@ -1803,7 +1861,7 @@ async def save_content_to_library(
     """
     logger.info(
         f"Save to library requested by user_id={current_user.id}, "
-        f"quiz_id={request.quiz_id}, activity_type={request.activity_type}"
+        f"quiz_id={save_request.quiz_id}, activity_type={save_request.activity_type}"
     )
 
     try:
@@ -1826,39 +1884,41 @@ async def save_content_to_library(
         content_data = None
         book_id = None
 
-        if request.content is not None:
+        if save_request.content is not None:
             # Use content directly from request (preferred - doesn't depend on in-memory storage)
             logger.info(
-                f"Using content from request directly, quiz_id={request.quiz_id}"
+                f"Using content from request directly, quiz_id={save_request.quiz_id}"
             )
-            content_data = request.content
-            book_id = request.content.get("book_id")
+            content_data = save_request.content
+            book_id = save_request.content.get("book_id")
         else:
             # Fall back to looking up from in-memory storage (legacy)
-            logger.info(f"Looking up content from storage, quiz_id={request.quiz_id}")
+            logger.info(
+                f"Looking up content from storage, quiz_id={save_request.quiz_id}"
+            )
 
-            if request.activity_type == "ai_quiz":
-                quiz = await storage.get_ai_quiz(request.quiz_id)
+            if save_request.activity_type == "ai_quiz":
+                quiz = await storage.get_ai_quiz(save_request.quiz_id)
                 if quiz:
                     content_data = quiz.model_dump(mode="json")
                     book_id = quiz.book_id
-            elif request.activity_type == "vocabulary_quiz":
-                quiz = await storage.get_quiz(request.quiz_id)
+            elif save_request.activity_type == "vocabulary_quiz":
+                quiz = await storage.get_quiz(save_request.quiz_id)
                 if quiz:
                     content_data = quiz.model_dump(mode="json")
                     book_id = quiz.book_id
-            elif request.activity_type == "reading":
-                activity = await storage.get_reading_activity(request.quiz_id)
+            elif save_request.activity_type == "reading":
+                activity = await storage.get_reading_activity(save_request.quiz_id)
                 if activity:
                     content_data = activity.model_dump(mode="json")
                     book_id = activity.book_id
-            elif request.activity_type == "sentence_builder":
-                activity = await storage.get_sentence_activity(request.quiz_id)
+            elif save_request.activity_type == "sentence_builder":
+                activity = await storage.get_sentence_activity(save_request.quiz_id)
                 if activity:
                     content_data = activity.model_dump(mode="json")
                     book_id = activity.book_id
-            elif request.activity_type == "word_builder":
-                activity = await storage.get_word_builder_activity(request.quiz_id)
+            elif save_request.activity_type == "word_builder":
+                activity = await storage.get_word_builder_activity(save_request.quiz_id)
                 if activity:
                     content_data = activity.model_dump(mode="json")
                     book_id = activity.book_id
@@ -1878,9 +1938,9 @@ async def save_content_to_library(
             "listening_sentence_builder": ("sentences", "correct_sentence"),
             "listening_word_builder": ("words", "correct_word"),
         }
-        if request.activity_type in _LISTENING_AUDIO_MAP:
+        if save_request.activity_type in _LISTENING_AUDIO_MAP:
             lang = content_data.get("language", "en")
-            items_key, text_key = _LISTENING_AUDIO_MAP[request.activity_type]
+            items_key, text_key = _LISTENING_AUDIO_MAP[save_request.activity_type]
             for item in content_data.get(items_key, []):
                 sentence = item.get(text_key, "")
                 if sentence and not item.get("audio_url"):
@@ -1895,11 +1955,11 @@ async def save_content_to_library(
         generated_content = TeacherGeneratedContent(
             teacher_id=teacher_id,
             book_id=book_id,
-            activity_type=request.activity_type,
-            title=request.title,
+            activity_type=save_request.activity_type,
+            title=save_request.title,
             content=content_data,
-            skill_id=request.skill_id,
-            format_id=request.format_id,
+            skill_id=save_request.skill_id,
+            format_id=save_request.format_id,
         )
         db.add(generated_content)
         await db.commit()
@@ -1920,7 +1980,7 @@ async def save_content_to_library(
 
                 # Compute item count from content data
                 item_count = 0
-                if request.activity_type == "mix_mode":
+                if save_request.activity_type == "mix_mode":
                     item_count = len(content_data.get("questions", []))
                 else:
                     for key in ("questions", "items", "sentences", "words", "pairs"):
@@ -1928,7 +1988,7 @@ async def save_content_to_library(
                             item_count = len(content_data[key])
                             break
 
-                has_audio = request.activity_type in (
+                has_audio = save_request.activity_type in (
                     "listening_fill_blank",
                     "listening_quiz",
                     "listening_sentence_builder",
@@ -1936,7 +1996,7 @@ async def save_content_to_library(
                     "vocabulary_matching",
                     "word_builder",
                 )
-                has_passage = request.activity_type in (
+                has_passage = save_request.activity_type in (
                     "reading_comprehension",
                     "reading",
                     "mix_mode",
@@ -1947,8 +2007,8 @@ async def save_content_to_library(
                     book_id,
                     {
                         "manifest": {
-                            "activity_type": request.activity_type,
-                            "title": request.title,
+                            "activity_type": save_request.activity_type,
+                            "title": save_request.title,
                             "item_count": item_count,
                             "has_audio": has_audio,
                             "has_passage": has_passage,
@@ -1969,11 +2029,11 @@ async def save_content_to_library(
                     await db.commit()
 
                     # Upload audio files from audio_data (base64) to DCS
-                    if request.activity_type in _LISTENING_AUDIO_MAP and dcs_cid:
+                    if save_request.activity_type in _LISTENING_AUDIO_MAP and dcs_cid:
                         import base64
 
                         items_key, _text_key = _LISTENING_AUDIO_MAP[
-                            request.activity_type
+                            save_request.activity_type
                         ]
                         audio_uploaded = 0
                         for item in content_data.get(items_key, []):
@@ -2010,7 +2070,7 @@ async def save_content_to_library(
                             )
 
                     # Upload audio for mix mode listening questions
-                    if request.activity_type == "mix_mode" and dcs_cid:
+                    if save_request.activity_type == "mix_mode" and dcs_cid:
                         import base64
 
                         audio_uploaded = 0
@@ -2070,7 +2130,7 @@ async def save_content_to_library(
         logger.error(f"Save to library failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save content to library: {str(e)}",
+            detail="Failed to save content to library. Please try again.",
         )
 
 
@@ -2084,8 +2144,10 @@ async def save_content_to_library(
         "Only teachers, supervisors, and admins can create assignments."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def create_assignment_from_content(
-    request: CreateAssignmentRequest,
+    request: Request,
+    assign_request: CreateAssignmentRequest,
     current_user: Annotated[User, TeacherOrHigher],
     storage: StorageDep,
 ) -> dict:
@@ -2102,27 +2164,31 @@ async def create_assignment_from_content(
     """
     logger.info(
         f"Create assignment requested by user_id={current_user.id}, "
-        f"quiz_id={request.quiz_id}, activity_type={request.activity_type}"
+        f"quiz_id={assign_request.quiz_id}, activity_type={assign_request.activity_type}"
     )
 
     try:
         # Validate that the content exists
         content_exists = False
 
-        if request.activity_type == "ai_quiz":
-            quiz = await storage.get_ai_quiz_public(request.quiz_id)
+        if assign_request.activity_type == "ai_quiz":
+            quiz = await storage.get_ai_quiz_public(assign_request.quiz_id)
             content_exists = quiz is not None
-        elif request.activity_type == "vocabulary_quiz":
-            quiz = await storage.get_quiz_public(request.quiz_id)
+        elif assign_request.activity_type == "vocabulary_quiz":
+            quiz = await storage.get_quiz_public(assign_request.quiz_id)
             content_exists = quiz is not None
-        elif request.activity_type == "reading":
-            activity = await storage.get_reading_activity_public(request.quiz_id)
+        elif assign_request.activity_type == "reading":
+            activity = await storage.get_reading_activity_public(assign_request.quiz_id)
             content_exists = activity is not None
-        elif request.activity_type == "sentence_builder":
-            activity = await storage.get_sentence_activity_public(request.quiz_id)
+        elif assign_request.activity_type == "sentence_builder":
+            activity = await storage.get_sentence_activity_public(
+                assign_request.quiz_id
+            )
             content_exists = activity is not None
-        elif request.activity_type == "word_builder":
-            activity = await storage.get_word_builder_activity_public(request.quiz_id)
+        elif assign_request.activity_type == "word_builder":
+            activity = await storage.get_word_builder_activity_public(
+                assign_request.quiz_id
+            )
             content_exists = activity is not None
 
         if not content_exists:
@@ -2131,14 +2197,16 @@ async def create_assignment_from_content(
                 detail="Content not found or expired.",
             )
 
-        logger.info(f"Assignment creation initiated for quiz_id={request.quiz_id}")
+        logger.info(
+            f"Assignment creation initiated for quiz_id={assign_request.quiz_id}"
+        )
 
         return {
             "message": "Assignment created successfully",
-            "quiz_id": request.quiz_id,
-            "activity_type": request.activity_type,
-            "title": request.title,
-            "redirect_url": f"/teacher/assignments/create?quiz_id={request.quiz_id}&type={request.activity_type}",
+            "quiz_id": assign_request.quiz_id,
+            "activity_type": assign_request.activity_type,
+            "title": assign_request.title,
+            "redirect_url": f"/teacher/assignments/create?quiz_id={assign_request.quiz_id}&type={assign_request.activity_type}",
         }
 
     except HTTPException:
@@ -2165,7 +2233,9 @@ async def create_assignment_from_content(
         "Includes teacher's own content and shared book-based content."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def list_library_content(
+    request: Request,
     current_user: Annotated[User, TeacherOrHigher],
     db: AsyncSessionDep,
     activity_type: str | None = Query(None, description="Filter by activity type"),
@@ -2272,10 +2342,53 @@ async def list_library_content(
                 # Fallback to placeholder titles
                 book_titles_map = {bid: f"Book {bid}" for bid in book_ids}
 
-        # Build response items
+        # Batch-load related data to avoid N+1 queries
+        from app.models import ActivityFormat, SkillCategory, Teacher
+
+        # Collect unique IDs
+        material_ids = {c.material_id for c in contents if c.material_id}
+        teacher_ids = {c.teacher_id for c in contents if c.teacher_id}
+        skill_ids = {c.skill_id for c in contents if c.skill_id}
+        format_ids = {c.format_id for c in contents if c.format_id}
+
+        # Batch fetch materials
+        materials_map: dict = {}
+        if material_ids:
+            mat_result = await db.execute(
+                select(TeacherMaterial).where(TeacherMaterial.id.in_(material_ids))
+            )
+            materials_map = {m.id: m.name for m in mat_result.scalars().all()}
+
+        # Batch fetch teachers with user relationship
+        teachers_map: dict = {}
+        if teacher_ids:
+            t_result = await db.execute(
+                select(Teacher)
+                .where(Teacher.id.in_(teacher_ids))
+                .options(selectinload(Teacher.user))
+            )
+            for t in t_result.scalars().all():
+                teachers_map[t.id] = t.user.full_name if t.user else "Unknown"
+
+        # Batch fetch skill categories
+        skills_map: dict = {}
+        if skill_ids:
+            sk_result = await db.execute(
+                select(SkillCategory).where(SkillCategory.id.in_(skill_ids))
+            )
+            skills_map = {s.id: s.name for s in sk_result.scalars().all()}
+
+        # Batch fetch activity formats
+        formats_map: dict = {}
+        if format_ids:
+            af_result = await db.execute(
+                select(ActivityFormat).where(ActivityFormat.id.in_(format_ids))
+            )
+            formats_map = {f.id: f.name for f in af_result.scalars().all()}
+
+        # Build response items (no per-item queries)
         items = []
         for content in contents:
-            # Determine source info
             source_type_str = "book" if content.book_id else "material"
             book_title = None
             material_name = None
@@ -2285,50 +2398,18 @@ async def list_library_content(
                     content.book_id, f"Book {content.book_id}"
                 )
             elif content.material_id:
-                # Fetch material name
-                material_result = await db.execute(
-                    select(TeacherMaterial).where(
-                        TeacherMaterial.id == content.material_id
-                    )
+                material_name = materials_map.get(
+                    content.material_id, "Unknown Material"
                 )
-                material = material_result.scalar_one_or_none()
-                material_name = material.name if material else "Unknown Material"
 
-            # Count activity items
             item_count = _count_activity_items(content.activity_type, content.content)
-
-            # Get creator info
-            from app.models import Teacher
-
-            creator_result = await db.execute(
-                select(Teacher)
-                .where(Teacher.id == content.teacher_id)
-                .options(selectinload(Teacher.user))
+            creator_name = teachers_map.get(content.teacher_id, "Unknown")
+            content_skill_name = (
+                skills_map.get(content.skill_id) if content.skill_id else None
             )
-            creator = creator_result.scalar_one_or_none()
-            creator_name = (
-                creator.user.full_name if creator and creator.user else "Unknown"
+            content_format_name = (
+                formats_map.get(content.format_id) if content.format_id else None
             )
-
-            # Resolve skill/format names if present (Epic 30)
-            content_skill_name = None
-            content_format_name = None
-            if content.skill_id:
-                from app.models import SkillCategory as SC
-
-                sk_result = await db.execute(
-                    select(SC).where(SC.id == content.skill_id)
-                )
-                sk = sk_result.scalar_one_or_none()
-                content_skill_name = sk.name if sk else None
-            if content.format_id:
-                from app.models import ActivityFormat as AF
-
-                af_result = await db.execute(
-                    select(AF).where(AF.id == content.format_id)
-                )
-                af = af_result.scalar_one_or_none()
-                content_format_name = af.name if af else None
 
             items.append(
                 ContentItemPublic(
@@ -2345,9 +2426,7 @@ async def list_library_content(
                     updated_at=None,  # Not tracked in current model
                     used_in_assignments=1 if content.is_used else 0,
                     is_shared=content.book_id is not None,
-                    created_by=ContentCreator(
-                        id=creator.id if creator else teacher_id, name=creator_name
-                    ),
+                    created_by=ContentCreator(id=content.teacher_id, name=creator_name),
                     skill_id=content.skill_id,
                     skill_name=content_skill_name,
                     format_id=content.format_id,
@@ -2383,7 +2462,9 @@ async def list_library_content(
     summary="Get detailed content from library",
     description="Retrieve full details of a saved AI-generated content item.",
 )
+@limiter.limit(RateLimits.AI)
 async def get_library_content_detail(
+    request: Request,
     content_id: UUID,
     current_user: Annotated[User, TeacherOrHigher],
     db: AsyncSessionDep,
@@ -2510,7 +2591,9 @@ async def get_library_content_detail(
     summary="Delete content from library",
     description="Delete a saved AI-generated content item. Only the creator can delete.",
 )
+@limiter.limit(RateLimits.AI)
 async def delete_library_content(
+    request: Request,
     content_id: UUID,
     current_user: Annotated[User, TeacherOrHigher],
     db: AsyncSessionDep,
@@ -2583,9 +2666,11 @@ async def delete_library_content(
     summary="Update content in library",
     description="Update a saved AI-generated content item including title and questions.",
 )
+@limiter.limit(RateLimits.AI)
 async def update_library_content(
+    request: Request,
     content_id: UUID,
-    request: UpdateContentRequest,
+    update_request: UpdateContentRequest,
     current_user: Annotated[User, TeacherOrHigher],
     db: AsyncSessionDep,
 ) -> UpdateContentResponse:
@@ -2635,10 +2720,10 @@ async def update_library_content(
         # Update fields
         updated_at = datetime.now(timezone.utc)
 
-        if request.title is not None:
-            content.title = request.title
+        if update_request.title is not None:
+            content.title = update_request.title
 
-        if request.content is not None:
+        if update_request.content is not None:
             # Ensure audio URLs are set for listening activities
             _UPDATE_AUDIO_MAP = {
                 "listening_fill_blank": ("items", "full_sentence"),
@@ -2647,9 +2732,9 @@ async def update_library_content(
                 "listening_word_builder": ("words", "correct_word"),
             }
             if content.activity_type in _UPDATE_AUDIO_MAP:
-                lang = request.content.get("language", "en")
+                lang = update_request.content.get("language", "en")
                 items_key, text_key = _UPDATE_AUDIO_MAP[content.activity_type]
-                for item in request.content.get(items_key, []):
+                for item in update_request.content.get(items_key, []):
                     sentence = item.get(text_key, "")
                     if sentence:
                         item["audio_url"] = (
@@ -2658,7 +2743,7 @@ async def update_library_content(
                             f"&lang={lang}"
                         )
                         item["audio_status"] = "ready"
-            content.content = request.content
+            content.content = update_request.content
 
         content.updated_at = updated_at
 
@@ -2690,9 +2775,11 @@ async def update_library_content(
     summary="Assign AI content to classes",
     description="Create an assignment from AI-generated content and assign to selected classes.",
 )
+@limiter.limit(RateLimits.AI)
 async def assign_library_content(
+    request: Request,
     content_id: UUID,
-    request: AssignContentRequest,
+    assign_request: AssignContentRequest,
     current_user: Annotated[User, TeacherOrHigher],
     db: AsyncSessionDep,
 ) -> AssignContentResponse:
@@ -2744,7 +2831,7 @@ async def assign_library_content(
             )
 
         # Validate class IDs
-        if not request.class_ids:
+        if not assign_request.class_ids:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="At least one class must be selected.",
@@ -2753,13 +2840,13 @@ async def assign_library_content(
         # Get classes and verify teacher owns them
         classes_result = await db.execute(
             select(Class).where(
-                Class.id.in_(request.class_ids),
+                Class.id.in_(assign_request.class_ids),
                 Class.teacher_id == teacher_id,
             )
         )
         classes = classes_result.scalars().all()
 
-        if len(classes) != len(request.class_ids):
+        if len(classes) != len(assign_request.class_ids):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="One or more classes not found or you don't have access.",
@@ -2771,7 +2858,7 @@ async def assign_library_content(
         students_result = await db.execute(
             select(Student)
             .join(ClassStudent, ClassStudent.student_id == Student.id)
-            .where(ClassStudent.class_id.in_(request.class_ids))
+            .where(ClassStudent.class_id.in_(assign_request.class_ids))
             .distinct()
         )
         students = students_result.scalars().all()
@@ -2794,10 +2881,10 @@ async def assign_library_content(
         dcs_book_id = content.book_id if content.book_id else 0
 
         assignment = Assignment(
-            name=request.name,
-            instructions=request.instructions,
-            due_date=request.due_date,
-            time_limit_minutes=request.time_limit_minutes,
+            name=assign_request.name,
+            instructions=assign_request.instructions,
+            due_date=assign_request.due_date,
+            time_limit_minutes=assign_request.time_limit_minutes,
             teacher_id=teacher_id,
             dcs_book_id=dcs_book_id,
             # Store AI content in activity_type and activity_content fields
@@ -2867,8 +2954,10 @@ async def assign_library_content(
         "Only teachers, supervisors, and admins can generate content."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def generate_content_v2(
-    request: "GenerationRequestV2",
+    request: Request,
+    gen_request: GenerationRequestV2,
     current_user: Annotated[User, TeacherOrHigher],
     dcs_client: DCSClientDep,
     llm_manager: Annotated[LLMManager, Depends(get_llm_manager_dep)],
@@ -2888,6 +2977,7 @@ async def generate_content_v2(
 
     from sqlmodel import Session as SyncSession
 
+    from app.core.db import engine as shared_sync_engine
     from app.schemas.ai_generation_v2 import GenerationResponseV2
     from app.services.skill_generation_dispatcher import dispatch
 
@@ -2921,8 +3011,8 @@ async def generate_content_v2(
         )
 
     logger.info(
-        f"V2 generation requested: skill={request.skill_slug}, "
-        f"format={request.format_slug}, user={current_user.id}"
+        f"V2 generation requested: skill={gen_request.skill_slug}, "
+        f"format={gen_request.format_slug}, user={current_user.id}"
     )
 
     import time as _time
@@ -2934,7 +3024,7 @@ async def generate_content_v2(
     llm_manager.last_generation_result = None
 
     # Handle mix mode separately (no dispatcher needed)
-    if request.skill_slug == "mix":
+    if gen_request.skill_slug == "mix":
         try:
             from app.services.ai_generation.mix_mode_service import MixModeService
             from app.services.dcs_ai_content_client import get_dcs_ai_content_client
@@ -2948,11 +3038,11 @@ async def generate_content_v2(
                 dcs_ai_content_client=dcs_ai_content,
             )
             mix_activity = await mix_service.generate_activity(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                total_count=request.count,
-                difficulty=request.difficulty,
-                language=request.language,
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                total_count=gen_request.count,
+                difficulty=gen_request.difficulty,
+                language=gen_request.language,
             )
 
             # Ensure audio URLs are set for listening/vocabulary questions
@@ -2965,7 +3055,7 @@ async def generate_content_v2(
                 ("vocabulary", "word_builder"): ("correct_word", ""),
                 ("vocabulary", "matching"): ("word", ""),
             }
-            lang = request.language or "en"
+            lang = gen_request.language or "en"
             for q in mix_activity.questions:
                 key = (q.skill_slug, q.format_slug)
                 if key in _MIX_AUDIO_MAP:
@@ -3032,9 +3122,9 @@ async def generate_content_v2(
                 format_id="00000000-0000-0000-0000-000000000000",
                 format_slug="mix",
                 format_name="Multi-Skill Mix",
-                source_type=request.source_type,
-                book_id=request.book_id,
-                difficulty=request.difficulty,
+                source_type=gen_request.source_type,
+                book_id=gen_request.book_id,
+                difficulty=gen_request.difficulty,
                 item_count=mix_activity.total_questions,
                 created_at=mix_activity.created_at,
             )
@@ -3043,26 +3133,20 @@ async def generate_content_v2(
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Mix mode generation failed: {e}")
+            logger.error(f"Mix mode generation failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Mix mode generation failed: {str(e)}",
+                detail="Mix mode generation failed. Please try again.",
             )
 
     # Dispatch: validate combination and get generator key
-    # Use a sync session for the dispatcher's DB lookups
-    from sqlmodel import create_engine
-
-    from app.core.config import settings
-
-    sync_engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
-    with SyncSession(sync_engine) as sync_session:
+    # Use a sync session with the shared engine (reuses connection pool)
+    with SyncSession(shared_sync_engine) as sync_session:
         dispatch_result = dispatch(
-            request.skill_slug,
-            request.format_slug or "",
+            gen_request.skill_slug,
+            gen_request.format_slug or "",
             sync_session,
         )
-    sync_engine.dispose()
 
     # Create DCS AI content client for audio uploads
     from app.services.dcs_ai_content_client import get_dcs_ai_content_client
@@ -3082,10 +3166,10 @@ async def generate_content_v2(
             from app.schemas.vocabulary_quiz import VocabularyQuizGenerationRequest
 
             vocab_request = VocabularyQuizGenerationRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids,
-                quiz_length=min(request.count, 20),
-                include_audio=request.include_audio,
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids,
+                quiz_length=min(gen_request.count, 20),
+                include_audio=gen_request.include_audio,
             )
             service = VocabularyQuizService(dcs_client, llm_manager)
             quiz = await service.generate_quiz(vocab_request)
@@ -3098,10 +3182,10 @@ async def generate_content_v2(
             from app.schemas.word_builder import WordBuilderRequest
 
             wb_request = WordBuilderRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids,
-                word_count=min(request.count, 15),
-                include_audio=request.include_audio,
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids,
+                word_count=min(gen_request.count, 15),
+                include_audio=gen_request.include_audio,
             )
             service = WordBuilderService(dcs_client, tts_manager)
             activity = await service.generate_activity(wb_request)
@@ -3114,13 +3198,15 @@ async def generate_content_v2(
             from app.schemas.ai_quiz import AIQuizGenerationRequest
 
             quiz_request = AIQuizGenerationRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "medium"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "medium"
                 ),
-                question_count=request.count,
-                language=request.language,
+                question_count=gen_request.count,
+                language=gen_request.language,
             )
             ai_service = AIQuizService(dcs_client, llm_manager)
             quiz = await ai_service.generate_quiz(quiz_request)
@@ -3135,13 +3221,15 @@ async def generate_content_v2(
             from app.services.ai_generation.prompts import GRAMMAR_MCQ_SYSTEM_PROMPT
 
             quiz_request = AIQuizGenerationRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "medium"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "medium"
                 ),
-                question_count=request.count,
-                language=request.language,
+                question_count=gen_request.count,
+                language=gen_request.language,
             )
             ai_service = AIQuizService(dcs_client, llm_manager)
             quiz = await ai_service.generate_quiz(
@@ -3157,13 +3245,15 @@ async def generate_content_v2(
             from app.schemas.sentence_builder import SentenceBuilderRequest
 
             sb_request = SentenceBuilderRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids,
-                sentence_count=min(request.count, 10),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids,
+                sentence_count=min(gen_request.count, 10),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "medium"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "medium"
                 ),
-                include_audio=request.include_audio,
+                include_audio=gen_request.include_audio,
             )
             sb_service = SentenceBuilderService(dcs_client, llm_manager, tts_manager)
             activity = await sb_service.generate_activity(sb_request)
@@ -3175,9 +3265,9 @@ async def generate_content_v2(
         elif generator_key == "reading_comprehension":
             from app.schemas.reading_comprehension import ReadingComprehensionRequest
 
-            extra = request.extra_config or {}
+            extra = gen_request.extra_config or {}
             passage_count = min(int(extra.get("passage_count", 1)), 5)
-            questions_per_passage = min(request.count, 20)
+            questions_per_passage = min(gen_request.count, 20)
             passage_length = 250
 
             import asyncio
@@ -3187,22 +3277,22 @@ async def generate_content_v2(
             all_questions: list[dict] = []
 
             # Build all requests — all passages share the full combined module context
-            all_module_ids = request.module_ids or [0]
+            all_module_ids = gen_request.module_ids or [0]
             primary_module_id = all_module_ids[0]
             rc_requests = []
             for i in range(passage_count):
                 rc_requests.append(
                     ReadingComprehensionRequest(
-                        book_id=request.book_id,
+                        book_id=gen_request.book_id,
                         module_id=primary_module_id,
                         module_ids=all_module_ids,
                         question_count=questions_per_passage,
                         difficulty=(
-                            request.difficulty
-                            if request.difficulty != "auto"
+                            gen_request.difficulty
+                            if gen_request.difficulty != "auto"
                             else "medium"
                         ),
-                        language=request.language,
+                        language=gen_request.language,
                         passage_length=passage_length,
                         passage_index=i + 1,
                         total_passages=passage_count,
@@ -3251,13 +3341,15 @@ async def generate_content_v2(
             )
 
             lq_request = ListeningQuizRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                question_count=min(request.count, 20),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                question_count=min(gen_request.count, 20),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
-                language=request.language,
+                language=gen_request.language,
             )
             lq_service = ListeningQuizService(dcs_client, llm_manager, tts_manager)
             activity = await lq_service.generate_activity(lq_request)
@@ -3273,13 +3365,15 @@ async def generate_content_v2(
             )
 
             lfb_request = ListeningFillBlankRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                item_count=min(request.count, 20),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                item_count=min(gen_request.count, 20),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
-                language=request.language,
+                language=gen_request.language,
             )
             lfb_service = ListeningFillBlankService(
                 dcs_client,
@@ -3300,21 +3394,23 @@ async def generate_content_v2(
             )
 
             gfb_request = GrammarFillBlankRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                item_count=min(request.count, 20),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                item_count=min(gen_request.count, 20),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
-                language=request.language,
+                language=gen_request.language,
                 mode=(
-                    request.extra_config.get("mode", "word_bank")
-                    if request.extra_config
+                    gen_request.extra_config.get("mode", "word_bank")
+                    if gen_request.extra_config
                     else "word_bank"
                 ),
                 include_hints=(
-                    request.extra_config.get("include_hints", True)
-                    if request.extra_config
+                    gen_request.extra_config.get("include_hints", True)
+                    if gen_request.extra_config
                     else True
                 ),
             )
@@ -3334,13 +3430,15 @@ async def generate_content_v2(
             )
 
             wsc_request = WritingSentenceCorrectorRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                item_count=min(request.count, 20),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                item_count=min(gen_request.count, 20),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
-                language=request.language,
+                language=gen_request.language,
             )
             wsc_service = WritingSentenceCorrectorService(dcs_client, llm_manager)
             activity = await wsc_service.generate_activity(wsc_request)
@@ -3356,13 +3454,15 @@ async def generate_content_v2(
             )
 
             wfb_request = WritingFillBlankRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                item_count=min(request.count, 20),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                item_count=min(gen_request.count, 20),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
-                language=request.language,
+                language=gen_request.language,
             )
             wfb_service = WritingFillBlankService(dcs_client, llm_manager)
             activity = await wfb_service.generate_activity(wfb_request)
@@ -3378,13 +3478,15 @@ async def generate_content_v2(
             )
 
             wfr_request = WritingFreeResponseRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                item_count=min(request.count, 10),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                item_count=min(gen_request.count, 10),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
-                language=request.language,
+                language=gen_request.language,
             )
             wfr_service = WritingFreeResponseService(dcs_client, llm_manager)
             activity = await wfr_service.generate_activity(wfr_request)
@@ -3400,13 +3502,15 @@ async def generate_content_v2(
             )
 
             sor_request = SpeakingOpenResponseRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                item_count=min(request.count, 10),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                item_count=min(gen_request.count, 10),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
-                language=request.language,
+                language=gen_request.language,
             )
             sor_service = SpeakingOpenResponseService(dcs_client, llm_manager)
             activity = await sor_service.generate_activity(sor_request)
@@ -3424,13 +3528,15 @@ async def generate_content_v2(
             )
 
             lsb_request = ListeningSentenceBuilderRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                sentence_count=min(request.count, 15),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                sentence_count=min(gen_request.count, 15),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
-                language=request.language,
+                language=gen_request.language,
             )
             lsb_service = ListeningSentenceBuilderService(
                 dcs_client,
@@ -3451,13 +3557,15 @@ async def generate_content_v2(
             )
 
             lwb_request = ListeningWordBuilderRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids or [],
-                word_count=min(request.count, 20),
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids or [],
+                word_count=min(gen_request.count, 20),
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "auto"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "auto"
                 ),
-                language=request.language,
+                language=gen_request.language,
             )
             lwb_service = ListeningWordBuilderService(
                 dcs_client,
@@ -3478,10 +3586,10 @@ async def generate_content_v2(
             )
 
             vm_request = VocabularyMatchingRequest(
-                book_id=request.book_id,
-                module_ids=request.module_ids,
-                pair_count=min(request.count, 20),
-                include_audio=request.include_audio,
+                book_id=gen_request.book_id,
+                module_ids=gen_request.module_ids,
+                pair_count=min(gen_request.count, 20),
+                include_audio=gen_request.include_audio,
             )
             vm_service = VocabularyMatchingService(dcs_client)
             activity = await vm_service.generate_activity(vm_request)
@@ -3535,10 +3643,10 @@ async def generate_content_v2(
         # Inject skill metadata into content
         content_data["_skill_metadata"] = {
             "skill_id": dispatch_result.skill_id,
-            "skill_slug": request.skill_slug,
+            "skill_slug": gen_request.skill_slug,
             "skill_name": dispatch_result.skill_name,
             "format_id": dispatch_result.format_id,
-            "format_slug": request.format_slug,
+            "format_slug": gen_request.format_slug,
             "format_name": dispatch_result.format_name,
         }
 
@@ -3547,21 +3655,21 @@ async def generate_content_v2(
             activity_type=dispatch_result.activity_type,
             content=content_data,
             skill_id=dispatch_result.skill_id,
-            skill_slug=request.skill_slug,
+            skill_slug=gen_request.skill_slug,
             skill_name=dispatch_result.skill_name,
             format_id=dispatch_result.format_id,
-            format_slug=request.format_slug or "",
+            format_slug=gen_request.format_slug or "",
             format_name=dispatch_result.format_name,
-            source_type=request.source_type,
-            book_id=request.book_id,
-            difficulty=request.difficulty,
+            source_type=gen_request.source_type,
+            book_id=gen_request.book_id,
+            difficulty=gen_request.difficulty,
             item_count=item_count,
             created_at=datetime.now(timezone.utc),
         )
 
         logger.info(
-            f"V2 generation complete: skill={request.skill_slug}, "
-            f"format={request.format_slug}, items={item_count}"
+            f"V2 generation complete: skill={gen_request.skill_slug}, "
+            f"format={gen_request.format_slug}, items={item_count}"
         )
 
         return response.model_dump(mode="json")
@@ -3588,7 +3696,7 @@ async def generate_content_v2(
         logger.error(f"V2 generation failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Generation failed: {str(e)}",
+            detail="Generation failed. Please try again.",
         )
 
 
@@ -3605,8 +3713,10 @@ async def generate_content_v2(
         "Each passage is streamed as it completes instead of waiting for all."
     ),
 )
+@limiter.limit(RateLimits.AI)
 async def generate_content_v2_stream(
-    request: "GenerationRequestV2",
+    request: Request,
+    gen_request: GenerationRequestV2,
     current_user: Annotated[User, TeacherOrHigher],
     dcs_client: DCSClientDep,
     llm_manager: Annotated[LLMManager, Depends(get_llm_manager_dep)],
@@ -3631,31 +3741,26 @@ async def generate_content_v2_stream(
     from fastapi.responses import StreamingResponse
     from sqlmodel import Session as SyncSession
 
+    from app.core.db import engine as shared_sync_engine
     from app.schemas.reading_comprehension import ReadingComprehensionRequest
     from app.services.skill_generation_dispatcher import dispatch
 
     # Check rate limit
     try:
         rate_limiter.check_limits(str(current_user.id), 1)
-    except RateLimitExceededError as e:
+    except RateLimitExceededError:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=str(e),
+            detail="Rate limit exceeded. Please try again later.",
         )
 
-    # Dispatch to get generator key
-    from sqlmodel import create_engine
-
-    from app.core.config import settings
-
-    sync_engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
-    with SyncSession(sync_engine) as sync_session:
+    # Dispatch to get generator key — use shared engine (reuses connection pool)
+    with SyncSession(shared_sync_engine) as sync_session:
         dispatch_result = dispatch(
-            request.skill_slug,
-            request.format_slug or "",
+            gen_request.skill_slug,
+            gen_request.format_slug or "",
             sync_session,
         )
-    sync_engine.dispose()
 
     generator_key = dispatch_result.generator_key
 
@@ -3665,11 +3770,11 @@ async def generate_content_v2_stream(
             detail="Streaming is only supported for reading comprehension.",
         )
 
-    extra = request.extra_config or {}
+    extra = gen_request.extra_config or {}
     passage_count = min(int(extra.get("passage_count", 1)), 5)
-    questions_per_passage = min(request.count, 20)
+    questions_per_passage = min(gen_request.count, 20)
 
-    all_module_ids = request.module_ids or [0]
+    all_module_ids = gen_request.module_ids or [0]
     primary_module_id = all_module_ids[0]
 
     rc_service = ReadingComprehensionService(dcs_client, llm_manager)
@@ -3678,14 +3783,16 @@ async def generate_content_v2_stream(
     for i in range(passage_count):
         rc_requests.append(
             ReadingComprehensionRequest(
-                book_id=request.book_id,
+                book_id=gen_request.book_id,
                 module_id=primary_module_id,
                 module_ids=all_module_ids,
                 question_count=questions_per_passage,
                 difficulty=(
-                    request.difficulty if request.difficulty != "auto" else "medium"
+                    gen_request.difficulty
+                    if gen_request.difficulty != "auto"
+                    else "medium"
                 ),
-                language=request.language,
+                language=gen_request.language,
                 passage_length=250,
                 passage_index=i + 1,
                 total_passages=passage_count,
@@ -3736,14 +3843,14 @@ async def generate_content_v2_stream(
             "content_id": passages[0]["passage_id"] if passages else str(uuid4()),
             "activity_type": dispatch_result.activity_type,
             "skill_id": dispatch_result.skill_id,
-            "skill_slug": request.skill_slug,
+            "skill_slug": gen_request.skill_slug,
             "skill_name": dispatch_result.skill_name,
             "format_id": dispatch_result.format_id,
-            "format_slug": request.format_slug or "",
+            "format_slug": gen_request.format_slug or "",
             "format_name": dispatch_result.format_name,
-            "source_type": request.source_type,
-            "book_id": request.book_id,
-            "difficulty": request.difficulty,
+            "source_type": gen_request.source_type,
+            "book_id": gen_request.book_id,
+            "difficulty": gen_request.difficulty,
             "item_count": len(all_questions),
             "passages": passages,
             "created_at": datetime.now(timezone.utc).isoformat(),

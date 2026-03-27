@@ -5,8 +5,6 @@
  * This service provides functions to interact with the Content Library API endpoints.
  */
 
-import axios from "axios";
-import { OpenAPI } from "../client";
 import type {
   BookContentDetail,
   BookContentListResponse,
@@ -17,45 +15,9 @@ import type {
   UpdateContentRequest,
   UpdateContentResponse,
 } from "../types/content-library";
+import { createApiClient } from "./apiClient";
 
-/**
- * Create axios instance with OpenAPI config
- */
-const apiClient = axios.create({
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Add token interceptor
-apiClient.interceptors.request.use(async (config) => {
-  if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE;
-  }
-
-  const token = OpenAPI.TOKEN;
-  if (token) {
-    const tokenValue =
-      typeof token === "function"
-        ? await token({
-            method: (config.method || "GET") as
-              | "GET"
-              | "POST"
-              | "PUT"
-              | "DELETE"
-              | "PATCH"
-              | "OPTIONS"
-              | "HEAD",
-            url: config.url || "",
-          })
-        : token;
-    if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`;
-    }
-  }
-
-  return config;
-});
+const apiClient = createApiClient();
 
 /**
  * List content library items with optional filters

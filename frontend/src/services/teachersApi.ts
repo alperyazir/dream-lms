@@ -6,10 +6,9 @@
  * Used for fetching teacher's classes and students for assignment creation.
  */
 
-import axios from "axios";
-import { OpenAPI } from "../client";
 import type { StudentPublic } from "../client";
 import type { Class, Student } from "../types/teacher";
+import { createApiClient } from "./apiClient";
 
 export interface PaginatedStudentsResponse {
   items: StudentPublic[];
@@ -19,43 +18,7 @@ export interface PaginatedStudentsResponse {
   has_more: boolean;
 }
 
-/**
- * Create axios instance with OpenAPI config
- */
-const apiClient = axios.create({
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Add token interceptor (async to handle async TOKEN function)
-apiClient.interceptors.request.use(async (config) => {
-  // Set baseURL from OpenAPI config to ensure requests go to correct backend
-  config.baseURL = OpenAPI.BASE;
-
-  const token = OpenAPI.TOKEN;
-  if (token) {
-    // Handle both sync and async token functions
-    const tokenValue =
-      typeof token === "function"
-        ? await token({
-            method: (config.method || "GET") as
-              | "GET"
-              | "POST"
-              | "PUT"
-              | "DELETE"
-              | "PATCH"
-              | "OPTIONS"
-              | "HEAD",
-            url: config.url || "",
-          })
-        : token;
-    if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`;
-    }
-  }
-  return config;
-});
+const apiClient = createApiClient();
 
 /**
  * Get all classes for the authenticated teacher

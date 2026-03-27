@@ -194,11 +194,11 @@ def student_progress_fixture(
             id=uuid.uuid4(),
             book_id=book.id,
             dream_activity_id=f"progress-activity-{i}",
-            module_name=f"Module {i+1}",
+            module_name=f"Module {i + 1}",
             page_number=i + 1,
             section_index=i,
             activity_type=act_type,
-            title=f"Progress Activity {i+1}",
+            title=f"Progress Activity {i + 1}",
             config_json={"type": act_type, "question": "Test"},
         )
         session.add(activity)
@@ -219,8 +219,8 @@ def student_progress_fixture(
             teacher_id=teacher.id,
             book_id=book.id,
             activity_id=activity.id,
-            name=f"Progress Assignment {i+1}",
-            instructions=f"Complete activity {i+1}",
+            name=f"Progress Assignment {i + 1}",
+            instructions=f"Complete activity {i + 1}",
             due_date=now + timedelta(days=7),
             time_limit_minutes=30,
         )
@@ -255,7 +255,7 @@ def student_progress_fixture(
             teacher_id=teacher.id,
             book_id=book.id,
             activity_id=activity.id,
-            name=f"Pending Assignment {i+1}",
+            name=f"Pending Assignment {i + 1}",
             instructions="Complete this activity",
             due_date=now + timedelta(days=14),
             time_limit_minutes=30,

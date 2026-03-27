@@ -5,52 +5,13 @@
  * This service provides functions to interact with the Classes API endpoints.
  */
 
-import axios from "axios";
-import { OpenAPI } from "../client";
 import type {
   ClassAnalyticsResponse,
   ClassPeriodType,
 } from "../types/analytics";
+import { createApiClient } from "./apiClient";
 
-/**
- * Create axios instance with OpenAPI config
- */
-const apiClient = axios.create({
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Add token interceptor (async to handle async TOKEN function)
-apiClient.interceptors.request.use(async (config) => {
-  // Set baseURL dynamically to ensure it uses the value set in main.tsx
-  if (!config.baseURL) {
-    config.baseURL = OpenAPI.BASE;
-  }
-
-  const token = OpenAPI.TOKEN;
-  if (token) {
-    // Handle both sync and async token functions
-    const tokenValue =
-      typeof token === "function"
-        ? await token({
-            method: (config.method || "GET") as
-              | "GET"
-              | "POST"
-              | "PUT"
-              | "DELETE"
-              | "PATCH"
-              | "OPTIONS"
-              | "HEAD",
-            url: config.url || "",
-          })
-        : token;
-    if (tokenValue) {
-      config.headers.Authorization = `Bearer ${tokenValue}`;
-    }
-  }
-  return config;
-});
+const apiClient = createApiClient();
 
 /**
  * Get comprehensive performance analytics for a class

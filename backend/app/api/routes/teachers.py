@@ -351,10 +351,10 @@ async def bulk_import_students(
 
     except Exception as e:
         session.rollback()
-        logger.error(f"Bulk import failed: {str(e)}")
+        logger.error(f"Bulk import failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bulk import failed: {str(e)}",
+            detail="Bulk import failed. Please try again.",
         )
 
     invalidate_for_event_sync("teacher_students_changed", user_id=str(current_user.id))

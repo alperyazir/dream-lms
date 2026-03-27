@@ -46,7 +46,9 @@ class BookService:
 
         # Use cache-aside pattern
         return await self.cache.get_or_fetch(
-            cache_key, lambda: self._fetch_books(publisher_id), ttl=600  # 10 minutes
+            cache_key,
+            lambda: self._fetch_books(publisher_id),
+            ttl=600,  # 10 minutes
         )
 
     async def _fetch_books(self, publisher_id: int | None = None) -> list[BookPublic]:
@@ -82,7 +84,9 @@ class BookService:
         """
         cache_key = CacheKeys.book_by_id(str(book_id))
         return await self.cache.get_or_fetch(
-            cache_key, lambda: self._fetch_book(book_id), ttl=600  # 10 minutes
+            cache_key,
+            lambda: self._fetch_book(book_id),
+            ttl=600,  # 10 minutes
         )
 
     async def _fetch_book(self, book_id: int) -> BookPublic | None:

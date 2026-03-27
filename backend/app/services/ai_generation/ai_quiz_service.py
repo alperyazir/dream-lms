@@ -271,7 +271,7 @@ class AIQuizService:
         )
 
         logger.info(
-            f"AI quiz generated: quiz_id={quiz.quiz_id}, " f"questions={len(questions)}"
+            f"AI quiz generated: quiz_id={quiz.quiz_id}, questions={len(questions)}"
         )
 
         return quiz
