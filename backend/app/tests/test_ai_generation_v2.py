@@ -367,9 +367,9 @@ class TestGeneratorMap:
             None,  # stub
         }
         for (skill, fmt), (gen_key, act_type) in GENERATOR_MAP.items():
-            assert gen_key in valid_keys, (
-                f"Invalid generator key: {gen_key} for ({skill}, {fmt})"
-            )
+            assert (
+                gen_key in valid_keys
+            ), f"Invalid generator key: {gen_key} for ({skill}, {fmt})"
             assert isinstance(act_type, str)
 
     def test_implemented_combo_count(self) -> None:

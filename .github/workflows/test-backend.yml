@@ -48,7 +48,7 @@ jobs:
         with:
           version: "0.4.15"
           enable-cache: true
-      - run: docker compose up -d db mailcatcher
+      - run: docker compose up -d db
       - name: Wait for DB
         run: sleep 5
       - name: Migrate DB

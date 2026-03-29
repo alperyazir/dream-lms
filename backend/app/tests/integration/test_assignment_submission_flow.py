@@ -304,9 +304,9 @@ async def test_full_assignment_submission_flow(
                 f"/api/v1/assignments/{test_assignment.id}/start",
                 headers=headers,
             )
-            assert start_response.status_code == 200, (
-                f"Start failed: {start_response.text}"
-            )
+            assert (
+                start_response.status_code == 200
+            ), f"Start failed: {start_response.text}"
             start_data = start_response.json()
             assert "activity_config" in start_data
 
@@ -336,9 +336,9 @@ async def test_full_assignment_submission_flow(
                 json=submit_payload,
                 headers=headers,
             )
-            assert submit_response.status_code == 200, (
-                f"Submit failed: {submit_response.text}"
-            )
+            assert (
+                submit_response.status_code == 200
+            ), f"Submit failed: {submit_response.text}"
             submit_data = submit_response.json()
             assert submit_data["success"] is True
             assert submit_data["score"] == 100.0
