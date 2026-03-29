@@ -3,16 +3,31 @@ name: Test Docker Compose
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     types:
       - opened
       - synchronize
 
 jobs:
-
   test-docker-compose:
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: changethis
+      POSTGRES_DB: app
+      POSTGRES_SERVER: db
+      POSTGRES_PORT: 5432
+      DOMAIN: localhost
+      STACK_NAME: flow-learn
+      FRONTEND_HOST: http://localhost:5173
+      ENVIRONMENT: local
+      PROJECT_NAME: "Flow Learn"
+      SECRET_KEY: changethis
+      FIRST_SUPERUSER: admin@example.com
+      FIRST_SUPERUSER_PASSWORD: changethis
+      DOCKER_IMAGE_BACKEND: backend
+      DOCKER_IMAGE_FRONTEND: frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -20,7 +35,7 @@ jobs:
       - run: docker compose down -v --remove-orphans
       - run: docker compose up -d --wait backend frontend adminer
       - name: Test backend is up
-        run: curl http://localhost:8000/api/v1/utils/health-check
+        run: curl --retry 10 --retry-delay 3 --retry-all-errors http://localhost:8000/api/v1/utils/health-check
       - name: Test frontend is up
-        run: curl http://localhost:5173
+        run: curl --retry 10 --retry-delay 3 --retry-all-errors http://localhost:5173
       - run: docker compose down -v --remove-orphans
