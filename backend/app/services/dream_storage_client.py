@@ -640,7 +640,7 @@ class DreamCentralStorageClient:
             return None
         except Exception as e:
             logger.warning(
-                f"Failed to get presigned URL for {publisher}/{book_name}/{path}: {e}"
+                f"Failed to get presigned URL for {publisher_id}/{book_name}/{path}: {e}"
             )
             return None
 
