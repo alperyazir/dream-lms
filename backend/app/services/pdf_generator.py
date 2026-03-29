@@ -266,7 +266,7 @@ def _create_cover_page(
     elements.append(Spacer(1, 2 * inch))
 
     # Footer info on cover
-    elements.append(Paragraph("Dream LMS Analytics Report", body_style))
+    elements.append(Paragraph("Flow Learn Analytics Report", body_style))
 
     return elements
 

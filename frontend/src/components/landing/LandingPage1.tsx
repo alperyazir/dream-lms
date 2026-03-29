@@ -117,7 +117,7 @@ const featuresDef = [
 
 const t = {
   EN: {
-    heroLine1: "Empowering Education",
+    heroLine1: "Flow Learn",
     heroLine2: "with AI Innovation",
     heroLine3: "",
     heroSub: "A modern learning management system that uses artificial intelligence to personalize education, track progress, and empower every learner.",
@@ -180,9 +180,9 @@ const t = {
     feat9Desc: "Live dashboards with detailed reports by class or student — track engagement, completion rates, and performance trends.",
   },
   TR: {
-    heroLine1: "Eğitimi",
+    heroLine1: "Flow Learn",
     heroLine2: "Yapay Zeka",
-    heroLine3: "ile Güçlendiriyoruz",
+    heroLine3: "ile Öğrenin",
     heroSub: "Eğitimi kişiselleştirmek, ilerlemeyi takip etmek ve her öğrenciyi güçlendirmek için yapay zeka kullanan modern bir öğrenme yönetim sistemi.",
     exploreFeatures: "Özellikleri Keşfet",
     featuresTitle: "Öğretmek ve Öğrenmek İçin İhtiyacınız Olan Her Şey",
@@ -576,7 +576,7 @@ export default function LandingPage1() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">{t[lang].emailUs}</h3>
-                  <p className="text-sm text-muted-foreground">info@dreamedtech.com</p>
+                  <p className="text-sm text-muted-foreground">info@flowlearn.com</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-5 rounded-2xl border border-border/50 bg-card">
@@ -659,7 +659,7 @@ export default function LandingPage1() {
                 <div className="flex items-center gap-3 mb-2">
                   <img
                     src="/assets/images/dreamedtech_single.svg"
-                    alt="Dream EdTech"
+                    alt="Flow Learn"
                     className="h-10 w-auto"
                   />
                   <SheetTitle className="text-2xl font-bold tracking-tight">

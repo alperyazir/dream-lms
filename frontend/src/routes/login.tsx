@@ -212,11 +212,11 @@ function Login() {
           >
             <img
               src="/assets/images/dreamedtech_single.svg"
-              alt="Dream EdTech"
+              alt="Flow Learn"
               className="h-16 xl:h-20 w-auto"
             />
             <span className="text-3xl xl:text-4xl font-bold text-white tracking-tight">
-              Dream <span className="text-teal-100">EdTech</span>
+              Flow <span className="text-teal-100">Learn</span>
             </span>
           </motion.div>
 

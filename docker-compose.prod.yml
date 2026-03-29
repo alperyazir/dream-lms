@@ -1,4 +1,4 @@
-# docker-compose.prod.yml — Production deployment for Dream LMS
+# docker-compose.prod.yml — Production deployment for Flow Learn
 # Usage: docker compose -f docker-compose.prod.yml up -d
 
 services:

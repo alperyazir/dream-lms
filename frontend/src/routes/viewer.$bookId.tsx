@@ -140,7 +140,7 @@ function ViewerPage() {
       document.title = `${book.title} - Flowbook Viewer`;
     }
     return () => {
-      document.title = "Dream LMS";
+      document.title = "Flow Learn";
     };
   }, [book?.title]);
 
