@@ -653,7 +653,9 @@ class DreamCentralStorageClient:
         )
         return response.json()
 
-    async def get_book_config(self, publisher_id: int, book_name: str) -> dict[str, Any]:
+    async def get_book_config(
+        self, publisher_id: int, book_name: str
+    ) -> dict[str, Any]:
         """
         Fetch config.json for a specific book.
 
@@ -667,7 +669,9 @@ class DreamCentralStorageClient:
         Raises:
             DreamStorageError: If request fails
         """
-        cache_key = self._generate_cache_key("get_book_config", str(publisher_id), book_name)
+        cache_key = self._generate_cache_key(
+            "get_book_config", str(publisher_id), book_name
+        )
 
         # Check cache
         cached = self._get_cached(cache_key)
@@ -759,9 +763,7 @@ class DreamCentralStorageClient:
         """
         self._validate_asset_path(asset_path)
         base_url = settings.DREAM_CENTRAL_STORAGE_URL
-        url = (
-            f"{base_url}/storage/books/{publisher_id}/{book_name}/object?path={asset_path}"
-        )
+        url = f"{base_url}/storage/books/{publisher_id}/{book_name}/object?path={asset_path}"
         return url
 
     async def download_asset(
@@ -912,7 +914,9 @@ class DreamCentralStorageClient:
                 async for chunk in response.aiter_bytes(chunk_size):
                     yield chunk
 
-    async def list_videos(self, publisher_id: int, book_name: str) -> list[dict[str, Any]]:
+    async def list_videos(
+        self, publisher_id: int, book_name: str
+    ) -> list[dict[str, Any]]:
         """
         List available video files in a book's DCS storage.
 
@@ -926,7 +930,9 @@ class DreamCentralStorageClient:
         Raises:
             DreamStorageError: If request fails
         """
-        cache_key = self._generate_cache_key("list_videos", str(publisher_id), book_name)
+        cache_key = self._generate_cache_key(
+            "list_videos", str(publisher_id), book_name
+        )
 
         # Check cache
         cached = self._get_cached(cache_key)
