@@ -113,7 +113,7 @@ async def get_book_cover(request: Request, book_id: int) -> Any:
 
         # Try presigned URL first (avoids proxying bytes through LMS)
         presigned_url = await client.get_presigned_url(
-            book.publisher_name, book.name, "images/book_cover.png", expires=86400
+            book.publisher_id, book.name, "images/book_cover.png", expires=86400
         )
         if presigned_url:
             return RedirectResponse(
@@ -123,7 +123,7 @@ async def get_book_cover(request: Request, book_id: int) -> Any:
             )
 
         # Fallback: proxy the image through LMS
-        url = f"/storage/books/{book.publisher_name}/{book.name}/object"
+        url = f"/storage/books/{book.publisher_id}/{book.name}/object"
         params = {"path": "images/book_cover.png"}
 
         try:
@@ -1284,7 +1284,7 @@ async def list_book_videos(
     dcs_client = await get_dream_storage_client()
     try:
         config_data = await dcs_client.get_book_config(
-            publisher=book.publisher_name, book_name=book.name
+            publisher_id=book.publisher_id, book_name=book.name
         )
     except Exception as e:
         logger.error(f"Failed to fetch config.json for book {book_id}: {e}")
@@ -1297,7 +1297,7 @@ async def list_book_videos(
     # Get all files in the book to check for subtitles
     try:
         all_files = await dcs_client.list_book_contents(
-            publisher=book.publisher_name, book_name=book.name
+            publisher_id=book.publisher_id, book_name=book.name
         )
     except Exception as e:
         logger.warning(f"Could not list book contents for subtitle detection: {e}")
