@@ -81,7 +81,10 @@ function PublisherTeachersPage() {
     error,
   } = useQuery({
     queryKey: ["publisherTeachers"],
-    queryFn: () => PublishersService.listMyTeachers(),
+    queryFn: async () => {
+      const res = await PublishersService.listMyTeachers();
+      return Array.isArray(res) ? res : (res as any).items ?? [];
+    },
   });
 
   // Fetch schools for dropdown

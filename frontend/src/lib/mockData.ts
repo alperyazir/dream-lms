@@ -2495,7 +2495,7 @@ const mockMessagesRaw: Message[] = [
     to_id: "teacher1",
     to_name: "Dr. Sarah Johnson",
     subject: "Next Week's Curriculum Meeting",
-    body: "Hi Sarah, can you prepare a 5-minute presentation on the Dream LMS platform for next Tuesday's curriculum meeting? The board is interested in our digital learning initiatives.",
+    body: "Hi Sarah, can you prepare a 5-minute presentation on the Flow Learn platform for next Tuesday's curriculum meeting? The board is interested in our digital learning initiatives.",
     timestamp: getRelativeDateTime(-7, 11, 0),
     read: true,
   },

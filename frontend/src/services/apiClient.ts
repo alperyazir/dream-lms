@@ -59,7 +59,7 @@ export function createApiClient() {
         localStorage.removeItem("access_token");
         sessionStorage.removeItem("must_change_password");
         sessionStorage.removeItem("user_role");
-        window.location.href = "/login";
+        window.location.href = "/home";
       }
       return Promise.reject(error);
     },

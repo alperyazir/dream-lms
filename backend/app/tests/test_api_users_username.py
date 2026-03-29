@@ -154,9 +154,9 @@ def test_all_seeded_users_have_valid_usernames(
         # Check username format (alphanumeric, underscore, hyphen only)
         import re
 
-        assert re.match(r"^[a-zA-Z0-9_-]+$", user.username), (
-            f"User {user.email} has invalid username format: {user.username}"
-        )
+        assert re.match(
+            r"^[a-zA-Z0-9_-]+$", user.username
+        ), f"User {user.email} has invalid username format: {user.username}"
 
 
 def test_get_user_me_includes_username(client: TestClient, admin_token: str) -> None:

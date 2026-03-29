@@ -157,9 +157,9 @@ class TestRateLimitIntegration:
                 data={"username": "wrong@example.com", "password": "wrong"},
             )
             # Should get 400 (invalid credentials), not 429
-            assert response.status_code == 400, (
-                f"Request {i + 1} got {response.status_code}"
-            )
+            assert (
+                response.status_code == 400
+            ), f"Request {i + 1} got {response.status_code}"
 
         # 11th request should be rate limited
         response = client.post(

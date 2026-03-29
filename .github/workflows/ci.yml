@@ -18,6 +18,8 @@ jobs:
           python-version: "3.12"
           cache: "pip"
       - run: pip install "ruff==0.13.0"
+      - run: ruff check app/ --fix
+      - run: ruff format app/ --exclude alembic
       - run: ruff check app/
       - run: ruff format --check app/ --exclude alembic
 
@@ -60,5 +62,5 @@ jobs:
     needs: [lint-backend, build-frontend]
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t dream-lms-backend ./backend
-      - run: docker build -t dream-lms-frontend ./frontend
+      - run: docker build -t flow-learn-backend ./backend
+      - run: docker build -t flow-learn-frontend ./frontend

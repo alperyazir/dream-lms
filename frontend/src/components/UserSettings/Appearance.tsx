@@ -33,7 +33,7 @@ const Appearance = () => {
           Theme Preferences
         </h3>
         <p className="text-sm text-muted-foreground">
-          Choose how Dream LMS looks to you
+          Choose how Flow Learn looks to you
         </p>
       </div>
 

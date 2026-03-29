@@ -186,7 +186,7 @@ function ContentLibraryPage() {
     <PageContainer>
       <PageHeader
         icon={Sparkles}
-        title="Dream AI Generation"
+        title="Flow AI Generation"
         description="Generate and manage AI-powered learning activities"
       >
         <div className="flex items-center gap-3">

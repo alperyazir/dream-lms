@@ -20,13 +20,13 @@ function Navbar() {
             <div className="relative">
               <img
                 src={Logo}
-                alt="DreamEdTech"
+                alt="Flow Learn"
                 className="h-9 w-9 transition-transform group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-              Dream LMS
+              Flow Learn
             </span>
           </Link>
 
@@ -65,8 +65,8 @@ function Navbar() {
         <div className="flex h-14 w-full items-center justify-between px-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img src={Logo} alt="DreamEdTech" className="h-8 w-8" />
-            <span className="text-lg font-bold">Dream LMS</span>
+            <img src={Logo} alt="Flow Learn" className="h-8 w-8" />
+            <span className="text-lg font-bold">Flow Learn</span>
           </Link>
 
           {/* Actions */}

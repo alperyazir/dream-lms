@@ -73,7 +73,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiClipboard, title: "Assignments", path: "/admin/assignments" },
     { icon: FiBarChart2, title: "Benchmarks", path: "/admin/benchmarks" },
     { icon: FiActivity, title: "AI Usage", path: "/admin/ai-usage" },
-    { icon: Sparkles, title: "DreamAI", path: "/dreamai" },
+    { icon: Sparkles, title: "Flow AI", path: "/dreamai" },
   ],
   supervisor: [
     { icon: FiHome, title: "Dashboard", path: "/admin/dashboard" },
@@ -84,7 +84,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiUsers, title: "Students", path: "/admin/students" },
     { icon: FiClipboard, title: "Assignments", path: "/admin/assignments" },
     { icon: FiBarChart2, title: "Benchmarks", path: "/admin/benchmarks" },
-    { icon: Sparkles, title: "DreamAI", path: "/dreamai" },
+    { icon: Sparkles, title: "Flow AI", path: "/dreamai" },
   ],
   publisher: [
     { icon: FiHome, title: "Dashboard", path: "/publisher/dashboard" },
@@ -98,7 +98,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiCalendar, title: "Calendar", path: "/teacher/calendar" },
     { icon: FiBook, title: "Library", path: "/teacher/books" },
     { icon: FiFolder, title: "My Materials", path: "/teacher/materials" },
-    { icon: Sparkles, title: "DreamAI", path: "/dreamai" },
+    { icon: Sparkles, title: "Flow AI", path: "/dreamai" },
     { icon: FiTrendingUp, title: "Classrooms", path: "/teacher/classrooms" },
     { icon: FiUsers, title: "Students", path: "/teacher/students" },
     { icon: FiClipboard, title: "Assignments", path: "/teacher/assignments" },
@@ -120,7 +120,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
 
   // Track which collapsible menus are expanded
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
-    location.pathname.startsWith("/dreamai") ? { DreamAI: true } : {},
+    location.pathname.startsWith("/dreamai") ? { "Flow AI": true } : {},
   );
 
   const userRole = (currentUser?.role || "student") as UserRole;
