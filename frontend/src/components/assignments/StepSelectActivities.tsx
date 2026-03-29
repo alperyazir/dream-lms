@@ -240,7 +240,7 @@ function AIContentTab({
           <Sparkles className="w-12 h-12 mx-auto mb-2 text-gray-400" />
           <p>No AI content found for this book</p>
           <p className="text-sm mt-1">
-            Generate content from the DreamAI section first
+            Generate content from the Flow AI section first
           </p>
         </div>
       ) : (

@@ -99,7 +99,7 @@ export const Route = createFileRoute("/change-password")({
   beforeLoad: () => {
     // Redirect if not authenticated
     if (!isLoggedIn()) {
-      throw redirect({ to: "/login" });
+      throw redirect({ to: "/home" });
     }
     // Story 28.1: Students cannot change their own passwords - teachers manage them
     const role = getUserRole();

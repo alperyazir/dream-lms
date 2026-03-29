@@ -4,16 +4,12 @@
 
 # Node
 node_modules/
-package.json
-package-lock.json
 
 # Testing
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
-.pytest_cache/
-.playwright-mcp/
 
 # Python
 venv/
@@ -26,7 +22,6 @@ __pycache__/
 .env.local
 .env.*.local
 .env.prod
-.env.example
 
 # Logs
 *.log
@@ -49,41 +44,18 @@ backend/generated_reports/*.excel
 **/.DS_Store
 Thumbs.db
 
-# Dev-only (lives in development branch)
-.bmad-core/
-.copier/
-.serena/
-docs/
-load-tests/
-hooks/
-scripts/
-frontend/.tanstack/
-frontend/openapi-ts-error-*.log
+# Duplicate/dev directories
+frontend/frontend/
+
+# Load testing (dev only)
 docker-compose.loadtest.yml
-docker-compose.override.yml
-docker-compose.traefik.yml
 backend/scripts/seed_load_test.py
-copier.yml
-.pre-commit-config.yaml
-.mcp.json
-deployment.md
-development.md
-release-notes.md
-README-LOCAL.md
-.claude/commands/BMad/
-.github/DISCUSSION_TEMPLATE/
-.github/ISSUE_TEMPLATE/
-.github/FUNDING.yml
-.github/dependabot.yml
-.github/labeler.yml
-.github/workflows/add-to-project.yml
-.github/workflows/detect-conflicts.yml
-.github/workflows/generate-client.yml
-.github/workflows/issue-manager.yml
-.github/workflows/labeler.yml
-.github/workflows/latest-changes.yml
-.github/workflows/smokeshow.yml
-.github/workflows/playwright.yml
+load-tests/k6-load-test.js
+load-tests/k6-setup.js
+load-tests/k6-setup-data.json
+load-tests/nohup.out
+
+# Dev artifacts
 todo.txt
 *.tmp
 *.swp

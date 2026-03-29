@@ -50,7 +50,7 @@ function ResetPassword() {
     onSuccess: () => {
       showSuccessToast("Password updated successfully.");
       reset();
-      navigate({ to: "/login" });
+      navigate({ to: "/home" });
     },
     onError: (err: ApiError) => {
       handleError(err);
