@@ -18,6 +18,7 @@ jobs:
           python-version: "3.12"
           cache: "pip"
       - run: pip install "ruff==0.13.0"
+      - run: ruff check app/ --fix
       - run: ruff check app/
       - run: ruff format --check app/ --exclude alembic
 
