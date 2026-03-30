@@ -5,12 +5,12 @@ Tests for AI Usage API Endpoints - Story 27.22
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from app.schemas.user import UserRole
 from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.security import create_access_token
 from app.models import Teacher, User
-from app.schemas.user import UserRole
 from app.services.usage_tracking_service import log_llm_usage, log_tts_usage
 
 
