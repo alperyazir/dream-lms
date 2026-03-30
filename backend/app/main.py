@@ -88,7 +88,7 @@ async def lifespan(app: FastAPI):
     Runs on startup and shutdown.
     """
     # Startup
-    logger.info("Starting Dream LMS backend...")
+    logger.info("Starting Flow Learn backend...")
 
     # Connect to Redis cache
     await init_redis()
@@ -155,7 +155,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("Shutting down Dream LMS backend...")
+    logger.info("Shutting down Flow Learn backend...")
     await app.state.arq_pool.close()
     await close_redis()
 

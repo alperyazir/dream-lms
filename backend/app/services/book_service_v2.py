@@ -187,7 +187,7 @@ class BookService:
             return None
 
         try:
-            return await client.get_book_config(book.publisher, book.book_name)
+            return await client.get_book_config(book.publisher_id, book.book_name)
         except Exception as e:
             logger.warning(f"Failed to fetch config for book {book_id}: {e}")
             return None

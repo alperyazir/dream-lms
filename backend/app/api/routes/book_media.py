@@ -217,7 +217,7 @@ async def stream_media(
     try:
         # Get file metadata (size) first
         file_size = await client.get_asset_size(
-            publisher=book.publisher_name,
+            publisher_id=book.publisher_id,
             book_name=book.name,
             asset_path=asset_path,
         )
@@ -253,7 +253,7 @@ async def stream_media(
     async def stream_generator() -> AsyncGenerator[bytes, None]:
         try:
             async for chunk in client.stream_asset(
-                publisher=book.publisher_name,
+                publisher_id=book.publisher_id,
                 book_name=book.name,
                 asset_path=asset_path,
                 start=start,

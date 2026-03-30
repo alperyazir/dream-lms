@@ -3,7 +3,7 @@ name: Test Backend
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     types:
       - opened
@@ -12,9 +12,33 @@ on:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: changethis
+      POSTGRES_DB: app
+      POSTGRES_SERVER: localhost
+      POSTGRES_PORT: 5432
+      DOMAIN: localhost
+      STACK_NAME: flow-learn
+      FRONTEND_HOST: http://localhost:5173
+      ENVIRONMENT: local
+      PROJECT_NAME: "Flow Learn"
+      SECRET_KEY: changethis
+      FIRST_SUPERUSER: admin@example.com
+      FIRST_SUPERUSER_PASSWORD: changethis
+      DOCKER_IMAGE_BACKEND: backend
+      DOCKER_IMAGE_FRONTEND: frontend
+      BACKEND_CORS_ORIGINS: "http://localhost,http://localhost:5173"
+      SMTP_HOST: ""
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+      EMAILS_FROM_EMAIL: "test@example.com"
+      SENTRY_DSN: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+      - name: Create .env file
+        run: env | grep -E '^(POSTGRES_|DOMAIN|STACK_NAME|FRONTEND_HOST|ENVIRONMENT|PROJECT_NAME|SECRET_KEY|FIRST_SUPERUSER|DOCKER_IMAGE_|BACKEND_CORS|SMTP_|EMAILS_|SENTRY_)' > .env
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -24,8 +48,9 @@ jobs:
         with:
           version: "0.4.15"
           enable-cache: true
-      - run: docker compose down -v --remove-orphans
       - run: docker compose up -d db mailcatcher
+      - name: Wait for DB
+        run: sleep 5
       - name: Migrate DB
         run: uv run bash scripts/prestart.sh
         working-directory: backend

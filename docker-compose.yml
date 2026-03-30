@@ -206,7 +206,7 @@ services:
       - SECRET_KEY=${SECRET_KEY?Variable not set}
       - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
       - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
-      - PROJECT_NAME=${PROJECT_NAME:-Dream LMS}
+      - PROJECT_NAME=${PROJECT_NAME:-Flow Learn}
     depends_on:
       redis:
         condition: service_healthy
