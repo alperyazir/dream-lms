@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import time
@@ -108,20 +109,36 @@ async def lifespan(app: FastAPI):
             "⚠️  Email disabled - SMTP not configured. New users will receive passwords in UI."
         )
 
-    # Register webhooks with Dream Central Storage
-    logger.info("Attempting to register webhooks with Dream Central Storage...")
-    try:
-        result = await webhook_registration_service.register_webhook()
-        if result["success"]:
-            logger.info(f"✅ {result['message']}")
-        else:
-            logger.warning(f"⚠️  Webhook registration failed: {result['message']}")
-            logger.warning("   You can manually register via admin sync endpoint")
-    except Exception as e:
-        logger.error(f"❌ Error during webhook registration: {e}")
-        logger.warning(
-            "   Webhook registration will be skipped. Use admin sync endpoint to register manually."
+    # Register webhooks with Dream Central Storage (background retry)
+    async def _register_webhooks_with_retry():
+        max_retries = 10
+        retry_delay = 30
+        for attempt in range(1, max_retries + 1):
+            logger.info(
+                f"Attempting webhook registration with FCS (attempt {attempt}/{max_retries})..."
+            )
+            try:
+                result = await webhook_registration_service.register_webhook()
+                if result["success"]:
+                    logger.info(f"✅ {result['message']}")
+                    return
+                else:
+                    logger.warning(
+                        f"⚠️  Webhook registration failed: {result['message']}"
+                    )
+            except Exception as e:
+                logger.error(f"❌ Error during webhook registration: {e}")
+
+            if attempt < max_retries:
+                logger.info(f"   Retrying in {retry_delay}s...")
+                await asyncio.sleep(retry_delay)
+
+        logger.error(
+            "❌ Webhook registration failed after all retries. "
+            "Use admin sync endpoint to register manually."
         )
+
+    asyncio.create_task(_register_webhooks_with_retry())
 
     # Note: Publishers no longer synced to local DB - managed via DCS caching service
     # Publishers are fetched on-demand from DCS and cached (see publisher_service_v2.py)
