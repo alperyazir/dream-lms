@@ -622,7 +622,7 @@ class DreamCentralStorageClient:
         return [BookRead(**b) for b in response.json()]
 
     async def get_presigned_url(
-        self, publisher: str, book_name: str, path: str, expires: int = 3600
+        self, publisher_id: int, book_name: str, path: str, expires: int = 3600
     ) -> str | None:
         """Get a presigned URL for a book asset from DCS.
 
@@ -630,7 +630,7 @@ class DreamCentralStorageClient:
         Returns None if the asset is not found.
         """
         try:
-            url = f"/storage/books/{publisher}/{book_name}/presigned"
+            url = f"/storage/books/{publisher_id}/{book_name}/presigned"
             response = await self._make_request(
                 "GET", url, params={"path": path, "expires": expires}
             )
@@ -640,7 +640,7 @@ class DreamCentralStorageClient:
             return None
         except Exception as e:
             logger.warning(
-                f"Failed to get presigned URL for {publisher}/{book_name}/{path}: {e}"
+                f"Failed to get presigned URL for {publisher_id}/{book_name}/{path}: {e}"
             )
             return None
 
@@ -653,12 +653,14 @@ class DreamCentralStorageClient:
         )
         return response.json()
 
-    async def get_book_config(self, publisher: str, book_name: str) -> dict[str, Any]:
+    async def get_book_config(
+        self, publisher_id: int, book_name: str
+    ) -> dict[str, Any]:
         """
         Fetch config.json for a specific book.
 
         Args:
-            publisher: Publisher name (e.g., "Universal ELT")
+            publisher_id: Publisher ID in DCS
             book_name: Book name (e.g., "BRAINS")
 
         Returns:
@@ -667,7 +669,9 @@ class DreamCentralStorageClient:
         Raises:
             DreamStorageError: If request fails
         """
-        cache_key = self._generate_cache_key("get_book_config", publisher, book_name)
+        cache_key = self._generate_cache_key(
+            "get_book_config", str(publisher_id), book_name
+        )
 
         # Check cache
         cached = self._get_cached(cache_key)
@@ -675,7 +679,7 @@ class DreamCentralStorageClient:
             return cached
 
         # Make request - use /object endpoint with path parameter
-        url = f"/storage/books/{publisher}/{book_name}/object?path=config.json"
+        url = f"/storage/books/{publisher_id}/{book_name}/object?path=config.json"
         response = await self._make_request("GET", url)
         config_data = response.json()
 
@@ -684,12 +688,12 @@ class DreamCentralStorageClient:
 
         return config_data
 
-    async def list_book_contents(self, publisher: str, book_name: str) -> list[str]:
+    async def list_book_contents(self, publisher_id: int, book_name: str) -> list[str]:
         """
         List all files in a book's storage directory.
 
         Args:
-            publisher: Publisher name
+            publisher_id: Publisher ID in DCS
             book_name: Book name
 
         Returns:
@@ -698,13 +702,12 @@ class DreamCentralStorageClient:
         Raises:
             DreamStorageError: If request fails
         """
-        url = f"/storage/books/{publisher}/{book_name}"
+        url = f"/storage/books/{publisher_id}/{book_name}"
         response = await self._make_request("GET", url)
         tree_data = response.json()
 
         # The book path prefix that we want to strip from full paths
-        # e.g., "Universal ELT/SwitchtoCLIL/" -> we want just "video/1.mp4"
-        book_prefix = f"{publisher}/{book_name}/"
+        book_prefix = f"{publisher_id}/{book_name}/"
 
         # DCS returns a nested tree structure. Flatten it to a list of relative paths.
         def flatten_tree(node: dict | list) -> list[str]:
@@ -743,12 +746,12 @@ class DreamCentralStorageClient:
 
         return flatten_tree(tree_data)
 
-    def get_asset_url(self, publisher: str, book_name: str, asset_path: str) -> str:
+    def get_asset_url(self, publisher_id: int, book_name: str, asset_path: str) -> str:
         """
         Generate authenticated URL for downloading a book asset.
 
         Args:
-            publisher: Publisher name
+            publisher_id: Publisher ID in DCS
             book_name: Book name
             asset_path: Relative path to asset (e.g., "images/M1/p7m5.jpg")
 
@@ -760,19 +763,17 @@ class DreamCentralStorageClient:
         """
         self._validate_asset_path(asset_path)
         base_url = settings.DREAM_CENTRAL_STORAGE_URL
-        url = (
-            f"{base_url}/storage/books/{publisher}/{book_name}/object?path={asset_path}"
-        )
+        url = f"{base_url}/storage/books/{publisher_id}/{book_name}/object?path={asset_path}"
         return url
 
     async def download_asset(
-        self, publisher: str, book_name: str, asset_path: str
+        self, publisher_id: int, book_name: str, asset_path: str
     ) -> bytes:
         """
         Download a book asset file.
 
         Args:
-            publisher: Publisher name
+            publisher_id: Publisher ID in DCS
             book_name: Book name
             asset_path: Relative path to asset
 
@@ -784,14 +785,14 @@ class DreamCentralStorageClient:
             DreamStorageError: If download fails
         """
         self._validate_asset_path(asset_path)
-        url = f"/storage/books/{publisher}/{book_name}/object?path={asset_path}"
+        url = f"/storage/books/{publisher_id}/{book_name}/object?path={asset_path}"
         # Use longer timeout for downloads
         response = await self._make_request("GET", url, use_long_timeout=True)
         return response.content
 
     async def get_asset_size(
         self,
-        publisher: str,
+        publisher_id: int,
         book_name: str,
         asset_path: str,
     ) -> int:
@@ -801,7 +802,7 @@ class DreamCentralStorageClient:
         Uses a Range request to get the total file size from Content-Range header.
 
         Args:
-            publisher: Publisher name
+            publisher_id: Publisher ID in DCS
             book_name: Book name
             asset_path: Relative path to asset
 
@@ -816,7 +817,7 @@ class DreamCentralStorageClient:
 
         auth_headers = await self._get_jwt_auth_headers()
 
-        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher}/{book_name}/object"
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher_id}/{book_name}/object"
         params = {"path": asset_path}
         headers = {
             **auth_headers,
@@ -853,7 +854,7 @@ class DreamCentralStorageClient:
 
     async def stream_asset(
         self,
-        publisher: str,
+        publisher_id: int,
         book_name: str,
         asset_path: str,
         start: int = 0,
@@ -864,7 +865,7 @@ class DreamCentralStorageClient:
         Stream an asset file with optional byte range.
 
         Args:
-            publisher: Publisher name
+            publisher_id: Publisher ID in DCS
             book_name: Book name
             asset_path: Relative path to asset
             start: Start byte position
@@ -882,7 +883,7 @@ class DreamCentralStorageClient:
 
         auth_headers = await self._get_jwt_auth_headers()
 
-        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher}/{book_name}/object"
+        url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher_id}/{book_name}/object"
         params = {"path": asset_path}
         headers = {**auth_headers}
 
@@ -913,12 +914,14 @@ class DreamCentralStorageClient:
                 async for chunk in response.aiter_bytes(chunk_size):
                     yield chunk
 
-    async def list_videos(self, publisher: str, book_name: str) -> list[dict[str, Any]]:
+    async def list_videos(
+        self, publisher_id: int, book_name: str
+    ) -> list[dict[str, Any]]:
         """
         List available video files in a book's DCS storage.
 
         Args:
-            publisher: Publisher name
+            publisher_id: Publisher ID in DCS
             book_name: Book name
 
         Returns:
@@ -927,7 +930,9 @@ class DreamCentralStorageClient:
         Raises:
             DreamStorageError: If request fails
         """
-        cache_key = self._generate_cache_key("list_videos", publisher, book_name)
+        cache_key = self._generate_cache_key(
+            "list_videos", str(publisher_id), book_name
+        )
 
         # Check cache
         cached = self._get_cached(cache_key)
@@ -935,7 +940,7 @@ class DreamCentralStorageClient:
             return cached
 
         # Get all files in the book directory
-        all_files = await self.list_book_contents(publisher, book_name)
+        all_files = await self.list_book_contents(publisher_id, book_name)
 
         # Filter for video files
         video_extensions = (".mp4", ".webm", ".ogg", ".mov")
@@ -953,7 +958,7 @@ class DreamCentralStorageClient:
                 # Get file size
                 try:
                     size_bytes = await self.get_asset_size(
-                        publisher, book_name, file_path
+                        publisher_id, book_name, file_path
                     )
                 except Exception as e:
                     logger.warning(f"Could not get size for {file_path}: {e}")

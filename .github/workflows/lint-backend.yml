@@ -27,6 +27,5 @@ jobs:
       - name: Run ruff lint and format check
         working-directory: backend
         run: |
-          uv run ruff check app --fix
           uv run ruff check app
           uv run ruff format app --check

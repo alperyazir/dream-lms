@@ -79,12 +79,16 @@ export function BookAssignmentDialog({
   });
 
   // Fetch all teachers
-  const { data: teachers = [], isLoading: teachersLoading } = useQuery({
+  const { data: teachersRaw, isLoading: teachersLoading } = useQuery({
     queryKey: ["publisherTeachers"],
-    queryFn: () => PublishersService.listMyTeachers(),
+    queryFn: async () => {
+      const res = await PublishersService.listMyTeachers();
+      return Array.isArray(res) ? res : (res as any).items ?? [];
+    },
     enabled: isOpen,
     staleTime: 5 * 60 * 1000,
   });
+  const teachers = teachersRaw ?? [];
 
   // Create school lookup map
   const schoolMap = useMemo(() => {

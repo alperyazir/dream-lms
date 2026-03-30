@@ -49,14 +49,21 @@ jobs:
           version: "0.4.15"
           enable-cache: true
       - run: docker compose up -d db redis
-      - name: Wait for DB and Redis
+      - name: Wait for DB
         run: sleep 5
       - name: Migrate DB
         run: uv run bash scripts/prestart.sh
         working-directory: backend
       - name: Run tests
-        run: uv run python -m pytest tests/ -x --deselect=tests/api/routes/test_private.py::test_create_user --deselect=tests/api/routes/test_users.py::test_update_user_me --deselect=tests/api/routes/test_users.py::test_update_password_me --deselect=tests/api/routes/test_users.py::test_register_user --deselect=tests/api/routes/test_users.py::test_register_user_already_exists_error --deselect=tests/api/routes/test_users.py::test_delete_user_me -q
         working-directory: backend
+        run: |
+          uv run python -m pytest tests/ -x -q \
+            --deselect=tests/api/routes/test_private.py::test_create_user \
+            --deselect=tests/api/routes/test_users.py::test_update_user_me \
+            --deselect=tests/api/routes/test_users.py::test_update_password_me \
+            --deselect=tests/api/routes/test_users.py::test_register_user \
+            --deselect=tests/api/routes/test_users.py::test_register_user_already_exists_error \
+            --deselect=tests/api/routes/test_users.py::test_delete_user_me
       - run: docker compose down -v --remove-orphans
       - name: Store coverage files
         uses: actions/upload-artifact@v4

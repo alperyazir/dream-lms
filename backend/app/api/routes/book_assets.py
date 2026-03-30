@@ -230,7 +230,7 @@ async def serve_book_asset(
 
     try:
         asset_data = await client.download_asset(
-            publisher=book.publisher_name,
+            publisher_id=book.publisher_id,
             book_name=book.name,
             asset_path=asset_path,
         )

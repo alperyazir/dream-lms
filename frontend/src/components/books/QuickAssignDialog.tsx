@@ -57,8 +57,9 @@ export function QuickAssignDialog({
     enabled: open,
   });
 
-  // Both APIs return Array<TeacherPublic> directly, not { items: [] }
-  const teachers = teachersData || [];
+  const teachers = Array.isArray(teachersData)
+    ? teachersData
+    : (teachersData as any)?.items ?? [];
 
   // Fetch current assignments for this book
   const { data: currentAssignments } = useQuery({
