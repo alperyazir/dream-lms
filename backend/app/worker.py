@@ -14,8 +14,8 @@ async def startup(ctx: dict) -> None:
 
     engine = create_async_engine(
         str(settings.SQLALCHEMY_DATABASE_URI),
-        pool_size=5,
-        max_overflow=5,
+        pool_size=settings.WORKER_DB_POOL_SIZE,
+        max_overflow=settings.WORKER_DB_MAX_OVERFLOW,
         pool_pre_ping=True,
     )
     ctx["db_engine"] = engine

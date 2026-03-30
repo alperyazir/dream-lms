@@ -147,10 +147,10 @@ class DreamCentralStorageClient:
 
     def __init__(self) -> None:
         """Initialize the Dream Central Storage client."""
-        # Configure connection limits
+        # Configure connection limits (from env or defaults)
         limits = httpx.Limits(
-            max_connections=10,
-            max_keepalive_connections=5,  # Max concurrent connections  # Reuse connections
+            max_connections=settings.DCS_MAX_CONNECTIONS,
+            max_keepalive_connections=settings.DCS_MAX_KEEPALIVE,
         )
 
         # Configure timeouts
