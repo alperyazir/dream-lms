@@ -111,28 +111,16 @@ async def get_book_cover(request: Request, book_id: int) -> Any:
 
         client = await get_dream_storage_client()
 
-        # Try presigned URL first (avoids proxying bytes through LMS)
-        presigned_url = await client.get_presigned_url(
-            book.publisher_id, book.name, "images/book_cover.png", expires=86400
-        )
-        if presigned_url:
-            return RedirectResponse(
-                url=presigned_url,
-                status_code=302,
-                headers={"Cache-Control": "public, max-age=3600"},
-            )
-
-        # Fallback: proxy the image through LMS
-        url = f"/storage/books/{book.publisher_id}/{book.name}/object"
-        params = {"path": "images/book_cover.png"}
-
+        # Proxy cover image through LMS (avoid redirect which breaks CORS)
         try:
-            response = await client._make_request("GET", url, params=params)
-            content_type = response.headers.get("content-type", "image/png")
-
+            cover_data = await client.download_asset(
+                publisher_id=book.publisher_id,
+                book_name=book.name,
+                asset_path="images/book_cover.png",
+            )
             return Response(
-                content=response.content,
-                media_type=content_type,
+                content=cover_data,
+                media_type="image/png",
                 headers={"Cache-Control": "public, max-age=3600"},
             )
         except Exception as e:
