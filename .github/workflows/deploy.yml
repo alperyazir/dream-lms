@@ -46,7 +46,7 @@ jobs:
           context: ./frontend
           push: true
           build-args: |
-            VITE_API_URL=https://api.flowlearn.co
+            VITE_API_URL=https://learn-api.dreamedtech.com
           tags: |
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
             ${{ env.FRONTEND_IMAGE }}:latest
