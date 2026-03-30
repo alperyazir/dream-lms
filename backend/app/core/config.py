@@ -58,12 +58,21 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = ""
 
     # Connection pool settings (tune per deployment)
-    DB_POOL_SIZE: int = 30  # Base connections per engine
-    DB_MAX_OVERFLOW: int = 20  # Extra connections under burst
+    # Defaults optimized for Hetzner CX43 (8 vCPU, 16GB) with PGBouncer
+    DB_POOL_SIZE: int = 10  # Base connections per engine (PGBouncer handles pooling)
+    DB_MAX_OVERFLOW: int = 10  # Extra connections under burst
     DB_POOL_TIMEOUT: int = 10  # Seconds to wait for a connection
     DB_POOL_RECYCLE: int = 300  # Recycle connections after N seconds
     DB_STATEMENT_TIMEOUT: int = 30000  # Kill queries after N ms
     DB_IDLE_TX_TIMEOUT: int = 30000  # Kill idle-in-transaction after N ms
+
+    # Worker pool settings (ARQ background tasks)
+    WORKER_DB_POOL_SIZE: int = 5  # Worker needs fewer connections
+    WORKER_DB_MAX_OVERFLOW: int = 5
+
+    # DCS HTTP client settings
+    DCS_MAX_CONNECTIONS: int = 20  # Max concurrent connections to FCS
+    DCS_MAX_KEEPALIVE: int = 10  # Reusable keepalive connections
 
     @computed_field  # type: ignore[prop-decorator]
     @property

@@ -167,9 +167,9 @@ def test_init_db_is_idempotent(session: Session) -> None:
     users_second = session.exec(select(User)).all()
 
     # Assertions
-    assert (
-        len(users_second) == 1
-    ), "init_db should be idempotent (same result when run multiple times)"
-    assert (
-        users_first[0].id == users_second[0].id
-    ), "Same admin user should exist after multiple runs"
+    assert len(users_second) == 1, (
+        "init_db should be idempotent (same result when run multiple times)"
+    )
+    assert users_first[0].id == users_second[0].id, (
+        "Same admin user should exist after multiple runs"
+    )
