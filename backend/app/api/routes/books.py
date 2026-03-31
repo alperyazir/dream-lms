@@ -98,7 +98,7 @@ async def get_book_cover(request: Request, book_id: int) -> Any:
     Raises:
         HTTPException: 404 if cover not found
     """
-    from fastapi.responses import RedirectResponse, Response
+    from fastapi.responses import Response
 
     try:
         book_service = get_book_service()

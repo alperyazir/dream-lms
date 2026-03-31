@@ -164,7 +164,7 @@ def create_teacher(
         user_create,
         update={
             "hashed_password": get_password_hash(password),
-            "must_change_password": True,  # New users must change password on first login
+            "must_change_password": False,
         },
     )
     session.add(db_user)
