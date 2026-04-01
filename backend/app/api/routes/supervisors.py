@@ -260,7 +260,7 @@ async def create_supervisor(
         full_name=supervisor_in.full_name,
         role=UserRole.supervisor,
         is_active=True,
-        must_change_password=True,
+        must_change_password=False,
     )
 
     session.add(new_user)
@@ -475,7 +475,7 @@ async def reset_supervisor_password(
     Reset a supervisor's password.
 
     - Generates new secure password
-    - Sets must_change_password = True
+    - Sets must_change_password = False
     - Sends email if configured, otherwise returns password
 
     Admin only - Supervisors cannot reset passwords of other Supervisors.
@@ -496,7 +496,7 @@ async def reset_supervisor_password(
     # Generate new password
     new_password = generate_temp_password(length=12)
     user.hashed_password = get_password_hash(new_password)
-    user.must_change_password = True
+    user.must_change_password = False
 
     session.add(user)
     await session.commit()

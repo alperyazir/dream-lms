@@ -19,18 +19,26 @@ class WebhookRegistrationService:
 
     def __init__(self):
         self.dream_storage_url = settings.DREAM_CENTRAL_STORAGE_URL
+        self.api_key = settings.DREAM_CENTRAL_STORAGE_API_KEY
         self.dream_storage_email = settings.DREAM_CENTRAL_STORAGE_EMAIL
         self.dream_storage_password = settings.DREAM_CENTRAL_STORAGE_PASSWORD
         self.webhook_secret = settings.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET
-        self.webhook_url = f"{settings.SERVER_HOST}/api/v1/webhooks/dream-storage"
+        self.webhook_url = f"{settings.SERVER_HOST}/api/v1/webhooks/dcs"
 
     async def get_dream_storage_token(self) -> str | None:
         """
-        Get admin access token from Dream Central Storage.
+        Get auth token for Dream Central Storage.
+        Prefers API key, falls back to email/password JWT login.
 
         Returns:
-            Access token if successful, None otherwise
+            Access token or API key if successful, None otherwise
         """
+        # Prefer API key auth (no login needed)
+        if self.api_key:
+            logger.info("Using API key for Dream Central Storage authentication")
+            return self.api_key
+
+        # Fallback to email/password JWT login
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(

@@ -1,6 +1,6 @@
+import asyncio
 import logging
 import os
-import tempfile
 import time
 from contextlib import asynccontextmanager
 
@@ -109,26 +109,47 @@ async def lifespan(app: FastAPI):
             "⚠️  Email disabled - SMTP not configured. New users will receive passwords in UI."
         )
 
-    # Register webhooks with Dream Central Storage (only from first worker)
-    # Gunicorn spawns multiple workers — use a simple file lock to avoid duplicates
+    # Register webhooks with Dream Central Storage (background retry, single worker only)
+    # Gunicorn spawns multiple workers — use a file lock to avoid duplicate registrations
+    import tempfile
+
     lock_path = os.path.join(tempfile.gettempdir(), "fl_webhook_registered")
     if not os.path.exists(lock_path):
         try:
-            # Create lock file first to win the race
             with open(lock_path, "w") as f:
                 f.write(str(os.getpid()))
-            logger.info("Attempting to register webhooks with Dream Central Storage...")
-            result = await webhook_registration_service.register_webhook()
-            if result["success"]:
-                logger.info(f"✅ {result['message']}")
-            else:
-                logger.warning(f"⚠️  Webhook registration failed: {result['message']}")
-                logger.warning("   You can manually register via admin sync endpoint")
-        except Exception as e:
-            logger.error(f"❌ Error during webhook registration: {e}")
-            logger.warning(
-                "   Webhook registration will be skipped. Use admin sync endpoint to register manually."
+        except OSError:
+            pass
+
+        async def _register_webhooks_with_retry():
+            max_retries = 10
+            retry_delay = 30
+            for attempt in range(1, max_retries + 1):
+                logger.info(
+                    f"Attempting webhook registration with FCS (attempt {attempt}/{max_retries})..."
+                )
+                try:
+                    result = await webhook_registration_service.register_webhook()
+                    if result["success"]:
+                        logger.info(f"✅ {result['message']}")
+                        return
+                    else:
+                        logger.warning(
+                            f"⚠️  Webhook registration failed: {result['message']}"
+                        )
+                except Exception as e:
+                    logger.error(f"❌ Error during webhook registration: {e}")
+
+                if attempt < max_retries:
+                    logger.info(f"   Retrying in {retry_delay}s...")
+                    await asyncio.sleep(retry_delay)
+
+            logger.error(
+                "❌ Webhook registration failed after all retries. "
+                "Use admin sync endpoint to register manually."
             )
+
+        asyncio.create_task(_register_webhooks_with_retry())
     else:
         logger.debug("Webhook registration skipped — already handled by another worker")
 
@@ -166,6 +187,8 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down Flow Learn backend...")
     # Clean up webhook lock file
+    import tempfile
+
     lock_path = os.path.join(tempfile.gettempdir(), "fl_webhook_registered")
     if os.path.exists(lock_path):
         try:

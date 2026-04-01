@@ -2258,7 +2258,7 @@ async def reset_user_password(
     - If user has email and emails are enabled: sends password via email
     - If user has no email or emails disabled: returns password once
 
-    Sets must_change_password = True so user must change password on next login.
+    Sets must_change_password = False so user must change password on next login.
     Creates a notification for the user that their password was reset.
 
     **Permissions:**
@@ -2310,7 +2310,7 @@ async def reset_user_password(
     # Hash and update password
     user.hashed_password = get_password_hash(new_password)
     # Force password change on next login
-    user.must_change_password = True
+    user.must_change_password = False
 
     session.add(user)
     await session.commit()
@@ -3038,7 +3038,7 @@ def change_publisher_password(
     Set a custom password for a publisher user account.
 
     **Permissions:** Admin or Supervisor only.
-    Sets must_change_password = True so the publisher must change on next login.
+    Sets must_change_password = False so the publisher must change on next login.
     """
     user = session.get(User, user_id)
     if not user:
@@ -3053,7 +3053,7 @@ def change_publisher_password(
         )
 
     user.hashed_password = get_password_hash(body.password)
-    user.must_change_password = True
+    user.must_change_password = False
     session.add(user)
     session.commit()
 

@@ -372,7 +372,7 @@ class DreamCentralStorageClient:
         # Add authorization header — storage endpoints need JWT, others use API key
         headers = kwargs.pop("headers", {})
         if url.startswith("/storage/"):
-            headers.update(await self._get_jwt_auth_headers())
+            headers.update(await self._get_auth_headers())
         else:
             headers.update(await self._get_auth_headers())
 
@@ -815,7 +815,7 @@ class DreamCentralStorageClient:
         """
         self._validate_asset_path(asset_path)
 
-        auth_headers = await self._get_jwt_auth_headers()
+        auth_headers = await self._get_auth_headers()
 
         url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher_id}/{book_name}/object"
         params = {"path": asset_path}
@@ -881,7 +881,7 @@ class DreamCentralStorageClient:
         """
         self._validate_asset_path(asset_path)
 
-        auth_headers = await self._get_jwt_auth_headers()
+        auth_headers = await self._get_auth_headers()
 
         url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/storage/books/{publisher_id}/{book_name}/object"
         params = {"path": asset_path}
@@ -1011,7 +1011,7 @@ class DreamCentralStorageClient:
         Raises:
             DreamStorageError: If upload fails
         """
-        auth_headers = await self._get_jwt_auth_headers()
+        auth_headers = await self._get_auth_headers()
 
         # Use DCS teacher upload endpoint
         url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/teachers/{teacher_id}/upload"
@@ -1088,7 +1088,7 @@ class DreamCentralStorageClient:
             raise ValueError(f"Invalid storage path format: {storage_path}")
         _teacher_uuid, _materials, filename = parts
 
-        auth_headers = await self._get_jwt_auth_headers()
+        auth_headers = await self._get_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
@@ -1148,7 +1148,7 @@ class DreamCentralStorageClient:
             raise ValueError(f"Invalid storage path format: {storage_path}")
         _teacher_uuid, _materials, filename = parts
 
-        auth_headers = await self._get_jwt_auth_headers()
+        auth_headers = await self._get_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
@@ -1207,7 +1207,7 @@ class DreamCentralStorageClient:
             raise ValueError(f"Invalid storage path format: {storage_path}")
         _teacher_uuid, _materials, filename = parts
 
-        auth_headers = await self._get_jwt_auth_headers()
+        auth_headers = await self._get_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
@@ -1267,7 +1267,7 @@ class DreamCentralStorageClient:
         _teacher_uuid, _materials, filename = parts
 
         # Verify file exists with Range request (HEAD not supported by DCS)
-        auth_headers = await self._get_jwt_auth_headers()
+        auth_headers = await self._get_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
@@ -1340,7 +1340,7 @@ class DreamCentralStorageClient:
         _teacher_uuid, _materials, filename = parts
 
         # Get valid token
-        auth_headers = await self._get_jwt_auth_headers()
+        auth_headers = await self._get_auth_headers()
 
         # URL-encode filename for Unicode support (e.g., Turkish characters)
         encoded_filename = url_quote(filename, safe="")
