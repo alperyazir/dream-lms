@@ -23,7 +23,7 @@ class WebhookRegistrationService:
         self.dream_storage_email = settings.DREAM_CENTRAL_STORAGE_EMAIL
         self.dream_storage_password = settings.DREAM_CENTRAL_STORAGE_PASSWORD
         self.webhook_secret = settings.DREAM_CENTRAL_STORAGE_WEBHOOK_SECRET
-        self.webhook_url = f"{settings.SERVER_HOST}/api/v1/webhooks/dcs"
+        self.webhook_url = f"{settings.SERVER_HOST}/api/v1/webhooks/dream-storage"
 
     async def get_dream_storage_token(self) -> str | None:
         """
