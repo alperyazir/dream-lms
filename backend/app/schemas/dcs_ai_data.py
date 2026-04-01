@@ -30,7 +30,7 @@ class ProcessingMetadata(BaseModel):
         stages: Optional processing stage information.
     """
 
-    book_id: str
+    book_id: str | int
     processing_status: str = Field(
         description="Status: pending, processing, completed, partial, failed"
     )
@@ -115,8 +115,8 @@ class ModulesMetadataResponse(BaseModel):
         modules: List of module metadata objects.
     """
 
-    book_id: str
-    publisher_id: str = Field(default="")
+    book_id: str | int
+    publisher_id: str | int = Field(default="")
     book_name: str = Field(default="")
     total_pages: int = Field(default=0, ge=0)
     module_count: int = Field(default=0, ge=0)
@@ -136,7 +136,7 @@ class ModuleListResponse(BaseModel):
         modules: List of module summaries.
     """
 
-    book_id: str
+    book_id: str | int
     total_modules: int = Field(ge=0)
     modules: list[ModuleSummary] = Field(default_factory=list)
 
@@ -220,7 +220,7 @@ class VocabularyResponse(BaseModel):
         extracted_at: Timestamp when vocabulary was extracted (optional).
     """
 
-    book_id: str
+    book_id: str | int
     language: str
     translation_language: str | None = Field(default=None)
     total_words: int = Field(ge=0)
