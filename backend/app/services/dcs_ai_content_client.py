@@ -34,14 +34,14 @@ class DCSAIContentClient:
 
         Returns: {"content_id": "...", "storage_path": "..."}
         """
-        token = await self._dcs._get_valid_token()
+        headers = await self._dcs._get_auth_headers()
         url = f"{settings.DREAM_CENTRAL_STORAGE_URL}/books/{book_id}/ai-content/"
         timeout = httpx.Timeout(connect=5.0, read=30.0, write=30.0, pool=5.0)
         async with httpx.AsyncClient(timeout=timeout) as client:
             resp = await client.post(
                 url,
                 json=payload,
-                headers={"Authorization": f"Bearer {token}"},
+                headers=headers,
             )
             if not resp.is_success:
                 logger.error(
@@ -76,7 +76,7 @@ class DCSAIContentClient:
         self, book_id: int, content_id: str, filename: str, audio_data: bytes
     ) -> dict:
         """PUT /books/{book_id}/ai-content/{content_id}/audio/{filename} — upload single audio file."""
-        token = await self._dcs._get_valid_token()
+        headers = await self._dcs._get_auth_headers()
         url = (
             f"{settings.DREAM_CENTRAL_STORAGE_URL}"
             f"/books/{book_id}/ai-content/{content_id}/audio/{filename}"
@@ -87,7 +87,7 @@ class DCSAIContentClient:
             resp = await client.put(
                 url,
                 files={"file": (filename, audio_data, "audio/mpeg")},
-                headers={"Authorization": f"Bearer {token}"},
+                headers=headers,
             )
             resp.raise_for_status()
             return resp.json()
@@ -100,7 +100,7 @@ class DCSAIContentClient:
         Args:
             files: list of (filename, audio_bytes) tuples.
         """
-        token = await self._dcs._get_valid_token()
+        headers = await self._dcs._get_auth_headers()
         url = (
             f"{settings.DREAM_CENTRAL_STORAGE_URL}"
             f"/books/{book_id}/ai-content/{content_id}/audio/batch"
@@ -116,7 +116,7 @@ class DCSAIContentClient:
             resp = await client.post(
                 url,
                 files=multipart_files,
-                headers={"Authorization": f"Bearer {token}"},
+                headers=headers,
             )
             resp.raise_for_status()
             return resp.json()
