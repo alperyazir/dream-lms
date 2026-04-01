@@ -1,5 +1,6 @@
 import logging
 import os
+import tempfile
 import time
 from contextlib import asynccontextmanager
 
@@ -108,20 +109,28 @@ async def lifespan(app: FastAPI):
             "⚠️  Email disabled - SMTP not configured. New users will receive passwords in UI."
         )
 
-    # Register webhooks with Dream Central Storage
-    logger.info("Attempting to register webhooks with Dream Central Storage...")
-    try:
-        result = await webhook_registration_service.register_webhook()
-        if result["success"]:
-            logger.info(f"✅ {result['message']}")
-        else:
-            logger.warning(f"⚠️  Webhook registration failed: {result['message']}")
-            logger.warning("   You can manually register via admin sync endpoint")
-    except Exception as e:
-        logger.error(f"❌ Error during webhook registration: {e}")
-        logger.warning(
-            "   Webhook registration will be skipped. Use admin sync endpoint to register manually."
-        )
+    # Register webhooks with Dream Central Storage (only from first worker)
+    # Gunicorn spawns multiple workers — use a simple file lock to avoid duplicates
+    lock_path = os.path.join(tempfile.gettempdir(), "fl_webhook_registered")
+    if not os.path.exists(lock_path):
+        try:
+            # Create lock file first to win the race
+            with open(lock_path, "w") as f:
+                f.write(str(os.getpid()))
+            logger.info("Attempting to register webhooks with Dream Central Storage...")
+            result = await webhook_registration_service.register_webhook()
+            if result["success"]:
+                logger.info(f"✅ {result['message']}")
+            else:
+                logger.warning(f"⚠️  Webhook registration failed: {result['message']}")
+                logger.warning("   You can manually register via admin sync endpoint")
+        except Exception as e:
+            logger.error(f"❌ Error during webhook registration: {e}")
+            logger.warning(
+                "   Webhook registration will be skipped. Use admin sync endpoint to register manually."
+            )
+    else:
+        logger.debug("Webhook registration skipped — already handled by another worker")
 
     # Note: Publishers no longer synced to local DB - managed via DCS caching service
     # Publishers are fetched on-demand from DCS and cached (see publisher_service_v2.py)
@@ -156,6 +165,13 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down Flow Learn backend...")
+    # Clean up webhook lock file
+    lock_path = os.path.join(tempfile.gettempdir(), "fl_webhook_registered")
+    if os.path.exists(lock_path):
+        try:
+            os.remove(lock_path)
+        except OSError:
+            pass
     await app.state.arq_pool.close()
     await close_redis()
 
