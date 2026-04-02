@@ -74,7 +74,7 @@ export function PlatformSelectDialog({
 
     const { update } = toast({
       title: "Preparing bundle...",
-      description: `${bookTitle} (${platform})`,
+      description: `${bookTitle} (${platform}) — Please don't refresh the page`,
     });
 
     try {
