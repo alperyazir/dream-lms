@@ -1,10 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, Save, Settings } from "lucide-react";
+import { AlertCircle, Check, Loader2, Save, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
+import { OpenAPI } from "@/client";
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -14,21 +21,21 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import useAuth from "@/hooks/useAuth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export const Route = createFileRoute("/_layout/admin/system-settings")({
-  component: AdminSettings,
+  component: AdminSystemSettings,
 });
 
 const PROVIDERS = [
-  { value: "deepseek", label: "DeepSeek" },
-  { value: "gemini", label: "Google Gemini" },
+  { value: "deepseek", label: "DeepSeek", icon: "🔷" },
+  { value: "gemini", label: "Google Gemini", icon: "🔶" },
 ];
 
 const DEEPSEEK_MODELS = [
-  { value: "deepseek-chat", label: "DeepSeek Chat" },
+  { value: "deepseek-chat", label: "DeepSeek Chat (V3)" },
   { value: "deepseek-coder", label: "DeepSeek Coder" },
-  { value: "deepseek-reasoner", label: "DeepSeek Reasoner" },
+  { value: "deepseek-reasoner", label: "DeepSeek Reasoner (R1)" },
 ];
 
 const GEMINI_MODELS = [
@@ -37,19 +44,30 @@ const GEMINI_MODELS = [
   { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
 ];
 
-async function fetchLLMSettings(token: string): Promise<Record<string, string>> {
-  const res = await fetch("/api/v1/admin/llm-settings", {
+const BASE_URL = OpenAPI.BASE || "";
+
+async function getAuthToken(): Promise<string> {
+  const token =
+    typeof OpenAPI.TOKEN === "function"
+      ? await OpenAPI.TOKEN({} as never)
+      : OpenAPI.TOKEN;
+  return token ?? "";
+}
+
+async function fetchLLMSettings(): Promise<Record<string, string>> {
+  const token = await getAuthToken();
+  const res = await fetch(`${BASE_URL}/api/v1/admin/llm-settings`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to fetch LLM settings");
+  if (!res.ok) throw new Error(`Failed to fetch LLM settings (${res.status})`);
   return res.json();
 }
 
 async function updateLLMSettings(
-  token: string,
-  settings: Record<string, string>
+  settings: Record<string, string>,
 ): Promise<Record<string, string>> {
-  const res = await fetch("/api/v1/admin/llm-settings", {
+  const token = await getAuthToken();
+  const res = await fetch(`${BASE_URL}/api/v1/admin/llm-settings`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -57,19 +75,20 @@ async function updateLLMSettings(
     },
     body: JSON.stringify(settings),
   });
-  if (!res.ok) throw new Error("Failed to update LLM settings");
+  if (!res.ok) throw new Error(`Failed to update LLM settings (${res.status})`);
   return res.json();
 }
 
-function AdminSettings() {
-  const { accessToken } = useAuth();
+function AdminSystemSettings() {
   const queryClient = useQueryClient();
-  const token = accessToken ?? "";
 
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    error: fetchError,
+  } = useQuery({
     queryKey: ["llm-settings"],
-    queryFn: () => fetchLLMSettings(token),
-    enabled: !!token,
+    queryFn: fetchLLMSettings,
   });
 
   const [primary, setPrimary] = useState("");
@@ -87,8 +106,7 @@ function AdminSettings() {
   }, [data]);
 
   const mutation = useMutation({
-    mutationFn: (settings: Record<string, string>) =>
-      updateLLMSettings(token, settings),
+    mutationFn: updateLLMSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["llm-settings"] });
     },
@@ -120,62 +138,117 @@ function AdminSettings() {
     );
   }
 
+  const activeProvider = PROVIDERS.find((p) => p.value === primary);
+  const activeModel =
+    primary === "deepseek"
+      ? DEEPSEEK_MODELS.find((m) => m.value === deepseekModel)?.label
+      : GEMINI_MODELS.find((m) => m.value === geminiModel)?.label;
+
   return (
     <PageContainer>
       <PageHeader title="System Settings" icon={Settings} />
 
+      {fetchError && (
+        <Alert variant="destructive" className="max-w-2xl mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load settings: {fetchError.message}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Active Config Summary */}
+      {data && (
+        <Card className="max-w-2xl mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Active AI Configuration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Provider:</span>
+                <Badge variant="outline" className="font-medium">
+                  {activeProvider?.icon} {activeProvider?.label}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Model:</span>
+                <Badge variant="secondary">{activeModel}</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Configuration Form */}
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             AI Model Configuration
             {mutation.isSuccess && (
-              <Badge variant="default" className="bg-green-600">
+              <Badge className="bg-green-600 text-white">
+                <Check className="h-3 w-3 mr-1" />
                 Saved
               </Badge>
             )}
+            {mutation.isError && (
+              <Badge variant="destructive">Save Failed</Badge>
+            )}
           </CardTitle>
+          <CardDescription>
+            Teachers will use the selected provider and model for AI content
+            generation. Changes take effect immediately.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Providers */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Primary Provider</Label>
               <Select value={primary} onValueChange={setPrimary}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select provider" />
                 </SelectTrigger>
                 <SelectContent>
                   {PROVIDERS.map((p) => (
                     <SelectItem key={p.value} value={p.value}>
-                      {p.label}
+                      {p.icon} {p.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Used for all AI generation requests
+              </p>
             </div>
 
             <div className="space-y-2">
               <Label>Fallback Provider</Label>
               <Select value={fallback} onValueChange={setFallback}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select fallback" />
                 </SelectTrigger>
                 <SelectContent>
                   {PROVIDERS.filter((p) => p.value !== primary).map((p) => (
                     <SelectItem key={p.value} value={p.value}>
-                      {p.label}
+                      {p.icon} {p.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Used when primary provider fails
+              </p>
             </div>
           </div>
 
+          {/* Models */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>DeepSeek Model</Label>
               <Select value={deepseekModel} onValueChange={setDeepseekModel}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select model" />
                 </SelectTrigger>
                 <SelectContent>
                   {DEEPSEEK_MODELS.map((m) => (
@@ -191,7 +264,7 @@ function AdminSettings() {
               <Label>Gemini Model</Label>
               <Select value={geminiModel} onValueChange={setGeminiModel}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select model" />
                 </SelectTrigger>
                 <SelectContent>
                   {GEMINI_MODELS.map((m) => (
@@ -204,15 +277,16 @@ function AdminSettings() {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-2">
             <Button
               onClick={handleSave}
               disabled={!hasChanges || mutation.isPending}
+              size="lg"
             >
               {mutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
-                <Save className="h-4 w-4" />
+                <Save className="h-4 w-4 mr-2" />
               )}
               Save Changes
             </Button>
