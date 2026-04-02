@@ -3352,7 +3352,7 @@ LLM_SETTING_KEYS = [
 @router.get("/llm-settings")
 async def get_llm_settings(
     session: AsyncSessionDep,
-    _: require_role(UserRole.admin),  # type: ignore[valid-type]
+    current_user: User = AdminOrSupervisor,
 ) -> dict[str, str]:
     """Get current LLM settings from system_settings table."""
     from app.models import SystemSetting
@@ -3382,7 +3382,7 @@ class LLMSettingsUpdate(SQLModel):
 async def update_llm_settings(
     payload: LLMSettingsUpdate,
     session: AsyncSessionDep,
-    _: require_role(UserRole.admin),  # type: ignore[valid-type]
+    current_user: User = AdminOrSupervisor,
 ) -> dict[str, str]:
     """Update LLM settings in system_settings table."""
     from datetime import UTC, datetime
