@@ -3,11 +3,11 @@
  * Story 29.3: Book Preview and Download Actions
  *
  * Dialog for selecting platform when downloading a book bundle.
+ * Closes immediately on selection, shows toast progress, auto-downloads.
  */
 
-import { AlertCircle, Apple, Download, Loader2, Monitor } from "lucide-react";
+import { Apple, Download, Monitor } from "lucide-react";
 import { useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 import { booksApi, type Platform } from "@/services/booksApi";
 
 interface PlatformOption {
@@ -65,41 +66,41 @@ export function PlatformSelectDialog({
   isOpen,
   onClose,
 }: PlatformSelectDialogProps) {
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(
-    null,
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
 
   const handlePlatformSelect = async (platform: Platform) => {
-    setSelectedPlatform(platform);
-    setIsLoading(true);
-    setError(null);
+    setPreparing(true);
+    onClose();
+
+    const { update } = toast({
+      title: "Preparing bundle...",
+      description: `${bookTitle} (${platform})`,
+    });
 
     try {
       const response = await booksApi.requestBookBundle(bookId, platform);
 
-      // Redirect to download URL - browser handles the download
-      window.location.href = response.download_url;
-      onClose();
-    } catch (err) {
-      console.error("Failed to request bundle:", err);
-      setError("Failed to generate download link. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      update({
+        id: "",
+        title: "Bundle ready!",
+        description: `Downloading ${response.file_name}`,
+      });
 
-  const handleClose = () => {
-    if (!isLoading) {
-      setSelectedPlatform(null);
-      setError(null);
-      onClose();
+      window.location.href = response.download_url;
+    } catch {
+      update({
+        id: "",
+        title: "Bundle failed",
+        description: "Failed to generate download. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPreparing(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -107,47 +108,21 @@ export function PlatformSelectDialog({
             Download Book
           </DialogTitle>
           <DialogDescription>
-            Select a platform to download "{bookTitle}" as a standalone
-            application.
+            Select a platform to download &quot;{bookTitle}&quot; as a
+            standalone application.
           </DialogDescription>
         </DialogHeader>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{error}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  selectedPlatform && handlePlatformSelect(selectedPlatform)
-                }
-              >
-                Retry
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
 
         <div className="grid grid-cols-2 gap-3 py-4">
           {platformOptions.map((option) => (
             <Button
               key={option.id}
               variant="outline"
-              className={`h-auto flex-col gap-2 p-4 hover:border-primary hover:bg-primary/5 ${
-                selectedPlatform === option.id && isLoading
-                  ? "border-primary bg-primary/5"
-                  : ""
-              }`}
+              className="h-auto flex-col gap-2 p-4 hover:border-primary hover:bg-primary/5"
               onClick={() => handlePlatformSelect(option.id)}
-              disabled={isLoading}
+              disabled={preparing}
             >
-              {isLoading && selectedPlatform === option.id ? (
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              ) : (
-                option.icon
-              )}
+              {option.icon}
               <div className="text-center">
                 <div className="font-medium">{option.label}</div>
                 <div className="text-xs text-muted-foreground">
@@ -159,7 +134,7 @@ export function PlatformSelectDialog({
         </div>
 
         <div className="text-xs text-muted-foreground text-center">
-          The download will start automatically after selecting a platform.
+          Dialog will close — download starts automatically when ready.
         </div>
       </DialogContent>
     </Dialog>
