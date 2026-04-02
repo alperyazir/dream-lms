@@ -22,7 +22,7 @@ import {
   type SupervisorUpdate,
   type UserPublic,
 } from "@/client";
-import { UserPasswordModal } from "@/components/admin/UserPasswordModal";
+import { UserPasswordModal } from "@/components/Admin/UserPasswordModal";
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
 import { Badge } from "@/components/ui/badge";

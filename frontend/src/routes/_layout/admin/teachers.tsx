@@ -24,7 +24,7 @@ import {
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
-import { UserPasswordModal } from "@/components/admin/UserPasswordModal";
+import { UserPasswordModal } from "@/components/Admin/UserPasswordModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
