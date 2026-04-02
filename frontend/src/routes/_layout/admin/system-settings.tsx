@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import useAuth from "@/hooks/useAuth";
 
-export const Route = createFileRoute("/_layout/admin/settings")({
+export const Route = createFileRoute("/_layout/admin/system-settings")({
   component: AdminSettings,
 });
 

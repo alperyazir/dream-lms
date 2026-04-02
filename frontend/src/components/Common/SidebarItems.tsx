@@ -73,7 +73,7 @@ const roleMenuItems: Record<UserRole, Item[]> = {
     { icon: FiClipboard, title: "Assignments", path: "/admin/assignments" },
     { icon: FiBarChart2, title: "Benchmarks", path: "/admin/benchmarks" },
     { icon: FiActivity, title: "AI Usage", path: "/admin/ai-usage" },
-    { icon: FiSettings, title: "System Settings", path: "/admin/settings" },
+    { icon: FiSettings, title: "System Settings", path: "/admin/system-settings" },
     { icon: Sparkles, title: "Flow AI", path: "/dreamai" },
   ],
   supervisor: [

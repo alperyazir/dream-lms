@@ -62,6 +62,7 @@ import { Route as LayoutAdminBooksRouteImport } from './routes/_layout/admin/boo
 import { Route as LayoutAdminBenchmarksRouteImport } from './routes/_layout/admin/benchmarks'
 import { Route as LayoutAdminAssignmentsRouteImport } from './routes/_layout/admin/assignments'
 import { Route as LayoutAdminAiUsageRouteImport } from './routes/_layout/admin/ai-usage'
+import { Route as LayoutAdminSystemSettingsRouteImport } from './routes/_layout/admin/system-settings'
 import { Route as LayoutTeacherMaterialsIndexRouteImport } from './routes/_layout/teacher/materials/index'
 import { Route as LayoutTeacherBooksIndexRouteImport } from './routes/_layout/teacher/books/index'
 import { Route as LayoutTeacherAssignmentsIndexRouteImport } from './routes/_layout/teacher/assignments/index'
@@ -352,6 +353,11 @@ const LayoutAdminAiUsageRoute = LayoutAdminAiUsageRouteImport.update({
   path: '/ai-usage',
   getParentRoute: () => LayoutAdminRoute,
 } as any)
+const LayoutAdminSystemSettingsRoute = LayoutAdminSystemSettingsRouteImport.update({
+  id: '/system-settings',
+  path: '/system-settings',
+  getParentRoute: () => LayoutAdminRoute,
+} as any)
 const LayoutTeacherMaterialsIndexRoute =
   LayoutTeacherMaterialsIndexRouteImport.update({
     id: '/materials/',
@@ -462,6 +468,7 @@ export interface FileRoutesByFullPath {
   '/viewer/$bookId': typeof ViewerBookIdRoute
   '/': typeof LayoutIndexRoute
   '/admin/ai-usage': typeof LayoutAdminAiUsageRoute
+  '/admin/system-settings': typeof LayoutAdminSystemSettingsRoute
   '/admin/assignments': typeof LayoutAdminAssignmentsRoute
   '/admin/benchmarks': typeof LayoutAdminBenchmarksRoute
   '/admin/books': typeof LayoutAdminBooksRoute
@@ -532,6 +539,7 @@ export interface FileRoutesByTo {
   '/viewer/$bookId': typeof ViewerBookIdRoute
   '/': typeof LayoutIndexRoute
   '/admin/ai-usage': typeof LayoutAdminAiUsageRoute
+  '/admin/system-settings': typeof LayoutAdminSystemSettingsRoute
   '/admin/assignments': typeof LayoutAdminAssignmentsRoute
   '/admin/benchmarks': typeof LayoutAdminBenchmarksRoute
   '/admin/books': typeof LayoutAdminBooksRoute
@@ -601,6 +609,7 @@ export interface FileRoutesById {
   '/viewer/$bookId': typeof ViewerBookIdRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/admin/ai-usage': typeof LayoutAdminAiUsageRoute
+  '/_layout/admin/system-settings': typeof LayoutAdminSystemSettingsRoute
   '/_layout/admin/assignments': typeof LayoutAdminAssignmentsRoute
   '/_layout/admin/benchmarks': typeof LayoutAdminBenchmarksRoute
   '/_layout/admin/books': typeof LayoutAdminBooksRoute
@@ -1251,6 +1260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminAiUsageRouteImport
       parentRoute: typeof LayoutAdminRoute
     }
+    '/_layout/admin/system-settings': {
+      id: '/_layout/admin/system-settings'
+      path: '/system-settings'
+      fullPath: '/admin/system-settings'
+      preLoaderRoute: typeof LayoutAdminSystemSettingsRouteImport
+      parentRoute: typeof LayoutAdminRoute
+    }
     '/_layout/teacher/materials/': {
       id: '/_layout/teacher/materials/'
       path: '/materials'
@@ -1368,6 +1384,7 @@ declare module '@tanstack/react-router' {
 
 interface LayoutAdminRouteChildren {
   LayoutAdminAiUsageRoute: typeof LayoutAdminAiUsageRoute
+  LayoutAdminSystemSettingsRoute: typeof LayoutAdminSystemSettingsRoute
   LayoutAdminAssignmentsRoute: typeof LayoutAdminAssignmentsRoute
   LayoutAdminBenchmarksRoute: typeof LayoutAdminBenchmarksRoute
   LayoutAdminBooksRoute: typeof LayoutAdminBooksRoute
@@ -1383,6 +1400,7 @@ interface LayoutAdminRouteChildren {
 
 const LayoutAdminRouteChildren: LayoutAdminRouteChildren = {
   LayoutAdminAiUsageRoute: LayoutAdminAiUsageRoute,
+  LayoutAdminSystemSettingsRoute: LayoutAdminSystemSettingsRoute,
   LayoutAdminAssignmentsRoute: LayoutAdminAssignmentsRoute,
   LayoutAdminBenchmarksRoute: LayoutAdminBenchmarksRoute,
   LayoutAdminBooksRoute: LayoutAdminBooksRoute,
