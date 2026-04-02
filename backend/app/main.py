@@ -214,6 +214,19 @@ app = FastAPI(
 app.state.limiter = limiter
 
 
+def _read_version() -> str:
+    try:
+        with open("/app/VERSION") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return "dev"
+
+
+@app.get("/version", tags=["system"])
+def get_version():
+    return {"service": "flow-learn", "version": _read_version()}
+
+
 # Rate limit exception handler
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):

@@ -51,6 +51,20 @@ class LLMSettings(BaseSettings):
         description="Fallback provider when primary fails.",
     )
 
+    # Model Selection
+    LLM_DEEPSEEK_MODEL: str = Field(
+        default="deepseek-chat",
+        description="DeepSeek model to use.",
+    )
+    LLM_GEMINI_MODEL: str = Field(
+        default="gemini-2.5-flash",
+        description="Gemini model for text requests.",
+    )
+    LLM_GEMINI_VISION_MODEL: str = Field(
+        default="gemini-2.5-flash",
+        description="Gemini model for vision requests.",
+    )
+
     # Feature Flags
     AI_GENERATION_ENABLED: bool = Field(
         default=True,

@@ -62,6 +62,7 @@ class DeepSeekProvider(LLMProvider):
 
         self._settings = settings
         self._api_key = settings.DEEPSEEK_API_KEY
+        self.DEFAULT_MODEL = settings.LLM_DEEPSEEK_MODEL
 
     async def generate(
         self,

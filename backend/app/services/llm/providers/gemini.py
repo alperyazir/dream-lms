@@ -64,6 +64,7 @@ class GeminiProvider(LLMProvider):
 
         self._settings = settings
         self._api_key = settings.GEMINI_API_KEY
+        self.DEFAULT_MODEL = settings.LLM_GEMINI_MODEL
 
     async def generate(
         self,
