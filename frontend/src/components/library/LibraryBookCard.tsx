@@ -51,8 +51,8 @@ export function LibraryBookCard({
           <BookCover
             coverUrl={book.cover_image_url}
             title={book.title}
-            size="lg"
-            className="w-full h-full"
+            size="md"
+            className="w-full h-full object-cover"
           />
 
           {/* Hover Overlay with Actions */}
