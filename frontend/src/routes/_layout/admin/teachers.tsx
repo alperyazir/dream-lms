@@ -7,6 +7,7 @@ import {
   Copy,
   Edit,
   KeyRound,
+  Mail,
   Plus,
   Search,
   Trash2,

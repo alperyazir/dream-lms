@@ -23,6 +23,7 @@ import {
   type PublisherAccountPublic,
   type PublisherAccountUpdate,
 } from "@/client";
+import { UserPasswordModal } from "@/components/Admin/UserPasswordModal";
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,10 @@ function AdminPublishers() {
     name: string;
   } | null>(null);
   const [accountToResetPassword, setAccountToResetPassword] = useState<{
+    userId: string;
+    userName: string;
+  } | null>(null);
+  const [passwordModalTarget, setPasswordModalTarget] = useState<{
     userId: string;
     userName: string;
   } | null>(null);
@@ -651,10 +656,14 @@ function AdminPublishers() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenResetPasswordDialog(account)}
-                          disabled={resetPasswordMutation.isPending}
+                          onClick={() =>
+                            setPasswordModalTarget({
+                              userId: account.user_id,
+                              userName: account.full_name || account.username,
+                            })
+                          }
                           className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                          title="Reset Password"
+                          title="View/Set Password"
                         >
                           <KeyRound className="w-4 h-4" />
                         </Button>
@@ -1158,6 +1167,16 @@ function AdminPublishers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {passwordModalTarget && (
+        <UserPasswordModal
+          userId={passwordModalTarget.userId}
+          userName={passwordModalTarget.userName}
+          userRole="publisher"
+          isOpen={!!passwordModalTarget}
+          onClose={() => setPasswordModalTarget(null)}
+        />
+      )}
     </div>
   );
 }

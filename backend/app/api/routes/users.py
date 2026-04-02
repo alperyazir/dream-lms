@@ -14,7 +14,11 @@ from app.api.deps import (
 )
 from app.core.config import settings
 from app.core.rate_limit import RateLimits, limiter
-from app.core.security import get_password_hash, verify_password
+from app.core.security import (
+    encrypt_viewable_password,
+    get_password_hash,
+    verify_password,
+)
 from app.models import (
     ChangeInitialPasswordRequest,
     ChangePasswordResponse,
@@ -150,6 +154,12 @@ def update_password_me(
     hashed_password = get_password_hash(body.new_password)
     current_user.hashed_password = hashed_password
     current_user.must_change_password = False
+    try:
+        current_user.viewable_password_encrypted = encrypt_viewable_password(
+            body.new_password
+        )
+    except ValueError:
+        pass
     session.add(current_user)
     session.commit()
     invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
@@ -196,6 +206,12 @@ def change_initial_password(
     # Update password and clear must_change_password flag
     current_user.hashed_password = get_password_hash(body.new_password)
     current_user.must_change_password = False
+    try:
+        current_user.viewable_password_encrypted = encrypt_viewable_password(
+            body.new_password
+        )
+    except ValueError:
+        pass
     session.add(current_user)
     session.commit()
     invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
