@@ -342,12 +342,50 @@ def reset_llm_manager() -> None:
     _manager = None
 
 
+def _apply_db_overrides(settings: LLMSettings) -> LLMSettings:
+    """Read LLM settings from system_settings DB table and override env defaults."""
+    try:
+        from sqlmodel import Session, select
+
+        from app.core.db import engine
+        from app.models import SystemSetting
+
+        with Session(engine) as session:
+            results = session.execute(
+                select(SystemSetting).where(
+                    SystemSetting.key.in_(
+                        [
+                            "llm_primary_provider",
+                            "llm_fallback_provider",
+                            "llm_deepseek_model",
+                            "llm_gemini_model",
+                        ]
+                    )
+                )
+            )
+            db_settings = {s.key: s.value for s in results.scalars().all()}
+
+        if db_settings.get("llm_primary_provider"):
+            settings.LLM_PRIMARY_PROVIDER = db_settings["llm_primary_provider"]
+        if db_settings.get("llm_fallback_provider"):
+            settings.LLM_FALLBACK_PROVIDER = db_settings["llm_fallback_provider"]
+        if db_settings.get("llm_deepseek_model"):
+            settings.LLM_DEEPSEEK_MODEL = db_settings["llm_deepseek_model"]
+        if db_settings.get("llm_gemini_model"):
+            settings.LLM_GEMINI_MODEL = db_settings["llm_gemini_model"]
+    except Exception:
+        pass  # DB not ready or table missing — use env defaults
+
+    return settings
+
+
 def create_default_manager(settings: LLMSettings | None = None) -> LLMManager:
     """
     Create a manager with default providers registered.
 
     This factory function creates an LLMManager and registers
     the available providers based on configuration.
+    DB settings override env defaults when available.
 
     Args:
         settings: Optional LLM settings. If None, loads from environment.
@@ -359,6 +397,7 @@ def create_default_manager(settings: LLMSettings | None = None) -> LLMManager:
     from app.services.llm.providers.gemini import GeminiProvider
 
     settings = settings or get_llm_settings()
+    settings = _apply_db_overrides(settings)
     manager = LLMManager(settings=settings)
 
     # Register DeepSeek provider if API key is available

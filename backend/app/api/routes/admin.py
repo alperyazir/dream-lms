@@ -3335,3 +3335,85 @@ async def backfill_skill_scores(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Backfill failed. Please try again.",
         )
+
+
+# ---------------------------------------------------------------------------
+# LLM Settings (dynamic admin configuration)
+# ---------------------------------------------------------------------------
+
+LLM_SETTING_KEYS = [
+    "llm_primary_provider",
+    "llm_fallback_provider",
+    "llm_deepseek_model",
+    "llm_gemini_model",
+]
+
+
+@router.get("/llm-settings")
+async def get_llm_settings(
+    session: AsyncSessionDep,
+    _: require_role(UserRole.admin),  # type: ignore[valid-type]
+) -> dict[str, str]:
+    """Get current LLM settings from system_settings table."""
+    from app.models import SystemSetting
+
+    result = await session.execute(
+        select(SystemSetting).where(SystemSetting.key.in_(LLM_SETTING_KEYS))
+    )
+    settings_map = {s.key: s.value for s in result.scalars().all()}
+    # Fill defaults for missing keys
+    defaults = {
+        "llm_primary_provider": "deepseek",
+        "llm_fallback_provider": "gemini",
+        "llm_deepseek_model": "deepseek-chat",
+        "llm_gemini_model": "gemini-2.5-flash",
+    }
+    return {k: settings_map.get(k, defaults[k]) for k in LLM_SETTING_KEYS}
+
+
+class LLMSettingsUpdate(SQLModel):
+    llm_primary_provider: str | None = None
+    llm_fallback_provider: str | None = None
+    llm_deepseek_model: str | None = None
+    llm_gemini_model: str | None = None
+
+
+@router.put("/llm-settings")
+async def update_llm_settings(
+    payload: LLMSettingsUpdate,
+    session: AsyncSessionDep,
+    _: require_role(UserRole.admin),  # type: ignore[valid-type]
+) -> dict[str, str]:
+    """Update LLM settings in system_settings table."""
+    from datetime import UTC, datetime
+
+    from app.models import SystemSetting
+
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No settings to update")
+
+    for key, value in updates.items():
+        if key not in LLM_SETTING_KEYS:
+            continue
+        existing = await session.get(SystemSetting, key)
+        if existing:
+            existing.value = value
+            existing.updated_at = datetime.now(UTC)
+        else:
+            session.add(
+                SystemSetting(key=key, value=value, updated_at=datetime.now(UTC))
+            )
+
+    await session.commit()
+
+    # Reset LLM manager so next generation picks up new settings
+    from app.services.llm.manager import reset_llm_manager
+
+    reset_llm_manager()
+
+    # Return updated settings
+    result = await session.execute(
+        select(SystemSetting).where(SystemSetting.key.in_(LLM_SETTING_KEYS))
+    )
+    return {s.key: s.value for s in result.scalars().all()}

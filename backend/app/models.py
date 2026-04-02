@@ -2103,3 +2103,16 @@ class AIUsageLog(SQLModel, table=True):
 
     # Relationship
     teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
+
+
+# ---------------------------------------------------------------------------
+# System Settings (key-value store for runtime admin configuration)
+# ---------------------------------------------------------------------------
+
+
+class SystemSetting(SQLModel, table=True):
+    __tablename__ = "system_settings"
+
+    key: str = Field(primary_key=True, max_length=100)
+    value: str = Field(max_length=2000)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
