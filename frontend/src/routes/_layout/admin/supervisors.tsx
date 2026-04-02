@@ -22,6 +22,7 @@ import {
   type SupervisorUpdate,
   type UserPublic,
 } from "@/client";
+import { UserPasswordModal } from "@/components/admin/UserPasswordModal";
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
 import { Badge } from "@/components/ui/badge";
@@ -85,6 +86,10 @@ function AdminSupervisors() {
     useState(false);
   const [supervisorToResetPassword, setSupervisorToResetPassword] = useState<{
     id: string;
+    userName: string;
+  } | null>(null);
+  const [passwordModalTarget, setPasswordModalTarget] = useState<{
+    userId: string;
     userName: string;
   } | null>(null);
   const [resetResult, setResetResult] = useState<{
@@ -550,14 +555,13 @@ function AdminSupervisors() {
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              handleResetPassword(
-                                supervisor.id,
-                                supervisor.full_name || "Supervisor",
-                              )
+                              setPasswordModalTarget({
+                                userId: supervisor.id,
+                                userName: supervisor.full_name || supervisor.username,
+                              })
                             }
-                            disabled={resetPasswordMutation.isPending}
                             className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                            title="Reset Password"
+                            title="View/Set Password"
                           >
                             <KeyRound className="w-4 h-4" />
                           </Button>
@@ -921,6 +925,16 @@ function AdminSupervisors() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {passwordModalTarget && (
+        <UserPasswordModal
+          userId={passwordModalTarget.userId}
+          userName={passwordModalTarget.userName}
+          userRole="supervisor"
+          isOpen={!!passwordModalTarget}
+          onClose={() => setPasswordModalTarget(null)}
+        />
+      )}
     </div>
   );
 }

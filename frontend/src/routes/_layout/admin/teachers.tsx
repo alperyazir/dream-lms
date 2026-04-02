@@ -7,7 +7,6 @@ import {
   Copy,
   Edit,
   KeyRound,
-  Mail,
   Plus,
   Search,
   Trash2,
@@ -25,6 +24,7 @@ import {
 import { ConfirmDialog } from "@/components/Common/ConfirmDialog";
 import { ErrorBoundary } from "@/components/Common/ErrorBoundary";
 import { PageContainer, PageHeader } from "@/components/Common/PageContainer";
+import { UserPasswordModal } from "@/components/admin/UserPasswordModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,6 +89,10 @@ function AdminTeachers() {
   const [isPasswordResultDialogOpen, setIsPasswordResultDialogOpen] =
     useState(false);
   const [teacherToResetPassword, setTeacherToResetPassword] = useState<{
+    userId: string;
+    userName: string;
+  } | null>(null);
+  const [passwordModalTarget, setPasswordModalTarget] = useState<{
     userId: string;
     userName: string;
   } | null>(null);
@@ -550,14 +554,13 @@ function AdminTeachers() {
                           variant="ghost"
                           size="sm"
                           onClick={() =>
-                            handleResetPassword(
-                              teacher.user_id,
-                              teacher.user_full_name || "Teacher",
-                            )
+                            setPasswordModalTarget({
+                              userId: teacher.user_id,
+                              userName: teacher.user_full_name || teacher.user_username,
+                            })
                           }
-                          disabled={resetPasswordMutation.isPending}
                           className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                          title="Reset Password"
+                          title="View/Set Password"
                         >
                           <KeyRound className="w-4 h-4" />
                         </Button>
@@ -1003,6 +1006,16 @@ function AdminTeachers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {passwordModalTarget && (
+        <UserPasswordModal
+          userId={passwordModalTarget.userId}
+          userName={passwordModalTarget.userName}
+          userRole="teacher"
+          isOpen={!!passwordModalTarget}
+          onClose={() => setPasswordModalTarget(null)}
+        />
+      )}
     </PageContainer>
   );
 }
