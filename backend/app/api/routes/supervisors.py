@@ -17,7 +17,7 @@ from starlette.requests import Request
 from app.api.deps import AdminOrSupervisor, AsyncSessionDep, SessionDep, require_role
 from app.core.config import settings
 from app.core.rate_limit import RateLimits, limiter
-from app.core.security import get_password_hash
+from app.core.security import encrypt_viewable_password, get_password_hash
 from app.models import (
     PasswordResetResponse,
     SupervisorCreateAPI,
@@ -30,7 +30,6 @@ from app.models import (
 )
 from app.schemas.pagination import SupervisorListResponse
 from app.utils import (
-    generate_new_account_email,
     generate_password_reset_by_admin_email,
     generate_temp_password,
     send_email,
@@ -252,6 +251,13 @@ async def create_supervisor(
     temp_password = generate_temp_password(length=12)
 
     # Create the supervisor user
+    # Store encrypted viewable password for admin visibility
+    viewable_encrypted = None
+    try:
+        viewable_encrypted = encrypt_viewable_password(temp_password)
+    except ValueError:
+        pass
+
     new_user = User(
         id=uuid.uuid4(),
         email=supervisor_in.user_email,
@@ -261,41 +267,14 @@ async def create_supervisor(
         role=UserRole.supervisor,
         is_active=True,
         must_change_password=False,
+        viewable_password_encrypted=viewable_encrypted,
     )
 
     session.add(new_user)
     await session.commit()
     await session.refresh(new_user)
 
-    # Send welcome email if email provided
-    password_emailed = False
-    message = ""
-
-    if supervisor_in.user_email and settings.emails_enabled:
-        email_data = generate_new_account_email(
-            email_to=supervisor_in.user_email,
-            username=supervisor_in.username,
-            password=temp_password,
-            full_name=supervisor_in.full_name,
-        )
-        background_tasks.add_task(
-            send_email,
-            email_to=supervisor_in.user_email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-        )
-        password_emailed = True
-        message = f"Welcome email queued to {supervisor_in.user_email}"
-        temp_password = None  # Don't return password if emailed
-    else:
-        if not supervisor_in.user_email:
-            message = (
-                "Supervisor created. No email provided - share the password manually."
-            )
-        else:
-            message = (
-                "Supervisor created. Email is disabled - share the password manually."
-            )
+    message = "Supervisor created successfully"
 
     logger.info(
         f"Supervisor created: Admin {current_user.username} created supervisor "
@@ -305,7 +284,7 @@ async def create_supervisor(
     return SupervisorCreateResponse(
         user=UserPublic.model_validate(new_user),
         temporary_password=temp_password,
-        password_emailed=password_emailed,
+        password_emailed=False,
         message=message,
     )
 

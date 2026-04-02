@@ -713,11 +713,7 @@ export default function LandingPage1() {
                   </div>
                 )}
 
-                <div className="text-right">
-                  <Link to="/recover-password" className="text-sm text-primary hover:text-primary/80 transition-colors">
-                    {t[lang].forgotPassword}
-                  </Link>
-                </div>
+                {/* Forgot password link removed — passwords managed by admin */}
 
                 <Button
                   type="submit"

@@ -348,15 +348,7 @@ function Login() {
                   </div>
                 )}
 
-                {/* Forgot Password */}
-                <div className="text-right">
-                  <RouterLink
-                    to="/recover-password"
-                    className="text-sm text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Forgot Password?
-                  </RouterLink>
-                </div>
+                {/* Forgot password link removed — passwords managed by admin */}
 
                 {/* Submit */}
                 <Button

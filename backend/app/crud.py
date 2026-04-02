@@ -160,13 +160,17 @@ def create_teacher(
         is_active=True,
         is_superuser=False,
     )
-    db_user = User.model_validate(
-        user_create,
-        update={
-            "hashed_password": get_password_hash(password),
-            "must_change_password": False,
-        },
-    )
+    update_data: dict[str, Any] = {
+        "hashed_password": get_password_hash(password),
+        "must_change_password": False,
+    }
+    # Store encrypted viewable password for admin visibility
+    try:
+        update_data["viewable_password_encrypted"] = encrypt_viewable_password(password)
+    except ValueError:
+        pass
+
+    db_user = User.model_validate(user_create, update=update_data)
     session.add(db_user)
     session.flush()  # Get user.id without committing
 

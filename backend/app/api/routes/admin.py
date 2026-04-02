@@ -96,7 +96,6 @@ from app.services.skill_attribution_service import (
 from app.services.webhook_registration import webhook_registration_service
 from app.utils import (
     generate_new_account_email,
-    generate_password_reset_by_admin_email,
     generate_temp_password,
     generate_username,
     parse_excel_file,
@@ -556,31 +555,9 @@ def create_teacher(
         teacher_create=teacher_create,
     )
 
-    # Handle password delivery based on email availability
-    password_emailed = False
-    temp_password_for_response = None
-    message = ""
-
-    if user.email and settings.emails_enabled:
-        # Send password via email in background - avoid blocking DB connection
-        email_data = generate_new_account_email(
-            email_to=user.email,
-            username=user.username,
-            password=temp_password,
-            full_name=teacher_in.full_name,
-        )
-        background_tasks.add_task(
-            send_email,
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-        )
-        password_emailed = True
-        message = "Password sent via email"
-    else:
-        # No email or emails disabled - return password once for manual communication
-        temp_password_for_response = temp_password
-        message = "Please share the temporary password securely with the user"
+    # Always return password — no email sending
+    temp_password_for_response = temp_password
+    message = "Teacher created successfully"
 
     # Build teacher response with user information
     teacher_data = TeacherPublic(
@@ -599,7 +576,7 @@ def create_teacher(
         user=UserPublic.model_validate(user),
         role_record=teacher_data,
         temporary_password=temp_password_for_response,
-        password_emailed=password_emailed,
+        password_emailed=False,
         message=message,
     )
 
@@ -2307,51 +2284,28 @@ async def reset_user_password(
     # Generate new secure password
     new_password = generate_temp_password(length=12)
 
-    # Hash and update password
+    # Hash and update password + store viewable encrypted
     user.hashed_password = get_password_hash(new_password)
-    # Force password change on next login
     user.must_change_password = False
+    try:
+        user.viewable_password_encrypted = encrypt_viewable_password(new_password)
+    except ValueError:
+        pass
 
     session.add(user)
     await session.commit()
     await session.refresh(user)
 
-    # Log the password reset action
     logger.info(
         f"Password reset for user {user.username} (ID: {user.id}) "
         f"by {current_user.role} {current_user.username}"
     )
 
-    # Handle password delivery based on email availability
-    password_emailed = False
-    temp_password_for_response = None
-
-    if user.email and settings.emails_enabled:
-        # Send password via email in background - avoid blocking DB connection
-        email_data = generate_password_reset_by_admin_email(
-            email_to=user.email, username=user.username, password=new_password
-        )
-        background_tasks.add_task(
-            send_email,
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-        )
-        password_emailed = True
-        message = f"Password reset successfully. New password sent to {user.email}"
-    else:
-        # No email or emails disabled - return password for manual sharing
-        temp_password_for_response = new_password
-        message = (
-            "Password reset successfully. "
-            "Please share the temporary password securely with the user."
-        )
-
     return PasswordResetResponse(
         success=True,
-        message=message,
-        password_emailed=password_emailed,
-        temporary_password=temp_password_for_response,
+        message="Password reset successfully",
+        password_emailed=False,
+        temporary_password=new_password,
     )
 
 
@@ -3417,3 +3371,86 @@ async def update_llm_settings(
         select(SystemSetting).where(SystemSetting.key.in_(LLM_SETTING_KEYS))
     )
     return {s.key: s.value for s in result.scalars().all()}
+
+
+# ---------------------------------------------------------------------------
+# User Password Management (view/set for any user)
+# ---------------------------------------------------------------------------
+
+
+class UserPasswordResponse(SQLModel):
+    user_id: str
+    username: str
+    full_name: str | None
+    role: str
+    password: str | None
+    message: str | None = None
+
+
+class SetUserPasswordRequest(SQLModel):
+    password: str
+
+
+@router.get("/users/{user_id}/password", response_model=UserPasswordResponse)
+async def get_user_password(
+    user_id: uuid.UUID,
+    session: AsyncSessionDep,
+    current_user: User = AdminOrSupervisor,
+) -> UserPasswordResponse:
+    """View a user's password (decrypted from stored encrypted password)."""
+    user = await session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    password = None
+    if user.viewable_password_encrypted:
+        password = decrypt_viewable_password(user.viewable_password_encrypted)
+
+    return UserPasswordResponse(
+        user_id=str(user.id),
+        username=user.username,
+        full_name=user.full_name,
+        role=user.role,
+        password=password,
+        message="Password not available" if password is None else None,
+    )
+
+
+@router.put("/users/{user_id}/password", response_model=UserPasswordResponse)
+async def set_user_password(
+    user_id: uuid.UUID,
+    payload: SetUserPasswordRequest,
+    session: AsyncSessionDep,
+    current_user: User = AdminOrSupervisor,
+) -> UserPasswordResponse:
+    """Set a new password for any user."""
+    user = await session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.hashed_password = get_password_hash(payload.password)
+    user.must_change_password = False
+    try:
+        user.viewable_password_encrypted = encrypt_viewable_password(payload.password)
+    except ValueError:
+        pass
+
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+    logger.info(
+        "Password set for user %s (ID: %s) by %s %s",
+        user.username,
+        user.id,
+        current_user.role,
+        current_user.username,
+    )
+
+    return UserPasswordResponse(
+        user_id=str(user.id),
+        username=user.username,
+        full_name=user.full_name,
+        role=user.role,
+        password=payload.password,
+    )
