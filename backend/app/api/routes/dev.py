@@ -30,7 +30,7 @@ def get_quick_login_users(
 
     Returns:
         Dictionary with role names as keys and lists of user dicts as values.
-        Each user dict contains: username, email
+        Each user dict contains: username
     """
     if settings.ENVIRONMENT == "production":
         raise HTTPException(status_code=404, detail="Not found")

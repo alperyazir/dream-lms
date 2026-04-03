@@ -2425,11 +2425,11 @@ async def _get_activity_type_insight_details(
 
     students_result = await session.execute(students_query)
 
-    for student_id, full_name, email, avg_score in students_result.all():
+    for student_id, full_name, username, avg_score in students_result.all():
         affected_students.append(
             AffectedStudent(
                 student_id=str(student_id),
-                name=full_name or email,
+                name=full_name or username or "Unknown",
                 relevant_metric=f"Avg: {avg_score:.1f}%",
             )
         )

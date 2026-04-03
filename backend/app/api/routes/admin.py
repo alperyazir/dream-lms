@@ -2131,8 +2131,8 @@ async def reset_user_password(
     Generates a secure random password (12+ chars with mixed case, numbers,
     symbols).
 
-    - If user has email and emails are enabled: sends password via email
-    - If user has no email or emails disabled: returns password once
+
+
 
     Sets must_change_password = False so user must change password on next login.
     Creates a notification for the user that their password was reset.
@@ -2487,7 +2487,7 @@ async def create_publisher_account(
     - Validates DCS publisher exists
     - Creates user with role=publisher
     - Sets dcs_publisher_id on user
-    - Sends welcome email with credentials
+
     """
     # Generate username from full_name if not provided
     from app.utils import generate_username_from_name
@@ -2723,7 +2723,7 @@ async def update_publisher_account(
     """
     Update a publisher user account.
 
-    Can update dcs_publisher_id, username, email, full_name, is_active.
+    Can update dcs_publisher_id, username, full_name, is_active.
     """
     user = session.get(User, user_id)
     if not user:
