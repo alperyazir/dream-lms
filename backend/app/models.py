@@ -95,8 +95,7 @@ class UserCreate(UserBase):
 
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
-    username: str | None = Field(
-        default=None, min_length=3, max_length=50)  # type: ignore
+    username: str | None = Field(default=None, min_length=3, max_length=50)  # type: ignore
     password: str | None = Field(default=None, min_length=1, max_length=40)
     dcs_publisher_id: int | None = Field(default=None)  # type: ignore
 
@@ -150,12 +149,10 @@ class User(UserBase, table=True):
 
     # Encrypted password for teacher viewing (students only)
     # Stores Fernet-encrypted password so teachers can help students who forgot
-    viewable_password_encrypted: str | None = Field(
-        default=None, max_length=500)
+    viewable_password_encrypted: str | None = Field(default=None, max_length=500)
 
     # Avatar fields
-    avatar_url: str | None = Field(
-        default=None, max_length=500)  # URL to avatar image
+    avatar_url: str | None = Field(default=None, max_length=500)  # URL to avatar image
     avatar_type: AvatarType | None = Field(
         default=None, sa_column=Column(SAEnum(AvatarType))
     )  # Type of avatar
@@ -300,8 +297,7 @@ class TeacherUpdate(SQLModel):
 
     school_id: uuid.UUID | None = Field(default=None)
     subject_specialization: str | None = Field(default=None, max_length=255)
-    user_username: str | None = Field(
-        default=None, min_length=3, max_length=50)
+    user_username: str | None = Field(default=None, min_length=3, max_length=50)
     user_full_name: str | None = Field(default=None, max_length=255)
 
 
@@ -386,8 +382,7 @@ class StudentCreate(StudentBase):
 class StudentUpdate(SQLModel):
     """Properties to receive via API on Student update"""
 
-    user_username: str | None = Field(
-        default=None, min_length=3, max_length=50)
+    user_username: str | None = Field(default=None, min_length=3, max_length=50)
     user_full_name: str | None = Field(default=None, max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
 
@@ -627,8 +622,7 @@ class ClassPublic(ClassBase):
 class ClassResponse(ClassPublic):
     """Class response with computed student count"""
 
-    student_count: int = Field(
-        default=0, description="Number of enrolled students")
+    student_count: int = Field(default=0, description="Number of enrolled students")
 
 
 class ClassListItem(ClassBase):
@@ -741,8 +735,7 @@ class BookAssignmentCreate(SQLModel):
     def validate_target(self) -> "BookAssignmentCreate":
         """Validate that at least one of school_id or teacher_id is set"""
         if self.school_id is None and self.teacher_id is None:
-            raise ValueError(
-                "At least one of school_id or teacher_id must be provided")
+            raise ValueError("At least one of school_id or teacher_id must be provided")
         return self
 
 
@@ -998,8 +991,7 @@ class AssignmentBase(SQLModel):
     due_date: datetime | None = Field(default=None)
     time_limit_minutes: int | None = Field(default=None, gt=0)
     scheduled_publish_date: datetime | None = Field(default=None)
-    status: AssignmentPublishStatus = Field(
-        default=AssignmentPublishStatus.published)
+    status: AssignmentPublishStatus = Field(default=AssignmentPublishStatus.published)
     # Story 10.3: Video attachment - stores relative path like "videos/chapter1.mp4"
     video_path: str | None = Field(default=None, max_length=500)
     # Additional Resources: JSON array of resource objects
@@ -1033,15 +1025,13 @@ class AssignmentCreate(AssignmentBase):
         if self.activity_id is None and (
             self.activity_ids is None or len(self.activity_ids) == 0
         ):
-            raise ValueError(
-                "Either activity_id or activity_ids must be provided")
+            raise ValueError("Either activity_id or activity_ids must be provided")
         if (
             self.activity_id is not None
             and self.activity_ids is not None
             and len(self.activity_ids) > 0
         ):
-            raise ValueError(
-                "Cannot provide both activity_id and activity_ids")
+            raise ValueError("Cannot provide both activity_id and activity_ids")
         return self
 
 
@@ -1101,19 +1091,16 @@ class Assignment(AssignmentBase, table=True):
     )
     # Skill classification relationships (Epic 30)
     primary_skill: Optional["SkillCategory"] = Relationship(
-        sa_relationship_kwargs={
-            "foreign_keys": "[Assignment.primary_skill_id]"}
+        sa_relationship_kwargs={"foreign_keys": "[Assignment.primary_skill_id]"}
     )
     activity_format: Optional["ActivityFormat"] = Relationship(
-        sa_relationship_kwargs={
-            "foreign_keys": "[Assignment.activity_format_id]"}
+        sa_relationship_kwargs={"foreign_keys": "[Assignment.activity_format_id]"}
     )
 
     @property
     def activities(self) -> list["Activity"]:
         """Returns ordered list of activities via junction table"""
-        sorted_aa = sorted(self.assignment_activities,
-                           key=lambda aa: aa.order_index)
+        sorted_aa = sorted(self.assignment_activities, key=lambda aa: aa.order_index)
         return [aa.activity for aa in sorted_aa]
 
     @property
@@ -1177,8 +1164,7 @@ class AssignmentActivity(AssignmentActivityBase, table=True):
 
     # SQLAlchemy-level unique constraint
     __table_args__ = (
-        UniqueConstraint("assignment_id", "activity_id",
-                         name="uq_assignment_activity"),
+        UniqueConstraint("assignment_id", "activity_id", name="uq_assignment_activity"),
     )
 
     # Relationships
@@ -1214,8 +1200,7 @@ class AssignmentStatus(str, Enum):
 class AssignmentStudentBase(SQLModel):
     """Shared AssignmentStudent properties"""
 
-    status: AssignmentStatus = Field(
-        default=AssignmentStatus.not_started, index=True)
+    status: AssignmentStatus = Field(default=AssignmentStatus.not_started, index=True)
     score: float | None = Field(default=None, ge=0, le=100)
     answers_json: dict | None = Field(default=None, sa_column=Column(JSON))
     progress_json: dict | None = Field(default=None, sa_column=Column(JSON))
@@ -1265,8 +1250,7 @@ class AssignmentStudent(AssignmentStudentBase, table=True):
 
     # SQLAlchemy-level unique constraint
     __table_args__ = (
-        UniqueConstraint("assignment_id", "student_id",
-                         name="uq_assignment_student"),
+        UniqueConstraint("assignment_id", "student_id", name="uq_assignment_student"),
     )
 
     # Relationships
@@ -1286,8 +1270,7 @@ class AssignmentStudent(AssignmentStudentBase, table=True):
     # Feedback relationship (one-to-one)
     feedback: Optional["Feedback"] = Relationship(
         back_populates="assignment_student",
-        sa_relationship_kwargs={"uselist": False,
-                                "cascade": "all, delete-orphan"},
+        sa_relationship_kwargs={"uselist": False, "cascade": "all, delete-orphan"},
     )
 
     def calculate_combined_score(self) -> float | None:
@@ -1436,8 +1419,7 @@ class StudentBulkImportRow(SQLModel):
 
     first_name: str = Field(max_length=255, alias="First Name")
     last_name: str = Field(max_length=255, alias="Last Name")
-    grade_level: str | None = Field(
-        default=None, max_length=50, alias="Grade Level")
+    grade_level: str | None = Field(default=None, max_length=50, alias="Grade Level")
 
 
 class TeacherBulkImportRow(SQLModel):
@@ -1569,12 +1551,10 @@ class WebhookEventLog(SQLModel, table=True):
     payload_json: dict = Field(
         sa_column=Column(JSON)
     )  # Full webhook payload for debugging
-    status: WebhookEventStatus = Field(
-        default=WebhookEventStatus.pending, index=True)
+    status: WebhookEventStatus = Field(default=WebhookEventStatus.pending, index=True)
     retry_count: int = Field(default=0)
     error_message: str | None = Field(default=None)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
     processed_at: datetime | None = Field(default=None)
 
 
@@ -1614,8 +1594,7 @@ class DismissedInsight(SQLModel, table=True):
     dismissed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationship
-    teacher: Teacher = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True})
+    teacher: Teacher = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 # --- Report Models (Story 5.6) ---
@@ -1692,8 +1671,7 @@ class ReportJob(SQLModel, table=True):
     error_message: str | None = None
 
     # Relationship
-    teacher: Teacher = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True})
+    teacher: Teacher = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 class SavedReportConfig(SQLModel, table=True):
@@ -1710,8 +1688,7 @@ class SavedReportConfig(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationship
-    teacher: Teacher = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True})
+    teacher: Teacher = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 # =============================================================================
@@ -1747,8 +1724,7 @@ class DirectMessage(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    sender_id: uuid.UUID = Field(
-        foreign_key="user.id", index=True, ondelete="CASCADE")
+    sender_id: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
     recipient_id: uuid.UUID = Field(
         foreign_key="user.id", index=True, ondelete="CASCADE"
     )
@@ -1758,8 +1734,7 @@ class DirectMessage(SQLModel, table=True):
         default=None, foreign_key="direct_messages.id", index=True, ondelete="SET NULL"
     )
     is_read: bool = Field(default=False, index=True)
-    sent_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), index=True)
+    sent_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
 
     # System message fields
     is_system: bool = Field(default=False, index=True)
@@ -1815,8 +1790,7 @@ class Feedback(SQLModel, table=True):
     assignment_student: "AssignmentStudent" = Relationship(
         back_populates="feedback", sa_relationship_kwargs={"passive_deletes": True}
     )
-    teacher: "Teacher" = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True})
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 # =============================================================================
@@ -1842,8 +1816,7 @@ class TeacherMaterial(SQLModel, table=True):
     # Material info
     name: str = Field(max_length=255)  # Display name
     type: MaterialType = Field(
-        sa_column=Column(
-            SAEnum(MaterialType, name="materialtype"), nullable=False)
+        sa_column=Column(SAEnum(MaterialType, name="materialtype"), nullable=False)
     )
 
     # Storage info (null for URLs and text notes)
@@ -1863,16 +1836,14 @@ class TeacherMaterial(SQLModel, table=True):
     extracted_text: str | None = Field(default=None)
     # Word count of extracted text
     word_count: int | None = Field(default=None)
-    language: str | None = Field(
-        default=None, max_length=10)  # Detected language code
+    language: str | None = Field(default=None, max_length=10)  # Detected language code
 
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    teacher: "Teacher" = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True})
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 class TeacherStorageQuota(SQLModel, table=True):
@@ -1887,8 +1858,7 @@ class TeacherStorageQuota(SQLModel, table=True):
     quota_bytes: int = Field(default=524288000)  # 500MB default
 
     # Relationship
-    teacher: "Teacher" = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True})
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 class TeacherGeneratedContent(SQLModel, table=True):
@@ -1921,14 +1891,11 @@ class TeacherGeneratedContent(SQLModel, table=True):
         max_length=50
     )  # vocab_quiz, ai_quiz, reading, matching, etc.
     title: str = Field(max_length=255)  # Generated activity title
-    content: dict = Field(default_factory=dict,
-                          sa_column=Column(JSON))  # Activity data
+    content: dict = Field(default_factory=dict, sa_column=Column(JSON))  # Activity data
 
     # Skill classification (Epic 30 - Story 30.3)
-    skill_id: uuid.UUID | None = Field(
-        default=None, foreign_key="skill_categories.id")
-    format_id: uuid.UUID | None = Field(
-        default=None, foreign_key="activity_formats.id")
+    skill_id: uuid.UUID | None = Field(default=None, foreign_key="skill_categories.id")
+    format_id: uuid.UUID | None = Field(default=None, foreign_key="activity_formats.id")
 
     # DCS sync
     dcs_content_id: str | None = Field(
@@ -1937,16 +1904,14 @@ class TeacherGeneratedContent(SQLModel, table=True):
 
     # Usage tracking
     is_used: bool = Field(default=False)  # True if used in assignment
-    assignment_id: uuid.UUID | None = Field(
-        default=None)  # Link to assignment if used
+    assignment_id: uuid.UUID | None = Field(default=None)  # Link to assignment if used
 
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime | None = Field(default=None)
 
     # Relationships
-    teacher: "Teacher" = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True})
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
     material: "TeacherMaterial" = Relationship(
         sa_relationship_kwargs={"passive_deletes": True}
     )
@@ -2041,8 +2006,7 @@ class StudentSkillScore(SQLModel, table=True):
     __tablename__ = "student_skill_scores"
     __table_args__ = (
         Index("ix_student_skill_scores_student_skill", "student_id", "skill_id"),
-        Index("ix_student_skill_scores_student_recorded",
-              "student_id", "recorded_at"),
+        Index("ix_student_skill_scores_student_recorded", "student_id", "recorded_at"),
         UniqueConstraint(
             "assignment_student_id",
             "skill_id",
@@ -2071,15 +2035,13 @@ class StudentSkillScore(SQLModel, table=True):
 
     # Relationships
     student: "Student" = Relationship(
-        sa_relationship_kwargs={
-            "foreign_keys": "[StudentSkillScore.student_id]"}
+        sa_relationship_kwargs={"foreign_keys": "[StudentSkillScore.student_id]"}
     )
     skill: "SkillCategory" = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[StudentSkillScore.skill_id]"}
     )
     assignment: "Assignment" = Relationship(
-        sa_relationship_kwargs={
-            "foreign_keys": "[StudentSkillScore.assignment_id]"}
+        sa_relationship_kwargs={"foreign_keys": "[StudentSkillScore.assignment_id]"}
     )
     assignment_student: "AssignmentStudent" = Relationship(
         sa_relationship_kwargs={
@@ -2103,8 +2065,7 @@ class AIUsageLog(SQLModel, table=True):
     teacher_id: uuid.UUID = Field(
         foreign_key="teachers.id", index=True, ondelete="CASCADE"
     )
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), index=True)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
     # "llm_generation", "tts_generation"
     operation_type: str = Field(max_length=50)
     # "vocabulary_quiz", "ai_quiz", etc.
@@ -2121,8 +2082,7 @@ class AIUsageLog(SQLModel, table=True):
     duration_ms: int = Field(default=0, ge=0)
 
     # Relationship
-    teacher: "Teacher" = Relationship(
-        sa_relationship_kwargs={"passive_deletes": True})
+    teacher: "Teacher" = Relationship(sa_relationship_kwargs={"passive_deletes": True})
 
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,6 @@ Tests for admin endpoints - password reset, user management, validation
 """
 
 import uuid
-from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from sqlmodel import Session

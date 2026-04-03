@@ -54,7 +54,6 @@ class TestCreatePublisherAccount:
         data = {
             "dcs_publisher_id": 12345,
             "username": "newpublisher",
-
             "full_name": "New Publisher User",
         }
         response = client.post(
@@ -321,8 +320,7 @@ class TestListPublisherAccounts:
         assert "count" in result
         assert result["count"] >= 1
         # Find our created account
-        accounts = [a for a in result["data"]
-                    if a["username"] == "listpublisher"]
+        accounts = [a for a in result["data"] if a["username"] == "listpublisher"]
         assert len(accounts) == 1
         assert accounts[0]["dcs_publisher_name"] == "Test Publisher"
 
@@ -474,8 +472,7 @@ class TestUpdatePublisherAccount:
                 json=update_data,
             )
             assert response.status_code == 400
-            assert "FCS Publisher ID 99999 not found" in response.json()[
-                "detail"]
+            assert "FCS Publisher ID 99999 not found" in response.json()["detail"]
 
 
 class TestDeletePublisherAccount:
