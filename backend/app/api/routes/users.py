@@ -82,13 +82,16 @@ def update_user_me(
     """
     Update own user.
     """
+    db_user = session.get(User, current_user.id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
     user_data = user_in.model_dump(exclude_unset=True)
-    current_user.sqlmodel_update(user_data)
-    session.add(current_user)
+    db_user.sqlmodel_update(user_data)
+    session.add(db_user)
     session.commit()
-    session.refresh(current_user)
+    session.refresh(db_user)
     invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
-    return current_user
+    return db_user
 
 
 @router.patch("/me/password", response_model=Message)
@@ -111,16 +114,20 @@ def update_password_me(
         raise HTTPException(
             status_code=400, detail="New password cannot be the same as the current one"
         )
-    hashed_password = get_password_hash(body.new_password)
-    current_user.hashed_password = hashed_password
-    current_user.must_change_password = False
+    # Re-fetch from DB to get a persistent (session-bound) object
+    # current_user may be reconstructed from Redis cache (transient)
+    db_user = session.get(User, current_user.id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db_user.hashed_password = get_password_hash(body.new_password)
+    db_user.must_change_password = False
     try:
-        current_user.viewable_password_encrypted = encrypt_viewable_password(
+        db_user.viewable_password_encrypted = encrypt_viewable_password(
             body.new_password
         )
     except ValueError:
         pass
-    session.add(current_user)
+    session.add(db_user)
     session.commit()
     invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
     return Message(message="Password updated successfully")
@@ -156,16 +163,19 @@ def change_initial_password(
             detail="New password must be different from current password",
         )
 
-    # Update password and clear must_change_password flag
-    current_user.hashed_password = get_password_hash(body.new_password)
-    current_user.must_change_password = False
+    # Re-fetch from DB to get a persistent (session-bound) object
+    db_user = session.get(User, current_user.id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db_user.hashed_password = get_password_hash(body.new_password)
+    db_user.must_change_password = False
     try:
-        current_user.viewable_password_encrypted = encrypt_viewable_password(
+        db_user.viewable_password_encrypted = encrypt_viewable_password(
             body.new_password
         )
     except ValueError:
         pass
-    session.add(current_user)
+    session.add(db_user)
     session.commit()
     invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
 
@@ -181,8 +191,11 @@ def complete_tour(
     Mark onboarding tour as completed for the current user.
     This endpoint is idempotent - calling multiple times is safe.
     """
-    current_user.has_completed_tour = True
-    session.add(current_user)
+    db_user = session.get(User, current_user.id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db_user.has_completed_tour = True
+    session.add(db_user)
     session.commit()
     invalidate_for_event_sync("user_profile_updated", user_id=str(current_user.id))
     return Message(message="Tour completed successfully")
