@@ -52,7 +52,6 @@ export function registerBookForCdn(
   publisherId: number,
   bookName: string,
 ): void {
-  console.debug("[CDN] Registered book", bookId, "→", publisherId, bookName);
   bookInfoCache.set(bookId, { publisherId, bookName });
 }
 
@@ -69,25 +68,17 @@ async function getAssetUrl(
     // Fetch book info and register
     try {
       const book = await getBook(bookId);
-      console.debug("[CDN] Fetched book info:", {
-        id: book.id,
-        book_name: book.book_name,
-        name: (book as any).name,
-        publisher_id: book.publisher_id,
-      });
+
       info = bookInfoCache.get(book.id);
-    } catch (err) {
-      console.warn("[CDN] Failed to fetch book info for", bookId, err);
+    } catch {
+      // ignore — info stays undefined
     }
   }
   if (info) {
-    const cdnUrl = buildBookCdnUrl(info.publisherId, info.bookName, assetPath);
-    console.debug("[CDN] Using CDN URL:", cdnUrl);
-    return cdnUrl;
+    return buildBookCdnUrl(info.publisherId, info.bookName, assetPath);
   }
 
   // Final fallback: presigned URL
-  console.debug("[CDN] Fallback to presigned for book", bookId, assetPath);
   const response = await apiClient.get<{
     url: string;
     expires_in_seconds: number;
