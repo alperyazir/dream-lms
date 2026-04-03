@@ -81,11 +81,8 @@ const changePasswordSchema = z
     currentPassword: z.string().min(1, "Current password is required"),
     newPassword: z
       .string()
-      .min(8, "Password must be at least 8 characters")
-      .max(40, "Password must be less than 40 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
+      .min(1, "New password is required")
+      .max(40, "Password must be less than 40 characters"),
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -100,11 +97,6 @@ export const Route = createFileRoute("/change-password")({
     // Redirect if not authenticated
     if (!isLoggedIn()) {
       throw redirect({ to: "/home" });
-    }
-    // Story 28.1: Students cannot change their own passwords - teachers manage them
-    const role = getUserRole();
-    if (role === "student") {
-      throw redirect({ to: "/student/dashboard" });
     }
     // Redirect if doesn't need password change
     if (!getMustChangePassword()) {

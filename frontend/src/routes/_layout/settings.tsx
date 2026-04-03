@@ -96,13 +96,8 @@ function UserSettings() {
     return null;
   }
 
-  // Story 28.1: Filter out password tab for students - teachers manage their passwords
-  const filteredTabs = tabsConfig.filter((tab) => {
-    if (tab.value === "password" && currentUser.role === "student") {
-      return false;
-    }
-    return true;
-  });
+  // All roles can access all settings tabs including password
+  const filteredTabs = tabsConfig;
 
   const roleInfo = getRoleInfo(currentUser.role || "student");
   const initials =

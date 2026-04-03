@@ -118,15 +118,15 @@ class UserUpdateMe(SQLModel):
 
 
 class UpdatePassword(SQLModel):
-    current_password: str = Field(min_length=8, max_length=40)
-    new_password: str = Field(min_length=8, max_length=40)
+    current_password: str = Field(min_length=1, max_length=40)
+    new_password: str = Field(min_length=1, max_length=40)
 
 
 class ChangeInitialPasswordRequest(SQLModel):
     """Request body for changing initial/temporary password"""
 
     current_password: str = Field(min_length=1)
-    new_password: str = Field(min_length=8, max_length=40)
+    new_password: str = Field(min_length=1, max_length=40)
 
 
 class ChangePasswordResponse(SQLModel):

@@ -26,7 +26,6 @@ from app.models import (
     User,
     UserCreate,
     UserPublic,
-    UserRole,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
@@ -104,16 +103,8 @@ def update_password_me(
     """
     Update own password.
     Also clears must_change_password flag if set.
-
-    Note: Students cannot change their passwords - teachers manage them (Story 28.1).
+    All roles (including students) can change their own password.
     """
-    # Block students from changing passwords (Story 28.1)
-    if current_user.role == UserRole.student:
-        raise HTTPException(
-            status_code=403,
-            detail="Students cannot change passwords. Please contact your teacher.",
-        )
-
     if not verify_password(body.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect password")
     if body.current_password == body.new_password:
@@ -152,15 +143,8 @@ def change_initial_password(
     - Updates to new password
     - Clears must_change_password flag
 
-    Note: Students cannot change their passwords - teachers manage them (Story 28.1).
+    All roles (including students) can change their own password.
     """
-    # Block students from changing passwords (Story 28.1)
-    if current_user.role == UserRole.student:
-        raise HTTPException(
-            status_code=403,
-            detail="Students cannot change passwords. Please contact your teacher.",
-        )
-
     # Verify current password
     if not verify_password(body.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Current password is incorrect")

@@ -7,12 +7,7 @@ export const namePattern = {
 };
 
 export const passwordRules = (isRequired = true) => {
-  const rules: any = {
-    minLength: {
-      value: 8,
-      message: "Password must be at least 8 characters",
-    },
-  };
+  const rules: any = {};
 
   if (isRequired) {
     rules.required = "Password is required";
