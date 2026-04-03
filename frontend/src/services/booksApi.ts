@@ -22,23 +22,53 @@ import { createApiClient } from "./apiClient";
 
 const apiClient = createApiClient();
 
-// --- Presigned URL cache to avoid duplicate requests ---
-const presignedCache = new Map<string, { url: string; expiresAt: number }>();
+// --- CDN URL for direct R2 access via Cloudflare custom domain ---
+const CDN_BOOKS_BASE =
+  import.meta.env.VITE_CDN_BOOKS_URL || "https://cdn.dreamedtech.com";
 
 /**
- * Get a presigned R2 URL for a book asset (image, audio, video).
- * Caches URLs for 50 minutes (presigned URLs expire in 1 hour).
+ * Build a CDN URL for a book asset.
+ * R2 bucket path: {publisher_id}/books/{book_name}/{asset_path}
  */
-async function getPresignedAssetUrl(
+export function buildBookCdnUrl(
+  publisherId: number,
+  bookName: string,
+  assetPath: string,
+): string {
+  return `${CDN_BOOKS_BASE}/${publisherId}/books/${bookName}/${assetPath}`;
+}
+
+// Cache: bookId → { publisherId, bookName } for functions that only have bookId
+const bookInfoCache = new Map<
+  string | number,
+  { publisherId: number; bookName: string }
+>();
+
+/**
+ * Register book info for CDN URL building (call when book data is loaded)
+ */
+export function registerBookForCdn(
+  bookId: string | number,
+  publisherId: number,
+  bookName: string,
+): void {
+  bookInfoCache.set(bookId, { publisherId, bookName });
+}
+
+/**
+ * Get CDN URL for a book asset using cached book info.
+ * Falls back to presigned URL if book info not cached.
+ */
+async function getAssetUrl(
   bookId: string | number,
   assetPath: string,
 ): Promise<string> {
-  const cacheKey = `${bookId}:${assetPath}`;
-  const cached = presignedCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.url;
+  const info = bookInfoCache.get(bookId) || bookInfoCache.get(Number(bookId));
+  if (info) {
+    return buildBookCdnUrl(info.publisherId, info.bookName, assetPath);
   }
 
+  // Fallback: fetch presigned URL from backend
   const response = await apiClient.get<{
     url: string;
     expires_in_seconds: number;
@@ -46,15 +76,7 @@ async function getPresignedAssetUrl(
   }>(`/api/v1/books/${bookId}/assets/presigned`, {
     params: { path: assetPath },
   });
-
-  const { url, expires_in_seconds } = response.data;
-  // Cache for 50 min (leave 10 min buffer before expiry)
-  presignedCache.set(cacheKey, {
-    url,
-    expiresAt: Date.now() + Math.max((expires_in_seconds - 600) * 1000, 60000),
-  });
-
-  return url;
+  return response.data.url;
 }
 
 /**
@@ -95,6 +117,12 @@ export async function getBooks(
   const url = `/api/v1/books${queryString ? `?${queryString}` : ""}`;
 
   const response = await apiClient.get<BookListResponse>(url);
+  // Auto-register books for CDN URL building
+  for (const book of response.data.items) {
+    if (book.publisher_id && book.name) {
+      registerBookForCdn(book.id, book.publisher_id, book.name);
+    }
+  }
   return response.data;
 }
 
@@ -175,7 +203,7 @@ export async function getActivityImageUrl(
 
   try {
     const assetPath = cleanAssetPath(sectionPath);
-    return await getPresignedAssetUrl(bookId, assetPath);
+    return await getAssetUrl(bookId, assetPath);
   } catch (error) {
     console.error("Failed to get activity image URL:", error, {
       bookId,
@@ -207,7 +235,7 @@ export async function getActivityAudioUrl(
 
   try {
     const assetPath = cleanAssetPath(audioPath);
-    return await getPresignedAssetUrl(bookId, assetPath);
+    return await getAssetUrl(bookId, assetPath);
   } catch (error) {
     console.error("Failed to get activity audio URL:", error, {
       bookId,
@@ -278,7 +306,7 @@ export async function getVideoStreamUrl(
   videoPath: string,
 ): Promise<string> {
   try {
-    return await getPresignedAssetUrl(bookId, videoPath);
+    return await getAssetUrl(bookId, videoPath);
   } catch {
     // Fallback to proxy with token auth
     const token = getAuthToken();
@@ -368,7 +396,7 @@ export async function getPageThumbnailUrl(
     // Extract bookId and path
     const match = thumbnailUrl.match(/\/api\/v1\/books\/(\d+)\/assets\/(.+)/);
     if (match) {
-      return await getPresignedAssetUrl(match[1], match[2]);
+      return await getAssetUrl(match[1], match[2]);
     }
     // Fallback to proxy
     const response = await apiClient.get(thumbnailUrl, { responseType: "blob" });
@@ -414,7 +442,7 @@ export async function getPageImageUrl(
     // imageUrl is like "/api/v1/books/{id}/assets/images/M1/7.png"
     const match = imageUrl.match(/\/api\/v1\/books\/(\d+)\/assets\/(.+)/);
     if (match) {
-      return await getPresignedAssetUrl(match[1], match[2]);
+      return await getAssetUrl(match[1], match[2]);
     }
     // Fallback to proxy
     const response = await apiClient.get(imageUrl, { responseType: "blob" });
@@ -442,11 +470,11 @@ export async function getMediaUrl(mediaUrl: string): Promise<string | null> {
     // mediaUrl is like "/api/v1/books/{id}/assets/..." or "/api/v1/books/{id}/media/..."
     const assetsMatch = mediaUrl.match(/\/api\/v1\/books\/(\d+)\/assets\/(.+)/);
     if (assetsMatch) {
-      return await getPresignedAssetUrl(assetsMatch[1], assetsMatch[2]);
+      return await getAssetUrl(assetsMatch[1], assetsMatch[2]);
     }
     const mediaMatch = mediaUrl.match(/\/api\/v1\/books\/(\d+)\/media\/(.+)/);
     if (mediaMatch) {
-      return await getPresignedAssetUrl(mediaMatch[1], mediaMatch[2]);
+      return await getAssetUrl(mediaMatch[1], mediaMatch[2]);
     }
     // Fallback to proxy
     const response = await apiClient.get(mediaUrl, { responseType: "blob" });
@@ -468,7 +496,11 @@ export async function getMediaUrl(mediaUrl: string): Promise<string | null> {
 export async function getBook(bookId: string | number): Promise<Book> {
   const url = `/api/v1/books/${bookId}`;
   const response = await apiClient.get<Book>(url);
-  return response.data;
+  const book = response.data;
+  if (book.publisher_id && book.name) {
+    registerBookForCdn(book.id, book.publisher_id, book.name);
+  }
+  return book;
 }
 
 // --- Story 9.5: Activity Selection Tabs ---
