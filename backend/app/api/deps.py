@@ -72,7 +72,6 @@ async def get_current_user(session: AsyncSessionDep, token: TokenDep) -> User:
         role_val = cached.get("role")
         user = User(
             id=uuid.UUID(cached["id"]),
-            email=None,
             username=cached.get("username", ""),
             full_name=cached.get("full_name"),
             role=UserRole(role_val) if role_val else None,

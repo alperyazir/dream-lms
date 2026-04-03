@@ -86,7 +86,7 @@ def list_supervisors(
         SupervisorPublic(
             id=s.id,
             full_name=s.full_name,
-            email=s.email,
+            # email removed
             username=s.username,
             is_active=s.is_active,
             created_at=None,  # User model doesn't have created_at
@@ -130,7 +130,7 @@ def list_supervisors_paginated(
         SupervisorPublic(
             id=s.id,
             full_name=s.full_name,
-            email=s.email,
+            # email removed
             username=s.username,
             is_active=s.is_active,
             created_at=None,
@@ -182,7 +182,7 @@ def get_supervisor(
     return SupervisorPublic(
         id=user.id,
         full_name=user.full_name,
-        email=user.email,
+        # email removed
         username=user.username,
         is_active=user.is_active,
         created_at=None,  # User model doesn't have created_at
@@ -242,7 +242,7 @@ async def create_supervisor(
 
     new_user = User(
         id=uuid.uuid4(),
-        email=None,
+        # email removed
         username=supervisor_in.username,
         hashed_password=get_password_hash(temp_password),
         full_name=supervisor_in.full_name,
@@ -335,7 +335,7 @@ def update_supervisor(
     return SupervisorPublic(
         id=user.id,
         full_name=user.full_name,
-        email=user.email,
+        # email removed
         username=user.username,
         is_active=user.is_active,
         created_at=None,  # User model doesn't have created_at

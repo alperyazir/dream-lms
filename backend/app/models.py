@@ -139,7 +139,6 @@ class ChangePasswordResponse(SQLModel):
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    email: str | None = Field(default=None, max_length=255)  # Legacy — no longer used
     hashed_password: str
     must_change_password: bool = Field(
         default=False
@@ -370,7 +369,6 @@ class StudentBase(SQLModel):
     """Shared Student properties"""
 
     grade_level: str | None = Field(default=None, max_length=50)
-    parent_email: str | None = Field(default=None, max_length=255)
 
 
 class StudentCreate(StudentBase):
@@ -382,11 +380,9 @@ class StudentCreate(StudentBase):
 class StudentUpdate(SQLModel):
     """Properties to receive via API on Student update"""
 
-    user_email: str | None = Field(default=None, max_length=255)
     user_username: str | None = Field(default=None, min_length=3, max_length=50)
     user_full_name: str | None = Field(default=None, max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
-    parent_email: str | None = Field(default=None, max_length=255)
 
 
 class Student(StudentBase, table=True):
