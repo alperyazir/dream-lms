@@ -11,6 +11,7 @@ import {
   EyeOff,
   KeyRound,
   Loader2,
+  RefreshCw,
   Save,
 } from "lucide-react";
 import { useState } from "react";
@@ -143,6 +144,20 @@ export function UserPasswordModal({
     }
   };
 
+  const generateRandomPassword = () => {
+    const chars = "abcdefghijkmnpqrstuvwxyz23456789";
+    let pwd = "";
+    for (let i = 0; i < 8; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return pwd;
+  };
+
+  const handleGeneratePassword = () => {
+    const generated = generateRandomPassword();
+    setPasswordMutation.mutate(generated);
+  };
+
   const handleSetPassword = () => {
     if (!newPassword) return;
     if (newPassword.length > 50) {
@@ -248,9 +263,24 @@ export function UserPasswordModal({
                       </Button>
                     </div>
                   ) : (
-                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-                      {passwordData?.message ||
-                        "Password not available. Set a new password below."}
+                    <div className="space-y-2">
+                      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+                        Password not stored yet.
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGeneratePassword}
+                        disabled={setPasswordMutation.isPending}
+                        className="w-full"
+                      >
+                        {setPasswordMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Generate New Password
+                      </Button>
                     </div>
                   )}
                 </div>
