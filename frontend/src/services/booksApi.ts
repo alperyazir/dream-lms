@@ -56,19 +56,28 @@ export function registerBookForCdn(
 }
 
 /**
- * Get CDN URL for a book asset using cached book info.
- * Falls back to presigned URL if book info not cached.
+ * Get CDN URL for a book asset.
+ * Fetches book info from backend if not cached yet.
  */
 async function getAssetUrl(
   bookId: string | number,
   assetPath: string,
 ): Promise<string> {
-  const info = bookInfoCache.get(bookId) || bookInfoCache.get(Number(bookId));
+  let info = bookInfoCache.get(bookId) || bookInfoCache.get(Number(bookId));
+  if (!info) {
+    // Fetch book info and register
+    try {
+      const book = await getBook(bookId);
+      info = bookInfoCache.get(book.id);
+    } catch {
+      // ignore — info stays undefined
+    }
+  }
   if (info) {
     return buildBookCdnUrl(info.publisherId, info.bookName, assetPath);
   }
 
-  // Fallback: fetch presigned URL from backend
+  // Final fallback: presigned URL
   const response = await apiClient.get<{
     url: string;
     expires_in_seconds: number;
