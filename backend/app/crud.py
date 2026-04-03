@@ -22,11 +22,6 @@ from app.models import (
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
-    # Check email uniqueness
-    existing_user_email = get_user_by_email(session=session, email=user_create.email)
-    if existing_user_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
     # Check username uniqueness
     existing_user_username = get_user_by_username(
         session=session, username=user_create.username
@@ -57,12 +52,6 @@ def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
     return db_user
 
 
-def get_user_by_email(*, session: Session, email: str) -> User | None:
-    statement = select(User).where(User.email == email)
-    session_user = session.exec(statement).first()
-    return session_user
-
-
 def get_user_by_username(*, session: Session, username: str) -> User | None:
     """
     Retrieve user by username.
@@ -74,38 +63,21 @@ def get_user_by_username(*, session: Session, username: str) -> User | None:
     return session_user
 
 
-def authenticate(*, session: Session, email: str, password: str) -> User | None:
-    db_user = get_user_by_email(session=session, email=email)
-    if not db_user:
-        return None
-    if not verify_password(password, db_user.hashed_password):
-        return None
-    return db_user
-
-
-def authenticate_with_username_or_email(
+def authenticate_by_username(
     *, session: Session, identifier: str, password: str
 ) -> User | None:
     """
-    Authenticate user with either username or email.
-
-    Detects format based on presence of '@' character.
-    If '@' present: treats as email
-    If no '@': treats as username
+    Authenticate user by username.
 
     Args:
         session: Database session
-        identifier: Username or email address
+        identifier: Username
         password: User password
 
     Returns:
         User object if authentication successful, None otherwise
     """
-    # Detect if identifier is email or username based on '@' character
-    if "@" in identifier:
-        db_user = get_user_by_email(session=session, email=identifier)
-    else:
-        db_user = get_user_by_username(session=session, username=identifier)
+    db_user = get_user_by_username(session=session, username=identifier)
 
     if not db_user:
         return None
@@ -117,7 +89,6 @@ def authenticate_with_username_or_email(
 def create_teacher(
     *,
     session: Session,
-    email: str,
     username: str,
     password: str,
     full_name: str,
@@ -128,7 +99,6 @@ def create_teacher(
 
     Args:
         session: Database session
-        email: User email address
         username: User username
         password: User password (will be hashed)
         full_name: User full_name
@@ -140,11 +110,6 @@ def create_teacher(
     Raises:
         Exception: If transaction fails (rolls back automatically)
     """
-    # Check email uniqueness
-    existing_user_email = get_user_by_email(session=session, email=email)
-    if existing_user_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
     # Check username uniqueness
     existing_user_username = get_user_by_username(session=session, username=username)
     if existing_user_username:
@@ -152,7 +117,7 @@ def create_teacher(
 
     # Create User with teacher role
     user_create = UserCreate(
-        email=email,
+        email=None,
         username=username,
         password=password,
         full_name=full_name,
@@ -191,7 +156,6 @@ def create_teacher(
 def create_student(
     *,
     session: Session,
-    email: str | None,
     username: str,
     password: str,
     full_name: str,
@@ -204,7 +168,6 @@ def create_student(
 
     Args:
         session: Database session
-        email: User email address (optional)
         username: User username
         password: User password (will be hashed)
         full_name: User full name
@@ -218,12 +181,6 @@ def create_student(
     Raises:
         Exception: If transaction fails (rolls back automatically)
     """
-    # Check email uniqueness (only if email is provided)
-    if email:
-        existing_user_email = get_user_by_email(session=session, email=email)
-        if existing_user_email:
-            raise HTTPException(status_code=400, detail="Email already registered")
-
     # Check username uniqueness
     existing_user_username = get_user_by_username(session=session, username=username)
     if existing_user_username:
@@ -231,7 +188,7 @@ def create_student(
 
     # Create User with student role
     user_create = UserCreate(
-        email=email,
+        email=None,
         username=username,
         password=password,
         full_name=full_name,

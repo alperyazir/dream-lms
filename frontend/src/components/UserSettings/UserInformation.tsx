@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import useAuth from "@/hooks/useAuth";
 import useCustomToast from "@/hooks/useCustomToast";
-import { emailPattern, handleError } from "@/utils";
+import { handleError } from "@/utils";
 
 const UserInformation = () => {
   const queryClient = useQueryClient();
@@ -24,14 +24,12 @@ const UserInformation = () => {
     register,
     handleSubmit,
     reset,
-    getValues,
-    formState: { isSubmitting, errors, isDirty },
+    formState: { isSubmitting, isDirty },
   } = useForm<UserPublic>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
       full_name: currentUser?.full_name,
-      email: currentUser?.email,
     },
   });
 
@@ -103,32 +101,6 @@ const UserInformation = () => {
             )}
           </div>
 
-          {/* Email Field */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            {editMode ? (
-              <div>
-                <Input
-                  id="email"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: emailPattern,
-                  })}
-                  type="email"
-                  placeholder="Enter your email"
-                />
-                {errors.email && (
-                  <p className="text-sm text-destructive mt-1">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="h-10 px-3 py-2 rounded-md bg-muted/50 text-foreground flex items-center">
-                {currentUser?.email}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Action Buttons */}
@@ -136,7 +108,7 @@ const UserInformation = () => {
           <div className="flex gap-3 pt-2">
             <Button
               type="submit"
-              disabled={!isDirty || !getValues("email") || isSubmitting}
+              disabled={!isDirty || isSubmitting}
             >
               <Save className="h-4 w-4 mr-2" />
               {isSubmitting ? "Saving..." : "Save Changes"}

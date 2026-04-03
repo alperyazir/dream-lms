@@ -7,7 +7,7 @@ Publishers are fetched from Dream Central Storage (DCS) API.
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 
 class PublisherPublic(BaseModel):
@@ -97,7 +97,6 @@ class PublisherAccountCreate(BaseModel):
         max_length=50,
         description="Username (auto-generated from full_name if not provided)",
     )
-    email: EmailStr
     full_name: str = Field(max_length=255)
 
 
@@ -106,7 +105,6 @@ class PublisherAccountUpdate(BaseModel):
 
     dcs_publisher_id: int | None = None
     username: str | None = Field(default=None, min_length=3, max_length=50)
-    email: EmailStr | None = None
     full_name: str | None = Field(default=None, max_length=255)
     is_active: bool | None = None
 
@@ -116,7 +114,6 @@ class PublisherAccountPublic(BaseModel):
 
     id: uuid.UUID
     username: str
-    email: str | None
     full_name: str | None
     dcs_publisher_id: int | None
     dcs_publisher_name: str | None = None  # Enriched from DCS
@@ -142,7 +139,6 @@ class PublisherAccountCreationResponse(BaseModel):
 
     user: "UserPublic"
     temporary_password: str | None = None
-    password_emailed: bool = False
     message: str = ""
 
 

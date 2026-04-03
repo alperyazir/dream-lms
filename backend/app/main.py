@@ -101,14 +101,6 @@ async def lifespan(app: FastAPI):
 
     app.state.arq_pool = await create_pool(REDIS_SETTINGS)
 
-    # Log email configuration status
-    if settings.emails_enabled:
-        logger.info(f"✅ Email enabled via SMTP: {settings.SMTP_HOST}")
-    else:
-        logger.warning(
-            "⚠️  Email disabled - SMTP not configured. New users will receive passwords in UI."
-        )
-
     # Register webhooks with Dream Central Storage (background retry, single worker only)
     # Gunicorn spawns multiple workers — use a file lock to avoid duplicate registrations
     import tempfile

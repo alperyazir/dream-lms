@@ -298,9 +298,9 @@ function Login() {
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       {...register("username", {
-                        required: "Username or email is required",
+                        required: "Username is required",
                       })}
-                      placeholder="Enter username or email"
+                      placeholder="Enter your username"
                       type="text"
                       className="pl-12 h-12 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700 focus:border-teal-500 focus:ring-teal-500/20 transition-all"
                     />

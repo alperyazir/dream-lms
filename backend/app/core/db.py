@@ -62,13 +62,12 @@ def init_db(session: Session) -> None:
     # This works because the models are already imported and registered from app.models
     # SQLModel.metadata.create_all(engine)
 
-    # 1. Create admin user
+    # 1. Create admin user (lookup by username)
     user = session.exec(
-        select(User).where(User.email == settings.FIRST_SUPERUSER)
+        select(User).where(User.username == settings.FIRST_SUPERUSER_USERNAME)
     ).first()
     if not user:
         user_in = UserCreate(
-            email=settings.FIRST_SUPERUSER,
             username=settings.FIRST_SUPERUSER_USERNAME,
             password=settings.FIRST_SUPERUSER_PASSWORD,
             is_superuser=True,

@@ -7,7 +7,6 @@ import {
   Copy,
   Edit,
   KeyRound,
-  Mail,
   Plus,
   Search,
   Trash2,
@@ -105,7 +104,6 @@ function AdminTeachers() {
   const [passwordCopied, setPasswordCopied] = useState(false);
   const [newTeacher, setNewTeacher] = useState<TeacherCreateAPI>({
     username: "",
-    user_email: "",
     full_name: "",
     school_id: "",
     subject_specialization: "",
@@ -113,7 +111,6 @@ function AdminTeachers() {
   const [editTeacher, setEditTeacher] = useState<TeacherUpdate>({
     school_id: undefined,
     subject_specialization: "",
-    user_email: "",
     user_username: "",
     user_full_name: "",
   });
@@ -162,15 +159,12 @@ function AdminTeachers() {
       setIsAddDialogOpen(false);
       setNewTeacher({
         username: "",
-        user_email: "",
         full_name: "",
         school_id: "",
         subject_specialization: "",
       });
 
-      if (response.password_emailed) {
-        showSuccessToast("Teacher created. Password sent to their email.");
-      } else if (response.temporary_password) {
+      if (response.temporary_password) {
         // Show one-time password dialog
         setResetResult({
           passwordEmailed: false,
@@ -295,7 +289,6 @@ function AdminTeachers() {
   const handleAddTeacher = () => {
     if (
       !newTeacher.username ||
-      !newTeacher.user_email ||
       !newTeacher.full_name ||
       !newTeacher.school_id
     ) {
@@ -319,7 +312,6 @@ function AdminTeachers() {
     setEditTeacher({
       school_id: teacher.school_id,
       subject_specialization: teacher.subject_specialization || "",
-      user_email: teacher.user_email,
       user_username: teacher.user_username || "",
       user_full_name: teacher.user_full_name,
     });
@@ -329,7 +321,6 @@ function AdminTeachers() {
   const handleUpdateTeacher = () => {
     if (!selectedTeacher) return;
     if (
-      !editTeacher.user_email ||
       !editTeacher.user_full_name ||
       !editTeacher.school_id
     ) {
@@ -419,7 +410,7 @@ function AdminTeachers() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search teachers by name, username, email or subject..."
+            placeholder="Search teachers by name, username or subject..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -491,7 +482,6 @@ function AdminTeachers() {
                   </TableHead>
                   <TableHead>Teacher Name</TableHead>
                   <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>School</TableHead>
                   <TableHead>Subject Specialization</TableHead>
                   <TableHead>Created At</TableHead>
@@ -522,14 +512,6 @@ function AdminTeachers() {
                     </TableCell>
                     <TableCell className="text-sm font-mono">
                       {teacher.user_username || "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Mail className="w-3 h-3" />
-                        <span className="text-sm">
-                          {teacher.user_email || "N/A"}
-                        </span>
-                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
@@ -688,23 +670,6 @@ function AdminTeachers() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-email">
-                Email{" "}
-                <span className="text-destructive ml-1" aria-hidden="true">
-                  *
-                </span>
-              </Label>
-              <Input
-                id="edit-email"
-                type="email"
-                placeholder="e.g., teacher@school.com"
-                value={editTeacher.user_email || ""}
-                onChange={(e) =>
-                  setEditTeacher({ ...editTeacher, user_email: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="edit-school">
                 School{" "}
                 <span className="text-destructive ml-1" aria-hidden="true">
@@ -757,7 +722,6 @@ function AdminTeachers() {
               disabled={
                 updateTeacherMutation.isPending ||
                 !editTeacher.user_full_name ||
-                !editTeacher.user_email ||
                 !editTeacher.school_id
               }
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
@@ -825,23 +789,6 @@ function AdminTeachers() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">
-                Email{" "}
-                <span className="text-destructive ml-1" aria-hidden="true">
-                  *
-                </span>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="e.g., teacher@school.com"
-                value={newTeacher.user_email}
-                onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, user_email: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="school">
                 School{" "}
                 <span className="text-destructive ml-1" aria-hidden="true">
@@ -895,7 +842,6 @@ function AdminTeachers() {
                 createTeacherMutation.isPending ||
                 !newTeacher.full_name ||
                 !newTeacher.username ||
-                !newTeacher.user_email ||
                 !newTeacher.school_id
               }
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
@@ -907,8 +853,7 @@ function AdminTeachers() {
           </DialogFooter>
           {!newTeacher.school_id &&
             newTeacher.full_name &&
-            newTeacher.username &&
-            newTeacher.user_email && (
+            newTeacher.username && (
               <p className="text-sm text-red-500 -mt-2">
                 Please select a school to continue
               </p>
@@ -969,12 +914,7 @@ function AdminTeachers() {
             <DialogDescription>{resetResult?.message}</DialogDescription>
           </DialogHeader>
 
-          {resetResult?.passwordEmailed ? (
-            <div className="flex items-center gap-2 py-4 text-green-600">
-              <Mail className="h-5 w-5" />
-              <span>Password has been sent to the user's email address.</span>
-            </div>
-          ) : resetResult?.temporaryPassword ? (
+          {resetResult?.temporaryPassword ? (
             <div className="space-y-3 py-4">
               <p className="text-amber-600">
                 Email delivery is not available. Please share this password

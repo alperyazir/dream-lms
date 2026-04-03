@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import useCustomToast from "@/hooks/useCustomToast";
-import { emailPattern, handleError } from "@/utils";
+import { handleError } from "@/utils";
 import { Checkbox } from "../ui/checkbox";
 import { DialogTrigger } from "../ui/dialog";
 import { Field } from "../ui/field";
@@ -39,7 +39,6 @@ const AddUser = () => {
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      email: "",
       full_name: "",
       password: "",
       confirm_password: "",
@@ -86,17 +85,6 @@ const AddUser = () => {
               Fill in the form below to add a new user to the system.
             </p>
             <div className="flex flex-col gap-4">
-              <Field required error={errors.email?.message} label="Email">
-                <Input
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: emailPattern,
-                  })}
-                  placeholder="Email"
-                  type="email"
-                />
-              </Field>
-
               <Field error={errors.full_name?.message} label="Full Name">
                 <Input
                   {...register("full_name")}

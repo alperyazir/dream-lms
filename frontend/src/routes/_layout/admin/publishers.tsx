@@ -9,7 +9,6 @@ import {
   KeyRound,
   Loader2,
   Lock,
-  Mail,
   Plus,
   Search,
   Trash2,
@@ -125,13 +124,11 @@ function AdminPublishers() {
   const [newAccount, setNewAccount] = useState<PublisherAccountCreate>({
     dcs_publisher_id: 0,
     username: "",
-    email: "",
     full_name: "",
   });
   const [editAccount, setEditAccount] = useState<PublisherAccountUpdate>({
     dcs_publisher_id: null,
     username: null,
-    email: null,
     full_name: null,
     is_active: null,
   });
@@ -182,9 +179,7 @@ function AdminPublishers() {
       setIsAddDialogOpen(false);
       resetNewAccountForm();
 
-      if (response.password_emailed) {
-        showSuccessToast("Account created. Password sent to email.");
-      } else if (response.temporary_password) {
+      if (response.temporary_password) {
         setPasswordResult({
           passwordEmailed: false,
           temporaryPassword: response.temporary_password,
@@ -342,7 +337,6 @@ function AdminPublishers() {
     setNewAccount({
       dcs_publisher_id: 0,
       username: "",
-      email: "",
       full_name: "",
     });
   };
@@ -355,7 +349,6 @@ function AdminPublishers() {
   const handleCreateAccount = () => {
     if (
       !newAccount.dcs_publisher_id ||
-      !newAccount.email ||
       !newAccount.full_name
     ) {
       showErrorToast("Please fill in all required fields");
@@ -369,7 +362,6 @@ function AdminPublishers() {
     setEditAccount({
       dcs_publisher_id: account.dcs_publisher_id,
       username: account.username,
-      email: account.email,
       full_name: account.full_name,
       is_active: account.is_active,
     });
@@ -500,7 +492,7 @@ function AdminPublishers() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, email, or publisher..."
+            placeholder="Search by name or publisher..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -572,7 +564,6 @@ function AdminPublishers() {
                     />
                   </TableHead>
                   <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>DCS Publisher</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
@@ -604,14 +595,6 @@ function AdminPublishers() {
                         <div className="text-sm text-muted-foreground font-mono">
                           @{account.username}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Mail className="w-3 h-3" />
-                        <span className="text-sm">
-                          {account.email || "N/A"}
-                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -842,24 +825,6 @@ function AdminPublishers() {
               </p>
             </div>
 
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="add-email">
-                Email{" "}
-                <span className="text-destructive ml-1" aria-hidden="true">
-                  *
-                </span>
-              </Label>
-              <Input
-                id="add-email"
-                type="email"
-                placeholder="e.g., user@publisher.com"
-                value={newAccount.email}
-                onChange={(e) =>
-                  setNewAccount({ ...newAccount, email: e.target.value })
-                }
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button
@@ -959,19 +924,6 @@ function AdminPublishers() {
               </p>
             </div>
 
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                placeholder="e.g., user@publisher.com"
-                value={editAccount.email || ""}
-                onChange={(e) =>
-                  setEditAccount({ ...editAccount, email: e.target.value })
-                }
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button
@@ -1129,12 +1081,7 @@ function AdminPublishers() {
             <DialogDescription>{passwordResult?.message}</DialogDescription>
           </DialogHeader>
 
-          {passwordResult?.passwordEmailed ? (
-            <div className="flex items-center gap-2 py-4 text-green-600">
-              <Mail className="h-5 w-5" />
-              <span>Password has been sent to the user's email address.</span>
-            </div>
-          ) : passwordResult?.temporaryPassword ? (
+          {passwordResult?.temporaryPassword ? (
             <div className="space-y-3 py-4">
               <p className="text-amber-600">
                 Email delivery is not available. Please share this password

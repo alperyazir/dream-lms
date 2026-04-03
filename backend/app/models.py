@@ -70,7 +70,6 @@ def validate_username_format(username: str | None) -> str | None:
 
 # Shared properties
 class UserBase(SQLModel):
-    email: str | None = Field(default=None, unique=True, index=True, max_length=255)
     username: str = Field(unique=True, index=True, min_length=3, max_length=50)
     is_active: bool = True
     is_superuser: bool = False
@@ -91,13 +90,11 @@ class UserBase(SQLModel):
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
-    email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
     password: str = Field(min_length=1, max_length=40)
 
 
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
-    email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
     username: str | None = Field(default=None, min_length=3, max_length=50)  # type: ignore
     password: str | None = Field(default=None, min_length=1, max_length=40)
     dcs_publisher_id: int | None = Field(default=None)  # type: ignore
@@ -111,7 +108,6 @@ class UserUpdate(UserBase):
 
 class UserUpdateMe(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
-    email: EmailStr | None = Field(default=None, max_length=255)
     username: str | None = Field(default=None, min_length=3, max_length=50)
 
     @field_validator("username")
@@ -143,6 +139,7 @@ class ChangePasswordResponse(SQLModel):
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    email: str | None = Field(default=None, max_length=255)  # Legacy — no longer used
     hashed_password: str
     must_change_password: bool = Field(
         default=False
@@ -361,7 +358,6 @@ class TeacherCreateAPI(SQLModel):
     """Properties for API endpoint teacher creation (includes user creation)"""
 
     username: str = Field(min_length=3, max_length=50)
-    user_email: EmailStr = Field(max_length=255)
     full_name: str = Field(max_length=255)
     school_id: uuid.UUID
     subject_specialization: str | None = Field(default=None, max_length=255)
@@ -447,10 +443,8 @@ class StudentCreateAPI(SQLModel):
     """Properties for API endpoint student creation (includes user creation)"""
 
     username: str = Field(min_length=3, max_length=50)
-    user_email: EmailStr | None = Field(default=None, max_length=255)
     full_name: str = Field(max_length=255)
     grade_level: str | None = Field(default=None, max_length=50)
-    parent_email: EmailStr | None = Field(default=None, max_length=255)
     # Optional password - if not provided, auto-generated
     password: str | None = Field(default=None, min_length=1, max_length=50)
 
@@ -492,21 +486,16 @@ class UserCreationResponse(SQLModel):
     role_record: (
         TeacherPublic | StudentPublic
     )  # Publishers managed in DCS, not created via API
-    temporary_password: str | None = None  # Only set if user has no email
-    password_emailed: bool = False  # True if email was sent
-    message: str = ""  # Status message
+    temporary_password: str | None = None
+    message: str = ""
 
 
 class PasswordResetResponse(SQLModel):
-    """Response schema for password reset endpoint - secure version (Story 11.2)
-
-    Never contains the actual password unless user has no email address.
-    """
+    """Response schema for password reset endpoint."""
 
     success: bool
     message: str
-    password_emailed: bool  # True if password was sent via email
-    temporary_password: str | None = None  # Only set if user has NO email (fallback)
+    temporary_password: str | None = None
 
 
 # --- Supervisor Models (Story 14.2) ---
@@ -516,7 +505,6 @@ class SupervisorCreateAPI(SQLModel):
     """Properties for API endpoint supervisor creation"""
 
     username: str = Field(min_length=3, max_length=50)
-    user_email: EmailStr | None = Field(default=None, max_length=255)
     full_name: str = Field(max_length=255)
 
 
@@ -524,7 +512,6 @@ class SupervisorUpdate(SQLModel):
     """Properties for updating a supervisor"""
 
     full_name: str | None = Field(default=None, max_length=255)
-    email: EmailStr | None = Field(default=None, max_length=255)
     username: str | None = Field(default=None, min_length=3, max_length=50)
     is_active: bool | None = None
 
@@ -534,11 +521,9 @@ class SupervisorPublic(SQLModel):
 
     id: uuid.UUID
     full_name: str | None
-    email: str | None
     username: str
     is_active: bool
     created_at: datetime | None
-    must_change_password: bool
 
 
 class SupervisorCreateResponse(SQLModel):
@@ -546,7 +531,6 @@ class SupervisorCreateResponse(SQLModel):
 
     user: UserPublic
     temporary_password: str | None = None
-    password_emailed: bool = False
     message: str = ""
 
 

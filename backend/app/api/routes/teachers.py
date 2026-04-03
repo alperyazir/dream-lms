@@ -4,7 +4,6 @@ from typing import Any
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     File,
     HTTPException,
     Query,
@@ -17,7 +16,6 @@ from starlette.requests import Request
 
 from app import crud
 from app.api.deps import AsyncSessionDep, SessionDep, require_role
-from app.core.config import settings
 from app.core.rate_limit import RateLimits, limiter
 from app.models import (
     BulkImportErrorDetail,
@@ -47,11 +45,9 @@ from app.services.redis_cache import (
     cache_set,
 )
 from app.utils import (
-    generate_new_account_email,
     generate_temp_password,
     generate_username,
     parse_excel_file,
-    send_email,
     validate_excel_headers,
     validate_file_size,
 )
@@ -74,7 +70,6 @@ def create_student(
     *,
     session: SessionDep,
     student_in: StudentCreateAPI,
-    background_tasks: BackgroundTasks,
     current_user: User = require_role(UserRole.teacher),
 ) -> Any:
     """
@@ -97,17 +92,6 @@ def create_student(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Teacher record not found for this user",
         )
-
-    # Check if user email already exists (only if email is provided)
-    if student_in.user_email:
-        existing_user = crud.get_user_by_email(
-            session=session, email=student_in.user_email
-        )
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists",
-            )
 
     # Check if username already exists
     existing_username = crud.get_user_by_username(
@@ -135,46 +119,13 @@ def create_student(
     # Create user and student atomically
     user, student = crud.create_student(
         session=session,
-        email=student_in.user_email,
+        email=None,
         username=student_in.username,
         password=temp_password,
         full_name=student_in.full_name,
         student_create=student_create,
         created_by_teacher_id=teacher.id,
     )
-
-    # Handle password delivery based on email availability
-    password_emailed = False
-    temp_password_for_response = None
-    message = ""
-
-    if user.email and settings.emails_enabled:
-        # Generate email content synchronously, send in background
-        try:
-            email_data = generate_new_account_email(
-                email_to=user.email,
-                username=user.username,
-                password=temp_password,
-                full_name=student_in.full_name,
-            )
-            background_tasks.add_task(
-                send_email,
-                email_to=user.email,
-                subject=email_data.subject,
-                html_content=email_data.html_content,
-            )
-            password_emailed = True
-            message = "Password will be sent via email"
-        except Exception as e:
-            logger.error(f"Failed to prepare welcome email for {user.email}: {e}")
-            temp_password_for_response = temp_password
-            message = (
-                "Email delivery failed. Please share the temporary password securely."
-            )
-    else:
-        # No email or emails disabled - return password once for manual communication
-        temp_password_for_response = temp_password
-        message = "Please share the temporary password securely with the student"
 
     # Build student response with user information
     student_data = StudentPublic(
@@ -194,9 +145,9 @@ def create_student(
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
         role_record=student_data,
-        temporary_password=temp_password_for_response,
-        password_emailed=password_emailed,
-        message=message,
+        temporary_password=temp_password,
+        password_emailed=False,
+        message="Please share the temporary password securely with the student",
     )
 
 
@@ -305,7 +256,6 @@ async def bulk_import_students(
 
     try:
         for row in rows:
-            email = row.get("Email", "").strip()
             first_name = row.get("First Name", "").strip()
             last_name = row.get("Last Name", "").strip()
             full_name = f"{first_name} {last_name}"
@@ -332,7 +282,7 @@ async def bulk_import_students(
             # Create user and student atomically
             user, student = crud.create_student(
                 session=session,
-                email=email,
+                email=None,
                 username=username,
                 password=temp_password,
                 full_name=full_name,
@@ -341,7 +291,11 @@ async def bulk_import_students(
             )
 
             created_credentials.append(
-                {"email": email, "temp_password": temp_password, "full_name": full_name}
+                {
+                    "username": username,
+                    "temp_password": temp_password,
+                    "full_name": full_name,
+                }
             )
 
         session.commit()
@@ -593,18 +547,6 @@ def update_student(
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Username already exists",
-                    )
-
-            # Check if email is being changed
-            if "email" in user_fields and user_fields["email"] != user.email:
-                # Check if new email already exists
-                existing_user = crud.get_user_by_email(
-                    session=session, email=user_fields["email"]
-                )
-                if existing_user and existing_user.id != user.id:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Email already exists",
                     )
 
             for key, value in user_fields.items():

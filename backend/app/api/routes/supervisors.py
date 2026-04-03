@@ -10,12 +10,11 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import func, or_, select
 from starlette.requests import Request
 
 from app.api.deps import AdminOrSupervisor, AsyncSessionDep, SessionDep, require_role
-from app.core.config import settings
 from app.core.rate_limit import RateLimits, limiter
 from app.core.security import encrypt_viewable_password, get_password_hash
 from app.models import (
@@ -30,9 +29,7 @@ from app.models import (
 )
 from app.schemas.pagination import SupervisorListResponse
 from app.utils import (
-    generate_password_reset_by_admin_email,
     generate_temp_password,
-    send_email,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,7 +75,6 @@ def list_supervisors(
         query = query.where(
             or_(
                 User.full_name.ilike(search_pattern),
-                User.email.ilike(search_pattern),
                 User.username.ilike(search_pattern),
             )
         )
@@ -122,7 +118,6 @@ def list_supervisors_paginated(
         base_query = base_query.where(
             or_(
                 func.lower(User.full_name).contains(search_filter),
-                func.lower(User.email).contains(search_filter),
                 func.lower(User.username).contains(search_filter),
             )
         )
@@ -212,7 +207,6 @@ async def create_supervisor(
     request: Request,
     *,
     session: AsyncSessionDep,
-    background_tasks: BackgroundTasks,
     supervisor_in: SupervisorCreateAPI,
     current_user: User = AdminOnly,
 ) -> Any:
@@ -220,23 +214,11 @@ async def create_supervisor(
     Create a new supervisor user.
 
     - **username**: Unique username (3-50 chars)
-    - **user_email**: Optional email address
     - **full_name**: Full name of the supervisor
 
     Returns the created supervisor with initial password.
     Admin only - Supervisors cannot create other Supervisors.
     """
-    # Check email uniqueness if provided
-    if supervisor_in.user_email:
-        existing_email = await session.execute(
-            select(User).where(User.email == supervisor_in.user_email)
-        )
-        if existing_email.scalar_one_or_none():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this email already exists",
-            )
-
     # Check username uniqueness
     existing_username = await session.execute(
         select(User).where(User.username == supervisor_in.username)
@@ -260,7 +242,7 @@ async def create_supervisor(
 
     new_user = User(
         id=uuid.uuid4(),
-        email=supervisor_in.user_email,
+        email=None,
         username=supervisor_in.username,
         hashed_password=get_password_hash(temp_password),
         full_name=supervisor_in.full_name,
@@ -284,7 +266,6 @@ async def create_supervisor(
     return SupervisorCreateResponse(
         user=UserPublic.model_validate(new_user),
         temporary_password=temp_password,
-        password_emailed=False,
         message=message,
     )
 
@@ -325,17 +306,6 @@ def update_supervisor(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor not found"
         )
-
-    # Validate email uniqueness if changed
-    if supervisor_in.email and supervisor_in.email != user.email:
-        existing = session.exec(
-            select(User).where(User.email == supervisor_in.email)
-        ).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this email already exists",
-            )
 
     # Validate username uniqueness if changed
     if supervisor_in.username and supervisor_in.username != user.username:
@@ -446,7 +416,6 @@ async def reset_supervisor_password(
     request: Request,
     *,
     session: AsyncSessionDep,
-    background_tasks: BackgroundTasks,
     supervisor_id: uuid.UUID,
     current_user: User = AdminOnly,
 ) -> Any:
@@ -455,7 +424,7 @@ async def reset_supervisor_password(
 
     - Generates new secure password
     - Sets must_change_password = False
-    - Sends email if configured, otherwise returns password
+    - Returns password directly
 
     Admin only - Supervisors cannot reset passwords of other Supervisors.
     """
@@ -480,31 +449,6 @@ async def reset_supervisor_password(
     session.add(user)
     await session.commit()
 
-    # Send email if possible
-    password_emailed = False
-    message = ""
-    returned_password = new_password
-
-    if user.email and settings.emails_enabled:
-        email_content = generate_password_reset_by_admin_email(
-            full_name=user.full_name or user.username,
-            new_password=new_password,
-        )
-        background_tasks.add_task(
-            send_email,
-            email_to=user.email,
-            subject=email_content["subject"],
-            html_content=email_content["html_content"],
-        )
-        password_emailed = True
-        message = f"New password sent to {user.email}"
-        returned_password = None  # Don't return password if emailed
-    else:
-        if not user.email:
-            message = "Password reset. No email on file - share the password manually."
-        else:
-            message = "Password reset. Email is disabled - share the password manually."
-
     logger.info(
         f"Password reset: Admin {current_user.username} reset password for supervisor "
         f"{user.username} (ID: {user.id})"
@@ -512,7 +456,7 @@ async def reset_supervisor_password(
 
     return PasswordResetResponse(
         success=True,
-        message=message,
-        password_emailed=password_emailed,
-        temporary_password=returned_password,
+        message="Password reset successfully. Share the password manually.",
+        password_emailed=False,
+        temporary_password=new_password,
     )

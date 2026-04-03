@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   Image,
   Lock,
-  Mail,
   Palette,
   Shield,
   User,
@@ -148,10 +147,6 @@ function UserSettings() {
                 {currentUser.full_name || "User"}
               </h2>
               <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  <span className="text-sm">{currentUser.email}</span>
-                </div>
                 <Badge
                   variant="outline"
                   className={cn("text-xs font-medium", roleInfo.color)}

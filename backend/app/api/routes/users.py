@@ -12,7 +12,6 @@ from app.api.deps import (
     SessionDep,
     get_current_active_superuser,
 )
-from app.core.config import settings
 from app.core.rate_limit import RateLimits, limiter
 from app.core.security import (
     encrypt_viewable_password,
@@ -33,7 +32,6 @@ from app.models import (
     UserUpdateMe,
 )
 from app.services.cache_events import invalidate_for_event_sync
-from app.utils import generate_new_account_email, send_email
 
 router = APIRouter(prefix="/users", tags=["users"])
 logger = logging.getLogger(__name__)
@@ -69,29 +67,7 @@ def create_user(request: Request, *, session: SessionDep, user_in: UserCreate) -
     """
     Create new user.
     """
-    user = crud.get_user_by_email(session=session, email=user_in.email)
-    if user:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this email already exists in the system.",
-        )
-
     user = crud.create_user(session=session, user_create=user_in)
-    if settings.emails_enabled and user_in.email:
-        try:
-            email_data = generate_new_account_email(
-                email_to=user_in.email,
-                username=user_in.email,
-                password=user_in.password,
-                full_name=user_in.full_name or "",
-            )
-            send_email(
-                email_to=user_in.email,
-                subject=email_data.subject,
-                html_content=email_data.html_content,
-            )
-        except Exception as e:
-            logger.error(f"Failed to send welcome email to {user_in.email}: {e}")
     return user
 
 
@@ -107,13 +83,6 @@ def update_user_me(
     """
     Update own user.
     """
-
-    if user_in.email:
-        existing_user = crud.get_user_by_email(session=session, email=user_in.email)
-        if existing_user and existing_user.id != current_user.id:
-            raise HTTPException(
-                status_code=409, detail="User with this email already exists"
-            )
     user_data = user_in.model_dump(exclude_unset=True)
     current_user.sqlmodel_update(user_data)
     session.add(current_user)
@@ -304,13 +273,6 @@ def update_user(
             status_code=404,
             detail="The user with this id does not exist in the system",
         )
-    if user_in.email:
-        existing_user = crud.get_user_by_email(session=session, email=user_in.email)
-        if existing_user and existing_user.id != user_id:
-            raise HTTPException(
-                status_code=409, detail="User with this email already exists"
-            )
-
     db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
     invalidate_for_event_sync("user_profile_updated", user_id=str(user_id))
     return db_user

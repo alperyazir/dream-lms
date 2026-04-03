@@ -5,7 +5,6 @@ from typing import Any
 import httpx
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     File,
     HTTPException,
     Query,
@@ -95,11 +94,9 @@ from app.services.skill_attribution_service import (
 )
 from app.services.webhook_registration import webhook_registration_service
 from app.utils import (
-    generate_new_account_email,
     generate_temp_password,
     generate_username,
     parse_excel_file,
-    send_email,
     validate_excel_headers,
     validate_file_size,
 )
@@ -484,7 +481,6 @@ def create_teacher(
     request: Request,
     *,
     session: SessionDep,
-    background_tasks: BackgroundTasks,
     teacher_in: TeacherCreateAPI,
     current_user: User = require_role(
         UserRole.admin, UserRole.supervisor, UserRole.publisher
@@ -503,14 +499,6 @@ def create_teacher(
 
     Returns user, temp_password, and teacher record.
     """
-    # Check if user email already exists
-    existing_user = crud.get_user_by_email(session=session, email=teacher_in.user_email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists",
-        )
-
     # Check if username already exists
     existing_username = crud.get_user_by_username(
         session=session, username=teacher_in.username
@@ -548,7 +536,7 @@ def create_teacher(
     # Create user and teacher atomically
     user, teacher = crud.create_teacher(
         session=session,
-        email=teacher_in.user_email,
+        email=None,
         username=teacher_in.username,
         password=temp_password,
         full_name=teacher_in.full_name,
@@ -657,7 +645,6 @@ def list_teachers_paginated(
         base_query = base_query.where(
             (func.lower(User.full_name).contains(search_filter))
             | (func.lower(User.username).contains(search_filter))
-            | (func.lower(User.email).contains(search_filter))
             | (func.lower(Teacher.subject_specialization).contains(search_filter))
         )
 
@@ -751,17 +738,6 @@ def update_teacher(
                 user_fields["username"] = value
         else:
             teacher_fields[field] = value
-
-    # Check if new email already exists for another user
-    if "email" in user_fields and user_fields["email"] != user.email:
-        existing_user = crud.get_user_by_email(
-            session=session, email=user_fields["email"]
-        )
-        if existing_user and existing_user.id != user.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists",
-            )
 
     # Check if new username already exists for another user [Story 9.2 AC: 14]
     if "username" in user_fields and user_fields["username"] != user.username:
@@ -928,7 +904,6 @@ def create_student(
     request: Request,
     *,
     session: SessionDep,
-    background_tasks: BackgroundTasks,
     student_in: StudentCreateAPI,
     current_user: User = require_role(
         UserRole.admin, UserRole.supervisor, UserRole.publisher, UserRole.teacher
@@ -949,14 +924,6 @@ def create_student(
     Returns user, password (for sharing), and student record.
     Password is stored encrypted so teachers can view/change it later (Story 28.1).
     """
-    # Check if user email already exists
-    existing_user = crud.get_user_by_email(session=session, email=student_in.user_email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists",
-        )
-
     # Check if username already exists
     existing_username = crud.get_user_by_username(
         session=session, username=student_in.username
@@ -980,41 +947,12 @@ def create_student(
     # Create user and student atomically
     user, student = crud.create_student(
         session=session,
-        email=student_in.user_email,
+        email=None,
         username=student_in.username,
         password=password,
         full_name=student_in.full_name,
         student_create=student_create,
     )
-
-    # Handle password delivery based on email availability
-    password_emailed = False
-    password_for_response = None
-    message = ""
-
-    if user.email and settings.emails_enabled:
-        # Send password via email in background - avoid blocking DB connection
-        email_data = generate_new_account_email(
-            email_to=user.email,
-            username=user.username,
-            password=password,
-            full_name=student_in.full_name,
-        )
-        background_tasks.add_task(
-            send_email,
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-        )
-        password_emailed = True
-        message = "Password sent via email"
-    else:
-        # No email or emails disabled - return password for manual communication
-        # Teachers can always view password later via GET /admin/students/{id}/password
-        password_for_response = password
-        message = (
-            "Share this password with the student. You can view/change it anytime."
-        )
 
     # Build student response with user information
     student_data = StudentPublic(
@@ -1032,9 +970,9 @@ def create_student(
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
         role_record=student_data,
-        temporary_password=password_for_response,
-        password_emailed=password_emailed,
-        message=message,
+        temporary_password=password,
+        password_emailed=False,
+        message="Share this password with the student. You can view/change it anytime.",
     )
 
 
@@ -1257,7 +1195,6 @@ def list_students(
         base_query = base_query.where(
             (func.lower(User.full_name).contains(search_filter))
             | (func.lower(User.username).contains(search_filter))
-            | (func.lower(User.email).contains(search_filter))
             | (func.lower(Student.grade_level).contains(search_filter))
             | (func.lower(Student.parent_email).contains(search_filter))
         )
@@ -1365,17 +1302,6 @@ def update_student(
                 user_fields["username"] = value
         else:
             student_fields[field] = value
-
-    # Check if new email already exists for another user
-    if "email" in user_fields and user_fields["email"] != user.email:
-        existing_user = crud.get_user_by_email(
-            session=session, email=user_fields["email"]
-        )
-        if existing_user and existing_user.id != user.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists",
-            )
 
     # Check if new username already exists for another user [Story 9.2 AC: 14]
     if "username" in user_fields and user_fields["username"] != user.username:
@@ -1674,7 +1600,6 @@ async def bulk_import_publishers(
 
     try:
         for row in rows:
-            email = row.get("Email", "").strip()
             first_name = row.get("First Name", "").strip()
             last_name = row.get("Last Name", "").strip()
             full_name = f"{first_name} {last_name}"
@@ -1697,7 +1622,7 @@ async def bulk_import_publishers(
             # Create user and publisher atomically
             user, publisher = crud.create_publisher(
                 session=session,
-                email=email,
+                email=None,
                 username=username,
                 password=temp_password,
                 full_name=full_name,
@@ -1705,7 +1630,11 @@ async def bulk_import_publishers(
             )
 
             created_credentials.append(
-                {"email": email, "temp_password": temp_password, "full_name": full_name}
+                {
+                    "username": username,
+                    "temp_password": temp_password,
+                    "full_name": full_name,
+                }
             )
 
         session.commit()
@@ -1824,7 +1753,6 @@ async def bulk_import_teachers(
 
     try:
         for row in rows:
-            email = row.get("Email", "").strip()
             first_name = row.get("First Name", "").strip()
             last_name = row.get("Last Name", "").strip()
             full_name = f"{first_name} {last_name}"
@@ -1868,7 +1796,7 @@ async def bulk_import_teachers(
             # Create user and teacher atomically
             user, teacher = crud.create_teacher(
                 session=session,
-                email=email,
+                email=None,
                 username=username,
                 password=temp_password,
                 full_name=full_name,
@@ -1876,7 +1804,11 @@ async def bulk_import_teachers(
             )
 
             created_credentials.append(
-                {"email": email, "temp_password": temp_password, "full_name": full_name}
+                {
+                    "username": username,
+                    "temp_password": temp_password,
+                    "full_name": full_name,
+                }
             )
 
         session.commit()
@@ -1995,7 +1927,6 @@ async def bulk_import_students(
 
     try:
         for row in rows:
-            email = row.get("Email", "").strip()
             first_name = row.get("First Name", "").strip()
             last_name = row.get("Last Name", "").strip()
             full_name = f"{first_name} {last_name}"
@@ -2022,7 +1953,7 @@ async def bulk_import_students(
             # Create user and student atomically
             user, student = crud.create_student(
                 session=session,
-                email=email,
+                email=None,
                 username=username,
                 password=temp_password,
                 full_name=full_name,
@@ -2030,7 +1961,11 @@ async def bulk_import_students(
             )
 
             created_credentials.append(
-                {"email": email, "temp_password": temp_password, "full_name": full_name}
+                {
+                    "username": username,
+                    "temp_password": temp_password,
+                    "full_name": full_name,
+                }
             )
 
         session.commit()
@@ -2144,15 +2079,6 @@ def admin_update_user(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    # Validate email uniqueness if changing
-    if user_in.email and user_in.email != db_user.email:
-        existing_user = crud.get_user_by_email(session=session, email=user_in.email)
-        if existing_user and existing_user.id != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="User with this email already exists",
-            )
-
     # Validate username uniqueness if changing
     if user_in.username and user_in.username != db_user.username:
         existing_user = session.exec(
@@ -2216,7 +2142,6 @@ async def reset_user_password(
     request: Request,
     *,
     session: AsyncSessionDep,
-    background_tasks: BackgroundTasks,
     user_id: uuid.UUID,
     current_user: User = require_role(
         UserRole.admin, UserRole.supervisor, UserRole.publisher
@@ -2580,7 +2505,6 @@ async def create_publisher_account(
     request: Request,
     *,
     session: SessionDep,
-    background_tasks: BackgroundTasks,
     account_in: PublisherAccountCreate,
     current_user: User = AdminOrSupervisor,
 ) -> PublisherAccountCreationResponse:
@@ -2592,14 +2516,6 @@ async def create_publisher_account(
     - Sets dcs_publisher_id on user
     - Sends welcome email with credentials
     """
-    # Check if user email already exists
-    existing_user = crud.get_user_by_email(session=session, email=account_in.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists",
-        )
-
     # Generate username from full_name if not provided
     from app.utils import generate_username_from_name
 
@@ -2635,7 +2551,7 @@ async def create_publisher_account(
     from app.models import UserCreate
 
     user_create = UserCreate(
-        email=account_in.email,
+        email=None,
         username=username,
         password=temp_password,
         full_name=account_in.full_name,
@@ -2644,37 +2560,11 @@ async def create_publisher_account(
     )
     user = crud.create_user(session=session, user_create=user_create)
 
-    # Handle password delivery based on email availability
-    password_emailed = False
-    temp_password_for_response = None
-    message = ""
-
-    if user.email and settings.emails_enabled:
-        # Send password via email in background - avoid blocking DB connection
-        email_data = generate_new_account_email(
-            email_to=user.email,
-            username=user.username,
-            password=temp_password,
-            full_name=account_in.full_name,
-        )
-        background_tasks.add_task(
-            send_email,
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-        )
-        password_emailed = True
-        message = "Password sent via email"
-    else:
-        # No email or emails disabled - return password once for manual communication
-        temp_password_for_response = temp_password
-        message = "Please share the temporary password securely with the user"
-
     return PublisherAccountCreationResponse(
         user=UserPublic.model_validate(user),
-        temporary_password=temp_password_for_response,
-        password_emailed=password_emailed,
-        message=message,
+        temporary_password=temp_password,
+        password_emailed=False,
+        message="Please share the temporary password securely with the user",
     )
 
 
@@ -2758,7 +2648,6 @@ async def list_publisher_accounts_paginated(
         search_filter = f"%{search.lower()}%"
         base_query = base_query.where(
             func.lower(User.full_name).contains(search_filter)
-            | func.lower(User.email).contains(search_filter)
             | func.lower(User.username).contains(search_filter)
         )
     count_query = select(func.count()).select_from(base_query.subquery())
@@ -2895,15 +2784,6 @@ async def update_publisher_account(
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
-            )
-
-    # Check email uniqueness if changing
-    if account_in.email and account_in.email != user.email:
-        existing = crud.get_user_by_email(session=session, email=account_in.email)
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered",
             )
 
     # Update user

@@ -8,7 +8,7 @@ Publisher data is fetched from Dream Central Storage (DCS).
 import logging
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy import func
 from sqlmodel import select
@@ -46,7 +46,7 @@ from app.services.book_service_v2 import get_book_service
 from app.services.dream_storage_client import get_dream_storage_client
 from app.services.publisher_service_v2 import get_publisher_service
 from app.services.redis_cache import cache_get, cache_set
-from app.utils import generate_new_account_email, generate_temp_password, send_email
+from app.utils import generate_temp_password
 
 router = APIRouter(prefix="/publishers", tags=["publishers"])
 logger = logging.getLogger(__name__)
@@ -452,7 +452,6 @@ def create_my_teacher(
     request: Request,
     session: SessionDep,
     teacher_in: TeacherCreateAPI,
-    background_tasks: BackgroundTasks,
     current_user: User = require_role(UserRole.publisher),
 ) -> UserCreationResponse:
     """Create teacher in publisher's school."""
@@ -481,33 +480,13 @@ def create_my_teacher(
     )
     user, teacher = create_teacher(
         session=session,
-        email=teacher_in.user_email,
+        email=None,
         username=teacher_in.username,
         password=password,
         full_name=teacher_in.full_name,
         teacher_create=teacher_create,
     )
     session.commit()
-
-    # Send welcome email in background
-    password_emailed = False
-    if user.email:
-        try:
-            email_data = generate_new_account_email(
-                email_to=user.email,
-                username=user.username,
-                password=password,
-                full_name=user.full_name or user.username,
-            )
-            background_tasks.add_task(
-                send_email,
-                email_to=user.email,
-                subject=email_data.subject,
-                html_content=email_data.html_content,
-            )
-            password_emailed = True
-        except Exception as e:
-            logger.warning(f"Failed to prepare welcome email for {user.email}: {e}")
 
     return UserCreationResponse(
         user=UserPublic.model_validate(user),
@@ -522,14 +501,9 @@ def create_my_teacher(
             created_at=teacher.created_at,
             updated_at=teacher.updated_at,
         ),
-        temporary_password=password if not password_emailed else None,
-        password_emailed=password_emailed,
-        message="Teacher created successfully"
-        + (
-            ". Password sent via email."
-            if password_emailed
-            else ". Please share the temporary password with the teacher."
-        ),
+        temporary_password=password,
+        password_emailed=False,
+        message="Teacher created successfully. Please share the temporary password with the teacher.",
     )
 
 

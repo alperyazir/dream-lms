@@ -7,7 +7,6 @@ import {
   Copy,
   Edit,
   KeyRound,
-  Mail,
   Plus,
   Search,
   Shield,
@@ -100,12 +99,10 @@ function AdminSupervisors() {
   const [passwordCopied, setPasswordCopied] = useState(false);
   const [newSupervisor, setNewSupervisor] = useState<SupervisorCreateAPI>({
     username: "",
-    user_email: "",
     full_name: "",
   });
   const [editSupervisor, setEditSupervisor] = useState<SupervisorUpdate>({
     full_name: "",
-    email: "",
     username: "",
     is_active: true,
   });
@@ -148,13 +145,10 @@ function AdminSupervisors() {
       setIsAddDialogOpen(false);
       setNewSupervisor({
         username: "",
-        user_email: "",
         full_name: "",
       });
 
-      if (response.password_emailed) {
-        showSuccessToast("Supervisor created. Password sent to their email.");
-      } else if (response.temporary_password) {
+      if (response.temporary_password) {
         // Show one-time password dialog
         setResetResult({
           passwordEmailed: false,
@@ -309,7 +303,6 @@ function AdminSupervisors() {
     setSelectedSupervisor(supervisor);
     setEditSupervisor({
       full_name: supervisor.full_name || "",
-      email: supervisor.email || "",
       username: supervisor.username || "",
       is_active: supervisor.is_active,
     });
@@ -407,7 +400,7 @@ function AdminSupervisors() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search supervisors by name, username or email..."
+            placeholder="Search supervisors by name or username..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -481,7 +474,6 @@ function AdminSupervisors() {
                   )}
                   <TableHead>Name</TableHead>
                   <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created At</TableHead>
                   {isAdmin && (
@@ -515,14 +507,6 @@ function AdminSupervisors() {
                     </TableCell>
                     <TableCell className="text-sm font-mono">
                       {supervisor.username || "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Mail className="w-3 h-3" />
-                        <span className="text-sm">
-                          {supervisor.email || "N/A"}
-                        </span>
-                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -694,24 +678,6 @@ function AdminSupervisors() {
                 3-50 characters, letters, numbers, underscore, hyphen, or dot
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="e.g., john@example.com"
-                value={newSupervisor.user_email || ""}
-                onChange={(e) =>
-                  setNewSupervisor({
-                    ...newSupervisor,
-                    user_email: e.target.value || null,
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                If provided, welcome email with password will be sent
-              </p>
-            </div>
           </div>
           <DialogFooter>
             <Button
@@ -778,21 +744,6 @@ function AdminSupervisors() {
                   setEditSupervisor({
                     ...editSupervisor,
                     username: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                placeholder="e.g., john@example.com"
-                value={editSupervisor.email || ""}
-                onChange={(e) =>
-                  setEditSupervisor({
-                    ...editSupervisor,
-                    email: e.target.value || null,
                   })
                 }
               />
@@ -884,12 +835,7 @@ function AdminSupervisors() {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {resetResult?.passwordEmailed ? (
-              <p className="text-muted-foreground">
-                The new password has been sent to the supervisor's email
-                address.
-              </p>
-            ) : resetResult?.temporaryPassword ? (
+            {resetResult?.temporaryPassword ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
                   Save this password now - it won't be shown again:

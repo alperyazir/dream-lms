@@ -9,7 +9,6 @@ import {
   FileSpreadsheet,
   GraduationCap,
   KeyRound,
-  Mail,
   Plus,
   Search,
   ChevronLeft,
@@ -102,10 +101,8 @@ function AdminStudents() {
   );
   const [newStudent, setNewStudent] = useState<StudentCreateAPI>({
     username: "",
-    user_email: "",
     full_name: "",
     grade_level: undefined,
-    parent_email: undefined,
     password: undefined,
   });
   // Story 28.1: Password management state
@@ -118,11 +115,9 @@ function AdminStudents() {
     name: string;
   } | null>(null);
   const [editStudent, setEditStudent] = useState<StudentUpdate>({
-    user_email: "",
     user_username: "",
     user_full_name: "",
     grade_level: "",
-    parent_email: "",
   });
 
   // Debounce search
@@ -163,19 +158,15 @@ function AdminStudents() {
       setIsAddDialogOpen(false);
       setNewStudent({
         username: "",
-        user_email: "",
         full_name: "",
         grade_level: undefined,
-        parent_email: undefined,
         password: undefined,
       });
       // Story 28.1: Reset password state
       setAutoGeneratePassword(true);
       setShowPassword(false);
 
-      if (response.password_emailed) {
-        showSuccessToast("Student created. Password sent to their email.");
-      } else if (response.temporary_password) {
+      if (response.temporary_password) {
         // Show one-time password dialog
         setResetResult({
           passwordEmailed: false,
@@ -307,11 +298,9 @@ function AdminStudents() {
   const handleEditStudent = (student: StudentPublic) => {
     setSelectedStudent(student);
     setEditStudent({
-      user_email: student.user_email || "",
       user_username: student.user_username || "",
       user_full_name: student.user_full_name || "",
       grade_level: student.grade_level || "",
-      parent_email: student.parent_email || "",
     });
     setIsEditDialogOpen(true);
   };
@@ -432,7 +421,7 @@ function AdminStudents() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search students by name, username, email, grade, parent email, or teacher..."
+            placeholder="Search students by name, username, grade, or teacher..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -504,9 +493,7 @@ function AdminStudents() {
                   </TableHead>
                   <TableHead>Student Name</TableHead>
                   <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Grade Level</TableHead>
-                  <TableHead>Parent Email</TableHead>
                   <TableHead>Teacher</TableHead>
                   <TableHead>Created At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -540,17 +527,8 @@ function AdminStudents() {
                     <TableCell className="text-sm font-mono">
                       {student.user_username || "N/A"}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Mail className="w-3 h-3" />
-                        <span className="text-sm">{student.user_email}</span>
-                      </div>
-                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {student.grade_level || "N/A"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {student.parent_email || "N/A"}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {student.created_by_teacher_name || "—"}
@@ -711,18 +689,6 @@ function AdminStudents() {
                 Auto-generated from full name (editable)
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="student-email">Email</Label>
-              <Input
-                id="student-email"
-                type="email"
-                placeholder="e.g., student@email.com"
-                value={newStudent.user_email || ""}
-                onChange={(e) =>
-                  setNewStudent({ ...newStudent, user_email: e.target.value })
-                }
-              />
-            </div>
             {/* Story 28.1: Password field with auto-generate option */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -790,21 +756,6 @@ function AdminStudents() {
                   setNewStudent({
                     ...newStudent,
                     grade_level: e.target.value || undefined,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="parent-email">Parent Email</Label>
-              <Input
-                id="parent-email"
-                type="email"
-                placeholder="e.g., parent@email.com"
-                value={newStudent.parent_email || ""}
-                onChange={(e) =>
-                  setNewStudent({
-                    ...newStudent,
-                    parent_email: e.target.value || undefined,
                   })
                 }
               />
@@ -883,26 +834,6 @@ function AdminStudents() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-email">
-                Email{" "}
-                <span className="text-destructive ml-1" aria-hidden="true">
-                  *
-                </span>
-              </Label>
-              <Input
-                id="edit-email"
-                type="email"
-                placeholder="e.g., student@email.com"
-                value={editStudent.user_email || ""}
-                onChange={(e) =>
-                  setEditStudent({
-                    ...editStudent,
-                    user_email: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="edit-grade">Grade Level</Label>
               <Input
                 id="edit-grade"
@@ -912,21 +843,6 @@ function AdminStudents() {
                   setEditStudent({
                     ...editStudent,
                     grade_level: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-parent-email">Parent Email</Label>
-              <Input
-                id="edit-parent-email"
-                type="email"
-                placeholder="e.g., parent@email.com"
-                value={editStudent.parent_email || ""}
-                onChange={(e) =>
-                  setEditStudent({
-                    ...editStudent,
-                    parent_email: e.target.value,
                   })
                 }
               />
@@ -993,12 +909,7 @@ function AdminStudents() {
             <DialogDescription>{resetResult?.message}</DialogDescription>
           </DialogHeader>
 
-          {resetResult?.passwordEmailed ? (
-            <div className="flex items-center gap-2 py-4 text-green-600">
-              <Mail className="h-5 w-5" />
-              <span>Password has been sent to the user's email address.</span>
-            </div>
-          ) : resetResult?.temporaryPassword ? (
+          {resetResult?.temporaryPassword ? (
             <div className="space-y-3 py-4">
               <p className="text-amber-600">
                 Email delivery is not available. Please share this password
