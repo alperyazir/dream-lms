@@ -71,8 +71,15 @@ jobs:
             docker pull ghcr.io/${{ github.repository }}/backend:latest
             docker pull ghcr.io/${{ github.repository }}/frontend:latest
 
-            # Update and restart services
+            # Ensure PASSWORD_ENCRYPTION_KEY exists
             cd /opt/flow-learn
+            if ! grep -q "^PASSWORD_ENCRYPTION_KEY=" .env 2>/dev/null; then
+              KEY=$(docker run --rm ghcr.io/${{ github.repository }}/backend:latest python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+              echo "PASSWORD_ENCRYPTION_KEY=$KEY" >> .env
+              echo "🔑 Generated PASSWORD_ENCRYPTION_KEY"
+            fi
+
+            # Update and restart services
             docker compose -f docker-compose.prod.yml up -d --no-build
             docker image prune -f
 

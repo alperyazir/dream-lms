@@ -157,6 +157,17 @@ class Settings(BaseSettings):
             "admin",
         )
 
+        if not self.PASSWORD_ENCRYPTION_KEY:
+            message = (
+                "PASSWORD_ENCRYPTION_KEY is not set. "
+                "User passwords will NOT be viewable by admins. "
+                'Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
+            )
+            if self.ENVIRONMENT == "local":
+                warnings.warn(message, stacklevel=1)
+            else:
+                warnings.warn(message, stacklevel=1)
+
         return self
 
 
