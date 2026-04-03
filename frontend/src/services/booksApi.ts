@@ -52,6 +52,7 @@ export function registerBookForCdn(
   publisherId: number,
   bookName: string,
 ): void {
+  console.debug("[CDN] Registered book", bookId, "→", publisherId, bookName);
   bookInfoCache.set(bookId, { publisherId, bookName });
 }
 
@@ -68,16 +69,25 @@ async function getAssetUrl(
     // Fetch book info and register
     try {
       const book = await getBook(bookId);
+      console.debug("[CDN] Fetched book info:", {
+        id: book.id,
+        book_name: book.book_name,
+        name: (book as any).name,
+        publisher_id: book.publisher_id,
+      });
       info = bookInfoCache.get(book.id);
-    } catch {
-      // ignore — info stays undefined
+    } catch (err) {
+      console.warn("[CDN] Failed to fetch book info for", bookId, err);
     }
   }
   if (info) {
-    return buildBookCdnUrl(info.publisherId, info.bookName, assetPath);
+    const cdnUrl = buildBookCdnUrl(info.publisherId, info.bookName, assetPath);
+    console.debug("[CDN] Using CDN URL:", cdnUrl);
+    return cdnUrl;
   }
 
   // Final fallback: presigned URL
+  console.debug("[CDN] Fallback to presigned for book", bookId, assetPath);
   const response = await apiClient.get<{
     url: string;
     expires_in_seconds: number;
@@ -128,8 +138,8 @@ export async function getBooks(
   const response = await apiClient.get<BookListResponse>(url);
   // Auto-register books for CDN URL building
   for (const book of response.data.items) {
-    if (book.publisher_id && book.name) {
-      registerBookForCdn(book.id, book.publisher_id, book.name);
+    if (book.publisher_id && (book.book_name || (book as any).name)) {
+      registerBookForCdn(book.id, book.publisher_id, (book.book_name || (book as any).name)!);
     }
   }
   return response.data;
@@ -506,8 +516,8 @@ export async function getBook(bookId: string | number): Promise<Book> {
   const url = `/api/v1/books/${bookId}`;
   const response = await apiClient.get<Book>(url);
   const book = response.data;
-  if (book.publisher_id && book.name) {
-    registerBookForCdn(book.id, book.publisher_id, book.name);
+  if (book.publisher_id && (book.book_name || (book as any).name)) {
+    registerBookForCdn(book.id, book.publisher_id, (book.book_name || (book as any).name)!);
   }
   return book;
 }
