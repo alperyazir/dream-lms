@@ -13,7 +13,6 @@ from app.models import User, UserRole
 from app.services.bulk_import import (
     check_existing_users,
     validate_bulk_import,
-    validate_email_format,
     validate_user_row,
 )
 from app.utils import parse_excel_file, validate_excel_headers, validate_file_size
@@ -153,20 +152,6 @@ def test_validate_excel_headers_case_insensitive() -> None:
     result = validate_excel_headers(headers, required)
 
     assert result is True
-
-
-def test_validate_email_format_valid() -> None:
-    """Test email format validation for valid emails."""
-    assert validate_email_format("test@example.com") is True
-    assert validate_email_format("user.name@company.co.uk") is True
-
-
-def test_validate_email_format_invalid() -> None:
-    """Test email format validation for invalid emails."""
-    assert validate_email_format("not-an-email") is False
-    assert validate_email_format("@example.com") is False
-    assert validate_email_format("user@") is False
-    assert validate_email_format("") is False
 
 
 def test_check_existing_users(session: Session) -> None:

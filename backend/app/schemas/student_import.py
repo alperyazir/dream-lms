@@ -21,7 +21,6 @@ class ImportRowResult(BaseModel):
     )
     full_name: str = Field(..., description="Full name from the row")
     username: str = Field(..., description="Generated or provided username")
-    email: str | None = Field(None, description="Email if provided")
     grade: str | None = Field(None, description="Grade level if provided")
     class_name: str | None = Field(None, description="Class/section if provided")
     status: ImportRowStatus = Field(..., description="Validation status")
@@ -47,7 +46,6 @@ class ImportCredential(BaseModel):
     full_name: str = Field(..., description="Student's full name")
     username: str = Field(..., description="Generated username")
     password: str = Field(..., description="Generated password")
-    email: str | None = Field(None, description="Student email if provided")
 
 
 class ImportExecutionResponse(BaseModel):

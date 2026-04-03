@@ -133,7 +133,7 @@ export function SelectedRecipientsPanel({
                                     {student.user_full_name}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
-                                    {student.user_email}
+                                    @{student.user_username}
                                   </div>
                                 </div>
                               ))}

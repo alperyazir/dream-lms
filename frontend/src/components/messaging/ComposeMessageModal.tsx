@@ -78,7 +78,6 @@ export const ComposeMessageModal = React.memo(
       return recipients.filter(
         (r) =>
           r.name.toLowerCase().includes(s) ||
-          r.email.toLowerCase().includes(s) ||
           r.organization_name?.toLowerCase().includes(s),
       );
     }, [recipients, searchTerm]);

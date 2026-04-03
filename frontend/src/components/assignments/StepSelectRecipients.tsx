@@ -62,7 +62,6 @@ export function StepSelectRecipients({
     return allStudents.filter(
       (student) =>
         student.user_full_name.toLowerCase().includes(searchLower) ||
-        student.user_email.toLowerCase().includes(searchLower) ||
         student.user_username.toLowerCase().includes(searchLower),
     );
   }, [allStudents, searchTerm]);
@@ -289,7 +288,7 @@ export function StepSelectRecipients({
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         type="search"
-                        placeholder="Search students by name, email, or username..."
+                        placeholder="Search students by name or username..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10 w-full"
@@ -372,7 +371,7 @@ export function StepSelectRecipients({
                                     )}
                                   </div>
                                   <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-                                    <span>{student.user_email}</span>
+                                    <span>@{student.user_username}</span>
                                     {student.grade_level && (
                                       <span>• Grade {student.grade_level}</span>
                                     )}

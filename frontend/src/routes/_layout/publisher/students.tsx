@@ -4,7 +4,6 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
-  Mail,
   Search,
   User,
 } from "lucide-react";
@@ -90,7 +89,7 @@ function PublisherStudents() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, username, or email..."
+            placeholder="Search by name or username..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -122,7 +121,6 @@ function PublisherStudents() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Username</TableHead>
                   <TableHead>Grade Level</TableHead>
                   <TableHead>School</TableHead>
@@ -138,16 +136,6 @@ function PublisherStudents() {
                         <User className="w-4 h-4 text-teal-500" />
                         {student.user_full_name}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {student.user_email ? (
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Mail className="w-3 h-3" />
-                          <span className="text-sm">{student.user_email}</span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
                     </TableCell>
                     <TableCell className="text-sm font-mono">
                       {student.user_username}

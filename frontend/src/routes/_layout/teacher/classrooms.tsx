@@ -843,9 +843,6 @@ function TeacherClassroomsPage() {
                     >
                       <div className="flex-1">
                         <p className="font-medium">{student.user_full_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {student.user_email}
-                        </p>
                       </div>
                       <Button
                         size="sm"
@@ -893,9 +890,6 @@ function TeacherClassroomsPage() {
                           <div>
                             <p className="font-medium">
                               {student.user_full_name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {student.user_email}
                             </p>
                           </div>
                         </Label>

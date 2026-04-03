@@ -85,7 +85,6 @@ def test_teacher_bulk_import_students_success(
     assert len(data["credentials"]) == 2
     # Bulk import returns temp_password (secure password flow)
     assert "temp_password" in data["credentials"][0]
-    assert "email" in data["credentials"][0]
 
     # Verify students were created in database
     students = session.exec(select(Student)).all()

@@ -233,7 +233,6 @@ function ClassDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
                       <TableHead>Grade</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -249,7 +248,6 @@ function ClassDetailPage() {
                             {student.user_full_name || "N/A"}
                           </Link>
                         </TableCell>
-                        <TableCell>{student.user_email}</TableCell>
                         <TableCell>{student.grade_level || "N/A"}</TableCell>
                       </TableRow>
                     ))}

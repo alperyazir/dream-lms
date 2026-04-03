@@ -17,20 +17,20 @@ def test_quick_login_users_returns_grouped_by_role(
     """Test endpoint returns users grouped by role."""
     # Create test users for each role
     users_data = [
-        ("admin1", "admin1@test.com", UserRole.admin),
-        ("pub1", "pub1@test.com", UserRole.publisher),
-        ("pub2", "pub2@test.com", UserRole.publisher),
-        ("teacher1", "teacher1@test.com", UserRole.teacher),
-        ("teacher2", "teacher2@test.com", UserRole.teacher),
-        ("student1", "student1@test.com", UserRole.student),
-        ("student2", "student2@test.com", UserRole.student),
-        ("student3", "student3@test.com", UserRole.student),
+        ("admin1", UserRole.admin),
+        ("pub1", UserRole.publisher),
+        ("pub2", UserRole.publisher),
+        ("teacher1", UserRole.teacher),
+        ("teacher2", UserRole.teacher),
+        ("student1", UserRole.student),
+        ("student2", UserRole.student),
+        ("student3", UserRole.student),
     ]
 
-    for username, email, role in users_data:
+    for username, role in users_data:
         user = User(
             id=uuid.uuid4(),
-            email=email,
+            email=None,
             username=username,
             hashed_password=get_password_hash("password"),
             role=role,
@@ -58,7 +58,6 @@ def test_quick_login_users_returns_grouped_by_role(
 
     # Verify structure of returned user objects
     assert data["admin"][0]["username"] == "admin1"
-    assert data["admin"][0]["email"] == "admin1@test.com"
 
 
 def test_quick_login_users_limits_to_5_per_role(
@@ -69,7 +68,7 @@ def test_quick_login_users_limits_to_5_per_role(
     for i in range(7):
         user = User(
             id=uuid.uuid4(),
-            email=f"student{i}@test.com",
+            email=None,
             username=f"student{i}",
             hashed_password=get_password_hash("password"),
             role=UserRole.student,
@@ -96,7 +95,7 @@ def test_quick_login_users_returns_users_for_role(
     for username in usernames:
         user = User(
             id=uuid.uuid4(),
-            email=f"{username}@test.com",
+            email=None,
             username=username,
             hashed_password=get_password_hash("password"),
             role=UserRole.teacher,
@@ -124,7 +123,7 @@ def test_quick_login_users_returns_empty_arrays_for_roles_with_no_users(
     # Create only one admin user (no publishers, teachers, students)
     user = User(
         id=uuid.uuid4(),
-        email="admin@test.com",
+        email=None,
         username="admin",
         hashed_password=get_password_hash("password"),
         role=UserRole.admin,

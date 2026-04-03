@@ -125,7 +125,6 @@ export function useMessageThread(
       ? {
           id: query.data.participant_id,
           name: query.data.participant_name,
-          email: query.data.participant_email,
           role: query.data.participant_role,
           organization_name: query.data.participant_organization_name,
         }
@@ -206,7 +205,7 @@ export function useSendMessage() {
       queryClient.setQueryData<{
         participant_id: string;
         participant_name: string;
-        participant_email: string;
+        participant_email?: string | null;
         participant_role: string;
         messages: Message[];
         total_messages: number;

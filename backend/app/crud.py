@@ -117,7 +117,6 @@ def create_teacher(
 
     # Create User with teacher role
     user_create = UserCreate(
-        email=None,
         username=username,
         password=password,
         full_name=full_name,
@@ -171,7 +170,7 @@ def create_student(
         username: User username
         password: User password (will be hashed)
         full_name: User full name
-        student_create: Student-specific data (grade_level, parent_email)
+        student_create: Student-specific data (grade_level)
         created_by_teacher_id: Optional ID of teacher who created this student
         store_viewable_password: If True, store encrypted password for teacher viewing (Story 28.1)
 
@@ -188,7 +187,6 @@ def create_student(
 
     # Create User with student role
     user_create = UserCreate(
-        email=None,
         username=username,
         password=password,
         full_name=full_name,

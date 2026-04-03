@@ -172,9 +172,6 @@ export function SchoolDetailsDialog({
                         <p className="font-medium truncate">
                           {teacher.user_full_name}
                         </p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {teacher.user_email}
-                        </p>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">

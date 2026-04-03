@@ -527,7 +527,7 @@ async def test_dream_storage_webhook(
     # Block in production
     if settings.ENVIRONMENT == "production":
         logger.warning(
-            f"Test webhook endpoint called in production by user {current_user.email}"
+            f"Test webhook endpoint called in production by user {current_user.username}"
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -541,7 +541,7 @@ async def test_dream_storage_webhook(
     entity_type = "publisher" if is_publisher_event else "book"
 
     logger.info(
-        f"Test webhook triggered by admin {current_user.email}: "
+        f"Test webhook triggered by admin {current_user.username}: "
         f"{payload.event} for {entity_type} {entity_id}"
     )
 
@@ -573,5 +573,5 @@ async def test_dream_storage_webhook(
     return {
         "status": "received",
         "event_id": str(event_log.id),
-        "message": f"Test webhook triggered by {current_user.email}",
+        "message": f"Test webhook triggered by {current_user.username}",
     }

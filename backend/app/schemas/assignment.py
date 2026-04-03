@@ -1228,7 +1228,7 @@ class AssignmentWithTeacher(BaseModel):
     title: str
     teacher_id: uuid.UUID
     teacher_name: str
-    teacher_email: str
+    teacher_email: str | None = None
     recipient_count: int = 0
     completed_count: int = 0
     due_date: datetime | None

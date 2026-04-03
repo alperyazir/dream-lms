@@ -68,7 +68,7 @@ class TeacherWithCounts(BaseModel):
 
     id: uuid.UUID
     user_id: uuid.UUID
-    user_email: str
+    user_email: str | None = None
     user_username: str
     user_full_name: str
     school_id: uuid.UUID

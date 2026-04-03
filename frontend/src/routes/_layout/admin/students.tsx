@@ -89,7 +89,6 @@ function AdminStudents() {
     userName: string;
   } | null>(null);
   const [resetResult, setResetResult] = useState<{
-    passwordEmailed: boolean;
     temporaryPassword: string | null;
     message: string;
   } | null>(null);
@@ -169,7 +168,6 @@ function AdminStudents() {
       if (response.temporary_password) {
         // Show one-time password dialog
         setResetResult({
-          passwordEmailed: false,
           temporaryPassword: response.temporary_password,
           message: "Student created successfully",
         });
@@ -227,7 +225,6 @@ function AdminStudents() {
     mutationFn: (userId: string) => AdminService.resetUserPassword({ userId }),
     onSuccess: (response) => {
       setResetResult({
-        passwordEmailed: response.password_emailed,
         temporaryPassword: response.temporary_password ?? null,
         message: response.message,
       });

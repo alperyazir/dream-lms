@@ -72,7 +72,7 @@ async def get_current_user(session: AsyncSessionDep, token: TokenDep) -> User:
         role_val = cached.get("role")
         user = User(
             id=uuid.UUID(cached["id"]),
-            email=cached.get("email", ""),
+            email=None,
             username=cached.get("username", ""),
             full_name=cached.get("full_name"),
             role=UserRole(role_val) if role_val else None,
@@ -95,7 +95,6 @@ async def get_current_user(session: AsyncSessionDep, token: TokenDep) -> User:
             cache_key,
             {
                 "id": str(user.id),
-                "email": user.email,
                 "username": user.username,
                 "full_name": user.full_name,
                 "role": user.role.value if user.role else None,

@@ -42,10 +42,10 @@ export interface Message {
   id: string;
   sender_id: string;
   sender_name: string;
-  sender_email: string;
+  sender_email?: string | null;
   recipient_id: string;
   recipient_name: string;
-  recipient_email: string;
+  recipient_email?: string | null;
   subject: string | null;
   body: string;
   parent_message_id: string | null;
@@ -73,7 +73,7 @@ export interface MessageCreate {
 export interface Conversation {
   participant_id: string;
   participant_name: string;
-  participant_email: string;
+  participant_email?: string | null;
   participant_role: string;
   last_message_preview: string;
   last_message_timestamp: string; // ISO 8601 datetime string
@@ -98,7 +98,7 @@ export interface ConversationListResponse {
 export interface MessageThreadResponse {
   participant_id: string;
   participant_name: string;
-  participant_email: string;
+  participant_email?: string | null;
   participant_role: string;
   participant_organization_name?: string | null; // Publisher organization name
   messages: Message[];
@@ -111,7 +111,7 @@ export interface MessageThreadResponse {
 export interface Recipient {
   user_id: string;
   name: string;
-  email: string;
+  email?: string | null;
   role: string;
   organization_name?: string | null; // Publisher organization name (from DCS)
 }

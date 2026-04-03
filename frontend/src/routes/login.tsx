@@ -29,7 +29,6 @@ import useAuth, { isLoggedIn } from "@/hooks/useAuth";
 // Type for quick login users response
 interface QuickLoginUser {
   username: string;
-  email: string | null;
 }
 
 interface QuickLoginUsers {

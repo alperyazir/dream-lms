@@ -72,11 +72,11 @@ async def get_allowed_recipients(
     """
 
     def _to_recipient(row: Any) -> RecipientPublic:
-        name = row.full_name or (row.email.split("@")[0] if row.email else "Unknown")
+        name = row.full_name or "Unknown"
         return RecipientPublic(
             user_id=row.id,
             name=name,
-            email=row.email,
+            email=None,
             role=row.role.value,
             organization_name=None,
         )
@@ -555,9 +555,8 @@ async def get_conversations(
     conversations = [
         ConversationPublic(
             participant_id=row.partner_id,
-            participant_name=row.full_name
-            or (row.email.split("@")[0] if row.email else "Unknown"),
-            participant_email=row.email,
+            participant_name=row.full_name or "Unknown",
+            participant_email=None,
             participant_role=row.role.value,
             last_message_preview=row.last_message[:100] if row.last_message else "",
             last_message_timestamp=row.max_sent_at,
@@ -637,23 +636,21 @@ async def get_thread(
             await db.commit()
 
     def _name(u: User) -> str:
-        return u.full_name or (
-            u.email.split("@")[0] if u.email else u.username or "Unknown"
-        )
+        return u.full_name or u.username or "Unknown"
 
     # Convert to response format
     message_responses = []
     for msg in messages:
         if msg.sender_id == user_id:
             sender_name = _name(current_user)
-            sender_email = current_user.email
+            sender_email = None
             recipient_name = _name(partner)
-            recipient_email = partner.email
+            recipient_email = None
         else:
             sender_name = _name(partner)
-            sender_email = partner.email
+            sender_email = None
             recipient_name = _name(current_user)
-            recipient_email = current_user.email
+            recipient_email = None
 
         message_responses.append(
             MessagePublic(

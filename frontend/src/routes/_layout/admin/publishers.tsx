@@ -114,7 +114,6 @@ function AdminPublishers() {
 
   // Password result state
   const [passwordResult, setPasswordResult] = useState<{
-    passwordEmailed: boolean;
     temporaryPassword: string | null;
     message: string;
   } | null>(null);
@@ -181,7 +180,6 @@ function AdminPublishers() {
 
       if (response.temporary_password) {
         setPasswordResult({
-          passwordEmailed: false,
           temporaryPassword: response.temporary_password,
           message: response.message || "Account created successfully.",
         });
@@ -240,7 +238,6 @@ function AdminPublishers() {
     mutationFn: (userId: string) => AdminService.resetUserPassword({ userId }),
     onSuccess: (response) => {
       setPasswordResult({
-        passwordEmailed: response.password_emailed,
         temporaryPassword: response.temporary_password ?? null,
         message: response.message,
       });
@@ -265,7 +262,6 @@ function AdminPublishers() {
     onSuccess: () => {
       setIsChangePasswordDialogOpen(false);
       setPasswordResult({
-        passwordEmailed: false,
         temporaryPassword: newPassword,
         message: "Password has been changed successfully.",
       });

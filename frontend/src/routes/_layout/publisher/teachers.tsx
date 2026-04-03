@@ -62,7 +62,6 @@ function PublisherTeachersPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newTeacher, setNewTeacher] = useState<TeacherCreateAPI>({
     username: "",
-    user_email: "",
     full_name: "",
     school_id: "",
     subject_specialization: "",
@@ -106,7 +105,6 @@ function PublisherTeachersPage() {
       setIsAddDialogOpen(false);
       setNewTeacher({
         username: "",
-        user_email: "",
         full_name: "",
         school_id: "",
         subject_specialization: "",
@@ -197,8 +195,7 @@ function PublisherTeachersPage() {
         !filters.search ||
         teacher.user_full_name
           .toLowerCase()
-          .includes(filters.search.toLowerCase()) ||
-        teacher.user_email.toLowerCase().includes(filters.search.toLowerCase());
+          .includes(filters.search.toLowerCase());
 
       const matchesSchool =
         !filters.school || teacher.school_id === filters.school;
@@ -340,18 +337,6 @@ function PublisherTeachersPage() {
               <p className="text-xs text-muted-foreground">
                 Auto-generated from full name (editable)
               </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="e.g., teacher@school.com"
-                value={newTeacher.user_email}
-                onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, user_email: e.target.value })
-                }
-              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="school">

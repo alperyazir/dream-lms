@@ -77,13 +77,9 @@ export function RecipientItem({
       <div className="flex-1 min-w-0 flex items-center gap-2">
         {getRoleIcon()}
         <span className="text-sm font-medium truncate">{recipient.name}</span>
-        {recipient.role === "publisher" && recipient.organization_name ? (
+        {recipient.role === "publisher" && recipient.organization_name && (
           <span className="text-xs text-muted-foreground truncate">
             {recipient.organization_name}
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground truncate">
-            {recipient.email}
           </span>
         )}
       </div>

@@ -253,11 +253,11 @@ export function BookDetailsDialog({
                             <div className="font-medium">
                               {assignment.teacher_name || "Unknown Teacher"}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              {assignment.teacher_email}
-                              {assignment.school_name &&
-                                ` • ${assignment.school_name}`}
-                            </div>
+                            {assignment.school_name && (
+                              <div className="text-xs text-muted-foreground">
+                                {assignment.school_name}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <Button

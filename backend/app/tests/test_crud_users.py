@@ -14,7 +14,6 @@ def test_create_user_with_valid_username_succeeds(session: Session) -> None:
     """Test creating user with valid username succeeds."""
     # Arrange
     user_create = UserCreate(
-        email="test@example.com",
         username="validuser123",
         password="password123",
         role=UserRole.student,
@@ -24,7 +23,6 @@ def test_create_user_with_valid_username_succeeds(session: Session) -> None:
     user = crud.create_user(session=session, user_create=user_create)
 
     # Assert
-    assert user.email == "test@example.com"
     assert user.username == "validuser123"
     assert user.role == UserRole.student
 
@@ -33,7 +31,6 @@ def test_create_user_with_duplicate_username_fails(session: Session) -> None:
     """Test creating user with duplicate username fails with 400."""
     # Arrange
     user1 = UserCreate(
-        email="user1@example.com",
         username="duplicate",
         password="password123",
         role=UserRole.student,
@@ -41,7 +38,6 @@ def test_create_user_with_duplicate_username_fails(session: Session) -> None:
     crud.create_user(session=session, user_create=user1)
 
     user2 = UserCreate(
-        email="user2@example.com",
         username="duplicate",
         password="password456",
         role=UserRole.student,
@@ -55,32 +51,6 @@ def test_create_user_with_duplicate_username_fails(session: Session) -> None:
     assert "Username already taken" in str(exc_info.value.detail)
 
 
-def test_create_user_with_duplicate_email_fails(session: Session) -> None:
-    """Test creating user with duplicate email fails with 400."""
-    # Arrange
-    user1 = UserCreate(
-        email="duplicate@example.com",
-        username="user1",
-        password="password123",
-        role=UserRole.student,
-    )
-    crud.create_user(session=session, user_create=user1)
-
-    user2 = UserCreate(
-        email="duplicate@example.com",
-        username="user2",
-        password="password456",
-        role=UserRole.student,
-    )
-
-    # Act & Assert
-    with pytest.raises(HTTPException) as exc_info:
-        crud.create_user(session=session, user_create=user2)
-
-    assert exc_info.value.status_code == 400
-    assert "Email already registered" in str(exc_info.value.detail)
-
-
 def test_create_user_with_short_username_fails_validation(session: Session) -> None:
     """Test creating user with username < 3 chars fails validation."""
     # Act & Assert
@@ -89,7 +59,6 @@ def test_create_user_with_short_username_fails_validation(session: Session) -> N
 
     with pytest.raises(ValidationError) as exc_info:
         UserCreate(
-            email="test@example.com",
             username="ab",  # Only 2 characters
             password="password123",
             role=UserRole.student,
@@ -108,7 +77,6 @@ def test_create_user_with_long_username_fails_validation(session: Session) -> No
 
     with pytest.raises(ValidationError) as exc_info:
         UserCreate(
-            email="test@example.com",
             username=long_username,
             password="password123",
             role=UserRole.student,
@@ -136,7 +104,6 @@ def test_create_user_with_invalid_characters_in_username_fails(
     for invalid_username in invalid_usernames:
         with pytest.raises(ValidationError) as exc_info:
             UserCreate(
-                email="test@example.com",
                 username=invalid_username,
                 password="password123",
                 role=UserRole.student,
@@ -151,7 +118,6 @@ def test_get_user_by_username_returns_correct_user(session: Session) -> None:
     """Test get_user_by_username() returns correct user."""
     # Arrange
     user_create = UserCreate(
-        email="find@example.com",
         username="findme",
         password="password123",
         role=UserRole.student,
@@ -165,7 +131,6 @@ def test_get_user_by_username_returns_correct_user(session: Session) -> None:
     assert found_user is not None
     assert found_user.id == created_user.id
     assert found_user.username == "findme"
-    assert found_user.email == "find@example.com"
 
 
 def test_get_user_by_username_returns_none_for_nonexistent(session: Session) -> None:

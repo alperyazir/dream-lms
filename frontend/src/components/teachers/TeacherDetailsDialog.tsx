@@ -19,7 +19,6 @@ interface TeacherDetailsDialogProps {
   teacher: {
     id: string;
     user_full_name: string;
-    user_email: string;
     school_name?: string | null;
     school_id?: string;
     books_assigned?: number;
@@ -74,7 +73,7 @@ export function TeacherDetailsDialog({
             <User className="h-5 w-5 text-primary" />
             {teacher.user_full_name}
           </DialogTitle>
-          <DialogDescription>{teacher.user_email}</DialogDescription>
+          <DialogDescription>{teacher.school_name || "Teacher"}</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh]">

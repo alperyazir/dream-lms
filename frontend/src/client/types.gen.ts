@@ -2569,7 +2569,7 @@ export type PublisherAccountCreate = {
    * Username (auto-generated from full_name if not provided)
    */
   username?: string | null;
-  email: string;
+  email?: string;
   full_name: string;
 };
 
@@ -3863,7 +3863,7 @@ export type SupervisorUpdate = {
  */
 export type TeacherCreateAPI = {
   username: string;
-  user_email: string;
+  user_email?: string;
   full_name: string;
   school_id: string;
   subject_specialization?: string | null;

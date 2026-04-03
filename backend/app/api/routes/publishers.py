@@ -149,7 +149,7 @@ async def get_my_profile(
         contact_email=publisher.contact_email,
         logo_url=publisher.logo_url,
         user_id=current_user.id,
-        user_email=current_user.email,
+        user_email=None,
         user_full_name=current_user.full_name,
     )
 
@@ -424,7 +424,7 @@ def list_my_teachers(
                 school_name=school_name,
                 subject_specialization=teacher.subject_specialization,
                 user_full_name=user.full_name or "",
-                user_email=user.email or "",
+                user_email=None,
                 user_username=user.username,
                 created_at=teacher.created_at,
                 updated_at=teacher.updated_at,
@@ -495,13 +495,12 @@ def create_my_teacher(
             school_id=teacher.school_id,
             subject_specialization=teacher.subject_specialization,
             user_full_name=user.full_name or "",
-            user_email=user.email or "",
+            user_email=None,
             user_username=user.username,
             created_at=teacher.created_at,
             updated_at=teacher.updated_at,
         ),
         temporary_password=password,
-        password_emailed=False,
         message="Teacher created successfully. Please share the temporary password with the teacher.",
     )
 
@@ -539,7 +538,6 @@ def list_my_students(
         base_query = base_query.where(
             or_(
                 User.full_name.ilike(search_filter),
-                User.email.ilike(search_filter),
                 User.username.ilike(search_filter),
             )
         )
@@ -586,7 +584,7 @@ def list_my_students(
                 id=student.id,
                 user_id=user.id,
                 user_full_name=user.full_name or "",
-                user_email=user.email,
+                user_email=None,
                 user_username=user.username,
                 grade_level=student.grade_level,
                 school_name=school_name,

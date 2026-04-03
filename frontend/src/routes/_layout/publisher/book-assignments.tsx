@@ -102,8 +102,7 @@ function BookAssignmentsPage() {
     return (
       assignment.book_title.toLowerCase().includes(searchLower) ||
       assignment.school_name?.toLowerCase().includes(searchLower) ||
-      assignment.teacher_name?.toLowerCase().includes(searchLower) ||
-      assignment.teacher_email?.toLowerCase().includes(searchLower)
+      assignment.teacher_name?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -240,11 +239,6 @@ function BookAssignmentsPage() {
                               <div>
                                 {assignment.teacher_name || "Unknown Teacher"}
                               </div>
-                              {assignment.teacher_email && (
-                                <div className="text-xs text-muted-foreground">
-                                  {assignment.teacher_email}
-                                </div>
-                              )}
                               {assignment.school_name && (
                                 <div className="text-xs text-muted-foreground">
                                   {assignment.school_name}

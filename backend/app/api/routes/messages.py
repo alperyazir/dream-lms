@@ -107,16 +107,8 @@ async def send_message(
     )
 
     # Get names for response
-    sender_name = current_user.full_name or (
-        current_user.email.split("@")[0]
-        if current_user.email
-        else current_user.username or "Unknown"
-    )
-    recipient_name = recipient.full_name or (
-        recipient.email.split("@")[0]
-        if recipient.email
-        else recipient.username or "Unknown"
-    )
+    sender_name = current_user.full_name or current_user.username or "Unknown"
+    recipient_name = recipient.full_name or recipient.username or "Unknown"
 
     await invalidate_for_event(
         "message_sent",
@@ -128,10 +120,10 @@ async def send_message(
         id=message.id,
         sender_id=message.sender_id,
         sender_name=sender_name,
-        sender_email=current_user.email,
+        sender_email=None,
         recipient_id=message.recipient_id,
         recipient_name=recipient_name,
-        recipient_email=recipient.email,
+        recipient_email=None,
         subject=message.subject,
         body=message.body,
         parent_message_id=message.parent_message_id,
@@ -322,13 +314,8 @@ async def get_message_thread(
 
     return MessageThreadResponse(
         participant_id=partner.id,
-        participant_name=partner.full_name
-        or (
-            partner.email.split("@")[0]
-            if partner.email
-            else partner.username or "Unknown"
-        ),
-        participant_email=partner.email,
+        participant_name=partner.full_name or partner.username or "Unknown",
+        participant_email=None,
         participant_role=partner.role.value,
         participant_organization_name=participant_organization_name,
         messages=messages,

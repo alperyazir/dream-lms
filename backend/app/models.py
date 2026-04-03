@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
-from pydantic import EmailStr, field_validator, model_validator
+from pydantic import field_validator, model_validator
 from sqlalchemy import JSON, CheckConstraint, Column, Index, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
@@ -346,7 +346,7 @@ class TeacherPublic(TeacherBase):
 
     id: uuid.UUID
     user_id: uuid.UUID
-    user_email: str
+    user_email: str | None = None
     user_username: str
     user_full_name: str
     school_id: uuid.UUID
@@ -476,11 +476,7 @@ class ChangePublisherPasswordRequest(SQLModel):
 
 # Response for user creation endpoints with temporary password
 class UserCreationResponse(SQLModel):
-    """Response schema for role-specific user creation endpoints.
-
-    Security: temporary_password is only included when user has no email.
-    When user has email, password_emailed=True and temporary_password is None.
-    """
+    """Response schema for role-specific user creation endpoints."""
 
     user: UserPublic
     role_record: (
@@ -640,7 +636,7 @@ class StudentInClass(SQLModel):
     """Student info for class detail response"""
 
     id: uuid.UUID
-    email: str
+    email: str | None = None
     full_name: str
     grade: str | None = None
 
@@ -824,7 +820,6 @@ class BookAssignmentResponse(SQLModel):
     school_name: str | None = None
     teacher_id: uuid.UUID | None
     teacher_name: str | None = None
-    teacher_email: str | None = None
     assigned_by: uuid.UUID
     assigned_by_name: str | None = None
     assigned_at: datetime
@@ -1422,11 +1417,7 @@ class StudentBulkImportRow(SQLModel):
 
     first_name: str = Field(max_length=255, alias="First Name")
     last_name: str = Field(max_length=255, alias="Last Name")
-    email: EmailStr = Field(max_length=255, alias="Email")
     grade_level: str | None = Field(default=None, max_length=50, alias="Grade Level")
-    parent_email: EmailStr | None = Field(
-        default=None, max_length=255, alias="Parent Email"
-    )
 
 
 class TeacherBulkImportRow(SQLModel):
@@ -1434,7 +1425,6 @@ class TeacherBulkImportRow(SQLModel):
 
     first_name: str = Field(max_length=255, alias="First Name")
     last_name: str = Field(max_length=255, alias="Last Name")
-    email: EmailStr = Field(max_length=255, alias="Email")
     school_id: uuid.UUID = Field(alias="School ID")
     subject_specialization: str | None = Field(
         default=None, max_length=255, alias="Subject Specialization"
@@ -1446,9 +1436,7 @@ class PublisherBulkImportRow(SQLModel):
 
     first_name: str = Field(max_length=255, alias="First Name")
     last_name: str = Field(max_length=255, alias="Last Name")
-    email: EmailStr = Field(max_length=255, alias="Email")
     company_name: str = Field(max_length=255, alias="Company Name")
-    contact_email: EmailStr = Field(max_length=255, alias="Contact Email")
 
 
 class BulkImportErrorDetail(SQLModel):

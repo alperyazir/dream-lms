@@ -564,7 +564,6 @@ export function ImportStudentsDialog({
                     <TableHead className="w-16">Row</TableHead>
                     <TableHead>Full Name</TableHead>
                     <TableHead>Username</TableHead>
-                    <TableHead>Email</TableHead>
                     <TableHead>Grade</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead className="w-24">Status</TableHead>
@@ -590,7 +589,6 @@ export function ImportStudentsDialog({
                       <TableCell className="font-mono text-sm">
                         {row.username}
                       </TableCell>
-                      <TableCell>{row.email || "-"}</TableCell>
                       <TableCell>{row.grade || "-"}</TableCell>
                       <TableCell>{row.class_name || "-"}</TableCell>
                       <TableCell>{getStatusBadge(row.status)}</TableCell>
@@ -727,7 +725,6 @@ export function ImportStudentsDialog({
                         <TableHead>Full Name</TableHead>
                         <TableHead>Username</TableHead>
                         <TableHead>Password</TableHead>
-                        <TableHead>Email</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -742,7 +739,6 @@ export function ImportStudentsDialog({
                           <TableCell className="font-mono text-sm">
                             {cred.password}
                           </TableCell>
-                          <TableCell>{cred.email || "-"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

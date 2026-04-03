@@ -12,7 +12,6 @@ interface TeacherCardProps {
   teacher: {
     id: string;
     user_full_name: string;
-    user_email: string;
     school_name?: string | null;
     books_assigned?: number;
     classroom_count?: number;
@@ -44,9 +43,6 @@ export function TeacherCard({
           </Avatar>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold truncate">{teacher.user_full_name}</h3>
-            <p className="text-sm text-muted-foreground truncate">
-              {teacher.user_email}
-            </p>
           </div>
         </div>
       </CardHeader>

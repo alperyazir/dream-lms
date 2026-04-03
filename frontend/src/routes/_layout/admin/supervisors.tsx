@@ -92,7 +92,6 @@ function AdminSupervisors() {
     userName: string;
   } | null>(null);
   const [resetResult, setResetResult] = useState<{
-    passwordEmailed: boolean;
     temporaryPassword: string | null;
     message: string;
   } | null>(null);
@@ -151,7 +150,6 @@ function AdminSupervisors() {
       if (response.temporary_password) {
         // Show one-time password dialog
         setResetResult({
-          passwordEmailed: false,
           temporaryPassword: response.temporary_password,
           message: "Supervisor created successfully",
         });
@@ -215,7 +213,6 @@ function AdminSupervisors() {
       SupervisorsService.resetSupervisorPassword({ supervisorId }),
     onSuccess: (response) => {
       setResetResult({
-        passwordEmailed: response.password_emailed,
         temporaryPassword: response.temporary_password ?? null,
         message: response.message,
       });

@@ -74,7 +74,6 @@ export interface School {
 export interface Publisher {
   id: string;
   name: string;
-  email: string;
   booksPublished: number;
   schoolsServed: number;
   joinedDate: string;
@@ -83,7 +82,6 @@ export interface Publisher {
 export interface Teacher {
   id: string;
   name: string;
-  email: string;
   school: string;
   classCount: number;
   studentCount: number;
@@ -517,7 +515,6 @@ export const adminDashboardData = {
     {
       id: "1",
       name: "EduPress Publishing",
-      email: "contact@edupress.com",
       booksPublished: 24,
       schoolsServed: 8,
       joinedDate: getRelativeDate(-320), // ~10.5 months ago
@@ -525,7 +522,6 @@ export const adminDashboardData = {
     {
       id: "2",
       name: "Learning Materials Inc",
-      email: "info@learningmaterials.com",
       booksPublished: 18,
       schoolsServed: 6,
       joinedDate: getRelativeDate(-250), // ~8 months ago
@@ -533,7 +529,6 @@ export const adminDashboardData = {
     {
       id: "3",
       name: "Academic Publishers Co",
-      email: "hello@academicpub.com",
       booksPublished: 15,
       schoolsServed: 5,
       joinedDate: getRelativeDate(-200), // ~6.5 months ago
@@ -541,7 +536,6 @@ export const adminDashboardData = {
     {
       id: "4",
       name: "SchoolBooks Plus",
-      email: "support@schoolbooksplus.com",
       booksPublished: 12,
       schoolsServed: 4,
       joinedDate: getRelativeDate(-160), // ~5 months ago
@@ -549,7 +543,6 @@ export const adminDashboardData = {
     {
       id: "5",
       name: "NextGen Education",
-      email: "contact@nextgenedu.com",
       booksPublished: 10,
       schoolsServed: 3,
       joinedDate: getRelativeDate(-90), // ~3 months ago
@@ -557,7 +550,6 @@ export const adminDashboardData = {
     {
       id: "6",
       name: "Future Learning Press",
-      email: "info@futurelearning.com",
       booksPublished: 8,
       schoolsServed: 2,
       joinedDate: getRelativeDate(-45), // ~1.5 months ago
@@ -568,7 +560,6 @@ export const adminDashboardData = {
     {
       id: "1",
       name: "Dr. Sarah Johnson",
-      email: "sarah.johnson@lincoln.edu",
       school: "Lincoln High School",
       classCount: 3,
       studentCount: 84,
@@ -576,7 +567,6 @@ export const adminDashboardData = {
     {
       id: "2",
       name: "Michael Chen",
-      email: "michael.chen@washington.edu",
       school: "Washington Middle School",
       classCount: 4,
       studentCount: 96,
@@ -584,7 +574,6 @@ export const adminDashboardData = {
     {
       id: "3",
       name: "Emily Rodriguez",
-      email: "emily.rodriguez@roosevelt.edu",
       school: "Roosevelt Elementary",
       classCount: 2,
       studentCount: 56,
@@ -592,7 +581,6 @@ export const adminDashboardData = {
     {
       id: "4",
       name: "David Kim",
-      email: "david.kim@jefferson.edu",
       school: "Jefferson Academy",
       classCount: 3,
       studentCount: 72,
@@ -600,7 +588,6 @@ export const adminDashboardData = {
     {
       id: "5",
       name: "Lisa Thompson",
-      email: "lisa.thompson@madison.edu",
       school: "Madison Prep School",
       classCount: 2,
       studentCount: 48,
@@ -1314,16 +1301,16 @@ export const mockActivityConfigs: ActivityConfig[] = [];
  * Mock Students - For assignment wizard selection
  */
 export const mockStudents = [
-  { id: "1", name: "Alex Johnson", email: "alex.j@school.edu" },
-  { id: "2", name: "Maria Garcia", email: "maria.g@school.edu" },
-  { id: "3", name: "James Wilson", email: "james.w@school.edu" },
-  { id: "4", name: "Emily Chen", email: "emily.c@school.edu" },
-  { id: "5", name: "Michael Brown", email: "michael.b@school.edu" },
-  { id: "6", name: "Sarah Davis", email: "sarah.d@school.edu" },
-  { id: "7", name: "David Martinez", email: "david.m@school.edu" },
-  { id: "8", name: "Lisa Anderson", email: "lisa.a@school.edu" },
-  { id: "9", name: "Robert Taylor", email: "robert.t@school.edu" },
-  { id: "10", name: "Jennifer Lee", email: "jennifer.l@school.edu" },
+  { id: "1", name: "Alex Johnson" },
+  { id: "2", name: "Maria Garcia" },
+  { id: "3", name: "James Wilson" },
+  { id: "4", name: "Emily Chen" },
+  { id: "5", name: "Michael Brown" },
+  { id: "6", name: "Sarah Davis" },
+  { id: "7", name: "David Martinez" },
+  { id: "8", name: "Lisa Anderson" },
+  { id: "9", name: "Robert Taylor" },
+  { id: "10", name: "Jennifer Lee" },
 ];
 
 /**

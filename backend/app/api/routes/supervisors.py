@@ -457,6 +457,5 @@ async def reset_supervisor_password(
     return PasswordResetResponse(
         success=True,
         message="Password reset successfully. Share the password manually.",
-        password_emailed=False,
         temporary_password=new_password,
     )

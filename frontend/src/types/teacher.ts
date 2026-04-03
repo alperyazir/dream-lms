@@ -26,11 +26,11 @@ export interface Class {
 export interface Student {
   id: string;
   user_id: string;
-  user_email: string;
+  user_email?: string | null;
   user_username: string;
   user_full_name: string;
   grade_level: string | null;
-  parent_email: string | null;
+  parent_email?: string | null;
   created_at: string;
   updated_at: string;
 }

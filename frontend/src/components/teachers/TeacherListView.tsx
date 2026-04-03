@@ -13,7 +13,6 @@ import {
 interface Teacher {
   id: string;
   user_full_name: string;
-  user_email: string;
   school_name?: string | null;
   books_assigned?: number;
   classroom_count?: number;
@@ -28,7 +27,6 @@ interface TeacherListViewProps {
 
 type SortKey =
   | "user_full_name"
-  | "user_email"
   | "school_name"
   | "books_assigned"
   | "classroom_count";
@@ -96,9 +94,6 @@ export function TeacherListView({
               <SortButton column="user_full_name" label="Name" />
             </TableHead>
             <TableHead>
-              <SortButton column="user_email" label="Email" />
-            </TableHead>
-            <TableHead>
               <SortButton column="school_name" label="School" />
             </TableHead>
             <TableHead className="text-center">
@@ -125,9 +120,6 @@ export function TeacherListView({
               <TableRow key={teacher.id}>
                 <TableCell className="font-medium">
                   {teacher.user_full_name}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {teacher.user_email}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {teacher.school_name || "-"}

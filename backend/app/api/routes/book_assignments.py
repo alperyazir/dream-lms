@@ -303,7 +303,6 @@ async def get_book_assignments(
     result = []
     for assignment in assignments:
         teacher_name = None
-        teacher_email = None
         school_name = None
 
         # Load teacher info
@@ -316,7 +315,6 @@ async def get_book_assignments(
             teacher = teacher_result.scalar_one_or_none()
             if teacher and teacher.user:
                 teacher_name = teacher.user.full_name
-                teacher_email = teacher.user.email
 
         # Load school info
         if assignment.school_id:
@@ -337,7 +335,6 @@ async def get_book_assignments(
                 school_name=school_name,
                 teacher_id=assignment.teacher_id,
                 teacher_name=teacher_name,
-                teacher_email=teacher_email,
                 assigned_by=assignment.assigned_by,
                 assigned_at=assignment.assigned_at,
             )

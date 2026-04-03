@@ -551,7 +551,7 @@ def create_teacher(
         id=teacher.id,
         subject_specialization=teacher.subject_specialization,
         user_id=teacher.user_id,
-        user_email=user.email,
+        user_email=None,
         user_username=user.username,
         user_full_name=user.full_name or "",
         school_id=teacher.school_id,
@@ -563,7 +563,6 @@ def create_teacher(
         user=UserPublic.model_validate(user),
         role_record=teacher_data,
         temporary_password=temp_password_for_response,
-        password_emailed=False,
         message=message,
     )
 
@@ -607,7 +606,7 @@ def list_teachers(
             id=t.id,
             subject_specialization=t.subject_specialization,
             user_id=t.user_id,
-            user_email=user.email if user else "",
+            user_email=None,
             user_username=user.username if user else "",
             user_full_name=(user.full_name or "") if user else "",
             school_id=t.school_id,
@@ -661,7 +660,7 @@ def list_teachers_paginated(
             id=t.id,
             subject_specialization=t.subject_specialization,
             user_id=t.user_id,
-            user_email=user.email if user else "",
+            user_email=None,
             user_username=user.username if user else "",
             user_full_name=(user.full_name or "") if user else "",
             school_id=t.school_id,
@@ -781,7 +780,7 @@ def update_teacher(
         id=teacher.id,
         subject_specialization=teacher.subject_specialization,
         user_id=teacher.user_id,
-        user_email=user.email,
+        user_email=None,
         user_username=user.username,
         user_full_name=user.full_name or "",
         school_id=teacher.school_id,
@@ -954,7 +953,7 @@ def create_student(
     # Build student response with user information
     student_data = StudentPublic(
         grade_level=student.grade_level,
-        parent_email=student.parent_email,  # Legacy DB field
+        parent_email=None,
         id=student.id,
         user_id=student.user_id,
         user_email=None,
@@ -968,7 +967,6 @@ def create_student(
         user=UserPublic.model_validate(user),
         role_record=student_data,
         temporary_password=password,
-        password_emailed=False,
         message="Share this password with the student. You can view/change it anytime.",
     )
 
@@ -1218,10 +1216,10 @@ def list_students(
 
         student_data = StudentPublic(
             grade_level=s.grade_level,
-            parent_email=s.parent_email,
+            parent_email=None,
             id=s.id,
             user_id=s.user_id,
-            user_email=user.email if user else "",
+            user_email=None,
             user_username=user.username if user else "",
             user_full_name=(user.full_name or "") if user else "",
             created_by_teacher_id=s.created_by_teacher_id,
@@ -1332,10 +1330,10 @@ def update_student(
     # Build response with user information
     return StudentPublic(
         grade_level=student.grade_level,
-        parent_email=student.parent_email,
+        parent_email=None,
         id=student.id,
         user_id=student.user_id,
-        user_email=user.email,
+        user_email=None,
         user_username=user.username,
         user_full_name=user.full_name or "",
         created_at=student.created_at,
@@ -2087,7 +2085,7 @@ def admin_update_user(
     db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
 
     logger.info(
-        f"User {db_user.email} (ID: {db_user.id}) updated by admin {current_user.email}"
+        f"User {db_user.username} (ID: {db_user.id}) updated by admin {current_user.username}"
     )
 
     return UserPublic.model_validate(db_user)
@@ -2222,7 +2220,6 @@ async def reset_user_password(
     return PasswordResetResponse(
         success=True,
         message="Password reset successfully",
-        password_emailed=False,
         temporary_password=new_password,
     )
 
@@ -2555,7 +2552,6 @@ async def create_publisher_account(
     return PublisherAccountCreationResponse(
         user=UserPublic.model_validate(user),
         temporary_password=temp_password,
-        password_emailed=False,
         message="Please share the temporary password securely with the user",
     )
 
@@ -2607,7 +2603,7 @@ async def list_publisher_accounts(
             PublisherAccountPublic(
                 id=user.id,
                 username=user.username,
-                email=user.email,
+                email=None,
                 full_name=user.full_name,
                 dcs_publisher_id=user.dcs_publisher_id,
                 dcs_publisher_name=dcs_publisher_name,
@@ -2659,7 +2655,7 @@ async def list_publisher_accounts_paginated(
             PublisherAccountPublic(
                 id=user.id,
                 username=user.username,
-                email=user.email,
+                email=None,
                 full_name=user.full_name,
                 dcs_publisher_id=user.dcs_publisher_id,
                 dcs_publisher_name=dcs_publisher_name,
@@ -2717,7 +2713,7 @@ async def get_publisher_account(
     return PublisherAccountPublic(
         id=user.id,
         username=user.username,
-        email=user.email,
+        email=None,
         full_name=user.full_name,
         dcs_publisher_id=user.dcs_publisher_id,
         dcs_publisher_name=dcs_publisher_name,
@@ -2796,7 +2792,7 @@ async def update_publisher_account(
     return PublisherAccountPublic(
         id=user.id,
         username=user.username,
-        email=user.email,
+        email=None,
         full_name=user.full_name,
         dcs_publisher_id=user.dcs_publisher_id,
         dcs_publisher_name=dcs_publisher_name,
@@ -2941,7 +2937,6 @@ def list_all_assignments(
         select(
             Assignment,
             User.full_name.label("teacher_name"),
-            User.email.label("teacher_email"),
             func.coalesce(recipient_count_subq.c.recipient_count, 0).label(
                 "recipient_count"
             ),
@@ -2981,7 +2976,6 @@ def list_all_assignments(
     for (
         assignment,
         teacher_name,
-        teacher_email,
         recipient_count,
         completed_count,
     ) in results:
@@ -2991,7 +2985,7 @@ def list_all_assignments(
                 title=assignment.name,
                 teacher_id=assignment.teacher_id,
                 teacher_name=teacher_name,
-                teacher_email=teacher_email,
+                teacher_email=None,
                 recipient_count=recipient_count,
                 completed_count=completed_count,
                 due_date=assignment.due_date,
@@ -3042,7 +3036,7 @@ def delete_assignment(
     session.commit()
 
     logger.info(
-        f"Admin {current_user.id} ({current_user.email}) deleted assignment {assignment_id} "
+        f"Admin {current_user.id} ({current_user.username}) deleted assignment {assignment_id} "
         f"(title: {assignment.name})"
     )
 

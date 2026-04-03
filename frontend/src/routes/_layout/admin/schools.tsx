@@ -594,7 +594,7 @@ function AdminSchools() {
               <Label htmlFor="contact-info">Contact Info</Label>
               <Input
                 id="contact-info"
-                placeholder="e.g., phone, email"
+                placeholder="e.g., phone number"
                 value={newSchool.contact_info || ""}
                 onChange={(e) =>
                   setNewSchool({ ...newSchool, contact_info: e.target.value })
@@ -701,7 +701,7 @@ function AdminSchools() {
               <Label htmlFor="edit-contact-info">Contact Info</Label>
               <Input
                 id="edit-contact-info"
-                placeholder="e.g., phone, email"
+                placeholder="e.g., phone number"
                 value={editSchool.contact_info || ""}
                 onChange={(e) =>
                   setEditSchool({ ...editSchool, contact_info: e.target.value })

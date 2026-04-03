@@ -85,10 +85,8 @@ function TeacherStudentsPage() {
   const [studentClassrooms, setStudentClassrooms] = useState<string[]>([]);
   const [newStudent, setNewStudent] = useState<StudentCreateAPI>({
     username: "",
-    user_email: "",
     full_name: "",
     grade_level: undefined,
-    parent_email: undefined,
     password: undefined,
   });
   // Story 28.1: Password management state
@@ -101,11 +99,9 @@ function TeacherStudentsPage() {
     name: string;
   } | null>(null);
   const [editStudent, setEditStudent] = useState<StudentUpdate>({
-    user_email: undefined,
     user_username: undefined,
     user_full_name: undefined,
     grade_level: undefined,
-    parent_email: undefined,
   });
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
@@ -140,12 +136,7 @@ function TeacherStudentsPage() {
   // Create student mutation
   const createStudentMutation = useMutation({
     mutationFn: (data: StudentCreateAPI) => {
-      // Convert empty email to undefined so backend treats it as optional
-      const payload = {
-        ...data,
-        user_email: data.user_email?.trim() || undefined,
-      };
-      return TeachersService.createStudent({ requestBody: payload });
+      return TeachersService.createStudent({ requestBody: data });
     },
     onSuccess: async (createdStudent) => {
       // If classrooms were selected, add the student to them
@@ -171,10 +162,8 @@ function TeacherStudentsPage() {
           setIsAddDialogOpen(false);
           setNewStudent({
             username: "",
-            user_email: "",
             full_name: "",
             grade_level: undefined,
-            parent_email: undefined,
             password: undefined,
           });
           setSelectedClassroomIds([]);
@@ -189,10 +178,8 @@ function TeacherStudentsPage() {
           setIsAddDialogOpen(false);
           setNewStudent({
             username: "",
-            user_email: "",
             full_name: "",
             grade_level: undefined,
-            parent_email: undefined,
             password: undefined,
           });
           setSelectedClassroomIds([]);
@@ -213,10 +200,8 @@ function TeacherStudentsPage() {
         setIsAddDialogOpen(false);
         setNewStudent({
           username: "",
-          user_email: "",
           full_name: "",
           grade_level: undefined,
-          parent_email: undefined,
         });
         setSelectedClassroomIds([]);
         showSuccessToast("Student created successfully!");
@@ -342,11 +327,9 @@ function TeacherStudentsPage() {
   const handleEditStudent = async (student: StudentPublic) => {
     setSelectedStudent(student);
     setEditStudent({
-      user_email: student.user_email,
       user_username: student.user_username,
       user_full_name: student.user_full_name,
       grade_level: student.grade_level,
-      parent_email: student.parent_email,
     });
 
     // Get classrooms from the API response
@@ -408,7 +391,6 @@ function TeacherStudentsPage() {
       student.user_full_name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      student.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.user_username?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
@@ -447,7 +429,7 @@ function TeacherStudentsPage() {
       <div className="flex-1">
         <Input
           type="search"
-          placeholder="Search students by name, email, or class..."
+          placeholder="Search students by name or username..."
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
@@ -522,10 +504,8 @@ function TeacherStudentsPage() {
                 </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Username</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Grade</TableHead>
                 <TableHead>Classrooms</TableHead>
-                <TableHead>Parent Email</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -561,7 +541,6 @@ function TeacherStudentsPage() {
                       @{student.user_username}
                     </span>
                   </TableCell>
-                  <TableCell>{student.user_email}</TableCell>
                   <TableCell>
                     {student.grade_level ? (
                       <Badge
@@ -593,11 +572,6 @@ function TeacherStudentsPage() {
                       <span className="text-muted-foreground text-sm">
                         None
                       </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {student.parent_email || (
-                      <span className="text-muted-foreground text-sm">-</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -751,23 +725,6 @@ function TeacherStudentsPage() {
                 Auto-generated from full name (editable)
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                Email{" "}
-                <span className="text-muted-foreground font-normal">
-                  (Optional)
-                </span>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="e.g., student@school.com"
-                value={newStudent.user_email || ""}
-                onChange={(e) =>
-                  setNewStudent({ ...newStudent, user_email: e.target.value })
-                }
-              />
-            </div>
             {/* Story 28.1: Password field with auto-generate option */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -835,21 +792,6 @@ function TeacherStudentsPage() {
                   setNewStudent({
                     ...newStudent,
                     grade_level: e.target.value || undefined,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="parent-email">Parent Email</Label>
-              <Input
-                id="parent-email"
-                type="email"
-                placeholder="e.g., parent@email.com"
-                value={newStudent.parent_email || ""}
-                onChange={(e) =>
-                  setNewStudent({
-                    ...newStudent,
-                    parent_email: e.target.value || undefined,
                   })
                 }
               />
@@ -978,26 +920,6 @@ function TeacherStudentsPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-email">
-                Email{" "}
-                <span className="text-destructive ml-1" aria-hidden="true">
-                  *
-                </span>
-              </Label>
-              <Input
-                id="edit-email"
-                type="email"
-                placeholder="e.g., student@school.com"
-                value={editStudent.user_email || ""}
-                onChange={(e) =>
-                  setEditStudent({
-                    ...editStudent,
-                    user_email: e.target.value || undefined,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Enrolled Classrooms</Label>
               {studentClassrooms.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -1030,21 +952,6 @@ function TeacherStudentsPage() {
                   setEditStudent({
                     ...editStudent,
                     grade_level: e.target.value || undefined,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-parent-email">Parent Email</Label>
-              <Input
-                id="edit-parent-email"
-                type="email"
-                placeholder="e.g., parent@email.com"
-                value={editStudent.parent_email || ""}
-                onChange={(e) =>
-                  setEditStudent({
-                    ...editStudent,
-                    parent_email: e.target.value || undefined,
                   })
                 }
               />

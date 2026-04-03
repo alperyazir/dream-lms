@@ -158,7 +158,7 @@ def admin_user_fixture(session: Session) -> User:
     """Create an admin user for testing"""
     user = User(
         id=uuid.uuid4(),
-        email="admin@example.com",
+        email=None,
         username="testadmin",
         hashed_password=get_password_hash("adminpassword"),
         role=UserRole.admin,
@@ -177,7 +177,7 @@ def supervisor_user_fixture(session: Session) -> User:
     """Create a supervisor user for testing"""
     user = User(
         id=uuid.uuid4(),
-        email="supervisor@example.com",
+        email=None,
         username="testsupervisor",
         hashed_password=get_password_hash("supervisorpassword"),
         role=UserRole.supervisor,
@@ -196,7 +196,7 @@ def publisher_user_fixture(session: Session) -> User:
     """Create a publisher user for testing"""
     user = User(
         id=uuid.uuid4(),
-        email="publisher@example.com",
+        email=None,
         username="testpublisher",
         hashed_password=get_password_hash("publisherpassword"),
         role=UserRole.publisher,
@@ -215,7 +215,7 @@ def teacher_user_fixture(session: Session) -> User:
     """Create a teacher user for testing"""
     user = User(
         id=uuid.uuid4(),
-        email="teacher@example.com",
+        email=None,
         username="testteacher",
         hashed_password=get_password_hash("teacherpassword"),
         role=UserRole.teacher,
@@ -234,7 +234,7 @@ def student_user_fixture(session: Session) -> User:
     """Create a student user for testing"""
     user = User(
         id=uuid.uuid4(),
-        email="student@example.com",
+        email=None,
         username="teststudent",
         hashed_password=get_password_hash("studentpassword"),
         role=UserRole.student,
@@ -253,7 +253,7 @@ def admin_token_fixture(client: TestClient, admin_user: User) -> str:
     """Get access token for admin user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": admin_user.email, "password": "adminpassword"},
+        data={"username": admin_user.username, "password": "adminpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -264,7 +264,7 @@ def supervisor_token_fixture(client: TestClient, supervisor_user: User) -> str:
     """Get access token for supervisor user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": supervisor_user.email, "password": "supervisorpassword"},
+        data={"username": supervisor_user.username, "password": "supervisorpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -275,7 +275,7 @@ def publisher_token_fixture(client: TestClient, publisher_user: User) -> str:
     """Get access token for publisher user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": publisher_user.email, "password": "publisherpassword"},
+        data={"username": publisher_user.username, "password": "publisherpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -286,7 +286,7 @@ def teacher_token_fixture(client: TestClient, teacher_user: User) -> str:
     """Get access token for teacher user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": teacher_user.email, "password": "teacherpassword"},
+        data={"username": teacher_user.username, "password": "teacherpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -297,7 +297,7 @@ def student_token_fixture(client: TestClient, student_user: User) -> str:
     """Get access token for student user"""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": student_user.email, "password": "studentpassword"},
+        data={"username": student_user.username, "password": "studentpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -323,7 +323,7 @@ def teacher_user_with_record_fixture(session: Session) -> User:
 
     user = User(
         id=uuid.uuid4(),
-        email="teacher_bulk@example.com",
+        email=None,
         username="teacherbulk",
         hashed_password=get_password_hash("teacherpassword"),
         role=UserRole.teacher,
@@ -387,7 +387,7 @@ def assignment_with_activity_fixture(session: Session, student_user) -> tuple:
     # Create teacher user
     teacher_user = User(
         id=uuid.uuid4(),
-        email="teacher_activity@example.com",
+        email=None,
         username="teacheractivity",
         hashed_password=get_password_hash("teacherpassword"),
         role=UserRole.teacher,

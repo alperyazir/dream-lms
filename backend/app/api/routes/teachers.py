@@ -129,10 +129,10 @@ def create_student(
     # Build student response with user information
     student_data = StudentPublic(
         grade_level=student.grade_level,
-        parent_email=student.parent_email,
+        parent_email=None,
         id=student.id,
         user_id=student.user_id,
-        user_email=user.email,
+        user_email=None,
         user_username=user.username,
         user_full_name=user.full_name or "",
         created_at=student.created_at,
@@ -145,7 +145,6 @@ def create_student(
         user=UserPublic.model_validate(user),
         role_record=student_data,
         temporary_password=temp_password,
-        password_emailed=False,
         message="Please share the temporary password securely with the student",
     )
 
@@ -422,10 +421,10 @@ async def list_my_students(
 
         student_data = StudentPublic(
             grade_level=s.grade_level,
-            parent_email=s.parent_email,
+            parent_email=None,
             id=s.id,
             user_id=s.user_id,
-            user_email=user.email if user else "",
+            user_email=None,
             user_username=user.username if user else "",
             user_full_name=user.full_name if user and user.full_name else "",
             created_by_teacher_id=s.created_by_teacher_id,
@@ -562,10 +561,10 @@ def update_student(
 
     return StudentPublic(
         grade_level=student.grade_level,
-        parent_email=student.parent_email,
+        parent_email=None,
         id=student.id,
         user_id=student.user_id,
-        user_email=user.email if user else "",
+        user_email=None,
         user_username=user.username if user else "",
         user_full_name=user.full_name if user and user.full_name else "",
         created_at=student.created_at,
@@ -1240,10 +1239,10 @@ def get_class_students(
         user = session.get(User, s.user_id)
         student_data = StudentPublic(
             grade_level=s.grade_level,
-            parent_email=s.parent_email,
+            parent_email=None,
             id=s.id,
             user_id=s.user_id,
-            user_email=user.email if user else "",
+            user_email=None,
             user_username=user.username if user else "",
             user_full_name=user.full_name if user and user.full_name else "",
             created_at=s.created_at,
@@ -1336,10 +1335,10 @@ def get_students_for_classes(
     for student, class_id, user in results:
         student_data = StudentPublic(
             grade_level=student.grade_level,
-            parent_email=student.parent_email,
+            parent_email=None,
             id=student.id,
             user_id=student.user_id,
-            user_email=user.email if user else "",
+            user_email=None,
             user_username=user.username if user else "",
             user_full_name=user.full_name if user and user.full_name else "",
             created_at=student.created_at,

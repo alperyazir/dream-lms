@@ -2,7 +2,6 @@
 
 import io
 import logging
-import re
 import uuid
 from datetime import UTC, datetime
 
@@ -647,11 +646,11 @@ async def get_students(
             StudentPublic(
                 id=student.id,
                 user_id=user.id,
-                user_email=user.email,
+                user_email=None,
                 user_username=user.username,
                 user_full_name=user.full_name,
                 grade_level=student.grade_level,
-                parent_email=student.parent_email,
+                parent_email=None,
                 created_at=student.created_at,
                 updated_at=student.updated_at,
             )
@@ -728,11 +727,11 @@ async def get_unassigned_students(
             StudentPublic(
                 id=student.id,
                 user_id=user.id,
-                user_email=user.email,
+                user_email=None,
                 user_username=user.username,
                 user_full_name=user.full_name,
                 grade_level=student.grade_level,
-                parent_email=student.parent_email,
+                parent_email=None,
                 created_at=student.created_at,
                 updated_at=student.updated_at,
             )
@@ -1079,14 +1078,6 @@ def get_import_template(
     )
 
 
-def _validate_email_format(email: str) -> bool:
-    """Validate email format using regex."""
-    if not email:
-        return True  # Empty email is valid (optional field)
-    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    return bool(re.match(pattern, email))
-
-
 @router.post(
     "/import/validate",
     response_model=ImportValidationResponse,
@@ -1177,8 +1168,6 @@ async def validate_import_file(
             row.get("Full Name *", "") or row.get("Full Name", "") or ""
         ).strip()
         provided_username = str(row.get("Username", "") or "").strip()
-        email = str(row.get("Email", "") or "").strip()
-        parent_email = str(row.get("Parent Email", "") or "").strip()
         grade = str(row.get("Grade", "") or "").strip()
         class_name = str(row.get("Class", "") or "").strip()
 
@@ -1189,13 +1178,7 @@ async def validate_import_file(
         if not full_name:
             errors.append("Full Name is required")
 
-        # Email format validation
-        if email and not _validate_email_format(email):
-            errors.append("Invalid email format")
-
-        # Parent email format validation
-        if parent_email and not _validate_email_format(parent_email):
-            errors.append("Invalid parent email format")
+        # Email format validation (removed - emails no longer used)
 
         # Generate or validate username
         if provided_username:
@@ -1242,7 +1225,6 @@ async def validate_import_file(
                 row_number=row_num,
                 full_name=full_name,
                 username=username,
-                email=email if email else None,
                 grade=grade if grade else None,
                 class_name=class_name if class_name else None,
                 status=row_status,
@@ -1533,7 +1515,6 @@ async def execute_import(
                     full_name=full_name,
                     username=username,
                     password=password,
-                    email=email if email else None,
                 )
             )
             created_count += 1
