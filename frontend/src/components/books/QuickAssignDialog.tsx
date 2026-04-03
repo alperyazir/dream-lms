@@ -177,8 +177,8 @@ export function QuickAssignDialog({
     const nameMatch = (t.user_full_name || "")
       .toLowerCase()
       .includes(searchLower);
-    const emailMatch = (t.user_email || "").toLowerCase().includes(searchLower);
-    return nameMatch || emailMatch;
+    const usernameMatch = (t.user_username || "").toLowerCase().includes(searchLower);
+    return nameMatch || usernameMatch;
   });
 
   // Filter assigned teachers by search
@@ -187,8 +187,8 @@ export function QuickAssignDialog({
     const nameMatch = (t.user_full_name || "")
       .toLowerCase()
       .includes(searchLower);
-    const emailMatch = (t.user_email || "").toLowerCase().includes(searchLower);
-    return nameMatch || emailMatch;
+    const usernameMatch = (t.user_username || "").toLowerCase().includes(searchLower);
+    return nameMatch || usernameMatch;
   });
 
   const handleToggleTeacher = (teacherId: string) => {
@@ -283,7 +283,7 @@ export function QuickAssignDialog({
                               {teacher.user_full_name || "Unknown"}
                             </p>
                             <p className="text-sm text-muted-foreground truncate">
-                              {teacher.user_email || "No email"}
+                              {teacher.user_username}
                             </p>
                           </div>
                           <Button
@@ -335,7 +335,7 @@ export function QuickAssignDialog({
                               {teacher.user_full_name || "Unknown"}
                             </p>
                             <p className="text-sm text-muted-foreground truncate">
-                              {teacher.user_email || "No email"}
+                              {teacher.user_username}
                             </p>
                           </div>
                         </label>

@@ -136,7 +136,7 @@ def test_get_users_returns_only_admin(
     assert "data" in data
     users = data["data"]
     assert len(users) == 1, "Should have exactly one user (admin)"
-    assert users[0]["email"] == settings.FIRST_SUPERUSER
+    assert users[0]["username"] == settings.FIRST_SUPERUSER_USERNAME
     assert users[0]["role"] == "admin"
 
 

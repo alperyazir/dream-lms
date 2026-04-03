@@ -13,7 +13,6 @@ def test_create_user_without_dcs_publisher_id(session: Session) -> None:
     """Test creating user without dcs_publisher_id defaults to None."""
     # Arrange
     user_create = UserCreate(
-        email="test@example.com",
         username="testuser",
         password="password123",
         role=UserRole.student,
@@ -30,7 +29,6 @@ def test_create_user_with_dcs_publisher_id(session: Session) -> None:
     """Test creating user with dcs_publisher_id."""
     # Arrange
     user_create = UserCreate(
-        email="publisher@example.com",
         username="publisheruser",
         password="password123",
         role=UserRole.publisher,
@@ -49,7 +47,6 @@ def test_dcs_publisher_id_exposed_in_user_public(session: Session) -> None:
     """Test that dcs_publisher_id is exposed in UserPublic schema."""
     # Arrange
     user_create = UserCreate(
-        email="publisher2@example.com",
         username="publisheruser2",
         password="password123",
         role=UserRole.publisher,
@@ -68,7 +65,6 @@ def test_dcs_publisher_id_none_in_user_public(session: Session) -> None:
     """Test that dcs_publisher_id is None in UserPublic when not set."""
     # Arrange
     user_create = UserCreate(
-        email="student@example.com",
         username="studentuser",
         password="password123",
         role=UserRole.student,
@@ -86,7 +82,6 @@ def test_update_user_dcs_publisher_id(session: Session) -> None:
     """Test updating dcs_publisher_id via UserUpdate."""
     # Arrange
     user_create = UserCreate(
-        email="updatetest@example.com",
         username="updatetestuser",
         password="password123",
         role=UserRole.publisher,
@@ -106,7 +101,6 @@ def test_update_user_clear_dcs_publisher_id(session: Session) -> None:
     """Test clearing dcs_publisher_id by setting to None."""
     # Arrange
     user_create = UserCreate(
-        email="cleartest@example.com",
         username="cleartestuser",
         password="password123",
         role=UserRole.publisher,
@@ -129,7 +123,6 @@ def test_dcs_publisher_id_field_exists_on_user_create_schema() -> None:
     """Test that dcs_publisher_id field exists on UserCreate schema."""
     # Arrange & Act
     user_create = UserCreate(
-        email="schema@example.com",
         username="schemauser",
         password="password123",
         role=UserRole.publisher,
@@ -155,7 +148,6 @@ def test_existing_user_unaffected_by_new_field(session: Session) -> None:
     """Test that users created without dcs_publisher_id work correctly."""
     # Arrange - simulate existing user (created without dcs_publisher_id)
     user_create = UserCreate(
-        email="existing@example.com",
         username="existinguser",
         password="password123",
         role=UserRole.teacher,
@@ -166,7 +158,7 @@ def test_existing_user_unaffected_by_new_field(session: Session) -> None:
 
     # Assert - user works normally, field defaults to None
     assert user.id is not None
-    assert user.email == "existing@example.com"
+    assert user.username == "existinguser"
     assert user.role == UserRole.teacher
     assert user.dcs_publisher_id is None
 

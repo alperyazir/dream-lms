@@ -348,7 +348,7 @@ describe("AdminPublishers Page", () => {
     });
   });
 
-  describe("DCS Publisher lookup", () => {
+  describe("FCS Publisher lookup", () => {
     it("finds publisher name by ID", () => {
       const getPublisherName = (publisherId: number | null): string => {
         if (!publisherId) return "N/A";

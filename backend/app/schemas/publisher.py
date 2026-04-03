@@ -90,7 +90,7 @@ class TeacherWithCounts(BaseModel):
 class PublisherAccountCreate(BaseModel):
     """Create a publisher user account linked to a DCS publisher."""
 
-    dcs_publisher_id: int = Field(description="DCS Publisher ID to link")
+    dcs_publisher_id: int = Field(description="FCS Publisher ID to link")
     username: str | None = Field(
         default=None,
         min_length=3,

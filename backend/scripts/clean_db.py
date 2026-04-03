@@ -26,8 +26,8 @@ def clean_database():
     with Session(engine) as session:
         print("🗑️  Starting database cleanup...")
 
-        # Get admin user email to preserve
-        admin_email = settings.FIRST_SUPERUSER
+        # Get admin username to preserve
+        admin_username = settings.FIRST_SUPERUSER_USERNAME
 
         # Delete in order respecting foreign key constraints
         print("  → Deleting assignment submissions...")
@@ -58,9 +58,9 @@ def clean_database():
         session.query(Publisher).delete()
 
         # Delete all users except admin
-        print(f"  → Deleting users (except {admin_email})...")
+        print(f"  → Deleting users (except {admin_username})...")
         non_admin_users = session.exec(
-            select(User).where(User.email != admin_email)
+            select(User).where(User.username != admin_username)
         ).all()
 
         for user in non_admin_users:
@@ -70,12 +70,11 @@ def clean_database():
         session.commit()
 
         # Verify admin still exists
-        admin = session.exec(select(User).where(User.email == admin_email)).first()
+        admin = session.exec(select(User).where(User.username == admin_username)).first()
 
         if admin:
             print("\n✅  Database cleaned successfully!")
-            print(f"📧  Admin user preserved: {admin.email}")
-            print(f"👤  Username: {admin.username}")
+            print(f"👤  Admin user preserved: {admin.username}")
             print("🔑  Password: Check FIRST_SUPERUSER_PASSWORD in .env")
         else:
             print("\n⚠️  Warning: Admin user not found!")

@@ -10,7 +10,7 @@ def test_signup_endpoint_returns_404(client: TestClient) -> None:
     """Test that /signup endpoint no longer exists (IV1)"""
     # Arrange
     signup_data = {
-        "email": "newuser@example.com",
+        "username": "newuser",
         "password": "password123",
         "full_name": "New User",
     }
@@ -26,7 +26,7 @@ def test_existing_login_still_works(client: TestClient, admin_user: User) -> Non
     """Test that login functionality remains intact after signup removal (IV2)"""
     # Arrange
     login_data = {
-        "username": admin_user.email,
+        "username": admin_user.username,
         "password": "adminpassword",
     }
 
@@ -44,7 +44,6 @@ def test_hierarchical_user_creation_intact(
     """Test that Admin can still create users (hierarchical creation) (IV3)"""
     # Arrange
     user_data = {
-        "email": "hierarchical@example.com",
         "username": "hierarchical_user",
         "password": "testpass123",
         "full_name": "Hierarchical User",
@@ -60,5 +59,5 @@ def test_hierarchical_user_creation_intact(
     # Assert
     assert response.status_code == 200
     created_user = response.json()
-    assert created_user["email"] == "hierarchical@example.com"
+    assert created_user["username"] == "hierarchical_user"
     assert created_user["full_name"] == "Hierarchical User"

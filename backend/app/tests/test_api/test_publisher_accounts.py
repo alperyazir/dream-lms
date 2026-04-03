@@ -54,7 +54,7 @@ class TestCreatePublisherAccount:
         data = {
             "dcs_publisher_id": 12345,
             "username": "newpublisher",
-            "email": "newpublisher@test.com",
+
             "full_name": "New Publisher User",
         }
         response = client.post(
@@ -65,7 +65,6 @@ class TestCreatePublisherAccount:
         assert response.status_code == 201
         result = response.json()
         assert result["user"]["username"] == "newpublisher"
-        assert result["user"]["email"] == "newpublisher@test.com"
         assert result["user"]["role"] == "publisher"
         assert result["user"]["dcs_publisher_id"] == 12345
         # Password should be returned since emails are disabled in test
@@ -90,7 +89,7 @@ class TestCreatePublisherAccount:
             json=data,
         )
         assert response.status_code == 400
-        assert "DCS Publisher ID 99999 not found" in response.json()["detail"]
+        assert "FCS Publisher ID 99999 not found" in response.json()["detail"]
 
     def test_create_publisher_account_duplicate_email(
         self,
@@ -218,7 +217,6 @@ class TestCreatePublisherAccount:
         result = response.json()
         # Should auto-generate username from name
         assert result["user"]["username"] == "john.doe"
-        assert result["user"]["email"] == "autogen@test.com"
         assert result["user"]["full_name"] == "John Doe"
 
     def test_create_publisher_account_auto_generate_username_with_accents(
@@ -323,7 +321,8 @@ class TestListPublisherAccounts:
         assert "count" in result
         assert result["count"] >= 1
         # Find our created account
-        accounts = [a for a in result["data"] if a["username"] == "listpublisher"]
+        accounts = [a for a in result["data"]
+                    if a["username"] == "listpublisher"]
         assert len(accounts) == 1
         assert accounts[0]["dcs_publisher_name"] == "Test Publisher"
 
@@ -475,7 +474,8 @@ class TestUpdatePublisherAccount:
                 json=update_data,
             )
             assert response.status_code == 400
-            assert "DCS Publisher ID 99999 not found" in response.json()["detail"]
+            assert "FCS Publisher ID 99999 not found" in response.json()[
+                "detail"]
 
 
 class TestDeletePublisherAccount:

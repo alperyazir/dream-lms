@@ -153,7 +153,7 @@ class TestGetStudentPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"},
+            data={"username": teacher_user.username, "password": "teacherpassword"},
         )
         assert response.status_code == 200
         teacher_token = response.json()["access_token"]
@@ -228,7 +228,7 @@ class TestGetStudentPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"},
+            data={"username": teacher_user.username, "password": "teacherpassword"},
         )
         assert response.status_code == 200
         teacher_token = response.json()["access_token"]
@@ -516,7 +516,7 @@ class TestBulkImportWithPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"},
+            data={"username": teacher_user.username, "password": "teacherpassword"},
         )
         teacher_token = response.json()["access_token"]
 
@@ -592,7 +592,7 @@ class TestBulkImportWithPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"},
+            data={"username": teacher_user.username, "password": "teacherpassword"},
         )
         teacher_token = response.json()["access_token"]
 
@@ -670,7 +670,7 @@ class TestBulkImportWithPassword:
         # Get teacher token
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": teacher_user.email, "password": "teacherpassword"},
+            data={"username": teacher_user.username, "password": "teacherpassword"},
         )
         teacher_token = response.json()["access_token"]
 

@@ -90,40 +90,6 @@ class TestPasswordReset:
         assert verify_password(data["temporary_password"], teacher_user.hashed_password)
         assert teacher_user.must_change_password is True
 
-    @patch("app.api.routes.admin.settings")
-    @patch("app.api.routes.admin.send_email")
-    def test_reset_password_sends_email_when_enabled(
-        self,
-        mock_send_email,
-        mock_settings,
-        client: TestClient,
-        session: Session,
-        admin_token: str,
-        teacher_user: User,
-    ):
-        """Test password reset sends email and hides password [11.2 AC: 1, 2]"""
-        # Configure mocks to simulate email being enabled
-        mock_settings.emails_enabled = True
-        mock_settings.PROJECT_NAME = "Dream LMS"
-        mock_settings.FRONTEND_HOST = "http://localhost"
-
-        response = client.post(
-            f"{settings.API_V1_STR}/admin/users/{teacher_user.id}/reset-password",
-            headers={"Authorization": f"Bearer {admin_token}"},
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-
-        # Password should NOT be returned when email is sent [11.2 AC: 1]
-        assert data["success"] is True
-        assert data["password_emailed"] is True
-        assert data["temporary_password"] is None
-        assert teacher_user.email in data["message"]
-
-        # Verify email was called
-        mock_send_email.assert_called_once()
-
     def test_reset_password_for_student(
         self, client: TestClient, session: Session, admin_token: str, student_user: User
     ):
@@ -661,7 +627,7 @@ class TestTeacherValidation:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["user"]["email"] == "newteacher@example.com"
+        assert data["user"]["username"] == "newteacher"
         assert "temporary_password" in data
         assert data["user"]["must_change_password"] is True
 
@@ -682,19 +648,6 @@ class TestUserEdit:
         assert response.status_code == 200
         assert response.json()["full_name"] == "Updated Teacher Name"
 
-    def test_edit_user_email(
-        self, client: TestClient, admin_token: str, teacher_user: User
-    ):
-        """Test updating user's email [AC: 10]"""
-        response = client.patch(
-            f"{settings.API_V1_STR}/admin/users/{teacher_user.id}",
-            headers={"Authorization": f"Bearer {admin_token}"},
-            json={"email": "newemail@example.com"},
-        )
-
-        assert response.status_code == 200
-        assert response.json()["email"] == "newemail@example.com"
-
     def test_edit_user_username(
         self, client: TestClient, admin_token: str, teacher_user: User
     ):
@@ -707,23 +660,6 @@ class TestUserEdit:
 
         assert response.status_code == 200
         assert response.json()["username"] == "newusername"
-
-    def test_edit_user_email_duplicate(
-        self,
-        client: TestClient,
-        admin_token: str,
-        teacher_user: User,
-        student_user: User,
-    ):
-        """Test that duplicate email is rejected [AC: 11]"""
-        response = client.patch(
-            f"{settings.API_V1_STR}/admin/users/{teacher_user.id}",
-            headers={"Authorization": f"Bearer {admin_token}"},
-            json={"email": student_user.email},
-        )
-
-        assert response.status_code == 409
-        assert "email" in response.json()["detail"].lower()
 
     def test_edit_user_username_duplicate(
         self,

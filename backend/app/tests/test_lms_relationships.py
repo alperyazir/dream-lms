@@ -25,7 +25,7 @@ class TestCompleteHierarchy:
         """Test creating complete publisher → school → teacher → student chain"""
         # 1. Create publisher user + publisher
         pub_user = User(
-            email="p@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
             full_name="Publisher User",
@@ -56,7 +56,7 @@ class TestCompleteHierarchy:
 
         # 3. Create teacher
         teacher_user = User(
-            email="t@test.com",
+            username="teacher_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
             full_name="Teacher User",
@@ -76,7 +76,7 @@ class TestCompleteHierarchy:
 
         # 4. Create student
         student_user = User(
-            email="s@test.com",
+            username="student_test",
             role=UserRole.student,
             hashed_password=get_password_hash("test123"),
             full_name="Student User",
@@ -118,7 +118,7 @@ class TestCompleteHierarchy:
         """Test querying all schools for a publisher"""
         # Setup
         pub_user = User(
-            email="p@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -148,7 +148,7 @@ class TestCompleteHierarchy:
         """Test querying all teachers for a school"""
         # Setup
         pub_user = User(
-            email="p@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -168,12 +168,12 @@ class TestCompleteHierarchy:
 
         # Create multiple teachers
         teacher1_user = User(
-            email="t1@test.com",
+            username="teacher1_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
         )
         teacher2_user = User(
-            email="t2@test.com",
+            username="teacher2_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
         )
@@ -214,7 +214,7 @@ class TestCascadeDeletes:
         """Test deleting publisher user cascades to publisher record and schools"""
         # Setup
         pub_user = User(
-            email="p@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -255,7 +255,7 @@ class TestCascadeDeletes:
         """Test deleting publisher record cascades to schools"""
         # Setup
         pub_user = User(
-            email="p@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -294,7 +294,7 @@ class TestCascadeDeletes:
         """Test deleting school cascades to teachers"""
         # Setup complete hierarchy
         pub_user = User(
-            email="p@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -314,12 +314,12 @@ class TestCascadeDeletes:
 
         # Create 2 teachers
         teacher1_user = User(
-            email="t1@test.com",
+            username="teacher1_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
         )
         teacher2_user = User(
-            email="t2@test.com",
+            username="teacher2_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
         )
@@ -359,7 +359,7 @@ class TestCascadeDeletes:
         """Test deleting teacher user cascades to teacher record only (not school)"""
         # Setup
         pub_user = User(
-            email="p@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -379,7 +379,7 @@ class TestCascadeDeletes:
         school_id = school.id
 
         teacher_user = User(
-            email="t@test.com",
+            username="teacher_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
         )
@@ -409,7 +409,7 @@ class TestCascadeDeletes:
     ) -> None:
         """Test deleting student user cascades to student record only"""
         student_user = User(
-            email="s@test.com",
+            username="student_test",
             role=UserRole.student,
             hashed_password=get_password_hash("test123"),
         )
@@ -439,7 +439,7 @@ class TestRelationshipQueries:
         """Test querying user from teacher record"""
         # Setup
         pub_user = User(
-            email="p@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -458,7 +458,7 @@ class TestRelationshipQueries:
         session.refresh(school)
 
         teacher_user = User(
-            email="teacher@test.com",
+            username="teacher_rel",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
             full_name="Jane Teacher",
@@ -474,13 +474,13 @@ class TestRelationshipQueries:
 
         # Query user from teacher
         assert teacher.user.id == teacher_user.id
-        assert teacher.user.email == "teacher@test.com"
+        assert teacher.user.username == "teacher_rel"
         assert teacher.user.full_name == "Jane Teacher"
 
     def test_query_user_from_student_record(self, session: Session) -> None:
         """Test querying user from student record"""
         student_user = User(
-            email="student@test.com",
+            username="student_rel",
             role=UserRole.student,
             hashed_password=get_password_hash("test123"),
             full_name="John Student",
@@ -496,5 +496,5 @@ class TestRelationshipQueries:
 
         # Query user from student
         assert student.user.id == student_user.id
-        assert student.user.email == "student@test.com"
+        assert student.user.username == "student_rel"
         assert student.user.full_name == "John Student"

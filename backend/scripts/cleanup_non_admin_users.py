@@ -34,7 +34,7 @@ def cleanup_non_admin_users(skip_confirmation: bool = False):
         print(f"🔍 Found {len(users_to_delete)} non-admin users:")
         for user in users_to_delete:
             print(
-                f"  - {user.username} ({user.role.value}) - {user.email or 'no email'}"
+                f"  - {user.username} ({user.role.value})"
             )
 
         # Confirm deletion
@@ -74,7 +74,7 @@ def cleanup_non_admin_users(skip_confirmation: bool = False):
         admin_users = session.exec(admin_statement).all()
         print(f"\n👑 Remaining admin users ({len(admin_users)}):")
         for admin in admin_users:
-            print(f"  - {admin.username} - {admin.email}")
+            print(f"  - {admin.username}")
 
 
 if __name__ == "__main__":

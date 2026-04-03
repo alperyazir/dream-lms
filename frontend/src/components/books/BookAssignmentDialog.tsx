@@ -123,7 +123,6 @@ export function BookAssignmentDialog({
     return teachers.filter(
       (teacher) =>
         teacher.user_full_name?.toLowerCase().includes(query) ||
-        teacher.user_email.toLowerCase().includes(query) ||
         teacher.user_username.toLowerCase().includes(query),
     );
   }, [teachers, searchQuery]);
@@ -511,7 +510,7 @@ export function BookAssignmentDialog({
                                                   "Unnamed Teacher"}
                                               </div>
                                               <div className="text-xs text-muted-foreground truncate">
-                                                {teacher.user_email}
+                                                {teacher.user_username}
                                               </div>
                                             </div>
                                           </label>
@@ -574,7 +573,7 @@ export function BookAssignmentDialog({
                                 {teacher.user_full_name || "Unnamed Teacher"}
                               </div>
                               <div className="text-xs text-muted-foreground truncate">
-                                {teacher.user_email} •{" "}
+                                {teacher.user_username} •{" "}
                                 {getTeacherSchoolName(teacher)}
                               </div>
                             </div>
@@ -665,7 +664,7 @@ export function BookAssignmentDialog({
                             <div className="flex items-center gap-2 min-w-0">
                               <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                               <span className="text-sm truncate">
-                                {teacher.user_full_name || teacher.user_email}
+                                {teacher.user_full_name || teacher.user_username}
                               </span>
                             </div>
                             <Button

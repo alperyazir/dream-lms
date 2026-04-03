@@ -174,31 +174,6 @@ class TestImportValidation:
         assert data["rows"][0]["status"] == "error"
         assert any("Full Name is required" in err for err in data["rows"][0]["errors"])
 
-    def test_validate_invalid_email(self, client: TestClient, admin_token: str) -> None:
-        """Test validation catches invalid email format."""
-        excel_data = create_test_excel(
-            [
-                {"Full Name": "John Doe", "Email": "not-an-email"},
-            ]
-        )
-
-        response = client.post(
-            "/api/v1/students/import/validate",
-            headers=auth_headers(admin_token),
-            files={
-                "file": (
-                    "students.xlsx",
-                    excel_data,
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
-            },
-        )
-
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data["error_count"] == 1
-        assert any("Invalid email format" in err for err in data["rows"][0]["errors"])
-
     def test_validate_duplicate_username_in_file(
         self, client: TestClient, admin_token: str
     ) -> None:

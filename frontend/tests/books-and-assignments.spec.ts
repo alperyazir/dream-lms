@@ -15,7 +15,7 @@ import { expect, type Page, test } from "@playwright/test"
 // Helper function to login as teacher
 const loginAsTeacher = async (page: Page) => {
   await page.goto("/login")
-  await page.getByPlaceholder("Email").fill("teacher@example.com")
+  await page.getByPlaceholder("Enter your username").fill("teacher@example.com")
   await page.getByPlaceholder("Password", { exact: true }).fill("password123")
   await page.getByRole("button", { name: "Log In" }).click()
   await page.waitForURL("/teacher/dashboard")
@@ -24,7 +24,7 @@ const loginAsTeacher = async (page: Page) => {
 // Helper function to login as student
 const loginAsStudent = async (page: Page) => {
   await page.goto("/login")
-  await page.getByPlaceholder("Email").fill("student@example.com")
+  await page.getByPlaceholder("Enter your username").fill("student@example.com")
   await page.getByPlaceholder("Password", { exact: true }).fill("password123")
   await page.getByRole("button", { name: "Log In" }).click()
   await page.waitForURL("/student/dashboard")

@@ -24,7 +24,7 @@ class TestPublisherModel:
         """Test creating publisher linked to user"""
         # Create user
         user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
             is_active=True,
@@ -53,7 +53,7 @@ class TestPublisherModel:
     def test_publisher_user_relationship(self, session: Session) -> None:
         """Test Publisher.user relationship"""
         user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -71,12 +71,12 @@ class TestPublisherModel:
 
         # Test relationship
         assert publisher.user.id == user.id
-        assert publisher.user.email == "pub@test.com"
+        assert publisher.user.username == "pub_test"
 
     def test_publisher_cascade_delete(self, session: Session) -> None:
         """Test that deleting user cascades to publisher"""
         user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -106,7 +106,7 @@ class TestSchoolModel:
         """Test creating school linked to publisher"""
         # Create publisher (with user)
         user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -138,7 +138,7 @@ class TestSchoolModel:
     def test_school_publisher_relationship(self, session: Session) -> None:
         """Test School.publisher relationship"""
         user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -163,7 +163,7 @@ class TestSchoolModel:
     def test_school_cascade_delete_from_publisher(self, session: Session) -> None:
         """Test that deleting publisher cascades to schools"""
         user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -198,7 +198,7 @@ class TestTeacherModel:
         """Test creating teacher with user and school relationships"""
         # Create publisher user + publisher + school
         pub_user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -218,7 +218,7 @@ class TestTeacherModel:
 
         # Create teacher user
         teacher_user = User(
-            email="teacher@test.com",
+            username="teacher_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
         )
@@ -245,7 +245,7 @@ class TestTeacherModel:
         """Test that deleting teacher user cascades to teacher"""
         # Setup
         pub_user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -264,7 +264,7 @@ class TestTeacherModel:
         session.refresh(school)
 
         teacher_user = User(
-            email="teacher@test.com",
+            username="teacher_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
         )
@@ -289,7 +289,7 @@ class TestTeacherModel:
         """Test that deleting school cascades to teachers"""
         # Setup
         pub_user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -308,7 +308,7 @@ class TestTeacherModel:
         session.refresh(school)
 
         teacher_user = User(
-            email="teacher@test.com",
+            username="teacher_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
         )
@@ -337,7 +337,7 @@ class TestStudentModel:
     def test_create_student_with_user(self, session: Session) -> None:
         """Test creating student linked to user"""
         user = User(
-            email="student@test.com",
+            username="student_test",
             role=UserRole.student,
             hashed_password=get_password_hash("test123"),
         )
@@ -362,7 +362,7 @@ class TestStudentModel:
     def test_student_cascade_delete_from_user(self, session: Session) -> None:
         """Test that deleting user cascades to student"""
         user = User(
-            email="student@test.com",
+            username="student_test",
             role=UserRole.student,
             hashed_password=get_password_hash("test123"),
         )
@@ -391,7 +391,7 @@ class TestUserRelationships:
     def test_user_publisher_relationship(self, session: Session) -> None:
         """Test accessing user.publisher relationship"""
         user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -416,7 +416,7 @@ class TestUserRelationships:
         """Test accessing user.teacher relationship"""
         # Setup school first
         pub_user = User(
-            email="pub@test.com",
+            username="pub_test",
             role=UserRole.publisher,
             hashed_password=get_password_hash("test123"),
         )
@@ -436,7 +436,7 @@ class TestUserRelationships:
 
         # Create teacher user
         user = User(
-            email="teacher@test.com",
+            username="teacher_test",
             role=UserRole.teacher,
             hashed_password=get_password_hash("test123"),
         )
@@ -460,7 +460,7 @@ class TestUserRelationships:
     def test_user_student_relationship(self, session: Session) -> None:
         """Test accessing user.student relationship"""
         user = User(
-            email="student@test.com",
+            username="student_test",
             role=UserRole.student,
             hashed_password=get_password_hash("test123"),
         )

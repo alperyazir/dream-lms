@@ -24,7 +24,7 @@ def test_user_model_default_role(session: Session):
     """Test that User model defaults to student role"""
     user = User(
         id=uuid.uuid4(),
-        email="newuser@example.com",
+        username="newuser",
         hashed_password="hashed",
         is_active=True,
         is_superuser=False,
@@ -43,7 +43,7 @@ def test_user_model_with_different_roles(session: Session):
     for role in roles:
         user = User(
             id=uuid.uuid4(),
-            email=f"{role.value}@example.com",
+            username=f"user_{role.value}",
             hashed_password="hashed",
             role=role,
             is_active=True,
@@ -65,7 +65,7 @@ def test_jwt_token_includes_role(client: TestClient, admin_user: User):
 
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": admin_user.email, "password": "adminpassword"},
+        data={"username": admin_user.username, "password": "adminpassword"},
     )
     assert response.status_code == 200
 
@@ -90,7 +90,7 @@ def test_require_role_allows_correct_role(client: TestClient, admin_token: str):
 def test_create_user_with_role(session: Session):
     """Test creating user through CRUD with role"""
     user_in = UserCreate(
-        email="test@example.com",
+        username="testteacher",
         password="testpassword123",
         role=UserRole.teacher,
         is_active=True,
@@ -100,14 +100,14 @@ def test_create_user_with_role(session: Session):
     user = crud.create_user(session=session, user_create=user_in)
 
     assert user.role == UserRole.teacher
-    assert user.email == "test@example.com"
+    assert user.username == "testteacher"
 
 
 def test_user_role_persists_after_refresh(session: Session):
     """Test that role persists correctly in database"""
     user = User(
         id=uuid.uuid4(),
-        email="persist@example.com",
+        username="persistuser",
         hashed_password="hashed",
         role=UserRole.publisher,
         is_active=True,

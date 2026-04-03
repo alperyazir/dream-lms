@@ -22,7 +22,6 @@ class TestListSupervisors:
         # Create a supervisor
         supervisor = User(
             id=uuid.uuid4(),
-            email="list_super@example.com",
             username="listsupervisor",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -64,7 +63,6 @@ class TestListSupervisors:
         for i in range(5):
             supervisor = User(
                 id=uuid.uuid4(),
-                email=f"page_super{i}@example.com",
                 username=f"pagesupervisor{i}",
                 hashed_password=get_password_hash("password"),
                 role=UserRole.supervisor,
@@ -90,7 +88,6 @@ class TestListSupervisors:
         # Create a supervisor with unique name
         supervisor = User(
             id=uuid.uuid4(),
-            email="searchable@example.com",
             username="searchablesuper",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -117,7 +114,6 @@ class TestListSupervisors:
         # Create a supervisor
         supervisor = User(
             id=uuid.uuid4(),
-            email="fields_super@example.com",
             username="fieldssuper",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -139,7 +135,6 @@ class TestListSupervisors:
         s = found[0]
         assert "id" in s
         assert "full_name" in s
-        assert "email" in s
         assert "username" in s
         assert "is_active" in s
         assert "created_at" in s
@@ -165,7 +160,6 @@ class TestGetSupervisor:
         """Test admin can get supervisor by ID [AC: 7]"""
         supervisor = User(
             id=uuid.uuid4(),
-            email="get_super@example.com",
             username="getsuper",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -191,7 +185,6 @@ class TestGetSupervisor:
         """Test supervisor can get another supervisor [AC: 9]"""
         other_supervisor = User(
             id=uuid.uuid4(),
-            email="other_super@example.com",
             username="othersuper",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -248,7 +241,7 @@ class TestCreateSupervisor:
         assert response.status_code == 201
         data = response.json()
         assert data["user"]["username"] == "newsupervisor"
-        assert data["user"]["email"] == "newsupervisor@example.com"
+        assert data["user"]["username"] == "newsupervisor"
         assert data["user"]["role"] == "supervisor"
         assert data["user"]["must_change_password"] is True
         # Password should be returned since emails are disabled in test
@@ -268,35 +261,6 @@ class TestCreateSupervisor:
 
         assert response.status_code == 403
 
-    def test_create_supervisor_validates_email_uniqueness(
-        self, client: TestClient, session: Session, admin_token: str
-    ):
-        """Test email uniqueness validation [AC: 15]"""
-        # Create existing user with email
-        existing = User(
-            id=uuid.uuid4(),
-            email="taken@example.com",
-            username="existinguser",
-            hashed_password=get_password_hash("password"),
-            role=UserRole.teacher,
-            is_active=True,
-        )
-        session.add(existing)
-        session.commit()
-
-        response = client.post(
-            f"{settings.API_V1_STR}/admin/supervisors",
-            headers={"Authorization": f"Bearer {admin_token}"},
-            json={
-                "username": "newsuper",
-                "user_email": "taken@example.com",
-                "full_name": "New Super",
-            },
-        )
-
-        assert response.status_code == 409
-        assert "email" in response.json()["detail"].lower()
-
     def test_create_supervisor_validates_username_uniqueness(
         self, client: TestClient, session: Session, admin_token: str
     ):
@@ -304,7 +268,6 @@ class TestCreateSupervisor:
         # Create existing user with username
         existing = User(
             id=uuid.uuid4(),
-            email="other@example.com",
             username="takenusername",
             hashed_password=get_password_hash("password"),
             role=UserRole.teacher,
@@ -322,19 +285,18 @@ class TestCreateSupervisor:
         assert response.status_code == 409
         assert "username" in response.json()["detail"].lower()
 
-    def test_create_supervisor_without_email(
+    def test_create_supervisor_returns_password(
         self, client: TestClient, admin_token: str
     ):
-        """Test supervisor creation without email returns password"""
+        """Test supervisor creation returns temporary password"""
         response = client.post(
             f"{settings.API_V1_STR}/admin/supervisors",
             headers={"Authorization": f"Bearer {admin_token}"},
-            json={"username": "noemailsuper", "full_name": "No Email Super"},
+            json={"username": "newsuper", "full_name": "New Super"},
         )
 
         assert response.status_code == 201
         data = response.json()
-        # Without email, password must be returned
         assert data["temporary_password"] is not None
         assert data["password_emailed"] is False
 
@@ -362,7 +324,6 @@ class TestUpdateSupervisor:
         """Test admin can update supervisor [AC: 19, 20]"""
         supervisor = User(
             id=uuid.uuid4(),
-            email="update_super@example.com",
             username="updatesuper",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -387,7 +348,6 @@ class TestUpdateSupervisor:
         """Test supervisor CANNOT update other supervisors [AC: 20]"""
         other = User(
             id=uuid.uuid4(),
-            email="other_update@example.com",
             username="otherupdate",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -404,46 +364,12 @@ class TestUpdateSupervisor:
 
         assert response.status_code == 403
 
-    def test_update_supervisor_validates_email_uniqueness(
-        self, client: TestClient, session: Session, admin_token: str
-    ):
-        """Test email uniqueness on update [AC: 22]"""
-        # Create two users
-        supervisor1 = User(
-            id=uuid.uuid4(),
-            email="super1@example.com",
-            username="super1",
-            hashed_password=get_password_hash("password"),
-            role=UserRole.supervisor,
-            is_active=True,
-        )
-        supervisor2 = User(
-            id=uuid.uuid4(),
-            email="super2@example.com",
-            username="super2",
-            hashed_password=get_password_hash("password"),
-            role=UserRole.supervisor,
-            is_active=True,
-        )
-        session.add_all([supervisor1, supervisor2])
-        session.commit()
-
-        # Try to update supervisor1's email to supervisor2's email
-        response = client.patch(
-            f"{settings.API_V1_STR}/admin/supervisors/{supervisor1.id}",
-            headers={"Authorization": f"Bearer {admin_token}"},
-            json={"email": "super2@example.com"},
-        )
-
-        assert response.status_code == 409
-
     def test_update_supervisor_validates_username_uniqueness(
         self, client: TestClient, session: Session, admin_token: str
     ):
         """Test username uniqueness on update [AC: 23]"""
         supervisor1 = User(
             id=uuid.uuid4(),
-            email="uname1@example.com",
             username="uname1",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -451,7 +377,6 @@ class TestUpdateSupervisor:
         )
         supervisor2 = User(
             id=uuid.uuid4(),
-            email="uname2@example.com",
             username="uname2",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -489,7 +414,6 @@ class TestDeleteSupervisor:
         """Test admin can delete supervisor [AC: 25, 26]"""
         supervisor = User(
             id=uuid.uuid4(),
-            email="delete_super@example.com",
             username="deletesuper",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -516,7 +440,6 @@ class TestDeleteSupervisor:
         """Test supervisor CANNOT delete other supervisors [AC: 26]"""
         other = User(
             id=uuid.uuid4(),
-            email="other_delete@example.com",
             username="otherdelete",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -564,7 +487,6 @@ class TestResetSupervisorPassword:
         """Test admin can reset supervisor password [AC: 30, 31]"""
         supervisor = User(
             id=uuid.uuid4(),
-            email="reset_super@example.com",
             username="resetsuper",
             hashed_password=get_password_hash("oldpassword"),
             role=UserRole.supervisor,
@@ -600,7 +522,6 @@ class TestResetSupervisorPassword:
         """Test supervisor CANNOT reset other supervisor passwords [AC: 31]"""
         other = User(
             id=uuid.uuid4(),
-            email="other_reset@example.com",
             username="otherreset",
             hashed_password=get_password_hash("password"),
             role=UserRole.supervisor,
@@ -622,7 +543,6 @@ class TestResetSupervisorPassword:
         """Test password generation [AC: 32]"""
         supervisor = User(
             id=uuid.uuid4(),
-            email="secure_reset@example.com",
             username="securereset",
             hashed_password=get_password_hash("oldpassword"),
             role=UserRole.supervisor,
@@ -647,7 +567,6 @@ class TestResetSupervisorPassword:
         """Test must_change_password is set [AC: 34]"""
         supervisor = User(
             id=uuid.uuid4(),
-            email="mustchange_reset@example.com",
             username="mustchangereset",
             hashed_password=get_password_hash("oldpassword"),
             role=UserRole.supervisor,

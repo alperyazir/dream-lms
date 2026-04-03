@@ -84,7 +84,6 @@ services:
       SMTP_HOST: "host.docker.internal"
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
-      EMAILS_FROM_EMAIL: "noreply@example.com"
       DREAM_CENTRAL_STORAGE_URL: "http://host.docker.internal:8081"
 
   # Using external MailHog instead - access web UI at http://localhost:8025

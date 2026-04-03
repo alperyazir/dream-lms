@@ -67,10 +67,9 @@ def test_teacher_create_student(
     session.commit()
 
     student_data = {
-        "user_email": "newstudent@example.com",
+        "username": "newstudent",
         "full_name": "New Student",
         "grade_level": "5th Grade",
-        "parent_email": "parent@example.com",
     }
 
     response = client.post(
@@ -90,22 +89,21 @@ def test_teacher_create_student(
     assert "message" in data
 
     # Verify user data
-    assert data["user"]["email"] == student_data["user_email"]
+    assert data["user"]["username"] == student_data["username"]
     assert data["user"]["full_name"] == student_data["full_name"]
     assert data["user"]["role"] == "student"
     assert data["user"]["must_change_password"] is True
 
-    # Verify temp password (returned since emails disabled in tests)
+    # Verify temp password (returned since no email sending)
     assert data["temporary_password"] is not None
     assert len(data["temporary_password"]) == 12
 
     # Verify student record
     assert data["role_record"]["grade_level"] == student_data["grade_level"]
-    assert data["role_record"]["parent_email"] == student_data["parent_email"]
 
     # Verify in database
     user = session.exec(
-        select(User).where(User.email == student_data["user_email"])
+        select(User).where(User.username == student_data["username"])
     ).first()
     assert user is not None
     assert user.role.value == "student"

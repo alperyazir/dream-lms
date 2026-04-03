@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test"
 import { firstSuperuser, firstSuperuserPassword } from "./config.ts"
 import { createUser } from "./utils/privateApi.ts"
-import { randomEmail, randomPassword } from "./utils/random"
+import { randomUsername, randomPassword } from "./utils/random"
 import { logInUser, logOutUser } from "./utils/user"
 
 const tabs = ["My profile", "Password", "Appearance"]
@@ -23,18 +23,18 @@ test("All tabs are visible", async ({ page }) => {
   }
 })
 
-test.describe("Edit user full name and email successfully", () => {
+test.describe("Edit user full name successfully", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
   test("Edit user name with a valid name", async ({ page }) => {
-    const email = randomEmail()
+    const username = randomUsername()
     const updatedName = "Test User 2"
     const password = randomPassword()
 
-    await createUser({ email, password })
+    await createUser({ username, password })
 
     // Log in the user
-    await logInUser(page, email, password)
+    await logInUser(page, username, password)
 
     await page.goto("/settings")
     await page.getByRole("tab", { name: "My profile" }).click()
@@ -47,59 +47,20 @@ test.describe("Edit user full name and email successfully", () => {
       page.getByLabel("My profile").getByText(updatedName, { exact: true }),
     ).toBeVisible()
   })
-
-  test("Edit user email with a valid email", async ({ page }) => {
-    const email = randomEmail()
-    const updatedEmail = randomEmail()
-    const password = randomPassword()
-
-    await createUser({ email, password })
-
-    // Log in the user
-    await logInUser(page, email, password)
-
-    await page.goto("/settings")
-    await page.getByRole("tab", { name: "My profile" }).click()
-    await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Email").fill(updatedEmail)
-    await page.getByRole("button", { name: "Save" }).click()
-    await expect(page.getByText("User updated successfully")).toBeVisible()
-    await expect(
-      page.getByLabel("My profile").getByText(updatedEmail, { exact: true }),
-    ).toBeVisible()
-  })
 })
 
 test.describe("Edit user with invalid data", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
-  test("Edit user email with an invalid email", async ({ page }) => {
-    const email = randomEmail()
-    const password = randomPassword()
-    const invalidEmail = ""
-
-    await createUser({ email, password })
-
-    // Log in the user
-    await logInUser(page, email, password)
-
-    await page.goto("/settings")
-    await page.getByRole("tab", { name: "My profile" }).click()
-    await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Email").fill(invalidEmail)
-    await page.locator("body").click()
-    await expect(page.getByText("Email is required")).toBeVisible()
-  })
-
   test("Cancel edit action restores original name", async ({ page }) => {
-    const email = randomEmail()
+    const username = randomUsername()
     const password = randomPassword()
     const updatedName = "Test User"
 
-    const user = await createUser({ email, password })
+    const user = await createUser({ username, password })
 
     // Log in the user
-    await logInUser(page, email, password)
+    await logInUser(page, username, password)
 
     await page.goto("/settings")
     await page.getByRole("tab", { name: "My profile" }).click()
@@ -112,26 +73,6 @@ test.describe("Edit user with invalid data", () => {
         .getByText(user.full_name as string, { exact: true }),
     ).toBeVisible()
   })
-
-  test("Cancel edit action restores original email", async ({ page }) => {
-    const email = randomEmail()
-    const password = randomPassword()
-    const updatedEmail = randomEmail()
-
-    await createUser({ email, password })
-
-    // Log in the user
-    await logInUser(page, email, password)
-
-    await page.goto("/settings")
-    await page.getByRole("tab", { name: "My profile" }).click()
-    await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Email").fill(updatedEmail)
-    await page.getByRole("button", { name: "Cancel" }).first().click()
-    await expect(
-      page.getByLabel("My profile").getByText(email, { exact: true }),
-    ).toBeVisible()
-  })
 })
 
 // Change Password
@@ -140,14 +81,14 @@ test.describe("Change password successfully", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
   test("Update password successfully", async ({ page }) => {
-    const email = randomEmail()
+    const username = randomUsername()
     const password = randomPassword()
     const NewPassword = randomPassword()
 
-    await createUser({ email, password })
+    await createUser({ username, password })
 
     // Log in the user
-    await logInUser(page, email, password)
+    await logInUser(page, username, password)
 
     await page.goto("/settings")
     await page.getByRole("tab", { name: "Password" }).click()
@@ -160,7 +101,7 @@ test.describe("Change password successfully", () => {
     await logOutUser(page)
 
     // Check if the user can log in with the new password
-    await logInUser(page, email, NewPassword)
+    await logInUser(page, username, NewPassword)
   })
 })
 
@@ -168,14 +109,14 @@ test.describe("Change password with invalid data", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
   test("Update password with weak passwords", async ({ page }) => {
-    const email = randomEmail()
+    const username = randomUsername()
     const password = randomPassword()
     const weakPassword = "weak"
 
-    await createUser({ email, password })
+    await createUser({ username, password })
 
     // Log in the user
-    await logInUser(page, email, password)
+    await logInUser(page, username, password)
 
     await page.goto("/settings")
     await page.getByRole("tab", { name: "Password" }).click()
@@ -190,15 +131,15 @@ test.describe("Change password with invalid data", () => {
   test("New password and confirmation password do not match", async ({
     page,
   }) => {
-    const email = randomEmail()
+    const username = randomUsername()
     const password = randomPassword()
     const newPassword = randomPassword()
     const confirmPassword = randomPassword()
 
-    await createUser({ email, password })
+    await createUser({ username, password })
 
     // Log in the user
-    await logInUser(page, email, password)
+    await logInUser(page, username, password)
 
     await page.goto("/settings")
     await page.getByRole("tab", { name: "Password" }).click()
@@ -210,13 +151,13 @@ test.describe("Change password with invalid data", () => {
   })
 
   test("Current password and new password are the same", async ({ page }) => {
-    const email = randomEmail()
+    const username = randomUsername()
     const password = randomPassword()
 
-    await createUser({ email, password })
+    await createUser({ username, password })
 
     // Log in the user
-    await logInUser(page, email, password)
+    await logInUser(page, username, password)
 
     await page.goto("/settings")
     await page.getByRole("tab", { name: "Password" }).click()

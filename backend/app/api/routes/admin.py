@@ -1,3 +1,4 @@
+import os
 import logging
 import uuid
 from typing import Any
@@ -215,10 +216,10 @@ class LogoUploadResponse(SQLModel):
 
 
 # Create static logos directory if it doesn't exist
-import os
 
 LOGOS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "logos"
+    os.path.dirname(os.path.dirname(
+        os.path.dirname(__file__))), "static", "logos"
 )
 os.makedirs(LOGOS_DIR, exist_ok=True)
 
@@ -651,7 +652,8 @@ def list_teachers_paginated(
     total = session.exec(count_query).one()
 
     paginated_query = (
-        base_query.order_by(Teacher.created_at.desc()).offset(skip).limit(limit)
+        base_query.order_by(Teacher.created_at.desc()
+                            ).offset(skip).limit(limit)
     )
     rows = session.exec(paginated_query).all()
 
@@ -1031,7 +1033,8 @@ def get_student_password(
             student_in_class = session.exec(
                 select(ClassStudent).where(
                     ClassStudent.student_id == student_id,
-                    ClassStudent.class_id.in_(teacher_class_ids),  # type: ignore
+                    ClassStudent.class_id.in_(
+                        teacher_class_ids),  # type: ignore
                 )
             ).first()
             if not student_in_class:
@@ -1121,7 +1124,8 @@ def set_student_password(
             student_in_class = session.exec(
                 select(ClassStudent).where(
                     ClassStudent.student_id == student_id,
-                    ClassStudent.class_id.in_(teacher_class_ids),  # type: ignore
+                    ClassStudent.class_id.in_(
+                        teacher_class_ids),  # type: ignore
                 )
             ).first()
             if not student_in_class:
@@ -1136,7 +1140,8 @@ def set_student_password(
 
     # Store encrypted viewable password
     try:
-        user.viewable_password_encrypted = encrypt_viewable_password(body.password)
+        user.viewable_password_encrypted = encrypt_viewable_password(
+            body.password)
     except ValueError:
         # PASSWORD_ENCRYPTION_KEY not configured - skip viewable storage
         pass
@@ -1196,7 +1201,8 @@ def list_students(
 
     # Get paginated results
     paginated_query = (
-        base_query.order_by(Student.created_at.desc()).offset(skip).limit(limit)
+        base_query.order_by(Student.created_at.desc()
+                            ).offset(skip).limit(limit)
     )
     rows = session.exec(paginated_query).all()
 
@@ -1465,7 +1471,8 @@ def bulk_delete_students(
             # Check self-deletion
             if user.id == current_user.id:
                 failed_count += 1
-                errors.append(f"Cannot delete your own account (student {student_id})")
+                errors.append(
+                    f"Cannot delete your own account (student {student_id})")
                 continue
 
             # Check hierarchical permission
@@ -1912,7 +1919,8 @@ async def bulk_import_students(
             last_name = row.get("Last Name", "").strip()
             full_name = f"{first_name} {last_name}"
             grade_level = (
-                row.get("Grade Level", "").strip() if row.get("Grade Level") else None
+                row.get("Grade Level", "").strip() if row.get(
+                    "Grade Level") else None
             )
 
             # Generate temporary password
@@ -2067,7 +2075,8 @@ def admin_update_user(
             )
 
     # Update user fields
-    db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
+    db_user = crud.update_user(
+        session=session, db_user=db_user, user_in=user_in)
 
     logger.info(
         f"User {db_user.username} (ID: {db_user.id}) updated by admin {current_user.username}"
@@ -2189,7 +2198,8 @@ async def reset_user_password(
     user.hashed_password = get_password_hash(new_password)
     user.must_change_password = False
     try:
-        user.viewable_password_encrypted = encrypt_viewable_password(new_password)
+        user.viewable_password_encrypted = encrypt_viewable_password(
+            new_password)
     except ValueError:
         pass
 
@@ -2350,9 +2360,11 @@ async def register_webhooks_manually(
     )
 
     if result["success"]:
-        logger.info(f"✅ Admin webhook registration succeeded: {result['message']}")
+        logger.info(
+            f"✅ Admin webhook registration succeeded: {result['message']}")
     else:
-        logger.warning(f"⚠️  Admin webhook registration failed: {result['message']}")
+        logger.warning(
+            f"⚠️  Admin webhook registration failed: {result['message']}")
 
     return result
 
@@ -2516,7 +2528,7 @@ async def create_publisher_account(
     if not publisher:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"DCS Publisher ID {account_in.dcs_publisher_id} not found",
+            detail=f"FCS Publisher ID {account_in.dcs_publisher_id} not found",
         )
 
     # Use provided password or auto-generate
@@ -2565,14 +2577,16 @@ async def list_publisher_accounts(
     """
     # Query users with publisher role
     statement = (
-        select(User).where(User.role == UserRole.publisher).offset(skip).limit(limit)
+        select(User).where(User.role == UserRole.publisher).offset(
+            skip).limit(limit)
     )
     result = session.exec(statement)
     users = result.all()
 
     # Count total
     count_statement = (
-        select(func.count()).select_from(User).where(User.role == UserRole.publisher)
+        select(func.count()).select_from(User).where(
+            User.role == UserRole.publisher)
     )
     total = session.exec(count_statement).one()
 
@@ -2748,7 +2762,7 @@ async def update_publisher_account(
         if not publisher:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"DCS Publisher ID {account_in.dcs_publisher_id} not found",
+                detail=f"FCS Publisher ID {account_in.dcs_publisher_id} not found",
             )
 
     # Check username uniqueness if changing
@@ -2906,14 +2920,16 @@ def list_all_assignments(
     # Story 20.1: Fix N+1 query problem by using subqueries for counts
     # Create subquery for recipient count
     recipient_count_subq = (
-        select(AssignmentStudent.assignment_id, func.count().label("recipient_count"))
+        select(AssignmentStudent.assignment_id,
+               func.count().label("recipient_count"))
         .group_by(AssignmentStudent.assignment_id)
         .subquery()
     )
 
     # Create subquery for completed count
     completed_count_subq = (
-        select(AssignmentStudent.assignment_id, func.count().label("completed_count"))
+        select(AssignmentStudent.assignment_id,
+               func.count().label("completed_count"))
         .where(AssignmentStudent.status == "completed")
         .group_by(AssignmentStudent.assignment_id)
         .subquery()
@@ -3209,7 +3225,8 @@ async def update_llm_settings(
             existing.updated_at = datetime.now(UTC)
         else:
             session.add(
-                SystemSetting(key=key, value=value, updated_at=datetime.now(UTC))
+                SystemSetting(key=key, value=value,
+                              updated_at=datetime.now(UTC))
             )
 
     await session.commit()
@@ -3284,7 +3301,8 @@ async def set_user_password(
     user.hashed_password = get_password_hash(payload.password)
     user.must_change_password = False
     try:
-        user.viewable_password_encrypted = encrypt_viewable_password(payload.password)
+        user.viewable_password_encrypted = encrypt_viewable_password(
+            payload.password)
     except ValueError:
         pass
 

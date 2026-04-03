@@ -28,7 +28,6 @@ def test_admin_creates_publisher_success(client: TestClient, admin_token: str) -
     assert response.status_code == 201
     data = response.json()
     assert "user" in data
-    assert data["user"]["email"] == "newpub@example.com"
     assert "username" in data["user"]  # Username should be auto-generated
     assert "temporary_password" in data  # Secure password flow
     assert data["user"]["must_change_password"] is True
@@ -75,7 +74,6 @@ def test_admin_creates_teacher_success(
 
     assert response.status_code == 201
     data = response.json()
-    assert data["user"]["email"] == "newteacher@example.com"
     assert "username" in data["user"]
 
 
@@ -96,7 +94,6 @@ def test_admin_creates_student_success(client: TestClient, admin_token: str) -> 
 
     assert response.status_code == 201
     data = response.json()
-    assert data["user"]["email"] == "newstudent@example.com"
     assert "username" in data["user"]
 
 
@@ -128,7 +125,7 @@ def test_publisher_creates_teacher_in_own_school(
     login_response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
         data={
-            "username": publisher_user_with_record.email,
+            "username": publisher_user_with_record.username,
             "password": "publisherpassword",
         },
     )
@@ -151,7 +148,6 @@ def test_publisher_creates_teacher_in_own_school(
 
     assert response.status_code == 201
     data = response.json()
-    assert data["user"]["email"] == "teacherviapub@example.com"
     assert "username" in data["user"]
 
 
@@ -182,7 +178,7 @@ def test_publisher_creates_teacher_via_admin_endpoint(
     login_response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
         data={
-            "username": publisher_user_with_record.email,
+            "username": publisher_user_with_record.username,
             "password": "publisherpassword",
         },
     )
@@ -205,7 +201,6 @@ def test_publisher_creates_teacher_via_admin_endpoint(
 
     assert response.status_code == 201
     data = response.json()
-    assert data["user"]["email"] == "teacherviaadmin@example.com"
     assert "username" in data["user"]
 
 
@@ -227,7 +222,7 @@ def test_publisher_cannot_create_teacher_in_other_school(
     login_response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
         data={
-            "username": publisher_user_with_record.email,
+            "username": publisher_user_with_record.username,
             "password": "publisherpassword",
         },
     )
@@ -292,7 +287,7 @@ def test_publisher_creates_student_success(
     login_response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
         data={
-            "username": publisher_user_with_record.email,
+            "username": publisher_user_with_record.username,
             "password": "publisherpassword",
         },
     )
@@ -314,7 +309,6 @@ def test_publisher_creates_student_success(
 
     assert response.status_code == 201
     data = response.json()
-    assert data["user"]["email"] == "studentviapub@example.com"
     assert "username" in data["user"]
 
 
@@ -327,7 +321,7 @@ def test_teacher_creates_student_success(
     login_response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
         data={
-            "username": teacher_user_with_record.email,
+            "username": teacher_user_with_record.username,
             "password": "teacherpassword",
         },
     )
@@ -349,7 +343,6 @@ def test_teacher_creates_student_success(
 
     assert response.status_code == 201
     data = response.json()
-    assert data["user"]["email"] == "studentviateacher@example.com"
     assert "username" in data["user"]
 
 
@@ -371,7 +364,6 @@ def test_teacher_creates_student_via_admin_endpoint(
 
     assert response.status_code == 201
     data = response.json()
-    assert data["user"]["email"] == "studentviaadmin@example.com"
     assert "username" in data["user"]
 
 

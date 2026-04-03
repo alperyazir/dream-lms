@@ -188,8 +188,8 @@ def test_validate_user_row_valid(session: Session) -> None:
         row=row,
         row_number=2,
         role=UserRole.student,
-        existing_emails=set(),
-        seen_emails=set(),
+        existing_usernames=set(),
+        seen_usernames=set(),
         session=session,
     )
 
@@ -209,8 +209,8 @@ def test_validate_user_row_missing_required_fields(session: Session) -> None:
         row=row,
         row_number=2,
         role=UserRole.student,
-        existing_emails=set(),
-        seen_emails=set(),
+        existing_usernames=set(),
+        seen_usernames=set(),
         session=session,
     )
 
@@ -218,42 +218,6 @@ def test_validate_user_row_missing_required_fields(session: Session) -> None:
     assert len(result.errors) > 0
     assert any("Last Name" in err for err in result.errors)
     assert any("Email" in err for err in result.errors)
-
-
-def test_validate_user_row_invalid_email(session: Session) -> None:
-    """Test validation fails for invalid email format."""
-    row = {"First Name": "John", "Last Name": "Doe", "Email": "not-an-email"}
-
-    result = validate_user_row(
-        row=row,
-        row_number=2,
-        role=UserRole.student,
-        existing_emails=set(),
-        seen_emails=set(),
-        session=session,
-    )
-
-    assert result.is_valid is False
-    assert any("Invalid email format" in err for err in result.errors)
-
-
-def test_validate_user_row_duplicate_email(session: Session) -> None:
-    """Test validation detects duplicate email within file."""
-    row = {"First Name": "John", "Last Name": "Doe", "Email": "duplicate@test.com"}
-
-    seen_emails = {"duplicate@test.com"}  # Already seen in this import
-
-    result = validate_user_row(
-        row=row,
-        row_number=2,
-        role=UserRole.student,
-        existing_emails=set(),
-        seen_emails=seen_emails,
-        session=session,
-    )
-
-    assert result.is_valid is False
-    assert any("Duplicate email" in err for err in result.errors)
 
 
 def test_validate_user_row_existing_user_conflict(session: Session) -> None:
@@ -270,14 +234,14 @@ def test_validate_user_row_existing_user_conflict(session: Session) -> None:
 
     row = {"First Name": "John", "Last Name": "Doe", "Email": "existing@test.com"}
 
-    existing_emails = {"existing@test.com"}
+    existing_usernames = {"existing@test.com"}
 
     result = validate_user_row(
         row=row,
         row_number=2,
         role=UserRole.student,
-        existing_emails=existing_emails,
-        seen_emails=set(),
+        existing_usernames=existing_usernames,
+        seen_usernames=set(),
         session=session,
     )
 
@@ -347,8 +311,8 @@ def test_validate_teacher_row_missing_school_id(session: Session) -> None:
         row=row,
         row_number=2,
         role=UserRole.teacher,
-        existing_emails=set(),
-        seen_emails=set(),
+        existing_usernames=set(),
+        seen_usernames=set(),
         session=session,
     )
 
@@ -369,8 +333,8 @@ def test_validate_publisher_row_missing_company_name(session: Session) -> None:
         row=row,
         row_number=2,
         role=UserRole.publisher,
-        existing_emails=set(),
-        seen_emails=set(),
+        existing_usernames=set(),
+        seen_usernames=set(),
         session=session,
     )
 

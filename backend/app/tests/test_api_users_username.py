@@ -28,7 +28,7 @@ def test_get_users_includes_username_field(
     # Check first user has username field
     first_user = data["data"][0]
     assert "username" in first_user
-    assert "email" in first_user
+    assert "username" in first_user  # email field removed
 
 
 def test_create_user_with_username_succeeds(
@@ -37,7 +37,6 @@ def test_create_user_with_username_succeeds(
     """Test POST /api/v1/users with username creates user successfully."""
     # Arrange
     user_data = {
-        "email": "newuser@example.com",
         "username": "newuser123",
         "password": "password123",
         "full_name": "New User",
@@ -55,7 +54,6 @@ def test_create_user_with_username_succeeds(
     assert response.status_code == 200
     data = response.json()
     assert data["username"] == "newuser123"
-    assert data["email"] == "newuser@example.com"
     assert data["role"] == "student"
 
 
@@ -65,7 +63,6 @@ def test_create_user_without_username_fails_validation(
     """Test POST /api/v1/users without username fails with 422 (validation error)."""
     # Arrange
     user_data = {
-        "email": "nouser@example.com",
         # Missing username field
         "password": "password123",
         "full_name": "No Username",
@@ -91,7 +88,6 @@ def test_create_user_with_duplicate_username_fails(
     """Test POST /api/v1/users with duplicate username fails with 400."""
     # Arrange - try to create user with existing username
     user_data = {
-        "email": "different@example.com",
         "username": admin_user.username,  # Duplicate username
         "password": "password123",
         "full_name": "Duplicate Username",
@@ -116,7 +112,7 @@ def test_email_based_login_still_works(client: TestClient, admin_user: User) -> 
     # Act
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": admin_user.email, "password": "adminpassword"},
+        data={"username": admin_user.username, "password": "adminpassword"},
     )
 
     # Assert
@@ -147,15 +143,15 @@ def test_all_seeded_users_have_valid_usernames(
 
     for user in all_users:
         # Check username exists
-        assert user.username is not None, f"User {user.email} has no username"
-        assert len(user.username) >= 3, f"User {user.email} username too short"
-        assert len(user.username) <= 50, f"User {user.email} username too long"
+        assert user.username is not None, f"User {user.id} has no username"
+        assert len(user.username) >= 3, f"User {user.id} username too short"
+        assert len(user.username) <= 50, f"User {user.id} username too long"
 
         # Check username format (alphanumeric, underscore, hyphen only)
         import re
 
         assert re.match(r"^[a-zA-Z0-9_-]+$", user.username), (
-            f"User {user.email} has invalid username format: {user.username}"
+            f"User {user.id} has invalid username format: {user.username}"
         )
 
 
@@ -171,5 +167,4 @@ def test_get_user_me_includes_username(client: TestClient, admin_token: str) -> 
     assert response.status_code == 200
     user_data = response.json()
     assert "username" in user_data
-    assert "email" in user_data
     assert user_data["username"] is not None

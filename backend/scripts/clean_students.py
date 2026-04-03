@@ -31,7 +31,7 @@ def clean_students() -> None:
             user = session.get(User, student.user_id)
 
             if user:
-                print(f"   - Deleting: {user.username} ({user.email})")
+                print(f"   - Deleting: {user.username}")
 
                 # Delete class enrollments
                 class_enrollments = session.exec(

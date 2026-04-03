@@ -439,7 +439,7 @@ class TestMultiActivityAnalytics:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": other_teacher_user.email,
+                "username": other_teacher_user.username,
                 "password": "otherpassword",
             },
         )
@@ -737,7 +737,7 @@ class TestStudentAssignmentResult:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": other_user.email,
+                "username": other_user.username,
                 "password": "studentpassword",
             },
         )

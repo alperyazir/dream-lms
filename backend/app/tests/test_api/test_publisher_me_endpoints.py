@@ -98,7 +98,7 @@ def publisher_token_with_dcs(client: TestClient, publisher_user_with_dcs: User) 
     """Get access token for publisher user with DCS link."""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": publisher_user_with_dcs.email, "password": "pubpassword"},
+        data={"username": publisher_user_with_dcs.username, "password": "pubpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -109,7 +109,7 @@ def publisher_token_no_dcs(client: TestClient, publisher_user_no_dcs: User) -> s
     """Get access token for publisher user without DCS link."""
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        data={"username": publisher_user_no_dcs.email, "password": "pubpassword"},
+        data={"username": publisher_user_no_dcs.username, "password": "pubpassword"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -205,7 +205,7 @@ class TestPublisherProfile:
             assert data["name"] == "Test Publisher Corp"
             assert data["contact_email"] == "contact@testpub.com"
             assert data["user_id"] == str(publisher_user_with_dcs.id)
-            assert data["user_email"] == publisher_user_with_dcs.email
+            assert data["user_email"] == publisher_user_with_dcs.username
             assert data["user_full_name"] == publisher_user_with_dcs.full_name
 
     def test_get_profile_no_dcs_link_returns_403(

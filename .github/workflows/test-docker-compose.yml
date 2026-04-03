@@ -32,13 +32,12 @@ jobs:
       SMTP_HOST: ""
       SMTP_USER: ""
       SMTP_PASSWORD: ""
-      EMAILS_FROM_EMAIL: "test@example.com"
       SENTRY_DSN: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Create .env file
-        run: env | grep -E '^(POSTGRES_|DOMAIN|STACK_NAME|FRONTEND_HOST|ENVIRONMENT|PROJECT_NAME|SECRET_KEY|FIRST_SUPERUSER|DOCKER_IMAGE_|BACKEND_CORS|SMTP_|EMAILS_|SENTRY_)' > .env
+        run: env | grep -E '^(POSTGRES_|DOMAIN|STACK_NAME|FRONTEND_HOST|ENVIRONMENT|PROJECT_NAME|SECRET_KEY|FIRST_SUPERUSER|DOCKER_IMAGE_|BACKEND_CORS|SMTP_|SENTRY_)' > .env
       - name: Verify docker compose config
         run: docker compose config --quiet
       - name: Build all services

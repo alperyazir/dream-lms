@@ -61,7 +61,7 @@ class TestListBooksAuthorization:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -155,7 +155,7 @@ class TestListBooksFunctionality:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -220,7 +220,7 @@ class TestListBooksFunctionality:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -289,7 +289,7 @@ class TestListBooksFunctionality:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -320,7 +320,7 @@ class TestListBooksValidation:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -345,7 +345,7 @@ class TestListBooksValidation:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -370,7 +370,7 @@ class TestListBooksValidation:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -406,7 +406,7 @@ class TestGetBookActivities:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -465,7 +465,7 @@ class TestGetBookActivities:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -573,7 +573,7 @@ class TestGetBookActivities:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -610,7 +610,7 @@ class TestGetBookStructure:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -753,7 +753,7 @@ class TestGetBookStructure:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -834,7 +834,7 @@ class TestListBookVideos:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -891,7 +891,7 @@ class TestListBookVideos:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -919,7 +919,7 @@ class TestListBookVideos:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )
@@ -988,7 +988,7 @@ class TestListBookVideos:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
             data={
-                "username": teacher_user_with_record.email,
+                "username": teacher_user_with_record.username,
                 "password": "teacherpassword",
             },
         )

@@ -71,7 +71,7 @@ function UsersTable() {
         <TableHeader>
           <TableRow>
             <TableHead>Full name</TableHead>
-            <TableHead>Email</TableHead>
+            <TableHead>Username</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
@@ -93,7 +93,7 @@ function UsersTable() {
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="truncate max-w-sm">{user.email}</TableCell>
+              <TableCell className="truncate max-w-sm">{user.username}</TableCell>
               <TableCell>{user.is_superuser ? "Superuser" : "User"}</TableCell>
               <TableCell>{user.is_active ? "Active" : "Inactive"}</TableCell>
               <TableCell>

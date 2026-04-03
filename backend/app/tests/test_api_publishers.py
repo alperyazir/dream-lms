@@ -45,7 +45,6 @@ def test_publisher_list_own_schools(
     # Create another publisher with a school (should not be visible)
     other_user = User(
         id=uuid.uuid4(),
-        email="other@publisher.com",
         username="otherpublisher",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
@@ -115,7 +114,7 @@ def test_publisher_create_teacher_in_own_school(
     session.refresh(school)
 
     teacher_data = {
-        "user_email": "newteacher@example.com",
+        "username": "newteacher",
         "full_name": "New Teacher",
         "school_id": str(school.id),
         "subject_specialization": "Mathematics",
@@ -138,7 +137,7 @@ def test_publisher_create_teacher_in_own_school(
     assert "message" in data
 
     # Verify user data
-    assert data["user"]["email"] == teacher_data["user_email"]
+    assert data["user"]["username"] == teacher_data["username"]
     assert data["user"]["full_name"] == teacher_data["full_name"]
     assert data["user"]["role"] == "teacher"
     assert data["user"]["must_change_password"] is True
@@ -156,7 +155,7 @@ def test_publisher_create_teacher_in_own_school(
 
     # Verify in database
     user = session.exec(
-        select(User).where(User.email == teacher_data["user_email"])
+        select(User).where(User.username == data["user"]["username"])
     ).first()
     assert user is not None
     assert user.role.value == "teacher"
@@ -183,7 +182,7 @@ def test_publisher_cannot_create_teacher_in_other_school(
     # Create another publisher with a school
     other_user = User(
         id=uuid.uuid4(),
-        email="other@publisher.com",
+        username="otherpublisher2",
         hashed_password=get_password_hash("password"),
         role=UserRole.publisher,
         full_name="Other Publisher",
@@ -212,7 +211,7 @@ def test_publisher_cannot_create_teacher_in_other_school(
 
     # Try to create teacher in other publisher's school
     teacher_data = {
-        "user_email": "teacher@example.com",
+        "username": "teacheruser",
         "full_name": "Teacher",
         "school_id": str(other_school.id),
         "subject_specialization": "Science",
@@ -253,7 +252,7 @@ def test_publisher_receives_temporary_password(
     session.refresh(school)
 
     teacher_data = {
-        "user_email": "teacher@example.com",
+        "username": "teacheruser",
         "full_name": "Teacher",
         "school_id": str(school.id),
         "subject_specialization": "History",

@@ -115,7 +115,7 @@ def test_token_contains_correct_role_for_each_user(
     for user, password, expected_role in test_cases:
         response = client.post(
             f"{settings.API_V1_STR}/login/access-token",
-            data={"username": user.email, "password": password},
+            data={"username": user.username, "password": password},
         )
         assert response.status_code == 200
 

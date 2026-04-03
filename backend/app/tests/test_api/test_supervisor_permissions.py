@@ -124,7 +124,7 @@ class TestSupervisorCreateAccess:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["user"]["email"] == "superpub@example.com"
+        assert data["user"]["username"] == "superpub"
 
     def test_supervisor_can_create_school(
         self,
@@ -187,7 +187,7 @@ class TestSupervisorCreateAccess:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["user"]["email"] == "superteacher@example.com"
+        assert data["user"]["username"] == "superteacher"
 
     def test_supervisor_can_create_student(
         self, client: TestClient, supervisor_token: str
@@ -205,7 +205,7 @@ class TestSupervisorCreateAccess:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["user"]["email"] == "superstudent@example.com"
+        assert data["user"]["username"] == "superstudent"
 
 
 class TestSupervisorDeletePermissions:

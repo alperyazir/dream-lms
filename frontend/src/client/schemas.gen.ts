@@ -8413,8 +8413,8 @@ export const PublisherAccountCreateSchema = {
   properties: {
     dcs_publisher_id: {
       type: "integer",
-      title: "Dcs Publisher Id",
-      description: "DCS Publisher ID to link",
+      title: "FCS Publisher Id",
+      description: "FCS Publisher ID to link",
     },
     username: {
       anyOf: [
@@ -8544,7 +8544,7 @@ export const PublisherAccountPublicSchema = {
           type: "null",
         },
       ],
-      title: "Dcs Publisher Id",
+      title: "FCS Publisher Id",
     },
     dcs_publisher_name: {
       anyOf: [
@@ -8555,7 +8555,7 @@ export const PublisherAccountPublicSchema = {
           type: "null",
         },
       ],
-      title: "Dcs Publisher Name",
+      title: "FCS Publisher Name",
     },
     is_active: {
       type: "boolean",
@@ -8598,7 +8598,7 @@ export const PublisherAccountUpdateSchema = {
           type: "null",
         },
       ],
-      title: "Dcs Publisher Id",
+      title: "FCS Publisher Id",
     },
     username: {
       anyOf: [
@@ -10123,7 +10123,7 @@ export const SchoolCreateSchema = {
     },
     dcs_publisher_id: {
       type: "integer",
-      title: "Dcs Publisher Id",
+      title: "FCS Publisher Id",
     },
   },
   type: "object",
@@ -10217,7 +10217,7 @@ export const SchoolPublicSchema = {
     },
     dcs_publisher_id: {
       type: "integer",
-      title: "Dcs Publisher Id",
+      title: "FCS Publisher Id",
     },
     created_at: {
       type: "string",
@@ -10281,7 +10281,7 @@ export const SchoolUpdateSchema = {
           type: "null",
         },
       ],
-      title: "Dcs Publisher Id",
+      title: "FCS Publisher Id",
     },
     benchmarking_enabled: {
       anyOf: [
@@ -10340,7 +10340,7 @@ export const SchoolWithCountsSchema = {
     },
     dcs_publisher_id: {
       type: "integer",
-      title: "Dcs Publisher Id",
+      title: "FCS Publisher Id",
     },
     created_at: {
       type: "string",
@@ -13624,8 +13624,8 @@ export const UserCreateSchema = {
           type: "null",
         },
       ],
-      title: "Dcs Publisher Id",
-      description: "DCS Publisher ID - only set for publisher role users",
+      title: "FCS Publisher Id",
+      description: "FCS Publisher ID - only set for publisher role users",
     },
     password: {
       type: "string",
@@ -13742,8 +13742,8 @@ export const UserPublicSchema = {
           type: "null",
         },
       ],
-      title: "Dcs Publisher Id",
-      description: "DCS Publisher ID - only set for publisher role users",
+      title: "FCS Publisher Id",
+      description: "FCS Publisher ID - only set for publisher role users",
     },
     id: {
       type: "string",
@@ -13857,7 +13857,7 @@ export const UserUpdateSchema = {
           type: "null",
         },
       ],
-      title: "Dcs Publisher Id",
+      title: "FCS Publisher Id",
     },
     password: {
       anyOf: [
